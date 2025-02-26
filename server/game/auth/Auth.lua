@@ -1,0 +1,511 @@
+
+local moon = require("moon")
+local uuid = require("uuid")
+local queue = require("moon.queue")
+local common = require("common")
+
+local db = common.Database
+local CmdCode = common.CmdCode
+local CmdEnum = common.CmdEnum
+local pb = require "pb"
+local traceback = debug.traceback
+
+local mem_player_limit = 0 --内存中最小玩家数量
+local min_online_time = 60 --seconds，logout间隔大于这个时间的,并且不在线的,user服务会被退出
+
+---@type auth_context
+local context = ...
+local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+local auth_queue = context.auth_queue
+local temp_openid_uid = {}
+local NODE = math.tointeger(moon.env("NODE"))
+local function doDSAuth(req)
+    local u = context.gnid_map[req.gnid]
+    local addr_dsnode
+    if not u then
+        local conf = {
+            name = "dsnode"..req.gnid,
+            file = "game/service_dsnode.lua"
+        }
+        addr_dsnode = moon.new_service(conf)
+        if addr_dsnode == 0 then
+            return "create dsnode service failed!"
+        end
+
+        local ok, err = moon.call("lua", addr_dsnode, "DsNode.Load", req)
+        if not ok then
+            moon.send("lua", context.addr_dgate, "DGate.Kick", 0, req.fd)
+            moon.kill(addr_dsnode)
+            context.gnid_map[req.gnid] = nil
+            return err
+        end
+    else
+        addr_dsnode = u.addr_dsnode
+    end
+
+    local openid, err = moon.call("lua", addr_dsnode, "DsNode.Login", req)
+    if not openid then
+        print(openid, err)
+        moon.send("lua", context.addr_dgate, "DGate.Kick", 0, req.fd)
+        moon.kill(addr_dsnode)
+        context.gnid_map[req.gnid] = nil
+        return err
+    end
+
+    if not u then
+        u = {
+            addr_dsnode = addr_dsnode,
+            openid = openid,
+            gnid = req.gnid,
+            logouttime = moon.time(),
+            online = false
+        }
+
+        context.gnid_map[req.gnid] = u
+    end
+
+    if req.pull then
+        return
+    end
+
+    req.addr_dsnode = addr_dsnode
+
+    local pass = true
+
+    if pass then
+        u.logouttime = 0
+        print("DS login success", req.gnid)
+    else
+        print("DS login failed", req.gnid)
+    end
+
+    moon.send("lua", context.addr_dgate, "DGate.BindDS", req)
+
+    local res = {
+        result = pass and 0 or 1,---maybe banned
+        connId = req.fd,
+        compressionType = 0,
+        gateNetId = req.gnid
+    }
+    context.S2D(req.gnid, CmdCode["dsgatepb.AuthResultCmd"], res,req.msg_context.stubId)
+
+end
+
+local function doAuth(Auth,req)
+    local u = context.uid_map[req.uid]
+    local addr_user
+    if not u then
+        local conf = {
+            name = "user"..req.uid,
+            file = "game/service_user.lua"
+        }
+        addr_user = moon.new_service(conf)
+        if addr_user == 0 then
+            return "create user service failed!"
+        end
+
+        local ok, err = moon.call("lua", addr_user, "User.Load", req)
+        if not ok then
+            moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
+            moon.kill(addr_user)
+            context.uid_map[req.uid] = nil
+            return err
+        end
+    else
+        addr_user = u.addr_user
+    end
+
+    local openid, err = moon.call("lua", addr_user, "User.Login", req)
+    if not openid then
+        print(openid, err)
+        moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
+        moon.kill(addr_user)
+        context.uid_map[req.uid] = nil
+        return err
+    end
+
+    if not u then
+        req.gnid = Auth.AllocGateNetId(0)
+        u = {
+            addr_user = addr_user,
+            openid = openid,
+            uid = req.uid,
+            logouttime = moon.time(),
+            online = false,
+            gnid = req.gnid
+        }
+
+        context.uid_map[req.uid] = u
+        context.gnid_map[req.gnid] = u
+        
+    end
+
+    if req.pull then
+        return
+    end
+
+    req.addr_user = addr_user
+
+    local pass = true
+
+    if pass then
+        u.logouttime = 0
+        print("login success", req.uid)
+    else
+        print("login failed", req.uid)
+    end
+
+    moon.send("lua", context.addr_gate, "Gate.BindUser", req)
+
+    local res = {
+        result = pass and 0 or 1,---maybe banned
+        gateNetId = u.gnid,
+        clientUserId = u.uid,
+        LoginKey = "",
+        compressionType = 0
+    }
+    context.S2C(res.gateNetId, CmdCode["dsgatepb.AuthResultCmd"], res,req.msg_context.stubId)
+end
+
+local function QuitOneUser(u)
+    moon.send("lua", u.addr_user, "User.Exit")
+    context.uid_map[u.uid] = nil
+    context.gnid_map[u.gnid] = nil
+end
+
+---@class Auth
+local Auth = {}
+
+Auth.Init = function()
+
+    moon.async(function()
+        while true do
+            moon.sleep(10000)
+            if context.server_exit then
+                return
+            end
+
+            local now = moon.time()
+
+            local count = table.count(context.uid_map)
+            for _, u in pairs(context.uid_map) do
+                if count > mem_player_limit then
+                    if u.logouttime > 0 and (now - u.logouttime) > min_online_time then
+                        QuitOneUser(u)
+                        count = count - 1
+                    end
+                else
+                    break
+                end
+            end
+        end
+    end)
+
+    local res = db.loadallopenid(context.addr_db_openid) or {}
+    for i=1,#res,2 do
+        context.openid_map[res[i]] = math.tointeger(res[i+1])
+    end
+
+    context.start_hour_timer()
+
+    return true
+end
+
+Auth.Start = function()
+    context.start_hour_timer()
+    return true
+end
+
+Auth.Shutdown = function()
+    context.server_exit = true
+    print("begin: server exit save user")
+    local ok, err = xpcall(function()
+        while true do
+            local ifbreak = true
+            for uid, q in pairs(auth_queue) do
+                local n = q("counter")
+                if n > 0 then
+                    ifbreak = false
+                    print("wait all async event done:", uid, n)
+                    break
+                end
+            end
+            if ifbreak then
+                break
+            end
+            moon.sleep(100)
+        end
+
+        ---let all user service quit
+        local count  = 0
+        for _ ,u in pairs(context.uid_map) do
+            QuitOneUser(u)
+            count = count + 1
+        end
+        return count
+    end, debug.traceback)
+    print("end: server exit save user", ok, err)
+    moon.quit()
+    return true
+end
+
+Auth.OnHour = function(v)
+    print("OnHour", v)
+    for _,u in pairs(context.uid_map) do
+        if u.logouttime == 0 then
+            moon.send("lua", u.addr_user, "User.OnHour", v)
+        end
+    end
+end
+
+Auth.OnDay = function(v)
+    print("OnDay", v)
+    for _,u in pairs(context.uid_map) do
+        if u.logouttime == 0 then
+            moon.send("lua", u.addr_user, "User.OnDay", v)
+        end
+    end
+end
+local function GenGN(value_node,value_flag,value_index)
+   
+    -- 首先确保index适合uint32的范围
+    assert(value_index <= 0x007FFFFF, "Index out of range for its allocated bits")
+    value_node = value_node&0xFF
+    value_flag = value_flag & 0x1
+    -- 创建数字：node占据高8位，flag占据第23位，index占据低23位
+    return (value_node<<24) |  (value_flag<<23) | value_index
+end
+Auth.AllocGateNetId = function(isds)
+    if not context.gnstart then
+        context.gnstart = 1
+    end
+    local condition = 1
+    while condition<0x007FFFFF do
+        context.gnstart = context.gnstart + 1
+        if context.gnstart > 0x007FFFFF then
+            context.gnstart = 1
+        end
+        local gnid = GenGN(NODE,isds,context.gnstart)
+        if context.gnid_map[gnid] == nil then
+            return gnid
+        end
+        condition = condition+1
+    end
+    return 0xFFFFFFFF
+end
+Auth.dsgatepb_AuthCmd = function (req)
+    
+    if not req then
+        return false
+    end
+    ---服务器关闭时,中断所有客户端的登录请求
+    if context.server_exit and not req.pull then
+        return false, "auth abort"
+    end
+    print("dsgatepb_AuthCmd ",req.fd,req.isDS,req.msg.dsType)
+    if req.isDS then
+       req.gnid = Auth.AllocGateNetId(1)
+       if req.msg.dsType == CmdEnum.DSType.Global then
+           local strgnid = tostring(req.gnid)
+           db.saveGloabalDsGnId(moon.queryservice("db_server"),strgnid)
+           moon.env("GloabalDsGnId", strgnid)
+       end
+       doDSAuth(req)
+    else
+        req.openid = req.msg.openid and req.msg.openid or tostring(req.fd) --todo 这里要求客户端传一个openid 或者登陆密钥串,暂时用fd代替
+        ---如果是opendid登录, 先得到openid对应的 uid
+        local uid = context.openid_map[req.openid]
+        if not uid then
+            ---避免同一个玩家瞬间发送大量登录请求
+            uid = temp_openid_uid[req.openid]
+            if not uid then
+                uid = uuid.next()
+                temp_openid_uid[req.openid] = uid
+            end
+
+            local res, err = db.insertuserid(context.addr_db_openid, req.openid, uid)
+            if not res then
+                moon.error("insertuserid", req.fd, req.openid, err)
+                moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
+                return false
+            end
+
+            temp_openid_uid[req.openid] = nil
+            context.openid_map[req.openid] = uid
+        end
+        req.uid = uid
+        doAuth(Auth,req)
+    end
+    return true
+end
+Auth.C2SLogin = function (req)
+
+    if not req then
+        return false
+    end
+
+    ---pull boolean @是否离线加载玩家
+    if not req.pull then
+        if not req.openid or #req.openid == 0 then
+            moon.error("user auth illegal", req.fd, req.openid)
+            moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
+            return false
+        end
+
+        ---如果是opendid登录, 先得到openid对应的 uid
+        local uid = context.openid_map[req.openid]
+        if not uid then
+            ---避免同一个玩家瞬间发送大量登录请求
+            uid = temp_openid_uid[req.openid]
+            if not uid then
+                uid = uuid.next()
+                temp_openid_uid[req.openid] = uid
+            end
+
+            local res, err = db.insertuserid(context.addr_db_openid, req.openid, uid)
+            if not res then
+                moon.error("insertuserid", req.fd, req.openid, err)
+                moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
+                return false
+            end
+
+            temp_openid_uid[req.openid] = nil
+            context.openid_map[req.openid] = uid
+        end
+        req.uid = uid
+    else
+        req.openid = ""
+        if not req.uid or req.uid == 0 then
+            if req.fd then
+                moon.error("user auth illegal", req.fd, req.uid)
+                moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
+            end
+            return false
+        end
+    end
+
+    ---服务器关闭时,中断所有客户端的登录请求
+    if context.server_exit and not req.pull then
+        return false, "auth abort"
+    end
+
+    local lock = auth_queue[req.uid]
+    if not lock then
+        lock = queue()
+        auth_queue[req.uid] = lock
+    end
+
+    if not req.pull then
+        if lock("count") > 0 then
+            moon.error("user auth too quickly", req.fd, req.uid, req.addr, "is pull:", req.pull)
+            moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
+            return
+        end
+        ---user may login again, but old socket not close,force close it
+        ---make the user offline event in right order.
+        local c = context.uid_map[req.uid]
+        if c and c.logouttime==0 then
+            moon.send("lua", context.addr_gate, "Kick", req.uid, 0, true)
+            Auth.Disconnect(req.uid)
+            return
+        end
+    end
+
+    local scope_lock<close> = lock()
+
+    if req.pull and context.uid_map[req.uid] then
+        return true
+    end
+
+    print(string.format("User Login fd:%d uid:%d pulluser:%s", req.fd, req.uid, req.pull))
+
+    if not req.pull then
+        moon.timeout(5000, function ()
+            if context.uid_map[req.uid] then
+                return
+            end
+            local res = {
+                ok = false,---maybe banned
+                time = moon.now(),
+                timezone = moon.timezone,
+                uid = req.uid,
+            }
+            context.S2C(req.uid, CmdCode.S2CLogin, res)
+        end)
+    end
+
+    local ok, err = xpcall(doAuth, traceback, req)
+    if not ok or err then
+        moon.error("Auth.C2SLogin Error", err, table.tostring(req))
+        return false, err
+    end
+    return true
+end
+
+---加载离线玩家
+function Auth.PullUser(uid)
+    local u = context.uid_map[uid]
+    if not u then
+        local ok,err = Auth.C2SLogin({fd =0 ,uid = uid, pull = true})
+        if not ok then
+            return ok, err
+        end
+        u = context.uid_map[uid]
+    end
+    return u
+end
+
+---向玩家发起调用，会主动加载玩家
+function Auth.CallUser(uid, cmd, ...)
+    if context.server_exit then
+        error(string.format("call user %d cmd %s when server exit", uid, cmd))
+    end
+
+    local u, err = Auth.PullUser(uid)
+    if not u then
+        return false, err
+    end
+
+    if u.logouttime > 0 then
+        u.logouttime = moon.time()
+    end
+
+    return moon.call("lua", u.addr_user, cmd, ...)
+end
+
+---向玩家发送消息，会主动加载玩家
+function Auth.SendUser(uid, cmd, ...)
+    local u, err = Auth.PullUser(uid)
+    if not u then
+        moon.error(err)
+        return
+    end
+
+    if u.logouttime > 0 then
+        u.logouttime = moon.time()
+    end
+
+    moon.send("lua", u.addr_user, cmd,...)
+end
+
+---向已经在内存的玩家发送消息,不会主动加载玩家
+function Auth.TrySendUser(uid, cmd, ...)
+    local u = context.uid_map[uid]
+    if not u then
+        return
+    end
+    moon.send("lua", u.addr_user, cmd,...)
+end
+
+function Auth.Disconnect(uid)
+    local u = context.uid_map[uid]
+    if u then
+        assert(moon.call("lua", u.addr_user, "User.Logout"))
+        u.logouttime = moon.time()
+    end
+end
+ 
+
+return Auth
+
+

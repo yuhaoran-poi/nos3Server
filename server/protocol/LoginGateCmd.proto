@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+import "common.proto";
+
+
+
+// 登录网关数据
+message PBUserLoginData
+{
+    int64 uid          = 1;
+    int64 steam_id     = 2;
+    string auth_key    = 3;
+    string auth_ticket = 4;
+    int64 macid       = 5;
+	string version     = 6;
+}
+
+
+
+// 大厅登录数据
+message PBLobbyLoginData
+{
+    int64 uid = 1;
+    string login_key = 2;
+    string version = 3;		//客户端版本号
+    string password = 4;
+}
+
+// 客户端请求登录
+message PBClientLoginReqCmd
+{
+    // 协议数据
+    PBUserLoginData login_data = 3;
+}
+// 客户端请求登录 返回信息
+message PBClientLoginRspCmd
+{
+    int32 code = 1; // 服务器验证返回
+    // 协议数据
+    int64 uid = 2;
+}
+
+
+
+
+
+
+

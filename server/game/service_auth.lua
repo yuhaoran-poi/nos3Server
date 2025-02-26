@@ -1,0 +1,33 @@
+require("common.LuaPanda").start("127.0.0.1", 8818)
+local moon = require("moon")
+local setup = require("common.setup")
+
+---@class auth_context:base_context
+---@field uid_map table<integer,AuthUser> @内存加载的玩家服务信息
+---@field scripts auth_scripts
+local context = {
+    uid_map = {},
+    gnid_map = {},
+    openid_map = {},--- map<openid, uid>
+    auth_queue = {},
+    service_counter = 0,
+    scripts = {},
+}
+
+local command = setup(context)
+
+---@diagnostic disable-next-line: duplicate-set-field
+command.hotfix = function(names)
+    for _,u in pairs(context.uid_map) do
+        moon.send("lua", u.addr_user, "hotfix", names)
+    end
+
+    for uid, q in pairs(context.auth_queue) do
+        if q("counter") >0 then
+            moon.async(function()
+                context.scripts.Auth.SendUser(uid, "hotfix", names)
+            end)
+        end
+    end
+end
+

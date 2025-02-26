@@ -1,0 +1,48 @@
+[
+    {
+        "index":1,
+        "name":"通用",
+        "items":[
+            "command"
+        ]
+    },
+    {
+        "index":2,
+        "name":"重载游戏配表",
+        "subcommand": "reload",
+        "items":[
+            "serverid"
+        ]
+    },
+    {
+        "index":3,
+        "name":"增加积分",
+        "subcommand":"addscore",
+        "items":[
+            "uid",
+            "count"
+        ]
+    },
+    {
+        "index": 4,
+        "name": "ds命令",
+        "subcommand": "dscommand",
+        "items": [
+            "dsgnid",
+            "command"
+        ]
+    },
+    {
+        "index": 5,
+        "name": "创建对象",
+        "subcommand": "RpcGmCreateEntityCmd",
+        "items": [
+            "dsgnid",
+            "entityid",
+            "mapid",
+            "x",
+            "y",
+            "z"
+        ]
+    }
+]

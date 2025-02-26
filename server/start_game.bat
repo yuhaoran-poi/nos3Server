@@ -1,0 +1,1 @@
+start cmd /k moon\moon.exe main_game.lua 1 
