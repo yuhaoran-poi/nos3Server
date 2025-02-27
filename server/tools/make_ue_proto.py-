@@ -1,0 +1,123 @@
+import os
+import sys
+import subprocess
+import re
+import google.protobuf.descriptor_pb2 as descriptor_pb2
+import time
+import traceback
+
+class rule_convert:
+    """
+    命名规则转换 Tips：大小驼峰及下划线互转
+    @descript 大驼峰: 首字母大写其余每一个逻辑断点（单词）都用大写字母标记,同帕斯卡命名法
+    @descript 小驼峰: 首字母小写其余每一个逻辑断点（单词）都用大写字母标记
+    @descript 下划线: 逻辑断点（单词）用的是下划线隔开
+    """
+
+    @staticmethod
+    def to_under_line(x):
+        """转下划线命名"""
+        return re.sub('(?<=[a-z])[A-Z]|(?<!^)[A-Z](?=[a-z])', '_\g<0>', x).lower()
+
+    @staticmethod
+    def to_upper_camel_case(x):
+        """转大驼峰法命名"""
+
+        s = re.sub('_([a-zA-Z])', lambda m: (m.group(1).upper()), x.lower())
+        return s[0].upper() + s[1:]
+
+    @staticmethod
+    def to_lower_camel_case(x):
+        """转小驼峰法命名"""
+        s = re.sub('_([a-zA-Z])', lambda m: (m.group(1).upper()), x.lower())
+        return s[0].lower() + s[1:]
+    
+ # 基础类型映射
+TYPE_MAP = {
+    descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE: "double",
+    descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT: "float",
+    descriptor_pb2.FieldDescriptorProto.TYPE_INT64: "int64",
+    descriptor_pb2.FieldDescriptorProto.TYPE_UINT64: "uint64",
+    descriptor_pb2.FieldDescriptorProto.TYPE_INT32: "int32",
+    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED64: "uint64",
+    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED32: "uint32",
+    descriptor_pb2.FieldDescriptorProto.TYPE_BOOL: "bool",
+    descriptor_pb2.FieldDescriptorProto.TYPE_STRING: "FString",
+    descriptor_pb2.FieldDescriptorProto.TYPE_GROUP: "/* Group not supported */",
+    descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE: "/* Message will be handled separately */",
+    descriptor_pb2.FieldDescriptorProto.TYPE_BYTES: "FString",  # 或者使用 TArray<uint8>
+    descriptor_pb2.FieldDescriptorProto.TYPE_UINT32: "uint32",
+    descriptor_pb2.FieldDescriptorProto.TYPE_ENUM: "/* Enum will be handled separately */",
+    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED32: "int32",
+    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED64: "int64",
+    descriptor_pb2.FieldDescriptorProto.TYPE_SINT32: "int32",
+    descriptor_pb2.FieldDescriptorProto.TYPE_SINT64: "int64"
+}
+
+# 处理嵌套消息和枚举
+def process_message(message_descriptor, indent=4):
+    struct_name = message_descriptor.name
+    lines = [f"USTRUCT(BlueprintType)", f"struct F{struct_name}", "{"]
+    lines.append("    GENERATED_BODY()")
+
+    for field in message_descriptor.field:
+        field_type = map_field_type(field)
+        field_name = field.name
+        lines.append(f"    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=\"{struct_name}\")")
+        lines.append(f"    {field_type} {rule_convert().to_upper_camel_case(field_name)};")
+
+    lines.append("};")
+    lines.append("\n")  # 空行分隔不同的结构体定义
+    return "\n".join(" " * indent + line for line in lines)
+
+def process_enum(enum_descriptor, indent=4):
+    enum_name = enum_descriptor.name
+    lines = [f"UENUM(BlueprintType)", f"enum class E{enum_name}", "{"]
+    for value in enum_descriptor.value:
+        lines.append(f"    {value.name} = {value.number},")
+    lines.append("};")
+    lines.append("\n")  # 空行分隔不同的枚举定义
+    return "\n".join(" " * indent + line for line in lines)
+
+def map_field_type(field):
+    if field.label == descriptor_pb2.FieldDescriptorProto.LABEL_REPEATED:
+        base_type = TYPE_MAP.get(field.type, "/* Unknown Type */")
+        return f"TArray<{base_type}>"
+    
+    if field.type == descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE:
+        return f"F{field.type_name.split('.')[-1]}"
+    
+    if field.type == descriptor_pb2.FieldDescriptorProto.TYPE_ENUM:
+        return f"E{field.type_name.split('.')[-1]}"
+    
+    return TYPE_MAP.get(field.type, "/* Unknown Type */")
+
+
+
+def generate_header(file_descriptor, output_header_path):
+    with open(output_header_path, 'w') as f:
+        f.write("#pragma once\n\n")
+        f.write("#include \"CoreMinimal.h\"\n")
+        f.write("#include \"UObject/NoExportTypes.h\"\n")
+
+        # 处理导入的 .proto 文件
+        for dependency in file_descriptor.file[0].dependency:
+            dependency_h = os.path.splitext(dependency)[0] + ".h"
+            f.write(f"#include \"{dependency_h}\"\n")
+        
+        f.write("\n")
+
+        # 处理枚举
+        for enum_descriptor in file_descriptor.file[0].enum_type:
+            f.write(process_enum(enum_descriptor,0))
+        
+        # 处理消息
+        for message_descriptor in file_descriptor.file[0].message_type:
+            f.write(process_message(message_descriptor,0))
+
+def generate_source(filename, output_source_path):
+    with open(output_source_path, 'w') as f:
+        f.write("#include \"CoreMinimal.h\"\n")
+        f.write(f"#include \"{filename}.h\"\n")
+        f.write("\n")
+
