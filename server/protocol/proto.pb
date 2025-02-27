@@ -116,7 +116,13 @@ star_level (R	starLevel
 	item_info (2.PBItemRitemInfo
 used_id (RusedId
 idx (Ridx#
-up_lv_fail_cnt (RupLvFailCnt"þ
+up_lv_fail_cnt (RupLvFailCnt"P
+PBMonsterEquipS=
+monster_equip_list (2.PBMonsterEquipRmonsterEquipList"D
+PBTabooWordS4
+taboo_word_list (2.PBTabooWordRtabooWordList"P
+PBDiagramsCardS=
+diagrams_card_list (2.PBDiagramsCardRdiagramsCardList"þ
 PBSealMonster$
 	item_info (2.PBItemRitemInfo
 uniqid (Runiqid
@@ -140,17 +146,17 @@ star_level (R	starLevel
 	item_info (2.PBItemRitemInfo
 uniqid (Runiqid
 used_id (RusedId
-idx (Ridx"¥
+idx (Ridx"n
+PBMainStarEffect$
+	item_info (2.PBItemRitemInfo
+used_id (RusedId
+	is_unlock (RisUnlock"¥
 
 PBMainStar$
 	item_info (2.PBItemRitemInfo
 used_id (RusedId
 	is_unlock (RisUnlock;
-main_star_effect (2.PBMainStarEffectRmainStarEffect"n
-PBMainStarEffect$
-	item_info (2.PBItemRitemInfo
-used_id (RusedId
-	is_unlock (RisUnlock"ð
+main_star_effect (2.PBMainStarEffectRmainStarEffect"ð
 PBAuctionExtra
 up_level (RupLevel
 up_exp (RupExp
@@ -177,13 +183,9 @@ exattrList!
 PBSealMonsterSkinSG
 seal_monster_skin_list (2.PBSealMonsterSkinRsealMonsterSkinList"D
 PBMagicItemS4
-magic_item_list (2.PBMagicItemRmagicItemList"P
-PBDiagramsCardS=
-diagrams_card_list (2.PBDiagramsCardRdiagramsCardList"L
+magic_item_list (2.PBMagicItemRmagicItemList"L
 PBSecretPaperS:
 secret_paper_list (2.PBSecretPaperRsecretPaperList"D
-PBTabooWordS4
-taboo_word_list (2.PBTabooWordRtabooWordList"D
 PBMinorStarS4
 minor_star_list (2.PBMinorStarRminorStarList";
 
@@ -199,9 +201,7 @@ PBAweItemS.
 PBMagicMarkS4
 magic_mark_list (2.PBMagicMarkRmagicMarkList"H
 PBStarSymbolS7
-star_symbol_list (2.PBStarSymbolRstarSymbolList"P
-PBMonsterEquipS=
-monster_equip_list (2.PBMonsterEquipRmonsterEquipList"A
+star_symbol_list (2.PBStarSymbolRstarSymbolList"A
 PBItemImage
 	config_id (RconfigId
 get_ts (RgetTs"D

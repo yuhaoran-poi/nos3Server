@@ -193,6 +193,23 @@ message PBAweItem
 	int32		up_lv_fail_cnt = 4;		// 当前等级升级失败次数
 }
 
+// 怪物装备列表
+message PBMonsterEquipS
+{
+    repeated PBMonsterEquip	monster_equip_list   = 1;
+}
+
+// 讳字列表
+message PBTabooWordS
+{
+    repeated PBTabooWord	taboo_word_list   = 1;
+}
+// 八卦牌列表
+message PBDiagramsCardS
+{
+    repeated PBDiagramsCard	diagrams_card_list   = 1;
+}
+
 // 召唤令牌(怪物)
 message PBSealMonster
 {
@@ -232,14 +249,7 @@ message PBMonsterEquip
 	int32		idx			= 4;
 }
 
-// 主星
-message PBMainStar
-{
-	PBItem		item_info 	= 1;
-	int32		used_id		= 2;	// 被装备的关联id
-	int32		is_unlock	= 3;	// 是否解锁
-	PBMainStarEffect	main_star_effect = 4;	// 主星效果
-}
+
 
 // 主星效果
 message PBMainStarEffect
@@ -247,6 +257,14 @@ message PBMainStarEffect
 	PBItem		item_info	= 1;
 	int32 	used_id		= 2;	// 被装备的关联id
 	int32		is_unlock	= 3;	// 是否解锁
+}
+// 主星
+message PBMainStar
+{
+	PBItem		item_info 	= 1;
+	int32		used_id		= 2;	// 被装备的关联id
+	int32		is_unlock	= 3;	// 是否解锁
+	PBMainStarEffect	main_star_effect = 4;	// 主星效果
 }
 
 // 拍卖行额外数据
@@ -303,22 +321,12 @@ message PBMagicItemS
     repeated PBMagicItem	magic_item_list   = 1;
 }
 
-// 八卦牌列表
-message PBDiagramsCardS
-{
-    repeated PBDiagramsCard	diagrams_card_list   = 1;
-}
+
 
 // 秘籍列表
 message PBSecretPaperS
 {
     repeated PBSecretPaper	secret_paper_list   = 1;
-}
-
-// 讳字列表
-message PBTabooWordS
-{
-    repeated PBTabooWord	taboo_word_list   = 1;
 }
 
 // 辅星列表
@@ -355,12 +363,6 @@ message PBMagicMarkS
 message PBStarSymbolS
 {
     repeated PBStarSymbol	star_symbol_list   = 1;
-}
-
-// 怪物装备列表
-message PBMonsterEquipS
-{
-    repeated PBMonsterEquip	monster_equip_list   = 1;
 }
 
 // 道具图鉴列表
@@ -504,6 +506,8 @@ message PBBagMagic
 	// 法器图鉴
 	PBMagicItemImageS magic_item_image_data	= 2;
 }
+
+
 
 message PBBagSealMonster
 {
