@@ -5,6 +5,8 @@ import re
 import google.protobuf.descriptor_pb2 as descriptor_pb2
 import time
 import traceback
+#from make_ue_proto import generate_header,generate_source
+from make_ue_proto import gen_ue_proto 
 ######################TEMPLATE BEGIN#######################
 
 
@@ -46,7 +48,7 @@ namespace google::protobuf
 {
 	class Message;
 }
-namespace DSGateCmd
+namespace CommonNetCmd
 {
 	UENUM()
 	enum class CmdCode : int32
@@ -60,11 +62,11 @@ namespace DSGateCmd
 '''
 
 cmdcode_cpp_template = '''\
-// Automatically generated，do not modify.
+// Automatically generated,do not modify.
 #include "CmdCode.h"
 #include "Proto/AllProto.h"
 
-namespace DSGateCmd
+namespace CommonNetCmd
 {
 	const TMap<CmdCode, google::protobuf::Message*> ID2Cmd = {
 %s
@@ -75,67 +77,13 @@ namespace DSGateCmd
 '''
 
 ######################TEMPLATE END#######################
-#########################################################
- # 基础类型映射
-TYPE_MAP = {
-    descriptor_pb2.FieldDescriptorProto.TYPE_DOUBLE: "double",
-    descriptor_pb2.FieldDescriptorProto.TYPE_FLOAT: "float",
-    descriptor_pb2.FieldDescriptorProto.TYPE_INT64: "int64",
-    descriptor_pb2.FieldDescriptorProto.TYPE_UINT64: "uint64",
-    descriptor_pb2.FieldDescriptorProto.TYPE_INT32: "int32",
-    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED64: "uint64",
-    descriptor_pb2.FieldDescriptorProto.TYPE_FIXED32: "uint32",
-    descriptor_pb2.FieldDescriptorProto.TYPE_BOOL: "bool",
-    descriptor_pb2.FieldDescriptorProto.TYPE_STRING: "FString",
-    descriptor_pb2.FieldDescriptorProto.TYPE_GROUP: "/* Group not supported */",
-    descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE: "/* Message will be handled separately */",
-    descriptor_pb2.FieldDescriptorProto.TYPE_BYTES: "FString",  # 或者使用 TArray<uint8>
-    descriptor_pb2.FieldDescriptorProto.TYPE_UINT32: "uint32",
-    descriptor_pb2.FieldDescriptorProto.TYPE_ENUM: "/* Enum will be handled separately */",
-    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED32: "int32",
-    descriptor_pb2.FieldDescriptorProto.TYPE_SFIXED64: "int64",
-    descriptor_pb2.FieldDescriptorProto.TYPE_SINT32: "int32",
-    descriptor_pb2.FieldDescriptorProto.TYPE_SINT64: "int64"
-}
-
-# 处理嵌套消息和枚举
-def process_message(message_descriptor, indent=4):
-    struct_name = message_descriptor.name
-    lines = [f"USTRUCT(BlueprintType)", f"struct F{struct_name}", "{"]
-    lines.append("    GENERATED_BODY()")
-
-    for field in message_descriptor.field:
-        field_type = map_field_type(field)
-        field_name = field.name
-        lines.append(f"    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=\"{struct_name}\")")
-        lines.append(f"    {field_type} {field_name};")
-
-    lines.append("};")
-    lines.append("\n")  # 空行分隔不同的结构体定义
-    return "\n".join(" " * indent + line for line in lines)
-
-def process_enum(enum_descriptor, indent=4):
-    enum_name = enum_descriptor.name
-    lines = [f"UENUM(BlueprintType)", f"enum class E{enum_name}", "{"]
-    for value in enum_descriptor.value:
-        lines.append(f"    {value.name} = {value.number},")
-    lines.append("};")
-    lines.append("\n")  # 空行分隔不同的枚举定义
-    return "\n".join(" " * indent + line for line in lines)
-
-def map_field_type(field):
-    if field.label == descriptor_pb2.FieldDescriptorProto.LABEL_REPEATED:
-        base_type = TYPE_MAP.get(field.type, "/* Unknown Type */")
-        return f"TArray<{base_type}>"
-    
-    if field.type == descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE:
-        return f"F{field.type_name.split('.')[-1]}"
-    
-    if field.type == descriptor_pb2.FieldDescriptorProto.TYPE_ENUM:
-        return f"E{field.type_name.split('.')[-1]}"
-    
-    return TYPE_MAP.get(field.type, "/* Unknown Type */")
-
+def get_filename_without_extension(abs_path):
+    # 获取文件名（包括扩展名）
+    filename_with_extension = os.path.basename(abs_path)
+    # 分离文件名和扩展名
+    filename_without_extension = os.path.splitext(filename_with_extension)[0] 
+    return filename_without_extension
+ 
 def parse_proto_file(proto_file_path):
     with open(proto_file_path, 'rb') as f:
         proto_content = f.read()
@@ -144,46 +92,9 @@ def parse_proto_file(proto_file_path):
     file_descriptor_set.ParseFromString(proto_content)
 
     return file_descriptor_set
-
-def generate_header(file_descriptor, output_header_path):
-    with open(output_header_path, 'w') as f:
-        f.write("#pragma once\n\n")
-        f.write("#include \"CoreMinimal.h\"\n")
-        f.write("#include \"UObject/NoExportTypes.h\"\n")
-
-        # 处理导入的 .proto 文件
-        for dependency in file_descriptor.file[0].dependency:
-            dependency_h = os.path.splitext(dependency)[0] + ".h"
-            f.write(f"#include \"{dependency_h}\"\n")
-        
-        f.write("\n")
-
-        # 处理枚举
-        for enum_descriptor in file_descriptor.file[0].enum_type:
-            f.write(process_enum(enum_descriptor))
-        
-        # 处理消息
-        for message_descriptor in file_descriptor.file[0].message_type:
-            f.write(process_message(message_descriptor))
-
-def generate_source(filename, output_source_path):
-    with open(output_source_path, 'w') as f:
-        f.write("#include \"CoreMinimal.h\"\n")
-        f.write(f"#include \"{filename}.h\"\n")
-        f.write("\n")
-
-def get_filename_without_extension(abs_path):
-    # 获取文件名（包括扩展名）
-    filename_with_extension = os.path.basename(abs_path)
-    # 分离文件名和扩展名
-    filename_without_extension = os.path.splitext(filename_with_extension)[0]
-    return filename_without_extension
-#########################################################
  
 
- 
-
-DSGateUE = "D:\\code\\skywork\\UltimateGame\\Plugins\\DSGate\\Source\\DSGateUE\\Public\Proto"
+CommonNetUE = "D:\\p4_workpc\\ZGDS_UE5\\Plugins\\CommonNetUE\\Source\\CommonNetUE\\Public\\Protos"
 LuaPB = ""
 
 def exec(command: str, input: str = None,
@@ -206,9 +117,13 @@ def generate_proto_desc(proto_path,proto_file_path, output_desc_path):
     exec("{0} -I{1} -o{2} {3}".format('protoc', proto_path,
              output_desc_path, proto_file_path))
     
+def generate_json_desc(proto_path,proto_file_path, output_desc_path):
+    exec("{0} -I{1} --include_imports --include_source_info --descriptor_set_out={2} {3}".format('protoc', proto_path,
+             output_desc_path, proto_file_path))    
+    
 def generate_proto_CPlusPlus(proto_path,proto_file_path, output_cplus_path):
     #%PROTOC% --cpp_out=. --cpp_opt=dllexport_decl=DSGATEUE_API -I "%PLUGIN_ROOT%/Source/ThirdParty/proto" -I "%PROTOBUF_PATH%/include" dsgate.proto
-    exec("{0} --cpp_out={1} --cpp_opt=dllexport_decl=DSGATEUE_API -I{2} {3}".format('protoc',output_cplus_path, proto_path, proto_file_path))    
+    exec("{0} --cpp_out={1} --cpp_opt=dllexport_decl=COMMONNETUE_API -I{2} {3}".format('protoc',output_cplus_path, proto_path, proto_file_path))    
  
 def get_proto_message_names(directory):
     sys_message = {}
@@ -223,16 +138,23 @@ def get_proto_message_names(directory):
                 protofiles.append(proto_file_path)
                 #if file == "dsgate.proto" or file == "unreal_common.proto":
                 if file != "any.proto":
-                  generate_proto_CPlusPlus(obpath,proto_file_path,DSGateUE)
+                  generate_proto_CPlusPlus(obpath,proto_file_path,CommonNetUE)
+                  filename = get_filename_without_extension(proto_file_path)
+                  outpb =  os.path.join(obpath, filename + '.pb.json') 
+                  generate_json_desc(obpath,proto_file_path,outpb) 
+                  gen_ue_proto(proto_file_path,outpb,CommonNetUE)
+                  """
                   filename = get_filename_without_extension(proto_file_path)
                   outpb =  os.path.join(obpath, filename + '.pb') 
                   generate_proto_desc(obpath,proto_file_path,outpb) 
                   file_descriptor_set = parse_proto_file(outpb)
                   # 输出文件名
-                  output_header_path = DSGateUE + "\\" + filename + ".h"
-                  output_source_path = DSGateUE + "\\" + filename +  ".cpp"
+                  output_header_path = CommonNetUE + "\\" + filename + ".h"
+                  output_source_path = CommonNetUE + "\\" + filename +  ".cpp"
                   generate_header(file_descriptor_set, output_header_path)
                   generate_source(filename, output_source_path)
+                  """
+          
 
     tmp = " ".join(protofiles)
     outpb =  os.path.join(obpath, 'proto.pb')  
@@ -246,7 +168,7 @@ def get_proto_message_names(directory):
             package_name = file_desc.package
             for desc in file_desc.message_type:
                 full_message_name = '.'.join(filter(None, [package_name, desc.name]))
-                if package_name=='unrealpb' or package_name=='dsgatepb' or package_name=='google.protobuf':
+                if package_name=='google.protobuf' or full_message_name == 'PBPacket':
                   sys_message[full_message_name] = desc.name
                 else:
                   custom_message[full_message_name] = desc.name
@@ -258,7 +180,7 @@ def gen_id_dict(sys_message,custom_message):
   sys_id_dict = {}
   custom_id_dict = {}
   # 自定义ID起始值（这里设置为1） 
-  sys_id_dict['dsgatepb.Packet'] = 1
+  sys_id_dict['PBPacket'] = 1
   current_id = 2
   # 生成系统协议（消息以Message结尾,或者为Packet）
   for key in sorted(sys_message.keys()):
@@ -282,7 +204,7 @@ def gen_id_dict(sys_message,custom_message):
   lua_cmdcode_content = ""
   h_cmdcode_content = ""
   cpp_cmdcode_content = ""
-  forward_content = ""
+  forward_content = "" 
   version = int(time.time())
   #系统协议
   for cmd in sys_id_dict:
@@ -311,11 +233,11 @@ def gen_id_dict(sys_message,custom_message):
           lua_cmdcode_content, forward_content))
   h_version_content = "TEXT(\"" + str(version) + "\");"
  
-  h_cmdcode_out_file= DSGateUE + "\\CmdCode.h"
+  h_cmdcode_out_file= CommonNetUE + "\\CmdCode.h"
   with open(h_cmdcode_out_file, "w", encoding='utf-8') as fobj:
       fobj.write(cmdcode_h_template % (
           h_cmdcode_content, h_version_content))
-  cpp_cmdcode_out_file= DSGateUE + "\\CmdCode.cpp"
+  cpp_cmdcode_out_file= CommonNetUE + "\\CmdCode.cpp"
   with open(cpp_cmdcode_out_file, "w", encoding='utf-8') as fobj:
       fobj.write(cmdcode_cpp_template % (
           cpp_cmdcode_content))

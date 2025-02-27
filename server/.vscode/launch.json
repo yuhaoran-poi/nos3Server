@@ -33,7 +33,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${file}",
-            "cwd": "D:\\code\\ugate\\server\\tools",
+            "cwd": "D:\\code\\nos3Server\\server\\tools",
         }
     ]
 }

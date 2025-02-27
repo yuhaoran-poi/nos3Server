@@ -1,10 +1,11 @@
-syntax = "proto2";
+syntax = "proto3";
 
 
 
 // 背包道具更新类型
 enum ITEM_OPERATION_TYPE
 {
+	ITEM_OPERATION_TYPE_NONE = 0;
     // 更新道具数据
     ITEM_OPERATION_TYPE_UPDATA = 1;
     // 删除道具
@@ -16,87 +17,86 @@ enum ITEM_OPERATION_TYPE
 // 货币
 message PBCoin
 {
-    required uint32     coin_type   = 1;
-    required int64      coin_count  = 2;
+    int32     coin_type   = 1;
+    int64      coin_count  = 2;
 }
 
 // 赐福数据
 message PBBlessing {
-	optional uint32 bless_id = 1;
-	optional uint32 idx = 2;
+	int32 bless_id = 1;
+	int32 idx = 2;
 }
 
 // 通用属性
 message PBAttribute
 {
-	optional uint32		id	= 1;
-	optional uint32		val = 2;
+	int32		id	= 1;
+	int32		val = 2;
 }
 
 // 通用技能
 message PBSkill
 {
-	optional uint32		config_id	= 1;
-	optional uint32		idx			= 2;
+	int32		config_id	= 1;
+	int32		idx			= 2;
 }
 
 // 通用道具
 message PBItem
 {
-    required uint32     	config_id	= 1;
-    required int32     		item_count	= 2;
-	optional uint32			item_type	= 3;//道具类型
-	optional uint32			up_level	= 4;//升级
-	optional int32			up_exp		= 5;
-	optional uint32			star_level	= 6;//升星
+    int32     	config_id	= 1;
+    int32     		item_count	= 2;
+	int32			item_type	= 3;//道具类型
+	int32			up_level	= 4;//升级
+	int32			up_exp		= 5;
+	int32			star_level	= 6;//升星
 	repeated PBAttribute	exattr_list	= 7;//额外属性	
 }
 
 // 道具简化信息
 message PBItemSimple
 {
-	required uint32     	config_id	= 1;
-	required int32     		item_count	= 2;
-	optional uint64			uniqid		= 3;
+	int32     	config_id	= 1;
+	int32     		item_count	= 2;
+	int64			uniqid		= 3;
 }
 
 // 通用槽位
 message PBBlock
 {
-	optional uint32		idx 		= 1;
-	optional uint32		config_id	= 2;
-	optional uint64		uniqid		= 3;
-	optional PBItem		item_detail	= 4; //插槽道具详情(可省略)
+	int32		idx 		= 1;
+	int32		config_id	= 2;
+	int64		uniqid		= 3;
+	PBItem		item_detail	= 4; //插槽道具详情(可省略)
 }
 
 // 不可堆叠道具
 message PBUniqItem
 {
-	optional PBItem		item_info	= 1;
-	optional uint64		uniqid		= 2;
+	PBItem		item_info	= 1;
+	int64		uniqid		= 2;
 }
 
 // 法器
 message PBMagicItem
 {
-	optional PBItem		item_info	= 1;
-	optional uint64		uniqid		= 2;
-	optional uint64		used_id		= 3; //被装备的关联id
-	optional uint32		idx			= 4;
-	//repeated uint32		element_tags	= 5; //元素词条id
-	optional uint32		light_cnt	= 5;
-	repeated uint32		tags		= 6; //随机词条id
+	PBItem		item_info	= 1;
+	int64		uniqid		= 2;
+	int64		used_id		= 3; //被装备的关联id
+	int32		idx			= 4;
+	int32		light_cnt	= 5;
+	repeated int32		tags		= 6; //随机词条id
 }
 
 // 法器图鉴
 message PBMagicItemImage
 {
-	optional uint32		config_id	= 1;	//道具id
-	optional uint64		get_ts		= 2;	//图鉴解锁时间
-	optional uint32		up_level	= 3;	//升级
-	optional int32		up_exp		= 4;
-	optional uint32		star_level	= 5;	//升星
-	optional uint32		tier		= 6;	//升阶
+	int32		config_id	= 1;	//道具id
+	int64		get_ts		= 2;	//图鉴解锁时间
+	int32		up_level	= 3;	//升级
+	int32		up_exp		= 4;
+	int32		star_level	= 5;	//升星
+	int32		tier		= 6;	//升阶
 }
 
 message PBMagicItemImageS
@@ -107,23 +107,23 @@ message PBMagicItemImageS
 // 八卦牌
 message PBDiagramsCard
 {
-	optional PBItem		item_info	= 1;
-	optional uint64		uniqid		= 2;
-	optional uint64		used_id		= 3; //被装备的关联id
-	optional uint64		idx			= 4;
-	optional uint32		light_cnt	= 5;
-	repeated uint32		tags		= 6; //随机词条id
+	PBItem		item_info	= 1;
+	int64		uniqid		= 2;
+	int64		used_id		= 3; //被装备的关联id
+	int64		idx			= 4;
+	int32		light_cnt	= 5;
+	repeated int32		tags		= 6; //随机词条id
 }
 
 // 八卦牌图鉴
 message PBDiagramsCardImage
 {
-	optional uint32		config_id	= 1;	//道具id
-	optional uint64		get_ts		= 2;	//图鉴解锁时间
-	optional uint32		up_level	= 3;	//升级
-	optional int32		up_exp		= 4;
-	optional uint32		star_level	= 5;	//升星
-	optional uint32		tier		= 6;	//升阶
+	int32		config_id	= 1;	//道具id
+	int64		get_ts		= 2;	//图鉴解锁时间
+	int32		up_level	= 3;	//升级
+	int32		up_exp		= 4;
+	int32		star_level	= 5;	//升星
+	int32		tier		= 6;	//升阶
 }
 
 message PBDiagramsCardImageS
@@ -134,137 +134,137 @@ message PBDiagramsCardImageS
 // 秘籍
 message	PBSecretPaper
 {
-	optional PBItem		item_info	= 1;
-	optional uint32		used_id		= 2; 	// 被关联id
+	PBItem		item_info	= 1;
+	int32		used_id		= 2; 	// 被关联id
 }
 
 // 讳字
 message	PBTabooWord
 {
-	optional PBItem		item_info	= 1;
-	optional uint64		used_id		= 2; //被装备的关联id
-	optional uint32		idx			= 3; // 槽位
+	PBItem		item_info	= 1;
+	int64		used_id		= 2; //被装备的关联id
+	int32		idx			= 3; // 槽位
 }
 
 // 皮肤
 message PBSkin
 {
-    optional PBItem		item_info		= 1;
+    PBItem		item_info		= 1;
     //体验开始时间(为0表示永久，非体验)
-	optional uint32		experience_card_start_time	= 2;
+	int32		experience_card_start_time	= 2;
 	//体验结束时间(为0表示永久，非体验)
-	optional uint32		experience_card_end_time	= 3;
-	optional uint32		add_time		= 4;
-	optional uint32		used_id			= 5; //被装备的关联角色id
+	int32		experience_card_end_time	= 3;
+	int32		add_time		= 4;
+	int32		used_id			= 5; //被装备的关联角色id
 }
 
 // 召唤怪物皮肤
 message PBSealMonsterSkin
 {
-	optional PBItem		item_info		= 1;
-	optional uint32		experience_card_start_time	= 2;		// 体验开始时间(为0表示永久，非体验)
-	optional uint32		experience_card_end_time	= 3;		// 体验结束时间(为0表示永久，非体验)
-	optional uint32		add_time		= 4;					// 获得时候的时间
-	repeated uint64		used_monster_uniqid	= 5; 				// 被装备的鬼怪id(可以被多个装)
+	PBItem		item_info		= 1;
+	int32		experience_card_start_time	= 2;		// 体验开始时间(为0表示永久，非体验)
+	int32		experience_card_end_time	= 3;		// 体验结束时间(为0表示永久，非体验)
+	int32		add_time		= 4;					// 获得时候的时间
+	repeated int64		used_monster_uniqid	= 5; 				// 被装备的鬼怪id(可以被多个装)
 }
 
 // 辅星
 message PBMinorStar
 {
-	optional PBItem		item_info	= 1;
-	repeated uint32		used_id		= 2; //被装备的关联id
+	PBItem		item_info	= 1;
+	repeated int32		used_id		= 2; //被装备的关联id
 }
 
 // 卦象
 message PBTrigram
 {
-	optional PBItem		item_info	= 1;
-	optional uint64		uniqid		= 2;
-	optional uint64		used_id		= 3; //被装备的关联id
-	optional uint32		idx			= 4;
+	PBItem		item_info	= 1;
+	int64		uniqid		= 2;
+	int64		used_id		= 3; //被装备的关联id
+	int32		idx			= 4;
 }
 
 // 镇山之宝
 message PBAweItem
 {
-	optional PBItem		item_info	= 1;
-	optional uint64		used_id		= 2;
-	optional uint32		idx			= 3;
-	optional uint32		up_lv_fail_cnt = 4;		// 当前等级升级失败次数
+	PBItem		item_info	= 1;
+	int64		used_id		= 2;
+	int32		idx			= 3;
+	int32		up_lv_fail_cnt = 4;		// 当前等级升级失败次数
 }
 
 // 召唤令牌(怪物)
 message PBSealMonster
 {
-	optional PBItem		item_info	= 1;
-	optional uint64		uniqid		= 2;
-	optional int32		life		= 3;	//阴寿
-	optional int32		ghost_air	= 4;	//阴气
+	PBItem		item_info	= 1;
+	int64		uniqid		= 2;
+	int32		life		= 3;	//阴寿
+	int32		ghost_air	= 4;	//阴气
 	repeated PBSkill	monster_skills	= 5;	//鬼怪技能
 	repeated PBSkill	cache_skills	= 6;	//刷新缓存技能
-	optional PBMonsterEquipS monster_equip_data = 7;	//鬼怪装备
-	optional uint32		unlock_equip_num = 8;	//解锁装备数量
-	optional uint32		dress_skin_id = 9;		// 穿戴的皮肤id
-	optional string		nick_name	= 10;	//怪物昵称
-	optional PBTabooWordS taboo_word_data = 11;	// 讳字
-	optional PBDiagramsCardS diagrams_card_data = 12;	// 八卦牌数据
+	PBMonsterEquipS monster_equip_data = 7;	//鬼怪装备
+	int32		unlock_equip_num = 8;	//解锁装备数量
+	int32		dress_skin_id = 9;		// 穿戴的皮肤id
+	string		nick_name	= 10;	//怪物昵称
+	PBTabooWordS taboo_word_data = 11;	// 讳字
+	PBDiagramsCardS diagrams_card_data = 12;	// 八卦牌数据
 }
 
 // 法印
 message PBMagicMark
 {
-	optional uint32 config_id	= 1;	//道具id
-	optional uint64 get_ts		= 2;	//解锁时间
+	int32 config_id	= 1;	//道具id
+	int64 get_ts		= 2;	//解锁时间
 }
 
 // 星象
 message PBStarSymbol
 {
-	optional PBItem		item_info	= 1;
+	PBItem		item_info	= 1;
 }
 
 // 怪物装备
 message PBMonsterEquip
 {
-	optional PBItem		item_info	= 1;
-	optional uint64		uniqid		= 2;
-	optional uint64		used_id		= 3; //被装备的关联id
-	optional uint32		idx			= 4;
+	PBItem		item_info	= 1;
+	int64		uniqid		= 2;
+	int64		used_id		= 3; //被装备的关联id
+	int32		idx			= 4;
 }
 
 // 主星
 message PBMainStar
 {
-	optional PBItem		item_info 	= 1;
-	optional uint32		used_id		= 2;	// 被装备的关联id
-	optional uint32		is_unlock	= 3;	// 是否解锁
-	optional PBMainStarEffect	main_star_effect = 4;	// 主星效果
+	PBItem		item_info 	= 1;
+	int32		used_id		= 2;	// 被装备的关联id
+	int32		is_unlock	= 3;	// 是否解锁
+	PBMainStarEffect	main_star_effect = 4;	// 主星效果
 }
 
 // 主星效果
 message PBMainStarEffect
 {
-	optional PBItem		item_info	= 1;
-	optional uint32 	used_id		= 2;	// 被装备的关联id
-	optional uint32		is_unlock	= 3;	// 是否解锁
+	PBItem		item_info	= 1;
+	int32 	used_id		= 2;	// 被装备的关联id
+	int32		is_unlock	= 3;	// 是否解锁
 }
 
 // 拍卖行额外数据
 message PBAuctionExtra
 {
-	optional uint32			up_level	= 1;//升级
-	optional int32			up_exp		= 2;
-	optional uint32			star_level	= 3;//升星
+	int32			up_level	= 1;//升级
+	int32			up_exp		= 2;
+	int32			star_level	= 3;//升星
 	repeated PBAttribute	exattr_list	= 4;//额外属性
 	//法器
-	repeated uint32			element_tags	= 5; //元素词条id
-	repeated uint32			tags			= 6; //普通词条id
+	repeated int32			element_tags	= 5; //元素词条id
+	repeated int32			tags			= 6; //普通词条id
 	//鬼怪
-	optional int32		life		= 7;	//阴寿
-	optional int32		ghost_air	= 8;	//阴气
+	int32		life		= 7;	//阴寿
+	int32		ghost_air	= 8;	//阴气
 	repeated PBSkill	monster_skills	= 9;	//鬼怪技能
-	optional uint32		unlock_equip_num = 10;	//解锁装备数量
-	optional string		nick_name	= 11;	//怪物昵称
+	int32		unlock_equip_num = 10;	//解锁装备数量
+	string		nick_name	= 11;	//怪物昵称
 }
 
 // 货币列表
@@ -366,8 +366,8 @@ message PBMonsterEquipS
 // 道具图鉴列表
 message PBItemImage
 {
-	optional uint32 config_id	= 1;	//道具id
-	optional uint64 get_ts		= 2;	//图鉴解锁时间
+	int32 config_id	= 1;	//道具id
+	int64 get_ts		= 2;	//图鉴解锁时间
 }
 
 message PBItemImageS
@@ -389,14 +389,14 @@ message PBMainStarEffectS
 
 message PBGourd
 {
-	optional uint32		gourd_id = 1;	//葫芦id
-	optional string		nick_name = 2;	//葫芦昵称
-	optional uint32 	up_level = 3;	//葫芦等级
-	optional uint32 	up_exp = 4;		//葫芦经验
-	optional uint32		total_talent = 5;	//总天赋点
-	optional uint32 	cur_talent = 6;		//当前天赋点
+	int32		gourd_id = 1;	//葫芦id
+	string		nick_name = 2;	//葫芦昵称
+	int32 	up_level = 3;	//葫芦等级
+	int32 	up_exp = 4;		//葫芦经验
+	int32		total_talent = 5;	//总天赋点
+	int32 	cur_talent = 6;		//当前天赋点
 	repeated PBAttribute 	talent_attr = 8;	//天赋属性
-	optional uint64		cd_end_ts = 9;	//葫芦冷却时间
+	int64		cd_end_ts = 9;	//葫芦冷却时间
 }
 
 message PBGourdS
@@ -406,8 +406,8 @@ message PBGourdS
 
 message PBPlayedGodsData
 {
-	optional uint32 idx = 1;		// 槽位
-	optional uint32 gods_id = 2;	// 神明id
+	int32 idx = 1;		// 槽位
+	int32 gods_id = 2;	// 神明id
 }
 
 message PBPlayedGodsDataS
@@ -418,25 +418,25 @@ message PBPlayedGodsDataS
 // 神明
 message PBGodsDataS
 {
-	repeated uint32		gods_list = 1;						// 神明列表
-	optional PBPlayedGodsDataS		played_gods_data = 2;	// 出战的神明数据
+	repeated int32		gods_list = 1;						// 神明列表
+	PBPlayedGodsDataS		played_gods_data = 2;	// 出战的神明数据
 }
 
 message PBEntry
 {
-	optional uint32 	config_id = 1;		// 词条id
-	optional uint32		entry_quality = 2;	// 词条品质
+	int32 	config_id = 1;		// 词条id
+	int32		entry_quality = 2;	// 词条品质
 }
 
 message PBAntique
 {
-	optional uint32		uniq_id = 1;				// 唯一id
-	optional uint32		quality = 2;				// 品质
-	optional PBCoin		price = 3;					// 价格
-	optional uint32		remain_identify_num = 4;	// 剩余鉴定次数
-	optional uint32		identify_result = 5;		// 鉴定结果
-	optional uint32		is_show = 6;				// 是否在展示中
-	optional PBItem		item_info = 7;				// 物品信息
+	int32		uniq_id = 1;				// 唯一id
+	int32		quality = 2;				// 品质
+	PBCoin		price = 3;					// 价格
+	int32		remain_identify_num = 4;	// 剩余鉴定次数
+	int32		identify_result = 5;		// 鉴定结果
+	int32		is_show = 6;				// 是否在展示中
+	PBItem		item_info = 7;				// 物品信息
 	repeated PBEntry	entry_list= 8;				// 词条列表
 }
 
@@ -448,88 +448,88 @@ message PBAntiqueS
 message PBBagNormal
 {
 	// 货币数据 所有货币类型的数据
-    optional PBCoinS    coin_data				= 1;
+    PBCoinS    coin_data				= 1;
 	// 可堆叠道具信息
-    optional PBItemS    item_data				= 2;
+    PBItemS    item_data				= 2;
 	// 宝匣
-    optional PBItemS    treasurebox_data		= 3;
+    PBItemS    treasurebox_data		= 3;
 	// 礼包
-    optional PBItemS    gift_data				= 4;
+    PBItemS    gift_data				= 4;
 	// 秘籍
-	optional PBSecretPaperS secret_paper_data	= 5;
+	PBSecretPaperS secret_paper_data	= 5;
 	// 讳字
-	optional PBTabooWordS taboo_word_data		= 6;
+	PBTabooWordS taboo_word_data		= 6;
 	// 辅星
-	optional PBMinorStarS minor_star_data		= 7;
+	PBMinorStarS minor_star_data		= 7;
 }
 
 message PBBagUniq
 {
 	// 不可堆叠道具
-	optional PBUniqItemS uniq_item_data	= 1;
+	PBUniqItemS uniq_item_data	= 1;
 	// 卦象
-	optional PBTrigramS trigram_data	= 2;
+	PBTrigramS trigram_data	= 2;
 	// 古董
-	optional PBAntiqueS antique_data	= 3;
+	PBAntiqueS antique_data	= 3;
 }
 
 message PBBagOnlyOne
 {
 	// 称号、头像、头像框
-    optional PBItemS    title_data						= 1;
+    PBItemS    title_data						= 1;
 	// 镇山之宝
-	optional PBAweItemS awe_item_data					= 2;
+	PBAweItemS awe_item_data					= 2;
 	// 星象
-	optional PBStarSymbolS star_symbol_data				= 3;
+	PBStarSymbolS star_symbol_data				= 3;
 	// 道具图鉴
-	optional PBItemImageS item_image_data				= 4;
+	PBItemImageS item_image_data				= 4;
 	// 主星
-	optional PBMainStarS main_star_data					= 5;
+	PBMainStarS main_star_data					= 5;
 	// 主星效果
-	optional PBMainStarEffectS	main_star_effect_data	= 6;
+	PBMainStarEffectS	main_star_effect_data	= 6;
 	// 炼鬼葫芦
-	optional PBGourdS gourd_data						= 7;
+	PBGourdS gourd_data						= 7;
 }
 
 message PBBagSkin
 {
 	// 所有的皮肤数据
-    optional PBSkinS    skin_data	= 1;
+    PBSkinS    skin_data	= 1;
 }
 
 message PBBagMagic
 {
 	// 法器
-	optional PBMagicItemS magic_item_data				= 1;
+	PBMagicItemS magic_item_data				= 1;
 	// 法器图鉴
-	optional PBMagicItemImageS magic_item_image_data	= 2;
+	PBMagicItemImageS magic_item_image_data	= 2;
 }
 
 message PBBagSealMonster
 {
 	// 召唤令牌(怪物)
-	optional PBSealMonsterS seal_monster_data			= 1;
+	PBSealMonsterS seal_monster_data			= 1;
 	// 怪物装备
-	optional PBMonsterEquipS monster_equip_data			= 2;
+	PBMonsterEquipS monster_equip_data			= 2;
 	// 召唤怪物皮肤数据
-	optional PBSealMonsterSkinS	seal_monster_skin_data	= 3;
+	PBSealMonsterSkinS	seal_monster_skin_data	= 3;
 }
 
 message PBBagDiagramsCard
 {
 	// 八卦牌
-	optional PBDiagramsCardS 		diagrams_card_data			= 1;
+	PBDiagramsCardS 		diagrams_card_data			= 1;
 	// 八卦牌图鉴
-	optional PBDiagramsCardImageS	diagrams_card_image_data	= 2;
+	PBDiagramsCardImageS	diagrams_card_image_data	= 2;
 }
 
 message PBBag
 {
-	optional PBBagNormal	normal_bag			= 1;
-	optional PBBagUniq		uniq_bag			= 2;
-	optional PBBagOnlyOne	only_one_bag		= 3;
-	optional PBBagSkin		skin_bag			= 4;
-	optional PBBagMagic		magic_bag			= 5;
-	optional PBBagSealMonster	seal_monster_bag	= 6;
-	optional PBBagDiagramsCard	diagrams_card_bag	= 7;
+	PBBagNormal	normal_bag			= 1;
+	PBBagUniq		uniq_bag			= 2;
+	PBBagOnlyOne	only_one_bag		= 3;
+	PBBagSkin		skin_bag			= 4;
+	PBBagMagic		magic_bag			= 5;
+	PBBagSealMonster	seal_monster_bag	= 6;
+	PBBagDiagramsCard	diagrams_card_bag	= 7;
 }

@@ -1,15 +1,13 @@
 syntax = "proto3";
 
-message Packet {
-    repeated MessagePack messages = 1;
-}
+
 
 // The serialized message and the context of it.
-message MessagePack {
+message PBMessagePack {
     // 收发包时表示目标ID[nodeid + 自增id]
     // a.小于0x1000000: 0全局服务器(GlobalServer) 1-254：指定一个网关服务器 255: 系统服务器(由当前网关根据消息号处理)
     // b.大于0x1000000时候：高位BYTE代表目标服务器节点id
-    uint32 gateNetId = 1;
+    uint32 net_id = 1;
 
     // How the message will be broadcasted to all connections in the channel? 
     // See @BroadcastType. ONLY works for the user-space messages. 
@@ -17,11 +15,15 @@ message MessagePack {
 
     // The stub for RPC callbacks.
     // 0 means the message is not a RPC message.
-    uint32 stubId = 3;
+    uint32 stub_id = 3;
 
     // The MessageType either defined in @MessageType enum, or defined in user space.
-    uint32 msgType = 4;
+    uint32 msg_type = 4;
 
     // The serialized message. It's Protobuf-marshalled byte array if the message is defined in @MessageType.
-    bytes msgBody = 5;
+    bytes  msg_body = 5;
+}
+
+message PBPacket {
+    repeated PBMessagePack messages = 1;
 }
