@@ -22,6 +22,7 @@ message PBMessagePack {
 
     // The serialized message. It's Protobuf-marshalled byte array if the message is defined in @MessageType.
     bytes  msg_body = 5;
+    
 }
 
 message PBPacket {

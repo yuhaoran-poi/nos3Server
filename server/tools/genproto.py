@@ -7,6 +7,7 @@ import time
 import traceback
 #from make_ue_proto import generate_header,generate_source
 from make_ue_proto import gen_ue_proto 
+import zlib
 ######################TEMPLATE BEGIN#######################
 
 
@@ -124,8 +125,32 @@ def generate_json_desc(proto_path,proto_file_path, output_desc_path):
 def generate_proto_CPlusPlus(proto_path,proto_file_path, output_cplus_path):
     #%PROTOC% --cpp_out=. --cpp_opt=dllexport_decl=DSGATEUE_API -I "%PLUGIN_ROOT%/Source/ThirdParty/proto" -I "%PROTOBUF_PATH%/include" dsgate.proto
     exec("{0} --cpp_out={1} --cpp_opt=dllexport_decl=COMMONNETUE_API -I{2} {3}".format('protoc',output_cplus_path, proto_path, proto_file_path))    
+
+def calculate_crc32(file_path):
+    """
+    计算给定文件路径的CRC32校验值。
+    
+    :param file_path: 文件的路径
+    :return: CRC32校验值
+    """
+    crc_value = 0  # 初始化CRC值
+    
+    try:
+        with open(file_path, 'rb') as f:  # 以二进制模式打开文件
+            for chunk in iter(lambda: f.read(4096), b''):  # 分块读取文件内容
+                crc_value = zlib.crc32(chunk, crc_value)  # 更新CRC值
+    except FileNotFoundError:
+        print(f"文件未找到: {file_path}")
+        return None
+    except Exception as e:
+        print(f"读取文件时出错: {e}")
+        return None
+    
+    # 返回最终的CRC32值，确保返回值是非负数
+    return crc_value & 0xFFFFFFFF
  
 def get_proto_message_names(directory):
+    version_crc = 0
     sys_message = {}
     custom_message = {}
     protofiles = list()
@@ -135,7 +160,7 @@ def get_proto_message_names(directory):
             if file.endswith('.proto'):
                 proto_file_path = os.path.join(root, file)
                 proto_file_path = os.path.abspath(proto_file_path)
-                protofiles.append(proto_file_path)
+                protofiles.append(proto_file_path) 
                 #if file == "dsgate.proto" or file == "unreal_common.proto":
                 if file != "any.proto":
                   generate_proto_CPlusPlus(obpath,proto_file_path,CommonNetUE)
@@ -173,9 +198,10 @@ def get_proto_message_names(directory):
                 else:
                   custom_message[full_message_name] = desc.name
 
-    return sys_message,custom_message
+    version_crc = calculate_crc32(outpb)
+    return sys_message,custom_message,version_crc
 
-def gen_id_dict(sys_message,custom_message):
+def gen_id_dict(sys_message,custom_message,version_crc):
   # 初始化一个新的字典用于存储ID
   sys_id_dict = {}
   custom_id_dict = {}
@@ -205,7 +231,7 @@ def gen_id_dict(sys_message,custom_message):
   h_cmdcode_content = ""
   cpp_cmdcode_content = ""
   forward_content = "" 
-  version = int(time.time())
+   
   #系统协议
   for cmd in sys_id_dict:
       lua_cmdcode_content += "    [\"" + cmd + "\"] = " + str(sys_id_dict[cmd]) + ",\n"
@@ -231,7 +257,7 @@ def gen_id_dict(sys_message,custom_message):
   with open(cmdcode_out_file, "w", encoding='utf-8') as fobj:
       fobj.write(cmdcode_template % (
           lua_cmdcode_content, forward_content))
-  h_version_content = "TEXT(\"" + str(version) + "\");"
+  h_version_content = "TEXT(\"" + str(version_crc) + "\");"
  
   h_cmdcode_out_file= CommonNetUE + "\\CmdCode.h"
   with open(h_cmdcode_out_file, "w", encoding='utf-8') as fobj:
@@ -246,8 +272,8 @@ def gen_id_dict(sys_message,custom_message):
           
 if __name__ == "__main__":
     try:
-      sys_message,custom_message = get_proto_message_names("../protocol")
-      gen_id_dict(sys_message,custom_message)
+      sys_message,custom_message,version_crc = get_proto_message_names("../protocol")
+      gen_id_dict(sys_message,custom_message,version_crc)
     except Exception as e:
       traceback.print_exc()
 
