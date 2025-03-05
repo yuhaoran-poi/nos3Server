@@ -193,6 +193,15 @@ message PBAweItem
 	int32		up_lv_fail_cnt = 4;		// 当前等级升级失败次数
 }
 
+// 怪物装备
+message PBMonsterEquip
+{
+	PBItem		item_info	= 1;
+	int64		uniqid		= 2;
+	int64		used_id		= 3; //被装备的关联id
+	int32		idx			= 4;
+}
+
 // 怪物装备列表
 message PBMonsterEquipS
 {
@@ -240,14 +249,7 @@ message PBStarSymbol
 	PBItem		item_info	= 1;
 }
 
-// 怪物装备
-message PBMonsterEquip
-{
-	PBItem		item_info	= 1;
-	int64		uniqid		= 2;
-	int64		used_id		= 3; //被装备的关联id
-	int32		idx			= 4;
-}
+
 
 
 

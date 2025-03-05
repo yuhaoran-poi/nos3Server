@@ -12,7 +12,7 @@ import zlib
 
 
 cmdcode_template = '''\
---- Automatically generated，do not modify.
+--- Automatically generated,do not modify.
 
 local M={
 %s
@@ -41,7 +41,7 @@ return setmetatable(M,mt)
 '''
 
 cmdcode_h_template = '''\
-// Automatically generated，do not modify.
+// Automatically generated,do not modify.
 #pragma once
 #include "CoreMinimal.h"
 #include <map>
@@ -49,30 +49,79 @@ namespace google::protobuf
 {
 	class Message;
 }
+class UProtobufMessage;
 namespace CommonNetCmd
 {
 	UENUM()
 	enum class CmdCode : int32
 	{
+        None = 0,
 %s
 	};
 	const FString CmdVersion = %s
-	extern const TMap<CmdCode, google::protobuf::Message*> ID2Cmd;
+    extern const TMap<CmdCode, google::protobuf::Message*> ID2Cmd;
     extern std::map<std::string,CmdCode> Cmd2ID;
+	extern TMap<CmdCode,TSubclassOf<UProtobufMessage>> ID2Proto;
+    extern CmdCode GetCmdCode(const google::protobuf::Message &Msg);
+	extern CmdCode GetProtoMsgType(const UProtobufMessage* Msg);
+	extern TSubclassOf<UProtobufMessage> GetProtoByCmd(CmdCode Cmd);
 }
 '''
 
 cmdcode_cpp_template = '''\
 // Automatically generated,do not modify.
 #include "CmdCode.h"
-#include "Proto/AllProto.h"
+#include "Protos/AllProto.h"
+#include "Net/ProtobufMessage.h"
 
 namespace CommonNetCmd
 {
 	const TMap<CmdCode, google::protobuf::Message*> ID2Cmd = {
 %s
 	};
+    TMap<CmdCode,TSubclassOf<UProtobufMessage>> ID2Proto = {};
     std::map<std::string,CmdCode> Cmd2ID = {};
+	CmdCode GetCmdCodeByName(const std::string& MsgName)
+	{
+		if(Cmd2ID.size() == 0)
+		{
+			for(const auto& Iter : ID2Cmd)
+			{
+				Cmd2ID[Iter.Value->GetTypeName()] = Iter.Key;
+			}
+		}
+		const auto Iter = Cmd2ID.find(MsgName);
+		if(Iter!=Cmd2ID.end())
+		{
+			return Iter->second;
+		}
+		return CmdCode::None;
+	}
+
+	CmdCode GetCmdCode(const google::protobuf::Message& Msg)
+	{
+		return GetCmdCodeByName(Msg.GetTypeName());
+	}
+
+    CmdCode GetProtoMsgType(const UProtobufMessage* Msg)
+    {
+	    if (Msg)
+	    {
+		    const FString ClassName = Msg->GetName();
+	    	const ANSICHAR* AnsiStr = TCHAR_TO_UTF8(*ClassName);
+	    	const std::string Str(AnsiStr);
+	    	return GetCmdCodeByName(Str); 
+	    	
+	    }
+	    return CmdCode::None;
+    }
+
+	TSubclassOf<UProtobufMessage> GetProtoByCmd(CmdCode Cmd)
+	{
+		if (!ID2Proto.Contains(Cmd))
+		  return nullptr;
+		return ID2Proto[Cmd];
+	}
  
 }
 '''
@@ -154,6 +203,7 @@ def get_proto_message_names(directory):
     sys_message = {}
     custom_message = {}
     protofiles = list()
+    allprotofiles = list()
     obpath = os.path.abspath(directory)
     for root, dirs, files in os.walk(directory):
         for file in files:
@@ -163,23 +213,19 @@ def get_proto_message_names(directory):
                 protofiles.append(proto_file_path) 
                 #if file == "dsgate.proto" or file == "unreal_common.proto":
                 if file != "any.proto":
-                  generate_proto_CPlusPlus(obpath,proto_file_path,CommonNetUE)
+                  generate_proto_CPlusPlus(obpath,proto_file_path,CommonNetUE) 
                   filename = get_filename_without_extension(proto_file_path)
                   outpb =  os.path.join(obpath, filename + '.pb.json') 
                   generate_json_desc(obpath,proto_file_path,outpb) 
                   gen_ue_proto(proto_file_path,outpb,CommonNetUE)
-                  """
-                  filename = get_filename_without_extension(proto_file_path)
-                  outpb =  os.path.join(obpath, filename + '.pb') 
-                  generate_proto_desc(obpath,proto_file_path,outpb) 
-                  file_descriptor_set = parse_proto_file(outpb)
-                  # 输出文件名
-                  output_header_path = CommonNetUE + "\\" + filename + ".h"
-                  output_source_path = CommonNetUE + "\\" + filename +  ".cpp"
-                  generate_header(file_descriptor_set, output_header_path)
-                  generate_source(filename, output_source_path)
-                  """
-          
+                  allprotofiles.append(filename)
+    h_AllProto_out_file= CommonNetUE + "\\AllProto.h"
+    with open(h_AllProto_out_file, "w", encoding='utf-8') as fobj:
+           fobj.write("// Automatically generated,do not modify.\n")
+           fobj.write("#pragma once\n")
+           fobj.write("#include \"google/protobuf/any.pb.h\"\n")
+           for filename in allprotofiles:
+               fobj.write("#include \"" + filename + ".pb.h\"\n")
 
     tmp = " ".join(protofiles)
     outpb =  os.path.join(obpath, 'proto.pb')  
@@ -193,10 +239,10 @@ def get_proto_message_names(directory):
             package_name = file_desc.package
             for desc in file_desc.message_type:
                 full_message_name = '.'.join(filter(None, [package_name, desc.name]))
-                if package_name=='google.protobuf' or full_message_name == 'PBPacket':
+                if package_name=='google.protobuf' or full_message_name == 'PBPacketCmd':
                   sys_message[full_message_name] = desc.name
                 else:
-                  custom_message[full_message_name] = desc.name
+                  custom_message[full_message_name] = desc.name 
 
     version_crc = calculate_crc32(outpb)
     return sys_message,custom_message,version_crc
@@ -206,12 +252,12 @@ def gen_id_dict(sys_message,custom_message,version_crc):
   sys_id_dict = {}
   custom_id_dict = {}
   # 自定义ID起始值（这里设置为1） 
-  sys_id_dict['PBPacket'] = 1
+  sys_id_dict['PBPacketCmd'] = 1
   current_id = 2
   # 生成系统协议（消息以Message结尾,或者为Packet）
   for key in sorted(sys_message.keys()):
      name = sys_message[key]
-     if name.endswith("Cmd") or name.startswith("Any"):
+     if name.startswith("Any"):
         print(name)
         sys_id_dict[key] = current_id
         current_id = current_id + 1
@@ -219,13 +265,12 @@ def gen_id_dict(sys_message,custom_message,version_crc):
   #生成用户自定义协议
   current_id = 100
   order_list = list[str]()
-  r = re.compile(r'([C,S][2,B][C,S]\w+)')  
   for key in sorted(custom_message.keys()):
-        order_list = r.findall(custom_message[key])
-        if len(order_list) > 0:
-            custom_id_dict[key] = current_id
-            current_id = current_id + 1
-            print(key)
+        name = custom_message[key]
+        if name.endswith("Cmd"):
+           print(name)
+           custom_id_dict[key] = current_id
+           current_id = current_id + 1
 
   lua_cmdcode_content = ""
   h_cmdcode_content = ""

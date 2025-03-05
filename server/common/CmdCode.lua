@@ -1,8 +1,12 @@
---- Automatically generated，do not modify.
+--- Automatically generated,do not modify.
 
 local M={
-    ["PBPacket"] = 1,
+    ["PBPacketCmd"] = 1,
     ["google.protobuf.Any"] = 2,
+    ["PBClientLoginReqCmd"] = 100,
+    ["PBClientLoginRspCmd"] = 101,
+    ["PBPingCmd"] = 102,
+    ["PBPongCmd"] = 103,
 
 }
 

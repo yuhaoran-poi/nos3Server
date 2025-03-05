@@ -1,14 +1,20 @@
 
-ä
+ß
 Common.proto"“
 PBMessagePack
-net_id (RnetId
-	broadcast (R	broadcast
-stub_id (RstubId
-msg_type (RmsgType
-msg_body (RmsgBody"6
-PBPacket*
-messages (2.PBMessagePackRmessagesbproto3
+net_id (RnetId
+	broadcast (R	broadcast
+stub_id (RstubId
+msg_type (RmsgType
+msg_body (RmsgBody"9
+PBPacketCmd*
+messages (2.PBMessagePackRmessages":
+	PBPingCmd
+src_gnId (RsrcGnId
+time (Rtime":
+	PBPongCmd
+src_gnId (RsrcGnId
+time (Rtimebproto3
 ÔA
 GameDataItem.proto"D
 PBCoin
@@ -116,7 +122,12 @@ star_level (R	starLevel
 	item_info (2.PBItemRitemInfo
 used_id (RusedId
 idx (Ridx#
-up_lv_fail_cnt (RupLvFailCnt"P
+up_lv_fail_cnt (RupLvFailCnt"y
+PBMonsterEquip$
+	item_info (2.PBItemRitemInfo
+uniqid (Runiqid
+used_id (RusedId
+idx (Ridx"P
 PBMonsterEquipS=
 monster_equip_list (2.PBMonsterEquipRmonsterEquipList"D
 PBTabooWordS4
@@ -141,12 +152,7 @@ star_level (R	starLevel
 	config_id (RconfigId
 get_ts (RgetTs"4
 PBStarSymbol$
-	item_info (2.PBItemRitemInfo"y
-PBMonsterEquip$
-	item_info (2.PBItemRitemInfo
-uniqid (Runiqid
-used_id (RusedId
-idx (Ridx"n
+	item_info (2.PBItemRitemInfo"n
 PBMainStarEffect$
 	item_info (2.PBItemRitemInfo
 used_id (RusedId
