@@ -65,6 +65,7 @@ namespace CommonNetCmd
     extern CmdCode GetCmdCode(const google::protobuf::Message &Msg);
 	extern CmdCode GetProtoMsgType(const UProtobufMessage* Msg);
 	extern TSubclassOf<UProtobufMessage> GetProtoByCmd(CmdCode Cmd);
+    extern CmdCode GetCmdCodeByName(const std::string& MsgName);
 }
 '''
 
@@ -107,7 +108,8 @@ namespace CommonNetCmd
     {
 	    if (Msg)
 	    {
-		    const FString ClassName = Msg->GetName();
+		    FString ClassName = Msg->GetName();
+	    	ClassName = UProtobufMessage::GetClassNameWithoutSuffix(ClassName);
 	    	const ANSICHAR* AnsiStr = TCHAR_TO_UTF8(*ClassName);
 	    	const std::string Str(AnsiStr);
 	    	return GetCmdCodeByName(Str); 
