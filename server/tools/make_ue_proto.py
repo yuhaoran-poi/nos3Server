@@ -115,7 +115,7 @@ def generate_struct(message, content, message_types, prefix="F"):
         field_start_line = find_position(content, field.name, start_line)
         field_comment = extract_comments(content, field_start_line, field_start_line)
         field_name = ''.join(word.capitalize() or '_' for word in field.name.split('_'))  # Convert snake_case to CamelCase
-        field_def = f'\tUPROPERTY(EditAnywhere, BlueprintReadWrite, Category="{struct_name}")\n\t{field_type} {field_name};'
+        field_def = f'\tUPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Protobuf|Property")\n\t{field_type} {field_name};'
         if field_comment:
             # 使用列表推导式为每一行添加制表符
             indented_comment = "\n".join([f"\t{line}" for line in field_comment.splitlines()])

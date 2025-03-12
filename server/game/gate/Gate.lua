@@ -77,18 +77,19 @@ function Gate.BindUser(req)
     context.gnid_map[req.gnid] = c
     context.auth_watch[req.fd] = nil
     print(string.format("BindUser fd:%d uid:%d gnid:%d serviceid:%08X", req.fd, req.uid,req.gnid, req.addr_user))
-    -- 同步登陆信息到Global
-    local synmsg = {
-         info = {
-             clientGnId = c.gnid,
-             clientUserId = c.uid,
-             LoginKey = ""
-         }
-     }
-     context.S2D(0, CmdCode["dsgatepb.SynLoginAuthCmd"], synmsg,0)
     return true
 end
 
+function Gate.BindGnId(req)
+    local c = {
+        fd = req.fd,
+        gnid = req.gnid
+    }
+    context.fd_map[req.fd] = c
+    context.gnid_map[req.gnid] = c
+    print(string.format("BindGnId fd:%d gnid:%d ", req.fd, req.gnid))
+    return true
+end
 function Gate.ForwardD2C(GnId,MessagePack)
     context.D2C(GnId,MessagePack)
 end

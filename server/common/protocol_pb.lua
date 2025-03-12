@@ -45,24 +45,24 @@ function M.encode(uid, id, t)
     end
 end
 
-function M.encodeMessagePacket(GnId, id, t, stubId)
+function M.encodeMessagePacket(GnId, id, t, stub_id)
     if type(id) == 'string' then
         id = CmdCode[id]
     end
     local name = id_name[id]
     assert(name, id)
     local MessagePack = {
-           gateNetId = GnId,
+           net_id = GnId,
            broadcast = 0,
-           stubId =    stubId,
-           msgType =   id,
-           msgBody =   pencode(name, t)
+           stub_id =    stub_id,
+           msg_type =   id,
+           msg_body =   pencode(name, t)
     }
     return MessagePack
 end
 
-function M.encodePacket(GnId, id, t, stubId)
-    local mid = CmdCode["dsgatepb.Packet"]
+function M.encodePacket(GnId, id, t, stub_id)
+    local mid = CmdCode["PBPacketCmd"]
     local mdata = id_bytes[mid]
     if type(id) == 'string' then
         id = CmdCode[id]
@@ -70,14 +70,14 @@ function M.encodePacket(GnId, id, t, stubId)
     local name = id_name[id]
     assert(name, id)
     local MessagePack = {
-           gateNetId = GnId,
+           net_id = GnId,
            broadcast = 0,
-           stubId =    stubId,
-           msgType =   id,
-           msgBody =   pencode(name, t)
+           stub_id =    stub_id,
+           msg_type =   id,
+           msg_body =   pencode(name, t)
     }
     local messages = {MessagePack}
-    return concat(seri.packs(GnId), mdata, pencode("dsgatepb.Packet", { messages = messages }))
+    return concat(seri.packs(GnId), mdata, pencode("PBPacketCmd", { messages = messages }))
 end
 
 function M.encodestring(id, t)
@@ -104,12 +104,12 @@ function M.decode(buf)
 end
 
 function M.DecodeMessagePack(msg)
-   local id = msg.msgType
+   local id = msg.msg_type
     local name = id_name[id]
     if not name then
         error(string.format("recv unknown message CmdCode: %d. client server version mismatch", id))
     end
-    return name, pdecode(name, msg.msgBody, msg.msgBody.len)
+    return name, pdecode(name, msg.msg_body, msg.msg_body.len)
 end
 
 function M.decodestring(data)
@@ -128,18 +128,7 @@ function M.name(id)
 end
 
 local ignore_print = {
-    ["S2CXXX"] = true,
-    ["dsgatepb.ClientForwardCmd"] = true,
-    ["dsgatepb.ServerForwardCmd"] = true,
-    ["dsgatepb.PingCmd"] = true,
-    ["dsgatepb.PongCmd"] = true,
-    ["dsgatepb.SubBorderCmd"] = true,
-    ["dsgatepb.SubBorderResultCmd"] = true,
-    ["dsgatepb.RegisterDsCmd"] = true,
-    ["dsgatepb.UpdateMapInfoCmd"] = true,
-    ["dsgatepb.RegisterDsResultCmd"] = true,
-    ["dsgatepb.UpdateConnToCmd"] = true,
-    ["dsgatepb.StartDataChannelCmd"] = true,
+    ["S2CXXX"] = true
 }
 ---@param uid integer
 ---@param buf buffer_ptr
@@ -155,14 +144,14 @@ function M.print_message(uid, buf,str,isRecv)
         if size >= offset then
             if not ignore_print[name] then
                 local t = (size > offset) and pdecode(name, p, len - 2) or {}
-                if name  == "dsgatepb.Packet" then
+                if name  == "PBPacketCmd" then
                     for _, MessagePack in ipairs(t.messages) do
                       local subname,submsg = M.DecodeMessagePack(MessagePack)
                        if not ignore_print[subname] then
                           if isRecv then
-                                moon.debug(string.format("[%s] Recv[from:%d][%d] MessagePack[stubId:%d,gateNetId:%d]  Message:%s \n%s", str,uid,len,MessagePack.stubId,MessagePack.gateNetId, subname, json.pretty_encode(submsg)))
+                                moon.debug(string.format("[%s] Recv[from:%d][%d] MessagePack[stub_id:%d,net_id:%d]  Message:%s \n%s", str,uid,len,MessagePack.stub_id,MessagePack.net_id, subname, json.pretty_encode(submsg)))
                            else
-                                 moon.debug(string.format("[%s] Send[to:%d][%d] MessagePack[stubId:%d,gateNetId:%d] Message:%s \n%s",str, uid,len, MessagePack.stubId,MessagePack.gateNetId,subname,json.pretty_encode(submsg)))
+                                 moon.debug(string.format("[%s] Send[to:%d][%d] MessagePack[stub_id:%d,net_id:%d] Message:%s \n%s",str, uid,len, MessagePack.stub_id,MessagePack.net_id,subname,json.pretty_encode(submsg)))
                           end
                        end
                     end

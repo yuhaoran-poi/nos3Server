@@ -27,7 +27,7 @@ hotfix.addsearcher(function(file)
 end)
 
 local function load_scripts(context, sname)
-    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP();
+    --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP();
     local dir = strfmt("game/%s/", sname)
     local scripts = moon.env_unpacked(dir)
     if not scripts then

@@ -308,7 +308,7 @@ onlyOneBag%
 ITEM_OPERATION_TYPE_UPDATA
 ITEM_OPERATION_TYPE_DELETE
 ITEM_OPERATION_TYPE_ADDbproto3
-Ç
+ô
 LoginGateCmd.proto"ª
 PBUserLoginData
 uid (Ruid
@@ -325,10 +325,12 @@ authTicket
 password (	Rpassword"F
 PBClientLoginReqCmd/
 
-login_data (2.PBUserLoginDataR	loginData";
+login_data (2.PBUserLoginDataR	loginData"h
 PBClientLoginRspCmd
-code (Rcode
-uid (Ruidbproto3
+code (Rcode
+error (	Rerror
+uid (Ruid
+net_id (RnetIdbproto3
 ä
 google/protobuf/any.protogoogle.protobuf"6
 Any

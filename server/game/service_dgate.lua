@@ -40,10 +40,10 @@ socket.on("message", function(fd, msg)
         for key, MessagePack in ipairs(req.messages) do
             local reqmsg = {}
             reqmsg.msg_context = {
-                gateNetId = MessagePack.gateNetId,
+                net_id = MessagePack.net_id,
                 broadcast = MessagePack.broadcast,
-                stubId =    MessagePack.stubId,
-                msgType =   MessagePack.msgType
+                stub_id =    MessagePack.stub_id,
+                msg_type =   MessagePack.msg_type
               }
            local subname,submsg = protocol.DecodeMessagePack(MessagePack)
             --先校验协议版本号
@@ -91,12 +91,6 @@ socket.on("close", function(fd, msg)
         print("GAME SERVER: close", fd, data)
         return
     end
-    -- 发送消息通知Gloabal
-    local DisconnectGateCmd = {
-        srcGnId = c.gnid
-    }
-    context.S2D(0, CmdCode["dsgatepb.DisconnectGateCmd"], DisconnectGateCmd,0)
-
     context.fd_map[fd] = nil
     context.gnid_map[c.gnid] = nil
     moon.send('lua', context.addr_auth, "Auth.Disconnect", c.gnid)

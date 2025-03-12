@@ -15,7 +15,7 @@ local min_online_time = 60 --seconds，logout间隔大于这个时间的,并且�
 
 ---@type auth_context
 local context = ...
-local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+--local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
 local auth_queue = context.auth_queue
 local temp_openid_uid = {}
 local NODE = math.tointeger(moon.env("NODE"))
@@ -85,9 +85,9 @@ local function doDSAuth(req)
         result = pass and 0 or 1,---maybe banned
         connId = req.fd,
         compressionType = 0,
-        gateNetId = req.gnid
+        net_id = req.gnid
     }
-    context.S2D(req.gnid, CmdCode["dsgatepb.AuthResultCmd"], res,req.msg_context.stubId)
+    context.S2D(req.gnid, CmdCode["dsgatepb.AuthResultCmd"], res,req.msg_context.stub_id)
 
 end
 
@@ -101,7 +101,7 @@ local function doAuth(Auth,req)
         }
         addr_user = moon.new_service(conf)
         if addr_user == 0 then
-            return "create user service failed!"
+            return false,"create user service failed!"
         end
 
         local ok, err = moon.call("lua", addr_user, "User.Load", req)
@@ -109,7 +109,7 @@ local function doAuth(Auth,req)
             moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
             moon.kill(addr_user)
             context.uid_map[req.uid] = nil
-            return err
+            return false,err
         end
     else
         addr_user = u.addr_user
@@ -125,7 +125,6 @@ local function doAuth(Auth,req)
     end
 
     if not u then
-        req.gnid = Auth.AllocGateNetId(0)
         u = {
             addr_user = addr_user,
             openid = openid,
@@ -141,7 +140,7 @@ local function doAuth(Auth,req)
     end
 
     if req.pull then
-        return
+        return false,"req.pull is true"
     end
 
     req.addr_user = addr_user
@@ -159,12 +158,10 @@ local function doAuth(Auth,req)
 
     local res = {
         result = pass and 0 or 1,---maybe banned
-        gateNetId = u.gnid,
-        clientUserId = u.uid,
-        LoginKey = "",
-        compressionType = 0
+        net_id = u.gnid,
+        uid = u.uid,
     }
-    context.S2C(res.gateNetId, CmdCode["dsgatepb.AuthResultCmd"], res,req.msg_context.stubId)
+    return true,res
 end
 
 local function QuitOneUser(u)
@@ -293,51 +290,75 @@ Auth.AllocGateNetId = function(isds)
     end
     return 0xFFFFFFFF
 end
-Auth.dsgatepb_AuthCmd = function (req)
+Auth.PBClientLoginReqCmd = function (req)
+    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    local function func()
+        if not req then
+           return false
+        end
+        ---服务器关闭时,中断所有客户端的登录请求
+        if context.server_exit and not req.pull then
+            return false, "auth abort"
+        end
+        print("PBClientLoginReqCmd ",req.fd,req.isDS,req.msg.dsType)
+        if req.isDS then
+           req.gnid = Auth.AllocGateNetId(1)
+           if req.msg.dsType == CmdEnum.DSType.Global then
+               local strgnid = tostring(req.gnid)
+               db.saveGloabalDsGnId(moon.queryservice("db_server"),strgnid)
+               moon.env("GloabalDsGnId", strgnid)
+           end
+           doDSAuth(req)
+        else
+            req.gnid = Auth.AllocGateNetId(0)
+            moon.send("lua", context.addr_gate, "Gate.BindGnId", req)
+            req.openid = req.msg.openid and req.msg.openid or tostring(req.fd) --todo 这里要求客户端传一个openid 或者登陆密钥串,暂时用fd代替
+            ---如果是opendid登录, 先得到openid对应的 uid
+            local uid = context.openid_map[req.openid]
+            if not uid then
+                ---避免同一个玩家瞬间发送大量登录请求
+                uid = temp_openid_uid[req.openid]
+                if not uid then
+                    uid = uuid.next()
+                    temp_openid_uid[req.openid] = uid
+                end
     
-    if not req then
+                local res, err = db.insertuserid(context.addr_db_openid, req.openid, uid)
+                if not res then
+                    moon.error("insertuserid", req.fd, req.openid, err)
+                    moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
+                    return false,"insetuserid err"
+                end
+    
+                temp_openid_uid[req.openid] = nil
+                context.openid_map[req.openid] = uid
+            end
+            req.uid = uid
+            return doAuth(Auth,req)
+        end
         return false
     end
-    ---服务器关闭时,中断所有客户端的登录请求
-    if context.server_exit and not req.pull then
-        return false, "auth abort"
-    end
-    print("dsgatepb_AuthCmd ",req.fd,req.isDS,req.msg.dsType)
-    if req.isDS then
-       req.gnid = Auth.AllocGateNetId(1)
-       if req.msg.dsType == CmdEnum.DSType.Global then
-           local strgnid = tostring(req.gnid)
-           db.saveGloabalDsGnId(moon.queryservice("db_server"),strgnid)
-           moon.env("GloabalDsGnId", strgnid)
-       end
-       doDSAuth(req)
+    local sucess,res = func()
+    local ret = {}
+    if sucess then
+      ret =
+      {
+        code = 0; 
+        error = "";
+        uid = res.uid;
+        net_id = res.net_id;
+      }
     else
-        req.openid = req.msg.openid and req.msg.openid or tostring(req.fd) --todo 这里要求客户端传一个openid 或者登陆密钥串,暂时用fd代替
-        ---如果是opendid登录, 先得到openid对应的 uid
-        local uid = context.openid_map[req.openid]
-        if not uid then
-            ---避免同一个玩家瞬间发送大量登录请求
-            uid = temp_openid_uid[req.openid]
-            if not uid then
-                uid = uuid.next()
-                temp_openid_uid[req.openid] = uid
-            end
-
-            local res, err = db.insertuserid(context.addr_db_openid, req.openid, uid)
-            if not res then
-                moon.error("insertuserid", req.fd, req.openid, err)
-                moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
-                return false
-            end
-
-            temp_openid_uid[req.openid] = nil
-            context.openid_map[req.openid] = uid
-        end
-        req.uid = uid
-        doAuth(Auth,req)
+      ret =
+      {
+        code = 1; 
+        error = res or "";
+      }
     end
-    return true
+    context.S2C(req.gnid, CmdCode["PBClientLoginRspCmd"], ret,req.msg_context.stub_id)
+ 
 end
+ 
 Auth.C2SLogin = function (req)
 
     if not req then

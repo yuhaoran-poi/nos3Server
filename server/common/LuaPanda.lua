@@ -2205,7 +2205,7 @@ function this.real_hook_process(info)
                     this.SendMsgWithStack("stopOnCodeBreakpoint");
                 else
                     --发消息并等待
-                    this.SendMsgWithStack("stopOnBreakpoint");   
+                    this.SendMsgWithStack("stopOnBreakpoint");
                     --若二次校验未命中，恢复状态
                     if hitBpTwiceCheck == false then 
                         isHit = false;

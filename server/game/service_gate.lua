@@ -1,4 +1,5 @@
---require("common.LuaPanda").start("127.0.0.1", 8818)
+require("common.LuaPanda").start("127.0.0.1", 8818)
+
 local moon = require("moon")
 local seri = require("seri")
 local socket = require("moon.socket")
@@ -28,7 +29,6 @@ setup(context)
 socket.on("accept", function(fd, msg)
     print("client: accept ", fd, moon.decode(msg, "Z"))
     socket.set_enable_chunked(fd, "w")
-    --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     --socket.settimeout(fd, 60)
 end)
 
@@ -36,19 +36,20 @@ socket.on("message", function(fd, msg)
     local c = context.fd_map[fd]
     if not c then
         ---first message must be auth message
+        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         context.auth_watch[fd] = tostring(msg)
         local name, req = protocol.decode(moon.decode(msg,"B"))
         for key, MessagePack in ipairs(req.messages) do
             local reqmsg = {}
             reqmsg.msg_context = {
-                gateNetId = MessagePack.gateNetId,
+                net_id = MessagePack.net_id,
                 broadcast = MessagePack.broadcast,
-                stubId =    MessagePack.stubId,
-                msgType =   MessagePack.msgType
+                stub_id =    MessagePack.stub_id,
+                msg_type =   MessagePack.msg_type
               }
            local subname,submsg = protocol.DecodeMessagePack(MessagePack)
             --先校验协议版本号
-            if subname == "dsgatepb.AuthCmd" then
+            if subname == "PBClientLoginReqCmd" then
                reqmsg.msg = submsg
                reqmsg.sign = context.auth_watch[fd]
                reqmsg.fd = fd
@@ -67,23 +68,23 @@ socket.on("message", function(fd, msg)
         end
         local name, req = protocol.decode(moon.decode(msg,"B"))
         for key, MessagePack in ipairs(req.messages) do
-            if MessagePack.gateNetId < GameDef.DSGateConst.MinNodeGateNetId then
-               if  MessagePack.gateNetId == GameDef.DSGateConst.GlobalGateNetId then
+            if MessagePack.net_id < GameDef.DSGateConst.MinNodeGateNetId then
+               if  MessagePack.net_id == GameDef.DSGateConst.GlobalGateNetId then
                   -- 转发到ds全局服务器
-                  context.forwardC(MessagePack.gateNetId,MessagePack)
-               elseif   MessagePack.gateNetId == GameDef.DSGateConst.ExternalGateNetId then
+                  context.forwardC(MessagePack.net_id,MessagePack)
+               elseif   MessagePack.net_id == GameDef.DSGateConst.ExternalGateNetId then
                    -- 外围服务器处理
                    redirect(MessagePack, c.addr_user, GameDef.PTYPE_C2S, 0, 0)
                end
             else
                 --转发
-                c.ds_gnid = MessagePack.gateNetId
-                if MessagePack.msgType == CmdCode["dsgatepb.SubDSCmd"] then
+                c.ds_gnid = MessagePack.net_id
+                if MessagePack.msg_type == CmdCode["dsgatepb.SubDSCmd"] then
                     local subname,submsg = protocol.DecodeMessagePack(MessagePack)
                     submsg.Addr = socket.getaddress(fd)
-                    context.S2D(MessagePack.gateNetId, CmdCode["dsgatepb.SubDSCmd"], submsg,MessagePack.stubId)
+                    context.S2D(MessagePack.net_id, CmdCode["dsgatepb.SubDSCmd"], submsg,MessagePack.stub_id)
                 else
-                    context.forwardC(MessagePack.gateNetId,MessagePack)
+                    context.forwardC(MessagePack.net_id,MessagePack)
                 end
                 
             end
@@ -107,8 +108,6 @@ socket.on("close", function(fd, msg)
     if c.ds_gnid then
        context.S2D(c.ds_gnid, CmdCode["dsgatepb.DisconnectGateCmd"], DisconnectGateCmd,0)
     end
-    -- 发送消息通知Gloabal
-    context.S2D(0, CmdCode["dsgatepb.DisconnectGateCmd"], DisconnectGateCmd,0)
     context.fd_map[fd] = nil
     context.uid_map[c.uid] = nil
     context.gnid_map[c.gnid] = nil
