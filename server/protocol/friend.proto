@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+message PBFriendData
+{
+    int64 uid			= 1;
+    int32 head_id		= 2;
+    string nick_name	= 3;
+    int32 account_level	= 4;
+    int32 online_state	= 5;
+	int32 friend_level	= 6;
+	int32 group_id		= 7;
+	int64 friend_time	= 8;
+	int32 head_frame	= 9;
+	int32 title			= 10;
+	string guild_name	= 11;
+	string name_remark	= 12;
+}
+
+message PBApplyFriendData
+{
+    int64 uid			= 1;
+    int32 head_id		= 2;
+    string nick_name	= 3;
+    int32 account_level	= 4;
+	int64 apply_time	= 5;
+	int32 head_frame	= 6;
+	int32 title			= 7;
+	string guild_name	= 8;
+}
+
+// 客户端请求好友数据
+message PBGetFriendInfoReqCmd
+{
+    // 协议数据
+    int64 uid          = 1;
+}
+
+// 客户端请求好友数据 返回信息
+message PBGetFriendInfoRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid = 3;
+    repeated PBFriendData friend_datas		= 4; //好友数据
+	repeated PBApplyFriendData apply_datas	= 5; //申请数据
+}
+
+
+
+
+

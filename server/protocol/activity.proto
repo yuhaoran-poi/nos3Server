@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+message PBActivityData
+{
+    int32 activity_id	= 1;
+    int64 beg_ts		= 2;
+    int64 end_ts		= 3;
+}
+
+// 客户端请求活动数据
+message PBGetActivityInfoReqCmd
+{
+    // 协议数据
+    int64 uid          = 1;
+}
+
+// 客户端请求活动数据返回信息
+message PBGetActivityInfoRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid = 3;
+    repeated PBActivityData activity_datas = 4;
+}
+
+
+
+
+

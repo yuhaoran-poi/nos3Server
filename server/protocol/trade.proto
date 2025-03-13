@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+message PBTradeBankProductData
+{
+	int64 trade_id		= 1;	//交易id
+	int32 product_id	= 2;	//商品id(道具的配置id)
+	int32 cur_num		= 3;	//当前剩余数量
+	int32 book_num		= 4;	//被预订数量
+	int32 sale_num		= 5;	//售出数量
+	int32 price     	= 6;	//单价
+	int32 uid     		= 7;	//卖家id
+	int64 beg_ts 		= 8;	//本商品创建时间
+	int64 end_ts 		= 9;	//本商品下架时间
+	int32 state 		= 10;	//当前商品状态
+}
+
+message PBSelfTradeBankData
+{
+	int32 box_capacity	= 1;	//交易行货架数
+	repeated PBTradeBankProductData product_list	= 2;
+}
+
+// 客户端请求自己的交易行数据
+message PBGetTradeBankInfoReqCmd
+{
+    // 协议数据
+    int64 uid		= 1;
+}
+
+// 客户端请求自己的交易行数据 返回信息
+message PBGetTradeBankInfoRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid	= 3;
+    PBSelfTradeBankData self_trade_bank_info	= 4; //自己的交易行数据
+}
+
+
+
+
+

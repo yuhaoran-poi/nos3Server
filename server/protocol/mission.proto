@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+message PBConditionData
+{
+	int32 cond_id		= 1;
+	int32 cond_type		= 2;
+	int32 cond_target	= 3;
+	int32 progress		= 4;
+	int32 is_complete	= 5;
+}
+
+message PBMissionData
+{
+    int32 mission_id	= 1;
+    int32 mission_type	= 2;
+	int32 is_complete	= 3;
+	int32 is_get		= 4;
+	int64 beg_ts		= 5;
+	int64 end_ts		= 6;
+	repeated PBConditionData cond_datas = 7;
+}
+
+// 更新任务进度
+message PBUpdateMissionSeverSyncCmd
+{
+    // 协议数据
+    int64 uid				= 1;
+	int32 cond_id			= 2;
+	int32 cond_type			= 3;
+	int32 update_progress	= 4;
+}
+
+// 更新任务进度 通知玩家
+message PBUpdateMissionClientSyncCmd
+{
+    repeated PBMissionData update_mission_datas	= 1; //好友数据
+}
+
+
+
+
+

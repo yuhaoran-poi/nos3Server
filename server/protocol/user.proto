@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+// 客户端开启宝匣
+message PBGetOpenBoxReqCmd
+{
+    // 协议数据
+    int64 uid			= 1;
+	int32 item_id		= 2;
+	int32 item_count	= 3;
+}
+
+// 客户端开启宝匣 返回信息
+message PBGetOpenBoxRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid	= 3;
+    int32 get_item_id		= 4;
+	int32 get_item_count	= 5;
+}
+
+
+
+
+

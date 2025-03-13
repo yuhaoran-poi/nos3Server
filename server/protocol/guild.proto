@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+message PBApplyGuildData
+{
+    int64 uid			= 1;
+    int32 head_id		= 2;
+    string nick_name	= 3;
+    int32 account_level	= 4;
+	int64 apply_time	= 5;
+	int32 head_frame	= 6;
+	int32 title			= 7;
+}
+
+// 客户端请求加入公会数据
+message PBApplyGuildReqCmd
+{
+    // 协议数据
+    PBApplyGuildData user_data	= 1;
+	int64 apply_guild_id		= 2;
+}
+
+// 客户端请求加入公会数据 返回信息
+message PBApplyGuildRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid = 3;
+}
+
+
+
+
+

@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+// 邮件中存放的道具
+message PBMailItem
+{
+    int32 item_id      = 1;// 道具ID为配置文件中的ID 使用分段来区分道具类型 [货币/普通道具/皮肤]
+    int32 item_count   = 2;
+}
+
+message PBMailData
+{
+    int64 mail_id		= 1;
+	int32 mail_type		= 2;
+	int64 beg_ts		= 3;
+	int64 end_ts		= 4;
+    string mail_title	= 5;
+    string mail_content	= 6;
+    int32 is_read		= 7;
+	int32 is_get		= 8;
+	int32 is_del		= 9;
+	repeated PBMailItem items	= 10;
+}
+
+// 客户端请求领取邮件附件
+message PBGetMailItemReqCmd
+{
+    // 协议数据
+    int64 uid		= 1;
+	int64 mail_id	= 2;
+}
+
+// 客户端请求领取邮件附件 返回信息
+message PBGetMailItemRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid = 3;
+	PBMailData mail_data = 4;
+}
+
+
+
+
+
