@@ -1,3 +1,14 @@
 server/.vscode/settings.json
 server/log/*.log
 BallAction/Logs
+/server/protocol/activity.pb.json
+/server/protocol/auth.pb.json
+/server/protocol/common.pb.json
+/server/protocol/friend.pb.json
+/server/protocol/guild.pb.json
+/server/protocol/mail.pb.json
+/server/protocol/mission.pb.json
+/server/protocol/rank.pb.json
+/server/protocol/team.pb.json
+/server/protocol/trade.pb.json
+/server/protocol/user.pb.json
