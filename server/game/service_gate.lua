@@ -68,28 +68,9 @@ socket.on("message", function(fd, msg)
         end
         local name, req = protocol.decode(moon.decode(msg,"B"))
         for key, MessagePack in ipairs(req.messages) do
-            if MessagePack.net_id < GameDef.DSGateConst.MinNodeGateNetId then
-               if  MessagePack.net_id == GameDef.DSGateConst.GlobalGateNetId then
-                  -- 转发到ds全局服务器
-                  context.forwardC(MessagePack.net_id,MessagePack)
-               elseif   MessagePack.net_id == GameDef.DSGateConst.ExternalGateNetId then
-                   -- 外围服务器处理
-                   redirect(MessagePack, c.addr_user, GameDef.PTYPE_C2S, 0, 0)
-               end
-            else
-                --转发
-                c.ds_gnid = MessagePack.net_id
-                if MessagePack.msg_type == CmdCode["dsgatepb.SubDSCmd"] then
-                    local subname,submsg = protocol.DecodeMessagePack(MessagePack)
-                    submsg.Addr = socket.getaddress(fd)
-                    context.S2D(MessagePack.net_id, CmdCode["dsgatepb.SubDSCmd"], submsg,MessagePack.stub_id)
-                else
-                    context.forwardC(MessagePack.net_id,MessagePack)
-                end
-                
-            end
+            -- 外围服务器处理
+            redirect(MessagePack, c.addr_user, GameDef.PTYPE_C2S, 0, 0)
         end
-        --redirect(msg, c.addr_user, GameDef.PTYPE_C2D, 0, 0)
     end
 end)
 
