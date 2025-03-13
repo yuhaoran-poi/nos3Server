@@ -129,6 +129,11 @@ namespace CommonNetCmd
 '''
 
 ######################TEMPLATE END#######################
+special_file_list=["common"]
+CommonNetUE = "D:\\p4_workpc\\ZGDS_UE5\\Plugins\\CommonNetUE\\Source\\CommonNetUE\\Public\\Protos"
+LuaPB = ""
+
+
 def get_filename_without_extension(abs_path):
     # 获取文件名（包括扩展名）
     filename_with_extension = os.path.basename(abs_path)
@@ -145,9 +150,6 @@ def parse_proto_file(proto_file_path):
 
     return file_descriptor_set
  
-
-CommonNetUE = "D:\\p4_workpc\\ZGDS_UE5\\Plugins\\CommonNetUE\\Source\\CommonNetUE\\Public\\Protos"
-LuaPB = ""
 
 def exec(command: str, input: str = None,
          encoding=None, errors='strict', silent=False) -> str:
@@ -199,6 +201,24 @@ def calculate_crc32(file_path):
     
     # 返回最终的CRC32值，确保返回值是非负数
     return crc_value & 0xFFFFFFFF
+
+def extract_message_names(proto_file_path, suffix='Cmd'):
+    # 获取文件名（不包括路径和扩展名）
+    file_name = os.path.splitext(os.path.basename(proto_file_path))[0]
+
+    with open(proto_file_path, 'r',encoding='utf-8') as file:
+        content = file.read()
+
+    # 使用正则表达式匹配消息定义
+    message_pattern = re.compile(r'message\s+(\w+)\s*\{', re.DOTALL)
+    matches = message_pattern.findall(content)
+
+    # 过滤出以指定后缀结尾的消息名，并生成字典
+    filtered_messages_dict = {message: file_name for message in matches if message.endswith(suffix)}
+
+    return filtered_messages_dict
+
+
  
 def get_proto_message_names(directory):
     version_crc = 0
@@ -206,6 +226,7 @@ def get_proto_message_names(directory):
     custom_message = {}
     protofiles = list()
     allprotofiles = list()
+    all_messages_dict = {}
     obpath = os.path.abspath(directory)
     for root, dirs, files in os.walk(directory):
         for file in files:
@@ -215,6 +236,8 @@ def get_proto_message_names(directory):
                 protofiles.append(proto_file_path) 
                 #if file == "dsgate.proto" or file == "unreal_common.proto":
                 if file != "any.proto":
+                  messages_dict = extract_message_names(proto_file_path)
+                  all_messages_dict.update(messages_dict)
                   generate_proto_CPlusPlus(obpath,proto_file_path,CommonNetUE) 
                   filename = get_filename_without_extension(proto_file_path)
                   outpb =  os.path.join(obpath, filename + '.pb.json') 
@@ -247,9 +270,9 @@ def get_proto_message_names(directory):
                   custom_message[full_message_name] = desc.name 
 
     version_crc = calculate_crc32(outpb)
-    return sys_message,custom_message,version_crc
+    return sys_message,custom_message,version_crc,all_messages_dict
 
-def gen_id_dict(sys_message,custom_message,version_crc):
+def gen_id_dict(sys_message,custom_message,version_crc,all_message):
   # 初始化一个新的字典用于存储ID
   sys_id_dict = {}
   custom_id_dict = {}
@@ -299,7 +322,13 @@ def gen_id_dict(sys_message,custom_message,version_crc):
       #lua_cmdcode_content += "    [" + str(custom_id_dict[cmd]) + "] = \"" + cmd + "\",\n"
       cppcmd = cmd.replace(".","::")
       cpp_cmdcode_content += "		{CmdCode::" + custom_message[cmd] + ",new " + cppcmd + "()},\n"
-                 
+  #所有消息forward
+  for cmd in all_message:
+        service = all_message[cmd]
+        if service not in special_file_list:
+           forward_content += "    " + cmd + \
+               " = 'addr_" + service + "',\n"
+                                   
   cmdcode_out_file="../common/CmdCode.lua"
   with open(cmdcode_out_file, "w", encoding='utf-8') as fobj:
       fobj.write(cmdcode_template % (
@@ -319,8 +348,8 @@ def gen_id_dict(sys_message,custom_message,version_crc):
           
 if __name__ == "__main__":
     try:
-      sys_message,custom_message,version_crc = get_proto_message_names("../protocol")
-      gen_id_dict(sys_message,custom_message,version_crc)
+      sys_message,custom_message,version_crc,all_message = get_proto_message_names("../protocol")
+      gen_id_dict(sys_message,custom_message,version_crc,all_message)
     except Exception as e:
       traceback.print_exc()
 
