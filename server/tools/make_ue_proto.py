@@ -121,6 +121,13 @@ def generate_struct(message, content, message_types, prefix="F"):
             indented_comment = "\n".join([f"\t{line}" for line in field_comment.splitlines()])
             field_def = f'{indented_comment}\n{field_def}'
         fields.append(field_def)
+    # 生成是否有某个属性标记
+    fields.append(f"\t// 是否有某个属性标记")
+    for field in message.field:
+        field_name = ''.join(word.capitalize() or '_' for word in field.name.split('_'))  # Convert snake_case to CamelCase
+        field_def = f'\tUPROPERTY(EditAnywhere, BlueprintReadWrite,Category="HasProperty")\n\tbool bHas{field_name};'
+        fields.append(field_def)
+
 
     struct_comment = extract_comments(content, start_line, start_line)
     struct_definition = []

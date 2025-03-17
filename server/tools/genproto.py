@@ -130,7 +130,7 @@ namespace CommonNetCmd
 
 ######################TEMPLATE END#######################
 special_file_list=["common"]
-CommonNetUE = "D:\\p4_workpc\\ZGDS_UE5\\Plugins\\CommonNetUE\\Source\\CommonNetUE\\Public\\Protos"
+CommonNetUE = "D:\\p4_workpc\\ZGDSRelease\\Plugins\\CommonNetUE\\Source\\CommonNetUE\\Public\\Protos"
 LuaPB = ""
 
 
@@ -163,7 +163,7 @@ def exec(command: str, input: str = None,
         output, err = p.communicate(input)
     if err or p.returncode != 0:
         raise EnvironmentError("Get stderr or exitcode != 0. "
-                               "Error: {}, Return Value: {}".format(
+                               "Error: {}, Return Value: {}".format( 
                                    ascii(err), p.returncode))
     return output if text_mode else output.decode(encoding, errors)
 
