@@ -12,3 +12,5 @@ BallAction/Logs
 /server/protocol/team.pb.json
 /server/protocol/trade.pb.json
 /server/protocol/user.pb.json
+/server/tools/__pycache__
+/server/tools/build
