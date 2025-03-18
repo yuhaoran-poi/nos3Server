@@ -29,6 +29,22 @@ ENUM_TYPE_MAP = {
     descriptor_pb2.FieldDescriptorProto.TYPE_UINT64: "uint64",
 }
 
+# 默认值映射表（新增）
+DEFAULT_VALUE_MAP = {
+    "double": "0.0",
+    "float": "0.0f",
+    "int32": "0",
+    "int64": "0LL",
+    "uint32": "0U",
+    "uint64": "0ULL",
+    "bool": "false",
+    "FString": 'TEXT("")',
+    "TArray": "{}",
+    "TMap": "{}",
+    "struct": "{}"  # 结构体默认初始化
+}
+
+
 def parse_proto(file_path):
     with open(file_path, 'rb') as f:
         data = f.read()
@@ -47,31 +63,29 @@ def is_map_field(field, message_types):
     return False
 
 def convert_type(field, is_repeated=False, is_map=False, message_types=None, prefix=""):
+    """返回类型和类型分类（map/array/struct/primitive）"""
     if is_map:
         key_type = TYPE_MAP.get(field.message_type.field[0].type, "/* Unknown key type */")
-        value_type = convert_type(field.message_type.field[1], field.message_type.field[1].label == field.LABEL_REPEATED, message_types=message_types, prefix=prefix)
-        return f'TMap<{key_type}, {value_type}>'
-    elif is_repeated:
+        value_type, _ = convert_type(field.message_type.field[1], 
+                                    field.message_type.field[1].label == field.LABEL_REPEATED,
+                                    message_types=message_types, prefix=prefix)
+        return (f'TMap<{key_type}, {value_type}>', 'map')
+    
+    if is_repeated:
         base_type = TYPE_MAP.get(field.type, "/* Unknown repeated type */")
         if field.type_name:
-            # For nested messages or enums
             nested_type_name = field.type_name.split('.')[-1]
             if any(msg.name == nested_type_name for msg in message_types):
                 base_type = f'{prefix}{nested_type_name}'
-            else:
-                base_type = nested_type_name
-        return f'TArray<{base_type}>'
-    else:
-        if field.type_name:
-            # For nested messages or enums
-            nested_type_name = field.type_name.split('.')[-1]
-            if any(msg.name == nested_type_name for msg in message_types):
-                return f'{prefix}{nested_type_name}'
-            else:
-                return nested_type_name
-        else:
-            base_type = TYPE_MAP.get(field.type, "/* Unknown type */")
-            return base_type
+        return (f'TArray<{base_type}>', 'array')
+    
+    if field.type_name:
+        nested_type_name = field.type_name.split('.')[-1]
+        if any(msg.name == nested_type_name for msg in message_types):
+            return (f'{prefix}{nested_type_name}', 'struct')
+        return (nested_type_name, 'enum')  # 假设是枚举类型
+    
+    return (TYPE_MAP.get(field.type, "/* Unknown type */"), 'primitive')
 
 def extract_comments(content, start_line, max_lines=5):
     lines = content.splitlines()
@@ -105,28 +119,38 @@ def find_position(content, target, start_line=1):
 def generate_struct(message, content, message_types, prefix="F"):
     struct_name = message.name
     fields = []
+    has_fields = []
     IsCmdMessage = struct_name.endswith("Cmd")
     # Find the starting line of the message
     start_line = find_position(content, f'message {message.name}')
 
     for field in message.field:
         is_map = is_map_field(field, message_types)
-        field_type = convert_type(field, field.label == field.LABEL_REPEATED, is_map, message_types, prefix)
+        field_type, type_category = convert_type(field, field.label == field.LABEL_REPEATED,is_map, message_types, prefix)
         field_start_line = find_position(content, field.name, start_line)
         field_comment = extract_comments(content, field_start_line, field_start_line)
         field_name = ''.join(word.capitalize() or '_' for word in field.name.split('_'))  # Convert snake_case to CamelCase
-        field_def = f'\tUPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Protobuf|Property")\n\t{field_type} {field_name};'
+        default_value = None
+        if type_category in ('map', 'array'):
+            default_value = DEFAULT_VALUE_MAP.get(type_category, "{}")
+        elif type_category == 'struct':
+            default_value = "{}"
+        else:
+            default_value = DEFAULT_VALUE_MAP.get(field_type.split('<')[0], "")  # 处理模板类型
+
+         # 生成字段定义（添加默认值）
+        field_def = f'\tUPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Protobuf|Property")\n\t{field_type} {field_name} = {default_value};'
+        # Has属性默认false
+        has_field_def = f'\tUPROPERTY(EditAnywhere, BlueprintReadWrite,Category="HasProperty")\n\tbool bHas{field_name} = false;'
         if field_comment:
             # 使用列表推导式为每一行添加制表符
             indented_comment = "\n".join([f"\t{line}" for line in field_comment.splitlines()])
             field_def = f'{indented_comment}\n{field_def}'
         fields.append(field_def)
-    # 生成是否有某个属性标记
-    fields.append(f"\t// 是否有某个属性标记")
-    for field in message.field:
-        field_name = ''.join(word.capitalize() or '_' for word in field.name.split('_'))  # Convert snake_case to CamelCase
-        field_def = f'\tUPROPERTY(EditAnywhere, BlueprintReadWrite,Category="HasProperty")\n\tbool bHas{field_name};'
-        fields.append(field_def)
+        has_fields.append(has_field_def)
+    # 添加分隔注释和has字段
+    fields.append('\t// ---------- 属性存在标志 ----------')
+    fields.extend(has_fields)
 
 
     struct_comment = extract_comments(content, start_line, start_line)
