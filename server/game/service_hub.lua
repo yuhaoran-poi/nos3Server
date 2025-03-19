@@ -105,21 +105,21 @@ local function command_handler(cmdline, echo)
         end
 
         local serverid = -1
-        local dsgnid = -1
+        local dsnet_id = -1
 
         if flag == "S" then--server
             serverid = math.tointeger(string.sub(split[1],2))
-        elseif flag == "D" then --dsgnid
-            dsgnid = math.tointeger(string.sub(split[1],2))
-            if dsgnid == 0 then
+        elseif flag == "D" then --dsnet_id
+            dsnet_id = math.tointeger(string.sub(split[1],2))
+            if dsnet_id == 0 then
               -- 全局DS
-              dsgnid = get_globalds()
-              if dsgnid == 0 then
-                echo("forwardD cur Node Cant find GloabalDsGnId!!!!"..dsgnid)
+              dsnet_id = get_globalds()
+              if dsnet_id == 0 then
+                echo("forwardD cur Node Cant find GloabalDsGnId!!!!"..dsnet_id)
                 return
               end
             end
-            local node,flag,index = extract_gn(dsgnid)
+            local node,flag,index = extract_gn(dsnet_id)
             serverid = node
             echo("gm serverid:"..serverid) 
         elseif flag =="U" then--user gm

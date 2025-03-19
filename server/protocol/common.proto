@@ -32,13 +32,11 @@ message PBPacketCmd {
 // 客户端发起ping
 message PBPingCmd
 {
-    int32 src_gnId = 1;
-    double time = 2;   // 用户统计服务器之间延时
+    double time = 1;   // 用户统计服务器之间延时
 }
 
 // 服务器回复pong
 message PBPongCmd
 {
-    int32 src_gnId = 1;
-    double time = 2;   // 用户统计服务器之间延时
+    double time = 1;   // 用户统计服务器之间延时
 }

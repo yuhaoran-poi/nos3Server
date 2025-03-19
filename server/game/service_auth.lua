@@ -7,7 +7,7 @@ local setup = require("common.setup")
 ---@field scripts auth_scripts
 local context = {
     uid_map = {},
-    gnid_map = {},
+    net_id_map = {},
     openid_map = {},--- map<openid, uid>
     auth_queue = {},
     service_counter = 0,

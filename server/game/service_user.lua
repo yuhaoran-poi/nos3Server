@@ -29,7 +29,7 @@ local context = {
     scripts = {},
     ---other service address
     addr_room = 0,
-    gnid = 0,
+    net_id = 0,
 }
 
 local command = setup(context, "user")
@@ -51,51 +51,37 @@ local function forward(subname, reqmsg)
 end
 
 moon.raw_dispatch("C2S", function(msg)
-    --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    local name, req = protocol.decode(moon.decode(buf, "B"))
+    local name, req = protocol.decode(moon.decode(msg, "B"))
     for key, MessagePack in ipairs(req.messages) do
         local reqmsg = {}
         reqmsg.msg_context = {
-            net_id = MessagePack.net_id,
+            net_id = context.net_id,
             broadcast = MessagePack.broadcast,
             stub_id = MessagePack.stub_id,
             msg_type = MessagePack.msg_type
         }
         --local subname, submsg = protocol.DecodeMessagePack(MessagePack)
-        
-        if not command[subname] then
-            reqmsg.msg = submsg
+        local msg_name = id_to_name(MessagePack.msg_type)
+        if not command[msg_name] then
+            reqmsg.msg = MessagePack.msg_body
+            forward(msg_name, reqmsg)
         else
+            local subname, submsg = protocol.DecodeMessagePack(MessagePack)
+            reqmsg.msg = submsg
+
             local fn = command[subname]
             moon.async(function()
-                local ok, res = xpcall(fn, debug.traceback, submsg)
+                local ok, res = xpcall(fn, debug.traceback, reqmsg)
+                local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 if not ok then
                     moon.error(res)
-                    context.S2C(CmdCode.S2CErrorCode, { code = 1 }) --server internal error
+                    --context.S2C(CmdCode.S2CErrorCode, { code = 1 }) --server internal error
                 elseif res then
-                    context.S2C(CmdCode.S2CErrorCode, { code = res })
+                    moon.error(res)
+                    --context.S2C(CmdCode.S2CErrorCode, { code = res })
                 end
             end)
         end
-    end
-
-    local buf = moon.decode(msg, "B")
-    local msgname = id_to_name(bunpack(buf, "<H"))
-    if not command[msgname] then
-        wfront(buf, seri.packs(context.uid))
-        forward(msg, msgname)
-    else
-        local cmd, data = mdecode(buf)
-        local fn = command[cmd]
-        moon.async(function()
-            local ok, res = xpcall(fn, debug.traceback, data)
-            if not ok then
-                moon.error(res)
-                context.S2C(CmdCode.S2CErrorCode,{code = 1}) --server internal error
-            elseif res then
-                context.S2C(CmdCode.S2CErrorCode,{code = res})
-            end
-        end)
     end
 end)
 
@@ -107,9 +93,14 @@ end
 context.addr_center = moon.queryservice("center")
 context.addr_auth = moon.queryservice("auth")
 
-context.S2C = function(cmd_code, mtable)
-    moon.raw_send('S2C', context.addr_gate, protocol.encode(context.uid, cmd_code, mtable))
-end
+-- context.S2C = function(cmd_code, mtable, stubId)
+--     moon.raw_send('S2C', context.addr_gate, protocol.encodeMessagePacket(context.net_id, cmd_code, mtable, stubId or 0))
+-- end
+
+-- context.S2C = function(net_id, cmd_code, mtable, stubId)
+--     forwardD2C(context, net_id, protocol.encodeMessagePacket(net_id, cmd_code, mtable, stubId or 0))
+--     --moon.raw_send('S2C', context.addr_gate, protocol.encodePacket(uid, cmd_code, mtable,mc))
+-- end
 
 moon.shutdown(function()
     --- rewrite default behavior: Avoid automatic service exits

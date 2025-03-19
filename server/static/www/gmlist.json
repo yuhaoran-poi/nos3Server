@@ -28,7 +28,7 @@
         "name": "ds命令",
         "subcommand": "dscommand",
         "items": [
-            "dsgnid",
+            "dsnet_id",
             "command"
         ]
     },
@@ -37,7 +37,7 @@
         "name": "创建对象",
         "subcommand": "RpcGmCreateEntityCmd",
         "items": [
-            "dsgnid",
+            "dsnet_id",
             "entityid",
             "mapid",
             "x",

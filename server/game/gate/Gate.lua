@@ -44,7 +44,7 @@ function Gate.Kick(uid, fd, ignore_socket_event)
         if ignore_socket_event then
             context.fd_map[c.fd] = nil
             context.uid_map[uid] = nil
-            context.gnid_map[c.gnid] = nil
+            context.net_id_map[c.net_id] = nil
         end
     end
 
@@ -69,26 +69,26 @@ function Gate.BindUser(req)
     local c = {
         uid = req.uid,
         fd = req.fd,
-        gnid = req.gnid,
+        net_id = req.net_id,
         addr_user = req.addr_user
     }
 
     context.fd_map[req.fd] = c
     context.uid_map[req.uid] = c
-    context.gnid_map[req.gnid] = c
+    context.net_id_map[req.net_id] = c
     context.auth_watch[req.fd] = nil
-    print(string.format("BindUser fd:%d uid:%d gnid:%d serviceid:%08X", req.fd, req.uid,req.gnid, req.addr_user))
+    print(string.format("BindUser fd:%d uid:%d net_id:%d serviceid:%08X", req.fd, req.uid,req.net_id, req.addr_user))
     return true
 end
 
 function Gate.BindGnId(req)
     local c = {
         fd = req.fd,
-        gnid = req.gnid
+        net_id = req.net_id
     }
     context.fd_map[req.fd] = c
-    context.gnid_map[req.gnid] = c
-    print(string.format("BindGnId fd:%d gnid:%d ", req.fd, req.gnid))
+    context.net_id_map[req.net_id] = c
+    print(string.format("BindGnId fd:%d net_id:%d ", req.fd, req.net_id))
     return true
 end
 function Gate.ForwardD2C(GnId,MessagePack)

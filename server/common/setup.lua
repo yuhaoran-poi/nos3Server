@@ -433,35 +433,35 @@ return function(context, sname)
     })
   
     --- send message to client.
-    context.D2D = function(gnid, MessagePack)
+    context.D2D = function(net_id, MessagePack)
         local Packet =  { messages =  {MessagePack} }
         local data = protocol.encodestring(1,  Packet)
-        moon.raw_send('D2D', context.addr_dgate,seri.packs(gnid) .. data)
+        moon.raw_send('D2D', context.addr_dgate,seri.packs(net_id) .. data)
     end
-    context.C2D = function(gnid, MessagePack)
+    context.C2D = function(net_id, MessagePack)
         local Packet =  { messages =  {MessagePack} }
         local data = protocol.encodestring(1,  Packet)
-        moon.raw_send('C2D', context.addr_dgate,seri.packs(gnid) .. data)
+        moon.raw_send('C2D', context.addr_dgate,seri.packs(net_id) .. data)
     end
-    context.D2C = function(gnid, MessagePack)
+    context.D2C = function(net_id, MessagePack)
         local Packet =  { messages =  {MessagePack} }
         local data = protocol.encodestring(1,  Packet)
-        moon.raw_send('D2C', context.addr_gate,seri.packs(gnid) .. data)
+        moon.raw_send('D2C', context.addr_gate,seri.packs(net_id) .. data)
     end
 
-    context.S2C = function(gnid, cmd_code, mtable,stubId)
-        forwardD2C(context,gnid,protocol.encodeMessagePacket(gnid, cmd_code, mtable,stubId or 0))
+    context.S2C = function(net_id, cmd_code, mtable,stubId)
+        forwardD2C(context,net_id,protocol.encodeMessagePacket(net_id, cmd_code, mtable,stubId or 0))
         --moon.raw_send('S2C', context.addr_gate, protocol.encodePacket(uid, cmd_code, mtable,mc))
     end
 
-    context.S2D = function(gnid, cmd_code, mtable,stubId)
-        forwardD(context,gnid,protocol.encodeMessagePacket(gnid, cmd_code, mtable,stubId or 0))
-       -- moon.raw_send('S2D', context.addr_dgate, protocol.encodePacket(gnid, cmd_code, mtable,mc))
+    context.S2D = function(net_id, cmd_code, mtable,stubId)
+        forwardD(context,net_id,protocol.encodeMessagePacket(net_id, cmd_code, mtable,stubId or 0))
+       -- moon.raw_send('S2D', context.addr_dgate, protocol.encodePacket(net_id, cmd_code, mtable,mc))
     end
     
-    context.D2S = function(gnid, cmd_code, mtable,stubId)
-        --forwardD(context,gnid,protocol.encodeMessagePacket(gnid, cmd_code, mtable,stubId or 0))
-       -- moon.raw_send('S2D', context.addr_dgate, protocol.encodePacket(gnid, cmd_code, mtable,mc))
+    context.D2S = function(net_id, cmd_code, mtable,stubId)
+        --forwardD(context,net_id,protocol.encodeMessagePacket(net_id, cmd_code, mtable,stubId or 0))
+       -- moon.raw_send('S2D', context.addr_dgate, protocol.encodePacket(net_id, cmd_code, mtable,mc))
     end
 
     --- send message to user-service.

@@ -36,7 +36,7 @@ login_data (2.PBUserLoginDataR	loginData"‡
 net_id (RnetId
 
 reconn_key (	R	reconnKeybproto3
-ß
+©
 common.proto"“
 PBMessagePack
 net_id (RnetId
@@ -45,13 +45,11 @@ reconn_key (	R	reconnKeybproto3
 msg_type (RmsgType
 msg_body (RmsgBody"9
 PBPacketCmd*
-messages (2.PBMessagePackRmessages":
-	PBPingCmd
-src_gnId (RsrcGnId
-time (Rtime":
-	PBPongCmd
-src_gnId (RsrcGnId
-time (Rtimebproto3
+messages (2.PBMessagePackRmessages"
+	PBPingCmd
+time (Rtime"
+	PBPongCmd
+time (Rtimebproto3
 é
 friend.proto"ò
 PBFriendData

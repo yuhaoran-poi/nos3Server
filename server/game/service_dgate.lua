@@ -17,7 +17,7 @@ local PTYPE_D2S = GameDef.PTYPE_D2S
 ---@field scripts gate_scripts
 local context = {
     conf = conf,
-    gnid_map = {},  --直连到本Gate的所有ds服务器,gateNetId
+    net_id_map = {},  --直连到本Gate的所有ds服务器,gateNetId
     fd_map = {},
     auth_watch = {},
 }
@@ -62,7 +62,7 @@ socket.on("message", function(fd, msg)
     else
         if moon.DEBUG() then
             local buf = moon.decode(msg, "B")
-            protocol.print_message(c.gnid, buf,"message",1)
+            protocol.print_message(c.net_id, buf,"message",1)
         end
         local name, req = protocol.decode(moon.decode(msg,"B"))
         for key, MessagePack in ipairs(req.messages) do
@@ -92,16 +92,16 @@ socket.on("close", function(fd, msg)
         return
     end
     context.fd_map[fd] = nil
-    context.gnid_map[c.gnid] = nil
-    moon.send('lua', context.addr_auth, "Auth.Disconnect", c.gnid)
-    print("GAME SERVER: close", fd, c.gnid, data)
+    context.net_id_map[c.net_id] = nil
+    moon.send('lua', context.addr_auth, "Auth.Disconnect", c.net_id)
+    print("GAME SERVER: close", fd, c.net_id, data)
 end)
 
 moon.raw_dispatch("S2D",function(msg)
     local buf = moon.decode(msg, "L")
-    local gnid = seri.unpack_one(buf, true)
-    if type(gnid) == "number" then
-        local c = context.gnid_map[gnid]
+    local net_id = seri.unpack_one(buf, true)
+    if type(net_id) == "number" then
+        local c = context.net_id_map[net_id]
         if not c then
             return
         end
@@ -109,11 +109,11 @@ moon.raw_dispatch("S2D",function(msg)
         socket.write(c.fd, buf)
 
         if moon.DEBUG() then
-            protocol.print_message(gnid, buf,"S2D")
+            protocol.print_message(net_id, buf,"S2D")
         end
     else
         local p = moon.ref_buffer(buf)
-        for _, one in ipairs(gnid) do
+        for _, one in ipairs(net_id) do
             local c = context.GnId_map[one]
             if c then
                 socket.write_ref_buffer(c.fd,p)
@@ -128,9 +128,9 @@ end)
 
 moon.raw_dispatch("D2D",function(msg)
     local buf = moon.decode(msg, "L")
-    local gnid = seri.unpack_one(buf, true)
-    if type(gnid) == "number" then
-        local c = context.gnid_map[gnid]
+    local net_id = seri.unpack_one(buf, true)
+    if type(net_id) == "number" then
+        local c = context.net_id_map[net_id]
         if not c then
             return
         end
@@ -138,11 +138,11 @@ moon.raw_dispatch("D2D",function(msg)
         socket.write(c.fd, buf)
 
         if moon.DEBUG() then
-            protocol.print_message(gnid, buf,"D2D")
+            protocol.print_message(net_id, buf,"D2D")
         end
     else
         local p = moon.ref_buffer(buf)
-        for _, one in ipairs(gnid) do
+        for _, one in ipairs(net_id) do
             local c = context.GnId_map[one]
             if c then
                 socket.write_ref_buffer(c.fd,p)
@@ -157,9 +157,9 @@ end)
 
 moon.raw_dispatch("C2D",function(msg)
     local buf = moon.decode(msg, "L")
-    local gnid = seri.unpack_one(buf, true)
-    if type(gnid) == "number" then
-        local c = context.gnid_map[gnid]
+    local net_id = seri.unpack_one(buf, true)
+    if type(net_id) == "number" then
+        local c = context.net_id_map[net_id]
         if not c then
             return
         end
@@ -167,11 +167,11 @@ moon.raw_dispatch("C2D",function(msg)
         socket.write(c.fd, buf)
 
         if moon.DEBUG() then
-            protocol.print_message(gnid, buf,"C2D")
+            protocol.print_message(net_id, buf,"C2D")
         end
     else
         local p = moon.ref_buffer(buf)
-        for _, one in ipairs(gnid) do
+        for _, one in ipairs(net_id) do
             local c = context.GnId_map[one]
             if c then
                 socket.write_ref_buffer(c.fd,p)

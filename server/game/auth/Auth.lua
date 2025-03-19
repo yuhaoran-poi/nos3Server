@@ -20,11 +20,11 @@ local auth_queue = context.auth_queue
 local temp_openid_uid = {}
 local NODE = math.tointeger(moon.env("NODE"))
 local function doDSAuth(req)
-    local u = context.gnid_map[req.gnid]
+    local u = context.net_id_map[req.net_id]
     local addr_dsnode
     if not u then
         local conf = {
-            name = "dsnode"..req.gnid,
+            name = "dsnode"..req.net_id,
             file = "game/service_dsnode.lua"
         }
         addr_dsnode = moon.new_service(conf)
@@ -36,7 +36,7 @@ local function doDSAuth(req)
         if not ok then
             moon.send("lua", context.addr_dgate, "DGate.Kick", 0, req.fd)
             moon.kill(addr_dsnode)
-            context.gnid_map[req.gnid] = nil
+            context.net_id_map[req.net_id] = nil
             return err
         end
     else
@@ -48,7 +48,7 @@ local function doDSAuth(req)
         print(openid, err)
         moon.send("lua", context.addr_dgate, "DGate.Kick", 0, req.fd)
         moon.kill(addr_dsnode)
-        context.gnid_map[req.gnid] = nil
+        context.net_id_map[req.net_id] = nil
         return err
     end
 
@@ -56,12 +56,12 @@ local function doDSAuth(req)
         u = {
             addr_dsnode = addr_dsnode,
             openid = openid,
-            gnid = req.gnid,
+            net_id = req.net_id,
             logouttime = moon.time(),
             online = false
         }
 
-        context.gnid_map[req.gnid] = u
+        context.net_id_map[req.net_id] = u
     end
 
     if req.pull then
@@ -74,9 +74,9 @@ local function doDSAuth(req)
 
     if pass then
         u.logouttime = 0
-        print("DS login success", req.gnid)
+        print("DS login success", req.net_id)
     else
-        print("DS login failed", req.gnid)
+        print("DS login failed", req.net_id)
     end
 
     moon.send("lua", context.addr_dgate, "DGate.BindDS", req)
@@ -85,9 +85,9 @@ local function doDSAuth(req)
         result = pass and 0 or 1,---maybe banned
         connId = req.fd,
         compressionType = 0,
-        net_id = req.gnid
+        net_id = req.net_id
     }
-    context.S2D(req.gnid, CmdCode["dsgatepb.AuthResultCmd"], res,req.msg_context.stub_id)
+    context.S2D(req.net_id, CmdCode["dsgatepb.AuthResultCmd"], res,req.msg_context.stub_id)
 
 end
 
@@ -131,11 +131,11 @@ local function doAuth(Auth,req)
             uid = req.uid,
             logouttime = moon.time(),
             online = false,
-            gnid = req.gnid
+            net_id = req.net_id
         }
 
         context.uid_map[req.uid] = u
-        context.gnid_map[req.gnid] = u
+        context.net_id_map[req.net_id] = u
         
     end
 
@@ -158,7 +158,7 @@ local function doAuth(Auth,req)
 
     local res = {
         result = pass and 0 or 1,---maybe banned
-        net_id = u.gnid,
+        net_id = u.net_id,
         uid = u.uid,
     }
     return true,res
@@ -167,7 +167,7 @@ end
 local function QuitOneUser(u)
     moon.send("lua", u.addr_user, "User.Exit")
     context.uid_map[u.uid] = nil
-    context.gnid_map[u.gnid] = nil
+    context.net_id_map[u.net_id] = nil
 end
 
 ---@class Auth
@@ -282,9 +282,9 @@ Auth.AllocGateNetId = function(isds)
         if context.gnstart > 0x007FFFFF then
             context.gnstart = 1
         end
-        local gnid = GenGN(NODE,isds,context.gnstart)
-        if context.gnid_map[gnid] == nil then
-            return gnid
+        local net_id = GenGN(NODE,isds,context.gnstart)
+        if context.net_id_map[net_id] == nil then
+            return net_id
         end
         condition = condition+1
     end
@@ -302,15 +302,15 @@ Auth.PBClientLoginReqCmd = function (req)
         end
         print("PBClientLoginReqCmd ",req.fd,req.isDS,req.msg.dsType)
         if req.isDS then
-           req.gnid = Auth.AllocGateNetId(1)
+           req.net_id = Auth.AllocGateNetId(1)
            if req.msg.dsType == CmdEnum.DSType.Global then
-               local strgnid = tostring(req.gnid)
-               db.saveGloabalDsGnId(moon.queryservice("db_server"),strgnid)
-               moon.env("GloabalDsGnId", strgnid)
+               local strnet_id = tostring(req.net_id)
+               db.saveGloabalDsGnId(moon.queryservice("db_server"),strnet_id)
+               moon.env("GloabalDsGnId", strnet_id)
            end
            doDSAuth(req)
         else
-            req.gnid = Auth.AllocGateNetId(0)
+            req.net_id = Auth.AllocGateNetId(0)
             moon.send("lua", context.addr_gate, "Gate.BindGnId", req)
             req.openid = req.msg.openid and req.msg.openid or tostring(req.fd) --todo 这里要求客户端传一个openid 或者登陆密钥串,暂时用fd代替
             ---如果是opendid登录, 先得到openid对应的 uid
@@ -355,7 +355,7 @@ Auth.PBClientLoginReqCmd = function (req)
         error = res or "";
       }
     end
-    context.S2C(req.gnid, CmdCode["PBClientLoginRspCmd"], ret,req.msg_context.stub_id)
+    context.S2C(req.net_id, CmdCode["PBClientLoginRspCmd"], ret,req.msg_context.stub_id)
  
 end
  

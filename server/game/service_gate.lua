@@ -22,7 +22,7 @@ local context = {
     conf = conf,
     uid_map = {},
     fd_map = {},
-    gnid_map = {},  --直连到本Gate的所有客户端
+    net_id_map = {},  --直连到本Gate的所有客户端
     auth_watch = {},
 }
 
@@ -66,7 +66,7 @@ socket.on("message", function(fd, msg)
     else
         if moon.DEBUG() then
             local buf = moon.decode(msg, "B")
-            protocol.print_message(c.gnid, buf,"message",1)
+            protocol.print_message(c.net_id, buf,"message",1)
         end
         -- local name, req = protocol.decode(moon.decode(msg,"B"))
         -- for key, MessagePack in ipairs(req.messages) do
@@ -74,7 +74,7 @@ socket.on("message", function(fd, msg)
         --     redirect(MessagePack, c.addr_user, GameDef.PTYPE_C2S, 0, 0)
         -- end
         local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-        --wfront(msg, seri.packs(c.gnid))
+        --wfront(msg, seri.packs(c.net_id))
         redirect(msg, c.addr_user, GameDef.PTYPE_C2S, 0, 0)
     end
 end)
@@ -89,14 +89,14 @@ socket.on("close", function(fd, msg)
     end
      -- 发送消息通知所在的ds
     local DisconnectGateCmd = {
-        srcGnId = c.gnid
+        srcGnId = c.net_id
     }
-    if c.ds_gnid then
-       context.S2D(c.ds_gnid, CmdCode["dsgatepb.DisconnectGateCmd"], DisconnectGateCmd,0)
+    if c.ds_net_id then
+       context.S2D(c.ds_net_id, CmdCode["dsgatepb.DisconnectGateCmd"], DisconnectGateCmd,0)
     end
     context.fd_map[fd] = nil
     context.uid_map[c.uid] = nil
-    context.gnid_map[c.gnid] = nil
+    context.net_id_map[c.net_id] = nil
     moon.send('lua', context.addr_auth, "Auth.Disconnect", c.uid)
     print("client: close", fd, c.uid, data)
 end)
@@ -144,9 +144,9 @@ end)
 
 moon.raw_dispatch("D2C",function(msg)
     local buf = moon.decode(msg, "L")
-    local gnid = seri.unpack_one(buf, true)
-    if type(gnid) == "number" then
-        local c = context.gnid_map[gnid]
+    local net_id = seri.unpack_one(buf, true)
+    if type(net_id) == "number" then
+        local c = context.net_id_map[net_id]
         if not c then
             -- 客户端没有找到,如果是ServerForward可以通知服务器删除客户端
             return
@@ -155,11 +155,11 @@ moon.raw_dispatch("D2C",function(msg)
         socket.write(c.fd, buf)
 
         if moon.DEBUG() then
-            protocol.print_message(gnid, buf,"D2C")
+            protocol.print_message(net_id, buf,"D2C")
         end
     else
         local p = moon.ref_buffer(msg)
-        for _, one in ipairs(gnid) do
+        for _, one in ipairs(net_id) do
             local c = context.GnId_map[one]
             if c then
                 socket.write_ref_buffer(c.fd,p)

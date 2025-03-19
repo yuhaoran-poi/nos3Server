@@ -19,7 +19,7 @@ function DsNode.Load(req)
         local isnew = false
         local data = {
                 openid = req.openid,
-                gnid = req.gnid,
+                net_id = req.net_id,
                 name = req.openid,
                 level = 10,
                 score = 0
@@ -38,12 +38,12 @@ function DsNode.Load(req)
     end
 
     if not res then
-        local errmsg = string.format("user init failed, can not find user %d", req.gnid)
+        local errmsg = string.format("user init failed, can not find user %d", req.net_id)
         moon.error(errmsg)
         return false, errmsg
     end
 
-    context.gnid = res.gnid
+    context.net_id = res.net_id
     return true
 end
 
@@ -79,12 +79,12 @@ function DsNode.Offline()
         return
     end
 
-    print(context.gnid, "offline")
+    print(context.net_id, "offline")
     state.online = false
 
 	if state.ismatching then
         state.ismatching = false
-        moon.send("lua", context.addr_center, "Center.UnMatch", context.gnid)
+        moon.send("lua", context.addr_center, "Center.UnMatch", context.net_id)
     end
 end
 

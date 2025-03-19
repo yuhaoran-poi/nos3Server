@@ -81,7 +81,7 @@ end
 --     else
 --         if moon.DEBUG() then
 --             local buf = moon.decode(msg, "B")
---             protocol.print_message(c.gnid, buf, "message", 1)
+--             protocol.print_message(c.net_id, buf, "message", 1)
 --         end
 --         local name, req = protocol.decode(moon.decode(msg, "B"))
 --         for key, MessagePack in ipairs(req.messages) do

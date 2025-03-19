@@ -25,7 +25,7 @@ local PTYPE_C2S = GameDef.PTYPE_C2S
 ---@class dsnode_context:base_context
 ---@field scripts dsnode_scripts
 local context = {
-    gnid = 0,
+    net_id = 0,
     scripts = {},
     ---other service address
     addr_room = 0
@@ -52,7 +52,7 @@ moon.raw_dispatch("D2C",function(msg)
     local buf = moon.decode(msg, "B")
     local msgname = id_to_name(bunpack(buf, "<H"))
     if not command[msgname] then
-        wfront(buf, seri.packs(context.gnid))
+        wfront(buf, seri.packs(context.net_id))
         forward(msg, msgname)
     else
         local cmd, data = mdecode(buf)
@@ -78,7 +78,7 @@ context.addr_center = moon.queryservice("center")
 context.addr_auth = moon.queryservice("auth")
 
 --context.S2D = function(cmd_code, mtable)
---    moon.raw_send('S2D', context.addr_dgate, protocol.encode(context.gnid, cmd_code, mtable))
+--    moon.raw_send('S2D', context.addr_dgate, protocol.encode(context.net_id, cmd_code, mtable))
 --end
 
 moon.shutdown(function()

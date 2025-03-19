@@ -25,7 +25,7 @@ function DGate.Start()
 end
 
 function DGate.Shutdown()
-    for _, c in pairs(context.gnid_map) do
+    for _, c in pairs(context.net_id_map) do
         socket.close(c.fd)
     end
     if listenfd then
@@ -35,16 +35,16 @@ function DGate.Shutdown()
     return true
 end
 
-function DGate.Kick(gnid, fd, ignore_socket_event)
-    print("gate kick", gnid, fd, ignore_socket_event)
-    if gnid and gnid >0 then
-        local c = context.gnid_map[gnid]
+function DGate.Kick(net_id, fd, ignore_socket_event)
+    print("gate kick", net_id, fd, ignore_socket_event)
+    if net_id and net_id >0 then
+        local c = context.net_id_map[net_id]
         if c then
             socket.close(c.fd)
         end
         if ignore_socket_event then
             context.fd_map[c.fd] = nil
-            context.gnid_map[gnid] = nil
+            context.net_id_map[net_id] = nil
         end
     end
 
@@ -58,24 +58,24 @@ function DGate.BindDS(req)
     if context.auth_watch[req.fd] ~= req.sign then
         return false, "client closed before auth done!"
     end
-    local old = context.gnid_map[req.gnid]
+    local old = context.net_id_map[req.net_id]
     if old and old.fd ~= req.fd then
         context.fd_map[old.fd] = nil
         socket.close(old.fd)
-        print("kick dsnode", req.gnid, "oldfd", old.fd, "newfd", req.fd)
+        print("kick dsnode", req.net_id, "oldfd", old.fd, "newfd", req.fd)
     end
 
     local c = {
-        gnid = req.gnid,
+        net_id = req.net_id,
         fd = req.fd,
         addr_dsnode = req.addr_dsnode
     }
 
     context.fd_map[req.fd] = c
-    context.gnid_map[req.gnid] = c
+    context.net_id_map[req.net_id] = c
     context.auth_watch[req.fd] = nil
-    print(string.format("BindDS fd:%d gnid:%d serviceid:%08X", req.fd, req.gnid,  req.addr_dsnode))
-    --向集群记录gnid-node
+    print(string.format("BindDS fd:%d net_id:%d serviceid:%08X", req.fd, req.net_id,  req.addr_dsnode))
+    --向集群记录net_id-node
 
     return true
 end
