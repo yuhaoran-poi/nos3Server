@@ -14,3 +14,4 @@ BallAction/Logs
 /server/protocol/user.pb.json
 /server/tools/__pycache__
 /server/tools/build
+/.vscode
