@@ -444,7 +444,7 @@ message PBGodsDataS
 	PBPlayedGodsDataS		played_gods_data = 2;	// 出战的神明数据
 }
 
-message PBEntry
+message PBEnt
 {
 	int32 	config_id = 1;		// 词条id
 	int32		entry_quality = 2;	// 词条品质
@@ -459,7 +459,7 @@ message PBAntique
 	int32		identify_result = 5;		// 鉴定结果
 	int32		is_show = 6;				// 是否在展示中
 	PBItem		item_info = 7;				// 物品信息
-	repeated PBEntry	entry_list= 8;				// 词条列表
+	repeated PBEnt	entry_list= 8;				// 词条列表
 }
 
 message PBAntiqueS

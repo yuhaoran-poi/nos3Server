@@ -13,9 +13,9 @@ activityId
 error (	Rerror
 uid (Ruid6
 activity_datas (2.PBActivityDataRactivityDatasbproto3
-ì
+²
 
-auth.proto"ª
+auth.proto"É
 PBUserLoginData
 uid (Ruid
 steam_id (RsteamId
@@ -23,20 +23,19 @@ auth.proto"ª
 auth_ticket (	R
 authTicket
 macid (Rmacid
-version (	Rversion"w
-PBLobbyLoginData
-uid (Ruid
-	login_key (	RloginKey
-version (	Rversion
-password (	Rpassword"F
+version (	Rversion
+
+pb_version (	R	pbVersion"F
 PBClientLoginReqCmd/
 
-login_data (2.PBUserLoginDataR	loginData"h
+login_data (2.PBUserLoginDataR	loginData"‡
 PBClientLoginRspCmd
 code (Rcode
 error (	Rerror
 uid (Ruid
-net_id (RnetIdbproto3
+net_id (RnetId
+
+reconn_key (	R	reconnKeybproto3
 ß
 common.proto"“
 PBMessagePack
@@ -243,7 +242,7 @@ product_id (R	productId
 error (	Rerror
 uid (RuidE
 self_trade_bank_info (2.PBSelfTradeBankDataRselfTradeBankInfobproto3
-ÅC
+ÁC
 
 user.proto"^
 PBGetOpenBoxReqCmd
@@ -478,10 +477,10 @@ gourd_list (2.PBGourdR	gourdList"=
 played_gods_list (2.PBPlayedGodsDataRplayedGodsList"h
 PBGodsDataS
 	gods_list (RgodsList<
-played_gods_data (2.PBPlayedGodsDataSRplayedGodsData"K
-PBEntry
+played_gods_data (2.PBPlayedGodsDataSRplayedGodsData"I
+PBEnt
 	config_id (RconfigId#
-entry_quality (RentryQuality"ž
+entry_quality (RentryQuality"œ
 	PBAntique
 uniq_id (RuniqId
 quality (Rquality
@@ -489,9 +488,9 @@ gourd_list (2.PBGourdR	gourdList"=
 remain_identify_num (RremainIdentifyNum'
 identify_result (RidentifyResult
 is_show (RisShow$
-	item_info (2.PBItemRitemInfo'
+	item_info (2.PBItemRitemInfo%
 
-entry_list (2.PBEntryR	entryList";
+entry_list (2.PBEntR	entryList";
 
 PBAntiqueS-
 antique_list (2
