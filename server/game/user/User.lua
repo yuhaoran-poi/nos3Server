@@ -46,6 +46,7 @@ function User.Load(req)
         scripts.UserModel.Create(data)
 
         context.uid = req.uid
+        context.gnid = req.gnid
         ---初始化自己数据
         context.batch_invoke_throw("Init", isnew)
         ---初始化互相引用的数据
@@ -133,6 +134,16 @@ end
 function User.C2SPing(req)
     req.stime = moon.time()
     context.S2C(CmdCode.S2CPong, req)
+end
+
+--PBPingCmd
+function User.PBPingCmd(req)
+    local ret =
+    {
+        src_gnId = context.gnid,
+        time = req.msg.time
+    }
+    context.S2C(context.gnid,CmdCode.PBPongCmd, ret,req.msg_context.stub_id)
 end
 
 --请求匹配
