@@ -277,13 +277,14 @@ def gen_id_dict(sys_message,custom_message,version_crc,all_message):
   sys_id_dict = {}
   custom_id_dict = {}
   # 自定义ID起始值（这里设置为1） 
-  #sys_id_dict['PBPacketCmd'] = 1 
-  current_id = 1
+  sys_id_dict['PBPacketCmd'] = 1 
+  current_id = 2
   # 生成系统协议（消息以Message结尾,或者为Packet）
   for key in sorted(sys_message.keys()):
      name = sys_message[key]
-     sys_id_dict[key] = current_id
-     current_id = current_id + 1
+     if name != 'PBPacketCmd':
+       sys_id_dict[key] = current_id
+       current_id = current_id + 1
   
   #生成用户自定义协议
   current_id = 100
