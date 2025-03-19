@@ -264,7 +264,7 @@ def get_proto_message_names(directory):
             package_name = file_desc.package
             for desc in file_desc.message_type:
                 full_message_name = '.'.join(filter(None, [package_name, desc.name]))
-                if package_name=='google.protobuf' or full_message_name == 'PBPacketCmd':
+                if package_name=='google.protobuf' or full_message_name == 'PBPacketCmd' or full_message_name == 'PBClientLoginReqCmd':
                   sys_message[full_message_name] = desc.name
                 else:
                   custom_message[full_message_name] = desc.name 
@@ -277,15 +277,13 @@ def gen_id_dict(sys_message,custom_message,version_crc,all_message):
   sys_id_dict = {}
   custom_id_dict = {}
   # 自定义ID起始值（这里设置为1） 
-  sys_id_dict['PBPacketCmd'] = 1
-  current_id = 2
+  #sys_id_dict['PBPacketCmd'] = 1 
+  current_id = 1
   # 生成系统协议（消息以Message结尾,或者为Packet）
   for key in sorted(sys_message.keys()):
      name = sys_message[key]
-     if name.startswith("Any"):
-        print(name)
-        sys_id_dict[key] = current_id
-        current_id = current_id + 1
+     sys_id_dict[key] = current_id
+     current_id = current_id + 1
   
   #生成用户自定义协议
   current_id = 100
