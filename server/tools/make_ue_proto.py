@@ -51,9 +51,33 @@ def parse_proto(file_path):
     file_set = descriptor_pb2.FileDescriptorSet.FromString(data)
     return file_set.file[0]
 
+def is_map_entry(message_type):
+    """判断是否为Protobuf自动生成的Map Entry类型"""
+    return message_type.options and message_type.options.map_entry
+
+def get_map_entry_type(field, message_types):
+    type_name = field.type_name.lstrip('.')
+    # 解析完整的消息层级（例如："PBGetMailItemRspCmd.MailDatasEntry"）
+    parent_message, entry_name = type_name.rsplit('.', 1) if '.' in type_name else ('', type_name)
+    
+    # 遍历所有已知消息类型
+    for msg in message_types:
+        # 匹配嵌套消息中的Map Entry
+        if msg.name == entry_name and msg.options.map_entry:
+            return msg
+        # 处理父消息嵌套的情况（如PBGetMailItemRspCmd嵌套在其它消息中）
+        if parent_message and msg.name == parent_message.split('.')[-1]:
+            for nested_msg in msg.nested_type:
+                if nested_msg.name == entry_name and nested_msg.options.map_entry:
+                    return nested_msg
+    return None
+
 def is_map_field(field, message_types):
     if field.type != descriptor_pb2.FieldDescriptorProto.TYPE_MESSAGE:
         return False
+     # 通过命名规则匹配Map类型（兼容不同protobuf版本的生成规则）
+    if field.type_name.endswith("Entry"):
+        return True
     # Get the nested message type by name
     nested_message_name = field.type_name.split('.')[-1]
     for msg in message_types:
@@ -65,11 +89,23 @@ def is_map_field(field, message_types):
 def convert_type(field, is_repeated=False, is_map=False, message_types=None, prefix=""):
     """返回类型和类型分类（map/array/struct/primitive）"""
     if is_map:
-        key_type = TYPE_MAP.get(field.message_type.field[0].type, "/* Unknown key type */")
-        value_type, _ = convert_type(field.message_type.field[1], 
-                                    field.message_type.field[1].label == field.LABEL_REPEATED,
-                                    message_types=message_types, prefix=prefix)
-        return (f'TMap<{key_type}, {value_type}>', 'map')
+        entry_type = get_map_entry_type(field, message_types)
+        if not entry_type or len(entry_type.field) < 2:
+            return ("TMap<InvalidKey,InvalidValue>", 'map')
+        
+        key_field = entry_type.field[0]
+        value_field = entry_type.field[1]
+        
+        # 递归解析Key类型（确保基本类型映射）
+        key_type, _ = convert_type(key_field, message_types=message_types, prefix=prefix)
+        # 递归解析Value类型（处理自定义消息）
+        value_type, _ = convert_type(value_field, message_types=message_types, prefix=prefix)
+        
+        # 增强前缀处理逻辑
+        if value_type.startswith("PB") or (value_type in [msg.name for msg in message_types]):
+            value_type = f"F{value_type}"
+        
+        return (f"TMap<{key_type}, {value_type}>", 'map')
     
     if is_repeated:
         base_type = TYPE_MAP.get(field.type, "/* Unknown repeated type */")
@@ -81,9 +117,11 @@ def convert_type(field, is_repeated=False, is_map=False, message_types=None, pre
     
     if field.type_name:
         nested_type_name = field.type_name.split('.')[-1]
+        # 检测是否为嵌套结构体
         if any(msg.name == nested_type_name for msg in message_types):
             return (f'{prefix}{nested_type_name}', 'struct')
-        return (nested_type_name, 'enum')  # 假设是枚举类型
+        # 否则视为枚举类型
+        return (f'E{nested_type_name}', 'enum')
     
     return (TYPE_MAP.get(field.type, "/* Unknown type */"), 'primitive')
 
@@ -218,8 +256,12 @@ def process_file(file_descriptor, content):
     def process_message(descriptor, prefix="F"):
         nonlocal includes, structs, enums
         structs.append(generate_struct(descriptor, content, message_types, prefix))
-        for nested_message in descriptor.nested_type:
-            process_message(nested_message, prefix + descriptor.name + "_")
+        #for nested_message in descriptor.nested_type:
+        #    process_message(nested_message, prefix + descriptor.name + "_")
+        # 确保嵌套消息的前缀叠加
+        new_prefix = f"{prefix}{descriptor.name}_"
+        for nested in descriptor.nested_type:
+            process_message(nested, new_prefix)
         for enum in descriptor.enum_type:
             enums.append(generate_enum(enum, content))
 
