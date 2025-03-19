@@ -1,4 +1,5 @@
--- require("LuaPanda").start("127.0.0.1", 8818)
+require("common.LuaPanda").start("127.0.0.1", 8818)
+
 local moon = require("moon")
 local seri = require("seri")
 local buffer = require("buffer")
@@ -27,27 +28,57 @@ local context = {
     uid = 0,
     scripts = {},
     ---other service address
-    addr_room = 0
+    addr_room = 0,
+    gnid = 0,
 }
 
 local command = setup(context, "user")
 
-local function forward(msg, msgname)
+local function forward(subname, reqmsg)
     local address
-    local v = fwd_addr[msgname]
+    local v = fwd_addr[subname]
     if v then
         address = context[v]
     end
 
     if not address then
-        moon.error("recv unknown message", msgname)
+        moon.error("recv unknown message", subname)
         return
     end
 
-    redirect(msg, address, PTYPE_C2S)
+    moon.send("lua", address, subname, reqmsg)
+    --redirect(msg, address, PTYPE_C2S)
 end
 
-moon.raw_dispatch("C2S",function(msg)
+moon.raw_dispatch("C2S", function(msg)
+    --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    local name, req = protocol.decode(moon.decode(buf, "B"))
+    for key, MessagePack in ipairs(req.messages) do
+        local reqmsg = {}
+        reqmsg.msg_context = {
+            net_id = MessagePack.net_id,
+            broadcast = MessagePack.broadcast,
+            stub_id = MessagePack.stub_id,
+            msg_type = MessagePack.msg_type
+        }
+        --local subname, submsg = protocol.DecodeMessagePack(MessagePack)
+        
+        if not command[subname] then
+            reqmsg.msg = submsg
+        else
+            local fn = command[subname]
+            moon.async(function()
+                local ok, res = xpcall(fn, debug.traceback, submsg)
+                if not ok then
+                    moon.error(res)
+                    context.S2C(CmdCode.S2CErrorCode, { code = 1 }) --server internal error
+                elseif res then
+                    context.S2C(CmdCode.S2CErrorCode, { code = res })
+                end
+            end)
+        end
+    end
+
     local buf = moon.decode(msg, "B")
     local msgname = id_to_name(bunpack(buf, "<H"))
     if not command[msgname] then

@@ -136,13 +136,13 @@ local function run(node_conf)
             port = node_conf.dport,
             threadid = 9,
         },
-        {
-            name = "robot",
-            file = "robot/robot.lua",
-            unique = true,
-            host = "127.0.0.1",
-            port = 12345
-        }
+        -- {
+        --     name = "robot",
+        --     file = "robot/robot.lua",
+        --     unique = true,
+        --     host = "127.0.0.1",
+        --     port = 12345
+        -- }
     }
 
     local function Start()

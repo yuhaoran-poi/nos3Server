@@ -55,6 +55,7 @@ function Gate.Kick(uid, fd, ignore_socket_event)
 end
 
 function Gate.BindUser(req)
+    --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if context.auth_watch[req.fd] ~= req.sign then
         return false, "client closed before auth done!"
     end

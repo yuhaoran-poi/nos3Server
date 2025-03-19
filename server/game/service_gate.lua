@@ -5,9 +5,11 @@ local seri = require("seri")
 local socket = require("moon.socket")
 local common = require("common")
 local setup = require("common.setup")
+local buffer = require("buffer")
 local protocol = common.protocol
 local GameDef = common.GameDef
 local CmdCode = common.CmdCode
+local wfront = buffer.write_front
 local conf = ...
 
 local redirect = moon.redirect
@@ -36,7 +38,7 @@ socket.on("message", function(fd, msg)
     local c = context.fd_map[fd]
     if not c then
         ---first message must be auth message
-        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         context.auth_watch[fd] = tostring(msg)
         local name, req = protocol.decode(moon.decode(msg,"B"))
         for key, MessagePack in ipairs(req.messages) do
@@ -66,11 +68,14 @@ socket.on("message", function(fd, msg)
             local buf = moon.decode(msg, "B")
             protocol.print_message(c.gnid, buf,"message",1)
         end
-        local name, req = protocol.decode(moon.decode(msg,"B"))
-        for key, MessagePack in ipairs(req.messages) do
-            -- 外围服务器处理
-            redirect(MessagePack, c.addr_user, GameDef.PTYPE_C2S, 0, 0)
-        end
+        -- local name, req = protocol.decode(moon.decode(msg,"B"))
+        -- for key, MessagePack in ipairs(req.messages) do
+        --     -- 外围服务器处理
+        --     redirect(MessagePack, c.addr_user, GameDef.PTYPE_C2S, 0, 0)
+        -- end
+        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        --wfront(msg, seri.packs(c.gnid))
+        redirect(msg, c.addr_user, GameDef.PTYPE_C2S, 0, 0)
     end
 end)
 
