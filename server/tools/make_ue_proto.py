@@ -44,12 +44,47 @@ DEFAULT_VALUE_MAP = {
     "struct": "{}"  # 结构体默认初始化
 }
 
-
+# 在全局范围新增枚举收集逻辑
+all_enums = []  # 需要确保在parse_proto时收集所有枚举
 def parse_proto(file_path):
     with open(file_path, 'rb') as f:
         data = f.read()
     file_set = descriptor_pb2.FileDescriptorSet.FromString(data)
-    return file_set.file[0]
+    target_name = os.path.basename(file_path)
+    filename_without_extension = os.path.splitext(target_name)[0] 
+    # 加载所有依赖的proto文件描述符
+    all_messages = []
+     # 收集所有枚举类型
+    global all_enums
+    all_enums = []
+
+    for file_desc in file_set.file:
+        all_messages.extend(file_desc.message_type)
+        all_enums.extend(file_desc.enum_type)
+        # 递归处理嵌套消息
+        def collect_nested_messages(messages):
+            for msg in messages:
+                all_messages.append(msg)
+                collect_nested_messages(msg.nested_type)
+         # 递归收集嵌套枚举
+        def collect_enums(messages):
+            for msg in messages:
+                all_enums.extend(msg.enum_type)
+                collect_enums(msg.nested_type)
+
+        collect_enums(file_desc.message_type)
+        collect_nested_messages(file_desc.message_type)
+
+    # 查找目标文件描述符
+   
+    for file_desc in file_set.file:
+        cur_name = os.path.basename(file_desc.name)
+        cur_name = os.path.splitext(cur_name)[0] 
+        if cur_name == filename_without_extension:
+            # 将收集到的所有消息附加到目标文件描述符
+            return file_desc,all_messages
+    raise ValueError(f"File descriptor for {target_name} not found")
+     
 
 def is_map_entry(message_type):
     """判断是否为Protobuf自动生成的Map Entry类型"""
@@ -118,7 +153,11 @@ def convert_type(field, is_repeated=False, is_map=False, message_types=None, pre
     if field.type_name:
         nested_type_name = field.type_name.split('.')[-1]
         # 检测是否为嵌套结构体
-        if any(msg.name == nested_type_name for msg in message_types):
+        # 检测是否为枚举类型
+        if any(enum.name == nested_type_name for enum in all_enums):
+            return (f'E{nested_type_name}', 'enum')
+        # 检测是否为结构体类型
+        elif any(msg.name == nested_type_name for msg in message_types):
             return (f'{prefix}{nested_type_name}', 'struct')
         # 否则视为枚举类型
         return (f'E{nested_type_name}', 'enum')
@@ -173,11 +212,25 @@ def generate_struct(message, content, message_types, prefix="F"):
             default_value = DEFAULT_VALUE_MAP.get(type_category, "{}")
         elif type_category == 'struct':
             default_value = "{}"
+        elif type_category =='enum':
+             # 获取原始枚举类型名称（不带E前缀）
+            enum_name = field_type.replace('E', '', 1)
+            # 查找匹配的枚举描述符
+            enum_desc = next((e for e in all_enums if e.name == enum_name), None)
+            
+            if enum_desc and enum_desc.value:
+                # 获取protobuf中定义的第一个枚举值（按声明顺序）
+                first_value = enum_desc.value[0].name
+            else:
+                first_value = 'Unknown'  # 安全回退值
+            
+            # 生成带命名空间的枚举初始化
+            default_value = f'{field_type}::{first_value}'
         else:
             default_value = DEFAULT_VALUE_MAP.get(field_type.split('<')[0], "")  # 处理模板类型
 
          # 生成字段定义（添加默认值）
-        field_def = f'\tUPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Protobuf|Property")\n\t{field_type} {field_name} = {default_value};'
+        field_def = f'\tUPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Protobuf|Property",Transient)\n\t{field_type} {field_name} = {default_value};'
         # Has属性默认false
         has_field_def = f'\tUPROPERTY(EditAnywhere, BlueprintReadWrite,Category="HasProperty")\n\tbool bHas{field_name} = false;'
         if field_comment:
@@ -247,15 +300,16 @@ def generate_enum(enum, content):
     ]
     return '\n'.join(enum_definition)
 
-def process_file(file_descriptor, content):
+def process_file(file_descriptor, content,all_message_types):
     includes = set()
     structs = []
     enums = []
     message_types = file_descriptor.message_type
+   
 
     def process_message(descriptor, prefix="F"):
         nonlocal includes, structs, enums
-        structs.append(generate_struct(descriptor, content, message_types, prefix))
+        structs.append(generate_struct(descriptor, content, all_message_types, prefix))
         #for nested_message in descriptor.nested_type:
         #    process_message(nested_message, prefix + descriptor.name + "_")
         # 确保嵌套消息的前缀叠加
@@ -281,7 +335,7 @@ def generate_header(file_descriptor, includes, structs, enums):
     header_content = [
         f'#pragma once',
         '#include "CoreMinimal.h"',
-        *[f'#include "{inc}"' for inc in sorted(includes)],
+        *[f'#include "Protos/{inc}"' for inc in sorted(includes)],
         f'#include "Net/ProtobufMessage.h"',  # Include base class
         f'#include "{base_name}.generated.h"',  # Include generated.h
         '',
@@ -313,11 +367,11 @@ def generate_cpp(file_descriptor, structs, enums):
  
 
 def gen_ue_proto(input_file, input_pb,output_dir):
-    file_descriptor = parse_proto(input_pb)
+    file_descriptor,all_message_types = parse_proto(input_pb)
     with open(input_file, 'r',encoding='utf-8') as f:
         content = f.read()
 
-    includes, structs, enums = process_file(file_descriptor, content)
+    includes, structs, enums = process_file(file_descriptor, content,all_message_types)
 
     base_name = os.path.splitext(os.path.basename(input_file))[0]
     header_file = os.path.join(output_dir, f'{base_name}.h')
