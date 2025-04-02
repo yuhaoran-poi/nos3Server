@@ -218,15 +218,15 @@ function User.PBClientGetUsrSimInfoReqCmd(req)
     end
 
     local ok, res = xpcall(func, debug.traceback)
-    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if ok then
         local ret = {
             code = res.code,
             error = res.error,
             uid = context.uid,
-            user_simple = res.user_simple
+            info = res.user_simple
         }
-        context.S2C(req.net_id, CmdCode["PBClientLoginRspCmd"], ret, req.msg_context.stub_id) -- body
+        context.S2C(context.net_id, CmdCode["PBClientGetUsrSimInfoRspCmd"], ret, req.msg_context.stub_id) -- body
     else
         --moon.error(err)
         moon.error(string.format("err = %s", json.pretty_encode(res)))

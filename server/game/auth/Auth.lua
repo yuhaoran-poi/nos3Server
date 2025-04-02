@@ -199,11 +199,6 @@ Auth.Init = function()
         end
     end)
 
-    local res = db.loadallopenid(context.addr_db_openid) or {}
-    for i=1,#res,2 do
-        context.openid_map[res[i]] = math.tointeger(res[i+1])
-    end
-
     context.start_hour_timer()
 
     context.addr_db_game = moon.queryservice("db_game")
