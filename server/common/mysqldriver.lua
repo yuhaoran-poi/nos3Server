@@ -1,4 +1,4 @@
---require("common.LuaPanda").start("127.0.0.1", 8818)
+require("common.LuaPanda").start("127.0.0.1", 8818)
 local moon = require("moon")
 local mysql = require("moon.db.mysql")
 local buffer = require("buffer")
@@ -21,7 +21,7 @@ if conf.name then
     end)
    
 
-    moon.dispatch("lua", function(sender, sessionid, sql, params)
+    moon.dispatch("lua", function(sender, sessionid, sql)
         -- 如果dbs为空，说明连接池已经满了，等待连接池有空闲连接
         local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP();
         while list.size(dbs) == 0 do
@@ -33,8 +33,12 @@ if conf.name then
             return
         end
         
-        local res = db:query(sql, params)
-        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP();
+        local res = db:query(sql)
+        if res and res.errno then
+            moon.error("mysql query failed:", res.message)
+            moon.error("mysql query sql:", sql)
+        end
+        --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP();
         list.push(dbs, db)
 
         if sessionid ~= 0 then
