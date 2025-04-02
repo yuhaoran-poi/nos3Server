@@ -17,7 +17,7 @@ local min_online_time = 60 --seconds，logout间隔大于这个时间的,并且�
 local context = ...
 --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
 local auth_queue = context.auth_queue
-local temp_openid_uid = {}
+local temp_openid = {}
 local NODE = math.tointeger(moon.env("NODE"))
 local function doDSAuth(req)
     local u = context.net_id_map[req.net_id]
@@ -43,9 +43,9 @@ local function doDSAuth(req)
         addr_dsnode = u.addr_dsnode
     end
 
-    local openid, err = moon.call("lua", addr_dsnode, "DsNode.Login", req)
-    if not openid then
-        print(openid, err)
+    local authkey, err = moon.call("lua", addr_dsnode, "DsNode.Login", req)
+    if not authkey then
+        print(authkey, err)
         moon.send("lua", context.addr_dgate, "DGate.Kick", 0, req.fd)
         moon.kill(addr_dsnode)
         context.net_id_map[req.net_id] = nil
@@ -55,7 +55,7 @@ local function doDSAuth(req)
     if not u then
         u = {
             addr_dsnode = addr_dsnode,
-            openid = openid,
+            authkey = authkey,
             net_id = req.net_id,
             logouttime = moon.time(),
             online = false
@@ -96,72 +96,73 @@ local function doAuth(Auth,req)
     local addr_user
     if not u then
         local conf = {
-            name = "user"..req.uid,
+            name = "user" .. req.uid,
             file = "game/service_user.lua"
         }
         addr_user = moon.new_service(conf)
         if addr_user == 0 then
-            return false,"create user service failed!"
+            return { code = 2001, error = "create user service failed!" }
         end
 
         local ok, err = moon.call("lua", addr_user, "User.Load", req)
         if not ok then
-            moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
+            --moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
             moon.kill(addr_user)
             context.uid_map[req.uid] = nil
-            return false,err
+            return { code = 2002, error = err }
         end
     else
         addr_user = u.addr_user
     end
 
-    local openid, err = moon.call("lua", addr_user, "User.Login", req)
-    if not openid then
-        print(openid, err)
-        moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
+    local authkey, err = moon.call("lua", addr_user, "User.Login", req)
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if not authkey then
+        print(authkey, err)
+        --moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
         moon.kill(addr_user)
         context.uid_map[req.uid] = nil
-        return err
+        return { code = 2003, error = err }
     end
 
-    if not u then
-        u = {
-            addr_user = addr_user,
-            openid = openid,
-            uid = req.uid,
-            logouttime = moon.time(),
-            online = false,
-            net_id = req.net_id
-        }
+    u = {
+        addr_user = addr_user,
+        authkey = authkey,
+        openid = "",
+        uid = req.uid,
+        logouttime = 0,
+        online = true,
+        net_id = req.net_id
+    }
 
-        context.uid_map[req.uid] = u
-        context.net_id_map[req.net_id] = u
-        
-    end
+    context.uid_map[req.uid] = u
+    context.net_id_map[req.net_id] = u
+
+    print("doAuth uid_map", req.uid, u.addr_user)
 
     if req.pull then
-        return false,"req.pull is true"
+        return { code = 2003, error = "req.pull is true" }
     end
 
     req.addr_user = addr_user
 
-    local pass = true
+    -- local pass = true
+    -- if pass then
+    --     u.logouttime = 0
+    --     print("login success", req.uid)
+    -- else
+    --     print("login failed", req.uid)
+    -- end
 
-    if pass then
-        u.logouttime = 0
-        print("login success", req.uid)
-    else
-        print("login failed", req.uid)
-    end
-
+    db.updatelogin(context.addr_db_game, req.uid)
     moon.send("lua", context.addr_gate, "Gate.BindUser", req)
 
     local res = {
-        result = pass and 0 or 1,---maybe banned
+        result = 0, --maybe banned
         net_id = u.net_id,
         uid = u.uid,
     }
-    return true,res
+    return { code = 0, error = "sucess", res = res }
 end
 
 local function QuitOneUser(u)
@@ -204,6 +205,21 @@ Auth.Init = function()
     end
 
     context.start_hour_timer()
+
+    context.addr_db_game = moon.queryservice("db_game")
+
+    local ok, err = moon.call("lua", context.addr_db_game, [[
+        CREATE TABLE IF NOT EXISTS account (
+            user_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            username VARCHAR(64) NOT NULL,
+            password_hash CHAR(32) NOT NULL,
+            create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_login TIMESTAMP NULL,
+            PRIMARY KEY (user_id),
+            UNIQUE INDEX (username)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ]])
+    assert(ok, "Failed to create account table: " .. tostring(err)) -- 增强错误提示
 
     return true
 end
@@ -257,106 +273,130 @@ end
 
 Auth.OnDay = function(v)
     print("OnDay", v)
-    for _,u in pairs(context.uid_map) do
+    for _, u in pairs(context.uid_map) do
         if u.logouttime == 0 then
             moon.send("lua", u.addr_user, "User.OnDay", v)
         end
     end
 end
-local function GenGN(value_node,value_flag,value_index)
-   
+
+local function GenGN(value_node, value_flag, value_index)
     -- 首先确保index适合uint32的范围
     assert(value_index <= 0x007FFFFF, "Index out of range for its allocated bits")
-    value_node = value_node&0xFF
+    value_node = value_node & 0xFF
     value_flag = value_flag & 0x1
     -- 创建数字：node占据高8位，flag占据第23位，index占据低23位
-    return (value_node<<24) |  (value_flag<<23) | value_index
+    return (value_node << 24) |  (value_flag << 23) | value_index
 end
+
 Auth.AllocGateNetId = function(isds)
     if not context.gnstart then
         context.gnstart = 1
     end
     local condition = 1
-    while condition<0x007FFFFF do
+    while condition < 0x007FFFFF do
         context.gnstart = context.gnstart + 1
         if context.gnstart > 0x007FFFFF then
             context.gnstart = 1
         end
-        local net_id = GenGN(NODE,isds,context.gnstart)
+        local net_id = GenGN(NODE, isds, context.gnstart)
         if context.net_id_map[net_id] == nil then
             return net_id
         end
-        condition = condition+1
+        condition = condition + 1
     end
     return 0xFFFFFFFF
 end
+
 Auth.PBClientLoginReqCmd = function (req)
-    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    local function processLogin()
+        if req.msg.is_register then
+            -- 注册逻辑（直接存储客户端提供的MD5）
+            local check_res, check_err = db.checkuser(context.addr_db_game, req.msg.login_data.authkey)
+            if check_err and not check_res and next(check_res) then
+                return { code = 1001, error = "USERNAME_EXISTS" }
+            end
+
+            local create_res, create_err = db.createuser(
+                context.addr_db_game,
+                req.msg.login_data.authkey,
+                req.msg.password -- 直接使用客户端提供的MD5
+            )
+            if create_err or not create_res.insert_id then
+                return { code = 1002, error = "CREATE_ACCOUNT_FAILED" }
+            end
+
+            req.uid = create_res.insert_id
+        else
+            if req.msg.login_data.authkey == "" or req.msg.password == "" then
+                return { code = 1003, error = "INVALID_USERNAME_OR_PASSWORD" }
+            end
+            -- 登录验证（直接比较MD5）
+            local datas, err = db.getuserbyauthkey(context.addr_db_game, req.msg.login_data.authkey)
+            print("datas=\n" .. print_r(datas, true))
+            local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+            -- 判断user_data是否为nil或空表
+            if err or datas == nil or next(datas) == nil then
+                return { code = 1003, error = "INVALID_AUTHKEY" }
+            end
+            local data = datas[1]
+            --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+            if req.msg.password ~= data.password_hash then
+                return { code = 1004, error = "INVALID_PASSWORD" }
+            end
+
+            --db.updatelogin(context.addr_db_game, data.user_id)
+            req.uid = data.user_id
+        end
+
+        return doAuth(Auth, req)
+    end
+
     local function func()
         if not req then
-           return false
+            return { code = 1005, error = "INVALID_REQUEST" }
         end
         ---服务器关闭时,中断所有客户端的登录请求
         if context.server_exit and not req.pull then
-            return false, "auth abort"
+            return { code = 1006, error = "SERVER_CLOSED" }
         end
-        print("PBClientLoginReqCmd ",req.fd,req.isDS,req.msg.dsType)
-        if req.isDS then
-           req.net_id = Auth.AllocGateNetId(1)
-           if req.msg.dsType == CmdEnum.DSType.Global then
-               local strnet_id = tostring(req.net_id)
-               db.saveGloabalDsGnId(moon.queryservice("db_server"),strnet_id)
-               moon.env("GloabalDsGnId", strnet_id)
-           end
-           doDSAuth(req)
-        else
-            req.net_id = Auth.AllocGateNetId(0)
-            moon.send("lua", context.addr_gate, "Gate.BindGnId", req)
-            req.openid = req.msg.openid and req.msg.openid or tostring(req.fd) --todo 这里要求客户端传一个openid 或者登陆密钥串,暂时用fd代替
-            ---如果是opendid登录, 先得到openid对应的 uid
-            local uid = context.openid_map[req.openid]
-            if not uid then
-                ---避免同一个玩家瞬间发送大量登录请求
-                uid = temp_openid_uid[req.openid]
-                if not uid then
-                    uid = uuid.next()
-                    temp_openid_uid[req.openid] = uid
-                end
-    
-                local res, err = db.insertuserid(context.addr_db_openid, req.openid, uid)
-                if not res then
-                    moon.error("insertuserid", req.fd, req.openid, err)
-                    moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
-                    return false,"insetuserid err"
-                end
-    
-                temp_openid_uid[req.openid] = nil
-                context.openid_map[req.openid] = uid
+
+        req.net_id = Auth.AllocGateNetId(0)
+        moon.send("lua", context.addr_gate, "Gate.BindGnId", req)
+
+        local uid = context.openid_map[req.msg.login_data.authkey]
+        if not uid then
+            ---避免同一个玩家瞬间发送大量登录请求
+            local tmp = temp_openid[req.msg.login_data.authkey]
+            if tmp then
+                moon.error("user logining", req.fd, req.msg.login_data.authkey)
+                return { code = 1007, error = "USER_LOGINING" }
             end
-            req.uid = uid
-            return doAuth(Auth,req)
+            --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+            temp_openid[req.msg.login_data.authkey] = 1
+        else
+            moon.error("user online", req.fd, req.uid)
+            return { code = 1008, error = "USER_ONLINE" }
         end
-        return false
+
+        return processLogin()
     end
-    local sucess,res = func()
-    local ret = {}
-    if sucess then
-      ret =
-      {
-        code = 0; 
-        error = "";
-        uid = res.uid;
-        net_id = res.net_id;
-      }
-    else
-      ret =
-      {
-        code = 1; 
-        error = res or "";
-      }
+    
+    local res = func()
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    local ret =
+    {
+        code = res.code,
+        error = res.error or "",
+        uid = res.res and res.res.uid or 0,
+        net_id = res.res and res.res.net_id or 0,
+    }
+    context.S2C(req.net_id, CmdCode["PBClientLoginRspCmd"], ret, req.msg_context.stub_id)
+
+    if res.code ~= 0 then
+        moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd) -- body
     end
-    context.S2C(req.net_id, CmdCode["PBClientLoginRspCmd"], ret,req.msg_context.stub_id)
- 
 end
  
 Auth.C2SLogin = function (req)
@@ -367,35 +407,35 @@ Auth.C2SLogin = function (req)
 
     ---pull boolean @是否离线加载玩家
     if not req.pull then
-        if not req.openid or #req.openid == 0 then
-            moon.error("user auth illegal", req.fd, req.openid)
+        if not req.authkey or #req.authkey == 0 then
+            moon.error("user auth illegal", req.fd, req.authkey)
             moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
             return false
         end
 
         ---如果是opendid登录, 先得到openid对应的 uid
-        local uid = context.openid_map[req.openid]
+        local uid = context.openid_map[req.authkey]
         if not uid then
             ---避免同一个玩家瞬间发送大量登录请求
-            uid = temp_openid_uid[req.openid]
+            uid = temp_openid[req.authkey]
             if not uid then
                 uid = uuid.next()
-                temp_openid_uid[req.openid] = uid
+                temp_openid[req.authkey] = uid
             end
 
-            local res, err = db.insertuserid(context.addr_db_openid, req.openid, uid)
+            local res, err = db.insertuserid(context.addr_db_openid, req.authkey, uid)
             if not res then
-                moon.error("insertuserid", req.fd, req.openid, err)
+                moon.error("insertuserid", req.fd, req.authkey, err)
                 moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
                 return false
             end
 
-            temp_openid_uid[req.openid] = nil
-            context.openid_map[req.openid] = uid
+            temp_openid[req.authkey] = nil
+            context.openid_map[req.authkey] = uid
         end
         req.uid = uid
     else
-        req.openid = ""
+        req.authkey = ""
         if not req.uid or req.uid == 0 then
             if req.fd then
                 moon.error("user auth illegal", req.fd, req.uid)
@@ -525,7 +565,6 @@ function Auth.Disconnect(uid)
         u.logouttime = moon.time()
     end
 end
- 
 
 return Auth
 

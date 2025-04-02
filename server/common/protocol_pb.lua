@@ -122,6 +122,14 @@ function M.decodestring(data)
     return name, pdecode(name, pbdata), id
 end
 
+function M.encodewithname(name, data)
+    return name, pencode(name, data)
+end
+
+function M.decodewithname(name, pbdata)
+    return name, pdecode(name, pbdata)
+end
+
 ---@return string
 function M.name(id)
     return id_name[id]

@@ -1,0 +1,1 @@
+start cmd /k moon\moon.exe main_robot.lua 20000

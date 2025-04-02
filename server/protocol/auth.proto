@@ -8,7 +8,7 @@ message PBUserLoginData
 {
     int64 uid          = 1;
     int64 steam_id     = 2;
-    string auth_key    = 3;
+    string authkey    = 3;
     string auth_ticket = 4;
     int64 macid        = 5;
 	string version     = 6; //客户端版本号
@@ -21,6 +21,8 @@ message PBClientLoginReqCmd
 {
     // 协议数据
     PBUserLoginData login_data = 1;
+    bool is_register = 2;
+    string password = 3;
 }
 
 // 客户端请求登录 返回信息

@@ -37,7 +37,7 @@ local command = setup(context, "user")
 local function forward(subname, reqmsg)
     local address
     local v = fwd_addr[subname]
-    if v then
+    if v ~= "addr_auth" then
         address = context[v]
     end
 
@@ -72,7 +72,7 @@ moon.raw_dispatch("C2S", function(msg)
             local fn = command[subname]
             moon.async(function()
                 local ok, res = xpcall(fn, debug.traceback, reqmsg)
-                local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+                --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 if not ok then
                     moon.error(res)
                     --context.S2C(CmdCode.S2CErrorCode, { code = 1 }) --server internal error
@@ -103,7 +103,7 @@ context.addr_auth = moon.queryservice("auth")
 -- end
 
 moon.shutdown(function()
-    --- rewrite default behavior: Avoid automatic service exits
+    print("user %d shutdown", context.uid)
 end)
 
 ---垃圾收集器间歇率控制着收集器需要在开启新的循环前要等待多久。 

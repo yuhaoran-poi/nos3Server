@@ -92,11 +92,16 @@ socket.on("close", function(fd, msg)
         srcGnId = c.net_id
     }
     if c.ds_net_id then
-       context.S2D(c.ds_net_id, CmdCode["dsgatepb.DisconnectGateCmd"], DisconnectGateCmd,0)
+        context.S2D(c.ds_net_id, CmdCode["dsgatepb.DisconnectGateCmd"], DisconnectGateCmd, 0)
     end
+    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     context.fd_map[fd] = nil
-    context.uid_map[c.uid] = nil
-    context.net_id_map[c.net_id] = nil
+    if c.uid then
+        context.uid_map[c.uid] = nil -- body
+    end
+    if c.net_id then
+        context.net_id_map[c.net_id] = nil
+    end
     moon.send('lua', context.addr_auth, "Auth.Disconnect", c.uid)
     print("client: close", fd, c.uid, data)
 end)

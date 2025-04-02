@@ -558,6 +558,79 @@ message PBBag
 	PBBagDiagramsCard	diagrams_card_bag	= 7;
 }
 
+//----------------------------------新增协议----------------------------------//
+// 段位
+message PBRankLevel
+{
+	message PBRankNode{
+		int32 grade = 1;//品阶
+		int32 level = 2;//品级
+		int32 star = 3;//当前星星数量
+		int32 score = 4;//隐藏分
+		int32 zhu_ji_points = 5;//筑基点（用于升星或抵扣星星）
+		int32 all_stars = 6;//所有星星数（记录玩家所有的星星数量，用于换算品阶、品级这些）
+	}
+	PBRankNode ghost_rank = 1;
+	PBRankNode human_rank = 2;
+	// 历史最高段位
+	PBRankNode ghost_top_rank = 3;
+	PBRankNode human_top_rank = 4;
+}
 
+// 捏脸数据定义
+message PBPinchFaceData
+{
+    string setting_data = 1;
+}
 
+message PBUserSimpleInfo
+{
+	int64 uid             = 1;
+    string plateform_id    = 2;
+	bytes nick_name       = 3;
+    int32 head_icon       = 4;
+    int32 sex             = 5;// 0-未选 1-男 2-女
+    int32 praise_num      = 6;// 点赞
+    int32 head_frame      = 7;// 头像框
+    int64 account_create_time = 8;// 账户创建时间
+	// 账户经验 账户等级
+    int32 account_level   = 9;
+    int32 account_exp     = 10;
+	int32 account_total_exp	= 11; //总的经验点（记录所有获得的经验点）
+    // 战队ID
+    int64 guild_uid       = 12;
+    bytes guild_name      = 13;
+	// 段位信息
+	PBRankLevel rank_level	= 14;
+	// 当前展示角色信息
+    message PBCurUseShowRole{
+        int32 role_id     			= 1;// 当前展示的角色id
+        repeated int32 skin_list	= 2;// 穿戴的皮肤列表
+    }
+    PBCurUseShowRole cur_show_role = 15;
+    PBPinchFaceData pinch_face_data = 16;	// 捏脸数据
+	int32 title     = 17;	//当前佩戴的称号
+	int32 player_flag  = 18;	//玩家标签
+	int32 online_time   = 19;	//最后一次在线时间
+	int64 sum_online_time = 20;	//累计在线时长 单位秒
+	int32 pa_flag  = 21;		// 是否禁言等操作
+	int64 mons_uniqid	= 22; //出战的鬼宠唯一id
+	int32 mons_confid	= 23; //出战的鬼宠配置id
+	repeated int32 mons_skin_list	= 24;// 出战的鬼宠穿戴的皮肤列表
+}
 
+// 客户端请求简略数据
+message PBClientGetUsrSimInfoReqCmd
+{
+    // 协议数据
+    int64 uid             = 1;
+}
+
+// 客户端请求简略数据 返回信息
+message PBClientGetUsrSimInfoRspCmd
+{
+    int32 code        = 1; // 服务器验证返回,0成功,其他失败
+    string error      = 2; // 错误信息
+    int64 uid         = 3; // 用户ID
+    PBUserSimpleInfo info = 4;	// 简略信息
+}

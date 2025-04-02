@@ -1,3 +1,8 @@
+--[[
+* @file : robot.lua
+* @brief : 模拟客户端请求,用于协议功能测试
+]]
+
 require("socket.core")
 print("LuaSocket is installed and loaded successfully.")
 
@@ -7,34 +12,32 @@ print("LuaSocket is installed and loaded successfully.")
 local moon = require("moon")
 local socket = require("moon.socket")
 local common = require("common")
-
 local protocol = common.protocol
-local MSGID = common.CmdCode
-local vector2 = common.vector2
---local GameCfg = common.GameCfg
-
 local conf = ...
-local fd_map = {}
--- local function read(fd)
---     local data, err = socket.read(fd, 2)
---     if not data then
---         return false, err
---     end
---     local len = string.unpack(">H", data)
---     data, err = socket.read(fd, len)
---     if not data then
---         return false, err
---     end
---     local name, t, id = protocol.decodestring(data)
---     if id == MSGID.S2CErrorCode then
---         moon.error(print_r(t, true))
---     end
---     return name, t
--- end
+---@class Client
+local Client = require "robot.logic.Client"
+require "robot.logic.ClientLogin"
+require "robot.logic.ClientGuild"
+require "robot.logic.ClientFriend"
+require "robot.logic.ClientMail"
+ 
 
+local all_robot = {}
+local cur_index = 1
+ 
+
+
+ 
+ 
+
+
+
+ 
+
+ 
 local function read(fd)
     local now_cmd_data = {}
-
+    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local data, err = socket.read(fd, 2)
     if not data then
         return false, err
@@ -52,7 +55,7 @@ local function read(fd)
     for _, MessagePack in ipairs(t.messages) do
         local subname, submsg = protocol.DecodeMessagePack(MessagePack)
         table.insert(now_cmd_data, {
-            call_id = MessagePack.stub_id,
+            stub_id = MessagePack.stub_id,
             cmd = subname,
             data = submsg
         })
@@ -60,205 +63,182 @@ local function read(fd)
 
     return true, now_cmd_data
 end
-
--- socket.on("message", function(fd, msg)
---     local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
---     local c = fd_map[fd]
---     if not c then
---         local name, req = protocol.decode(moon.decode(msg, "B"))
---         for key, MessagePack in ipairs(req.messages) do
---             local reqmsg = {}
---             reqmsg.msg_context = {
---                 net_id = MessagePack.net_id,
---                 broadcast = MessagePack.broadcast,
---                 stub_id = MessagePack.stub_id,
---                 msg_type = MessagePack.msg_type
---             }
---             local subname, submsg = protocol.DecodeMessagePack(MessagePack)
-
---             print("client: message", fd, subname, submsg)
---         end
---     else
---         if moon.DEBUG() then
---             local buf = moon.decode(msg, "B")
---             protocol.print_message(c.net_id, buf, "message", 1)
---         end
---         local name, req = protocol.decode(moon.decode(msg, "B"))
---         for key, MessagePack in ipairs(req.messages) do
---             local subname, submsg = protocol.DecodeMessagePack(MessagePack)
---             if c.expect_state and c.expect_state.stub_id == MessagePack.stub_id then
---                 local fn = c.expect_state.fn
---                 if fn then
---                     fn(submsg)
---                 end
---             else
---                 print("msg call_id", MessagePack.stub_id)
---                 print("msg cmd", subname)
---                 print("msg data", submsg)
---             end
---         end
---     end
--- end)
-
-local function send(fd, stub_id, msgId, msg)
-    local MessagePack = protocol.encodeMessagePacket(0, msgId, msg, stub_id or 0)
-    local Packet = { messages = { MessagePack } }
-    local data = protocol.encodestring(1, Packet)
-    --moon.raw_send(C2S, receiver, data, session)
-    local len = #data
-    return socket.write(fd, string.pack(">H",len)..data)
-end
-
----@class Client
----@field fd integer
----@field expect_state table
----@field ok boolean
----@field now_stub_id integer
-local Client = {}
-
-function Client.new(host, port, name)
-    local client = {
-        fd = assert(socket.connect(host, port, moon.PTYPE_SOCKET_TCP)),
-        expect_state = nil,
-        ok = true,
-        now_stub_id = 0,
-    }
-
-    moon.async(function ()
-        while true do
-            local cmd, msgs = read(client.fd)
-            if not cmd then
-                print("socket error", msgs)
+function Client.new(host, port)
+ 
+    local client = setmetatable({}, { __index = Client, __newindex = Client })
+    -- 尝试建立socket连接
+    local fd, err = socket.connect(host, port, moon.PTYPE_SOCKET_TCP)
+    if not fd then
+        client.last_error = err
+        moon.error("connect failed: %s", err)
+        return setmetatable(client, {__index = Client,__newindex = Client})
+    end
+    
+    client.fd = fd
+    client.ok = true
+    client.username = "robot"
+    client.password = "123456"
+    client.cb_map = {}
+    client.stub_id = 0
+    -- 启动异步读取循环
+    moon.async(function()
+        while client.ok do
+            local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+            local success,ret, result = pcall(read, client.fd)
+            if not success or not ret then
                 client.ok = false
+                client.last_error = result or "read error"
+                moon.error("socket error: %s", client.last_error)
                 return
             end
 
-            local _, _ = client:Call("PBPingCmd", {}, "PBPongCmd")
-
-            for _, v in pairs(msgs) do
-                if client.expect_state and client.expect_state.stub_id == v.call_id then
-                    local fn = client.expect_state.fn
-                    if fn then
-                        fn(v.data)
+            for _, v in pairs(result) do
+                moon.info("received: ", v.cmd, v.data)
+                print_r(v.data)
+                ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+                if v.stub_id > 0 then
+                    local cb = client.cb_map[v.stub_id]
+                    if cb then
+                        cb(v.data)
+                        client.cb_map[v.stub_id] = nil
                     end
                 else
-                    print("msg call_id", v.call_id)
-                    print("msg cmd", v.cmd)
-                    print("msg data", v.data)
+                    local cmd = "On"..v.cmd
+                    local f = client[cmd]
+                    if f then
+                        f(client, v.data)
+                    end
                 end
             end
         end
     end)
 
-    return setmetatable(client, {__index = Client})
+    return client
 end
 
----阻塞等待指定消息返回
----@param self Client
----@param cmd string
----@param fn? function
----@return any
-function Client.Expect(self, cmd, fn)
-    assert(self.ok)
-    self.expect_state = {cmd = cmd, fn = fn, co = coroutine.running()}
-    return coroutine.yield()
-end
-
----comment 发送消息
----@param self Client
----@param msgId any
----@param msg any
----@return boolean
-function Client.Send(self, msgId, msg)
-    if not self.ok then
-        return false
+-- 发送请求包
+function Client:send(msgname, msg, cb)
+    local stub_id = 0
+    if cb then
+        self.stub_id = self.stub_id + 1
+        self.cb_map[self.stub_id] = cb
+        stub_id = self.stub_id
     end
-    self.now_stub_id = self.now_stub_id + 1
-    send(self.fd, self.now_stub_id, msgId, msg)
+    local MessagePack = protocol.encodeMessagePacket(0, msgname, msg, stub_id or 0)
+    local Packet = { messages = { MessagePack } }
+    local data = protocol.encodestring(1, Packet)
+    local len = #data
+    return socket.write(self.fd, string.pack(">H", len) .. data)
+end
+
+
+
+
+function Client:help()
+    local info =
+    [[
+"Usage":lua robot.lua cmd [args] ...
+	help 					this help
+	exit					exit console
+	addbot                  index
+	delbot                  index
+    curbot                  index
+]]
+    print(info)
+end
+
+function Client:exit()
+    os.exit()
+end
+
+function Client:addbot(index)
+    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    index = tonumber(index) or 1
+    local robot = Client.new(conf.host, conf.port)
+    robot:Init()
+    robot.index = index
+  
+    if all_robot[index] then
+        print("robot found!")
+        return
+    end
+    all_robot[index] = robot
+    cur_index = index
+    print("add robot success!" .. index)
+end
+
+function Client:delbot(index)
+    local robot = all_robot[index]
+    if not robot then print("robot not found!") return end
+    robot:disconnect()
+    all_robot[index] = nil
+    print("del robot success!" .. index)
+    if index == cur_index then
+        cur_index = 0
+        -- cur_index 取出结果集第一条记录
+        for k, v in pairs(all_robot) do
+            cur_index = k
+            break
+        end
+    end
+end
+
+function Client:curbot(index)
+    local robot = all_robot[index]
+    if not robot then
+        print("robot not found!")
+        return
+    end
+    cur_index = index
+    print("robot info:" .. index)
+    print("robot id:" .. robot.index)
+    print("robot name:" .. robot.user_name)
+end
+
+ 
+ 
+
+
+ 
+---@class Robot
+local Robot = {}
+
+Robot.Init = function()
+     
+   
     return true
 end
 
----comment 发送消息并等待返回
----@param self Client
----@param sendMsgId any
----@param sendMsg any
----@param recvMsgName any
----@return any
-function Client.Call(self, sendMsgId, sendMsg, recvMsgName)
-    assert(self.ok)
-    self.now_stub_id = self.now_stub_id + 1
-    send(self.fd, self.now_stub_id, sendMsgId, sendMsg)
-    return self:Expect(recvMsgName)
+Robot.DoCmd = function(params)
+    local cmd = params[1]
+    table.remove(params, 1)
+    local f = Client[cmd]
+    if f then
+        local cur_bot = all_robot[cur_index] or Client
+        local ok, err = pcall(f, cur_bot, table.unpack(params))
+        if not ok then print(err) end
+    else
+        print("not found cmd<".. tostring(cmd).. ">! use <help> cmd for usage!")
+    end
 end
 
-
---游戏逻辑流程
-local function client_handler(uname)
-    local client = Client.new(conf.host, conf.port, uname)
-    fd_map[client.fd] = client
-
-    ---auth message
-    local login_msg = {
-        uid = 1,
-        login_key = uname,
-        version = "3",
-        password = "4",
-    }
-    local S2CLogin, err = client:Call("PBClientLoginReqCmd", { login_data = login_msg }, "PBClientLoginRspCmd")
-    assert(S2CLogin.ok, "S2CLogin failed")
-
-    print("robot", login_msg, " login success")
-end
-
-moon.dispatch("lua", function()
-    moon.warn("ignore")
-end)
-
-moon.async(function()
-    --GameCfg.Load()
-
-    moon.sleep(10)
-    local username = 0
-
-    local create_user
-    create_user = function (un)
-        if not un then
-            username = username + 1
-            un = username
+if conf.name then
+  
+  
+    moon.dispatch("lua", function(sender, session, cmd, ...)
+        -- 如果dbs为空，说明连接池已经满了，等待连接池有空闲连接
+        local fn = Robot[cmd]
+        if fn then
+            moon.response("lua", sender, session, fn(...))
+        else
+            moon.error("unknown Robot command", cmd, ...)
         end
+    end)
+    
+end
 
-        moon.async(function ()
-            print(xpcall(client_handler, debug.traceback, "robot"..tostring(un)))
-            moon.sleep(2000000)
-            --create_user(un)
-        end)
-    end
 
-    moon.sleep(3000)
-    --for _=1, GameCfg.constant.robot_num do
-    for _ = 1, 1 do
-        create_user()
-        moon.sleep(10000000)
-    end
-end)
 
--- local function robot()
---     local username = 0
+return Robot
+ 
 
---     local create_user
---     create_user = function(un)
---         if not un then
---             username = username + 1
---             un = username
---         end
-
---         print(xpcall(client_handler, debug.traceback, "robot" .. tostring(un)))
---     end
-
---     --for _=1, GameCfg.constant.robot_num do
---     for _ = 1, 1 do
---         create_user()
---     end
--- end
-
--- robot()

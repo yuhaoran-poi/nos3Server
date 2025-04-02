@@ -1,18 +1,13 @@
-local pgsql = require("sqldriver")
+local moon = require("moon")
 
----@param res pg_result|pg_error
-local function check_err(res)
-    assert(not res.code, table.tostring(res))
-end
-
-return function (addr_db)
-    local sql = string.format([[
-        --create userdata table
-        create table if not exists userdata (
-            uid bigint PRIMARY KEY NOT NULL,
-            data text
-           );
+return function(addr_db)
+    -- 修改执行命令为 DB.Query
+    local ok, err = moon.call("lua", addr_db, [[
+        CREATE TABLE IF NOT EXISTS userdata (
+            uid BIGINT PRIMARY KEY NOT NULL,
+            data TEXT NOT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
     ]])
-    check_err(pgsql.query(addr_db, sql))
+    assert(ok, err)
 end
 

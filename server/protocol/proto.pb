@@ -13,22 +13,25 @@ activityId
 error (	Rerror
 uid (Ruid6
 activity_datas (2.PBActivityDataRactivityDatasbproto3
-≤
+Ô
 
-auth.proto"…
+auth.proto"»
 PBUserLoginData
 uid (Ruid
-steam_id (RsteamId
-auth_key (	RauthKey
+steam_id (RsteamId
+authkey (	Rauthkey
 auth_ticket (	R
 authTicket
 macid (Rmacid
 version (	Rversion
 
-pb_version (	R	pbVersion"F
+pb_version (	R	pbVersion"É
 PBClientLoginReqCmd/
 
-login_data (2.PBUserLoginDataR	loginData"á
+login_data (2.PBUserLoginDataR	loginData
+is_register (R
+isRegister
+password (	Rpassword"á
 PBClientLoginRspCmd
 code (Rcode
 error (	Rerror
@@ -50,36 +53,35 @@ reconn_key (	R	reconnKeybproto3
 time (Rtime"
 	PBPongCmd
 time (Rtimebproto3
-È
-friend.proto"Ú
+å
+friend.proto"Í
 PBFriendData
 uid (Ruid
 head_id (RheadId
 	nick_name (	RnickName#
 account_level (RaccountLevel!
-online_state (RonlineState!
-friend_level (RfriendLevel
-group_id (RgroupId
-friend_time (R
+online_state (RonlineState
+group_id (RgroupId
+friend_time (R
 friendTime
 
-head_frame	 (R	headFrame
-title
- (Rtitle
+head_frame (R	headFrame
+title	 (Rtitle
+guild_id
+ (RguildId
 
 guild_name (	R	guildName
 name_remark (	R
-nameRemark"Û
+nameRemark"Ô
 PBApplyFriendData
 uid (Ruid
 head_id (RheadId
 	nick_name (	RnickName#
 account_level (RaccountLevel
 
-apply_time (R	applyTime
-
-head_frame (R	headFrame
-title (Rtitle
+head_frame (R	headFrame
+title (Rtitle
+guild_id (RguildId
 
 guild_name (	R	guildName")
 PBGetFriendInfoReqCmd
@@ -90,7 +92,15 @@ guild_name (	R	guildName")
 uid (Ruid0
 friend_datas (2.PBFriendDataRfriendDatas3
 apply_datas (2.PBApplyFriendDataR
-applyDatasbproto3
+applyDatas"Z
+PBApplyFriendReqCmd
+uid (Ruid1
+
+apply_data (2.PBApplyFriendDataR	applyData"Q
+PBApplyFriendRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruidbproto3
 ©
 guild.proto"”
 PBApplyGuildData
@@ -240,7 +250,7 @@ product_id (R	productId
 error (	Rerror
 uid (RuidE
 self_trade_bank_info (2.PBSelfTradeBankDataRselfTradeBankInfobproto3
-¡C
+˚O
 
 user.proto"^
 PBGetOpenBoxReqCmd
@@ -539,7 +549,69 @@ onlyOneBag%
 .PBBagSkinRskinBag(
 	magic_bag (2.PBBagMagicRmagicBag;
 seal_monster_bag (2.PBBagSealMonsterRsealMonsterBag>
-diagrams_card_bag (2.PBBagDiagramsCardRdiagramsCardBag*ê
+diagrams_card_bag (2.PBBagDiagramsCardRdiagramsCardBag"°
+PBRankLevel6
+
+ghost_rank (2.PBRankLevel.PBRankNodeR	ghostRank6
+
+human_rank (2.PBRankLevel.PBRankNodeR	humanRank=
+ghost_top_rank (2.PBRankLevel.PBRankNodeRghostTopRank=
+human_top_rank (2.PBRankLevel.PBRankNodeRhumanTopRank£
+
+PBRankNode
+grade (Rgrade
+level (Rlevel
+star (Rstar
+score (Rscore"
+zhu_ji_points (RzhuJiPoints
+	all_stars (RallStars"4
+PBPinchFaceData!
+setting_data (	RsettingData"©
+PBUserSimpleInfo
+uid (Ruid!
+plateform_id (	RplateformId
+	nick_name (RnickName
+	head_icon (RheadIcon
+sex (Rsex
+
+praise_num (R	praiseNum
+
+head_frame (R	headFrame.
+account_create_time (RaccountCreateTime#
+account_level	 (RaccountLevel
+account_exp
+ (R
+accountExp*
+account_total_exp (RaccountTotalExp
+	guild_uid (RguildUid
+
+guild_name (R	guildName+
+
+rank_level (2.PBRankLevelR	rankLevelF
+cur_show_role (2".PBUserSimpleInfo.PBCurUseShowRoleRcurShowRole8
+pinch_face_data (2.PBPinchFaceDataRpinchFaceData
+title (Rtitle
+player_flag (R
+playerFlag
+online_time (R
+onlineTime&
+sum_online_time (RsumOnlineTime
+pa_flag (RpaFlag
+mons_uniqid (R
+monsUniqid
+mons_confid (R
+monsConfid$
+mons_skin_list (RmonsSkinListH
+PBCurUseShowRole
+role_id (RroleId
+	skin_list (RskinList"/
+PBClientGetUsrSimInfoReqCmd
+uid (Ruid"Ä
+PBClientGetUsrSimInfoRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid%
+info (2.PBUserSimpleInfoRinfo*ê
 ITEM_OPERATION_TYPE
 ITEM_OPERATION_TYPE_NONE 
 ITEM_OPERATION_TYPE_UPDATA

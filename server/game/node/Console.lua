@@ -3,6 +3,7 @@ local json = require("json")
 local fs = require("fs")
 local datetime = require("moon.datetime")
 local sharetable = require("sharetable")
+local clusterd = require("cluster")
 
 ---@type node_context
 local context = ...
@@ -27,8 +28,19 @@ end
 local Console = {}
 
 function Console.Init()
-	static_tables_md5 = Console.table_md5()
-	return true
+    static_tables_md5 = Console.table_md5()
+    return true
+end
+
+function Console.Notify_nodemgr(nodeinfo)
+	--local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP();
+	local res, err = clusterd.call(9999, "nodemgr", "Nodemgr.BindNode", nodeinfo)
+    print("Notify_nodemgr", res.error, err)
+	if res.error == "success" then
+		return true-- body
+    else
+		return false
+	end
 end
 
 local help = [[

@@ -83,6 +83,14 @@ local function run(node_conf)
         -- },
         {
             unique = true,
+            name = "db_game",
+            file = "common/mysqldriver.lua",
+            threadid = 2,
+            poolsize = 5,
+            opts = db_conf.mysql
+        },
+        {
+            unique = true,
             name = "auth",
             file = "game/service_auth.lua",
             threadid = 2,
@@ -173,6 +181,13 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("cluster"), "Listen"))
         assert(moon.call("lua", moon.queryservice("gate"), "Start"))
         assert(moon.call("lua", moon.queryservice("dgate"), "Start"))
+        -- local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP();
+        local nodeinfo = {
+            nid = moon.env("NODE"),
+            chost = "127.0.0.1",
+            cport = 12108, 
+        }
+        moon.call("lua", moon.queryservice("node"), "Console.Notify_nodemgr", nodeinfo)
 
         moon.async(function()
             while true do

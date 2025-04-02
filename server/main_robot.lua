@@ -64,11 +64,22 @@ local function run(node_conf)
             threadid = 1,
             host = "127.0.0.1",
             port = 12108
+        },
+        {
+            name = "robotmgr",
+            file = "robot/robotmgr.lua",
+            unique = true,
+            threadid = 2,
+            host = "127.0.0.1",
+            port = 12108
         }
     }
 
     local function Start()
         print("main_robot start")
+        ---控制服务初始化顺序,Init一般为加载DB
+        assert(moon.call("lua", moon.queryservice("robot"), "Init"))
+        assert(moon.call("lua", moon.queryservice("robotmgr"), "Init"))
     end
 
     local server_ok = false
@@ -136,4 +147,5 @@ moon.async(function()
     moon.env("SERVER_NAME", node_conf.type.."-"..tostring(node_conf.node))
     run(node_conf)
 end)
+
 

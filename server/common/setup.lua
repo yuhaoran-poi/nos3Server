@@ -4,6 +4,7 @@ local fs = require("fs")
 local seri = require("seri")
 local datetime = require("moon.datetime")
 local common = require("common")
+local cluster = require("cluster")
 local GameDef = common.GameDef
 local protocol = common.protocol
 local CmdCode = common.CmdCode
@@ -99,6 +100,46 @@ local function start_hour_timer(context)
     end)
 end
 
+local function extract_gn(GnId)
+    local node = (GnId & 0xFF000000) >> 24 -- 获取node部分
+    local flag = (GnId >> 23) & 0x1    -- 获取flag部分
+    local index = GnId & 0x007FFFFF    -- 获取index部分
+    -- 返回node、flag和index
+    return node, flag, index
+end
+
+local function get_globalds()
+    local data = moon.env("GloabalDsGnId")
+    if data then
+        return math.tointeger(data)
+    end
+    return 0
+end
+
+-- 转发发往客户端的消息(只能向客户端转发)
+local function forwardD2C(context, GnId, MessagePack)
+    if GnId == 0 then
+        return
+    end
+    if not context.NODE then
+        context.NODE = math.tointeger(moon.env("NODE"))
+    end
+    local node, flag, index = extract_gn(GnId)
+    if context.NODE == node then
+        -- 本节点转发
+        if flag == 0 then
+            context.D2C(GnId, MessagePack)
+        end
+    else
+       
+        -- 通过其他节点转发
+        if flag == 0 then
+            cluster.send(node, 'gate', "ForwardD2C", GnId, MessagePack)
+        else
+            print("forwardD2C err, cannot send msg to other client !!!", GnId)
+        end
+    end
+end
 local function _internal(context)
     ---@class base_context
     ---@field scripts table
@@ -158,10 +199,16 @@ local function _internal(context)
     end
 
     --- send message to client.
-    function base_context.S2C(uid, cmd_code, mtable)
-        moon.raw_send('S2C', context.addr_gate, protocol.encode(uid, cmd_code, mtable))
+    function base_context.S2CX(uid, cmd_code, mtable, stubId)
+        -- 查询uid对应的节点
+        local net_id = cluster.call(9999, 'usermgr', "getNetIdByUid", uid)
+        base_context.S2C(net_id, cmd_code, mtable, stubId)
     end
 
+    base_context.S2C = function(net_id, cmd_code, mtable, stubId)
+        forwardD2C(context, net_id, protocol.encodeMessagePacket(net_id, cmd_code, mtable, stubId or 0))
+        --moon.raw_send('S2C', context.addr_gate, protocol.encodePacket(uid, cmd_code, mtable,mc))
+    end
     --- 给玩家服务发送消息,如果玩家不在线,会加载玩家
     function base_context.send_user(uid, ...)
         moon.send("lua", context.addr_auth, "Auth.SendUser", uid, ...)
@@ -236,21 +283,7 @@ local function do_client_command(context, cmd, uid, req)
     end
 end
 
-local function extract_gn(GnId)
-    local node = (GnId&0xFF000000)>>24      -- 获取node部分
-    local flag = (GnId>>23)&0x1             -- 获取flag部分
-    local index = GnId&0x007FFFFF           -- 获取index部分
-    -- 返回node、flag和index
-    return node, flag, index
-end 
 
-local function get_globalds()
-    local data = moon.env("GloabalDsGnId")
-    if data then
-        return math.tointeger(data)
-    end    
-    return 0
-end
 
 --转发DS发来的消息
 local function forwardD(context,GnId,MessagePack)
@@ -279,7 +312,6 @@ local function forwardD(context,GnId,MessagePack)
             print("forwardD err,node = 0,GnId = ",GnId)
             return
         end
-        local cluster = require("cluster")
         -- 通过其他节点转发
         if flag == 1 then
             cluster.send(node, 'dgate',"ForwardD2D", GnId,MessagePack)
@@ -308,7 +340,6 @@ local function forwardC(context,GnId,MessagePack)
             context.C2D(GnId,MessagePack)
         end
     else
-        local cluster = require("cluster")
         -- 通过其他节点转发
         if flag == 1 then
             cluster.send(node, 'dgate',"ForwardC2D", GnId,MessagePack)
@@ -317,30 +348,7 @@ local function forwardC(context,GnId,MessagePack)
         end
     end
 end
--- 转发发往客户端的消息(只能向客户端转发)
-local function forwardD2C(context,GnId,MessagePack)
-    if GnId == 0 then
-       return
-    end
-    if not context.NODE then
-        context.NODE = math.tointeger(moon.env("NODE"))
-    end
-    local node,flag,index = extract_gn(GnId)
-    if context.NODE == node then
-        -- 本节点转发
-        if flag == 0 then
-            context.D2C(GnId,MessagePack)
-        end
-    else
-        local cluster = require("cluster")
-        -- 通过其他节点转发
-        if flag == 0 then
-            cluster.send(node, 'gate',"ForwardD2C", GnId,MessagePack)
-        else
-            print("forwardD2C err, cannot send msg to other client !!!",GnId)
-        end
-    end
-end
+
 
 
 return function(context, sname)
@@ -465,17 +473,48 @@ return function(context, sname)
     end
 
     --- send message to user-service.
-    context.send_user = function(uid, ...)
-        moon.send("lua", context.addr_auth, "Auth.SendUser", uid, ...)
+    context.send_user = function(uid,cmd, ...)
+        -- 查询uid对应的节点
+        local node, addr_user = cluster.call(9999, 'usermgr', "getAddrUserByUid", uid)
+        if not context.NODE then
+            context.NODE = math.tointeger(moon.env("NODE"))
+        end
+        if context.NODE == node then
+            moon.send("lua", addr_user, cmd, ...)
+        else
+            cluster.send(node, addr_user, cmd, ...)
+        end
     end
 
     --- send message to user-service and get results.
-    context.call_user = function(uid, ...)
-        return moon.call("lua", context.addr_auth, "Auth.CallUser", uid, ...)
+    context.call_user = function(uid, cmd,...)
+        --return moon.call("lua", context.addr_auth, "Auth.CallUser", uid, ...)
+        local node,addr_user = cluster.call(9999, 'usermgr', "getAddrUserByUid", uid)
+        if node and addr_user then
+            if not context.NODE then
+                context.NODE = math.tointeger(moon.env("NODE"))
+            end
+            if context.NODE == node then
+                return moon.call("lua", addr_user, cmd, ...)
+            else
+                return cluster.call(node, addr_user, cmd, ...)
+            end
+        end
     end
 
-    context.try_send_user = function(uid, ...)
-        moon.send("lua", context.addr_auth, "Auth.TrySendUser", uid, ...)
+    context.try_send_user = function(uid,cmd, ...)
+        --moon.send("lua", context.addr_auth, "Auth.TrySendUser", uid, ...)
+        local node, addr_user = cluster.call(9999, 'usermgr', "getAddrUserByUid", uid)
+        if node and addr_user then
+            if not context.NODE then
+                context.NODE = math.tointeger(moon.env("NODE"))
+            end
+            if context.NODE == node then
+                return moon.call("lua", addr_user, cmd, ...)
+            else
+                return cluster.call(node, addr_user, cmd, ...)
+            end
+        end
     end
 
     return command
