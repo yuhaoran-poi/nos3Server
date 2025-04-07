@@ -130,7 +130,7 @@ namespace CommonNetCmd
 
 ######################TEMPLATE END#######################
 special_file_list=["common"]
-CommonNetUE = "D:\\p4_workpc\\ZGDSRelease\\Plugins\\CommonNetUE\\Source\\CommonNetUE\\Public\\Protos"
+CommonNetUE = "./proto_out"
 LuaPB = ""
 
 
@@ -240,7 +240,7 @@ def get_proto_message_names(directory):
                   all_messages_dict.update(messages_dict)
                   generate_proto_CPlusPlus(obpath,proto_file_path,CommonNetUE) 
                   filename = get_filename_without_extension(proto_file_path)
-                  outpb =  os.path.join(obpath, filename + '.pb.json') 
+                  outpb =  os.path.join(obpath, filename + '.pb') 
                   generate_json_desc(obpath,proto_file_path,outpb) 
                   gen_ue_proto(proto_file_path,outpb,CommonNetUE)
                   allprotofiles.append(filename)

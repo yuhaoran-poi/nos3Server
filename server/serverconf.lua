@@ -10,8 +10,8 @@ local db_pg = {
 }
 
 local db_mysql = {
-    [1] = { host = "127.0.0.1", port = 3306, database = "mgame", user = "root", password = "root", auth_plugin = "root", timeout = 5000, ssl = false },
-    [2] = { host = "127.0.0.1", port = 3306, database = "mgame", user = "root", password = "root", auth_plugin = "root", timeout = 5000, ssl = false },
+    [1] = { host = "127.0.0.1", port = 3307, database = "mgame", user = "root", password = "123456", auth_plugin = "mysql_native_password", timeout = 5000, max_packet_size=64*1024*1024, ssl = false },
+    [2] = { host = "127.0.0.1", port = 3307, database = "mgame", user = "root", password = "123456", auth_plugin = "mysql_native_password", timeout = 5000, max_packet_size=64*1024*1024, ssl = false },
 }
 
 ---服务器相关配置

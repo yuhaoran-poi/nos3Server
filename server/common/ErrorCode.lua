@@ -42,6 +42,30 @@ local ErrorCode = {
 
     ---奖励已经领取过
     DailyTaskReceived = 701,
+
+    ---队伍相关错误码
+    ---已经在队伍中
+    TeamAlreadyInTeam = 801,
+    ---不在队伍中
+    TeamNotInTeam = 802,
+    ---不是队长
+    TeamNotMaster = 803,
+    ---创建队伍失败
+    TeamCreateFailed = 804,
+    ---加入队伍失败
+    TeamJoinFailed = 805,
+    ---退出队伍失败
+    TeamExitFailed = 806,
+    ---踢出队员失败
+    TeamKickoutFailed = 807,
+    ---获取队伍信息失败
+    TeamGetInfoFailed = 808,
+    ---队伍不存在
+    TeamNotExist = 809,
+    ---队伍已满
+    TeamFull = 810,
+    ---队伍数据损坏
+    TeamDataCorrupted = 811
 }
 
 return ErrorCode

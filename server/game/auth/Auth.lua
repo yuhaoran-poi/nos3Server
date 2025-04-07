@@ -309,17 +309,19 @@ Auth.PBClientLoginReqCmd = function (req)
     --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local function processLogin()
         if req.msg.is_register then
+
             -- 注册逻辑（直接存储客户端提供的MD5）
             local check_res, check_err = db.checkuser(context.addr_db_game, req.msg.login_data.authkey)
             if check_err and not check_res and next(check_res) then
                 return { code = 1001, error = "USERNAME_EXISTS" }
             end
-
+            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
             local create_res, create_err = db.createuser(
                 context.addr_db_game,
                 req.msg.login_data.authkey,
                 req.msg.password -- 直接使用客户端提供的MD5
             )
+            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
             if create_err or not create_res.insert_id then
                 return { code = 1002, error = "CREATE_ACCOUNT_FAILED" }
             end
