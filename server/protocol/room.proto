@@ -1,0 +1,265 @@
+syntax = "proto3";
+
+import "user.proto";
+
+//message PBRoomApplyData
+//{
+//    int64 uid			= 1;
+//	int32 head_id		= 2;
+//    string nick_name	= 3;
+//    int32 account_level	= 4;
+//	int32 head_frame	= 5;
+//	int32 title			= 6;
+//}
+
+// 房间搜索的数据
+message PBRoomSearchInfo
+{
+    int64 roomid    = 1;
+	int32 chapter   = 2;		//章节
+	int32 difficulty    = 3;	//难度
+	int32 playercnt     = 4;	//当前玩家人数
+	int64 master_id     = 5;	//房主id
+	int32 needpwd       = 6;	//是否需要密码
+}
+
+// 房间内人员信息
+message PBRoomMemberInfo
+{
+    int32 seat_idx      = 1;
+    int32 is_ready      = 2;
+    PBUserSimpleInfo mem_info   = 3;
+}
+
+message PBRoomInfo
+{
+    int64 roomid    = 1;
+	int32 isopen    = 2;
+	int32 needpwd   = 3;
+	string pwd      = 4;
+	int32 chapter   = 5;
+	int32 difficulty    = 6;
+}
+
+// 客户端创建房间
+message PBCreateRoomReqCmd
+{
+    int64 uid		= 1;
+    int32 isopen    = 2;
+	int32 needpwd   = 3;
+	string pwd      = 4;
+	int32 chapter   = 5;
+	int32 difficulty    = 6;
+    PBUserSimpleInfo self_info  = 7;
+}
+
+message PBCreateRoomRspCmd
+{
+    int32 code      = 1; // 服务器验证返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int64 roomid    = 3;
+}
+
+// 搜索房间
+message PBSearchRoomReqCmd
+{
+    int64 uid		= 1;
+    int64 roomid    = 2;
+    int32 chapter   = 3;
+	int32 difficulty    = 4;
+    int32 start_idx = 5;    //搜索的起始序号
+}
+
+message PBSearchRoomRspCmd
+{
+    int32 code      = 1; // 服务器返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int64 roomid    = 3;
+    int32 chapter   = 4;
+	int32 difficulty    = 5;
+    int32 start_idx = 6;    //搜索的起始序号
+    repeated PBRoomSearchInfo search_data   = 7;
+}
+
+// 房主修改房间信息
+message PBModRoomReqCmd
+{
+    int64 uid		= 1;
+	int64 roomid	= 2;
+    int32 isopen    = 3;
+	int32 needpwd   = 4;
+	string pwd      = 5;
+	int32 chapter   = 6;
+	int32 difficulty    = 7;
+}
+
+message PBModRoomRspCmd
+{
+    int32 code      = 1; // 服务器返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int32 isopen    = 3;
+	int32 needpwd   = 4;
+	string pwd      = 5;
+	int32 chapter   = 6;
+	int32 difficulty    = 7;
+}
+
+// 房间基础数据 同步信息
+message PBRoomInfoSyncCmd
+{
+    PBRoomInfo room_data    = 1;
+}
+
+// 客户端请求加入房间数据
+message PBApplyRoomReqCmd
+{
+    // 协议数据
+    int64 uid		= 1;
+	int64 roomid	= 2;
+	PBUserSimpleInfo apply_info	= 3;
+}
+
+message PBApplyRoomRspCmd
+{
+    int32 code      = 1; // 服务器返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int64 roomid    = 3;
+}
+
+message PBApplyRoomSyncCmd
+{
+    int64 uid		= 1;
+	int64 roomid	= 2;
+	PBUserSimpleInfo apply_info	= 3;
+}
+
+// 房主处理加入房间请求
+message PBDealApplyRoomReqCmd
+{
+    int64 deal_uid  = 1;
+    int32 deal_op   = 2;
+}
+
+message PBDealApplyRoomRspCmd
+{
+    int32 code      = 1; // 服务器返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int64 deal_uid  = 3;
+    int32 deal_op   = 4;
+}
+
+message PBDealApplyRoomSyncCmd
+{
+    int64 roomid    = 1;
+    int32 deal_op   = 2;
+    int64 master_uid    = 3;
+    string master_name  = 4;
+    string pwd      = 5;
+}
+
+message PBEnterRoomReqCmd
+{
+    int64 uid		= 1;
+	int64 roomid	= 2;
+    string pwd      = 3;
+}
+
+message PBEnterRoomRspCmd
+{
+    int32 code      = 1; // 服务器返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int64 uid		= 3;
+	int64 roomid	= 4;
+}
+
+message PBEnterRoomSyncCmd
+{
+    PBRoomMemberInfo member_data = 1;
+}
+
+// 玩家退出房间
+message PBExitRoomReqCmd
+{
+    int64 uid		= 1;
+	int64 roomid	= 2;
+}
+
+message PBExitRoomRspCmd
+{
+    int32 code      = 1; // 服务器返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int64 uid		= 3;
+	int64 roomid	= 4;
+}
+
+message PBExitRoomSyncCmd
+{
+    int64 uid		= 1;
+	int64 roomid	= 2;
+}
+
+// 房主踢人
+message PBKickRoomReqCmd
+{
+    int64 self_uid	= 1;
+	int64 roomid	= 2;
+    int64 kick_uid  = 3;
+}
+
+message PBKickRoomRspCmd
+{
+    int32 code      = 1; // 服务器返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int64 self_uid	= 3;
+	int64 roomid	= 4;
+    int64 kick_uid  = 5;
+}
+
+message PBKickRoomSyncCmd
+{
+	int64 roomid	= 1;
+    int64 kick_uid  = 2;
+}
+
+// 房间成员准备
+message PBReadyRoomReqCmd
+{
+    int64 uid		= 1;
+	int64 roomid	= 2;
+    int32 ready_op  = 3; // 1--准备, 2--取消准备
+}
+
+message PBReadyRoomRspCmd
+{
+    int32 code      = 1; // 服务器返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int64 uid		= 3;
+	int64 roomid	= 4;
+    int32 is_ready  = 5;
+}
+
+message PBReadyRoomSyncCmd
+{
+	int64 uid		= 1;
+	int64 roomid	= 2;
+    int32 is_ready  = 3;
+}
+
+// 请求房间内所有数据
+message PBGetRoomInfoReqCmd
+{
+    int64 uid		= 1;
+	int64 roomid	= 2;
+}
+
+message PBGetRoomInfoRspCmd
+{
+    int32 code      = 1; // 服务器返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    PBRoomInfo room_data    = 3;
+    repeated PBRoomMemberInfo member_datas  = 4;
+}
+
+
+
+

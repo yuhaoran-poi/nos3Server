@@ -202,54 +202,6 @@ PBRankInfo
 uid (Ruid(
 	rank_info (2.PBRankInfoRrankInfo(
 	self_data (2.PBRankDataRselfDatabproto3
-“
-
-team.proto"≥
-PBTeamApplyData
-uid (Ruid
-head_id (RheadId
-	nick_name (	RnickName#
-account_level (RaccountLevel
-
-head_frame (R	headFrame
-title (Rtitle"n
-PBApplyTeamReqCmd
-uid (Ruid
-teamid (Rteamid/
-
-apply_info (2.PBTeamApplyDataR	applyInfo"O
-PBApplyTeamRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid"E
-PBApplyTeamSyncCmd/
-
-apply_data (2.PBTeamApplyDataR	applyDatabproto3
-È
-trade.proto"ç
-PBTradeBankProductData
-trade_id (RtradeId
-
-product_id (R	productId
-cur_num (RcurNum
-book_num (RbookNum
-sale_num (RsaleNum
-price (Rprice
-uid (Ruid
-beg_ts (RbegTs
-end_ts	 (RendTs
-state
- (Rstate"t
-PBSelfTradeBankData!
-box_capacity (RboxCapacity:
-product_list (2.PBTradeBankProductDataRproductList",
-PBGetTradeBankInfoReqCmd
-uid (Ruid"ù
-PBGetTradeBankInfoRspCmd
-code (Rcode
-error (	Rerror
-uid (RuidE
-self_trade_bank_info (2.PBSelfTradeBankDataRselfTradeBankInfobproto3
 ˚O
 
 user.proto"^
@@ -617,6 +569,253 @@ monsConfid$
 ITEM_OPERATION_TYPE_UPDATA
 ITEM_OPERATION_TYPE_DELETE
 ITEM_OPERATION_TYPE_ADDbproto3
+¥
+
+room.proto
+user.proto"π
+PBRoomSearchInfo
+roomid (Rroomid
+chapter (Rchapter
+
+difficulty (R
+difficulty
+	playercnt (R	playercnt
+	master_id (RmasterId
+needpwd (Rneedpwd"v
+PBRoomMemberInfo
+seat_idx (RseatIdx
+is_ready (RisReady,
+mem_info (2.PBUserSimpleInfoRmemInfo"¢
+
+PBRoomInfo
+roomid (Rroomid
+isopen (Risopen
+needpwd (Rneedpwd
+pwd (	Rpwd
+chapter (Rchapter
+
+difficulty (R
+difficulty"‘
+PBCreateRoomReqCmd
+uid (Ruid
+isopen (Risopen
+needpwd (Rneedpwd
+pwd (	Rpwd
+chapter (Rchapter
+
+difficulty (R
+difficulty.
+	self_info (2.PBUserSimpleInfoRselfInfo"V
+PBCreateRoomRspCmd
+code (Rcode
+error (	Rerror
+roomid (Rroomid"ï
+PBSearchRoomReqCmd
+uid (Ruid
+roomid (Rroomid
+chapter (Rchapter
+
+difficulty (R
+difficulty
+	start_idx (RstartIdx"·
+PBSearchRoomRspCmd
+code (Rcode
+error (	Rerror
+roomid (Rroomid
+chapter (Rchapter
+
+difficulty (R
+difficulty
+	start_idx (RstartIdx2
+search_data (2.PBRoomSearchInfoR
+searchData"π
+PBModRoomReqCmd
+uid (Ruid
+roomid (Rroomid
+isopen (Risopen
+needpwd (Rneedpwd
+pwd (	Rpwd
+chapter (Rchapter
+
+difficulty (R
+difficulty"π
+PBModRoomRspCmd
+code (Rcode
+error (	Rerror
+isopen (Risopen
+needpwd (Rneedpwd
+pwd (	Rpwd
+chapter (Rchapter
+
+difficulty (R
+difficulty"=
+PBRoomInfoSyncCmd(
+	room_data (2.PBRoomInfoRroomData"o
+PBApplyRoomReqCmd
+uid (Ruid
+roomid (Rroomid0
+
+apply_info (2.PBUserSimpleInfoR	applyInfo"U
+PBApplyRoomRspCmd
+code (Rcode
+error (	Rerror
+roomid (Rroomid"p
+PBApplyRoomSyncCmd
+uid (Ruid
+roomid (Rroomid0
+
+apply_info (2.PBUserSimpleInfoR	applyInfo"K
+PBDealApplyRoomReqCmd
+deal_uid (RdealUid
+deal_op (RdealOp"u
+PBDealApplyRoomRspCmd
+code (Rcode
+error (	Rerror
+deal_uid (RdealUid
+deal_op (RdealOp"õ
+PBDealApplyRoomSyncCmd
+roomid (Rroomid
+deal_op (RdealOp
+
+master_uid (R	masterUid
+master_name (	R
+masterName
+pwd (	Rpwd"O
+PBEnterRoomReqCmd
+uid (Ruid
+roomid (Rroomid
+pwd (	Rpwd"g
+PBEnterRoomRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+roomid (Rroomid"H
+PBEnterRoomSyncCmd2
+member_data (2.PBRoomMemberInfoR
+memberData"<
+PBExitRoomReqCmd
+uid (Ruid
+roomid (Rroomid"f
+PBExitRoomRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+roomid (Rroomid"=
+PBExitRoomSyncCmd
+uid (Ruid
+roomid (Rroomid"`
+PBKickRoomReqCmd
+self_uid (RselfUid
+roomid (Rroomid
+kick_uid (RkickUid"ä
+PBKickRoomRspCmd
+code (Rcode
+error (	Rerror
+self_uid (RselfUid
+roomid (Rroomid
+kick_uid (RkickUid"F
+PBKickRoomSyncCmd
+roomid (Rroomid
+kick_uid (RkickUid"X
+PBReadyRoomReqCmd
+uid (Ruid
+roomid (Rroomid
+ready_op (RreadyOp"Ç
+PBReadyRoomRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+roomid (Rroomid
+is_ready (RisReady"Y
+PBReadyRoomSyncCmd
+uid (Ruid
+roomid (Rroomid
+is_ready (RisReady"?
+PBGetRoomInfoReqCmd
+uid (Ruid
+roomid (Rroomid"ü
+PBGetRoomInfoRspCmd
+code (Rcode
+error (	Rerror(
+	room_data (2.PBRoomInfoRroomData4
+member_datas (2.PBRoomMemberInfoRmemberDatasbproto3
+ü
+
+team.proto
+user.proto"®
+
+PBTeamInfo
+team_id (RteamId
+	master_id (RmasterId.
+	user_list (2.PBUserSimpleInfoRuserList
+is_del (RisDel
+
+match_type (R	matchType"K
+PBTeamStatusCmd
+team_id (RteamId
+team_status (R
+teamStatus"+
+PBTeamInfoReqCmd
+team_id (RteamId"P
+PBTeamInfoRspCmd
+code (Rcode(
+	team_info (2.PBTeamInfoRteamInfo"u
+PBTeamCreateReqCmd
+uid (Ruid.
+	base_data (2.PBUserSimpleInfoRbaseData
+
+match_type (R	matchType"@
+PBTeamCreateRspCmd
+code (Rcode
+teamId (RteamId"$
+PBTeamExitReqCmd
+uid (Ruid"&
+PBTeamExitRspCmd
+code (Rcode"F
+PBTeamKickoutReqCmd
+uid (Ruid
+
+target_uid (R	targetUid"H
+PBTeamKickoutRspCmd
+code (Rcode
+
+target_uid (R	targetUid"å
+PBTeamJoinReqCmd
+uid (Ruid
+
+master_uid (R	masterUid
+team_id (RteamId.
+	base_data (2.PBUserSimpleInfoRbaseData"^
+PBTeamJoinRspCmd
+code (Rcode
+
+master_uid (R	masterUid
+team_id (RteamIdbproto3
+È
+trade.proto"ç
+PBTradeBankProductData
+trade_id (RtradeId
+
+product_id (R	productId
+cur_num (RcurNum
+book_num (RbookNum
+sale_num (RsaleNum
+price (Rprice
+uid (Ruid
+beg_ts (RbegTs
+end_ts	 (RendTs
+state
+ (Rstate"t
+PBSelfTradeBankData!
+box_capacity (RboxCapacity:
+product_list (2.PBTradeBankProductDataRproductList",
+PBGetTradeBankInfoReqCmd
+uid (Ruid"ù
+PBGetTradeBankInfoRspCmd
+code (Rcode
+error (	Rerror
+uid (RuidE
+self_trade_bank_info (2.PBSelfTradeBankDataRselfTradeBankInfobproto3
 ‰
 google/protobuf/any.protogoogle.protobuf"6
 Any
