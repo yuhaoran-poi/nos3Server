@@ -104,6 +104,7 @@ local function doAuth(Auth,req)
             return { code = 2001, error = "create user service failed!" }
         end
 
+        req.addr_user = addr_user
         local ok, err = moon.call("lua", addr_user, "User.Load", req)
         if not ok then
             --moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
@@ -113,6 +114,7 @@ local function doAuth(Auth,req)
         end
     else
         addr_user = u.addr_user
+        req.addr_user = addr_user
     end
 
     local authkey, err = moon.call("lua", addr_user, "User.Login", req)
@@ -144,8 +146,8 @@ local function doAuth(Auth,req)
         return { code = 2003, error = "req.pull is true" }
     end
 
-    req.addr_user = addr_user
-
+    --req.addr_user = addr_user
+    
     -- local pass = true
     -- if pass then
     --     u.logouttime = 0
