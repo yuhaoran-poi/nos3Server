@@ -1,40 +1,92 @@
 syntax = "proto3";
 
-message PBTeamApplyData
+message PBTeamInfo
 {
-    int64 uid			= 1;
-	int32 head_id		= 2;
-    string nick_name	= 3;
-    int32 account_level	= 4;
-	int32 head_frame	= 5;
-	int32 title			= 6;
+    int64 team_id = 1;
+	int64 master_id = 2;		//队长id
+	repeated PBUserGameBaseSimpleData user_list = 3;//
+	bool is_del = 4;		//是否解散
+	int32 match_type = 5;		//游戏模式
 }
 
-// 客户端请求加入队伍数据
-message PBApplyTeamReqCmd
+//队伍 状态同步
+message PBTeamStatusCmd
+{
+	int64 team_id = 1; //team_id
+	bool team_status = 2; //team status
+}
+
+//组队 请求队伍玩家列表
+message PBTeamInfoReqCmd
+{
+	int64 team_id = 1; //team_id
+}
+//组队 返回队伍玩家列表
+message PBTeamInfoRspCmd
+{
+    int32 code = 1;		          
+	PBTeamInfo team_info = 2;		//队伍信息
+}
+
+//组队 申请创建队伍
+message PBTeamCreateReqCmd
+{
+	int64 uid = 1;
+	PBUserGameBaseSimpleData base_data = 2;		//游戏基础数据
+	int32 match_type = 3;					    //
+}
+
+//组队 申请创建队伍返回
+message PBTeamCreateRspCmd
+{
+    int32 code = 1;	
+	int64 teamId = 2;					//队伍ID
+}
+
+//组队 退出队伍
+message PBTeamExitReqCmd
+{ 
+	int64 uid = 1;
+}
+
+//组队 退出队伍返回
+message PBTeamExitRspCmd
+{
+   int32 code = 1;		           // fail 1 success 0
+}
+
+//组队 队伍踢人
+message PBTeamKickoutReqCmd
+{
+	int64 uid = 1;
+	int64 target_uid = 2;					//uid
+}
+
+//组队 队伍踢人返回
+message PBTeamKickoutRspCmd
+{
+    int32 code = 1;	
+	int64 target_uid = 2;					//uid
+    int32 code = 3;		                    // fail 1 success 0
+}
+
+//组队 队伍加入
+message PBTeamJoinReqCmd
 {
     // 协议数据
-    int64 uid		= 1;
-	int64 teamid	= 2;
-	PBTeamApplyData apply_info	= 3;
+	int64 uid = 1;
+	int64 master_uid = 2;					   //uid（队长的ID)
+	int64 team_id = 3;					       //队伍id
+	PBUserGameBaseSimpleData base_data = 4;	   //游戏基础数据
 }
 
-// 客户端请求加入队伍数据 返回信息
-message PBApplyTeamRspCmd
+//组队 队伍加入返回
+message PBTeamJoinRspCmd
 {
-    int32 code = 1; // 服务器返回,0成功,其他失败
-    string error = 2; // 错误信息
-    // 协议数据
-    int64 uid				= 3;
+     int32 code = 1;	
+	int64 master_uid = 2;					//uid（队长的ID)
+	int64 team_id = 3;					    //队伍id
 }
-
-// 客户端请求加入队伍数据 同步信息
-message PBApplyTeamSyncCmd
-{
-    PBTeamApplyData apply_data	= 1;
-}
-
-
 
 
 

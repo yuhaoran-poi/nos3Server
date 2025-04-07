@@ -23,6 +23,7 @@
 ---@field public chapterid integer @当前章节ID
 ---@field public exp integer @当前经验
 ---@field public itemlist table<integer, ItemData> @道具列表
+---@field public team TeamInfo @队伍信息
 
 
 ---@class C2SMatch
@@ -47,6 +48,14 @@
 ---@class ItemData
 ---@field public id integer @道具id
 ---@field public count integer @道具数量
+
+---@class TeamInfo
+---@field public team_id integer @队伍ID
+---@field public master_id integer @队长ID
+---@field public user_list table<integer, PBUserSimpleInfo> @队伍成员列表
+---@field public is_del boolean @是否解散
+---@field public match_type integer @游戏模式
+ 	 
 
 
 ---@class MailData
@@ -780,6 +789,7 @@
 ---@field Hello Hello
 ---@field Item Item
 ---@field User User
+---@field Team Team
 ---@field UserModel UserModel
 
 
