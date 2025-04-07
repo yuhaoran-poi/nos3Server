@@ -11,12 +11,7 @@ local context = ...
 ---@class TeamMgr
 local TeamMgr = {}
 
--- 队伍数据存储
-local teams = {
-    tidmap = {}, -- 队伍ID -> 队伍信息 map<team_id, team_info>
-    uidmap = {} -- 用户ID -> 队伍ID map<uid, team_id>
-}
-
+ 
 function TeamMgr.Init()
     return true
 end
