@@ -10,11 +10,10 @@ local protocol = common.protocol
 local conf = ...
 
 ---@class node_context:base_context
----@field scripts node_scripts
 local context = {
     conf = conf,
-    node_info = {},
-    user_node = {},
+    node_info = {}, -- 节点信息
+    user_node = {}, -- 用户对应的节点信息
 }
 
 setup(context)

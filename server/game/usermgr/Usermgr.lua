@@ -38,8 +38,8 @@ end
 function Usermgr.NodeOnline(msg)
     local n = {
         nid = msg.nid,
-        chost = msg.chost,
-        cport = msg.cport,
+        -- chost = msg.chost,
+        -- cport = msg.cport,
         user_num = 0,
     }
     context.node_info[msg.nid] = n
@@ -76,19 +76,20 @@ function Usermgr.ApplyLogin(msg)
     local old = context.user_node[msg.uid]
     if old and old ~= msg.nid then
         local res = {
-            nid = old,
+            nid = old.nid,
+            addr_user = old.addr_user,
         }
 
-        local now_node = context.node_info[old]
-        if now_node then
-            res.chost = now_node.host
-            res.cport = now_node.port
-        end
+        -- local now_node = context.node_info[old]
+        -- if now_node then
+        --     res.chost = now_node.host
+        --     res.cport = now_node.port
+        -- end
 
         return { error = "user already login", res }
     end
 
-    context.user_node[msg.uid] = msg.uid
+    context.user_node[msg.uid] = {nid = msg.nid, addr_user = msg.addr_user}
     if not old then
         context.node_info[msg.nid].user_num = context.node_info[msg.nid].user_num + 1
     end

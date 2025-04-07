@@ -15,3 +15,4 @@ BallAction/Logs
 /server/tools/__pycache__
 /server/tools/build
 /.vscode
+/server/tools/proto_out
