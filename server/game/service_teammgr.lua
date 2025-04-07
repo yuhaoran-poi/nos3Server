@@ -7,8 +7,8 @@ local protocol = common.protocol
 
 local conf = ...
 
----@class team_context:base_context
----@field scripts team_scripts
+---@class teammgr_context:base_context
+---@field scripts teammgr_scripts
 local context = {
     conf = conf,
     team_info = {}, -- 队伍ID -> 队伍信息

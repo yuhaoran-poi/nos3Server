@@ -83,6 +83,13 @@ local function run(node_conf)
             threadid = 5,
             websocket = false,
         },
+        {
+            unique = true,
+            name = "teammgr",
+            file = "game/service_teammgr.lua",
+            threadid = 6,
+            websocket = false,
+        },
     }
 
     local function Start()
@@ -90,9 +97,10 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("node"), "Init"))
         assert(moon.call("lua", moon.queryservice("nodemgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("usermgr"), "Init"))
-
+        assert(moon.call("lua", moon.queryservice("teammgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("nodemgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("usermgr"), "Start"))
+        assert(moon.call("lua", moon.queryservice("teammgr"), "Start"))
         ---加载完数据后 开始接受网络连接
         assert(moon.call("lua", moon.queryservice("cluster"), "Listen"))
     end

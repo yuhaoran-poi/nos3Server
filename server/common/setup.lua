@@ -209,18 +209,75 @@ local function _internal(context)
         forwardD2C(context, net_id, protocol.encodeMessagePacket(net_id, cmd_code, mtable, stubId or 0))
         --moon.raw_send('S2C', context.addr_gate, protocol.encodePacket(uid, cmd_code, mtable,mc))
     end
-    --- 给玩家服务发送消息,如果玩家不在线,会加载玩家
-    function base_context.send_user(uid, ...)
-        moon.send("lua", context.addr_auth, "Auth.SendUser", uid, ...)
+    base_context.send_user = function(uid, cmd, ...)
+        -- 查询uid对应的节点
+        local node, addr_user = cluster.call(9999, 'usermgr', "getAddrUserByUid", uid)
+        if not context.NODE then
+            context.NODE = math.tointeger(moon.env("NODE"))
+        end
+        if node == 0 or addr_user == 0 then
+            moon.warn("send_user failed, node = ", node, " addr_user = ", addr_user)
+            return
+        end
+        if context.NODE == node then
+            moon.send("lua", addr_user, cmd, ...)
+        else
+            cluster.send(node, addr_user, cmd, ...)
+        end
+    end
+    base_context.send_users = function(uids, not_uids, cmd, ...)
+        if not_uids then
+            local tmp = {}
+            for _, uid in ipairs(uids) do
+                if not not_uids[uid] then
+                    table.insert(tmp, uid)
+                end
+            end
+            uids = tmp
+        end
+        --查询在线用户列表
+        local online_uids = cluster.call(9999, "usermgr", "Usermgr.getOnlineUsers", uids)
+        if not online_uids then
+            return false, "getOnlineUsers failed"
+        end
+
+        if not context.NODE then
+            context.NODE = math.tointeger(moon.env("NODE"))
+        end
+        --遍历在线用户列表，发送消息
+        for uid, info in pairs(online_uids) do
+            local node, addr_user = info.node, info.addr_user
+            if node ~= 0 or addr_user ~= 0 then
+                if context.NODE == node then
+                    moon.send("lua", addr_user, cmd, ...)
+                else
+                    cluster.send(node, addr_user, cmd, ...)
+                end
+            else
+                moon.warn("send_user failed, node = ", node, " uid= ", uid, "addr_user = ", addr_user)
+            end
+        end
+        return true
     end
 
-    --- 调用玩家服务,如果玩家不在线,会加载玩家
-    function base_context.call_user(uid, ...)
-        return moon.call("lua", context.addr_auth, "Auth.CallUser", uid, ...)
-    end
-    --- 尝试给玩家服务发送消息,如果玩家不在线,消息会被忽略
-    function base_context.try_send_user(uid, ...)
-        moon.send("lua", context.addr_auth, "Auth.TrySendUser", uid, ...)
+
+
+    --- send message to user-service and get results.
+    base_context.call_user = function(uid, cmd, ...)
+        --return moon.call("lua", context.addr_auth, "Auth.CallUser", uid, ...)
+        local node, addr_user = cluster.call(9999, 'usermgr', "getAddrUserByUid", uid)
+        if node == 0 or addr_user == 0 then
+            moon.warn("send_user failed, node = ", node, " addr_user = ", addr_user)
+            return
+        end
+        if not context.NODE then
+            context.NODE = math.tointeger(moon.env("NODE"))
+        end
+        if context.NODE == node then
+            return moon.call("lua", addr_user, cmd, ...)
+        else
+            return cluster.call(node, addr_user, cmd, ...)
+        end
     end
 
     command.hotfix = function(fixlist)
@@ -472,50 +529,9 @@ return function(context, sname)
        -- moon.raw_send('S2D', context.addr_dgate, protocol.encodePacket(net_id, cmd_code, mtable,mc))
     end
 
-    --- send message to user-service.
-    context.send_user = function(uid,cmd, ...)
-        -- 查询uid对应的节点
-        local node, addr_user = cluster.call(9999, 'usermgr', "getAddrUserByUid", uid)
-        if not context.NODE then
-            context.NODE = math.tointeger(moon.env("NODE"))
-        end
-        if context.NODE == node then
-            moon.send("lua", addr_user, cmd, ...)
-        else
-            cluster.send(node, addr_user, cmd, ...)
-        end
-    end
+    
 
-    --- send message to user-service and get results.
-    context.call_user = function(uid, cmd,...)
-        --return moon.call("lua", context.addr_auth, "Auth.CallUser", uid, ...)
-        local node,addr_user = cluster.call(9999, 'usermgr', "getAddrUserByUid", uid)
-        if node and addr_user then
-            if not context.NODE then
-                context.NODE = math.tointeger(moon.env("NODE"))
-            end
-            if context.NODE == node then
-                return moon.call("lua", addr_user, cmd, ...)
-            else
-                return cluster.call(node, addr_user, cmd, ...)
-            end
-        end
-    end
-
-    context.try_send_user = function(uid,cmd, ...)
-        --moon.send("lua", context.addr_auth, "Auth.TrySendUser", uid, ...)
-        local node, addr_user = cluster.call(9999, 'usermgr', "getAddrUserByUid", uid)
-        if node and addr_user then
-            if not context.NODE then
-                context.NODE = math.tointeger(moon.env("NODE"))
-            end
-            if context.NODE == node then
-                return moon.call("lua", addr_user, cmd, ...)
-            else
-                return cluster.call(node, addr_user, cmd, ...)
-            end
-        end
-    end
+ 
 
     return command
 end

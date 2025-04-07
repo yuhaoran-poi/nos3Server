@@ -176,4 +176,45 @@ function Team.PBTeamInfoReqCmd()
     })
 end
 
+-- 队伍创建事件
+function Team.OnTeamCreated(uid, team_id)
+    local DB = scripts.UserModel.Get()
+    DB.team.team_id = team_id
+    DB.team.master_id = uid
+    DB.team.members = {[uid] = true}
+    DB.team.is_del = false
+end
+
+-- 队员加入事件
+function Team.OnTeamMemberJoined(team_id, uid)
+    local DB = scripts.UserModel.Get()
+    if DB.team.team_id == team_id then
+        DB.team.members[uid] = true
+    end
+end
+
+-- 队长变更事件
+function Team.OnTeamMasterChanged(team_id, new_master_uid)
+    local DB = scripts.UserModel.Get()
+    if DB.team.team_id == team_id then
+        DB.team.master_id = new_master_uid
+    end
+end
+
+-- 队员退出事件
+function Team.OnTeamMemberExited(team_id, uid)
+    local DB = scripts.UserModel.Get()
+    if DB.team.team_id == team_id then
+        DB.team.members[uid] = nil
+        
+        -- 如果退出的是自己，则清除队伍信息
+        if uid == DB.uid then
+            DB.team.team_id = 0
+            DB.team.master_id = 0
+            DB.team.members = {}
+            DB.team.is_del = true
+        end
+    end
+end
+
 return Team

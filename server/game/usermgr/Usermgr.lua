@@ -110,4 +110,46 @@ function Usermgr.NotifyLogout(msg)
     context.user_node[msg.uid] = nil
 end
 
+--- 获取用户user_addr
+---@param uid number 用户ID
+---@return number node_id   用户所在节点ID
+---@return number user_addr 用户地址
+function Usermgr.getAddrUserByUid(uid)
+    local info = context.user_node[uid]
+    if not info then
+        return 0, 0
+    end
+    return info.nid, info.addr_user
+end
+
+--- 获取在线用户列表
+---@param _uids table 用户ID列表，格式为 {uid1, uid2, ...}
+---@return table 在线用户列表，格式为 {uid1 = {node_id1,addr_user1}, uid2 = {node_id2,addr_user2}, ...}
+function Usermgr.getOnlineUsers(_uids)
+    local online_users = {}
+    for uid in pairs(_uids or {}) do
+        local info = context.user_node[uid]
+        if info then
+            online_users[uid] = { info.nid, info.addr_user }
+        end
+    end
+    return online_users
+end
+
+--- 获取不在线用户列表
+---@param _uids table 用户ID列表，格式为 {uid1, uid2,...}
+---@return table 不在线用户列表，格式为 {uid1, uid2,...}
+function Usermgr.getOfflineUsers(_uids)
+    local offline_users = {}
+    for uid in pairs(_uids or {}) do
+        local info = context.user_node[uid]
+        if not info then
+            table.insert(offline_users, uid)
+        end
+    end
+    return offline_users
+end
+
+ 
+
 return Usermgr
