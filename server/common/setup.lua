@@ -208,21 +208,28 @@ local function _internal(context)
         end
         base_context.S2C(ret, cmd_code, mtable, stubId)
     end
-
+ 
     base_context.S2C = function(net_id, cmd_code, mtable, stubId)
         forwardD2C(context, net_id, protocol.encodeMessagePacket(net_id, cmd_code, mtable, stubId or 0))
         --moon.raw_send('S2C', context.addr_gate, protocol.encodePacket(uid, cmd_code, mtable,mc))
     end
+    base_context.R2C = function(cmd_code, mtable, req)
+        base_context.S2C(context.net_id, cmd_code, mtable, req.msg_context.stub_id)
+    end
+         
     base_context.send_user = function(uid, cmd, ...)
         -- 查询uid对应的节点
-        local node, addr_user = cluster.call(3999, 'usermgr', "getAddrUserByUid", uid)
+        local res, err = cluster.call(3999, 'usermgr', "Usermgr.getAddrUserByUid", uid)
+        if not res then
+            print(err)
+            return
+        end
+        local node, addr_user = res.nid, res.addr_user
+        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         if not context.NODE then
             context.NODE = math.tointeger(moon.env("NODE"))
         end
-        if node == 0 or addr_user == 0 then
-            moon.warn("send_user failed, node = ", node, " addr_user = ", addr_user)
-            return
-        end
+       
         if context.NODE == node then
             moon.send("lua", addr_user, cmd, ...)
         else
@@ -240,8 +247,9 @@ local function _internal(context)
             uids = tmp
         end
         --查询在线用户列表
-        local online_uids = cluster.call(3999, "usermgr", "Usermgr.getOnlineUsers", uids)
+        local online_uids,err = cluster.call(3999, "usermgr", "Usermgr.getOnlineUsers", uids)
         if not online_uids then
+            print(err)
             return false, "getOnlineUsers failed"
         end
 
@@ -250,7 +258,7 @@ local function _internal(context)
         end
         --遍历在线用户列表，发送消息
         for uid, info in pairs(online_uids) do
-            local node, addr_user = info.node, info.addr_user
+            local node, addr_user = info.nid, info.addr_user
             if node ~= 0 or addr_user ~= 0 then
                 if context.NODE == node then
                     moon.send("lua", addr_user, cmd, ...)
@@ -269,11 +277,12 @@ local function _internal(context)
     --- send message to user-service and get results.
     base_context.call_user = function(uid, cmd, ...)
         --return moon.call("lua", context.addr_auth, "Auth.CallUser", uid, ...)
-        local node, addr_user = cluster.call(3999, 'usermgr', "getAddrUserByUid", uid)
-        if node == 0 or addr_user == 0 then
-            moon.warn("send_user failed, node = ", node, " addr_user = ", addr_user)
+        local res, err = cluster.call(3999, 'usermgr', "Usermgr.getAddrUserByUid", uid)
+        if not res then
+            print(err)
             return
         end
+        local node, addr_user = res.nid, res.addr_user
         if not context.NODE then
             context.NODE = math.tointeger(moon.env("NODE"))
         end

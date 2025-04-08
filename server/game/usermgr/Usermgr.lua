@@ -113,13 +113,8 @@ end
 --- 获取用户user_addr
 ---@param uid number 用户ID
 ---@return number node_id   用户所在节点ID
----@return number user_addr 用户地址
 function Usermgr.getAddrUserByUid(uid)
-    local info = context.user_node[uid]
-    if not info then
-        return 0, 0
-    end
-    return info.nid, info.addr_user
+    return context.user_node[uid]
 end
 
 --- 获取在线用户列表

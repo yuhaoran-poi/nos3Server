@@ -1,4 +1,4 @@
-require("common.LuaPanda").start("127.0.0.1", 8818)
+--require("common.LuaPanda").start("127.0.0.1", 8818)
 
 local moon = require("moon")
 local seri = require("seri")
@@ -77,7 +77,7 @@ moon.raw_dispatch("C2S", function(msg)
                     moon.error(res)
                     --context.S2C(CmdCode.S2CErrorCode, { code = 1 }) --server internal error
                 elseif res then
-                    moon.error(res)
+                    moon.info(res)
                     --context.S2C(CmdCode.S2CErrorCode, { code = res })
                 end
             end)
