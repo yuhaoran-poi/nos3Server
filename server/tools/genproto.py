@@ -129,7 +129,8 @@ namespace CommonNetCmd
 '''
 
 ######################TEMPLATE END#######################
-special_file_list=["common"]
+special_file_list=["common","team"]
+user_file_list=["team"]
 CommonNetUE = "./proto_out"
 LuaPB = ""
 
@@ -327,6 +328,11 @@ def gen_id_dict(sys_message,custom_message,version_crc,all_message):
         if service not in special_file_list:
            forward_content += "    " + cmd + \
                " = 'addr_" + service + "',\n"
+        else:
+            # 判断是否在 user_file_list 中
+            if service in user_file_list:
+                forward_content += "    " + cmd + \
+                    " = 'addr_user"  + "',\n"
                                    
   cmdcode_out_file="../common/CmdCode.lua"
   with open(cmdcode_out_file, "w", encoding='utf-8') as fobj:

@@ -201,8 +201,12 @@ local function _internal(context)
     --- send message to client.
     function base_context.S2CX(uid, cmd_code, mtable, stubId)
         -- 查询uid对应的节点
-        local net_id = cluster.call(9999, 'usermgr', "getNetIdByUid", uid)
-        base_context.S2C(net_id, cmd_code, mtable, stubId)
+        local ret, err = cluster.call(3999, 'usermgr', "getNetIdByUid", uid)
+        if not ret then
+            print(err)
+            return
+        end
+        base_context.S2C(ret, cmd_code, mtable, stubId)
     end
 
     base_context.S2C = function(net_id, cmd_code, mtable, stubId)
@@ -211,7 +215,7 @@ local function _internal(context)
     end
     base_context.send_user = function(uid, cmd, ...)
         -- 查询uid对应的节点
-        local node, addr_user = cluster.call(9999, 'usermgr', "getAddrUserByUid", uid)
+        local node, addr_user = cluster.call(3999, 'usermgr', "getAddrUserByUid", uid)
         if not context.NODE then
             context.NODE = math.tointeger(moon.env("NODE"))
         end
@@ -236,7 +240,7 @@ local function _internal(context)
             uids = tmp
         end
         --查询在线用户列表
-        local online_uids = cluster.call(9999, "usermgr", "Usermgr.getOnlineUsers", uids)
+        local online_uids = cluster.call(3999, "usermgr", "Usermgr.getOnlineUsers", uids)
         if not online_uids then
             return false, "getOnlineUsers failed"
         end
@@ -265,7 +269,7 @@ local function _internal(context)
     --- send message to user-service and get results.
     base_context.call_user = function(uid, cmd, ...)
         --return moon.call("lua", context.addr_auth, "Auth.CallUser", uid, ...)
-        local node, addr_user = cluster.call(9999, 'usermgr', "getAddrUserByUid", uid)
+        local node, addr_user = cluster.call(3999, 'usermgr', "getAddrUserByUid", uid)
         if node == 0 or addr_user == 0 then
             moon.warn("send_user failed, node = ", node, " addr_user = ", addr_user)
             return

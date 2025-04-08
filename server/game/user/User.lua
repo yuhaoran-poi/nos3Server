@@ -22,7 +22,7 @@ function User.Load(req)
     --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local function fn()
         -- 向Usermgr申请是否允许登录
-        local res, err = clusterd.call(9999, "usermgr", "Usermgr.ApplyLogin", { uid = req.uid, nid = moon.env("NODE"), user_addr = req.addr_user })
+        local res, err = clusterd.call(3999, "usermgr", "Usermgr.ApplyLogin", { uid = req.uid, nid = moon.env("NODE"), user_addr = req.addr_user })
         print("Usermgr.ApplyLogin", res, err)
         if res.error ~= "success" then
             return false
@@ -138,7 +138,7 @@ function User.Exit()
     end
 
     -- 通知usermgr
-    clusterd.call(9999, "usermgr", "Usermgr.NotifyLogout", { uid = context.uid, nid = moon.env("NODE") })
+    clusterd.call(3999, "usermgr", "Usermgr.NotifyLogout", { uid = context.uid, nid = moon.env("NODE") })
     
     moon.quit()
     return true

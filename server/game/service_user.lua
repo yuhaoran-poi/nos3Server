@@ -59,6 +59,7 @@ moon.raw_dispatch("C2S", function(msg)
             stub_id = MessagePack.stub_id,
             msg_type = MessagePack.msg_type
         }
+        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         --local subname, submsg = protocol.DecodeMessagePack(MessagePack)
         local msg_name = id_to_name(MessagePack.msg_type)
         if not command[msg_name] then

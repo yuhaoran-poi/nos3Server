@@ -58,6 +58,13 @@ local function run(node_conf)
         },
         {
             unique = true,
+            name = "db_server",
+            file = "moon/service/redisd.lua",
+            threadid = 1,
+            opts = db_conf.redis
+        },
+        {
+            unique = true,
             name = "node",
             file = "game/service_node.lua",
             threadid = 2,
@@ -101,6 +108,19 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("nodemgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("usermgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("teammgr"), "Start"))
+
+        local data = db.loadserverdata(moon.queryservice("db_server"))
+        if not data then
+            data = { boot_times = 0 }
+        else
+            data = json.decode(data)
+        end
+        ---服务器启动次数+1
+        data.boot_times = data.boot_times + 1
+        moon.env("SERVER_START_TIMES", tostring(data.boot_times))
+        ---初始化唯一ID生成器
+        uuid.init(1, tonumber(arg[1]), data.boot_times)
+
         ---加载完数据后 开始接受网络连接
         assert(moon.call("lua", moon.queryservice("cluster"), "Listen"))
     end

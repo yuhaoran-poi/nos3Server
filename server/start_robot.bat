@@ -1,1 +1,1 @@
-start cmd /k moon\moon.exe main_robot.lua 20000
+start cmd /k moon\moon.exe main_robot.lua 2000
