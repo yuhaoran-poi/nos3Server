@@ -739,7 +739,7 @@ memberData"<
 error (	Rerror(
 	room_data (2.PBRoomInfoRroomData4
 member_datas (2.PBRoomMemberInfoRmemberDatasbproto3
-Ÿ
+ 
 
 team.proto
 user.proto"¨
@@ -764,10 +764,10 @@ teamStatus"+
 uid (Ruid.
 	base_data (2.PBUserSimpleInfoRbaseData
 
-match_type (R	matchType"@
+match_type (R	matchType"A
 PBTeamCreateRspCmd
-code (Rcode
-teamId (RteamId"$
+code (Rcode
+team_id (RteamId"$
 PBTeamExitReqCmd
 uid (Ruid"&
 PBTeamExitRspCmd

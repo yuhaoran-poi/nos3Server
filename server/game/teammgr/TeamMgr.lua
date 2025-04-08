@@ -104,11 +104,11 @@ function Teammgr.ExitTeam(uid)
     -- 如果队伍没有成员了，则删除队伍
     if not next(team.members) then
         context.team_info[team_id] = nil
+        context.send_user(uid, "Team.OnTeamMemberExited", team_id,uid)
+    else
+        -- 广播成员退出事件
+        context.send_users(team.members, {}, "Team.OnTeamMemberExited", team_id, uid)
     end
-    
-    -- 广播成员退出事件
-    context.send_users(team.members, {}, "Team.OnTeamMemberExited", team_id, uid)
-    
     return true
 end
 

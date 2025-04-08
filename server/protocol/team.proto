@@ -42,7 +42,7 @@ message PBTeamCreateReqCmd
 message PBTeamCreateRspCmd
 {
     int32 code = 1;	
-	int64 teamId = 2;					//队伍ID
+	int64 team_id = 2;					//队伍ID
 }
 
 //组队 退出队伍

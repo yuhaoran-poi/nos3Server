@@ -37,7 +37,7 @@ local cur_index = 1
  
 local function read(fd)
     local now_cmd_data = {}
-    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local data, err = socket.read(fd, 2)
     if not data then
         return false, err
@@ -64,14 +64,25 @@ local function read(fd)
     return true, now_cmd_data
 end
 function Client.new(host, port)
- 
-    local client = setmetatable({}, { __index = Client, __newindex = Client })
+    local clientBase = {
+        fd = nil,
+        ok = false,
+        last_error = nil,
+        username = "robot",
+        password = "123456",
+        cb_map = {},
+        stub_id = 0,
+        uid = nil,
+        login_ok = false,
+        index = 0,
+    }
+    local client = setmetatable(clientBase, { __index = Client })
     -- 尝试建立socket连接
     local fd, err = socket.connect(host, port, moon.PTYPE_SOCKET_TCP)
     if not fd then
         client.last_error = err
         moon.error("connect failed: %s", err)
-        return setmetatable(client, {__index = Client,__newindex = Client})
+        return nil
     end
     
     client.fd = fd
@@ -80,6 +91,9 @@ function Client.new(host, port)
     client.password = "123456"
     client.cb_map = {}
     client.stub_id = 0
+    client.uid = nil
+    client.login_ok = false
+    client.index = 0
     -- 启动异步读取循环
     moon.async(function()
         while client.ok do
@@ -93,7 +107,7 @@ function Client.new(host, port)
             end
 
             for _, v in pairs(result) do
-                moon.info("received: ", v.cmd, v.data)
+                moon.info("received: ",client.index, v.cmd, v.data)
                 print_r(v.data)
                 ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 if v.stub_id > 0 then
@@ -143,12 +157,19 @@ function Client:help()
 	addbot                  index
 	delbot                  index
     curbot                  index
+    addlogin                   index
 ]]
     print(info)
 end
 
 function Client:exit()
     os.exit()
+end
+function Client:addlogin(index)
+   local bot = Client:addbot(index)
+   if bot then
+       bot:login()
+   end
 end
 
 function Client:addbot(index)
@@ -160,14 +181,16 @@ function Client:addbot(index)
   
     if all_robot[index] then
         print("robot found!")
-        return
+        return nil
     end
     all_robot[index] = robot
     cur_index = index
     print("add robot success!" .. index)
+    return robot
 end
 
 function Client:delbot(index)
+    index = tonumber(index) or 1
     local robot = all_robot[index]
     if not robot then print("robot not found!") return end
     robot:disconnect()
@@ -184,7 +207,9 @@ function Client:delbot(index)
 end
 
 function Client:curbot(index)
+    index = tonumber(index) or 1
     local robot = all_robot[index]
+    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if not robot then
         print("robot not found!")
         return

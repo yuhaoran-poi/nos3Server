@@ -38,7 +38,7 @@ function Team.PBTeamCreateReqCmd(req)
     if DB.team.team_id ~= 0 then
         context.R2C(CmdCode.PBTeamCreateRspCmd, {
             code = ErrorCode.TeamAlreadyInTeam
-        })
+        },req)
         return ErrorCode.TeamAlreadyInTeam
     end
     
@@ -48,14 +48,14 @@ function Team.PBTeamCreateReqCmd(req)
         print("CreateTeam failed:", err)
         context.R2C(CmdCode.PBTeamCreateRspCmd, {
             code = err or ErrorCode.TeamCreateFailed
-        })
+        },req)
         return err or ErrorCode.TeamCreateFailed
     end
     
     -- 返回队伍ID
     context.R2C(CmdCode.PBTeamCreateRspCmd, {
         code = ErrorCode.None,
-        teamId = team_id
+        team_id = team_id
     },req)
     
     return ErrorCode.None
@@ -96,6 +96,7 @@ end
 function Team.PBTeamExitReqCmd(req)
     -- 如果不在队伍中则不能退出
     local DB = scripts.UserModel.Get()
+    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if DB.team.team_id == 0 then
         context.R2C(CmdCode.PBTeamExitRspCmd, {
             code = ErrorCode.TeamNotInTeam
@@ -104,7 +105,7 @@ function Team.PBTeamExitReqCmd(req)
     end
     
     -- 调用teammgr服务退出队伍
-    local success, err = cluster.call(3999, "teammgr", "Teammgr.ExitTeam", req.uid)
+    local success, err = cluster.call(3999, "teammgr", "Teammgr.ExitTeam", context.uid)
     if not success then
         print("ExitTeam failed:", err)
         context.R2C(CmdCode.PBTeamExitRspCmd, {
@@ -133,7 +134,7 @@ function Team.PBTeamKickoutReqCmd(req)
     end
     
     -- 调用teammgr服务踢出队员
-    local success, err = cluster.call(3999, "teammgr", "Teammgr.KickoutMember", req.uid, req.target_uid)
+    local success, err = cluster.call(3999, "teammgr", "Teammgr.KickoutMember", context.uid, req.msg.target_uid)
     if not success then
         print("KickoutMember failed:", err)
         context.R2C(CmdCode.PBTeamKickoutRspCmd, {
@@ -144,7 +145,7 @@ function Team.PBTeamKickoutReqCmd(req)
     
     -- 返回踢出成功
     context.R2C(CmdCode.PBTeamKickoutRspCmd, {
-        target_uid = req.target_uid,
+        target_uid = req.msg.target_uid,
         code = ErrorCode.None
     },req)
     
@@ -184,6 +185,7 @@ end
 
 -- 队伍创建事件
 function Team.OnTeamCreated(uid, team_id)
+    moon.info("OnTeamCreated", uid, team_id)
     local DB = scripts.UserModel.Get()
     DB.team.team_id = team_id
     DB.team.master_id = uid
@@ -193,6 +195,7 @@ end
 
 -- 队员加入事件
 function Team.OnTeamMemberJoined(team_id, uid)
+    moon.info("OnTeamMemberJoined", team_id, uid)
     local DB = scripts.UserModel.Get()
     if DB.team.team_id == team_id then
         DB.team.members[uid] = true
@@ -201,6 +204,7 @@ end
 
 -- 队长变更事件
 function Team.OnTeamMasterChanged(team_id, new_master_uid)
+    moon.info("OnTeamMasterChanged", team_id, new_master_uid)
     local DB = scripts.UserModel.Get()
     if DB.team.team_id == team_id then
         DB.team.master_id = new_master_uid
@@ -209,12 +213,13 @@ end
 
 -- 队员退出事件
 function Team.OnTeamMemberExited(team_id, uid)
+    moon.info("OnTeamMemberExited", team_id, uid)
     local DB = scripts.UserModel.Get()
     if DB.team.team_id == team_id then
         DB.team.members[uid] = nil
         
         -- 如果退出的是自己，则清除队伍信息
-        if uid == DB.uid then
+        if uid == context.uid then
             DB.team.team_id = 0
             DB.team.master_id = 0
             DB.team.members = {}
@@ -225,12 +230,13 @@ end
 
 -- 队员被踢出事件
 function Team.OnTeamMemberKicked(team_id, target_uid)
+    moon.info("OnTeamMemberKicked", team_id, target_uid)
     local DB = scripts.UserModel.Get()
     if DB.team.team_id == team_id then
         DB.team.members[target_uid] = nil
         
         -- 如果被踢的是自己，则清除队伍信息
-        if target_uid == DB.uid then
+        if target_uid == context.uid then
             DB.team.team_id = 0
             DB.team.master_id = 0
             DB.team.members = {}

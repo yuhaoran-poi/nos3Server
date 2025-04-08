@@ -2977,7 +2977,7 @@ $
 F�
 
 F�bproto3
-�
+�
 
 team.proto
 user.proto"�
@@ -3002,10 +3002,10 @@ teamStatus"+
 uid (Ruid.
 	base_data (2.PBUserSimpleInfoRbaseData
 
-match_type (R	matchType"@
+match_type (R	matchType"A
 PBTeamCreateRspCmd
-code (Rcode
-teamId (RteamId"$
+code (Rcode
+team_id (RteamId"$
 PBTeamExitReqCmd
 uid (Ruid"&
 PBTeamExitRspCmd
@@ -3202,14 +3202,14 @@ master_uid (R	masterUid
 
  +
 
-,"	队伍ID
+,"	队伍ID
 
 
 ,
 
-,
+,
 
-,
+,
  
 0 3组队 退出队伍
 

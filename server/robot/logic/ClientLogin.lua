@@ -20,7 +20,7 @@ function Client:login()
         password = moon.md5("123456"),
     }
     self:send("PBClientLoginReqCmd", login_msg, function(msg)
-        print("rpc PBClientLoginReqCmd ret = ", msg)
+        print("rpc PBClientLoginReqCmd ret = ", self.index,msg)
         print_r(msg)
         if msg.code == 0 then
             self.login_ok = true
