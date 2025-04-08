@@ -125,7 +125,7 @@ end
 function Team.PBTeamKickoutReqCmd(req)
     -- 如果不是队长则不能踢人
     local DB = scripts.UserModel.Get()
-    if DB.team.master_id ~= req.uid then
+    if DB.team.master_id ~= context.uid then
         context.R2C(CmdCode.PBTeamKickoutRspCmd, {
             code = ErrorCode.TeamNotMaster
         },req)
