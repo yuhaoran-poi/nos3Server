@@ -28,7 +28,6 @@ local context = {
     uid = 0,
     scripts = {},
     ---other service address
-    addr_room = 0,
     net_id = 0,
 }
 
