@@ -6,7 +6,7 @@
 require("socket.core")
 print("LuaSocket is installed and loaded successfully.")
 
-require("common.LuaPanda").start("127.0.0.1", 8818)
+--require("common.LuaPanda").start("127.0.0.1", 8818)
 --print("LuaPanda successfully.")
 
 local moon = require("moon")
@@ -107,7 +107,7 @@ function Client.new(host, port)
             end
 
             for _, v in pairs(result) do
-                moon.info("received: ", v.cmd, v.data)
+                moon.info("received: ",client.index, v.cmd, v.data)
                 print_r(v.data)
                 ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 if v.stub_id > 0 then
@@ -157,12 +157,19 @@ function Client:help()
 	addbot                  index
 	delbot                  index
     curbot                  index
+    addlogin                   index
 ]]
     print(info)
 end
 
 function Client:exit()
     os.exit()
+end
+function Client:addlogin(index)
+   local bot = Client:addbot(index)
+   if bot then
+       bot:login()
+   end
 end
 
 function Client:addbot(index)
@@ -174,11 +181,12 @@ function Client:addbot(index)
   
     if all_robot[index] then
         print("robot found!")
-        return
+        return nil
     end
     all_robot[index] = robot
     cur_index = index
     print("add robot success!" .. index)
+    return robot
 end
 
 function Client:delbot(index)
