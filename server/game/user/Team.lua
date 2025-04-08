@@ -42,8 +42,9 @@ function Team.PBTeamCreateReqCmd(req)
     end
     
     -- 调用teammgr服务创建队伍
-    local team_id, err = cluster.call(9999, "teammgr", "Teammgr.CreateTeam", req.uid, req.match_type, req.base_data)
+    local team_id, err = cluster.call(3999, "teammgr", "Teammgr.CreateTeam", req.uid, req.match_type, req.base_data)
     if not team_id then
+        print("CreateTeam failed:", err)
         context.S2C(CmdCode.PBTeamCreateRspCmd, {
             code = err or ErrorCode.TeamCreateFailed
         })
@@ -71,8 +72,9 @@ function Team.PBTeamJoinReqCmd(req)
     end
     
     -- 调用teammgr服务加入队伍
-    local success, err = cluster.call(9999, "teammgr", "Teammgr.JoinTeam", req.uid, req.team_id, req.base_data)
+    local success, err = cluster.call(3999, "teammgr", "Teammgr.JoinTeam", req.uid, req.team_id, req.base_data)
     if not success then
+        print("JoinTeam failed:", err)
         context.S2C(CmdCode.PBTeamJoinRspCmd, {
             code = err or ErrorCode.TeamJoinFailed
         })
@@ -101,8 +103,9 @@ function Team.PBTeamExitReqCmd(req)
     end
     
     -- 调用teammgr服务退出队伍
-    local success, err = cluster.call(9999, "teammgr", "Teammgr.ExitTeam", req.uid)
+    local success, err = cluster.call(3999, "teammgr", "Teammgr.ExitTeam", req.uid)
     if not success then
+        print("ExitTeam failed:", err)
         context.S2C(CmdCode.PBTeamExitRspCmd, {
             code = err or ErrorCode.TeamExitFailed
         })
@@ -129,8 +132,9 @@ function Team.PBTeamKickoutReqCmd(req)
     end
     
     -- 调用teammgr服务踢出队员
-    local success, err = cluster.call(9999, "teammgr", "Teammgr.KickoutMember", req.uid, req.target_uid)
+    local success, err = cluster.call(3999, "teammgr", "Teammgr.KickoutMember", req.uid, req.target_uid)
     if not success then
+        print("KickoutMember failed:", err)
         context.S2C(CmdCode.PBTeamKickoutRspCmd, {
             code = err or ErrorCode.TeamKickoutFailed
         })
@@ -160,8 +164,9 @@ function Team.PBTeamInfoReqCmd()
     end
     
     -- 从teammgr服务获取队伍信息
-    local team_info, err = cluster.call(9999, "teammgr", "Teammgr.GetTeamInfo", DB.team.team_id)
+    local team_info, err = cluster.call(3999, "teammgr", "Teammgr.GetTeamInfo", DB.team.team_id)
     if not team_info then
+        print("GetTeamInfo failed:", err)
         context.S2C(CmdCode.PBTeamInfoRspCmd, {
             code = err or ErrorCode.TeamGetInfoFailed,
             team_info = nil
@@ -209,6 +214,22 @@ function Team.OnTeamMemberExited(team_id, uid)
         
         -- 如果退出的是自己，则清除队伍信息
         if uid == DB.uid then
+            DB.team.team_id = 0
+            DB.team.master_id = 0
+            DB.team.members = {}
+            DB.team.is_del = true
+        end
+    end
+end
+
+-- 队员被踢出事件
+function Team.OnTeamMemberKicked(team_id, target_uid)
+    local DB = scripts.UserModel.Get()
+    if DB.team.team_id == team_id then
+        DB.team.members[target_uid] = nil
+        
+        -- 如果被踢的是自己，则清除队伍信息
+        if target_uid == DB.uid then
             DB.team.team_id = 0
             DB.team.master_id = 0
             DB.team.members = {}

@@ -5,23 +5,23 @@ local common = require "common"
 local CmdCode = common.CmdCode
 local ErrorCode = common.ErrorCode
 
----@type teammgr_context
+---@type Teammgr_context
 local context = ...
 
----@class TeamMgr
-local TeamMgr = {}
+---@class Teammgr
+local Teammgr = {}
 
  
-function TeamMgr.Init()
+function Teammgr.Init()
     return true
 end
 
-function TeamMgr.Start()
+function Teammgr.Start()
     return true
 end
  
 -- 创建队伍
-function TeamMgr.CreateTeam(uid, match_type, base_data)
+function Teammgr.CreateTeam(uid, match_type, base_data)
     -- 检查用户是否已在队伍中
     if context.user_team[uid] then
         return nil, ErrorCode.TeamAlreadyInTeam
@@ -45,7 +45,7 @@ function TeamMgr.CreateTeam(uid, match_type, base_data)
 end
 
 -- 加入队伍
-function TeamMgr.JoinTeam(uid, team_id, base_data)
+function Teammgr.JoinTeam(uid, team_id, base_data)
     -- 检查用户是否已在其他队伍中
     if context.user_team[uid] then
         return false, ErrorCode.TeamAlreadyInTeam
@@ -72,7 +72,7 @@ function TeamMgr.JoinTeam(uid, team_id, base_data)
 end
 
 -- 退出队伍
-function TeamMgr.ExitTeam(uid)
+function Teammgr.ExitTeam(uid)
     -- 查找用户所在的队伍
     local team_id = context.user_team[uid]
     if not team_id then
@@ -112,7 +112,7 @@ function TeamMgr.ExitTeam(uid)
 end
 
 -- 踢出队员
-function TeamMgr.KickoutMember(master_uid, target_uid)
+function Teammgr.KickoutMember(master_uid, target_uid)
     -- 查找队长所在的队伍
     local team_id = context.user_team[master_uid]
     local team = context.team_info[team_id]
@@ -131,13 +131,13 @@ function TeamMgr.KickoutMember(master_uid, target_uid)
     context.user_team[target_uid] = nil
     
     -- 广播成员被踢出事件
-    -- moon.send("lua", moon.queryservice("user"), "OnTeamMemberKicked", team_id, target_uid)
+    context.send_user(target_uid, "Team.OnTeamMemberKicked", team_id, target_uid)
     
     return true
 end
 
 -- 获取队伍信息
-function TeamMgr.GetTeamInfo(team_id)
+function Teammgr.GetTeamInfo(team_id)
     local team = context.team_info[team_id]
     if not team then
         return nil
@@ -145,4 +145,4 @@ function TeamMgr.GetTeamInfo(team_id)
     return team
 end
 
-return TeamMgr
+return Teammgr

@@ -30,7 +30,7 @@ conf.db[1] = { redis = db_redis[1], pg = db_pg[1], mysql = db_mysql[1] }
 conf.db[2] = { redis = db_redis[1], pg = db_pg[1], mysql = db_mysql[1] }
 conf.db[3] = { redis = db_redis[1], pg = db_pg[1], mysql = db_mysql[1] }
 conf.db[100] = { redis = db_redis[1], pg = db_pg[1], mysql = db_mysql[1] }
-conf.db[9999] = { redis = db_redis[1], pg = db_pg[1], mysql = db_mysql[1] }
-conf.db[20000] = { redis = db_redis[1], pg = db_pg[1], mysql = db_mysql[1] }
+conf.db[3999] = { redis = db_redis[1], pg = db_pg[1], mysql = db_mysql[1] }
+conf.db[2000] = { redis = db_redis[1], pg = db_pg[1], mysql = db_mysql[1] }
 
 return conf
