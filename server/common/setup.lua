@@ -237,9 +237,10 @@ local function _internal(context)
         end
     end
     base_context.send_users = function(uids, not_uids, cmd, ...)
+        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         if not_uids then
             local tmp = {}
-            for _, uid in ipairs(uids) do
+            for _,uid in ipairs(uids) do
                 if not not_uids[uid] then
                     table.insert(tmp, uid)
                 end
@@ -247,7 +248,8 @@ local function _internal(context)
             uids = tmp
         end
         --查询在线用户列表
-        local online_uids,err = cluster.call(3999, "usermgr", "Usermgr.getOnlineUsers", uids)
+        local online_uids, err = cluster.call(3999, "usermgr", "Usermgr.getOnlineUsers", uids)
+        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         if not online_uids then
             print(err)
             return false, "getOnlineUsers failed"

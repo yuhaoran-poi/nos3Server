@@ -73,7 +73,7 @@ function Team.PBTeamJoinReqCmd(req)
     end
     
     -- 调用teammgr服务加入队伍
-    local success, err = cluster.call(3999, "teammgr", "Teammgr.JoinTeam", req.uid, req.team_id, req.base_data)
+    local success, err = cluster.call(3999, "teammgr", "Teammgr.JoinTeam", context.uid, req.msg.team_id, DB.simple)
     if not success then
         print("JoinTeam failed:", err)
         context.R2C(CmdCode.PBTeamJoinRspCmd, {
@@ -85,8 +85,7 @@ function Team.PBTeamJoinReqCmd(req)
     -- 返回加入成功
     context.R2C(CmdCode.PBTeamJoinRspCmd, {
         code = ErrorCode.None,
-        master_uid = req.master_uid,
-        team_id = req.team_id
+        team_id = req.msg.team_id
     },req)
     
     return ErrorCode.None
@@ -126,7 +125,7 @@ end
 function Team.PBTeamKickoutReqCmd(req)
     -- 如果不是队长则不能踢人
     local DB = scripts.UserModel.Get()
-    if DB.team.master_id ~= req.uid then
+    if DB.team.master_id ~= context.uid then
         context.R2C(CmdCode.PBTeamKickoutRspCmd, {
             code = ErrorCode.TeamNotMaster
         },req)
@@ -185,7 +184,7 @@ end
 
 -- 队伍创建事件
 function Team.OnTeamCreated(uid, team_id)
-    moon.info("OnTeamCreated", uid, team_id)
+    moon.info("OnTeamCreated", context.uid,uid, team_id)
     local DB = scripts.UserModel.Get()
     DB.team.team_id = team_id
     DB.team.master_id = uid
@@ -195,16 +194,21 @@ end
 
 -- 队员加入事件
 function Team.OnTeamMemberJoined(team_id, uid)
-    moon.info("OnTeamMemberJoined", team_id, uid)
+    moon.info("OnTeamMemberJoined:",context.uid, team_id, uid)
     local DB = scripts.UserModel.Get()
-    if DB.team.team_id == team_id then
+    if context.uid == uid then
+        DB.team.team_id = team_id
+        DB.team.members = { [uid] = true }
+        DB.team.is_del = false
+    elseif DB.team.team_id == team_id then
         DB.team.members[uid] = true
     end
+
 end
 
 -- 队长变更事件
 function Team.OnTeamMasterChanged(team_id, new_master_uid)
-    moon.info("OnTeamMasterChanged", team_id, new_master_uid)
+    moon.info("OnTeamMasterChanged:", context.uid,team_id, new_master_uid)
     local DB = scripts.UserModel.Get()
     if DB.team.team_id == team_id then
         DB.team.master_id = new_master_uid
@@ -213,7 +217,7 @@ end
 
 -- 队员退出事件
 function Team.OnTeamMemberExited(team_id, uid)
-    moon.info("OnTeamMemberExited", team_id, uid)
+    moon.info("OnTeamMemberExited:", context.uid,team_id, uid)
     local DB = scripts.UserModel.Get()
     if DB.team.team_id == team_id then
         DB.team.members[uid] = nil
@@ -230,7 +234,7 @@ end
 
 -- 队员被踢出事件
 function Team.OnTeamMemberKicked(team_id, target_uid)
-    moon.info("OnTeamMemberKicked", team_id, target_uid)
+    moon.info("OnTeamMemberKicked:", context.uid,team_id, target_uid)
     local DB = scripts.UserModel.Get()
     if DB.team.team_id == team_id then
         DB.team.members[target_uid] = nil
