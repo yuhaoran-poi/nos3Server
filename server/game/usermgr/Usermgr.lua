@@ -122,10 +122,10 @@ end
 ---@return table 在线用户列表，格式为 {uid1 = {node_id1,addr_user1}, uid2 = {node_id2,addr_user2}, ...}
 function Usermgr.getOnlineUsers(_uids)
     local online_users = {}
-    for uid in pairs(_uids or {}) do
+    for _,uid in ipairs(_uids or {}) do
         local info = context.user_node[uid]
         if info then
-            online_users[uid] = { info.nid, info.addr_user }
+            online_users[uid] = info
         end
     end
     return online_users

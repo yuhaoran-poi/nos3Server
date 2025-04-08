@@ -57,7 +57,7 @@ function Teammgr.JoinTeam(uid, team_id, base_data)
         return false, ErrorCode.TeamNotExist
     end
     
-    -- 检查队伍是否已满(假设最大5人)
+    -- 检查队伍是否已满(假设最大5人)a
     if #team.members >= 5 then
         return false, ErrorCode.TeamFull
     end
@@ -68,7 +68,11 @@ function Teammgr.JoinTeam(uid, team_id, base_data)
     context.user_team[uid] = team_id
     
     -- 广播成员加入事件
-    context.send_users(team.members, {}, "Team.OnTeamMemberJoined", team_id, uid)
+    local member_keys = {}
+    for k,_ in pairs(team.members) do
+        table.insert(member_keys, k)
+    end
+    context.send_users(member_keys, {}, "Team.OnTeamMemberJoined", team_id, uid)
     return true
 end
 
@@ -98,7 +102,11 @@ function Teammgr.ExitTeam(uid)
             break
         end
         -- 广播队长变更事件
-        context.send_users(team.members,{}, "Team.OnTeamMasterChanged", team_id, team.master_uid)
+        local member_keys = {}
+        for k,_ in pairs(team.members) do
+            table.insert(member_keys, k)
+        end
+        context.send_users(member_keys, {}, "Team.OnTeamMasterChanged", team_id, team.master_uid)
     end
     
     -- 如果队伍没有成员了，则删除队伍
@@ -107,7 +115,11 @@ function Teammgr.ExitTeam(uid)
         context.send_user(uid, "Team.OnTeamMemberExited", team_id,uid)
     else
         -- 广播成员退出事件
-        context.send_users(team.members, {}, "Team.OnTeamMemberExited", team_id, uid)
+        local member_keys = {}
+        for k,_ in pairs(team.members) do
+            table.insert(member_keys, k)
+        end
+        context.send_users(member_keys, {}, "Team.OnTeamMemberExited", team_id, uid)
     end
     return true
 end
