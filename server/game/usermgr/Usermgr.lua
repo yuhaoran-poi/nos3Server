@@ -25,7 +25,7 @@ function Usermgr.Start()
 end
 
 function Usermgr.Shutdown()
-    for _, n in pairs(context.node_map) do
+    for _, n in pairs(context.node_info) do
         socket.close(n.fd)
     end
     if listenfd then
