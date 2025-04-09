@@ -112,7 +112,7 @@ function Client:deal_apply_room(deal_uid, deal_op)
     end)
 end
 
-function Client:exit_room()
+function Client:exit_room(exit_roomid)
     if not self.ok then
         print("connect failed, err = ", err)
         return
@@ -120,7 +120,7 @@ function Client:exit_room()
 
     local req_msg = {
         uid = self.uid,
-        roomid = self.roomid,
+        roomid = self.roomid or exit_roomid,
     }
     self:send("PBExitRoomReqCmd", req_msg, function(msg)
         print("rpc PBExitRoomReqCmd ret = ", self.index, msg)

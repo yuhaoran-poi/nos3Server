@@ -33,8 +33,8 @@ function Console.Init()
 end
 
 function Console.Notify_nodemgr(nodeinfo)
-	--local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP();
-	local res, err = clusterd.call(3999, "nodemgr", "Nodemgr.BindNode", nodeinfo)
+    local res, err = clusterd.call(3999, "nodemgr", "Nodemgr.BindNode", nodeinfo)
+	local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP();
     print("Notify_nodemgr", res.error, err)
 	if res.error == "success" then
 		return true-- body

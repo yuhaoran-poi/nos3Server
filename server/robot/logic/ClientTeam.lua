@@ -93,4 +93,3 @@ function Client:destroy_team()
     end)
 end
 
- 

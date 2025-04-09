@@ -177,6 +177,7 @@ moon.async(function()
 
     moon.env("NODE", arg[1])
     moon.env("SERVER_NAME", node_conf.type.."-"..tostring(node_conf.node))
+    moon.env("SERVER_TYPE", node_conf.type)
     run(node_conf)
 end)
 

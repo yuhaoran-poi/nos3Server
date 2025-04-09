@@ -29,7 +29,8 @@ end)
 
 local function load_scripts(context, sname)
     --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP();
-    local dir = strfmt("game/%s/", sname)
+    local server_type = moon.env("SERVER_TYPE") or "game"
+    local dir = strfmt("%s/%s/", server_type, sname)
     local scripts = moon.env_unpacked(dir)
     if not scripts then
         scripts = {}

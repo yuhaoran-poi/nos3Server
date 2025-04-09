@@ -16,6 +16,8 @@ if _G["__init__"] then
     }
 end
 
+--require("common.LuaPanda").start("127.0.0.1", 8818)
+
 local moon = require("moon")
 local socket = require("moon.socket")
 local json = require("json")
@@ -181,7 +183,7 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("cluster"), "Listen"))
         assert(moon.call("lua", moon.queryservice("gate"), "Start"))
         assert(moon.call("lua", moon.queryservice("dgate"), "Start"))
-        -- local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP();
+        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP();
         local nodeinfo = {
             nid = moon.env("NODE"),
             chost = "127.0.0.1",
@@ -282,7 +284,8 @@ moon.async(function()
     local node_conf = json.decode(response.body)
 
     moon.env("NODE", arg[1])
-    moon.env("SERVER_NAME", node_conf.type.."-"..tostring(node_conf.node))
+    moon.env("SERVER_NAME", node_conf.type .. "-" .. tostring(node_conf.node))
+    moon.env("SERVER_TYPE", node_conf.type)
     run(node_conf)
 end)
 
