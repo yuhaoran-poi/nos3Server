@@ -468,7 +468,6 @@ monsConfid$
 ITEM_OPERATION_TYPE_UPDATA
 ITEM_OPERATION_TYPE_DELETE
 ITEM_OPERATION_TYPE_ADDbproto3
-<<<<<<< HEAD
 ¶v
 guild.proto
 user.proto"y
@@ -1148,10 +1147,7 @@ PBRankInfo
 uid (Ruid(
 	rank_info (2.PBRankInfoRrankInfo(
 	self_data (2.PBRankDataRselfDatabproto3
-´
-=======
 ‹
->>>>>>> aed752c0c2145bc874ea688837d8dbae041a1d75
 
 room.proto
 user.proto"Ú

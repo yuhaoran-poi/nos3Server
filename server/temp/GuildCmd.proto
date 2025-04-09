@@ -1,0 +1,1585 @@
+syntax = "proto2";
+
+import "xCommond.proto";
+import "GameDataGuild.proto";
+import "GameDataUser.proto";
+import "Entity.proto";
+import "GameDataItem.proto";
+
+// 
+enum PBGuildCmdType {
+
+    PB_GUILD_LOGIN_DATA_LOAD_REQ_CMD     = 1; // 登录请求加载公会数据
+    PB_GUILD_LOGIN_DATA_LOAD_RSP_CMD     = 2; // 加载公会数据返回 
+
+    PB_GUILD_FULL_DATA_UPDATE_CMD        = 3; // 更新自己的公会信息
+    PB_GUILD_HEARTBEAT_FRIEND_CMD        = 4; // 公会中的心跳
+
+    PB_GUILD_NOT_FIND_NOTIFY_ENTER_CMD   = 5; // 如果好友请求加入公会 但是没有找到玩家的数据 去通知大厅玩家重写进入
+    
+	//创建公会
+	PB_GUILD_CREATE_GUILD_REQ_CMD = 6;
+	PB_GUILD_CREATE_GUILD_RSP_CMD = 7;
+	
+	//申请加入公会
+	PB_GUILD_APPLY_JOIN_GUILD_REQ_CMD = 8;
+	PB_GUILD_APPLY_JOIN_GUILD_RSP_CMD = 9;
+	
+	//回复申请加入公会
+	PB_GUILD_ANSWER_APPLY_JOIN_GUILD_REQ_CMD = 10;
+	PB_GUILD_ANSWER_APPLY_JOIN_GUILD_RSP_CMD = 11;
+	
+	//搜索公会
+	PB_GUILD_SEARCH_GUILD_REQ_CMD = 12;
+	PB_GUILD_SEARCH_GUILD_RSP_CMD = 13;
+	
+	//邀请加入公会
+	PB_GUILD_INVITE_JOIN_GUILD_REQ_CMD = 14;
+	PB_GUILD_INVITE_JOIN_GUILD_RSP_CMD = 15;
+	
+	//回复邀请加入公会
+	PB_GUILD_ANSWER_INVITE_JOIN_REQ_CMD = 16;
+	PB_GUILD_ANSWER_INVITE_JOIN_RSP_CMD = 17;
+	
+	//退出公会
+	PB_GUILD_QUIT_GUILD_REQ_CMD = 18;
+	PB_GUILD_QUIT_GUILD_RSP_CMD = 19;
+	
+	//踢出公会
+	PB_GUILD_EXPEL_QUIT_GUILD_REQ_CMD = 20;
+	PB_GUILD_EXPEL_QUIT_GUILD_RSP_CMD = 21;
+	
+	//公会授予职位
+	PB_GUILD_GRANT_REQ_CMD = 22;
+	PB_GUILD_GRANT_RSP_CMD = 23;
+	
+	//公会转让
+	PB_GUILD_DEMISE_REQ_CMD = 24;
+	PB_GUILD_DEMISE_RSP_CMD = 25;
+	
+	//公会解散
+	PB_GUILD_DISMISS_REQ_CMD = 26;
+	PB_GUILD_DISMISS_RSP_CMD = 27;
+	
+	//公会解冻
+	PB_GUILD_THAW_REQ_CMD = 28;
+	PB_GUILD_THAW_RSP_CMD = 29;
+	
+	//公会修改公告
+	PB_GUILD_MODIFY_ANNOUNCEMENT_REQ_CMD = 30;
+	PB_GUILD_MODIFY_ANNOUNCEMENT_RSP_CMD = 31;
+	
+	//公会增加职位
+	PB_GUILD_ADD_DUTY_REQ_CMD = 32;
+	PB_GUILD_ADD_DUTY_RSP_CMD = 33;
+	
+	//公会修改职位权限
+	PB_GUILD_MODIFY_RIGHT_REQ_CMD = 34;
+	PB_GUILD_MODIFY_RIGHT_RSP_CMD = 35;
+	
+	//公会升级
+	PB_GUILD_UPGRADE_REQ_CMD = 36;
+	PB_GUILD_UPGRADE_RSP_CMD = 37;
+	
+	//公会头像修改
+	PB_GUILD_MODIFY_HEADICON_REQ_CMD = 38;
+	PB_GUILD_MODIFY_HEADICON_RSP_CMD = 39;
+	
+	//获取申请列表
+	PB_GUILD_GET_APPLY_LIST_REQ_CMD = 40;
+	PB_GUILD_GET_APPLY_LIST_RSP_CMD = 41;
+	
+	//修改公会名称
+	PB_GUILD_MODIFY_NAME_REQ_CMD = 42;
+	PB_GUILD_MODIFY_NAME_RSP_CMD = 43;
+	
+	//物品兑换
+	PB_GUILD_EXCHANGE_ITEM_REQ_CMD = 44;
+	PB_GUILD_EXCHANGE_ITEM_RSP_CMD = 45;
+	
+	//接受任务
+	PB_GUILD_TASK_ACCEPT_REQ_CMD = 46;
+	PB_GUILD_TASK_ACCEPT_RSP_CMD = 47;
+	
+	//领取任务奖励
+	PB_GUILD_TASK_GetReward_REQ_CMD = 48;
+	PB_GUILD_TASK_GetReward_RSP_CMD = 49;
+	
+	//更新任务状态
+	PB_GUILD_UPDATE_TASK_INFO_RSP_CMD = 50;
+	//更新任务列表
+	PB_GUILD_UPDATE_TASK_LIST_RSP_CMD = 51;
+
+	//获取公会列表
+	PB_GUILD_GET_GUILD_LIST_REQ_CMD = 52;
+	PB_GUILD_GET_GUILD_LIST_RSP_CMD = 53;
+	
+//设置玩家的公会信息到玩家对象上，用于快捷访问
+	PB_GUILD_PLAYER_SET_GUILD_INFO_CMD = 54;
+	
+	//更新公会信息
+	PB_GUILD_UPDATE_GUILD_INFO_CMD = 55;
+	
+	//更新公会记录信息
+	PB_GUILD_UPDATE_GUILD_RECORD_INFO_CMD = 56;	
+	
+	//更新自己已申请的公会记录信息
+	PB_GUILD_UPDATE_ME_APPLY_GUILD_LIST_CMD = 57;	
+	
+	//通知公会有人申请
+	PB_GUILD_Boardcast_PLAYER_APPLY_CMD = 58;	
+	
+	//广播全公会，通知有玩家加入公会
+	PB_GUILD_Boardcast_PLAYER_JOIN_CMD = 59;
+	//广播全公会，通知有玩家退出公会
+	PB_GUILD_Boardcast_PLAYER_EXIT_CMD = 60;
+	
+	//获取公会成员请求
+	PB_GUILD_GET_MEMBERS_REQ_CMD = 61;
+	PB_GUILD_GET_MEMBERS_RSP_CMD = 62;
+	
+	//更新申请列表
+	PB_GUILD_UPDATE_APPLY_LIST_2_GUILD_MGR = 63;
+	
+	//更新公会的信息到GuildMgr缓存。
+	PB_GUILD_UPDATE_SIMPLE_INFO_2_GUILD_MGR = 64;
+	//通知公会解散
+	PB_GUILD_Boardcast_GUILD_DISMISS = 65;
+	
+		//删除公会职位
+	PB_GUILD_DEL_DUTY_REQ_CMD = 66;
+	PB_GUILD_DEL_DUTY_RSP_CMD = 67;
+
+		//修改公会职位名称
+	PB_GUILD_MODIFY_DUTY_NAME_REQ_CMD = 68;
+	PB_GUILD_MODIFY_DUTY_NAME_RSP_CMD = 69;
+
+		//修改公会职位等级
+	PB_GUILD_MODIFY_DUTY_LEVEL_REQ_CMD = 70;
+	PB_GUILD_MODIFY_DUTY_LEVEL_RSP_CMD = 71;	
+	
+	//更新最新的职位列表
+	PB_GUILD_UPDATE_DUTY_LIST_CMD = 72;	
+	//更新公会等级
+	PB_GUILD_UPDATE_GUILD_LEVEL_CMD = 73;
+		
+	//战队改名
+	PB_GUILD_CHANGE_GUILD_NAME_REQ_CMD = 74;	
+	PB_GUILD_CHANGE_GUILD_NAME_RSP_CMD = 75;
+	
+	//战队提升人数上线
+	PB_GUILD_UPGRADE_MEMBER_MAXCOUNT_REQ_CMD = 76;	
+	PB_GUILD_UPGRADE_MEMBER_MAXCOUNT_RSP_CMD = 77;
+	
+	//战队捐赠
+	PB_GUILD_DONATE_REQ_CMD = 78;	
+	PB_GUILD_DONATE_RSP_CMD = 79;
+	
+	//战队领工资
+	PB_GUILD_GET_SALARY_REQ_CMD = 80;	
+	PB_GUILD_GET_SALARY_RSP_CMD = 81;
+	
+	//战队仓库更新
+	PB_GUILD_UPDATE_GUILD_BAG_CMD = 82;	
+	//更新玩家公会数据
+	PB_GUILD_UPDATE_GUILD_USER_DATA = 83;	
+	//公会添加物品
+	PB_GUILD_ADD_ITEMS = 84;
+	
+	//设置加入公会条件
+	PB_GUILD_JOIN_CONDITION_REQ_CMD = 85;
+	PB_GUILD_JOIN_CONDITION_RSP_CMD = 86;
+	
+	//更新公会邀请记录
+	PB_GUILD_UPDATE_ME_INVITE_GUILD_LIST_CMD = 87;
+	PB_GUILD_UPDATE_INVITE_LIST_2_GUILD_MGR = 88;
+	
+	//拉取公会记录
+	PB_GUILD_GET_RECORD_LIST_REQ = 89;
+	PB_GUILD_GET_RECORD_LIST_RSP = 90;
+	
+	//设置战队战利品管理员
+	PB_GUILD_SPOILS_MANANGER_SET_REQ = 91;
+	PB_GUILD_SPOILS_MANANGER_SET_RSP = 92;
+	
+	//管理员设置成员dkp值
+	PB_GUILD_DKP_MODIFY_REQ = 93;
+	PB_GUILD_DKP_MODIFY_RSP = 94;
+	
+	//发送战利品邮件请求
+	PB_SEND_GUILD_SPOILS_REQ = 95;
+	PB_SEND_GUILD_SPOILS_RESP = 96;
+	
+	
+	
+	PB_LOBBYGATE_NOTIFY_GUILD_INIT = 100;
+	PB_LOBBYGATE_NOTIFY_GUILD_INIT_SUCC = 101;
+	
+	//更新公会商店物品
+	PB_GUILD_UPDATE_SHOP_REQ = 102;
+	PB_GUILD_UPDATE_SHOP_CMD = 103;
+	PB_GUILD_SHOP_BUY_REQ = 104;
+	PB_GUILD_SHOP_BUY_RSP = 105;
+	
+	//公会任务
+	PB_GUILD_DAYMISSION_AWARD_REQ_CMD = 106;
+	PB_GUILD_RECIVE_DAYMISSION_AWARD_RSP_CMD = 107;
+	
+	//购买推荐位
+	PB_GUILD_BUY_RECOMMEND_REQ = 108;
+	PB_GUILD_BUY_RECOMMEND_RSP  = 109;
+	
+	//GM命令增加/减少公会物品
+	PB_GUILD_GM_ADDITEM2BAG_REQ = 110;
+	
+	//减少公会物品
+	PB_GUILD_DEL_ITEMS = 111;
+	//设置公会头像
+	PB_GUILD_SET_HEAD_REQ = 112;
+	PB_GUILD_SET_HEAD_RSP = 113;
+	
+	//设置公会状态
+	PB_SET_GUILDSTATUS_REQ = 114;
+	//设置公会捐赠
+	PB_SET_GUILD_JUANZENG = 115;
+}
+
+// 协议大类定义
+message PBGuildCmd
+{
+    optional CmdType cmd = 1 [default = PB_GUILD_CMD];
+}
+
+// GM命令更新公会背包数据
+message PBGuildAddItems2Bag
+{
+	enum MsgID { ID = 200110; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_GM_ADDITEM2BAG_REQ];
+    // 协议数据
+    // 公会记录
+	optional uint32 guildid = 3;//公会ID
+	optional PBItemS items = 4;	//添加物品列表
+	optional uint32 add_or_del = 5;//加操作还是减操作
+}
+
+// 更新自己的公会玩家数据
+message PBGuildAddItems
+{
+	enum MsgID { ID = 200001; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_ADD_ITEMS];
+    // 协议数据
+    // 公会记录
+	optional PBItemS items = 3;	//添加物品列表
+}
+
+// 删除公会物品
+message PBGuildDelItems
+{
+	enum MsgID { ID = 200111; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_DEL_ITEMS];
+    // 协议数据
+    // 公会记录
+	optional PBItemS items = 3;	//添加物品列表
+}
+
+
+// 更新自己的公会玩家数据
+message PBGuildUpdateGuildUserData
+{
+	enum MsgID { ID = 200002; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPDATE_GUILD_USER_DATA];
+    // 协议数据
+    // 公会记录
+	optional PBGuildMemberData user_data = 3;	//自己的最新公会数据
+}
+
+// 更新公会仓库
+message PBGuildUpdateGuildBagCmd
+{
+	enum MsgID { ID = 200003; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPDATE_GUILD_BAG_CMD];
+    // 协议数据
+    // 公会记录
+	optional PBItemS items = 3;	//变化的仓库物品列表
+}
+
+// 更新公会等级
+message PBGuildUpdateGuildLevelCmd
+{
+	enum MsgID { ID = 200004; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPDATE_GUILD_LEVEL_CMD];
+    // 协议数据
+    // 公会记录
+	optional uint32 new_level = 3;	//最新等级
+}
+
+//提升公会最大人数的请求
+message PBGuildUpgradeMemberMaxcountReq
+{
+	enum MsgID { ID = 200005; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPGRADE_MEMBER_MAXCOUNT_REQ_CMD];
+    // 协议数据
+	optional uint32 uid = 3;
+}
+
+//提升公会最大人数的返回
+message PBGuildUpgradeMemberMaxcountRsp
+{
+	enum MsgID { ID = 200006; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPGRADE_MEMBER_MAXCOUNT_RSP_CMD];
+    // 协议数据
+    // 玩家的数据
+    optional uint32 cur_member_maxcount = 3;
+	optional uint32 sucucess = 4;  //1成功 0提示灵币不足 
+}
+
+//公会捐赠请求
+message PBGuildDonateReq
+{
+	enum MsgID { ID = 200007; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_DONATE_REQ_CMD];
+    // 协议数据
+	optional uint32 uid = 3;
+	optional uint32 num = 4;	//捐赠数量（只能灵石）
+	optional uint32 item_id = 5; //注意这个值如果不为0就是捐灵石，否则就是战利品
+}
+
+//公会捐赠返回
+message PBGuildDonateRsp
+{
+	enum MsgID { ID = 200008; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_DONATE_RSP_CMD];
+    // 协议数据
+    // 玩家的数据
+	optional uint32 num = 3;	//捐赠数量（只能灵石）
+	optional uint32 item_id = 4; //注意这个值如果不为0就是捐灵石，否则就是战利品
+}
+
+
+//战队领工资请求
+message PBGuildGetSalaryReq
+{
+	enum MsgID { ID = 200009; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_GET_SALARY_REQ_CMD];
+    // 协议数据
+	optional uint32 uid = 3;
+}
+
+//战队领工资返回
+message PBGuildGetSalaryRsp
+{
+	enum MsgID { ID = 200010; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_GET_SALARY_RSP_CMD];
+    // 协议数据
+    // 玩家的数据
+	optional PBItemS get_items = 3;	//获得的物品（列表）
+}
+
+
+
+// 更新公会职位列表信息（延迟5~10秒）
+message PBGuildUpdateDutyListCmd
+{
+	enum MsgID { ID = 200011; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPDATE_DUTY_LIST_CMD];
+    // 协议数据
+    // 公会记录
+	optional PBGuildDutyList duty_list = 3;	//职位列表
+}
+
+
+//更新操作
+enum eApplyOpt
+{
+	AO_ADD = 1;
+	AO_DEL = 2;
+}
+
+
+// 更新公会申请列表信息
+message PBGuildUpdateApplyList2GuildMgr
+{
+	enum MsgID { ID = 200012; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPDATE_APPLY_LIST_2_GUILD_MGR];
+    // 协议数据
+    // 公会记录
+	optional eApplyOpt opt = 3;	//0为增加，1为删除
+    optional PBUserApplyInfo apply_info = 4;
+	optional uint32 uid = 5;		//申请玩家
+}
+
+// 更新公会记录信息
+message PBGuildUpdateSimpleInfo2GuildMgr
+{
+	enum MsgID { ID = 200013; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPDATE_SIMPLE_INFO_2_GUILD_MGR];
+    // 协议数据
+    // 公会记录
+	optional PBGuildSimpleInfo simple_info = 3;	//公会简略信息
+}
+
+
+// 更新公会记录信息
+message PBGuildUpdateGuildRecordInfo
+{
+	enum MsgID { ID = 200014; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPDATE_GUILD_RECORD_INFO_CMD];
+    // 协议数据
+    // 公会记录
+    required PBGuildRecordList record_list = 3;
+}
+
+
+//获取公会成员请求
+message PBGuildGetMembersReq
+{
+	enum MsgID { ID = 200015; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_GET_MEMBERS_REQ_CMD];
+    // 协议数据
+    // 分页索引，一页默认50个
+    optional uint32 nPage = 3;
+	optional uint32 uid = 4;
+}
+
+//获取公会成员请求的返回
+message PBGuildGetMembersRsp
+{
+	enum MsgID { ID = 200016; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_GET_MEMBERS_RSP_CMD];
+    // 协议数据
+    // 玩家的数据
+	optional uint32 nPage = 3;			//分页索引
+	optional uint32 member_count = 4;			//成员总数
+    optional PBGuildMemberList members = 5;
+}
+
+//广播全公会，通知有玩家申请
+message PBGuildBoardcastPlayerApply
+{
+	enum MsgID { ID = 200017; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_Boardcast_PLAYER_APPLY_CMD];
+    // 协议数据
+    optional uint32 apply_count = 3;		//申请消息数量
+}
+
+
+//广播全公会，通知有玩家加入公会
+message PBGuildBoardcastPlayerJoin
+{
+	enum MsgID { ID = 200018; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_Boardcast_PLAYER_JOIN_CMD];
+    // 协议数据
+    // 玩家的数据
+    optional PBGuildUserData user_info = 3;
+	optional uint64 guild_id = 4;	//公会ID
+}
+
+
+	//广播全公会，通知有玩家退出公会
+message PBGuildBoardcastPlayerExit
+{
+	enum MsgID { ID = 200019; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_Boardcast_PLAYER_EXIT_CMD];
+    // 协议数据
+    // 公会记录
+    optional uint32 uid = 3;
+	optional uint64 guild_id = 4;	//公会ID
+}
+
+//广播全公会，通知公会解散
+message PBGuildBoardcastGuildDismiss
+{
+	enum MsgID { ID = 200020; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_Boardcast_GUILD_DISMISS];
+    // 协议数据
+    // 公会记录
+	optional uint64 guild_id = 3;	//公会ID
+}
+
+
+// 更新公会记录信息
+message PBGuildUpdateMeApplyGuildList
+{
+	enum MsgID { ID = 200021; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPDATE_ME_APPLY_GUILD_LIST_CMD];
+    // 协议数据
+    // 公会记录
+    optional PBUserGuildApplyList me_apply_list = 3;
+	optional bool b_apply = 4;			//申请还是取消？
+}
+
+
+
+//通知公会开始初始化
+message PBLobbyGateNotifyGuildInit
+{
+	enum MsgID { ID = 200022; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_LOBBYGATE_NOTIFY_GUILD_INIT];
+    // 协议数据
+}
+
+
+//通知公会管理器初始化成功
+message PBLobbyGateNotifyGuildInitSucc
+{
+	enum MsgID { ID = 200023; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_LOBBYGATE_NOTIFY_GUILD_INIT_SUCC];
+    // 协议数据
+	optional uint64 guild_id = 3;
+}
+
+
+// 登录请求自己的公会数据 返回
+message PBGuildFullDataUpdateCmd
+{
+	enum MsgID { ID = 200024; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_FULL_DATA_UPDATE_CMD];
+    // 协议数据
+    // 登录之后的成功返回数据
+    required PBGuildUserGuildFullData full_data = 3;
+}
+
+
+
+//设置玩家的公会信息到玩家对象上，用于快捷访问
+message PBGuildPlayerSetGuildInfoCmd
+{
+	enum MsgID { ID = 200025; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_PLAYER_SET_GUILD_INFO_CMD];
+    // 协议数据
+	optional PBEntityMailbox mb = 3;	//公会MB
+	optional uint64 guild_id = 4;		//公会id
+	optional bytes guild_name = 5;		//公会name
+	optional uint32 guild_level = 6;//公会等级
+	optional uint32 guild_prosperity = 7;//公会繁荣度
+}
+
+
+//获取公会列表
+message PBGuildGetGuildListReqCmd
+{
+	enum MsgID { ID = 200026; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_GET_GUILD_LIST_REQ_CMD];
+    // 协议数据
+	optional uint32 idx = 3;
+	optional uint32 uid = 4;
+	optional uint32 sort_type = 5;	//排序类型。1
+	optional bool b_asc = 6; //是否升序
+	optional uint32 min_level =7;     //最低等级
+	optional uint32 max_level =8;     //最高等级
+    optional uint32 min_member_count = 9; //最低人数
+    optional uint32 max_member_count = 10; //最高人数
+    optional uint32 pageCount = 11;   //固定每页多少条记录
+    optional bool   brecomment = 12;  //只搜索推荐列表
+    optional bool   bjoin_con = 13;   //只搜索可以加入的公会	
+}
+
+//获取公会列表返回
+message PBGuildGetGuildListRspCmd
+{
+	enum MsgID { ID = 200027; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_GET_GUILD_LIST_RSP_CMD];
+    // 协议数据
+    optional PBGuildSimpleList guildList = 3;         //公会列表
+	optional uint32 sort_type = 4;	//排序类型。1
+	optional bool b_asc = 5; //是否升序
+	optional uint32 min_level =6;     //最低等级
+	optional uint32 max_level =7;     //最高等级
+    optional uint32 min_member_count = 8; //最低人数
+    optional uint32 max_member_count = 9; //最高人数
+    optional uint32 max_count = 10;            //总人数	
+	optional uint32 pageCount = 11;   //固定每页多少条记录	
+	optional bool   brecomment = 12;  //只搜索推荐列表
+    optional bool   bjoin_con = 13;   //只搜索可以加入的公会	
+}
+
+
+//创建公会请求
+message PBGuildCreateGuildReqCmd
+{
+	enum MsgID { ID = 200028; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_CREATE_GUILD_REQ_CMD];
+    // 协议数据
+    optional bytes name = 3;        //公会名
+	optional uint32 uid = 4;
+}
+
+//创建公会返回
+message PBGuildCreateGuildRspCmd
+{
+	enum MsgID { ID = 200029; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_CREATE_GUILD_RSP_CMD];
+    // 协议数据
+    optional bytes name = 3;         //公会名
+}
+
+
+//申请加入请求
+message PBGuildApplyJoinGuildReqCmd
+{
+	enum MsgID { ID = 200030; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_APPLY_JOIN_GUILD_REQ_CMD];
+    // 协议数据
+    optional uint64 guildId = 3;        //公会id
+	optional uint32 uid = 4;
+	optional bool b_apply = 5;		//是否申请。false为取消申请
+	optional PBEntityMailbox applyer_mb = 6;	//申请人mb
+	optional PBUserGameBaseSimpleData simple_info = 7;	//玩家基础数据
+}
+
+//申请加入返回
+message PBGuildApplyJoinGuildRspCmd
+{
+	enum MsgID { ID = 200031; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_APPLY_JOIN_GUILD_RSP_CMD];
+    // 协议数据
+    optional uint64 guildId = 3;        //公会id
+}
+
+//回复申请加入请求
+message PBGuildAnswerApplyJoinGuildReqCmd
+{
+	enum MsgID { ID = 200032; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_ANSWER_APPLY_JOIN_GUILD_REQ_CMD];
+    // 协议数据
+    optional uint64 applyer_uid = 3;        //申请人uid
+	optional bool b_agree = 4;		//是否同意
+	optional uint32 uid = 5;
+}
+
+//回复申请加入返回
+message PBGuildAnswerApplyJoinGuildRspCmd
+{
+	enum MsgID { ID = 200033; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_ANSWER_APPLY_JOIN_GUILD_RSP_CMD];
+    // 协议数据
+    optional uint64 applyer_uid = 3;        //申请人uid
+	optional bool b_agree = 4;		//是否同意
+}
+
+
+//搜索公会
+message PBGuildSearchGuildReqCmd
+{
+	enum MsgID { ID = 200034; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_SEARCH_GUILD_REQ_CMD];
+    // 协议数据
+    optional bytes key = 3;
+	optional uint32 uid = 4;
+}
+
+//搜索公会返回
+message PBGuildSearchGuildRspCmd
+{
+	enum MsgID { ID = 200035; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_SEARCH_GUILD_RSP_CMD];
+    // 协议数据
+	optional PBGuildSimpleInfo guid_info= 3;	//公会简略信息
+}
+
+
+//邀请加入公会
+message PBGuildInviteJoinGuildReqCmd
+{
+	enum MsgID { ID = 200036; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_INVITE_JOIN_GUILD_REQ_CMD];
+    // 协议数据
+    optional int32 uid = 3;
+	optional string invited_key = 4;//被邀请人的名称、uid或steam_id
+	optional uint32 be_invite_uid = 5; //被邀请人uid
+}
+
+//邀请加入公会返回
+message PBGuildInviteJoinGuildRspCmd
+{
+	enum MsgID { ID = 200037; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_INVITE_JOIN_GUILD_RSP_CMD];
+    // 协议数据
+	required int32 invited_uid = 3;//被邀请人uid
+}
+
+
+//回复邀请加入公会
+message PBGuildAnswerInviteJoinGuildReqCmd
+{
+	enum MsgID { ID = 200038; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_INVITE_JOIN_GUILD_RSP_CMD];
+    // 协议数据
+	optional int32 inviter_uid = 4;	//邀请人uid
+	optional bool b_agree = 5;	//是否同意
+	optional uint32 uid = 6;
+	optional PBEntityMailbox applyer_mb = 7;	//回复人mb
+}
+
+
+//退出公会
+message PBGuildQuitReqCmd
+{
+	enum MsgID { ID = 200039; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_QUIT_GUILD_REQ_CMD];
+	
+	optional uint32 uid = 3;
+}
+
+//退出公会返回
+message PBGuildQuitRspCmd
+{
+	enum MsgID { ID = 200040; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_QUIT_GUILD_RSP_CMD];
+	
+	optional uint32 code = 3;
+}
+
+
+//踢出公会
+message PBGuildExpelQuitReqCmd
+{
+	enum MsgID { ID = 200041; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_EXPEL_QUIT_GUILD_REQ_CMD];
+    // 协议数据
+	optional int32 expel_uid = 3;	//被踢玩家uid
+	optional uint32 uid = 4;
+}
+
+//踢出公会返回
+message PBGuildExpelQuitRspCmd
+{
+	enum MsgID { ID = 200042; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_EXPEL_QUIT_GUILD_RSP_CMD];
+    // 协议数据
+	required int32 expel_uid = 3;	//被踢玩家uid
+}
+
+
+	//公会授予职位
+message PBGuildGrantReqCmd
+{
+	enum MsgID { ID = 200043; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_GRANT_REQ_CMD];
+    // 协议数据
+	required int32 target_uid = 3;	//目标玩家uid
+	required int32 duty_id = 4;	//职务ID
+	optional uint32 uid = 5;
+}
+
+	//公会授予职位返回
+message PBGuildGrantRspCmd
+{
+	enum MsgID { ID = 200044; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_GRANT_RSP_CMD];
+    // 协议数据
+	required int32 target_uid = 3;	//目标玩家uid
+	required int32 duty_id = 4;	//职务ID
+}
+
+
+
+	//公会转让职位
+message PBGuildDemiseReqCmd
+{
+	enum MsgID { ID = 200045; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_DEMISE_REQ_CMD];
+    // 协议数据
+	required int32 target_uid = 3;	//目标玩家uid
+	optional uint32 uid = 4;
+}
+
+	//公会转让返回
+message PBGuildDemiseRspCmd
+{
+	enum MsgID { ID = 200046; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_DEMISE_RSP_CMD];
+    // 协议数据
+	optional int32 new_master_uid = 3;		//新会长ID
+	optional string new_master_name = 4;	//新会长名称
+}
+
+
+
+	//公会解散
+message PBGuildDismissReqCmd
+{
+	enum MsgID { ID = 200047; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_DISMISS_REQ_CMD];
+    // 协议数据
+	optional uint32 uid = 3;
+}
+
+	//公会解散返回
+message PBGuildDismissRspCmd
+{
+	enum MsgID { ID = 200048; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_DISMISS_RSP_CMD];
+    // 协议数据
+}
+
+
+
+	//公会解冻
+message PBGuildThawReqCmd
+{
+	enum MsgID { ID = 200049; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_THAW_REQ_CMD];
+	optional uint32 uid = 3;
+}
+
+	//公会解冻返回
+message PBGuildThawRspCmd
+{
+	enum MsgID { ID = 200050; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_THAW_RSP_CMD];
+    // 协议数据
+}
+
+	//公会修改公告
+message PBGuildModifyAnnouncementReqCmd
+{
+	enum MsgID { ID = 200051; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_MODIFY_ANNOUNCEMENT_REQ_CMD];
+    // 协议数据
+	optional bytes newAnnouncement = 3;
+	optional uint32 uid = 4;
+}
+
+	//公会修改公告返回
+message PBGuildModifyAnnouncementRspCmd
+{
+	enum MsgID { ID = 200052; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_MODIFY_ANNOUNCEMENT_RSP_CMD];
+    // 协议数据
+	optional bytes newAnnouncement = 3;
+	optional uint32 modify_time = 4;
+}
+
+	//公会增加职位
+message PBGuildAddDutyReqCmd
+{
+	enum MsgID { ID = 200053; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_ADD_DUTY_REQ_CMD];
+    // 协议数据
+	optional bytes duty_name = 4;	//职位名称
+	optional uint32 uid = 5;
+}
+
+	//公会增加职位返回
+message PBGuildAddDutyRspCmd
+{
+	enum MsgID { ID = 200054; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_ADD_DUTY_RSP_CMD];
+    // 协议数据
+	optional uint32 new_duty_id = 3;	//新职位ID
+	optional bytes duty_name = 4;		//职位名称
+}
+
+		//删除公会职位请求
+message PBGuildDelDutyReqCmd
+{
+	enum MsgID { ID = 200055; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_DEL_DUTY_REQ_CMD];
+    // 协议数据
+    optional uint32 duty_id = 3;
+	optional uint32 uid = 4;
+}
+
+		//删除公会职位的返回
+message PBGuildDelDutyRspCmd
+{
+	enum MsgID { ID = 200056; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_DEL_DUTY_RSP_CMD];
+    // 协议数据
+    // 玩家的数据
+    optional uint32 duty_id = 3;
+}
+
+	//公会修改职位权限
+message PBGuildModifyDutyRightReqCmd
+{
+	enum MsgID { ID = 200057; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_MODIFY_RIGHT_REQ_CMD];
+    // 协议数据
+    optional int32 uid = 3;
+	optional uint32 duty = 4;	//职位ID
+	optional uint64 newRight = 5;	//新增或删除的权限
+	optional bool b_set = 6;	//true为设置，false为取消
+}
+
+	//公会修改成员权限返回
+message PBGuildModifyDutyRightRspCmd
+{
+	enum MsgID { ID = 200058; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_MODIFY_RIGHT_RSP_CMD];
+    // 协议数据
+	required uint32 duty = 3;	//职位ID
+	required uint64 newRight = 4;	//最新的权限
+}
+
+
+		//修改公会职位名称
+message PBGuildModifyDutyNameReq
+{
+	enum MsgID { ID = 200059; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_MODIFY_DUTY_NAME_REQ_CMD];
+    // 协议数据
+	optional uint32 duty_id = 3;
+    optional bytes new_name = 4;
+	optional int32 uid = 5;
+}
+
+		//修改公会职位名称DE 返回
+message PBGuildModifyDutyNameRsp
+{
+	enum MsgID { ID = 200060; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_MODIFY_DUTY_NAME_RSP_CMD];
+    // 协议数据
+	optional uint32 duty_id = 3;
+    optional bytes new_name = 4;
+}
+
+
+		//修改公会职位等级
+message PBGuildModifyDutyLevelReq
+{
+	enum MsgID { ID = 200061; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_MODIFY_DUTY_LEVEL_REQ_CMD];
+    // 协议数据
+	optional uint32 duty_id = 3;
+    optional uint32 new_level = 4;
+	optional int32 uid = 5;
+}
+
+		//修改公会职位等级DE 返回
+message PBGuildModifyDutyLevelRsp
+{
+	enum MsgID { ID = 200062; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_MODIFY_DUTY_LEVEL_RSP_CMD];
+    // 协议数据
+	optional uint32 duty_id = 3;
+    optional uint32 new_level = 4;
+}
+
+	//公会升级
+message PBGuildUpgradeReqCmd
+{
+	enum MsgID { ID = 200063; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPGRADE_REQ_CMD];
+	
+	optional uint32 uid = 3;
+}
+
+	//公会升级返回
+message PBGuildUpgradeRspCmd
+{
+	enum MsgID { ID = 200064; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPGRADE_RSP_CMD];
+    // 协议数据
+	optional int32 new_level = 3;		//新等级
+}
+
+
+
+	//公会头像修改
+message PBGuildModifyHeadIconReqCmd
+{
+	enum MsgID { ID = 200065; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_MODIFY_HEADICON_REQ_CMD];
+    // 协议数据
+	required uint32 headIcon = 3;
+	optional uint32 uid = 4;
+}
+
+	//公会头像修改返回
+message PBGuildModifyHeadIconRspCmd
+{
+	enum MsgID { ID = 200066; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_MODIFY_HEADICON_RSP_CMD];
+    // 协议数据
+	required uint32 headIcon = 3;
+}
+
+
+//获取申请列表
+message PBGuildGetApplyListReqCmd
+{
+	enum MsgID { ID = 200067; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_GET_APPLY_LIST_REQ_CMD];
+    // 协议数据
+	optional uint32 uid = 3;
+}
+
+//获取申请列表返回
+message PBGuildGetApplyListRspCmd
+{
+	enum MsgID { ID = 200068; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_GET_APPLY_LIST_RSP_CMD];
+    // 协议数据
+	optional PBGuildUserApplyList applyList = 3;
+	optional uint32 total_count = 5;			//总申请数
+}
+
+
+	//修改公会名称
+message PBGuildModifyGuildNameReqCmd
+{
+	enum MsgID { ID = 200069; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_MODIFY_NAME_REQ_CMD];
+    // 协议数据
+	required string newName = 3;
+	optional uint32 uid = 4;
+}
+
+
+	//修改公会名称返回
+message PBGuildModifyGuildNameRspCmd
+{
+	enum MsgID { ID = 200070; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_MODIFY_NAME_RSP_CMD];
+    // 协议数据
+	required string newName = 3;
+	optional uint32 uid = 4;
+}
+
+	//物品兑换
+message PBGuildExchangeItemReqCmd
+{
+	enum MsgID { ID = 200071; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_EXCHANGE_ITEM_REQ_CMD];
+    // 协议数据
+    optional int32 uid = 3;
+	required uint32 targetItemId = 4;	//兑换物品ID
+	required uint32 targetItemNum = 5;	//兑换物品数量
+}
+
+
+	//物品兑换返回
+message PBGuildExchangeItemRspCmd
+{
+	enum MsgID { ID = 200072; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_EXCHANGE_ITEM_RSP_CMD];
+    // 协议数据
+	required uint32 targetItemId = 4;	//兑换物品ID
+	required uint32 targetItemNum = 5;	//兑换物品数量
+}
+
+
+	//接受任务
+message PBGuildAcceptTaskReqCmd
+{
+	enum MsgID { ID = 200073; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_TASK_ACCEPT_REQ_CMD];
+    // 协议数据
+    optional int32 uid = 3;
+	required uint32 taskCfgId = 4;	//任务ID
+}
+
+
+	//接受任务返回
+message PBGuildAcceptTaskRspCmd
+{
+	enum MsgID { ID = 200074; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_TASK_ACCEPT_RSP_CMD];
+    // 协议数据
+	required uint32 taskCfgId = 3;	//任务ID
+}
+
+
+//领取任务奖励
+message PBGuildGetTaskRewardReqCmd
+{
+	enum MsgID { ID = 200075; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_TASK_GetReward_REQ_CMD];
+    // 协议数据
+    optional int32 uid = 3;
+	required uint32 taskCfgId = 4;	//任务ID
+}
+
+
+//领取任务奖励返回
+message PBGuildGetTaskRewardRspCmd
+{
+	enum MsgID { ID = 200076; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_TASK_GetReward_RSP_CMD];
+    // 协议数据
+	required uint32 taskCfgId = 3;	//任务ID
+	required PBGuildRewardList rewardList = 4;	//任务奖励信息
+}
+
+//更新任务状态
+message PBGuildUpdateTaskInfoRspCmd
+{
+	enum MsgID { ID = 200077; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPDATE_TASK_INFO_RSP_CMD];
+    // 协议数据
+	required PBGuildTaskInfo taskInfo = 3;	//任务奖励信息
+}
+
+	//更新任务列表
+message PBGuildUpdateTaskListRspCmd
+{
+	enum MsgID { ID = 200078; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPDATE_TASK_LIST_RSP_CMD];
+    // 协议数据
+    optional PBGuildTaskList allTasks = 3;
+}
+
+	//更新成员列表
+message PBGuildUpdateGuildInfoRspCmd
+{
+	enum MsgID { ID = 200079; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPDATE_GUILD_INFO_CMD];
+    // 协议数据
+    optional PBGuildUserGuildFullData guildInfo = 3;
+}
+
+//设置加入公会条件
+message PBSetGuildJoinConditionReqCmd
+{
+	enum MsgID { ID = 200080; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_JOIN_CONDITION_REQ_CMD];
+    // 协议数据
+	optional int32 uid = 3;
+    optional PBGuidJoinCon joinCon = 4;
+}
+//设置加入公会条件返回
+message PBSetGuildJoinConditionRspCmd
+{
+	enum MsgID { ID = 200081; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_JOIN_CONDITION_RSP_CMD];
+    optional PBGuidJoinCon joinCon = 3;
+}
+
+// 更新玩家公会邀请加入记录
+message PBGuildUpdateMeInviteGuildList
+{
+	enum MsgID { ID = 200082; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPDATE_ME_INVITE_GUILD_LIST_CMD];
+    // 协议数据
+    // 邀请记录记录
+    optional PBGuildInviteList me_invite_list = 3; 
+}
+// 更新公会管理器邀请列表信息
+message PBGuildUpdateInviteList2GuildMgr
+{
+	enum MsgID { ID = 200083; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPDATE_INVITE_LIST_2_GUILD_MGR];
+    // 协议数据
+    // 公会记录
+    optional PBGuildInviteRecordInfo invite_info = 3;
+	optional uint32 be_invite_uid = 4;		//被邀请玩家
+}
+
+// 拉取公会记录
+message PBGuildRecordListReq
+{
+    enum MsgID { ID = 200084; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_GET_RECORD_LIST_REQ];
+    // 协议数据
+    // 公会记录
+	optional uint64 eType = 3;//1
+    optional uint32 idx = 4;        //
+	optional uint32 uid = 5;
+	optional uint32 sort_type = 6;	//排序类型。1按记录时间 2按玩家昵称
+	optional bool b_asc = 7;         //是否升序
+	optional bool bManager = 8;
+    optional uint32 des_uid = 9;     //制定用户记录 如果des_uid=0,查询所有玩家	
+	optional uint32 pageCount = 10;   //固定每页多少条记录	
+}
+// 拉取公会记录返回
+message PBGuildRecordListRsp
+{
+     enum MsgID { ID = 200085; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_GET_RECORD_LIST_RSP];
+    // 协议数据
+    // 公会记录
+	optional uint64 eType = 3;//
+    optional uint32 idx = 4;        //
+	optional uint32 uid = 5;
+	optional uint32 sort_type = 6;	//排序类型。1
+	optional bool b_asc = 7;         //是否升序
+	optional PBGuildRecordList record_list = 8; 
+	optional uint32 nTotalCount = 9;     //总记录条数
+	optional uint32 pageCount = 10;   //固定每页多少条记录	
+}
+
+// 设置战利品管理员
+message PBGuildSetSpoilsMgrReq
+{
+    enum MsgID { ID = 200086; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_SPOILS_MANANGER_SET_REQ];
+    // 协议数据
+	optional uint32 uid = 3;
+	optional bool bSet = 4;          //true任命，false为取消
+	optional uint32 des_uid = 5;     //目标uid
+}
+// 设置战利品管理员返回
+message PBGuildSetSpoilsMgrRsp
+{
+    enum MsgID { ID = 200087; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_SPOILS_MANANGER_SET_RSP];
+    // 协议数据
+	optional bool sucess = 3;           //成功true,失败false
+    optional bool bSet = 4;          //true任命，false为取消
+	optional uint32 des_uid = 5;     //目标uid	
+}
+
+//管理员设置成员dkp值
+message  PBGuildDkpChangeReq
+{
+    enum MsgID { ID = 200088; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_DKP_MODIFY_REQ];
+    // 协议数据
+	optional uint32 uid = 3;
+    optional int32  changeNum = 4;   //修改的值
+	optional uint32 des_uid = 5;     //目标uid
+    optional string  desc = 6;       //备注	
+}
+message PBGuildDkpChangeRsp
+{
+    enum MsgID { ID = 200089; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_DKP_MODIFY_RSP];
+    // 协议数据
+    optional int32  changeNum = 3;   //修改的值
+	optional uint32 des_uid = 4;     //目标uid
+	optional uint32 curDKP = 5;      //当前dkp的值
+	optional string desc = 6;        //备注
+}
+message PBGuildSendSpoilsReq
+{
+    enum MsgID { ID = 200090; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_SEND_GUILD_SPOILS_REQ];
+    // 协议数据
+    optional int32  uid = 3;          
+	optional uint32 des_uid = 4;            //目标uid
+	optional PBGuildSpoilsItemList slist=5; //发送的物品
+}
+message PBGuildSendSpoilsRsp
+{
+    enum MsgID { ID = 200091; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_SEND_GUILD_SPOILS_RESP];
+    // 协议数据
+    optional bool sucess = 3;
+}
+message PBGuildUpdateShopReq
+{
+    enum MsgID { ID = 200092; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPDATE_SHOP_REQ];
+    // 协议数据
+	optional uint32 uid = 3;
+	optional int32 tab_index = 4;                     //所在标签页
+}   
+message PBGuildUpdateShopInfo
+{
+    enum MsgID { ID = 200093; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_UPDATE_SHOP_CMD];
+    // 协议数据
+	optional int32 tab_index = 3;                     //所在标签页
+	optional PBGuildShopItemInfoList item_list = 4;   //物品列表
+}
+message PBGuildShopBuyItemReq
+{
+    enum MsgID { ID = 200094; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_SHOP_BUY_REQ];
+    // 协议数据
+	optional uint32 uid = 3;
+	optional int32 tab_index = 4;                     //所在标签页
+	optional int32 s_id = 5;                          //商店物品id
+	optional int32 item_count = 6;                    //物品数量
+}
+message PBGuildShopBuyItemRsp
+{
+    enum MsgID { ID = 200095; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_SHOP_BUY_RSP];
+    // 协议数据
+	optional int32 tab_index = 3;                     //所在标签页
+	optional int32 s_id = 4;                          //商店物品id
+	optional int32 item_count = 5;                    //物品数量
+	optional bool  sucess = 6;                        //是否成功 
+}
+// -------------------------------------------公会日常任务--------------------------------------------
+
+// 公会日常任务奖励领取
+message PBGuildDayMissionAwardReqCmd
+{    
+	enum MsgID { ID = 200096; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_DAYMISSION_AWARD_REQ_CMD];
+
+    // 一键领取 还是按照积分领取
+	optional uint32 uid = 3;
+    optional bool      bDayMission   = 4;
+    optional int32     missionId         = 5;
+}
+
+// 公会日常任务奖励领取返回
+message PBGuildDayMissionAwardRspCmd
+{    
+	enum MsgID { ID = 200097; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_RECIVE_DAYMISSION_AWARD_RSP_CMD];
+
+    // 领取返回
+    required int32      code         = 3;
+    optional PBItemS    item_list    = 4;
+	optional bool       bDayMission   = 5;
+}     
+
+// 购买推荐位
+message PBGuildBuyRecommentReqCmd
+{    
+	enum MsgID { ID = 200098; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_BUY_RECOMMEND_REQ];
+	optional uint32 uid = 3;
+}
+// 购买推荐位返回
+message PBGuildBuyRecommentRspCmd
+{    
+	enum MsgID { ID = 200099; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_BUY_RECOMMEND_RSP];
+	optional uint32 uid = 3;
+	optional bool sucess = 4;              //是否成功
+	optional uint64 recommend_endtime = 5; //推荐位到期时间
+}
+
+message PBGuildSetHeadReqCmd
+{
+    enum MsgID { ID = 200100; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_SET_HEAD_REQ];
+	optional uint32 uid = 3;
+	optional uint32 item_headid = 4;
+	optional uint32 item_frameid = 5;
+}
+
+message PBGuildSetHeadRspCmd
+{
+    enum MsgID { ID = 200101; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_GUILD_SET_HEAD_RSP];
+	optional uint32 item_headid = 3;
+	optional uint32 item_frameid = 4;
+}
+
+// GM命令设置公会状态
+message PBSetGuildStatus
+{
+	enum MsgID { ID = 200110; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_SET_GUILDSTATUS_REQ];
+    // 协议数据
+	optional uint32 guildid = 3;//公会ID
+	optional uint32 status = 4;	//状态
+}
+
+// GM命令开关捐赠
+message PBOpenGuildJuanZeng
+{
+	enum MsgID { ID = 200111; }
+    // 协议类型定义
+    optional PBGuildCmd cmdID = 1; 
+    optional PBGuildCmdType param = 2 [default = PB_SET_GUILD_JUANZENG];
+    // 协议数据
+	optional uint32 guildid = 3;    //公会ID
+	optional bool open_juanzeng = 4;//是否开启捐赠
+}

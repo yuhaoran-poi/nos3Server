@@ -10,8 +10,8 @@ local db_pg = {
 }
 
 local db_mysql = {
-    [1] = { host = "127.0.0.1", port = 3306, database = "mgame", user = "root", password = "root", auth_plugin = "mysql_native_password", timeout = 5000, max_packet_size=64*1024*1024, ssl = false },
-    [2] = { host = "127.0.0.1", port = 3306, database = "mgame", user = "root", password = "root", auth_plugin = "mysql_native_password", timeout = 5000, max_packet_size=64*1024*1024, ssl = false },
+    [1] = { host = "127.0.0.1", port = 3307, database = "mgame", user = "root", password = "123456", auth_plugin = "mysql_native_password", timeout = 5000, max_packet_size=64*1024*1024, ssl = false },
+    [2] = { host = "127.0.0.1", port = 3307, database = "mgame", user = "root", password = "123456", auth_plugin = "mysql_native_password", timeout = 5000, max_packet_size = 64 * 1024 * 1024, ssl = false },
 }
 
 ---服务器相关配置
@@ -29,8 +29,8 @@ conf.db = {}
 conf.db[1] = { redis = db_redis[1], pg = db_pg[1], mysql = db_mysql[1] }
 conf.db[2] = { redis = db_redis[1], pg = db_pg[1], mysql = db_mysql[1] }
 conf.db[3] = { redis = db_redis[1], pg = db_pg[1], mysql = db_mysql[1] }
-conf.db[100] = { redis = db_redis[1], pg = db_pg[1], mysql = db_mysql[1] }
+conf.db[1001] = { redis = db_redis[1], pg = db_pg[1], mysql = db_mysql[1] }
 conf.db[3999] = { redis = db_redis[1], pg = db_pg[1], mysql = db_mysql[1] }
-conf.db[2000] = { redis = db_redis[1], pg = db_pg[1], mysql = db_mysql[1] }
+conf.db[2001] = { redis = db_redis[1], pg = db_pg[1], mysql = db_mysql[1] }
 
 return conf
