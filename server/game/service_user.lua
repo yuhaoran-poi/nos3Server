@@ -55,6 +55,7 @@ moon.raw_dispatch("C2S", function(msg)
     for key, MessagePack in ipairs(req.messages) do
         local reqmsg = {}
         reqmsg.msg_context = {
+            uid = context.uid,
             net_id = context.net_id,
             broadcast = MessagePack.broadcast,
             stub_id = MessagePack.stub_id,
