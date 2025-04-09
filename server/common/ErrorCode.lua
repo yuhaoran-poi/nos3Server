@@ -65,7 +65,29 @@ local ErrorCode = {
     ---队伍已满
     TeamFull = 810,
     ---队伍数据损坏
-    TeamDataCorrupted = 811
+    TeamDataCorrupted = 811,
+
+    ---房间系统错误码（900-910）
+    ---未创建房间
+    RoomNotCreated = 901,
+    ---房间不存在
+    RoomNotFound = 902,
+    ---无房间操作权限
+    RoomPermissionDenied = 903,
+    ---玩家不在房间内
+    RoomMemberNotFound = 904,
+    ---重复的房间申请
+    RoomDuplicateApply = 905,
+    ---无效的准备操作
+    RoomInvalidReadyOp = 906,
+    ---房间人数已满
+    RoomFull = 907,
+    ---已在房间内
+    RoomAlreadyInRoom = 908,
+    ---房间状态错误
+    RoomInvalidState = 909,
+    ---房间申请不存在
+    RoomApplyNotFound = 910,
 }
 
 return ErrorCode

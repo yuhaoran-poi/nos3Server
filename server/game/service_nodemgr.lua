@@ -9,7 +9,7 @@ local protocol = common.protocol
 
 local conf = ...
 
----@class node_context:base_context
+---@class nodemgr_context:base_context
 ---@field scripts node_scripts
 local context = {
     conf = conf,

@@ -21,6 +21,7 @@ require "robot.logic.ClientGuild"
 require "robot.logic.ClientFriend"
 require "robot.logic.ClientMail"
 require "robot.logic.ClientTeam"
+require "robot.logic.ClientRoom"
 
 local all_robot = {}
 local cur_index = 1

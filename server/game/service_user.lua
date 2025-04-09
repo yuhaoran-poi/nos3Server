@@ -1,4 +1,4 @@
---require("common.LuaPanda").start("127.0.0.1", 8818)
+require("common.LuaPanda").start("127.0.0.1", 8818)
 
 local moon = require("moon")
 local seri = require("seri")
@@ -59,7 +59,7 @@ moon.raw_dispatch("C2S", function(msg)
             stub_id = MessagePack.stub_id,
             msg_type = MessagePack.msg_type
         }
-        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         --local subname, submsg = protocol.DecodeMessagePack(MessagePack)
         local msg_name = id_to_name(MessagePack.msg_type)
         if not command[msg_name] then
@@ -72,7 +72,7 @@ moon.raw_dispatch("C2S", function(msg)
             local fn = command[subname]
             moon.async(function()
                 local ok, res = xpcall(fn, debug.traceback, reqmsg)
-                --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+                local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 if not ok then
                     moon.error(res)
                     --context.S2C(CmdCode.S2CErrorCode, { code = 1 }) --server internal error

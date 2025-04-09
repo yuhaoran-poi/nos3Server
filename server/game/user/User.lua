@@ -220,7 +220,7 @@ function User.PBClientGetUsrSimInfoReqCmd(req)
     end
 
     local ok, res = xpcall(func, debug.traceback)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if ok then
         local ret = {
             code = res.code,

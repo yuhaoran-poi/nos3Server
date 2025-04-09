@@ -1,4 +1,4 @@
---require("common.LuaPanda").start("127.0.0.1", 8818)
+require("common.LuaPanda").start("127.0.0.1", 8818)
 
 local moon = require("moon")
 local socket = require("moon.socket")
@@ -9,12 +9,14 @@ local protocol = common.protocol
 
 local conf = ...
 
----@class usermgr_context:base_context
+---@class roommgr_context:base_context
 local context = {
     conf = conf,
-    node_info = {}, -- 节点信息
-    user_node = {}, -- 用户对应的节点信息
+    room_nowid = conf.room_startid,
+    rooms = {}, --当前房间列表
+    uid_roomid = {}, --uid所在的房间id
 }
+local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
 
 setup(context)
 
