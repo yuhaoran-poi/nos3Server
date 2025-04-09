@@ -101,107 +101,6 @@ apply_data (2.PBApplyFriendDataR	applyData"Q
 code (Rcode
 error (	Rerror
 uid (Ruidbproto3
-©
-guild.proto"”
-PBApplyGuildData
-uid (Ruid
-head_id (RheadId
-	nick_name (	RnickName#
-account_level (RaccountLevel
-
-apply_time (R	applyTime
-
-head_frame (R	headFrame
-title (Rtitle"j
-PBApplyGuildReqCmd.
-	user_data (2.PBApplyGuildDataRuserData$
-apply_guild_id (RapplyGuildId"P
-PBApplyGuildRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruidbproto3
-∏
-
-mail.proto"D
-
-PBMailItem
-item_id (RitemId
-
-item_count (R	itemCount"ú
-
-PBMailData
-mail_id (RmailId
-	mail_type (RmailType
-beg_ts (RbegTs
-end_ts (RendTs
-
-mail_title (	R	mailTitle!
-mail_content (	RmailContent
-is_read (RisRead
-is_get (RisGet
-is_del	 (RisDel!
-items
- (2.PBMailItemRitems"@
-PBGetMailItemReqCmd
-uid (Ruid
-mail_id (RmailId"{
-PBGetMailItemRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid(
-	mail_data (2.PBMailDataRmailDatabproto3
-ù
-mission.proto"•
-PBConditionData
-cond_id (RcondId
-	cond_type (RcondType
-cond_target (R
-condTarget
-progress (Rprogress
-is_complete (R
-isComplete"Ë
-PBMissionData
-
-mission_id (R	missionId!
-mission_type (RmissionType
-is_complete (R
-isComplete
-is_get (RisGet
-beg_ts (RbegTs
-end_ts (RendTs/
-
-cond_datas (2.PBConditionDataR	condDatas"é
-PBUpdateMissionSeverSyncCmd
-uid (Ruid
-cond_id (RcondId
-	cond_type (RcondType'
-update_progress (RupdateProgress"`
-PBUpdateMissionClientSyncCmd@
-update_mission_datas (2.PBMissionDataRupdateMissionDatasbproto3
-Ÿ
-
-rank.proto"a
-
-PBRankData
-id (Rid
-idx (Ridx
-score (Rscore
-	rank_data (	RrankData"v
-
-PBRankInfo
-rank_id (RrankId
-beg_ts (RbegTs
-end_ts (RendTs!
-datas (2.PBRankDataRdatas"@
-PBGetRankInfoReqCmd
-uid (Ruid
-rank_id (RrankId"•
-PBGetRankInfoRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid(
-	rank_info (2.PBRankInfoRrankInfo(
-	self_data (2.PBRankDataRselfDatabproto3
 ˚O
 
 user.proto"^
@@ -569,6 +468,685 @@ monsConfid$
 ITEM_OPERATION_TYPE_UPDATA
 ITEM_OPERATION_TYPE_DELETE
 ITEM_OPERATION_TYPE_ADDbproto3
+∂v
+guild.proto
+user.proto"y
+PBGuildItemData
+grid_id (RgridId
+item_uid (RitemUid
+item_id (RitemId
+item_num (RitemNum"D
+PBGuildItemListData-
+	item_list (2.PBGuildItemDataRitemList"x
+PBGuildApplyUserBaseInfo=
+playerSimpleInfo (2.PBUserSimpleInfoRplayerSimpleInfo
+
+apply_time (R	applyTime"P
+PBGuildUserApplyList8
+
+apply_list (2.PBGuildApplyUserBaseInfoR	applyList"ı
+PBGuildMemberData
+uid (Ruid"
+playerDutyId (RplayerDutyId*
+playerContribute (RplayerContribute2
+playerWeekContribute (RplayerWeekContribute"
+playerStatus (RplayerStatus/
+last_get_salary_time (RlastGetSalaryTime
+	join_time (RjoinTime
+dkp (Rdkp
+
+bSpoilsMgr	 (R
+bSpoilsMgr&
+last_send_spoil
+ (RlastSendSpoil"ï
+PBGuildUserData
+uid (Ruid=
+playerSimpleInfo (2.PBUserSimpleInfoRplayerSimpleInfo1
+
+guild_data (2.PBGuildMemberDataR	guildData" 
+PBGuildRecordInfo
+record_type (R
+recordType
+nickname (Rnickname
+record_time (R
+recordTime
+	duty_name (	RdutyName
+guild_level (R
+guildLevel
+
+guild_name (	R	guildName
+
+target_uid (R	targetUid
+duty_id (RdutyId$
+gkd_change_num	 (RgkdChangeNum
+gkd_cur_num
+ (R	gkdCurNum
+gkd_desc (	RgkdDesc
+item_id (RitemId
+gubi_num (RgubiNum
+
+contribute (R
+contribute)
+spoils_item (2.PBItemSR
+spoilsItem!
+season_point (RseasonPoint
+op_mgr_name (	R	opMgrName
+rechage_num (R
+rechageNum"H
+PBGuildRecordList3
+record_list (2.PBGuildRecordInfoR
+recordList"Ö
+PBGuildDutyInfo
+duty_id (RdutyId
+	duty_name (RdutyName
+
+duty_right (R	dutyRight
+
+duty_level (R	dutyLevel"ô
+PBGuidJoinCon
+bCanJoin (RbCanJoin
+minRank (RminRank
+minLevel (RminLevel
+notice (	Rnotice
+
+bJoinCheck (R
+bJoinCheck"÷
+PBGuildSimpleInfo
+	node_name$ (	RnodeName
+guildId (RguildId
+name (Rname
+level (Rlevel!
+president_id (RpresidentId%
+president_name (RpresidentName
+
+build_time (R	buildTime
+exp (Rexp
+
+contribute (R
+contribute
+
+activeness	 (R
+activeness
+status
+ (Rstatus$
+accouncenment (Raccouncenment!
+member_count (RmemberCount(
+member_max_count (RmemberMaxCount)
+join_con (2.PBGuidJoinConRjoinCon+
+recommend_endtime (RrecommendEndtime
+item_headid (R
+itemHeadid!
+item_frameid (RitemFrameid"E
+PBGuildSimpleList0
+	guildList (2.PBGuildSimpleInfoR	guildList"F
+PBGuildMemberList1
+member_list (2.PBGuildUserDataR
+memberList"@
+PBGuildDutyList-
+	duty_list (2.PBGuildDutyInfoRdutyList"M
+PBGuildRewardInfo
+rewardId (RrewardId
+	rewardNum (R	rewardNum"A
+PBGuildRewardList,
+rewards (2.PBGuildRewardInfoRrewards"{
+PBGuildTaskInfo
+	taskCfgId (R	taskCfgId
+	startTime (R	startTime
+curNum (RcurNum
+state (Rstate"9
+PBGuildTaskList&
+items (2.PBGuildTaskInfoRitems"X
+PBGuildShopItemPrice
+
+nPriceType (R
+nPriceType 
+nPriceCount (RnPriceCount"Ø
+PBGuildShopItemInfo
+s_id (RsId4
+
+item_price (2.PBGuildShopItemPriceR	itemPrice
+	buy_count (RbuyCount
+item_id (RitemId
+pre_time (RpreTime"E
+PBGuildShopItemInfoList*
+items (2.PBGuildShopItemInfoRitems"ô
+
+PBGuildInfo
+guildId (RguildId
+name (Rname
+level (Rlevel!
+president_id (RpresidentId%
+president_name (RpresidentName
+
+build_time (R	buildTime
+exp (Rexp
+
+contribute (R
+contribute
+
+activeness	 (R
+activeness
+status
+ (Rstatus
+
+master_ids (R	masterIds-
+	user_list (2.PBGuildUserDataRuserList$
+accouncenment (Raccouncenment3
+record_list (2.PBGuildRecordListR
+recordList4
+
+apply_list (2.PBGuildUserApplyListR	applyList!
+member_count (RmemberCount
+freeze_time (R
+freezeTime
+apply_count (R
+applyCount!
+destory_time (RdestoryTime-
+	duty_list (2.PBGuildDutyListRdutyList@
+AnnouncenmentlastModifyTime (RAnnouncenmentlastModifyTime(
+member_num_level (RmemberNumLevel$
+member_max_num (RmemberMaxNum%
+	guild_bag (2.PBItemSRguildBag+
+season_activeness (RseasonActiveness)
+join_con (2.PBGuidJoinConRjoinCon.
+nameLastModifyTime (RnameLastModifyTime#
+spoilsmgr_ids (RspoilsmgrIds.
+slist (2.PBGuildShopItemInfoListRslist+
+recommend_endtime (RrecommendEndtime1
+last_shoprefreshtime  (RlastShoprefreshtime
+item_headid! (R
+itemHeadid!
+item_frameid" (RitemFrameid#
+open_juanzeng# (RopenJuanzeng"Ç
+PBGuildUserGuildFullData*
+	guildInfo (2.PBGuildInfoR	guildInfo:
+self_guild_data (2.PBGuildMemberDataRselfGuildData"≠
+PBGuildInviteRecordInfo&
+invitePlayerID (RinvitePlayerID*
+invitePlayerName (	RinvitePlayerName>
+inviteGuildSInfo (2.PBGuildSimpleInfoRinviteGuildSInfo"G
+PBGuildInviteList2
+invites (2.PBGuildInviteRecordInfoRinvites"K
+PBGuildSpoilsItem
+item_id (RitemId
+
+item_count (R	itemCount"H
+PBGuildSpoilsItemList/
+	item_list (2.PBGuildSpoilsItemRitemList"K
+PBUserApplyInfo
+guild_id (RguildId
+
+apply_time (R	applyTime"G
+PBUserGuildApplyList/
+
+apply_list (2.PBUserApplyInfoR	applyList"q
+PBGuildAddItems2BagCmd
+guild_id (RguildId
+items (2.PBItemSRitems
+
+add_or_del (RaddOrDel"4
+PBGuildAddItemsCmd
+items (2.PBItemSRitems"4
+PBGuildDelItemsCmd
+items (2.PBItemSRitems"P
+PBGuildUpdateGuildUserDataCmd/
+	user_data (2.PBGuildMemberDataRuserData":
+PBGuildUpdateGuildBagCmd
+items (2.PBItemSRitems"9
+PBGuildUpdateGuildLevelCmd
+	new_level (RnewLevel"6
+"PBGuildUpgradeMemberMaxcountReqCmd
+uid (Ruid"p
+"PBGuildUpgradeMemberMaxcountRspCmd.
+cur_member_maxcount (RcurMemberMaxcount
+sucucess (Rsucucess"R
+PBGuildDonateReqCmd
+uid (Ruid
+num (Rnum
+item_id (RitemId"@
+PBGuildDonateRspCmd
+num (Rnum
+item_id (RitemId"*
+PBGuildGetSalaryReqCmd
+uid (Ruid"?
+PBGuildGetSalaryRspCmd%
+	get_items (2.PBItemSRgetItems"I
+PBGuildUpdateDutyListCmd-
+	duty_list (2.PBGuildDutyListRdutyList"V
+PBGuildUpdateGuildRecordInfoCmd3
+record_list (2.PBGuildRecordListR
+recordList"A
+PBGuildGetMembersReqCmd
+nPage (RnPage
+uid (Ruid"Ä
+PBGuildGetMembersRspCmd
+nPage (RnPage!
+member_count (RmemberCount,
+members (2.PBGuildMemberListRmembers"A
+PBGuildBoardcastPlayerApplyCmd
+apply_count (R
+applyCount"i
+PBGuildBoardcastPlayerJoinCmd-
+	user_info (2.PBGuildUserDataRuserInfo
+guild_id (RguildId"L
+PBGuildBoardcastPlayerExitCmd
+uid (Ruid
+guild_id (RguildId"<
+PBGuildBoardcastGuildDismissCmd
+guild_id (RguildId"v
+ PBGuildUpdateMeApplyGuildListCmd9
+me_apply_list (2.PBUserGuildApplyListRmeApplyList
+b_apply (RbApply"R
+PBGuildFullDataUpdateCmd6
+	full_data (2.PBGuildUserGuildFullDataRfullData"Ω
+PBGuildPlayerSetGuildInfoCmd
+node_id (RnodeId
+guild_id (RguildId
+
+guild_name (R	guildName
+guild_level (R
+guildLevel)
+guild_prosperity (RguildProsperity"⁄
+PBGuildGetGuildListReqCmd
+idx (Ridx
+uid (Ruid
+	sort_type (RsortType
+b_asc (RbAsc
+	min_level (RminLevel
+	max_level (RmaxLevel(
+min_member_count (RminMemberCount(
+max_member_count (RmaxMemberCount
+	pageCount	 (R	pageCount
+
+brecomment
+ (R
+brecomment
+	bjoin_con (RbjoinCon"Ö
+PBGuildGetGuildListRspCmd0
+	guildList (2.PBGuildSimpleListR	guildList
+	sort_type (RsortType
+b_asc (RbAsc
+	min_level (RminLevel
+	max_level (RmaxLevel(
+min_member_count (RminMemberCount(
+max_member_count (RmaxMemberCount
+	max_count (RmaxCount
+	pageCount	 (R	pageCount
+
+brecomment
+ (R
+brecomment
+	bjoin_con (RbjoinCon"@
+PBGuildCreateGuildReqCmd
+name (Rname
+uid (Ruid".
+PBGuildCreateGuildRspCmd
+name (Rname"Ω
+PBGuildApplyJoinGuildReqCmd
+guild_id (RguildId
+uid (Ruid
+b_apply (RbApply$
+applyer_net_id (RapplyerNetId2
+simple_info (2.PBUserSimpleInfoR
+simpleInfo"8
+PBGuildApplyJoinGuildRspCmd
+guild_id (RguildId"o
+!PBGuildAnswerApplyJoinGuildReqCmd
+applyer_uid (R
+applyerUid
+b_agree (RbAgree
+uid (Ruid"]
+!PBGuildAnswerApplyJoinGuildRspCmd
+applyer_uid (R
+applyerUid
+b_agree (RbAgree">
+PBGuildSearchGuildReqCmd
+key (Rkey
+uid (Ruid"K
+PBGuildSearchGuildRspCmd/
+	guid_info (2.PBGuildSimpleInfoRguidInfo"u
+PBGuildInviteJoinGuildReqCmd
+uid (Ruid
+invited_key (	R
+invitedKey"
+be_invite_uid (RbeInviteUid"?
+PBGuildInviteJoinGuildRspCmd
+invited_uid (R
+invitedUid"ñ
+"PBGuildAnswerInviteJoinGuildReqCmd
+inviter_uid (R
+inviterUid
+b_agree (RbAgree
+uid (Ruid$
+applyer_net_id (RapplyerNetId"%
+PBGuildQuitReqCmd
+uid (Ruid"'
+PBGuildQuitRspCmd
+code (Rcode"G
+PBGuildExpelQuitReqCmd
+	expel_uid (RexpelUid
+uid (Ruid"5
+PBGuildExpelQuitRspCmd
+	expel_uid (RexpelUid"^
+PBGuildGrantReqCmd
+
+target_uid (R	targetUid
+duty_id (RdutyId
+uid (Ruid"L
+PBGuildGrantRspCmd
+
+target_uid (R	targetUid
+duty_id (RdutyId"F
+PBGuildDemiseReqCmd
+
+target_uid (R	targetUid
+uid (Ruid"c
+PBGuildDemiseRspCmd$
+new_master_uid (RnewMasterUid&
+new_master_name (	RnewMasterName"(
+PBGuildDismissReqCmd
+uid (Ruid"
+PBGuildDismissRspCmd"%
+PBGuildThawReqCmd
+uid (Ruid"
+PBGuildThawRspCmd"]
+PBGuildModifyAnnouncementReqCmd(
+newAnnouncement (RnewAnnouncement
+uid (Ruid"l
+PBGuildModifyAnnouncementRspCmd(
+newAnnouncement (RnewAnnouncement
+modify_time (R
+modifyTime"E
+PBGuildAddDutyReqCmd
+	duty_name (RdutyName
+uid (Ruid"S
+PBGuildAddDutyRspCmd
+new_duty_id (R	newDutyId
+	duty_name (RdutyName"A
+PBGuildDelDutyReqCmd
+duty_id (RdutyId
+uid (Ruid"/
+PBGuildDelDutyRspCmd
+duty_id (RdutyId"u
+PBGuildModifyDutyRightReqCmd
+uid (Ruid
+duty (Rduty
+newRight (RnewRight
+b_set (RbSet"N
+PBGuildModifyDutyRightRspCmd
+duty (Rduty
+newRight (RnewRight"c
+PBGuildModifyDutyNameReqCmd
+duty_id (RdutyId
+new_name (RnewName
+uid (Ruid"Q
+PBGuildModifyDutyNameRspCmd
+duty_id (RdutyId
+new_name (RnewName"f
+PBGuildModifyDutyLevelReqCmd
+duty_id (RdutyId
+	new_level (RnewLevel
+uid (Ruid"T
+PBGuildModifyDutyLevelRspCmd
+duty_id (RdutyId
+	new_level (RnewLevel"(
+PBGuildUpgradeReqCmd
+uid (Ruid"3
+PBGuildUpgradeRspCmd
+	new_level (RnewLevel"K
+PBGuildModifyHeadIconReqCmd
+headIcon (RheadIcon
+uid (Ruid"9
+PBGuildModifyHeadIconRspCmd
+headIcon (RheadIcon"-
+PBGuildGetApplyListReqCmd
+uid (Ruid"q
+PBGuildGetApplyListRspCmd3
+	applyList (2.PBGuildUserApplyListR	applyList
+total_count (R
+totalCount"J
+PBGuildModifyGuildNameReqCmd
+newName (	RnewName
+uid (Ruid"J
+PBGuildModifyGuildNameRspCmd
+newName (	RnewName
+uid (Ruid"w
+PBGuildExchangeItemReqCmd
+uid (Ruid"
+targetItemId (RtargetItemId$
+targetItemNum (RtargetItemNum"e
+PBGuildExchangeItemRspCmd"
+targetItemId (RtargetItemId$
+targetItemNum (RtargetItemNum"I
+PBGuildAcceptTaskReqCmd
+uid (Ruid
+	taskCfgId (R	taskCfgId"7
+PBGuildAcceptTaskRspCmd
+	taskCfgId (R	taskCfgId"L
+PBGuildGetTaskRewardReqCmd
+uid (Ruid
+	taskCfgId (R	taskCfgId"n
+PBGuildGetTaskRewardRspCmd
+	taskCfgId (R	taskCfgId2
+
+rewardList (2.PBGuildRewardListR
+rewardList"K
+PBGuildUpdateTaskInfoRspCmd,
+taskInfo (2.PBGuildTaskInfoRtaskInfo"K
+PBGuildUpdateTaskListRspCmd,
+allTasks (2.PBGuildTaskListRallTasks"W
+PBGuildUpdateGuildInfoRspCmd7
+	guildInfo (2.PBGuildUserGuildFullDataR	guildInfo"[
+PBSetGuildJoinConditionReqCmd
+uid (Ruid(
+joinCon (2.PBGuidJoinConRjoinCon"I
+PBSetGuildJoinConditionRspCmd(
+joinCon (2.PBGuidJoinConRjoinCon"]
+!PBGuildUpdateMeInviteGuildListCmd8
+me_invite_list (2.PBGuildInviteListRmeInviteList"ÿ
+PBGuildRecordListReqCmd
+eType (ReType
+idx (Ridx
+uid (Ruid
+	sort_type (RsortType
+b_asc (RbAsc
+bManager (RbManager
+des_uid (RdesUid
+	pageCount (R	pageCount"˙
+PBGuildRecordListRspCmd
+eType (ReType
+idx (Ridx
+uid (Ruid
+	sort_type (RsortType
+b_asc (RbAsc3
+record_list (2.PBGuildRecordListR
+recordList 
+nTotalCount	 (RnTotalCount
+	pageCount
+ (R	pageCount"Z
+PBGuildSetSpoilsMgrReqCmd
+uid (Ruid
+bSet (RbSet
+des_uid (RdesUid"`
+PBGuildSetSpoilsMgrRspCmd
+sucess (Rsucess
+bSet (RbSet
+des_uid (RdesUid"u
+PBGuildDkpChangeReqCmd
+uid (Ruid
+	changeNum (R	changeNum
+des_uid (RdesUid
+desc (	Rdesc"{
+PBGuildDkpChangeRspCmd
+	changeNum (R	changeNum
+des_uid (RdesUid
+curDKP (RcurDKP
+desc (	Rdesc"r
+PBGuildSendSpoilsReqCmd
+uid (Ruid
+des_uid (RdesUid,
+slist (2.PBGuildSpoilsItemListRslist"1
+PBGuildSendSpoilsRspCmd
+sucess (Rsucess"H
+PBGuildUpdateShopReqCmd
+uid (Ruid
+	tab_index (RtabIndex"n
+PBGuildUpdateShopInfoCmd
+	tab_index (RtabIndex5
+	item_list (2.PBGuildShopItemInfoListRitemList"{
+PBGuildShopBuyItemReqCmd
+uid (Ruid
+	tab_index (RtabIndex
+s_id (RsId
+
+item_count (R	itemCount"Å
+PBGuildShopBuyItemRspCmd
+	tab_index (RtabIndex
+s_id (RsId
+
+item_count (R	itemCount
+sucess (Rsucess"p
+PBGuildDayMissionAwardReqCmd
+uid (Ruid 
+bDayMission (RbDayMission
+	missionId (R	missionId"{
+PBGuildDayMissionAwardRspCmd
+code (Rcode%
+	item_list (2.PBItemSRitemList 
+bDayMission (RbDayMission"-
+PBGuildBuyRecommentReqCmd
+uid (Ruid"r
+PBGuildBuyRecommentRspCmd
+uid (Ruid
+sucess (Rsucess+
+recommend_endtime (RrecommendEndtime"l
+PBGuildSetHeadReqCmd
+uid (Ruid
+item_headid (R
+itemHeadid!
+item_frameid (RitemFrameid"Z
+PBGuildSetHeadRspCmd
+item_headid (R
+itemHeadid!
+item_frameid (RitemFrameid"H
+PBSetGuildStatusCmd
+guild_id (RguildId
+status (Rstatus"X
+PBOpenGuildJuanZengCmd
+guild_id (RguildId#
+open_juanzeng (RopenJuanzeng*m
+enPBGuildStatus	
+eNone 
+eGS_Creating
+eGS_Init
+
+eGS_Normal
+
+eGS_Freeze
+eGS_Destory*ú
+enGuildRecordType
+eRT_ALL_RECORD 
+eRT_DUTY_CHANGE
+eRT_JOIN
+eRT_QUIT
+eRT_CHANGE_GUILD_NAME
+ERT_JUANZENG
+eRT_GUILD_LV_UP
+ERT_GUILDBAG
+ERT_GUILDRANKRECORD
+ERT_GUILDGKD	
+ERT_SPOILS_GRANT
+
+ERT_SEASON_POINT
+ERT_PLAYER_RECHARGE*0
+	eApplyOpt
+AO_NONE 
+
+AO_ADD
+
+AO_DELbproto3
+∏
+
+mail.proto"D
+
+PBMailItem
+item_id (RitemId
+
+item_count (R	itemCount"ú
+
+PBMailData
+mail_id (RmailId
+	mail_type (RmailType
+beg_ts (RbegTs
+end_ts (RendTs
+
+mail_title (	R	mailTitle!
+mail_content (	RmailContent
+is_read (RisRead
+is_get (RisGet
+is_del	 (RisDel!
+items
+ (2.PBMailItemRitems"@
+PBGetMailItemReqCmd
+uid (Ruid
+mail_id (RmailId"{
+PBGetMailItemRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid(
+	mail_data (2.PBMailDataRmailDatabproto3
+ù
+mission.proto"•
+PBConditionData
+cond_id (RcondId
+	cond_type (RcondType
+cond_target (R
+condTarget
+progress (Rprogress
+is_complete (R
+isComplete"Ë
+PBMissionData
+
+mission_id (R	missionId!
+mission_type (RmissionType
+is_complete (R
+isComplete
+is_get (RisGet
+beg_ts (RbegTs
+end_ts (RendTs/
+
+cond_datas (2.PBConditionDataR	condDatas"é
+PBUpdateMissionSeverSyncCmd
+uid (Ruid
+cond_id (RcondId
+	cond_type (RcondType'
+update_progress (RupdateProgress"`
+PBUpdateMissionClientSyncCmd@
+update_mission_datas (2.PBMissionDataRupdateMissionDatasbproto3
+Ÿ
+
+rank.proto"a
+
+PBRankData
+id (Rid
+idx (Ridx
+score (Rscore
+	rank_data (	RrankData"v
+
+PBRankInfo
+rank_id (RrankId
+beg_ts (RbegTs
+end_ts (RendTs!
+datas (2.PBRankDataRdatas"@
+PBGetRankInfoReqCmd
+uid (Ruid
+rank_id (RrankId"•
+PBGetRankInfoRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid(
+	rank_info (2.PBRankInfoRrankInfo(
+	self_data (2.PBRankDataRselfDatabproto3
 ã
 
 room.proto

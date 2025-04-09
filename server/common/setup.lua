@@ -214,7 +214,7 @@ local function _internal(context)
         --moon.raw_send('S2C', context.addr_gate, protocol.encodePacket(uid, cmd_code, mtable,mc))
     end
     base_context.R2C = function(cmd_code, mtable, req)
-        base_context.S2C(context.net_id, cmd_code, mtable, req.msg_context.stub_id)
+        base_context.S2C(req.msg_context.net_id, cmd_code, mtable, req.msg_context.stub_id)
     end
          
     base_context.send_user = function(uid, cmd, ...)

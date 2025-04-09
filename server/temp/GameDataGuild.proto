@@ -1,0 +1,287 @@
+syntax = "proto2";
+import "GameDataUser.proto";
+import "GameDataItem.proto";
+
+enum enPBGuildStatus
+{
+	eGS_Creating = 1;		//创建中
+	eGS_Init = 2;			//初始化中
+	eGS_Normal = 3;			//正常
+	eGS_Freeze = 4;			//冻结中
+	eGS_Destory = 5;		//已销毁
+};
+
+
+// 公会道具
+message PBGuildItemData{
+    optional int64 grid_id = 1;            //背包格子ID
+    optional int64 item_uid = 2;    //物品实例ID
+    optional int32 item_id = 3;            // 配置文件ID
+    optional int32 item_num = 4;        // 数量
+}
+
+message PBGuildItemListData{
+    repeated PBGuildItemData item_list = 1;
+}
+
+message PBGuildApplyUserBaseInfo{
+	optional PBUserGameBaseSimpleData playerSimpleInfo = 1;
+	optional uint64 apply_time = 2;		//申请时间
+}
+
+//申请列表
+message PBGuildUserApplyList{
+	repeated PBGuildApplyUserBaseInfo apply_list = 1;
+}
+
+
+// 公会中的玩家数据
+message PBGuildMemberData{
+    // 基础信息
+	optional uint32 uid = 1;		//玩家uID
+	optional uint32 playerDutyId= 2;		//玩家职务Id
+	optional uint32 playerContribute= 3;		//玩家贡献
+	optional uint32 playerWeekContribute= 4;		//玩家本周贡献
+	optional uint32 playerStatus= 5;		//玩家在线状态
+	optional uint32 last_get_salary_time = 6;	//上一次获取工资的时间戳
+	optional uint32 join_time = 7;	//加入公会时间
+	optional uint32 dkp = 8;        //个人的DKP值
+	optional bool   bSpoilsMgr=9;   //是否战利品管理员
+	optional uint64 last_send_spoil=10;//上次发放战利品的时间戳
+}
+
+// 公会中的玩家数据
+message PBGuildUserData{
+    // 基础信息
+	optional uint32 uid = 1;		//玩家uID
+	optional PBUserGameBaseSimpleData playerSimpleInfo = 2;	//玩家基础数据
+	optional PBGuildMemberData guild_data = 3; //玩家公会的数据
+}
+
+
+enum enGuildRecordType
+{
+    eRT_ALL_RECORD = 0 ;      //所有记录
+	eRT_DUTY_CHANGE = 1;		//身份变更（职位变更）+
+	eRT_JOIN = 2;				//加入 +
+	eRT_QUIT = 3;				//退出 +
+	eRT_CHANGE_GUILD_NAME = 4;	//战队改名 +
+	ERT_JUANZENG = 5;			//战队捐赠 +
+	eRT_GUILD_LV_UP = 6;		//战队升级
+	ERT_GUILDBAG = 7;			//使用战队仓库
+	ERT_GUILDRANKRECORD = 8;	//战队排位积分变更记录
+	ERT_GUILDGKD = 9;           //战队GKD变化记录
+	ERT_SPOILS_GRANT = 10;      //战利品发放记录
+	ERT_SEASON_POINT = 11;      //赛季积分变化记录
+	ERT_PLAYER_RECHARGE=12;     //玩家充值记录
+	
+}
+
+ 
+message PBGuildRecordInfo{
+	optional uint32 record_type = 1;
+	optional bytes nickname = 2;			//目标玩家昵称
+	optional uint32 record_time = 3;
+	optional string duty_name = 4;			//只在 eRT_DUTY_CHANGE 有用（表示职位名称)
+	optional uint32 guild_level = 5;		//只在 eRT_GUILD_LV_UP 有用
+	optional string guild_name = 6;			//只在 eRT_CHANGE_GUILD_NAME 有用
+	optional uint32 target_uid = 7;			//目标玩家UID
+	optional uint32 duty_id = 8;			//只在 eRT_DUTY_CHANGE 有用 （表示职位ID)
+	optional int32  gkd_change_num = 9;     //eRT_GuildGKD变化记录 ,  
+	optional int32  gkd_cur_num    = 10;    //eRT_GuildGKD GKD当前值
+	optional string gkd_desc = 11;          //eRT_GuildGKD 备注
+	optional uint32 item_id = 12;          //只在ERT_JUANZENG时使用
+	optional uint32  gubi_num = 13;          //只在ERT_JUANZENG时使用，古币数量
+	optional uint32  contribute = 14;       //贡献值
+	optional PBItemS  spoils_item =15;     //只在战利品发放时使用，物品id
+	optional int32   season_point = 16;      //只在ERT_SEASON_POINT时使用
+    optional string  op_mgr_name = 17;       //发放管理员名字
+    optional uint32	 rechage_num = 18;       //玩家充值的灵石数量 
+}
+
+message PBGuildRecordList
+{
+	repeated PBGuildRecordInfo record_list = 1;	//更新公会记录
+}
+
+
+
+message PBGuildDutyInfo{
+	optional uint32 duty_id = 1;
+	optional bytes duty_name = 2;
+	optional uint64 duty_right = 3;	//按位读取
+	optional uint32 duty_level = 4;//	职位等级
+}
+
+message PBGuidJoinCon
+{
+     optional bool bCanJoin = 1; //允许加入
+	 optional uint32 minRank = 2; //最低段位（品阶<<16+品级）
+	 optional uint32 minLevel = 3; //最低等级
+	 optional string notice   = 4; //宣传语
+	 optional bool  bJoinCheck = 5; //加入工会需要审核
+}
+
+//公会的简略信息
+message PBGuildSimpleInfo{
+    optional uint64 guildId = 1;	//公会uid
+	optional bytes name = 2;	//公会名
+	optional uint32 level = 3;	//公会等级
+	optional uint32 president_id = 4;	//公会长ID
+	optional bytes president_name = 5;	//公会长名称
+	optional uint32 build_time = 6;	//创建时间
+	optional uint32 exp = 7;	//公会经验
+	optional uint32 contribute = 8;	//公会贡献值
+	optional uint32 activeness = 9;	//公会活跃度
+	optional uint32 status = 10;	//公会状态（正常，冻结或者销毁）
+	optional bytes accouncenment = 11;		//公会公告
+	optional uint32 member_count = 12;		//公会成员人数（当前）
+	optional uint32 member_max_count = 13;  //公会人数上限
+	optional PBGuidJoinCon join_con =14;   //公会加入条件
+	optional uint64 recommend_endtime = 15; //公会推荐到期时间
+	optional uint32 item_headid = 16;       //公会头像ID
+	optional uint32 item_frameid = 17;     //公会头像框ID
+}
+
+
+message PBGuildSimpleList
+{
+	repeated PBGuildSimpleInfo guildList= 1;		//公会列表
+}
+
+
+message PBGuildMemberList
+{
+	repeated PBGuildUserData member_list = 1;	//成员列表
+}
+
+message PBGuildDutyList
+{
+	repeated PBGuildDutyInfo duty_list = 1;	//职位列表
+}
+
+
+
+
+
+//奖励信息
+message PBGuildRewardInfo
+{
+    optional int32 rewardId = 1;    //奖励物品ID
+    optional int32 rewardNum = 2;    //奖励数量
+}
+
+//奖励列表
+message PBGuildRewardList
+{
+    repeated PBGuildRewardInfo rewards = 1;    //奖励列表
+}
+
+
+//任务信息
+message PBGuildTaskInfo
+{
+    optional int32 taskCfgId = 1;         //任务配置表ID
+    optional int32 startTime = 2;        //接受任务时间
+    optional int32 curNum = 3;            //当前完成数量（任务进度）
+    optional int32 state = 4;            //任务状态。0表示未接受，1表示已接受未完成，2表示已完成未领奖，3表示已领奖。
+}
+
+//任务列表
+message PBGuildTaskList
+{
+    repeated PBGuildTaskInfo items = 1;    //
+}
+
+
+// 玩家的公会数据 登录成功之后请求返回
+message PBGuildUserGuildFullData{
+    // 公会信息
+    optional PBGuildInfo guildInfo = 1;
+	optional PBGuildMemberData self_guild_data = 2; //玩家自己的信息
+}
+
+
+//玩家被邀请记录
+message PBGuildInviteRecordInfo
+{
+    optional uint32 invitePlayerID = 1;
+    optional string invitePlayerName = 2;
+	optional PBGuildSimpleInfo inviteGuildSInfo = 3;
+}
+
+//玩家被邀请列表
+message PBGuildInviteList
+{
+    repeated PBGuildInviteRecordInfo  invites = 1;
+}
+//发放战利品道具
+message PBGuildSpoilsItem
+{
+    required int32 item_id      = 1;// 道具ID为配置文件中的ID 使用分段来区分道具类型 [货币/普通道具/皮肤]
+    required int32 item_count   = 2;
+}
+//战利品发放列表
+message PBGuildSpoilsItemList
+{
+    repeated PBGuildSpoilsItem item_list = 1;
+}
+//公会商店物品价格
+message PBGuildShopItemPrice
+{
+   required uint32 nPriceType  = 1;
+   required uint32 nPriceCount = 2;
+}
+//公会商店物品信息
+message PBGuildShopItemInfo
+{
+   optional int32 s_id = 1;               //唯一ID
+   optional PBGuildShopItemPrice item_price = 2; //价格
+   optional int32 buy_count = 3;             //已购买的数量
+   optional int32 item_id = 4;               //物品id
+   optional uint64 pre_time= 5;              //上次刷新时间
+}
+//公会商店物品列表
+message PBGuildShopItemInfoList
+{
+   repeated PBGuildShopItemInfo  items = 1;
+}
+
+//公会信息
+message PBGuildInfo{
+ 
+    optional uint64 guildId = 1;	//公会uid
+	optional bytes name = 2;	//公会名
+	optional uint32 level = 3;	//公会等级
+	optional uint32 president_id = 4;	//公会长ID
+	optional bytes president_name = 5;	//公会长名称
+	optional uint32 build_time = 6;	//创建时间
+	optional uint32 exp =7;	//公会经验
+	optional uint32 contribute = 8;	//公会贡献值
+	optional uint32 activeness = 9;	//公会活跃度
+	optional uint32 status = 10;	//公会状态（正常，冻结或者销毁）
+	repeated uint32 master_ids = 11;	//公会管理员列表
+	repeated PBGuildUserData user_list = 13;	//玩家列表
+	optional bytes accouncenment = 14;		//公会公告
+	optional PBGuildRecordList record_list = 15;	//公会记录
+	optional PBGuildUserApplyList apply_list = 16;		//公会申请列表
+	optional uint32 member_count = 17;		//公会成员人数（当前）
+	optional uint32 freeze_time = 18;               //冻结开始时间
+	optional uint32 apply_count = 19;		//公会申请数量
+	optional uint32 destory_time = 20;               //销毁时间
+	optional PBGuildDutyList duty_list = 21;	//职位列表
+	optional uint32 AnnouncenmentlastModifyTime = 22;		//公告上次修改时间
+	optional uint32 member_num_level = 23; 		//成员人数等级(第几等级）
+	optional uint32 member_max_num = 24;		//最大成员人数
+	optional PBItemS guild_bag = 25;			//公会仓库（包含货币、普通物品、皮肤等）
+	optional uint32 season_activeness = 26;     //本赛季活跃度
+	optional PBGuidJoinCon join_con=27;         //公会加入条件
+	optional uint32 nameLastModifyTime = 28;    //公会名字上次修改时间
+	repeated uint32 spoilsmgr_ids = 29;	        //公会战利品管理员
+	optional PBGuildShopItemInfoList slist = 30;//商店物品信息存档
+	optional uint64 recommend_endtime = 31;     //公会推荐到期时间
+	optional uint64 last_shoprefreshtime=32;    //商店物品上次刷新时间
+	optional uint32 item_headid = 33;            //公会头像ID
+	optional uint32 item_frameid = 34;       //公会头像框ID
+	optional bool   open_juanzeng = 35;      //打开捐赠
+}

@@ -24,6 +24,7 @@
 ---@field public exp integer @当前经验
 ---@field public itemlist table<integer, ItemData> @道具列表
 ---@field public team TeamInfo @队伍信息
+---@field public guild GuildInfo @公会信息
 
 
 ---@class C2SMatch
@@ -55,6 +56,12 @@
 ---@field public user_list table<integer, PBUserSimpleInfo> @队伍成员列表
 ---@field public is_del boolean @是否解散
 ---@field public match_type integer @游戏模式
+
+---@class GuildInfo
+---@field public guild_id integer @公会ID
+---@field public guild_node integer @公会节点
+---@field public guild_addr integer @公会地址
+
  	 
 
 
