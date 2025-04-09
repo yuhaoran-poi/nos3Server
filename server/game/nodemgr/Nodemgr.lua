@@ -52,7 +52,10 @@ function Nodemgr.BindNode(msg)
     print(string.format("BindNode nid:%d", msg.nid))
 
     --通知mgr上的其他服务，有新的节点上线
-    moon.send("lua", context.addr_usermgr, "Usermgr.NodeOnline", n)
+    local addr_usermgr = moon.queryservice("usermgr")
+    if addr_usermgr > 0 then
+        moon.send("lua", addr_usermgr, "Usermgr.NodeOnline", n) -- body
+    end
     
     return {error = "success"}
 end

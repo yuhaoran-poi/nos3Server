@@ -20,7 +20,8 @@ message PBRoomSearchInfo
 	int32 difficulty    = 3;	//难度
 	int32 playercnt     = 4;	//当前玩家人数
 	int64 master_id     = 5;	//房主id
-	int32 needpwd       = 6;	//是否需要密码
+    string master_name  = 6;    //房主昵称
+	int32 needpwd       = 7;	//是否需要密码
 }
 
 // 房间内人员信息
@@ -50,7 +51,6 @@ message PBCreateRoomReqCmd
 	string pwd      = 4;
 	int32 chapter   = 5;
 	int32 difficulty    = 6;
-    PBUserSimpleInfo self_info  = 7;
 }
 
 message PBCreateRoomRspCmd
@@ -116,7 +116,6 @@ message PBApplyRoomReqCmd
     // 协议数据
     int64 uid		= 1;
 	int64 roomid	= 2;
-	PBUserSimpleInfo apply_info	= 3;
 }
 
 message PBApplyRoomRspCmd
@@ -174,7 +173,8 @@ message PBEnterRoomRspCmd
 
 message PBEnterRoomSyncCmd
 {
-    PBRoomMemberInfo member_data = 1;
+    int64 roomid	= 1;
+    PBRoomMemberInfo member_data = 2;
 }
 
 // 玩家退出房间

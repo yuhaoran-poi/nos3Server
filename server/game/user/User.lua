@@ -23,7 +23,8 @@ function User.Load(req)
     local function fn()
         -- 向Usermgr申请是否允许登录
         local res, err = clusterd.call(3999, "usermgr", "Usermgr.ApplyLogin",
-        { uid = req.uid, nid = moon.env("NODE"), addr_user = req.addr_user })
+            { uid = req.uid, nid = moon.env("NODE"), addr_user = req.addr_user })
+        
         print("Usermgr.ApplyLogin", res, err)
         if res.error ~= "success" then
             return false
@@ -219,7 +220,7 @@ function User.PBClientGetUsrSimInfoReqCmd(req)
     end
 
     local ok, res = xpcall(func, debug.traceback)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if ok then
         local ret = {
             code = res.code,

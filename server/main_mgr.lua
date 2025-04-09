@@ -97,6 +97,14 @@ local function run(node_conf)
             threadid = 6,
             websocket = false,
         },
+        {
+            unique = true,
+            name = "roommgr",
+            file = "game/service_roommgr.lua",
+            threadid = 7,
+            websocket = false,
+            room_startid = 10000,
+        },
     }
 
     local function Start()
@@ -105,9 +113,11 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("nodemgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("usermgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("teammgr"), "Init"))
+        assert(moon.call("lua", moon.queryservice("roommgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("nodemgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("usermgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("teammgr"), "Start"))
+        assert(moon.call("lua", moon.queryservice("roommgr"), "Start"))
 
         local data = db.loadserverdata(moon.queryservice("db_server"))
         if not data then

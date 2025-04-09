@@ -468,6 +468,7 @@ monsConfid$
 ITEM_OPERATION_TYPE_UPDATA
 ITEM_OPERATION_TYPE_DELETE
 ITEM_OPERATION_TYPE_ADDbproto3
+<<<<<<< HEAD
 ¶v
 guild.proto
 user.proto"y
@@ -1148,9 +1149,12 @@ PBRankInfo
 	rank_info (2.PBRankInfoRrankInfo(
 	self_data (2.PBRankDataRselfDatabproto3
 ´
+=======
+‹
+>>>>>>> aed752c0c2145bc874ea688837d8dbae041a1d75
 
 room.proto
-user.proto"¹
+user.proto"Ú
 PBRoomSearchInfo
 roomid (Rroomid
 chapter (Rchapter
@@ -1158,8 +1162,10 @@ user.proto"¹
 difficulty (R
 difficulty
 	playercnt (R	playercnt
-	master_id (RmasterId
-needpwd (Rneedpwd"v
+	master_id (RmasterId
+master_name (	R
+masterName
+needpwd (Rneedpwd"v
 PBRoomMemberInfo
 seat_idx (RseatIdx
 is_ready (RisReady,
@@ -1173,7 +1179,7 @@ PBRoomInfo
 chapter (Rchapter
 
 difficulty (R
-difficulty"Ô
+difficulty"¤
 PBCreateRoomReqCmd
 uid (Ruid
 isopen (Risopen
@@ -1182,8 +1188,7 @@ difficulty"Ô
 chapter (Rchapter
 
 difficulty (R
-difficulty.
-	self_info (2.PBUserSimpleInfoRselfInfo"V
+difficulty"V
 PBCreateRoomRspCmd
 code (Rcode
 error (	Rerror
@@ -1228,12 +1233,10 @@ difficulty"¹
 difficulty (R
 difficulty"=
 PBRoomInfoSyncCmd(
-	room_data (2.PBRoomInfoRroomData"o
+	room_data (2.PBRoomInfoRroomData"=
 PBApplyRoomReqCmd
 uid (Ruid
-roomid (Rroomid0
-
-apply_info (2.PBUserSimpleInfoR	applyInfo"U
+roomid (Rroomid"U
 PBApplyRoomRspCmd
 code (Rcode
 error (	Rerror
@@ -1267,9 +1270,10 @@ masterName
 code (Rcode
 error (	Rerror
 uid (Ruid
-roomid (Rroomid"H
-PBEnterRoomSyncCmd2
-member_data (2.PBRoomMemberInfoR
+roomid (Rroomid"`
+PBEnterRoomSyncCmd
+roomid (Rroomid2
+member_data (2.PBRoomMemberInfoR
 memberData"<
 PBExitRoomReqCmd
 uid (Ruid
