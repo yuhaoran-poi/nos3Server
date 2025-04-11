@@ -186,8 +186,7 @@ local function run(node_conf)
         local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP();
         local nodeinfo = {
             nid = moon.env("NODE"),
-            chost = "127.0.0.1",
-            cport = 12108, 
+            node_type = moon.env("SERVER_TYPE"),
         }
         moon.call("lua", moon.queryservice("node"), "Console.Notify_nodemgr", nodeinfo)
 
