@@ -62,6 +62,9 @@ function User.Load(req)
 
         context.uid = req.uid
         context.net_id = req.net_id
+
+        ---加载simple数据
+        User.LoadSimple()
         ---初始化自己数据
         context.batch_invoke_throw("Init", isnew)
         ---初始化互相引用的数据
@@ -81,7 +84,69 @@ function User.Load(req)
     end
     return true
 end
+function User.LoadSimple()
+    local user_data = scripts.UserModel.Get()
+    if not user_data then
+        local res = { code = 2003, error = "no user_data" }
+        return res
+    end
 
+    if not user_data.simple then
+        --内存中不存在则查询数据库
+        local redis_db_data = Database.GetUserSimple(context.addr_db_redis, context.uid)
+        
+        local db_data, err = Database.loaduser_simple(context.addr_db_user, context.uid)
+        if db_data and #db_data == 1 then
+            local pbname, tmp_data = protocol.decodewithname("PBUserSimpleInfo", db_data[1].value)
+            user_data.simple = tmp_data
+        else
+            --数据库中不存在则视为新用户初始化
+            local user_simple = {
+                uid = user_data.user_id,
+                plateform_id = user_data.authkey,
+                nickname = user_data.name or user_data.authkey,
+                head_icon = 0,
+                sex = 0,
+                praise_num = 0,
+                head_frame = 0,
+                account_create_time = moon.time(),
+                account_level = 0,
+                account_exp = 0,
+                account_total_exp = 0,
+                guild_uid = 0,
+                guild_name = "",
+                cur_show_role = {
+                    role_id = 0,
+                    skin_list = {}
+                },
+                pinch_face_data = {
+                    setting_data = "",
+                },
+                title = 0,
+                player_flag = 0,
+                online_time = moon.time(),
+                sum_online_time = 0,
+                pa_flag = 0,
+                mons_uniqid = 0,
+                mons_confid = 0,
+                mons_skin_list = {},
+            }
+
+            local pbname, pb_data = protocol.encodewithname("PBUserSimpleInfo", user_simple)
+            local db_op, err = Database.saveuser_simple(context.addr_db_user, context.uid, user_simple, pb_data)
+            if not db_op or err then
+                local res = { code = 2004, error = "no user_simple" }
+                return res
+            end
+            Database.SetUserSimple(context.addr_db_redis, context.uid, user_simple)
+            user_data.simple = user_simple
+        end
+
+        scripts.UserModel.SetSimple(user_data.simple)
+    end
+    return { code = 0, error = "success", user_simple = user_data.simple }
+    
+end
 function User.Login(req)
     if req.pull then--服务器主动拉起玩家
         return scripts.UserModel.Get().authkey
@@ -151,75 +216,8 @@ function User.C2SUserData()
 end
 
 function User.PBClientGetUsrSimInfoReqCmd(req)
-    local function func()
-        if not req then
-           return false
-        end
-        
-        local user_data = scripts.UserModel.Get()
-        if not user_data then
-            local res = { code = 2003, error = "no user_data" }
-            return res
-        end
-        
-        if not user_data.simple then
-            --内存中不存在则查询数据库
-            local db_data, err = Database.loaduser_simple(context.addr_db_user, context.uid)
-            if db_data and #db_data == 1 then
-                local pbname, tmp_data = protocol.decodewithname("PBUserSimpleInfo", db_data[1].value)
-                user_data.simple = tmp_data
-            else
-                --数据库中不存在则视为新用户初始化
-                local user_simple = {
-                    uid = user_data.user_id,
-                    plateform_id = user_data.authkey,
-                    nickname = user_data.name,
-                    head_icon = 0,
-                    sex = 0,
-                    praise_num = 0,
-                    head_frame = 0,
-                    account_create_time = moon.time(),
-                    account_level = 0,
-                    account_exp = 0,
-                    account_total_exp = 0,
-                    guild_uid = 0,
-                    guild_name = "",
-                    cur_show_role = {
-                        role_id = 0,
-                        skin_list = {}
-                    },
-                    pinch_face_data = {
-                        setting_data = "",
-                    },
-                    title = 0,
-                    player_flag = 0,
-                    online_time = moon.time(),
-                    sum_online_time = 0,
-                    pa_flag = 0,
-                    mons_uniqid = 0,
-                    mons_confid = 0,
-                    mons_skin_list = {},
-                }
-
-                local pbname, pb_data = protocol.encodewithname("PBUserSimpleInfo", user_simple)
-                local db_op, err = Database.saveuser_simple(context.addr_db_user, context.uid, user_simple, pb_data)
-                if not db_op or err then
-                    local res = { code = 2004, error = "no user_simple" }
-                    return res
-                end
-                user_data.simple = user_simple
-            end
-            
-            scripts.UserModel.SetSimple(user_data.simple)
-        end
-        --local rank_data = Database.query_rank(context.addr_db_user, context.uid)
-        --local role_data = Database.query_role(context.addr_db_user, context.uid)
-
-        local res = { code = 0, error = "success", user_simple = user_data.simple }
-        return res
-    end
-
-    local ok, res = xpcall(func, debug.traceback)
+  
+    local ok, res = User.LoadSimple()
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if ok then
         local ret = {

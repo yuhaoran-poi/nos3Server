@@ -41,23 +41,23 @@ message PBGuildUserApplyList{
 message PBGuildMemberData{
     // 基础信息
 	int64 uid = 1;		//玩家uID
-	int32 playerDutyId= 2;		//玩家职务Id
-	int32 playerContribute= 3;		//玩家贡献
-	int32 playerWeekContribute= 4;		//玩家本周贡献
-	int32 playerStatus= 5;		//玩家在线状态
-	int32 last_get_salary_time = 6;	//上一次获取工资的时间戳
-	int32 join_time = 7;	//加入公会时间
-	int32 dkp = 8;        //个人的DKP值
-	bool   bSpoilsMgr=9;   //是否战利品管理员
-	int64 last_send_spoil=10;//上次发放战利品的时间戳
+    string nickname = 2;	//玩家昵称
+	int32 duty_id= 3;		//玩家职务Id
+	int32 contribute= 4;		//玩家贡献
+	int32 week_contribute= 5;		//玩家本周贡献
+	bool online = 6;		//玩家在线状态 true 在线 false 不在线
+	int32 last_get_salary_time = 7;	//上一次获取工资的时间戳
+	int32 join_time = 8;	//加入公会时间
+	int32 dkp = 9;        //个人的DKP值
+	bool   b_spoils_mgr=10;   //是否战利品管理员
+	int64 last_send_spoil=11;//上次发放战利品的时间戳
 }
 
 // 公会中的玩家数据
 message PBGuildUserData{
     // 基础信息
 	int64 uid = 1;		//玩家uID
-	PBUserSimpleInfo playerSimpleInfo = 2;	//玩家基础数据
-	PBGuildMemberData guild_data = 3; //玩家公会的数据
+	PBGuildMemberData guild_data = 2; //玩家公会的数据
 }
 
 // 公会记录类型
@@ -101,11 +101,7 @@ message PBGuildRecordInfo{
     int32	 rechage_num = 18;       //玩家充值的灵石数量 
 }
 
-// 公会记录列表
-message PBGuildRecordList
-{
-	repeated PBGuildRecordInfo record_list = 1;	//更新公会记录
-}
+
 
 
 // 公会职位信息
@@ -119,17 +115,17 @@ message PBGuildDutyInfo{
 // 加入公会条件
 message PBGuidJoinCon
 {
-     bool bCanJoin = 1; //允许加入
-	 int32 minRank = 2; //最低段位（品阶<<16+品级）
-	 int32 minLevel = 3; //最低等级
+     bool can_join = 1; //允许加入
+	 int32 min_rank = 2; //最低段位（品阶<<16+品级）
+	 int32 min_level = 3; //最低等级
 	 string notice   = 4; //宣传语
-	 bool  bJoinCheck = 5; //加入工会需要审核
+	 bool  join_check = 5; //加入工会需要审核
 }
 
 //公会的简略信息
 message PBGuildSimpleInfo{
     string node_name = 36;	//所属节点名称
-    int64 guildId = 1;	//公会uid
+    int64 guild_id = 1;	//公会uid
 	bytes name = 2;	//公会名
 	int32 level = 3;	//公会等级
 	int32 president_id = 4;	//公会长ID
@@ -151,7 +147,7 @@ message PBGuildSimpleInfo{
 // 公会简略信息列表
 message PBGuildSimpleList
 {
-	repeated PBGuildSimpleInfo guildList= 1;		//公会列表
+	repeated PBGuildSimpleInfo guild_list= 1;		//公会列表
 }
 
 // 公会成员列表
@@ -173,8 +169,8 @@ message PBGuildDutyList
 //奖励信息
 message PBGuildRewardInfo
 {
-    int32 rewardId = 1;    //奖励物品ID
-    int32 rewardNum = 2;    //奖励数量
+    int32 reward_id = 1;    //奖励物品ID
+    int32 reward_num = 2;    //奖励数量
 }
 
 //公会奖励列表
@@ -187,9 +183,9 @@ message PBGuildRewardList
 //公会任务信息
 message PBGuildTaskInfo
 {
-    int32 taskCfgId = 1;         //任务配置表ID
-    int32 startTime = 2;        //接受任务时间
-    int32 curNum = 3;            //当前完成数量（任务进度）
+    int32 task_id = 1;         //任务配置表ID
+    int32 start_time = 2;        //接受任务时间
+    int32 cur_num = 3;            //当前完成数量（任务进度）
     int32 state = 4;            //任务状态。0表示未接受，1表示已接受未完成，2表示已完成未领奖，3表示已领奖。
 }
 
@@ -201,8 +197,8 @@ message PBGuildTaskList
 //公会商店物品价格
 message PBGuildShopItemPrice
 {
-   int32 nPriceType  = 1;
-   int32 nPriceCount = 2;
+   int32 priclog_type  = 1;
+   int32 price_count = 2;
 }
 //公会商店物品信息
 message PBGuildShopItemInfo
@@ -220,46 +216,62 @@ message PBGuildShopItemInfoList
 }
 
 //公会信息
-message PBGuildInfo{
-    int64 guildId = 1;	//公会uid
+message PBGuildInfoDB{
+    int64 guild_id = 1;	//公会uid
 	bytes name = 2;	//公会名
 	int32 level = 3;	//公会等级
-	int32 president_id = 4;	//公会长ID
-	bytes president_name = 5;	//公会长名称
+	int64 president_id = 4;	//公会长ID
+	bytes president_name = 5; //公会长名称
 	int32 build_time = 6;	//创建时间
-	int32 exp =7;	//公会经验
+	int32 exp = 7;	//公会经验
 	int32 contribute = 8;	//公会贡献值
 	int32 activeness = 9;	//公会活跃度
 	int32 status = 10;	//公会状态（正常，冻结或者销毁）
-	repeated int32 master_ids = 11;	//公会管理员列表
-	repeated PBGuildUserData user_list = 13;	//玩家列表
-	bytes accouncenment = 14;		//公会公告
-	PBGuildRecordList record_list = 15;	//公会记录
-	PBGuildUserApplyList apply_list = 16;		//公会申请列表
-	int32 member_count = 17;		//公会成员人数（当前）
+	repeated int64 master_ids = 11;	//公会管理员列表
+	map<int64,PBGuildMemberData>  members = 12;	//玩家列表
+    int32 member_count = 13;		//公会成员人数（当前）
+    int32 member_num_level = 14; 		//成员人数等级(第几等级）
+	int32 member_max_num = 15;		//最大成员人数
+	bytes accouncenment = 16;		//公会公告
+	PBGuildUserApplyList apply_list = 17;		//公会申请列表
 	int32 freeze_time = 18;               //冻结开始时间
 	int32 apply_count = 19;		//公会申请数量
 	int32 destory_time = 20;               //销毁时间
 	PBGuildDutyList duty_list = 21;	//职位列表
-	int32 AnnouncenmentlastModifyTime = 22;		//公告上次修改时间
-	int32 member_num_level = 23; 		//成员人数等级(第几等级）
-	int32 member_max_num = 24;		//最大成员人数
-	PBItemS guild_bag = 25;			//公会仓库（包含货币、普通物品、皮肤等）
-	int32 season_activeness = 26;     //本赛季活跃度
-	PBGuidJoinCon join_con=27;         //公会加入条件
-	int32 nameLastModifyTime = 28;    //公会名字上次修改时间
-	repeated int32 spoilsmgr_ids = 29;	        //公会战利品管理员
-	PBGuildShopItemInfoList slist = 30;//商店物品信息存档
-	int64 recommend_endtime = 31;     //公会推荐到期时间
-	int64 last_shoprefreshtime=32;    //商店物品上次刷新时间
-	int32 item_headid = 33;            //公会头像ID
-	int32 item_frameid = 34;       //公会头像框ID
-	bool   open_juanzeng = 35;      //打开捐赠
+	int32 announcenment_modify_time = 22;		//公告上次修改时间
+	int32 season_activeness = 23;     //本赛季活跃度
+	PBGuidJoinCon join_con = 24;         //公会加入条件
+	int32 name_modify_time = 25;    //公会名字上次修改时间
+	repeated int64 spoilsmgr_ids = 26;	        //公会战利品管理员
+	int64 recommend_endtime = 27;     //公会推荐到期时间
+	int32 item_headid = 28;            //公会头像ID
+	int32 item_frameid = 29;       //公会头像框ID
+	bool   open_juanzeng = 30;      //打开捐赠
 }
+// 公会商店信息
+message PBGuildShopDB{
+	 int64 guild_id = 1;	//公会uid
+	 PBGuildShopItemInfoList shop_item_list = 2;	//商店物品信息
+	 int64 last_refresh_time = 3;	//上次刷新时间
+}
+
+// 公会背包信息
+message PBGuildBagDB{
+	 int64 guild_id = 1;	//公会uid
+	 PBItemS bag_item_list = 2;	//公会仓库（包含货币、普通物品、皮肤等）
+}
+
+// 公会记录列表
+message PBGuildRecordDB
+{
+	int64 guild_id = 1;	//公会uid
+	repeated PBGuildRecordInfo record_list = 2;	//记录列表
+}
+
 // 玩家的公会数据 登录成功之后请求返回
 message PBGuildUserGuildFullData{
     // 公会信息
-    PBGuildInfo guildInfo = 1;
+    PBGuildInfoDB guild_info = 1;
 	PBGuildMemberData self_guild_data = 2; //玩家自己的信息
 }
 
@@ -267,9 +279,9 @@ message PBGuildUserGuildFullData{
 //玩家被邀请记录
 message PBGuildInviteRecordInfo
 {
-    int32 invitePlayerID = 1;
-    string invitePlayerName = 2;
-	PBGuildSimpleInfo inviteGuildSInfo = 3;
+    int64 invite_uid = 1;
+    string invite_name = 2;
+	PBGuildSimpleInfo invite_guild_simple = 3;
 }
 
 //玩家被邀请列表
@@ -431,7 +443,7 @@ message PBGuildUpdateGuildRecordInfoCmd
 {
     // 协议数据
     // 公会记录
-    PBGuildRecordList record_list = 1;
+    PBGuildRecordDB record_list = 1;
 }
 
 
@@ -441,7 +453,7 @@ message PBGuildGetMembersReqCmd
 
     // 协议数据
     // 分页索引，一页默认50个
-    int32 nPage = 1;
+    int32 page_index = 1;
 	int64 uid = 2;
 }
 
@@ -450,7 +462,7 @@ message PBGuildGetMembersRspCmd
 {
     // 协议数据
     // 玩家的数据
-	int32 nPage = 1;			        //分页索引
+	int32 page_index = 1;			//分页索引
 	int32 member_count = 2;			//成员总数
     PBGuildMemberList members = 3;
 }
@@ -538,7 +550,7 @@ message PBGuildGetGuildListReqCmd
 	int32 max_level =6;     //最高等级
     int32 min_member_count = 7; //最低人数
     int32 max_member_count = 8; //最高人数
-    int32 pageCount = 9;   //固定每页多少条记录
+    int32 page_count = 9;   //固定每页多少条记录
     bool   brecomment = 10;  //只搜索推荐列表
     bool   bjoin_con = 11;   //只搜索可以加入的公会	
 }
@@ -548,7 +560,7 @@ message PBGuildGetGuildListRspCmd
 {
  
     // 协议数据
-    PBGuildSimpleList guildList = 1;         //公会列表
+    PBGuildSimpleList guild_list = 1;         //公会列表
 	int32 sort_type = 2;	//排序类型。1
 	bool b_asc = 3; //是否升序
 	int32 min_level =4;     //最低等级
@@ -556,7 +568,7 @@ message PBGuildGetGuildListRspCmd
     int32 min_member_count = 6; //最低人数
     int32 max_member_count = 7; //最高人数
     int32 max_count = 8;            //总人数	
-	int32 pageCount = 9;   //固定每页多少条记录	
+	int32 page_count = 9;   //固定每页多少条记录	
 	bool   brecomment = 10;  //只搜索推荐列表
     bool   bjoin_con = 11;   //只搜索可以加入的公会	
 }
@@ -585,7 +597,7 @@ message PBGuildApplyJoinGuildReqCmd
     int64 guild_id = 1;         //公会id
 	int64 uid = 2;
 	bool b_apply = 3;		    //是否申请。false为取消申请
-	int32 applyer_net_id = 4;	//申请人net_id
+	int64 applyer_uid = 4;	    //申请人uid
 	PBUserSimpleInfo simple_info = 5;	//玩家基础数据
 }
 
@@ -636,14 +648,14 @@ message PBGuildInviteJoinGuildReqCmd
     // 协议数据
     int64 uid = 1;
 	string invited_key = 2;//被邀请人的名称、uid或steam_id
-	int32 be_invite_uid = 3; //被邀请人uid
+	int64 be_invite_uid = 3; //被邀请人uid
 }
 
 //邀请加入公会返回
 message PBGuildInviteJoinGuildRspCmd
 {
     // 协议数据
-	int32 invited_uid = 1;//被邀请人uid
+	int64 invited_uid = 1;//被邀请人uid
 }
 
 
@@ -651,10 +663,10 @@ message PBGuildInviteJoinGuildRspCmd
 message PBGuildAnswerInviteJoinGuildReqCmd
 {
     // 协议数据
-	int32 inviter_uid = 1;	//邀请人uid
+	int64 inviter_uid = 1;	//邀请人uid
 	bool b_agree = 2;	//是否同意
 	int64 uid = 3;
-	int32 applyer_net_id = 4;	//回复人net_id
+	int32 applyer_uid = 4;	//回复人uid
 }
 
 
@@ -683,7 +695,7 @@ message PBGuildExpelQuitReqCmd
 message PBGuildExpelQuitRspCmd
 {
     // 协议数据
-	int32 expel_uid = 1;	//被踢玩家uid
+	int64 expel_uid = 1;	//被踢玩家uid
 }
 
 
@@ -700,7 +712,7 @@ message PBGuildGrantReqCmd
 message PBGuildGrantRspCmd
 {
     // 协议数据
-	int32 target_uid = 1;	//目标玩家uid
+	int64 target_uid = 1;	//目标玩家uid
 	int32 duty_id = 2;	//职务ID
 }
 
@@ -710,7 +722,7 @@ message PBGuildGrantRspCmd
 message PBGuildDemiseReqCmd
 {
     // 协议数据
-	int32 target_uid = 1;	//目标玩家uid
+	int64 target_uid = 1;	//目标玩家uid
 	int64 uid = 2;
 }
 
@@ -718,7 +730,7 @@ message PBGuildDemiseReqCmd
 message PBGuildDemiseRspCmd
 {
     // 协议数据
-	int32 new_master_uid = 1;		//新会长ID
+	int64 new_master_uid = 1;		//新会长ID
 	string new_master_name = 2;	//新会长名称
 }
 
@@ -755,7 +767,7 @@ message PBGuildThawRspCmd
 message PBGuildModifyAnnouncementReqCmd
 {
     // 协议数据
-	bytes newAnnouncement = 1;
+	bytes new_announcement = 1;
 	int64 uid = 2;
 }
 
@@ -763,7 +775,7 @@ message PBGuildModifyAnnouncementReqCmd
 message PBGuildModifyAnnouncementRspCmd
 {
     // 协议数据
-	bytes newAnnouncement = 1;
+	bytes new_announcement = 1;
 	int32 modify_time = 2;
 }
 
@@ -805,7 +817,7 @@ message PBGuildModifyDutyRightReqCmd
     // 协议数据
     int64 uid = 1;
 	int32 duty = 2;	//职位ID
-	int64 newRight = 3;	//新增或删除的权限
+	int64 new_right = 3;	//新增或删除的权限
 	bool b_set = 4;	//true为设置，false为取消
 }
 
@@ -814,7 +826,7 @@ message PBGuildModifyDutyRightRspCmd
 {
     // 协议数据
 	int32 duty = 1;	    //职位ID
-	int64 newRight = 2;	//最新的权限
+	int64 new_right = 2;	//最新的权限
 }
 
 
@@ -873,7 +885,7 @@ message PBGuildModifyHeadIconReqCmd
 {
 
     // 协议数据
-	int32 headIcon = 1;
+	int32 head_icon = 1;
 	int64 uid = 2;
 }
 
@@ -881,7 +893,7 @@ message PBGuildModifyHeadIconReqCmd
 message PBGuildModifyHeadIconRspCmd
 {
     // 协议数据
-	int32 headIcon = 1;
+	int32 head_icon = 1;
 }
 
 
@@ -896,7 +908,7 @@ message PBGuildGetApplyListReqCmd
 message PBGuildGetApplyListRspCmd
 {
     // 协议数据
-	PBGuildUserApplyList applyList = 1;
+	PBGuildUserApplyList apply_list = 1;
 	int32 total_count = 2;			//总申请数
 }
 
@@ -905,7 +917,7 @@ message PBGuildGetApplyListRspCmd
 message PBGuildModifyGuildNameReqCmd
 {
     // 协议数据
-	string newName = 1;
+	string new_name = 1;
 	int64 uid = 2;
 }
 
@@ -914,7 +926,7 @@ message PBGuildModifyGuildNameReqCmd
 message PBGuildModifyGuildNameRspCmd
 {
     // 协议数据
-	string newName = 1;
+	string new_name = 1;
 	int64 uid = 2;
 }
 
@@ -923,8 +935,8 @@ message PBGuildExchangeItemReqCmd
 {
     // 协议数据
     int64 uid = 1;
-	int32 targetItemId = 2;	//兑换物品ID
-	int32 targetItemNum = 3;	//兑换物品数量
+	int32 item_id = 2;	//兑换物品ID
+	int32 item_num = 3;	//兑换物品数量
 }
 
 
@@ -932,8 +944,8 @@ message PBGuildExchangeItemReqCmd
 message PBGuildExchangeItemRspCmd
 {
     // 协议数据
-	int32 targetItemId = 1;	//兑换物品ID
-	int32 targetItemNum = 2;	//兑换物品数量
+	int32 item_id = 1;	//兑换物品ID
+	int32 item_num = 2;	//兑换物品数量
 }
 
 
@@ -942,7 +954,7 @@ message PBGuildAcceptTaskReqCmd
 {
     // 协议数据
     int64 uid = 1;
-	int32 taskCfgId = 2;	//任务ID
+	int32 task_id = 2;	//任务ID
 }
 
 
@@ -950,7 +962,7 @@ message PBGuildAcceptTaskReqCmd
 message PBGuildAcceptTaskRspCmd
 {
     // 协议数据
-	int32 taskCfgId = 1;	//任务ID
+	int32 task_id = 1;	//任务ID
 }
 
 
@@ -959,7 +971,7 @@ message PBGuildGetTaskRewardReqCmd
 { 
     // 协议数据
     int64 uid = 1;
-	int32 taskCfgId = 2;	//任务ID
+	int32 task_id = 2;	//任务ID
 }
 
 
@@ -967,29 +979,29 @@ message PBGuildGetTaskRewardReqCmd
 message PBGuildGetTaskRewardRspCmd
 {
     // 协议数据
-	int32 taskCfgId = 3;	//任务ID
-	PBGuildRewardList rewardList = 4;	//任务奖励信息
+	int32 task_id = 3;	//任务ID
+	PBGuildRewardList reward_list = 4;	//任务奖励信息
 }
 
 //更新任务状态
 message PBGuildUpdateTaskInfoRspCmd
 {
     // 协议数据
-	PBGuildTaskInfo taskInfo = 1;	//任务奖励信息
+	PBGuildTaskInfo task_info = 1;	//任务奖励信息
 }
 
 	//更新任务列表
 message PBGuildUpdateTaskListRspCmd
 {
     // 协议数据
-    PBGuildTaskList allTasks = 1;
+    PBGuildTaskList all_tasks = 1;
 }
 
 //更新成员列表
 message PBGuildUpdateGuildInfoRspCmd
 {
     // 协议数据
-    PBGuildUserGuildFullData guildInfo = 1;
+    PBGuildUserGuildFullData guild_info = 1;
 }
 
 //设置加入公会条件
@@ -997,12 +1009,12 @@ message PBSetGuildJoinConditionReqCmd
 {
     // 协议数据
 	int64 uid = 1;
-    PBGuidJoinCon joinCon = 2;
+    PBGuidJoinCon join_con = 2;
 }
 //设置加入公会条件返回
 message PBSetGuildJoinConditionRspCmd
 {
-    PBGuidJoinCon joinCon = 1;
+    PBGuidJoinCon join_con = 1;
 }
 
 // 更新玩家公会邀请加入记录
@@ -1019,28 +1031,28 @@ message PBGuildRecordListReqCmd
 {
     // 协议数据
     // 公会记录
-	int64 eType = 1;//1
+	int64 log_type = 1;//1
     int32 idx = 2;        //
 	int64 uid = 3;
 	int32 sort_type = 4;	//排序类型。1按记录时间 2按玩家昵称
 	bool b_asc = 5;         //是否升序
-	bool bManager = 6;
+	bool b_manager = 6;
     int32 des_uid = 7;     //制定用户记录 如果des_uid=0,查询所有玩家	
-	int32 pageCount = 8;   //固定每页多少条记录	
+	int32 page_count = 8;   //固定每页多少条记录	
 }
 // 拉取公会记录返回
 message PBGuildRecordListRspCmd
 {
     // 协议数据
     // 公会记录
-	int64 eType = 3;//
+	int64 log_type = 3;//
     int32 idx = 4;        //
 	int64 uid = 5;
 	int32 sort_type = 6;	//排序类型。1
 	bool b_asc = 7;         //是否升序
-	PBGuildRecordList record_list = 8; 
-	int32 nTotalCount = 9;     //总记录条数
-	int32 pageCount = 10;   //固定每页多少条记录	
+	PBGuildRecordDB record_list = 8; 
+	int32 total_count = 9;     //总记录条数
+	int32 page_count = 10;   //固定每页多少条记录	
 }
 
 // 设置战利品管理员
@@ -1048,7 +1060,7 @@ message PBGuildSetSpoilsMgrReqCmd
 {
     // 协议数据
 	int64 uid = 1;
-	bool bSet = 2;          //true任命，false为取消
+	bool b_set = 2;          //true任命，false为取消
 	int32 des_uid = 3;     //目标uid
 }
 // 设置战利品管理员返回
@@ -1056,7 +1068,7 @@ message PBGuildSetSpoilsMgrRspCmd
 {
     // 协议数据
 	bool sucess = 1;          //成功true,失败false
-    bool bSet = 2;            //true任命，false为取消
+    bool b_set = 2;            //true任命，false为取消
 	int32 des_uid = 3;       //目标uid	
 }
 
@@ -1065,16 +1077,16 @@ message  PBGuildDkpChangeReqCmd
 {
     // 协议数据
 	int64 uid = 1;
-    int32  changeNum = 2;   //修改的值
+    int32  change_num = 2;   //修改的值
 	int32 des_uid = 3;     //目标uid
     string  desc = 4;       //备注	
 }
 message PBGuildDkpChangeRspCmd
 {
     // 协议数据
-    int32  changeNum = 1;   //修改的值
+    int32  change_num = 1;   //修改的值
 	int32 des_uid = 2;     //目标uid
-	int32 curDKP = 3;      //当前dkp的值
+	int32 cur_dkp = 3;      //当前dkp的值
 	string desc = 4;        //备注
 }
 message PBGuildSendSpoilsReqCmd
@@ -1124,8 +1136,8 @@ message PBGuildDayMissionAwardReqCmd
 {    
     // 一键领取 还是按照积分领取
 	int64 uid = 1;
-    bool      bDayMission   = 2;
-    int32     missionId         = 3;
+    bool      day_mission   = 2;
+    int32     mission_id         = 3;
 }
 
 // 公会日常任务奖励领取返回
@@ -1134,7 +1146,7 @@ message PBGuildDayMissionAwardRspCmd
     // 领取返回
     int32      code         = 1;
     PBItemS    item_list    = 2;
-	bool       bDayMission   = 3;
+	bool       day_mission   = 3;
 }     
 
 // 购买推荐位

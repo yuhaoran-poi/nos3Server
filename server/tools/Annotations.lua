@@ -62,7 +62,9 @@
 ---@field public guild_node integer @公会节点
 ---@field public guild_addr integer @公会地址
 
- 	 
+--@class GuildDbData
+--@field public guild_id integer @公会ID
+
 
 
 ---@class MailData
@@ -804,3 +806,13 @@
 ---@field constant constant
 ---@field example example_cfg[]
 ---@field item item_cfg[]
+
+
+---@class guild_scripts
+---@field Guild Guild
+---@field GuildAdmin GuildAdmin
+---@field GuildLog GuildLog
+---@field GuildModel GuildModel
+---@field GuildShop GuildShop
+---@field GuildTask GuildTask
+---@field GuildTreasury GuildTreasury

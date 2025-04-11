@@ -87,7 +87,7 @@ moon.raw_dispatch("C2S", function(msg)
 end)
 
 context.addr_gate = moon.queryservice("gate")
-context.addr_db_user = moon.queryservice("db_user")
+context.addr_db_redis = moon.queryservice("db_user")
 if moon.queryservice("db_game") > 0 then
     context.addr_db_user = moon.queryservice("db_game")
 end

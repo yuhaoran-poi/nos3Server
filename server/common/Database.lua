@@ -196,6 +196,49 @@ function _M.query_role(addr_db, uid)
     return role_data
 end
 
+function _M.GetUserSimple(addr_db, uid)
+    local res, err = redis_call(addr_db, "HGETALL", "user_simple_"..uid)
+    if res == false then
+        error("GetUserSimple failed:"..tostring(err))
+    end
+    
+    local simple_data = {}
+    if res and #res > 0 then
+        for i=1,#res,2 do
+            simple_data[res[i]] = json.decode(res[i+1] or "null")
+        end
+    end
+    return simple_data
+end
+
+function _M.GetUserSimpleF(addr_db, uid, field)
+    local res, err = redis_call(addr_db, "HGET", "user_simple_"..uid, field)
+    if res == false then
+        error("GetUserSimpleF failed:"..tostring(err))
+    end
+    
+    if res then
+        return json.decode(res)
+    end
+    return nil
+end
+
+function _M.SetUserSimple(addr_db, uid, simple)
+    assert(simple)
+    
+    local tmp = {}
+    for k,v in pairs(simple) do
+        table.insert(tmp, k)
+        table.insert(tmp, json.encode(v))
+    end
+    
+    redis_send(addr_db, "HMSET", "user_simple_"..uid, table.unpack(tmp))
+end
+
+function _M.SetUserSimpleF(addr_db, uid, field, value)
+    redis_send(addr_db, "HSET", "user_simple_"..uid, field, json.encode(value))
+end
+
 -- 新增分布式会话管理（核心改造点）
 function _M.create_session(addr_db, uid)
     local session_id = moon.md5(tostring(uid)..moon.time()) -- 使用框架API生成全局唯一会话ID
@@ -282,6 +325,56 @@ function _M.saveuser_simple(addr, uid, data, pbdata)
 
     local cmd = string.format([[
         INSERT INTO mgame.user_simple (uid, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], uid, pbdata, data_str, pbdata, data_str)
+    return moon.call("lua", addr, cmd)
+end
+
+function _M.save_guildinfo(addr, guild_id, data, pbdata)
+    assert(data)
+
+    local data_str = jencode(data)
+
+    local cmd = string.format([[
+        INSERT INTO mgame.c_guild (guild_id, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], guild_id, pbdata, data_str, pbdata, data_str)
+    return moon.call("lua", addr, cmd)
+end
+function _M.save_guildshop(addr, guild_id, data, pbdata)
+    assert(data)
+
+    local data_str = jencode(data)
+
+    local cmd = string.format([[
+        INSERT INTO mgame.c_guild_shop (guild_id, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], guild_id, pbdata, data_str, pbdata, data_str)
+    return moon.call("lua", addr, cmd)
+end
+
+function _M.save_guildbag(addr, guild_id, data, pbdata)
+    assert(data)
+
+    local data_str = jencode(data)
+
+    local cmd = string.format([[
+        INSERT INTO mgame.c_guild_bag (guild_id, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], guild_id, pbdata, data_str, pbdata, data_str)
+    return moon.call("lua", addr, cmd)
+end
+function _M.save_guildrecord(addr, guild_id, data, pbdata)
+    assert(data)
+
+    local data_str = jencode(data)
+
+    local cmd = string.format([[
+        INSERT INTO mgame.c_guild_record (guild_id, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
     ]], uid, pbdata, data_str, pbdata, data_str)
