@@ -18,7 +18,7 @@ function GuildProxy.Init()
         data.guild = {
             guild_id = 0,
             guild_node = 0,
-            guild_addr = 0,
+            addr_guild = 0,
         }
     end
 end
