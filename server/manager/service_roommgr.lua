@@ -16,7 +16,7 @@ local context = {
     rooms = {}, --当前房间列表
     uid_roomid = {}, --uid所在的房间id
 }
-local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+--local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
 
 setup(context)
 

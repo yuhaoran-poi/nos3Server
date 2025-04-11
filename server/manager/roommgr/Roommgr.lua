@@ -3,6 +3,7 @@ local socket = require("moon.socket")
 local common = require("common")
 local CmdCode = common.CmdCode
 local GameCfg = common.GameCfg --游戏配置
+local Database = common.Database
 local ErrorCode = common.ErrorCode
 
 ---@type roommgr_context
@@ -15,6 +16,7 @@ local Roommgr = {}
 
 function Roommgr.Init()
     context.rooms = {} -- 全量房间数据存储
+    context.addr_db_server = moon.queryservice("db_server")
     return true
 end
 
@@ -43,6 +45,24 @@ function Roommgr.CreateRoom(req)
         apply_list = {},
     }
     table.insert(room.players, { is_ready = 1, mem_info = req.self_info })
+    
+    local room_tags = {
+        isopen = room.isopen,
+        chapter = room.chapter,
+        difficulty = room.difficulty,
+    }
+    local room_data = {
+        roomid = room.roomid,
+        isopen = room.isopen,
+        chapter = room.chapter,
+	    difficulty = room.difficulty,
+	    playercnt = #room.players,
+	    master_id = room.master_id,
+        master_name = room.master_name,
+	    needpwd = room.needpwd,
+    }
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    Database.upsert_room(context.addr_db_server, roomid, room_tags, room_data)
 
     context.rooms[roomid] = room
     context.uid_roomid[req.msg.uid] = roomid
@@ -95,6 +115,23 @@ function Roommgr.ModRoom(req)
     room.pwd = req.pwd or room.pwd
     room.chapter = req.chapter or room.chapter
     room.difficulty = req.difficulty or room.difficulty
+
+    local room_tags = {
+        isopen = room.isopen,
+        chapter = room.chapter,
+        difficulty = room.difficulty,
+    }
+    local room_data = {
+        roomid = room.roomid,
+        isopen = room.isopen,
+        chapter = room.chapter,
+        difficulty = room.difficulty,
+        playercnt = #room.players,
+        master_id = room.master_id,
+        master_name = room.master_name,
+        needpwd = room.needpwd,
+    }
+    Database.upsert_room(context.addr_db_server, room.roomid, room_tags, room_data)
 
     local notify_uids = {}
     for _, player in ipairs(room.players) do
@@ -157,7 +194,7 @@ function Roommgr.ApplyToRoom(req)
 end
 
 function Roommgr.DealApply(req)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local room = context.rooms[req.roomid]
     if not room then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
@@ -193,6 +230,23 @@ function Roommgr.DealApply(req)
         -- 添加玩家到房间
         table.insert(room.players, { is_ready = 0, mem_info = apply_data.apply_info })
         context.uid_roomid[req.deal_uid] = req.roomid
+
+        local room_tags = {
+            isopen = room.isopen,
+            chapter = room.chapter,
+            difficulty = room.difficulty,
+        }
+        local room_data = {
+            roomid = room.roomid,
+            isopen = room.isopen,
+            chapter = room.chapter,
+            difficulty = room.difficulty,
+            playercnt = #room.players,
+            master_id = room.master_id,
+            master_name = room.master_name,
+            needpwd = room.needpwd,
+        }
+        Database.upsert_room(context.addr_db_server, room.roomid, room_tags, room_data)
 
         -- 广播新成员加入
         local notify_uids = {}
@@ -239,6 +293,7 @@ function Roommgr.ExitRoom(req)
             room.master_name = room.players[2].mem_info.nick_name
         else
             context.rooms[req.roomid] = nil
+            Database.delete_room(context.addr_db_server, req.roomid)
         end
     end
 

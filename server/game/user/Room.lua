@@ -49,7 +49,7 @@ function Room.PBCreateRoomReqCmd(req)
 end
 
 function Room.PBSearchRoomReqCmd(req)
-    if req.msg.roomid then
+    if req.msg.roomid and req.msg.roomid ~= 0 then
         local res, err = clusterd.call(3999, "roommgr", "Roommgr.SearchRooms", {
             roomid = req.msg.roomid,
         })
@@ -62,7 +62,34 @@ function Room.PBSearchRoomReqCmd(req)
 
         return context.S2C(context.net_id, CmdCode["PBSearchRoomRspCmd"], res, req.msg_context.stub_id)
     else
-        -- 按房间类型划分来查询，准备通过redis直接读取
+        local conditions = {
+            isopen = 1,
+            chapter = req.msg.chapter or 0,
+            difficulty = req.msg.difficulty or 0,
+        }
+        local result = Database.search_rooms(context.addr_db_server, conditions, req.msg.start_idx, 100) -- 按房间类型划分来查询，准备通过redis直接读取
+        local res = {
+            code = ErrorCode.None,
+            error = "搜索完成",
+            search_data = {}
+        }
+        if result.total > 0 then
+            for k, v in pairs(result.data) do
+                if v.isopen == 1 then
+                    table.insert(res.search_data, {
+                        roomid = v.roomid,
+                        chapter = v.chapter,
+                        difficulty = v.difficulty,
+                        playercnt = v.players,
+                        master_id = v.master_id,
+                        master_name = v.master_name,
+                        needpwd = v.needpwd
+                    })
+                end
+            end
+        end
+        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        return context.S2C(context.net_id, CmdCode["PBSearchRoomRspCmd"], res, req.msg_context.stub_id)
     end
 end
 
