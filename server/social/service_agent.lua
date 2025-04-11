@@ -1,4 +1,4 @@
---require("common.LuaPanda").start("127.0.0.1", 8818)
+require("common.LuaPanda").start("127.0.0.1", 8818)
 local moon = require("moon")
 local setup = require("common.setup")
 
@@ -6,6 +6,7 @@ local setup = require("common.setup")
 ---@field scripts agent_scripts
 local context = {
     scripts = {},
+    addr_db_game = 0,
 }
 
 local command = setup(context)

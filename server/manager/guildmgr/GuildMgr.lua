@@ -36,6 +36,7 @@ function GuildMgr.CreateGuild(creator_uid, guild_name)
     -- 查找node_guilds表中公会数量最少的节点
     local min_node = nil
     local min_count = math.huge
+    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     for nid, guild_ids in pairs(context.node_guilds) do
         local count = #guild_ids
         if count < min_count then
@@ -46,8 +47,11 @@ function GuildMgr.CreateGuild(creator_uid, guild_name)
     if not min_node then
         return { code = ErrorCode.AgentNotAvailable }
     end
+    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+ 
+     
     -- 调用agent服务创建公会
-    local res, err = cluster.call(min_node, "agent", "Agent.CreateGuild", guild_id, creator_uid, guild_name)
+    local res, err = cluster.call(min_node, "agent", "Agent.CreateGuild", guild_id, guild_name,creator_uid)
     if not res then
         print("CreateGuild failed:", err)
         return { code = ErrorCode.AgentCreateFailed,error = err}
@@ -79,6 +83,7 @@ end
 ---@return boolean
 function GuildMgr.AgentOnline(nid, addr_agent)
     context.node_agents[nid] = addr_agent
+    context.node_guilds[nid] = {}
     return true
 end
 
@@ -86,6 +91,7 @@ end
 ---@return boolean
 function GuildMgr.AgentOffline(nid)
     context.node_agents[nid] = nil
+    context.node_guilds[nid] = nil
     return true
 end
 

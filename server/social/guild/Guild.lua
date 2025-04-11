@@ -68,8 +68,6 @@ local defaultGuildRecordDB = {
 }
 
 function Guild.Init()
-    context.addr_db_game = moon.queryservice("db_game")
-    
     return true
 end
 
@@ -85,8 +83,9 @@ end
 ---@param guild_id integer
 ---@param creator_uid integer
 ---@param guild_name string
----@return integer|nil, ErrorCode?
+---@return {}
 function Guild.Create(guild_id, guild_name, creator_uid)
+    context.guild_id = guild_id
     local guild_db = scripts.GuildModel.Get()
     if not guild_db then
         local data = 
@@ -121,12 +120,19 @@ function Guild.Create(guild_id, guild_name, creator_uid)
     end
 
     -- 保存到数据库
+
+    xpcall(function()
+        scripts.GuildModel.Save()
+    end, function(err)
+        print("GuildModel.Save:", err)
+        return { code = ErrorCode.CreateGuildDataSaveErr, error = err }
+    end)
     
-    return guild_id
+    return {code = ErrorCode.None}
 end
 
 function Guild.AddMemeber(uid)
-    local guild_data = scripts.GuildModel.MutGet()
+    local guild_data = scripts.GuildModel.MutGetGuildInfoDB()
     if not guild_data then
         return false, ErrorCode.GuildNotExist
     end

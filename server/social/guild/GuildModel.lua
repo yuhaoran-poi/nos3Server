@@ -1,6 +1,7 @@
 local moon = require("moon")
 local common = require("common")
 local Database = common.Database
+local protocol = common.protocol
 
 ----DB Model 标准定义格式
 
@@ -26,19 +27,19 @@ function GuildModel.Create(data)
     DBData =
     {
         GuildInfo = {
-                      db_data = data.GuildInfoDB,
+                      db_data = data.GuildInfo,
                       dirty = true,
                    },
         GuildShop = {
-                      db_data = data.GuildShopDB,
+                      db_data = data.GuildShop,
                       dirty = true,
                    }, 
         GuildBag = {
-                      db_data = data.GuildBagDB,
+                      db_data = data.GuildBag,
                       dirty = true,
                    },
         GuildRecord = {
-                      db_data = data.GuildRecordDB,
+                      db_data = data.GuildRecord,
                       dirty = true,
                     },
     }
@@ -66,7 +67,8 @@ function GuildModel.Save(checkDirty)
         return
     end
     if DBData.GuildInfo.dirty then
-        local ok, err = Database.save_guildinfo(context.addr_db_game, context.guild_id,DBData.GuildInfo.db_data)
+        local pbname, pb_data = protocol.encodewithname("PBGuildInfoDB", DBData.GuildInfo.db_data)
+        local ok, err = Database.save_guildinfo(context.addr_db_game, context.guild_id, DBData.GuildInfo.db_data, pb_data)
         if not ok then
             moon.error(err)
             return
@@ -75,7 +77,8 @@ function GuildModel.Save(checkDirty)
     end
 
     if DBData.GuildShop.dirty then
-        local ok, err = Database.save_guildshop(context.addr_db_game, context.guild_id,DBData.GuildShop.db_data)
+        local pbname, pb_data = protocol.encodewithname("PBGuildShopDB", DBData.GuildShop.db_data)
+        local ok, err = Database.save_guildshop(context.addr_db_game, context.guild_id, DBData.GuildShop.db_data, pb_data)
         if not ok then
             moon.error(err)
             return
@@ -84,7 +87,8 @@ function GuildModel.Save(checkDirty)
     end
 
     if DBData.GuildBag.dirty then
-        local ok, err = Database.save_guildbag(context.addr_db_game, context.guild_id,DBData.GuildBag.db_data)
+        local pbname, pb_data = protocol.encodewithname("PBGuildBagDB", DBData.GuildBag.db_data)
+        local ok, err = Database.save_guildbag(context.addr_db_game, context.guild_id, DBData.GuildBag.db_data, pb_data)
         if not ok then
             moon.error(err)
             return
@@ -93,7 +97,9 @@ function GuildModel.Save(checkDirty)
     end
 
     if DBData.GuildRecord.dirty then
-        local ok, err = Database.save_guildrecord(context.addr_db_game, context.guild_id,DBData.GuildRecord.db_data)
+        local pbname, pb_data = protocol.encodewithname("PBGuildRecordDB", DBData.GuildRecord.db_data)
+        local ok, err = Database.save_guildrecord(context.addr_db_game, context.guild_id, DBData.GuildRecord.db_data,
+        pb_data)
         if not ok then
             moon.error(err)
             return

@@ -2,9 +2,9 @@
 if _G["__init__"] then
     local arg = ...
     return {
-        thread = 8,
+        thread = 16,
         enable_stdout = true,
-        logfile = string.format("log/game-%s-%s.log", arg[1], os.date("%Y-%m-%d-%H-%M-%S")),
+        logfile = string.format("log/social-%s-%s.log", arg[1], os.date("%Y-%m-%d-%H-%M-%S")),
         loglevel = "DEBUG",
         path = table.concat({
             "./?.lua",
@@ -86,9 +86,17 @@ local function run(node_conf)
         },
         {
             unique = true,
+            name = "db_game",
+            file = "common/mysqldriver.lua",
+            threadid = 4,
+            poolsize = 5,
+            opts = db_conf.mysql
+        },
+        {
+            unique = true,
             name = "agent",
             file = "social/service_agent.lua",
-            threadid = 4,
+            threadid = 5,
             websocket = false,
         },
        
@@ -116,8 +124,7 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("cluster"), "Listen"))
         local cluster = require("cluster")
         -- 上报本节点id和agent服务地址给公会管理器
-        local ret = cluster.call(3999, "guildmgr", "GuildMgr.AgentOnline",
-        { nid = tonumber(arg[1]), addr_agent = moon.queryservice("agent") })
+        local ret = cluster.call(3999, "guildmgr", "GuildMgr.AgentOnline",tonumber(arg[1]), moon.queryservice("agent") )
         if not ret then
             moon.error("report node online failed")
             return
@@ -152,7 +159,7 @@ local function run(node_conf)
         print("receive shutdown")
         -- 通知guildmgr agent下线
         local cluster = require("cluster")
-        local ret = cluster.call(3999, "guildmgr", "Guildmgr.AgentOffline", { nid = tonumber(arg[1]) })
+        local ret = cluster.call(3999, "guildmgr", "Guildmgr.AgentOffline", tonumber(arg[1]) )
         if not ret then
             moon.error("report node offline failed")
         end

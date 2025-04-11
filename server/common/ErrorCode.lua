@@ -116,8 +116,10 @@ local ErrorCode = {
     CreateGuildServiceErr = 922,
     ---创建公会数据错误
     CreateGuildDataErr = 923,
+    ---创建公会数据存档错误
+    CreateGuildDataSaveErr = 924,
     --- 创建公会失败
-    GuildCreateFailed = 924,
+    GuildCreateFailed = 925,
 }
 
 return ErrorCode
