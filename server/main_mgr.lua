@@ -2,9 +2,9 @@
 if _G["__init__"] then
     local arg = ...
     return {
-        thread = 8,
+        thread = 10,
         enable_stdout = true,
-        logfile = string.format("log/game-%s-%s.log", arg[1], os.date("%Y-%m-%d-%H-%M-%S")),
+        logfile = string.format("log/manager-%s-%s.log", arg[1], os.date("%Y-%m-%d-%H-%M-%S")),
         loglevel = "DEBUG",
         path = table.concat({
             "./?.lua",
@@ -105,6 +105,14 @@ local function run(node_conf)
             websocket = false,
             room_startid = 10000,
         },
+        {
+            unique = true,
+            name = "guildmgr",
+            file = "manager/service_guildmgr.lua",
+            threadid = 8,
+            websocket = false,
+            room_startid = 10000,
+        },
     }
 
     local function Start()
@@ -118,7 +126,7 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("usermgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("teammgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("roommgr"), "Start"))
-
+        assert(moon.call("lua", moon.queryservice("guildmgr"), "Start"))
         local data = db.loadserverdata(moon.queryservice("db_server"))
         if not data then
             data = { boot_times = 0 }

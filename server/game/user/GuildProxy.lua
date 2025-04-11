@@ -64,22 +64,29 @@ function GuildProxy.PBGuildCreateGuildReqCmd(req)
         return ErrorCode.GuildAlreadyInGuild
     end
 
-    local guild_info, err = cluster.call(3999, "guildmgr", "Guildmgr.CreateGuild", context.uid, req.msg.guild_name, DB.simple)
-    if not guild_info then
+    local res, err = cluster.call(3999, "guildmgr", "GuildMgr.CreateGuild", context.uid, req.msg.guild_name)
+    if not res then
         print("CreateGuild failed:", err)
         context.R2C(CmdCode.PBGuildCreateGuildRspCmd, {
-            code = err or ErrorCode.GuildCreateFailed,
-        },req)
-        return err or ErrorCode.GuildCreateFailed
+            code = ErrorCode.GuildCreateFailed,
+        }, req)
+        return ErrorCode.GuildCreateFailed
+    end
+    if res.code ~= ErrorCode.None then
+        context.R2C(CmdCode.PBGuildCreateGuildRspCmd, {
+            code = res.code,
+        }, req)
+        return res.code
     end
     -- 保存公会信息
-    DB.guild.guild_id = guild_info.guild_id
-    DB.guild.guild_node = guild_info.guild_node
-    DB.guild.guild_addr = guild_info.guild_addr
+    DB.guild.guild_id = res.guild_id
+    DB.guild.guild_node = res.guild_node
+    DB.guild.addr_guild = res.addr_guild
     -- 返回创建公会信息
     context.R2C(CmdCode.PBGuildCreateGuildRspCmd, {
         code = ErrorCode.None,
-        guild_info = guild_info,
+        guild_id = res.guild_id,
+        guild_name = res.guild_name,
     },req)
 
 end

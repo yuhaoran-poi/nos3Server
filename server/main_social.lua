@@ -98,7 +98,7 @@ local function run(node_conf)
         ---控制服务初始化顺序,Init一般为加载DB
         assert(moon.call("lua", moon.queryservice("node"), "Init"))
         assert(moon.call("lua", moon.queryservice("agent"), "Init"))
-  
+      
 
         local data = db.loadserverdata(moon.queryservice("db_server"))
         if not data then
@@ -114,6 +114,14 @@ local function run(node_conf)
 
         ---加载完数据后 开始接受网络连接
         assert(moon.call("lua", moon.queryservice("cluster"), "Listen"))
+        local cluster = require("cluster")
+        -- 上报本节点id和agent服务地址给公会管理器
+        local ret = cluster.call(3999, "guildmgr", "GuildMgr.AgentOnline",
+        { nid = tonumber(arg[1]), addr_agent = moon.queryservice("agent") })
+        if not ret then
+            moon.error("report node online failed")
+            return
+        end
     end
 
     local server_ok = false
@@ -142,6 +150,12 @@ local function run(node_conf)
     ---注册进程退出信号处理
     moon.shutdown(function()
         print("receive shutdown")
+        -- 通知guildmgr agent下线
+        local cluster = require("cluster")
+        local ret = cluster.call(3999, "guildmgr", "Guildmgr.AgentOffline", { nid = tonumber(arg[1]) })
+        if not ret then
+            moon.error("report node offline failed")
+        end
         moon.async(function()
             if server_ok then
                 -- wait other service shutdown

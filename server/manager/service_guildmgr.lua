@@ -10,7 +10,10 @@ local conf = ...
 local context ={
     conf = conf,
     guilds = {},
-    uid_to_guild = {}
+    uid_to_guild = {},
+    ---@type table<integer, integer> 节点ID到agent服务地址的映射
+    node_agents = {},
+    node_guilds = {}, --agent节点对应的guild_ids{[nid] = {guild_id1 = true,guild_id2 = true}}
 }
 
 setup(context)
