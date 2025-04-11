@@ -1,6 +1,7 @@
 local moon = require("moon")
 local json = require("json")
 local redisd = require("redisd")
+local uuid = require("uuid")
 ---@type sqlclient
 local pgsql = require("sqldriver")
 
@@ -329,6 +330,139 @@ function _M.saveuser_simple(addr, uid, data, pbdata)
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
     ]], uid, pbdata, data_str, pbdata, data_str)
     return moon.call("lua", addr, cmd)
+end
+
+-- 房间索引前缀常量
+local ROOM_PREFIX = "room:"
+local INDEX_PREFIX = "room:index:"
+local TEMP_PREFIX = "room:temp:"
+
+-- 创建/更新房间
+function _M.upsert_room(addr_db, roomid, room_tags, room_data)
+    -- 获取旧值
+    local ola_values = {}
+    local old_json, err = redis_call(addr_db, "MGET", ROOM_PREFIX .. roomid)
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if old_json and next(old_json) ~= nil then
+        ola_values = json.decode(old_json)
+    end
+
+    -- 存储新数据
+    redis_send(addr_db, "MSET", ROOM_PREFIX .. roomid, json.encode(room_data))
+
+    -- 更新索引
+    for tag, new_value in pairs(room_tags) do
+        local old_value = ola_values[tag]
+        -- 删除旧索引
+        if old_value and old_value ~= new_value then
+            local del_pipeline = {}
+            table.insert(del_pipeline, "SREM")
+            table.insert(del_pipeline, INDEX_PREFIX .. tag .. ":" .. old_value)
+            table.insert(del_pipeline, roomid)
+            redis_send(addr_db, table.unpack(del_pipeline))
+        end
+
+        -- 添加新索引
+        local add_pipeline = {}
+        table.insert(add_pipeline, "SADD")
+        table.insert(add_pipeline, INDEX_PREFIX .. tag .. ":" .. new_value)
+        table.insert(add_pipeline, roomid)
+        redis_send(addr_db, table.unpack(add_pipeline))
+
+        -- 添加0索引
+        local add_pipeline_0 = {}
+        table.insert(add_pipeline_0, "SADD")
+        table.insert(add_pipeline_0, INDEX_PREFIX .. tag .. ":" .. 0)
+        table.insert(add_pipeline_0, roomid)
+        redis_send(addr_db, table.unpack(add_pipeline_0))
+    end
+end
+
+-- 复合条件分页查询
+function _M.search_rooms(addr_db, conditions, page, page_size)
+    -- 生成临时键
+    local temp_key = TEMP_PREFIX .. moon.md5(json.encode(conditions))
+    -- 查看临时键是否存在
+    local exists, e_err = redis_call(addr_db, "EXISTS", temp_key)
+    if exists == 0 then
+        -- 新建临时键
+        -- 构建查询条件集合
+        local sets = {}
+        for tag, value in pairs(conditions) do
+            table.insert(sets, INDEX_PREFIX .. tag .. ":" .. value)
+        end
+
+        -- 执行集合运算
+        if #sets == 0 then return { total = 0, data = {} } end
+
+        redis_send(addr_db, "SINTERSTORE", temp_key, table.unpack(sets))
+        redis_send(addr_db, "EXPIRE", temp_key, 600)
+    end
+
+    -- 分页查询
+    local ids, i_err = redis_call(addr_db, "SMEMBERS", temp_key)
+    if #ids > 0 then
+        table.sort(ids)
+        local total = #ids
+        -- 计算分页范围
+        local beg_idx = math.max(1, (page - 1) * page_size + 1)
+        local end_idx = math.min(beg_idx + page_size - 1, total)
+        -- 提取当前页数据
+        local pipeline = {}
+        table.insert(pipeline, "MGET")
+        local can_get = false
+        for i = beg_idx, end_idx do
+            if ids[i] then
+                table.insert(pipeline, ROOM_PREFIX .. ids[i])
+                can_get = true
+            else
+                break -- 防止索引越界
+            end
+        end
+
+        if can_get then
+            local res, r_err = redis_call(addr_db, table.unpack(pipeline))
+            if res and next(res) ~= nil then
+                for i = 1, #res do
+                    if res[i] then
+                        res[i] = json.decode(res[i])
+                    end
+                end
+            end
+            return {
+                total = #res,
+                data = res
+            }
+        end
+    end
+
+    return {
+        total = 0,
+        data = {}
+    }
+end
+
+-- 删除房间
+function _M.delete_room(addr_db, roomid)
+    -- 获取房间信息
+    local old_json, err = redis_call(addr_db, "MGET", ROOM_PREFIX .. roomid)
+    local ola_values = json.decode(old_json)
+    if not ola_values then
+        ola_values = {}
+    end
+
+    -- 删除主数据
+    redis_send(addr_db, "DEL", ROOM_PREFIX .. roomid)
+
+    -- 清理索引
+    for k, v in pairs(ola_values) do
+        local del_pipeline = {}
+        table.insert(del_pipeline, "SREM")
+        table.insert(del_pipeline, INDEX_PREFIX .. k .. ":" .. v)
+        table.insert(del_pipeline, roomid)
+
+        redis_send(addr_db, table.unpack(del_pipeline))
+    end
 end
 
 function _M.save_guildinfo(addr, guild_id, data, pbdata)

@@ -1,4 +1,4 @@
---require("common.LuaPanda").start("127.0.0.1", 8818)
+require("common.LuaPanda").start("127.0.0.1", 8818)
 
 local moon = require("moon")
 local seri = require("seri")
@@ -73,7 +73,7 @@ moon.raw_dispatch("C2S", function(msg)
             local fn = command[subname]
             moon.async(function()
                 local ok, res = xpcall(fn, debug.traceback, reqmsg)
-                local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+                --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 if not ok then
                     moon.error(res)
                     --context.S2C(CmdCode.S2CErrorCode, { code = 1 }) --server internal error
@@ -91,6 +91,7 @@ context.addr_db_redis = moon.queryservice("db_user")
 if moon.queryservice("db_game") > 0 then
     context.addr_db_user = moon.queryservice("db_game")
 end
+context.addr_db_server = moon.queryservice("db_server")
 context.addr_center = moon.queryservice("center")
 context.addr_auth = moon.queryservice("auth")
 
