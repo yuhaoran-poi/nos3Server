@@ -44,8 +44,7 @@ function Nodemgr.BindNode(msg)
 
     local n = {
         nid = msg.nid,
-        chost = msg.chost,
-        cport = msg.cport,
+        node_type = msg.node_type,
     }
 
     context.node_map[msg.nid] = n
