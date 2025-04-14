@@ -143,6 +143,8 @@ local function doAuth(Auth,req)
     print("doAuth uid_map", req.uid, u.addr_user)
 
     if req.pull then
+        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        print("doAuth pull", req.uid, req.net_id)
         return { code = 2003, error = "req.pull is true" }
     end
 
