@@ -30,8 +30,8 @@ local defaultGuildInfoDB = {
     master_ids = {},            --公会管理员列表
     members = {},                  --玩家列表
     member_count = 0,              --公会成员人数（当前）
-    member_num_level = 0,          --成员人数等级(第几等级）
-    member_max_num = 0,            --最大成员人数
+    member_num_level = 1,          --成员人数等级(第几等级）
+    member_max_num = 10,            --最大成员人数
     accouncenment = "",         --公会公告
     apply_list = {},            --公会申请列表
     freeze_time = 0,            --冻结开始时间
@@ -116,7 +116,10 @@ function Guild.Create(guild_id, guild_name, creator_uid)
         guild_record.guild_id = guild_id
         -- 创建数据模型
         scripts.GuildModel.Create(data)
-        Guild.AddMemeber(creator_uid)
+        local res = Guild.AddMemeber(creator_uid)
+        if res.code ~= ErrorCode.None then
+            return res
+        end
     end
 
     -- 保存到数据库
@@ -134,10 +137,10 @@ end
 function Guild.AddMemeber(uid)
     local guild_data = scripts.GuildModel.MutGetGuildInfoDB()
     if not guild_data then
-        return false, ErrorCode.GuildNotExist
+        return {code = ErrorCode.GuildNotExist}
     end
     if guild_data.member_count >= guild_data.member_max_num then
-        return false, ErrorCode.GuildFull
+        return {code = ErrorCode.GuildFull}
     end
     local nickname = Database.GetUserSimpleF(context.addr_db_redis, uid, "nickname")
     guild_data.members[uid] = {
@@ -154,6 +157,7 @@ function Guild.AddMemeber(uid)
           last_send_spoil=0,    --上次发放战利品的时间戳
     }
     guild_data.member_count = table.count(guild_data.members)
+    return {code = ErrorCode.None}
     --scripts.GuildModel.Save()
 end
 
