@@ -15,6 +15,7 @@ local context = {
     room_nowid = conf.room_startid,
     rooms = {}, --当前房间列表
     uid_roomid = {}, --uid所在的房间id
+    waitds_roomids = {}, --等待DS的房间id列表 status:0--请求DS,1--查询DS状态
 }
 --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
 

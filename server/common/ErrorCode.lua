@@ -88,6 +88,8 @@ local ErrorCode = {
     RoomInvalidState = 909,
     ---房间申请不存在
     RoomApplyNotFound = 910,
+    -- 玩家没有全部准备
+    RoomNotAllReady = 911,
 }
 
 return ErrorCode

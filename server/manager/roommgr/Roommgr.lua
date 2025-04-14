@@ -5,6 +5,11 @@ local CmdCode = common.CmdCode
 local GameCfg = common.GameCfg --游戏配置
 local Database = common.Database
 local ErrorCode = common.ErrorCode
+local lock = require("moon.queue")()
+local httpc = require("moon.http.client")
+local json = require("json")
+local jencode = json.encode
+local jdecode = json.decode
 
 ---@type roommgr_context
 local context = ...
@@ -15,9 +20,115 @@ local listenfd
 local Roommgr = {}
 
 function Roommgr.Init()
-    context.rooms = {} -- 全量房间数据存储
+    context.rooms = {}          -- 全量房间数据存储
+    context.waitds_roomids = {} -- 等待中房间ID列表
     context.addr_db_server = moon.queryservice("db_server")
+
+    -- 新增定时器轮询
+    moon.async(function()
+        while true do
+            moon.sleep(1000) -- 每秒检查一次
+            Roommgr.CheckWaitDSRooms()
+        end
+    end)
     return true
+end
+
+function Roommgr.CheckWaitDSRooms()
+    local now = moon.time()
+    local scope <close> = lock()
+
+    local function allocate_cb(rsp_data)
+        if not rsp_data or not rsp_data.error or rsp_data.error ~= "success" then
+            return false
+        end
+
+        if not rsp_data.allocationresponse then
+            return false
+        end
+
+        local ret = {}
+        if not rsp_data.allocationresponse.address
+            or not rsp_data.allocationresponse.gameServerName
+            or not rsp_data.allocationresponse.nodeName then
+            return false
+        end
+
+        ret.ds_ip = rsp_data.allocationresponse.address
+        ret.region = rsp_data.allocationresponse.gameServerName
+        ret.serverssion = rsp_data.allocationresponse.nodeName
+
+        return true, ret
+    end
+    
+    local function query_cb(rsp_data)
+        if not rsp_data or not rsp_data.gameservers or #rsp_data.gameservers ~= 1 then
+            return false
+        end
+
+        local gameserver = rsp_data.gameservers[1]
+        if not gameserver.labels
+            or not gameserver.labels["agones.dev/sdk-loadmap"]
+            or not gameserver.labels["agones.dev/sdk-loadmap"] ~= "true"
+            or not gameserver.labels["agones.dev/sdk-clb_address"] then
+            return false
+        end
+
+        return true, gameserver.labels["agones.dev/sdk-clb_address"]
+    end
+    
+    for k, v in pairs(context.waitds_roomids) do
+        if now - v.lasttime >= 10 then
+            v.lasttime = now
+            
+            if v.status == 0 then
+                local response = httpc.post("http://127.0.0.1:9991/fallback", v.allocate_data)
+                local rsp_data = json.decode(response.body)
+                local success, ret = allocate_cb(rsp_data)
+                if not success or not ret then
+                    v.failcnt = v.failcnt + 1
+                else
+                    v.ds_ip = ret.ds_ip
+                    v.region = ret.region
+                    v.serverssion = ret.serverssion
+
+                    v.status = 1
+                    v.failcnt = 0
+                end
+            elseif v.status == 1 then
+                local get_url = "http://43.136.214.127:8000/api/gameservers?" .. v.region
+                local response = httpc.get(get_url)
+                local rsp_data = json.decode(response.body)
+                local success, ret = query_cb(rsp_data)
+                if not success or not ret then
+                    v.failcnt = v.failcnt + 1
+                else
+                    v.ds_address = ret
+                    
+                    v.status = 2
+                    v.failcnt = 0
+                end
+            else
+                v.failcnt = v.failcnt + 1
+            end
+        end
+    end
+
+    for k, v in pairs(context.waitds_roomids) do
+        if now - v.lasttime >= 10 then
+        end
+    end
+end
+
+function Roommgr.AddWaitDSRooms(roomid, allocate_data)
+    local scope <close> = lock()
+
+    context.waitds_roomids[roomid] = {
+        status = 0,
+        lasttime = 0,
+        failcnt = 0,
+        allocate_data = allocate_data,
+    }
 end
 
 -- 生成唯一房间ID（保留原逻辑）
@@ -41,6 +152,7 @@ function Roommgr.CreateRoom(req)
         difficulty = req.msg.difficulty,
         master_id = req.msg.uid,
         master_name = req.self_info.nick_name,
+        state = 0, -- 0: 等待中, 1: 游戏中, 2: 已关闭
         players = {},
         apply_list = {},
     }
@@ -51,7 +163,7 @@ function Roommgr.CreateRoom(req)
         chapter = room.chapter,
         difficulty = room.difficulty,
     }
-    local room_data = {
+    local redis_data = {
         roomid = room.roomid,
         isopen = room.isopen,
         chapter = room.chapter,
@@ -59,10 +171,11 @@ function Roommgr.CreateRoom(req)
 	    playercnt = #room.players,
 	    master_id = room.master_id,
         master_name = room.master_name,
-	    needpwd = room.needpwd,
+        needpwd = room.needpwd,
+        state = room.state,
     }
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    Database.upsert_room(context.addr_db_server, roomid, room_tags, room_data)
+    Database.upsert_room(context.addr_db_server, roomid, room_tags, redis_data)
 
     context.rooms[roomid] = room
     context.uid_roomid[req.msg.uid] = roomid
@@ -82,7 +195,8 @@ function Roommgr.SearchRooms(req)
                 playercnt = #room.players,
                 master_id = room.master_id,
                 master_name = room.master_name,
-                needpwd = room.needpwd
+                needpwd = room.needpwd,
+                state = room.state,
             })
         end
     end
@@ -121,7 +235,7 @@ function Roommgr.ModRoom(req)
         chapter = room.chapter,
         difficulty = room.difficulty,
     }
-    local room_data = {
+    local redis_data = {
         roomid = room.roomid,
         isopen = room.isopen,
         chapter = room.chapter,
@@ -130,8 +244,9 @@ function Roommgr.ModRoom(req)
         master_id = room.master_id,
         master_name = room.master_name,
         needpwd = room.needpwd,
+        state = room.state,
     }
-    Database.upsert_room(context.addr_db_server, room.roomid, room_tags, room_data)
+    Database.upsert_room(context.addr_db_server, room.roomid, room_tags, redis_data)
 
     local notify_uids = {}
     for _, player in ipairs(room.players) do
@@ -145,7 +260,8 @@ function Roommgr.ModRoom(req)
         needpwd = room.needpwd,
         pwd = room.pwd,
         chapter = room.chapter,
-        difficulty = room.difficulty
+        difficulty = room.difficulty,
+        state = room.state,
     })
 
     return {
@@ -236,7 +352,7 @@ function Roommgr.DealApply(req)
             chapter = room.chapter,
             difficulty = room.difficulty,
         }
-        local room_data = {
+        local redis_data = {
             roomid = room.roomid,
             isopen = room.isopen,
             chapter = room.chapter,
@@ -245,8 +361,9 @@ function Roommgr.DealApply(req)
             master_id = room.master_id,
             master_name = room.master_name,
             needpwd = room.needpwd,
+            state = room.state,
         }
-        Database.upsert_room(context.addr_db_server, room.roomid, room_tags, room_data)
+        Database.upsert_room(context.addr_db_server, room.roomid, room_tags, redis_data)
 
         -- 广播新成员加入
         local notify_uids = {}
@@ -420,7 +537,8 @@ function Roommgr.GetRoomInfo(req)
             needpwd = room.needpwd,
             pwd = room.pwd,
             chapter = room.chapter,
-            difficulty = room.difficulty
+            difficulty = room.difficulty,
+            state = room.state,
         },
         member_datas = {}
     }
@@ -435,6 +553,61 @@ function Roommgr.GetRoomInfo(req)
     end
 
     return res
+end
+
+function Roommgr.StartGame(req)
+    local room = context.rooms[req.roomid]
+    if not room then
+        return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+
+    -- 验证房主身份
+    if room.master_id ~= req.uid or room.state ~= 0 then
+        return { code = ErrorCode.RoomPermissionDenied, error = "无开始游戏权限" }
+    end
+
+    -- 检查所有玩家准备状态
+    for _, player in ipairs(room.players) do
+        if player.is_ready ~= 1 then
+            return { code = ErrorCode.RoomNotAllReady, error = "存在未准备玩家" }
+        end
+    end
+
+    -- 准备进入DS
+    context.waitds_roomids[req.roomid] = 0
+
+    -- 更新房间状态
+    room.state = 1 -- 游戏中状态
+    room.isopen = 0 -- 游戏开始后关闭房间
+    local room_tags = {
+        isopen = room.isopen, -- 游戏开始后关闭房间
+        chapter = room.chapter,
+        difficulty = room.difficulty,
+    }
+    local redis_data = {
+        roomid = room.roomid,
+        isopen = room.isopen,
+        chapter = room.chapter,
+        difficulty = room.difficulty,
+        playercnt = #room.players,
+        master_id = room.master_id,
+        master_name = room.master_name,
+        needpwd = room.needpwd,
+        state = room.state,
+    }
+    Database.upsert_room(context.addr_db_server, req.roomid, room_tags, redis_data)
+
+    -- 广播游戏开始
+    local notify_uids = {}
+    for _, player in ipairs(room.players) do
+        table.insert(notify_uids, player.mem_info.uid)
+    end
+    context.send_users(notify_uids, {}, "Room.OnGameStart", {
+        roomid = req.roomid,
+        game_uid = game_uid
+    })
+
+    return { code = ErrorCode.None, error = "游戏开始成功" }
 end
 
 function Roommgr.Start()
