@@ -1177,7 +1177,7 @@ PBRankInfo
 uid (Ruid(
 	rank_info (2.PBRankInfoRrankInfo(
 	self_data (2.PBRankDataRselfDatabproto3
-Ñ
+µ
 
 room.proto
 user.proto"Ú
@@ -1355,7 +1355,12 @@ memberData"<
 code (Rcode
 error (	Rerror
 uid (Ruid
-roomid (Rroomidbproto3
+roomid (Rroomid"b
+PBEnterDsRoomSyncCmd
+roomid (Rroomid
+
+ds_address (	R	dsAddress
+ds_ip (	RdsIpbproto3
  
 
 team.proto

@@ -8,6 +8,7 @@ local ErrorCode = common.ErrorCode
 local lock = require("moon.queue")()
 local httpc = require("moon.http.client")
 local json = require("json")
+local crypt = require("crypt")
 local jencode = json.encode
 local jdecode = json.decode
 
@@ -28,7 +29,8 @@ function Roommgr.Init()
     moon.async(function()
         while true do
             moon.sleep(1000) -- 每秒检查一次
-            Roommgr.CheckWaitDSRooms()
+            local allocated_rooms, fail_rooms = Roommgr.CheckWaitDSRooms()
+            Roommgr.NotifyDsRooms(allocated_rooms, fail_rooms)
         end
     end)
     return true
@@ -69,7 +71,7 @@ function Roommgr.CheckWaitDSRooms()
         local gameserver = rsp_data.gameservers[1]
         if not gameserver.labels
             or not gameserver.labels["agones.dev/sdk-loadmap"]
-            or not gameserver.labels["agones.dev/sdk-loadmap"] ~= "true"
+            or gameserver.labels["agones.dev/sdk-loadmap"] ~= "true"
             or not gameserver.labels["agones.dev/sdk-clb_address"] then
             return false
         end
@@ -82,7 +84,9 @@ function Roommgr.CheckWaitDSRooms()
             v.lasttime = now
             
             if v.status == 0 then
-                local response = httpc.post("http://127.0.0.1:9991/fallback", v.allocate_data)
+                local response = httpc.post(context.conf.allocate_url, v.allocate_data)
+                --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+                print_r(response)
                 local rsp_data = json.decode(response.body)
                 local success, ret = allocate_cb(rsp_data)
                 if not success or not ret then
@@ -96,8 +100,11 @@ function Roommgr.CheckWaitDSRooms()
                     v.failcnt = 0
                 end
             elseif v.status == 1 then
-                local get_url = "http://43.136.214.127:8000/api/gameservers?" .. v.region
+                local get_url = context.conf.query_url .. "?name=" .. v.region
+                print_r(get_url)
                 local response = httpc.get(get_url)
+                --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+                print_r(response)
                 local rsp_data = json.decode(response.body)
                 local success, ret = query_cb(rsp_data)
                 if not success or not ret then
@@ -114,8 +121,60 @@ function Roommgr.CheckWaitDSRooms()
         end
     end
 
+    local allocated_rooms = {}
+    local fail_rooms = {}
     for k, v in pairs(context.waitds_roomids) do
-        if now - v.lasttime >= 10 then
+        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        if v.status == 2 then
+            allocated_rooms[k] = v
+        elseif v.failcnt > 5 then
+            table.insert(fail_rooms, k)
+        end
+    end
+    for roomid, _ in pairs(allocated_rooms) do
+        context.waitds_roomids[roomid] = nil
+    end
+    for roomid, _ in pairs(fail_rooms) do
+        context.waitds_roomids[roomid] = nil
+    end
+    print("allocated_rooms")
+    print_r(allocated_rooms)
+
+    return allocated_rooms, fail_rooms
+end
+
+function Roommgr.NotifyDsRooms(allocated_rooms, fail_rooms)
+    for roomid, allocate_info in pairs(allocated_rooms) do
+        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        local room = context.rooms[roomid]
+        if room then
+            local notify_uids = {}
+            for _, player in pairs(room.players) do
+                table.insert(notify_uids, player.mem_info.uid)
+            end
+            context.send_users(notify_uids, {}, "Room.OnEnterDs", {
+                roomid = roomid,
+                ds_address = allocate_info.ds_address,
+                ds_ip = allocate_info.ds_ip,
+            })
+        end
+    end
+
+    for roomid, fail_info in pairs(fail_rooms) do
+        local room = context.rooms[roomid]
+        if room then
+            local notify_uids = {}
+            for _, player in pairs(room.players) do
+                table.insert(notify_uids, player.mem_info.uid)
+            end
+            context.send_users(notify_uids, {}, "Room.OnEnterDs", {
+                roomid = roomid,
+                ds_address = fail_info.ds_address,
+                ds_ip = fail_info.ds_ip,
+            })
+
+            room.state = 0
+            room.isopen = 0
         end
     end
 end
@@ -127,6 +186,10 @@ function Roommgr.AddWaitDSRooms(roomid, allocate_data)
         status = 0,
         lasttime = 0,
         failcnt = 0,
+        ds_ip = "",
+        region = "",
+        serverssion = "",
+        ds_address = "",
         allocate_data = allocate_data,
     }
 end
@@ -249,7 +312,7 @@ function Roommgr.ModRoom(req)
     Database.upsert_room(context.addr_db_server, room.roomid, room_tags, redis_data)
 
     local notify_uids = {}
-    for _, player in ipairs(room.players) do
+    for _, player in pairs(room.players) do
         if player.mem_info.uid ~= req.uid then
             table.insert(notify_uids, player.uid)
         end
@@ -287,7 +350,7 @@ function Roommgr.ApplyToRoom(req)
     end
 
     -- 检查重复申请
-    for _, apply in ipairs(room.apply_list) do
+    for _, apply in pairs(room.apply_list) do
         if apply.uid == req.msg.uid then
             return { code = ErrorCode.RoomDuplicateApply, error = "已提交过申请", roomid = req.msg.roomid }
         end
@@ -323,7 +386,7 @@ function Roommgr.DealApply(req)
 
     -- 查找对应申请
     local apply_index = nil
-    for i, apply in ipairs(room.apply_list) do
+    for i, apply in pairs(room.apply_list) do
         if apply.uid == req.deal_uid then
             apply_index = i
             break
@@ -367,7 +430,7 @@ function Roommgr.DealApply(req)
 
         -- 广播新成员加入
         local notify_uids = {}
-        for _, player in ipairs(room.players) do
+        for _, player in pairs(room.players) do
             table.insert(notify_uids, player.mem_info.uid)
         end
         context.send_users(notify_uids, {}, "Room.OnMemberEnter", {
@@ -392,7 +455,7 @@ function Roommgr.ExitRoom(req)
 
     -- 验证玩家是否在房间内
     local member_index = nil
-    for i, member in ipairs(room.players) do
+    for i, member in pairs(room.players) do
         if member.mem_info.uid == req.uid then
             member_index = i
             break
@@ -420,7 +483,7 @@ function Roommgr.ExitRoom(req)
 
     -- 广播玩家退出
     local notify_uids = {}
-    for _, player in ipairs(room.players) do
+    for _, player in pairs(room.players) do
         table.insert(notify_uids, player.mem_info.uid)
     end
     context.send_users(notify_uids, {}, "Room.OnMemberExit", {
@@ -444,7 +507,7 @@ function Roommgr.KickMember(req)
 
     -- 查找被踢玩家
     local kick_index = nil
-    for i, member in ipairs(room.players) do
+    for i, member in pairs(room.players) do
         if member.mem_info.uid == req.kick_uid then
             kick_index = i
             break
@@ -461,7 +524,7 @@ function Roommgr.KickMember(req)
 
     -- 广播踢人通知
     local notify_uids = {}
-    for _, player in ipairs(room.players) do
+    for _, player in pairs(room.players) do
         table.insert(notify_uids, player.mem_info.uid)
     end
     context.send_users(notify_uids, {}, "Room.OnMemberKick", {
@@ -480,7 +543,7 @@ function Roommgr.UpdateReadyStatus(req)
 
     -- 查找玩家在房间中的位置
     local member_index = nil
-    for i, member in ipairs(room.players) do
+    for i, member in pairs(room.players) do
         if member.mem_info.uid == req.uid then
             member_index = i
             break
@@ -496,7 +559,7 @@ function Roommgr.UpdateReadyStatus(req)
 
     -- 广播状态更新
     local notify_uids = {}
-    for _, player in ipairs(room.players) do
+    for _, player in pairs(room.players) do
         table.insert(notify_uids, player.mem_info.uid)
     end
     context.send_users(notify_uids, {}, "Room.OnReadyStatusUpdate", {
@@ -516,7 +579,7 @@ function Roommgr.GetRoomInfo(req)
 
     -- 验证请求者是否在房间内
     local in_room = false
-    for _, member in ipairs(room.players) do
+    for _, member in pairs(room.players) do
         if member.mem_info.uid == req.uid then
             in_room = true
             break
@@ -544,7 +607,7 @@ function Roommgr.GetRoomInfo(req)
     }
 
     -- 填充成员数据
-    for i, member in ipairs(room.players) do
+    for i, member in pairs(room.players) do
         table.insert(res.member_datas, {
             seat_idx = i,
             is_ready = member.is_ready,
@@ -567,14 +630,31 @@ function Roommgr.StartGame(req)
     end
 
     -- 检查所有玩家准备状态
-    for _, player in ipairs(room.players) do
+    for _, player in pairs(room.players) do
         if player.is_ready ~= 1 then
             return { code = ErrorCode.RoomNotAllReady, error = "存在未准备玩家" }
         end
     end
 
     -- 准备进入DS
-    context.waitds_roomids[req.roomid] = 0
+    local room_info = {
+        room_id = room.roomid,
+        chapter = room.chapter,
+        difficulty = room.difficulty,
+        map_id = 1,
+        boss_id = 1,
+        redis_ip = context.conf.redis_nginx_ip,
+        redis_port = context.conf.redis_nginx_port,
+        redis_authkey = context.conf.redis_nginx_authkey,
+        redis_listkey = context.conf.redis_nginx_title,
+        users = room.players,
+    }
+    local room_str = crypt.base64encode(json.encode(room_info))
+    local allocate_data = {
+        fleet = context.conf.fleet,
+        room = room_str,
+    }
+    Roommgr.AddWaitDSRooms(room.roomid, json.encode(allocate_data))
 
     -- 更新房间状态
     room.state = 1 -- 游戏中状态
@@ -596,16 +676,6 @@ function Roommgr.StartGame(req)
         state = room.state,
     }
     Database.upsert_room(context.addr_db_server, req.roomid, room_tags, redis_data)
-
-    -- 广播游戏开始
-    local notify_uids = {}
-    for _, player in ipairs(room.players) do
-        table.insert(notify_uids, player.mem_info.uid)
-    end
-    context.send_users(notify_uids, {}, "Room.OnGameStart", {
-        roomid = req.roomid,
-        game_uid = game_uid
-    })
 
     return { code = ErrorCode.None, error = "游戏开始成功" }
 end

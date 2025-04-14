@@ -35,7 +35,7 @@ function Room.PBCreateRoomReqCmd(req)
         msg = req.msg,
         self_info = user_data.simple,
     })
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if err then
         return context.S2C(context.net_id, CmdCode["PBCreateRoomRspCmd"], {
             code = ErrorCode.ServerInternalError,
@@ -53,6 +53,7 @@ function Room.PBSearchRoomReqCmd(req)
         local res, err = clusterd.call(3999, "roommgr", "Roommgr.SearchRooms", {
             roomid = req.msg.roomid,
         })
+        --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         if err then
             return context.S2C(context.net_id, CmdCode["PBSearchRoomRspCmd"], {
                 code = ErrorCode.ServerInternalError,
@@ -88,7 +89,7 @@ function Room.PBSearchRoomReqCmd(req)
                 end
             end
         end
-        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         return context.S2C(context.net_id, CmdCode["PBSearchRoomRspCmd"], res, req.msg_context.stub_id)
     end
 end
@@ -308,6 +309,30 @@ function Room.PBGetRoomInfoReqCmd(req)
 
     -- 返回查询结果
     return context.S2C(context.net_id, CmdCode["PBGetRoomInfoRspCmd"], res, req.msg_context.stub_id)
+end
+
+function Room.PBStartGameRoomReqCmd(req)
+    if not context.roomid or context.roomid ~= req.msg.roomid then
+        return context.S2C(context.net_id, CmdCode["PBStartGameRoomRspCmd"], {
+            code = ErrorCode.RoomNotFound,
+            error = "不在目标房间内"
+        }, req.msg_context.stub_id)
+    end
+
+    local res, err = clusterd.call(3999, "roommgr", "Roommgr.StartGame", req.msg)
+    if err then
+        return context.S2C(context.net_id, CmdCode["PBStartGameRoomRspCmd"], {
+            code = ErrorCode.ServerInternalError,
+            error = "system error",
+        }, req.msg_context.stub_id)
+    end
+
+    return context.S2C(context.net_id, CmdCode["PBStartGameRoomRspCmd"], res, req.msg_context.stub_id)
+end
+
+function Room.OnEnterDs(res)
+    -- 加入DS广播
+    context.S2C(context.net_id, CmdCode["PBEnterDsRoomSyncCmd"], res, 0)
 end
 
 return Room

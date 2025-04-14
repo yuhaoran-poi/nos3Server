@@ -232,9 +232,9 @@ end
 
 function User.PBClientGetUsrSimInfoReqCmd(req)
   
-    local  res,ok = User.LoadSimple()
+    local res, err = User.LoadSimple()
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    if res then
+    if not err and res then
         local ret = {
             code = res.code,
             error = res.error,

@@ -356,7 +356,7 @@ function _M.upsert_room(addr_db, roomid, room_tags, room_data)
     local old_json, err = redis_call(addr_db, "MGET", ROOM_PREFIX .. roomid)
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if old_json and next(old_json) ~= nil then
-        ola_values = json.decode(old_json)
+        ola_values = json.decode(old_json[1])
     end
 
     -- 存储新数据
@@ -458,9 +458,11 @@ end
 function _M.delete_room(addr_db, roomid)
     -- 获取房间信息
     local old_json, err = redis_call(addr_db, "MGET", ROOM_PREFIX .. roomid)
-    local ola_values = json.decode(old_json)
-    if not ola_values then
-        ola_values = {}
+    if old_json and next(old_json) ~= nil then
+        local ola_values = json.decode(old_json[1])
+        if not ola_values then
+            ola_values = {}
+        end
     end
 
     -- 删除主数据

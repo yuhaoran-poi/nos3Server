@@ -104,6 +104,13 @@ local function run(node_conf)
             threadid = 7,
             websocket = false,
             room_startid = 10000,
+            allocate_url = "http://43.136.214.127:8000/api/allocator",
+            query_url = "http://43.136.214.127:8000/api/gameservers",
+            fleet = "nos3-fleet-test",
+            redis_nginx_ip = "172.27.0.3",
+            redis_nginx_port = 3379,
+            redis_nginx_authkey = "acgameUI00",
+            redis_nginx_title = "battle_report_17",
         },
         {
             unique = true,
