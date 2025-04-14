@@ -60,7 +60,7 @@
 ---@class GuildInfo
 ---@field public guild_id integer @公会ID
 ---@field public guild_node integer @公会节点
----@field public guild_addr integer @公会地址
+---@field public addr_guild integer @公会地址
 
 --@class GuildDbData
 --@field public guild_id integer @公会ID

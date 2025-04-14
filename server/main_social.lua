@@ -2,9 +2,9 @@
 if _G["__init__"] then
     local arg = ...
     return {
-        thread = 8,
+        thread = 16,
         enable_stdout = true,
-        logfile = string.format("log/game-%s-%s.log", arg[1], os.date("%Y-%m-%d-%H-%M-%S")),
+        logfile = string.format("log/social-%s-%s.log", arg[1], os.date("%Y-%m-%d-%H-%M-%S")),
         loglevel = "DEBUG",
         path = table.concat({
             "./?.lua",
@@ -86,9 +86,17 @@ local function run(node_conf)
         },
         {
             unique = true,
+            name = "db_game",
+            file = "common/mysqldriver.lua",
+            threadid = 4,
+            poolsize = 5,
+            opts = db_conf.mysql
+        },
+        {
+            unique = true,
             name = "agent",
             file = "social/service_agent.lua",
-            threadid = 4,
+            threadid = 5,
             websocket = false,
         },
        
@@ -98,7 +106,7 @@ local function run(node_conf)
         ---控制服务初始化顺序,Init一般为加载DB
         assert(moon.call("lua", moon.queryservice("node"), "Init"))
         assert(moon.call("lua", moon.queryservice("agent"), "Init"))
-  
+      
 
         local data = db.loadserverdata(moon.queryservice("db_server"))
         if not data then
@@ -114,6 +122,13 @@ local function run(node_conf)
 
         ---加载完数据后 开始接受网络连接
         assert(moon.call("lua", moon.queryservice("cluster"), "Listen"))
+        local cluster = require("cluster")
+        -- 上报本节点id和agent服务地址给公会管理器
+        local ret = cluster.call(3999, "guildmgr", "GuildMgr.AgentOnline",tonumber(arg[1]), moon.queryservice("agent") )
+        if not ret then
+            moon.error("report node online failed")
+            return
+        end
     end
 
     local server_ok = false
@@ -142,6 +157,12 @@ local function run(node_conf)
     ---注册进程退出信号处理
     moon.shutdown(function()
         print("receive shutdown")
+        -- 通知guildmgr agent下线
+        local cluster = require("cluster")
+        local ret = cluster.call(3999, "guildmgr", "Guildmgr.AgentOffline", tonumber(arg[1]) )
+        if not ret then
+            moon.error("report node offline failed")
+        end
         moon.async(function()
             if server_ok then
                 -- wait other service shutdown

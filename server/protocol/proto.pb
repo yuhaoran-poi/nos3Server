@@ -468,7 +468,7 @@ monsConfid$
 ITEM_OPERATION_TYPE_UPDATA
 ITEM_OPERATION_TYPE_DELETE
 ITEM_OPERATION_TYPE_ADDbproto3
-Ýv
+¢w
 guild.proto
 user.proto"y
 PBGuildItemData
@@ -791,12 +791,16 @@ page_count	 (R	pageCount
 brecomment
  (R
 brecomment
-	bjoin_con (RbjoinCon"@
-PBGuildCreateGuildReqCmd
-name (Rname
-uid (Ruid".
+	bjoin_con (RbjoinCon"K
+PBGuildCreateGuildReqCmd
+uid (Ruid
+
+guild_name (R	guildName"h
 PBGuildCreateGuildRspCmd
-name (Rname"¸
+code (Rcode
+guild_id (RguildId
+
+guild_name (R	guildName"¸
 PBGuildApplyJoinGuildReqCmd
 guild_id (RguildId
 uid (Ruid

@@ -578,15 +578,16 @@ message PBGuildGetGuildListRspCmd
 message PBGuildCreateGuildReqCmd
 {
     // 协议数据
-    bytes name = 1;        //公会名
-	int64 uid = 2;
+	int64 uid = 1;
+	bytes guild_name = 2;        //公会名
 }
 
 //创建公会返回
 message PBGuildCreateGuildRspCmd
 {
-    // 协议数据
-    bytes name = 1;         //公会名
+    int32 code = 1;			//错误码
+	int64 guild_id = 2;		//公会id
+    bytes guild_name = 3;   //公会名
 }
 
 

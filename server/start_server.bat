@@ -1,3 +1,5 @@
+# 删除log目录下所有.log文件
+del /s /q log\*.log
 start cmd /k moon\moon.exe main_hub.lua 10000 node.json
 timeout /t 5
 start cmd /k moon\moon.exe main_mgr.lua 3999

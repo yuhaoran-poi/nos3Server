@@ -68,6 +68,8 @@ local ErrorCode = {
     TeamDataCorrupted = 811,
 
     ---房间系统错误码（900-910）
+    --- 玩家没有全部准备
+    RoomNotAllReady = 900,
     ---未创建房间
     RoomNotCreated = 901,
     ---房间不存在
@@ -88,8 +90,38 @@ local ErrorCode = {
     RoomInvalidState = 909,
     ---房间申请不存在
     RoomApplyNotFound = 910,
-    -- 玩家没有全部准备
-    RoomNotAllReady = 911,
+
+    ---公会相关错误码
+    ---已在公会中
+    GuildAlreadyInGuild = 911,
+    ---代理不可用
+    AgentNotAvailable = 912,
+    ---创建公会失败
+    AgentCreateFailed = 913,
+    ---公会不存在
+    GuildNotExist = 914,
+    ---公会已满
+    GuildFull = 915,
+    ---不在公会中
+    GuildNotInGuild = 916,
+    ---公会数据损坏
+    GuildDataCorrupted = 917,
+    ---公会成员不存在
+    GuildMemberNotExist = 918,
+    ---无效的公会职位
+    GuildInvalidPosition = 919,
+    ---没有权限
+    GuildNoPermission = 920,
+    ---不能变更自己职位
+    GuildCannotChangeSelfPosition = 921,
+    ---创建公会服务错误
+    CreateGuildServiceErr = 922,
+    ---创建公会数据错误
+    CreateGuildDataErr = 923,
+    ---创建公会数据存档错误
+    CreateGuildDataSaveErr = 924,
+    --- 创建公会失败
+    GuildCreateFailed = 925,
 }
 
 return ErrorCode

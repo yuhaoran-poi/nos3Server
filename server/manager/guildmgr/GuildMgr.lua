@@ -3,7 +3,9 @@ local common = require("common")
 local CmdCode = common.CmdCode
 local GameCfg = common.GameCfg
 local Database = common.Database
-
+local ErrorCode = common.ErrorCode
+local cluster = require("cluster")
+local uuid = require("uuid")
 ---@type guildmgr_context
 local context = ...
 local scripts = context.scripts
@@ -13,131 +15,83 @@ local scripts = context.scripts
 ---@class GuildMgr
 local GuildMgr = {}
 
-function GuildMgr:Init()
-
+function GuildMgr.Init()
+    return true
+end
+function GuildMgr.Start()
     return true
 end
 
 ---@param creator_uid integer
 ---@param guild_name string
----@param base_data table
----@return integer|nil, ErrorCode?
-function GuildMgr:CreateGuild(creator_uid, guild_name, base_data)
+---@return  {}
+function GuildMgr.CreateGuild(creator_uid, guild_name)
     -- 检查用户是否已有公会
     if context.uid_to_guild[creator_uid] then
-        return nil, ErrorCode.GuildAlreadyInGuild
+        return { code = ErrorCode.GuildAlreadyInGuild }
     end
     
-    -- 生成公会ID
-    local guild_id = moon.new_service("guild", "Guild", creator_uid, guild_name, base_data)
-    if not guild_id then
-        return nil, ErrorCode.ServerInternalError
+    -- 生成唯一公会ID
+    local guild_id = uuid.next()
+    -- 查找node_guilds表中公会数量最少的节点
+    local min_node = nil
+    local min_count = math.huge
+    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    for nid, guild_ids in pairs(context.node_guilds) do
+        local count = #guild_ids
+        if count < min_count then
+            min_count = count
+            min_node = nid
+        end
     end
+    if not min_node then
+        return { code = ErrorCode.AgentNotAvailable }
+    end
+    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+ 
+     
+    -- 调用agent服务创建公会
+    local res, err = cluster.call(min_node, "agent", "Agent.CreateGuild", guild_id, guild_name,creator_uid)
+    if not res then
+        print("CreateGuild failed:", err)
+        return { code = ErrorCode.AgentCreateFailed,error = err}
+    end
+    if res.code ~= ErrorCode.None then
+        return { code = res.code } -- 返回错误码，不继续执行后续操作，直接retur
+    end
+    -- 记录公会ID到节点的映射
+    context.node_guilds[min_node][guild_id] = res.addr_guild
     
-    -- 初始化公会数据
-    local guild_data = {
-        id = guild_id,
-        name = guild_name,
+    
+    context.guilds[guild_id] = {
+        guild_id = guild_id,
         creator_uid = creator_uid,
-        create_time = moon.time(),
-        base_data = base_data
+        guild_name = guild_name,
+        guild_node = min_node,
+        addr_guild = res.addr_guild,
     }
-    
-    context.guilds[guild_id] = guild_data
     context.uid_to_guild[creator_uid] = guild_id
     
-    return guild_id
+    return { code = ErrorCode.None, guild_id = guild_id,guild_name = guild_name ,addr_guild = res.addr_guild ,guild_node = min_node}
 end
 
----@param uid integer
----@param guild_id integer
----@return boolean, ErrorCode?
-function GuildMgr:JoinGuild(uid, guild_id)
-    -- 检查用户是否已有公会
-    if context.uid_to_guild[uid] then
-        return false, ErrorCode.GuildAlreadyInGuild
-    end
-    
-    -- 检查公会是否存在
-    local guild = context.guilds[guild_id]
-    if not guild then
-        return false, ErrorCode.GuildNotExist
-    end
-    
-    -- 调用公会服务加入
-    local success, err = moon.call(guild_id, "Guild", "Join", uid, guild_id)
-    if not success then
-        return false, err or ErrorCode.ServerInternalError
-    end
-    
-    context.uid_to_guild[uid] = guild_id
+
+
+
+---@param nid integer 节点ID
+---@param addr_agent integer agent服务地址
+---@return boolean
+function GuildMgr.AgentOnline(nid, addr_agent)
+    context.node_agents[nid] = addr_agent
+    context.node_guilds[nid] = {}
     return true
 end
 
----@param uid integer
----@return boolean, ErrorCode?
-function GuildMgr:ExitGuild(uid)
-    local guild_id = context.uid_to_guild[uid]
-    if not guild_id then
-        return false, ErrorCode.GuildNotInGuild
-    end
-    
-    -- 调用公会服务退出
-    local success, err = moon.call(guild_id, "Guild", "Exit", uid)
-    if not success then
-        return false, err or ErrorCode.ServerInternalError
-    end
-    
-    context.uid_to_guild[uid] = nil
-    return true
-end
-
----@param guild_id integer
----@return table|nil, ErrorCode?
-function GuildMgr:GetGuildInfo(guild_id)
-    local guild = context.guilds[guild_id]
-    if not guild then
-        return nil, ErrorCode.GuildNotExist
-    end
-    
-    return guild
-end
-
----@param guild_id integer
----@param uid integer
----@param new_duty integer
----@return boolean, ErrorCode?
-function GuildMgr:ChangeMemberDuty(guild_id, uid, new_duty)
-    -- 检查公会是否存在
-    local guild = context.guilds[guild_id]
-    if not guild then
-        return false, ErrorCode.GuildNotExist
-    end
-    
-    -- 调用公会服务变更职位
-    local success, err = moon.call(guild_id, "Guild", "ChangeDuty", uid, new_duty)
-    if not success then
-        return false, err or ErrorCode.ServerInternalError
-    end
-    
-    return true
-end
-
----@param guild_id integer
----@return boolean, ErrorCode?
-function GuildMgr:UpgradeGuild(guild_id)
-    -- 检查公会是否存在
-    local guild = context.guilds[guild_id]
-    if not guild then
-        return false, ErrorCode.GuildNotExist
-    end
-    
-    -- 调用公会服务升级
-    local success, err = moon.call(guild_id, "Guild", "Upgrade")
-    if not success then
-        return false, err or ErrorCode.ServerInternalError
-    end
-    
+---@param nid integer 节点ID
+---@return boolean
+function GuildMgr.AgentOffline(nid)
+    context.node_agents[nid] = nil
+    context.node_guilds[nid] = nil
     return true
 end
 

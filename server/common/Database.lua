@@ -471,7 +471,7 @@ function _M.save_guildinfo(addr, guild_id, data, pbdata)
     local data_str = jencode(data)
 
     local cmd = string.format([[
-        INSERT INTO mgame.c_guild (guild_id, value, json)
+        INSERT INTO mgame.c_guild (guildId, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
     ]], guild_id, pbdata, data_str, pbdata, data_str)
@@ -483,7 +483,7 @@ function _M.save_guildshop(addr, guild_id, data, pbdata)
     local data_str = jencode(data)
 
     local cmd = string.format([[
-        INSERT INTO mgame.c_guild_shop (guild_id, value, json)
+        INSERT INTO mgame.c_guild_shop (guildId, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
     ]], guild_id, pbdata, data_str, pbdata, data_str)
@@ -494,9 +494,8 @@ function _M.save_guildbag(addr, guild_id, data, pbdata)
     assert(data)
 
     local data_str = jencode(data)
-
     local cmd = string.format([[
-        INSERT INTO mgame.c_guild_bag (guild_id, value, json)
+        INSERT INTO mgame.c_guild_bag (guildId, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
     ]], guild_id, pbdata, data_str, pbdata, data_str)
@@ -508,10 +507,10 @@ function _M.save_guildrecord(addr, guild_id, data, pbdata)
     local data_str = jencode(data)
 
     local cmd = string.format([[
-        INSERT INTO mgame.c_guild_record (guild_id, value, json)
+        INSERT INTO mgame.c_guild_record (guildId, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], uid, pbdata, data_str, pbdata, data_str)
+    ]], guild_id, pbdata, data_str, pbdata, data_str)
     return moon.call("lua", addr, cmd)
 end
 
