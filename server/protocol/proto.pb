@@ -1173,7 +1173,7 @@ PBRankInfo
 uid (Ruid(
 	rank_info (2.PBRankInfoRrankInfo(
 	self_data (2.PBRankDataRselfDatabproto3
-‹
+Ñ
 
 room.proto
 user.proto"Ú
@@ -1191,7 +1191,7 @@ masterName
 PBRoomMemberInfo
 seat_idx (RseatIdx
 is_ready (RisReady,
-mem_info (2.PBUserSimpleInfoRmemInfo"¢
+mem_info (2.PBUserSimpleInfoRmemInfo"¸
 
 PBRoomInfo
 roomid (Rroomid
@@ -1201,7 +1201,8 @@ PBRoomInfo
 chapter (Rchapter
 
 difficulty (R
-difficulty"¤
+difficulty
+state (Rstate"¤
 PBCreateRoomReqCmd
 uid (Ruid
 isopen (Risopen
@@ -1342,7 +1343,15 @@ memberData"<
 code (Rcode
 error (	Rerror(
 	room_data (2.PBRoomInfoRroomData4
-member_datas (2.PBRoomMemberInfoRmemberDatasbproto3
+member_datas (2.PBRoomMemberInfoRmemberDatas"A
+PBStartGameRoomReqCmd
+uid (Ruid
+roomid (Rroomid"k
+PBStartGameRoomRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+roomid (Rroomidbproto3
  
 
 team.proto
