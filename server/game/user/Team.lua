@@ -13,9 +13,11 @@ local scripts = context.scripts
 local Team = {}
 
 function Team.Init()
-    local data = scripts.UserModel.Get()
-    if not data.team then
-        data.team = {
+    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    local DB = scripts.UserModel.MutGetUserData()
+    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if not DB.team then
+        DB.team = {
             team_id = 0,
             master_id = 0,
             members = {},
@@ -34,7 +36,7 @@ end
 function Team.PBTeamCreateReqCmd(req)
     -- 如果已经在队伍中则不能创建
    
-    local DB = scripts.UserModel.Get()
+    local DB = scripts.UserModel.MutGetUserData()
     if DB.team.team_id ~= 0 then
         context.R2C(CmdCode.PBTeamCreateRspCmd, {
             code = ErrorCode.TeamAlreadyInTeam
@@ -64,7 +66,7 @@ end
 -- 加入队伍
 function Team.PBTeamJoinReqCmd(req)
     -- 如果已经在队伍中则不能加入
-    local DB = scripts.UserModel.Get()
+    local DB = scripts.UserModel.MutGetUserData()
     if DB.team.team_id ~= 0 then
         context.R2C(CmdCode.PBTeamJoinRspCmd, {
             code = ErrorCode.TeamAlreadyInTeam
@@ -94,7 +96,7 @@ end
 -- 退出队伍
 function Team.PBTeamExitReqCmd(req)
     -- 如果不在队伍中则不能退出
-    local DB = scripts.UserModel.Get()
+    local DB = scripts.UserModel.MutGetUserData()
     local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if DB.team.team_id == 0 then
         context.R2C(CmdCode.PBTeamExitRspCmd, {
@@ -124,7 +126,7 @@ end
 -- 踢出队员
 function Team.PBTeamKickoutReqCmd(req)
     -- 如果不是队长则不能踢人
-    local DB = scripts.UserModel.Get()
+    local DB = scripts.UserModel.MutGetUserData()
     if DB.team.master_id ~= context.uid then
         context.R2C(CmdCode.PBTeamKickoutRspCmd, {
             code = ErrorCode.TeamNotMaster
@@ -153,7 +155,7 @@ end
 
 -- 获取队伍信息
 function Team.PBTeamInfoReqCmd(req)
-    local DB = scripts.UserModel.Get()
+    local DB = scripts.UserModel.MutGetUserData()
     
     -- 如果不在队伍中则返回错误码
     if DB.team.team_id == 0 then
@@ -185,7 +187,7 @@ end
 -- 队伍创建事件
 function Team.OnTeamCreated(uid, team_id)
     moon.info("OnTeamCreated", context.uid,uid, team_id)
-    local DB = scripts.UserModel.Get()
+    local DB = scripts.UserModel.MutGetUserData()
     DB.team.team_id = team_id
     DB.team.master_id = uid
     DB.team.members = {[uid] = true}
@@ -195,7 +197,7 @@ end
 -- 队员加入事件
 function Team.OnTeamMemberJoined(team_id, uid)
     moon.info("OnTeamMemberJoined:",context.uid, team_id, uid)
-    local DB = scripts.UserModel.Get()
+    local DB = scripts.UserModel.MutGetUserData()
     if context.uid == uid then
         DB.team.team_id = team_id
         DB.team.members = { [uid] = true }
@@ -209,7 +211,7 @@ end
 -- 队长变更事件
 function Team.OnTeamMasterChanged(team_id, new_master_uid)
     moon.info("OnTeamMasterChanged:", context.uid,team_id, new_master_uid)
-    local DB = scripts.UserModel.Get()
+    local DB = scripts.UserModel.MutGetUserData()
     if DB.team.team_id == team_id then
         DB.team.master_id = new_master_uid
     end
@@ -218,7 +220,7 @@ end
 -- 队员退出事件
 function Team.OnTeamMemberExited(team_id, uid)
     moon.info("OnTeamMemberExited:", context.uid,team_id, uid)
-    local DB = scripts.UserModel.Get()
+    local DB = scripts.UserModel.MutGetUserData()
     if DB.team.team_id == team_id then
         DB.team.members[uid] = nil
         
@@ -235,7 +237,7 @@ end
 -- 队员被踢出事件
 function Team.OnTeamMemberKicked(team_id, target_uid)
     moon.info("OnTeamMemberKicked:", context.uid,team_id, target_uid)
-    local DB = scripts.UserModel.Get()
+    local DB = scripts.UserModel.MutGetUserData()
     if DB.team.team_id == team_id then
         DB.team.members[target_uid] = nil
         

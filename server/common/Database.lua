@@ -299,7 +299,19 @@ function _M.updatelogin(addr, user_id)
     moon.send("lua", addr, cmd)
 end
 
-function _M.saveuser(addr, uid, data)
+function _M.loaduserdata(addr, uid)
+    local cmd = string.format([[
+        SELECT data FROM mgame.userdata WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        return jdecode(res[1].data)
+    end
+    print("loaduserdata failed", uid, err)
+    return nil
+end
+
+function _M.saveuserdata(addr, uid, data)
     assert(data)
 
     local data_str = jencode(data)

@@ -10,7 +10,7 @@ local context = ...
 ---定时存储标记
 local dirty = false
 
----@type UserData
+
 local DBData
 
 ---@class UserModel
@@ -47,15 +47,23 @@ function UserModel.Save(checkDirty)
         return
     end
 
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    Database.saveuser(context.addr_db_user, DBData.user_id, DBData)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    Database.saveuserdata(context.addr_db_user, DBData.user_data.user_id, DBData.user_data)
     dirty = false
 end
 
 ---只读,使用这个函数
----@return UserData
+ 
 function UserModel.Get()
     return DBData
+end
+function UserModel.GetUserData()
+    return DBData.user_data
+end
+function UserModel.MutGetUserData()
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    dirty = true
+    return DBData.user_data
 end
 
 ---需要修改数据时,使用这个函数
@@ -66,6 +74,7 @@ function UserModel.MutGet()
 end
 
 function UserModel.SetSimple(simple_data)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     DBData.simple = simple_data
 end
 

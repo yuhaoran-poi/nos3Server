@@ -34,12 +34,20 @@ function User.Load(req)
         if data then
             return data
         end
+        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+     
+        local user_data, err = Database.loaduserdata(context.addr_db_user, req.uid)
+        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        if user_data   then
 
-        data, err = Database.loaduser(context.addr_db_user, req.uid)
-        --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-        if data and #data > 0 then
-            data = data[1] -- 取出结果集第一条记录
+            data = {
+                user_id = user_data.user_id,
+            	user_data = user_data, -- 取出结果集第一条记录
+                authkey = req.msg.login_data.authkey
+               }
+         
         end
+
 
         local isnew = false
         if not data then
@@ -48,16 +56,18 @@ function User.Load(req)
             end
 
             isnew = true
+            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
 
             data = {
                 authkey = req.msg.login_data.authkey,
-                uid = req.uid,
-                name = req.msg.login_data.authkey,
-                level = 10,
-                score = 0
+                user_id = req.uid,
+                user_data = {
+                    user_id = req.uid,
+                    name = req.msg.login_data.authkey,
+                }
             }
         end
-
+        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         scripts.UserModel.Create(data)
 
         context.uid = req.uid
@@ -85,26 +95,29 @@ function User.Load(req)
     return true
 end
 function User.LoadSimple()
-    local user_data = scripts.UserModel.Get()
-    if not user_data then
+    local DB = scripts.UserModel.Get()
+    if not DB then
+        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         local res = { code = 2003, error = "no user_data" }
         return res
     end
 
-    if not user_data.simple then
+    if not DB.simple then
         --内存中不存在则查询数据库
         local redis_db_data = Database.GetUserSimple(context.addr_db_redis, context.uid)
-        
+        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+ 
         local db_data, err = Database.loaduser_simple(context.addr_db_user, context.uid)
+        ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         if db_data and #db_data == 1 then
             local pbname, tmp_data = protocol.decodewithname("PBUserSimpleInfo", db_data[1].value)
-            user_data.simple = tmp_data
+            DB.simple = tmp_data
         else
             --数据库中不存在则视为新用户初始化
             local user_simple = {
-                uid = user_data.user_id,
-                plateform_id = user_data.authkey,
-                nickname = user_data.name or user_data.authkey,
+                uid = DB.user_id,
+                plateform_id = DB.authkey,
+                nickname = DB.name or DB.authkey,
                 head_icon = 0,
                 sex = 0,
                 praise_num = 0,
@@ -139,15 +152,17 @@ function User.LoadSimple()
                 return res
             end
             Database.SetUserSimple(context.addr_db_redis, context.uid, user_simple)
-            user_data.simple = user_simple
+            DB.simple = user_simple
         end
 
-        scripts.UserModel.SetSimple(user_data.simple)
+        scripts.UserModel.SetSimple(DB.simple)
     end
-    return { code = 0, error = "success", user_simple = user_data.simple }
+    return { code = 0, error = "success", user_simple = DB.simple }
     
 end
 function User.Login(req)
+    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+ 
     if req.pull then--服务器主动拉起玩家
         return scripts.UserModel.Get().authkey
     end
@@ -217,9 +232,9 @@ end
 
 function User.PBClientGetUsrSimInfoReqCmd(req)
   
-    local ok, res = User.LoadSimple()
+    local  res,ok = User.LoadSimple()
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    if ok then
+    if res then
         local ret = {
             code = res.code,
             error = res.error,

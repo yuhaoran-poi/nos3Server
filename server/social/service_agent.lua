@@ -1,4 +1,4 @@
-require("common.LuaPanda").start("127.0.0.1", 8818)
+--require("common.LuaPanda").start("127.0.0.1", 8818)
 local moon = require("moon")
 local setup = require("common.setup")
 
