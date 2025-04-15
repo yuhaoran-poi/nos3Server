@@ -120,6 +120,14 @@ local function run(node_conf)
             websocket = false,
             room_startid = 10000,
         },
+        {
+            unique = true,
+            name = "db_game",
+            file = "common/mysqldriver.lua",
+            threadid = 9,
+            poolsize = 5,
+            opts = db_conf.mysql
+        },
     }
 
     local function Start()

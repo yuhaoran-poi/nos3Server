@@ -8,7 +8,7 @@ local GameCfg = common.GameCfg --游戏配置
 local ErrorCode = common.ErrorCode --逻辑错误码
 local CmdCode = common.CmdCode --客户端通信消息码
 local LuaExt = common.LuaExt
-local cluster = require "moon.cluster"
+local cluster = require("cluster")
 ---@type guild_context
 local context = ...
 local scripts = context.scripts ---方便访问同服务的其它lua模块

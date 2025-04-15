@@ -137,8 +137,8 @@ function Roommgr.CheckWaitDSRooms()
     for roomid, _ in pairs(fail_rooms) do
         context.waitds_roomids[roomid] = nil
     end
-    print("allocated_rooms")
-    print_r(allocated_rooms)
+    --print("allocated_rooms")
+    --print_r(allocated_rooms)
 
     return allocated_rooms, fail_rooms
 end

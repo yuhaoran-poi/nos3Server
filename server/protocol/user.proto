@@ -585,7 +585,8 @@ message PBPinchFaceData
 }
 
 // 当前展示角色信息
-message PBCurUseShowRole{
+message PBCurUseShowRole
+{
     int32 role_id     			= 1;// 当前展示的角色id
     repeated int32 skin_list	= 2;// 穿戴的皮肤列表
 }
@@ -609,7 +610,6 @@ message PBUserSimpleInfo
     bytes guild_name      = 13;
 	// 段位信息
 	PBRankLevel rank_level	= 14;
-
     PBCurUseShowRole cur_show_role = 15;
     PBPinchFaceData pinch_face_data = 16;	// 捏脸数据
 	int32 title     = 17;	//当前佩戴的称号

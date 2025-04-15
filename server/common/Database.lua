@@ -2,7 +2,8 @@ local moon = require("moon")
 local json = require("json")
 local redisd = require("redisd")
 local uuid = require("uuid")
-local protocol = require("common.protocol")
+local protocol = require("common.protocol_pb")
+ 
  
 
 ---@type sqlclient
@@ -526,7 +527,7 @@ end
 function _M.load_guildbag(addr, guild_id)
     local cmd = string.format([[
         SELECT value, json FROM mgame.c_guild_bag WHERE guildId = %d;
-    ]])
+    ]],guild_id)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
         local _, tmp_data = protocol.decodewithname("PBGuildBagDB", res[1].value)

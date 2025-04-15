@@ -48,7 +48,6 @@ function User.Load(req)
          
         end
 
-
         local isnew = false
         if not data then
             if req.pull then

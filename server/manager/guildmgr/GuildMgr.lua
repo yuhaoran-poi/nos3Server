@@ -4,14 +4,16 @@ local CmdCode = common.CmdCode
 local GameCfg = common.GameCfg
 local Database = common.Database
 local ErrorCode = common.ErrorCode
+local LuaExt = common.LuaExt
 local cluster = require("cluster")
 local uuid = require("uuid")
+local queue = require "moon.queue"
 ---@type guildmgr_context
 local context = ...
 local scripts = context.scripts
 
 
-
+local lock = queue()
 ---@class GuildMgr
 local GuildMgr = {}
 
@@ -19,14 +21,27 @@ function GuildMgr.Init()
     return true
 end
 function GuildMgr.Start()
+    -- 启动一个协程加载所有公会 直到成功
+    moon.async(function()  
+        while true do
+            local ok = GuildMgr.LoadGuilds()
+            if ok then
+                break
+            end
+            moon.sleep(3000) -- 等待3秒后重试
+        end
+    end)
+
+    
     return true
 end
 -- 从c_guild表读取所有公会id,根据负载均衡算法选择节点，并将其分配给该节点
 function GuildMgr.LoadGuilds()
+    local scope <close> = lock()
     -- 判断是否已经加载过
     if context.load_guild_start then
-        moon.error("LoadGuilds already started")
-        return false
+        moon.warn("LoadGuilds already started")
+        return true
     end
     local guild_ids = Database.load_guildids(context.addr_db_game)
     if not guild_ids then
@@ -34,19 +49,19 @@ function GuildMgr.LoadGuilds()
         return false
     end
     if context.allguild_load then
-        moon.error("All guilds already loaded")
-        return false
+        moon.warn("All guilds already loaded")
+        return true
     end
     -- 判断node_agents数量是否小于（公会数量/1000,向上取整），如果是则返回错误
-    local node_count = #context.node_agents
+    local node_count = table.size(context.node_guilds)
     if node_count < math.ceil(#guild_ids / 1000) then
-        moon.error("Node count is less than guild count / 1000")
+        moon.warn("Node count is less than guild count / 1000 node_count:", node_count, "guild_count:", #guild_ids)
         return false
     end
     for _, guild_id in ipairs(guild_ids) do
-        local guild = Database.GetGuildById(guild_id)
+        
         local node = GuildMgr.FindLeastLoadedNode()
-        if guild and node then
+        if  node then
             context.guilds[guild_id] = {
                 guild_id = guild_id,
                 guild_node = node,
@@ -61,6 +76,7 @@ function GuildMgr.LoadGuilds()
             return false
         end
     end
+    moon.info("LoadGuilds success")
     context.load_guild_start = true
     return true
 end
@@ -160,8 +176,7 @@ end
 function GuildMgr.AgentOnline(nid, addr_agent)
     context.node_agents[nid] = addr_agent
     context.node_guilds[nid] = {}
-    -- 加载所有的guild
-    --GuildMgr.LoadGuilds()
+    moon.info("Agent online:", nid, addr_agent)
     return true
 end
 
@@ -170,6 +185,7 @@ end
 function GuildMgr.AgentOffline(nid)
     context.node_agents[nid] = nil
     context.node_guilds[nid] = nil
+    moon.info("Agent offline:", nid)
     return true
 end
 
