@@ -93,35 +93,35 @@ local ErrorCode = {
 
     ---公会相关错误码
     ---已在公会中
-    GuildAlreadyInGuild = 911,
+    GuildAlreadyInGuild = 1001,
     ---代理不可用
-    AgentNotAvailable = 912,
+    AgentNotAvailable = 1002,
     ---创建公会失败
-    AgentCreateFailed = 913,
+    AgentCreateFailed = 1003,
     ---公会不存在
-    GuildNotExist = 914,
+    GuildNotExist = 1004,
     ---公会已满
-    GuildFull = 915,
+    GuildFull = 1005,
     ---不在公会中
-    GuildNotInGuild = 916,
+    GuildNotInGuild = 1006,
     ---公会数据损坏
-    GuildDataCorrupted = 917,
+    GuildDataCorrupted = 1007,
     ---公会成员不存在
-    GuildMemberNotExist = 918,
+    GuildMemberNotExist = 1008,
     ---无效的公会职位
-    GuildInvalidPosition = 919,
+    GuildInvalidPosition = 1009,
     ---没有权限
-    GuildNoPermission = 920,
+    GuildNoPermission = 1010,
     ---不能变更自己职位
-    GuildCannotChangeSelfPosition = 921,
+    GuildCannotChangeSelfPosition = 1011,
     ---创建公会服务错误
-    CreateGuildServiceErr = 922,
+    CreateGuildServiceErr = 1012,
     ---创建公会数据错误
-    CreateGuildDataErr = 923,
+    CreateGuildDataErr = 1013,
     ---创建公会数据存档错误
-    CreateGuildDataSaveErr = 924,
+    CreateGuildDataSaveErr = 1014,
     --- 创建公会失败
-    GuildCreateFailed = 925,
+    GuildCreateFailed = 1015,
 }
 
 return ErrorCode

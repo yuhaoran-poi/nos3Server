@@ -101,7 +101,7 @@ apply_data (2.PBApplyFriendDataR	applyData"Q
 code (Rcode
 error (	Rerror
 uid (Ruidbproto3
-ûO
+ºO
 
 user.proto"^
 PBGetOpenBoxReqCmd
@@ -400,14 +400,7 @@ onlyOneBag%
 .PBBagSkinRskinBag(
 	magic_bag (2.PBBagMagicRmagicBag;
 seal_monster_bag (2.PBBagSealMonsterRsealMonsterBag>
-diagrams_card_bag (2.PBBagDiagramsCardRdiagramsCardBag"¡
-PBRankLevel6
-
-ghost_rank (2.PBRankLevel.PBRankNodeR	ghostRank6
-
-human_rank (2.PBRankLevel.PBRankNodeR	humanRank=
-ghost_top_rank (2.PBRankLevel.PBRankNodeRghostTopRank=
-human_top_rank (2.PBRankLevel.PBRankNodeRhumanTopRank£
+diagrams_card_bag (2.PBBagDiagramsCardRdiagramsCardBag"£
 
 PBRankNode
 grade (Rgrade
@@ -415,9 +408,19 @@ PBRankNode
 star (Rstar
 score (Rscore"
 zhu_ji_points (RzhuJiPoints
-	all_stars (RallStars"4
+	all_stars (RallStars"Ë
+PBRankLevel*
+
+ghost_rank (2.PBRankNodeR	ghostRank*
+
+human_rank (2.PBRankNodeR	humanRank1
+ghost_top_rank (2.PBRankNodeRghostTopRank1
+human_top_rank (2.PBRankNodeRhumanTopRank"4
 PBPinchFaceData!
-setting_data (	RsettingData"©
+setting_data (	RsettingData"H
+PBCurUseShowRole
+role_id (RroleId
+	skin_list (RskinList"Î
 PBUserSimpleInfo
 uid (Ruid!
 plateform_id (	RplateformId
@@ -438,8 +441,8 @@ accountExp*
 
 guild_name (R	guildName+
 
-rank_level (2.PBRankLevelR	rankLevelF
-cur_show_role (2".PBUserSimpleInfo.PBCurUseShowRoleRcurShowRole8
+rank_level (2.PBRankLevelR	rankLevel5
+cur_show_role (2.PBCurUseShowRoleRcurShowRole8
 pinch_face_data (2.PBPinchFaceDataRpinchFaceData
 title (Rtitle
 player_flag (R
@@ -452,10 +455,7 @@ onlineTime&
 monsUniqid
 mons_confid (R
 monsConfid$
-mons_skin_list (RmonsSkinListH
-PBCurUseShowRole
-role_id (RroleId
-	skin_list (RskinList"/
+mons_skin_list (RmonsSkinList"/
 PBClientGetUsrSimInfoReqCmd
 uid (Ruid"€
 PBClientGetUsrSimInfoRspCmd
