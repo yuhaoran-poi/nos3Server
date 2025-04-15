@@ -23,9 +23,24 @@ function GuildMgr.Start()
 end
 -- 从c_guild表读取所有公会id,根据负载均衡算法选择节点，并将其分配给该节点
 function GuildMgr.LoadGuilds()
-    local guild_ids = Database.GetAllGuildIds(context.addr_db_game)
+    -- 判断是否已经加载过
+    if context.load_guild_start then
+        moon.error("LoadGuilds already started")
+        return false
+    end
+    local guild_ids = Database.load_guildids(context.addr_db_game)
     if not guild_ids then
         moon.error("LoadGuilds failed")
+        return false
+    end
+    if context.allguild_load then
+        moon.error("All guilds already loaded")
+        return false
+    end
+    -- 判断node_agents数量是否小于（公会数量/1000,向上取整），如果是则返回错误
+    local node_count = #context.node_agents
+    if node_count < math.ceil(#guild_ids / 1000) then
+        moon.error("Node count is less than guild count / 1000")
         return false
     end
     for _, guild_id in ipairs(guild_ids) do
@@ -46,6 +61,7 @@ function GuildMgr.LoadGuilds()
             return false
         end
     end
+    context.load_guild_start = true
     return true
 end
 
@@ -144,6 +160,8 @@ end
 function GuildMgr.AgentOnline(nid, addr_agent)
     context.node_agents[nid] = addr_agent
     context.node_guilds[nid] = {}
+    -- 加载所有的guild
+    --GuildMgr.LoadGuilds()
     return true
 end
 

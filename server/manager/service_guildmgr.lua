@@ -15,6 +15,7 @@ local context ={
     node_agents = {},
     node_guilds = {}, --agent节点对应的guild_ids{[nid] = {guild_id1 = true,guild_id2 = true}}
     allguild_load = false, --是否所有的guild都已经加载完成
+    load_guild_start = false, --是否已经开始加载guild
 }
 
 setup(context)

@@ -481,20 +481,9 @@ function _M.delete_room(addr_db, roomid)
         redis_send(addr_db, table.unpack(del_pipeline))
     end
 end
--- 统计所有公会数量
-function _M.count_guilds(addr)
-    local cmd = [[
-        SELECT COUNT(*) FROM mgame.c_guild;
-    ]]
-    local res, err = moon.call("lua", addr, cmd)
-    if res and #res > 0 then
-        return res[1]["COUNT(*)"]
-    end
-    print("count_guilds failed", err)
-    return 0
-end
+ 
 -- 加载所有公会id
-function _M.GetAllGuildIds(addr)
+function _M.load_guildids(addr)
     local cmd = [[
         SELECT guildId FROM mgame.c_guild;
     ]]
@@ -506,7 +495,7 @@ function _M.GetAllGuildIds(addr)
         end
         return guild_ids
     end
-    print("GetAllGuildIds failed", err)
+    print("load_guildids failed", err)
     return {}
 end
 -- 加载公会信息
