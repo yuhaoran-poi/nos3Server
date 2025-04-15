@@ -88,8 +88,18 @@ function Agent.CreateGuild(guild_id, guild_name, creator_uid)
     return { code = ErrorCode.None, guild_id = guild_id,addr_guild = addr_guild }
 end
 
--- 从数据库加载并创建公会服务
-function Agent.LoadGuild(guild_ids)
+-- 创建Guild服务并从数据库加载数据
+function Agent.LoadGuild(guild_id)
+    local conf = {
+        name = "guild" .. guild_id,
+        file = "social/service_guild.lua"
+    }
+    local addr_guild = moon.new_service(conf)
+    if addr_guild == 0 then
+        moon.error("create guild service failed!") -- 使用moon.error而不是get_logger的error方法
+        return
+    end
+    moon.send("lua", addr_guild, "Guild.Load", guild_id, addr_guild)
 end
 
 

@@ -2,6 +2,9 @@ local moon = require("moon")
 local json = require("json")
 local redisd = require("redisd")
 local uuid = require("uuid")
+local protocol = require("common.protocol")
+ 
+
 ---@type sqlclient
 local pgsql = require("sqldriver")
 
@@ -478,12 +481,88 @@ function _M.delete_room(addr_db, roomid)
         redis_send(addr_db, table.unpack(del_pipeline))
     end
 end
-
-function _M.save_guildinfo(addr, guild_id, data, pbdata)
+-- 统计所有公会数量
+function _M.count_guilds(addr)
+    local cmd = [[
+        SELECT COUNT(*) FROM mgame.c_guild;
+    ]]
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        return res[1]["COUNT(*)"]
+    end
+    print("count_guilds failed", err)
+    return 0
+end
+-- 加载所有公会id
+function _M.GetAllGuildIds(addr)
+    local cmd = [[
+        SELECT guildId FROM mgame.c_guild;
+    ]]
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local guild_ids = {}
+        for _, row in ipairs(res) do
+            table.insert(guild_ids, row.guildId)
+        end
+        return guild_ids
+    end
+    print("GetAllGuildIds failed", err)
+    return {}
+end
+-- 加载公会信息
+function _M.load_guildinfo(addr, guild_id)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.c_guild WHERE guildId = %d;
+    ]], guild_id)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local _, tmp_data = protocol.decodewithname("PBGuildInfoDB", res[1].value)
+        return tmp_data
+    end
+    print("load_guildinfo failed", guild_id, err)
+    return nil
+end
+function _M.load_guildshop(addr, guild_id)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.c_guild_shop WHERE guildId = %d;
+    ]], guild_id)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local _, tmp_data = protocol.decodewithname("PBGuildShopDB", res[1].value)
+        return tmp_data
+    end
+    print("load_guildshop failed", guild_id, err)
+    return nil
+end
+function _M.load_guildbag(addr, guild_id)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.c_guild_bag WHERE guildId = %d;
+    ]])
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local _, tmp_data = protocol.decodewithname("PBGuildBagDB", res[1].value)
+        return tmp_data
+    end
+    print("load_guildbag failed", guild_id, err)
+    return nil
+end
+function _M.load_guildrecord(addr, guild_id)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.c_guild_record WHERE guildId = %d;
+    ]], guild_id)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local _, tmp_data = protocol.decodewithname("PBGuildRecordDB", res[1].value)
+        return tmp_data
+    end
+    print("load_guildrecord failed", guild_id, err)
+    return nil
+end
+function _M.save_guildinfo(addr, guild_id, data)
     assert(data)
 
     local data_str = jencode(data)
-
+    local _, pbdata = protocol.encodewithname("PBGuildInfoDB", data)
     local cmd = string.format([[
         INSERT INTO mgame.c_guild (guildId, value, json)
         VALUES (%d, '%s', '%s')
@@ -491,11 +570,11 @@ function _M.save_guildinfo(addr, guild_id, data, pbdata)
     ]], guild_id, pbdata, data_str, pbdata, data_str)
     return moon.call("lua", addr, cmd)
 end
-function _M.save_guildshop(addr, guild_id, data, pbdata)
+function _M.save_guildshop(addr, guild_id, data)
     assert(data)
 
     local data_str = jencode(data)
-
+    local _, pbdata = protocol.encodewithname("PBGuildShopDB", data)
     local cmd = string.format([[
         INSERT INTO mgame.c_guild_shop (guildId, value, json)
         VALUES (%d, '%s', '%s')
@@ -504,10 +583,11 @@ function _M.save_guildshop(addr, guild_id, data, pbdata)
     return moon.call("lua", addr, cmd)
 end
 
-function _M.save_guildbag(addr, guild_id, data, pbdata)
+function _M.save_guildbag(addr, guild_id, data)
     assert(data)
 
     local data_str = jencode(data)
+    local _, pbdata = protocol.encodewithname("PBGuildBagDB", data)
     local cmd = string.format([[
         INSERT INTO mgame.c_guild_bag (guildId, value, json)
         VALUES (%d, '%s', '%s')
@@ -515,11 +595,11 @@ function _M.save_guildbag(addr, guild_id, data, pbdata)
     ]], guild_id, pbdata, data_str, pbdata, data_str)
     return moon.call("lua", addr, cmd)
 end
-function _M.save_guildrecord(addr, guild_id, data, pbdata)
+function _M.save_guildrecord(addr, guild_id, data)
     assert(data)
 
     local data_str = jencode(data)
-
+    local _, pbdata = protocol.encodewithname("PBGuildRecordDB", data)
     local cmd = string.format([[
         INSERT INTO mgame.c_guild_record (guildId, value, json)
         VALUES (%d, '%s', '%s')

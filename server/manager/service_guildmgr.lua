@@ -14,6 +14,11 @@ local context ={
     ---@type table<integer, integer> 节点ID到agent服务地址的映射
     node_agents = {},
     node_guilds = {}, --agent节点对应的guild_ids{[nid] = {guild_id1 = true,guild_id2 = true}}
+    allguild_load = false, --是否所有的guild都已经加载完成
 }
 
 setup(context)
+context.addr_db_redis = moon.queryservice("db_user")
+if moon.queryservice("db_game") > 0 then
+    context.addr_db_game = moon.queryservice("db_game")
+end

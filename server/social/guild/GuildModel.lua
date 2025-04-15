@@ -67,8 +67,8 @@ function GuildModel.Save(checkDirty)
         return
     end
     if DBData.GuildInfo.dirty then
-        local pbname, pb_data = protocol.encodewithname("PBGuildInfoDB", DBData.GuildInfo.db_data)
-        local ok, err = Database.save_guildinfo(context.addr_db_game, context.guild_id, DBData.GuildInfo.db_data, pb_data)
+        
+        local ok, err = Database.save_guildinfo(context.addr_db_game, context.guild_id, DBData.GuildInfo.db_data)
         if not ok then
             moon.error(err)
             return
@@ -77,8 +77,7 @@ function GuildModel.Save(checkDirty)
     end
 
     if DBData.GuildShop.dirty then
-        local pbname, pb_data = protocol.encodewithname("PBGuildShopDB", DBData.GuildShop.db_data)
-        local ok, err = Database.save_guildshop(context.addr_db_game, context.guild_id, DBData.GuildShop.db_data, pb_data)
+        local ok, err = Database.save_guildshop(context.addr_db_game, context.guild_id, DBData.GuildShop.db_data)
         if not ok then
             moon.error(err)
             return
@@ -87,8 +86,7 @@ function GuildModel.Save(checkDirty)
     end
 
     if DBData.GuildBag.dirty then
-        local pbname, pb_data = protocol.encodewithname("PBGuildBagDB", DBData.GuildBag.db_data)
-        local ok, err = Database.save_guildbag(context.addr_db_game, context.guild_id, DBData.GuildBag.db_data, pb_data)
+        local ok, err = Database.save_guildbag(context.addr_db_game, context.guild_id, DBData.GuildBag.db_data)
         if not ok then
             moon.error(err)
             return
@@ -97,9 +95,7 @@ function GuildModel.Save(checkDirty)
     end
 
     if DBData.GuildRecord.dirty then
-        local pbname, pb_data = protocol.encodewithname("PBGuildRecordDB", DBData.GuildRecord.db_data)
-        local ok, err = Database.save_guildrecord(context.addr_db_game, context.guild_id, DBData.GuildRecord.db_data,
-        pb_data)
+        local ok, err = Database.save_guildrecord(context.addr_db_game, context.guild_id, DBData.GuildRecord.db_data)
         if not ok then
             moon.error(err)
             return

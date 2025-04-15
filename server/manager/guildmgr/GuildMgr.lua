@@ -23,23 +23,32 @@ function GuildMgr.Start()
 end
 -- 从c_guild表读取所有公会id,根据负载均衡算法选择节点，并将其分配给该节点
 function GuildMgr.LoadGuilds()
-    local guild_ids = Database.GetAllGuildIds()
+    local guild_ids = Database.GetAllGuildIds(context.addr_db_game)
     if not guild_ids then
+        moon.error("LoadGuilds failed")
         return false
     end
-    local node_guilds = {}
     for _, guild_id in ipairs(guild_ids) do
         local guild = Database.GetGuildById(guild_id)
-        if guild then
-            local node_id = context.node_guilds[guild.guild_node] or {}
-            table.insert(node_id, guild.guild_id)
-            context.node_guilds[guild.guild_node] = node_id
-            context.guilds[guild.guild_id] = guild
-            context.uid_to_guild[guild.creator_uid] = guild.guild_id
+        local node = GuildMgr.FindLeastLoadedNode()
+        if guild and node then
+            context.guilds[guild_id] = {
+                guild_id = guild_id,
+                guild_node = node,
+                addr_guild = 0,
+                status = 0, -- 0: loading, 1: online, 2: offline, 3: error, 4: database error_message
+            }
+            context.node_guilds[node][guild_id] = true
+            -- 通知agent服务加载公会
+            cluster.send(node, "agent", "Agent.LoadGuild", guild_id)
+        else
+            moon.error("LoadGuild failed:", guild_id)
+            return false
         end
     end
     return true
 end
+
 -- 查找node_guilds表中公会数量最少的节点
 function GuildMgr.FindLeastLoadedNode()
     local min_node = nil
@@ -53,6 +62,35 @@ function GuildMgr.FindLeastLoadedNode()
     end
     return min_node
 end
+
+--- 处理公会加载完成通知
+--- @param node_id integer 节点ID
+---@param guild_id integer
+---@param addr_guild integer
+function GuildMgr.GuildLoad(guild_id, addr_guild)
+    local guild = context.guilds[guild_id]
+    if not guild then
+        moon.error("Guild not found:", guild_id)
+        return
+    end
+    guild.addr_guild = addr_guild
+    guild.status = 1
+    -- 判断所有公会是否加载完成
+    local all_loaded = true
+    for _, guild in pairs(context.guilds) do
+        if guild.status ~= 1 then
+            all_loaded = false
+            break
+        end
+    end
+    if all_loaded and not context.allguild_load then
+        context.allguild_load = true
+        moon.info("All guilds loaded")
+    end
+    moon.info("Guild loaded:", guild_id)
+     
+end
+
 ---@param creator_uid integer
 ---@param guild_name string
 ---@return  {}

@@ -1,6 +1,6 @@
 local moon = require "moon"
 local uuid = require "uuid"
-local coqueue = require "moon.queue"
+local queue = require "moon.queue"
 local common = require "common"
 local GameDef= common.GameDef
 local Database = common.Database
@@ -8,10 +8,11 @@ local GameCfg = common.GameCfg --游戏配置
 local ErrorCode = common.ErrorCode --逻辑错误码
 local CmdCode = common.CmdCode --客户端通信消息码
 local LuaExt = common.LuaExt
+local cluster = require "moon.cluster"
 ---@type guild_context
 local context = ...
 local scripts = context.scripts ---方便访问同服务的其它lua模块
- 
+local lock = queue() -- 定义一个队列锁，用于保证线程安全
 ---@class Guild
 local Guild = {}
 
@@ -163,22 +164,45 @@ end
 
 ---@param guild_id integer
 ---@return table|nil, ErrorCode?
-function Guild.Load(guild_id)
+function Guild.Load(guild_id, addr_guild)
     local scope_lock<close> = lock()
-    local guild_data = Database.LoadGuildData(context.addr_db_game, guild_id)
-    if not guild_data then
-        return nil, ErrorCode.GuildNotExist
+    local guild_db = scripts.GuildModel.Get()
+    if not guild_db then
+        local data =
+        {
+            GuildInfo = Database.load_guildinfo(context.addr_db_game, guild_id),
+            GuildShop = Database.load_guildshop(context.addr_db_game, guild_id),
+            GuildBag = Database.load_guildbag(context.addr_db_game, guild_id),
+            GuildRecord = Database.load_guildrecord(context.addr_db_game, guild_id),
+        }
+        if not data.GuildInfo then
+            moon.error("LoadGuild failed: GuildInfo not found,guild_id:", guild_id);
+            return nil, ErrorCode.GuildDataCorrupted
+        end
+        if not data.GuildShop then
+            moon.error("LoadGuild failed: GuildShop not found,guild_id:", guild_id);
+            return nil, ErrorCode.GuildDataCorrupted
+        end
+        if not data.GuildBag then
+            moon.error("LoadGuild failed: GuildBag not found,guild_id:", guild_id);
+            return nil, ErrorCode.GuildDataCorrupted
+        end
+        if not data.GuildRecord then
+            moon.error("LoadGuild failed: GuildRecord not found,guild_id:", guild_id);
+            return nil, ErrorCode.GuildDataCorrupted
+        end
+        -- 创建数据模型
+        scripts.GuildModel.Create(data)
+        ---初始化自己数据
+        context.batch_invoke_throw("Init")
+        ---初始化互相引用的数据
+        context.batch_invoke_throw("Start")
+        -- 通知guildmgr
+        cluster.send(3999, "guildmgr", "GuildMgr.GuildLoad", guild_id, addr_guild)
     end
-    
-    context.guild_data = guild_data
-    
-    -- 初始化成员映射
-    for uid, _ in pairs(guild_data.members or {}) do
-        context.members[uid] = guild_id
-    end
-    
-    return guild_data
+    return guild_db
 end
+
 
 ---@param uid integer
 ---@param guild_id integer
