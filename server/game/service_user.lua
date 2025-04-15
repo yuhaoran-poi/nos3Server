@@ -29,6 +29,9 @@ local context = {
     scripts = {},
     ---other service address
     net_id = 0,
+ 
+    guild_node = 0,
+    addr_guild = 0,
 }
 
 local command = setup(context, "user")

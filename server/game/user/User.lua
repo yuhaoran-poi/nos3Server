@@ -29,7 +29,7 @@ function User.Load(req)
         if res.error ~= "success" then
             return false
         end
-
+    
         local data = scripts.UserModel.Get()
         if data then
             return data
