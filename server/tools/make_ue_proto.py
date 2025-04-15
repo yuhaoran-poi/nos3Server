@@ -194,6 +194,10 @@ def find_position(content, target, start_line=1):
     return -1
 
 def generate_struct(message, content, message_types, prefix="F"):
+    # 跳过Protobuf自动生成的Map Entry类型
+    if message.options and message.options.map_entry:
+        return ""
+        
     struct_name = message.name
     fields = []
     has_fields = []

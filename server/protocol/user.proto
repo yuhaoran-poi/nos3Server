@@ -559,17 +559,18 @@ message PBBag
 }
 
 //----------------------------------新增协议----------------------------------//
-// 段位
-message PBRankLevel
-{
-	message PBRankNode{
+message PBRankNode{
 		int32 grade = 1;//品阶
 		int32 level = 2;//品级
 		int32 star = 3;//当前星星数量
 		int32 score = 4;//隐藏分
 		int32 zhu_ji_points = 5;//筑基点（用于升星或抵扣星星）
 		int32 all_stars = 6;//所有星星数（记录玩家所有的星星数量，用于换算品阶、品级这些）
-	}
+}
+// 段位
+message PBRankLevel
+{
+	
 	PBRankNode ghost_rank = 1;
 	PBRankNode human_rank = 2;
 	// 历史最高段位
@@ -581,6 +582,12 @@ message PBRankLevel
 message PBPinchFaceData
 {
     string setting_data = 1;
+}
+
+// 当前展示角色信息
+message PBCurUseShowRole{
+    int32 role_id     			= 1;// 当前展示的角色id
+    repeated int32 skin_list	= 2;// 穿戴的皮肤列表
 }
 
 message PBUserSimpleInfo
@@ -602,11 +609,7 @@ message PBUserSimpleInfo
     bytes guild_name      = 13;
 	// 段位信息
 	PBRankLevel rank_level	= 14;
-	// 当前展示角色信息
-    message PBCurUseShowRole{
-        int32 role_id     			= 1;// 当前展示的角色id
-        repeated int32 skin_list	= 2;// 穿戴的皮肤列表
-    }
+
     PBCurUseShowRole cur_show_role = 15;
     PBPinchFaceData pinch_face_data = 16;	// 捏脸数据
 	int32 title     = 17;	//当前佩戴的称号
