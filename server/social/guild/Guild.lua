@@ -8,6 +8,7 @@ local GameCfg = common.GameCfg --游戏配置
 local ErrorCode = common.ErrorCode --逻辑错误码
 local CmdCode = common.CmdCode --客户端通信消息码
 local LuaExt = common.LuaExt
+local GuildEnum = require("common.GuildEnum") --公会枚举
 local cluster = require("cluster")
 ---@type guild_context
 local context = ...
@@ -67,6 +68,8 @@ local defaultGuildRecordDB = {
     guild_id = 0, --公会id
     record_list = {}, --记录列表 
 }
+
+ 
 
 function Guild.Init()
     return true
@@ -159,13 +162,13 @@ function Guild.AddMemeber(uid)
     }
     guild_data.member_count = table.count(guild_data.members)
     return {code = ErrorCode.None}
-    --scripts.GuildModel.Save()
 end
 
 ---@param guild_id integer
 ---@return table|nil, ErrorCode?
 function Guild.Load(guild_id, addr_guild)
-    local scope_lock<close> = lock()
+    local scope_lock <close> = lock()
+    context.guild_id = guild_id
     local guild_db = scripts.GuildModel.Get()
     if not guild_db then
         local data =
@@ -203,191 +206,139 @@ function Guild.Load(guild_id, addr_guild)
     return guild_db
 end
 
+--- 成员退出公会
+---@param uid integer 成员UID
+---@return ErrorCode?
+function Guild.MemberQuit(uid)
+    local guild_db = scripts.GuildModel.Get()
+    if not guild_db then
+        return ErrorCode.GuildDataCorrupted
+    end
+    if not guild_db.GuildInfo then
+        return ErrorCode.GuildDataCorrupted
+    end
+    -- 判断是否是会长
+    if guild_db.GuildInfo.president_id == uid then
+        return ErrorCode.GuildPresidentCannotQuit
+    end
+    -- 判断是否是公会成员
+    if not guild_db.GuildInfo.members[uid] then
+        return ErrorCode.GuildMemberNotExist
+    end
+    local guild_info = scripts.GuildModel.MutGetGuildInfoDB()
+    if not guild_info then
+        return ErrorCode.GuildDataCorrupted
+    end
+    guild_info.members[uid] = nil
+    guild_info.member_count = table.count(guild_db.GuildInfo.members)
+    -- 添加公会记录
+    scripts.GuildRecord.MemberQuit(uid)
+    -- 通知在线成员
+    Guild.NotifyMemberQuit(uid)
+    return  ErrorCode.None
+end
+function Guild.GetMembers()
+    local guild_info = scripts.GuildModel.GetGuildInfoDB()
+    local member_keys = {}
+    for k, _ in pairs(guild_info.members) do
+        table.insert(member_keys, k)
+    end
+    return member_keys
+end
+function Guild.NotifyMemberQuit(uid)
+     
+    context.send_users(Guild.GetMembers, {}, "GuildProxy.OnGuildMemberQuit", context.guild_id, uid)
+end
 
----@param uid integer
----@param guild_id integer
----@param base_data table
----@return boolean, ErrorCode?
-function Guild.Join(uid, guild_id, base_data)
-    local scope_lock<close> = lock()
-    
-    -- 检查用户是否已在其他公会中
-    if context.members[uid] then
-        return false, ErrorCode.GuildAlreadyInGuild
+--- 处理玩家申请加入公会
+---@param uid integer 玩家UID
+---@param guild_id integer 公会ID
+---@return ErrorCode?
+function Guild.ApplyJoinGuild(uid, guild_id)
+    local guild_info = scripts.GuildModel.GetGuildInfoDB()
+    if not guild_info then
+        return ErrorCode.GuildDataCorrupted
     end
     
-    local guild = context.guild_data[guild_id]
-    if not guild then
-        return false, ErrorCode.GuildNotExist
+    -- 检查公会状态
+    if guild_info.status ~= GuildEnum.EGuildStatus.eGS_Normal then
+        return ErrorCode.GuildStatusAbnormal
     end
     
-    -- 检查公会是否已满
-    if guild.member_count >= guild.member_max_count then
-        return false, ErrorCode.GuildFull
+    -- 检查成员数量
+    if guild_info.member_count >= guild_info.member_max_num then
+        return ErrorCode.GuildFull
     end
     
-    -- 添加成员
-    guild.members[uid] = {
+    -- 检查是否已在公会
+    if guild_info.members[uid] then
+        return ErrorCode.GuildAlreadyInGuild
+    end
+    
+    -- 检查是否已在申请列表
+    if guild_info.apply_list[uid] then
+        return ErrorCode.GuildAlreadyApplied
+    end
+    
+    -- 添加申请
+    guild_info.apply_list[uid] = {
         uid = uid,
-        position = 3, -- 默认职位为普通成员
-        join_time = os.time()
+        apply_time = os.time(),
+        nickname = Database.GetUserSimpleF(context.addr_db_redis, uid, "nickname") or ""
     }
-    guild.member_count = guild.member_count + 1
-    context.members[uid] = guild_id
+    guild_info.apply_count = table.count(guild_info.apply_list)
     
-    -- 保存到数据库
-    local success = Database.SaveGuildData(context.addr_db_game, guild_id, guild)
-    if not success then
-        return false, ErrorCode.ServerInternalError
+    -- 通知会长和管理员
+    local notify_members = {guild_info.president_id}
+    for _, mid in ipairs(guild_info.master_ids) do
+        table.insert(notify_members, mid)
     end
+    context.send_users(notify_members, "GuildProxy.OnGuildApplyJoin", guild_id, uid)
     
-    return true
+    return ErrorCode.None
 end
 
---- 检查用户是否有指定权限
----@param guild_id integer
----@param uid integer
----@param permission string
----@return boolean
-local function HasPermission(guild_id, uid, permission)
-    local guild = context.guild_data[guild_id]
-    if not guild then return false end
-    
-    local member = guild.members[uid]
-    if not member then return false end
-    
-    local position = context.positions[member.position or 3]
-    if not position then return false end
-    
-    for _, perm in ipairs(position.permissions) do
-        if perm == permission then
-            return true
-        end
+--- 处理公会申请加入回复
+---@param uid integer 处理人UID
+---@param applyer_uid integer 申请人UID
+---@param agree boolean 是否同意
+---@return ErrorCode?
+function Guild.AnswerApplyJoinGuild(uid,applyer_uid, agree)
+    local guild_info = scripts.GuildModel.MutGetGuildInfoDB()
+    if not guild_info then
+        return ErrorCode.GuildDataCorrupted
     end
     
-    return false
+    -- 检查申请是否存在
+    if not guild_info.apply_list[applyer_uid] then
+        return ErrorCode.GuildApplyNotExist
+    end
+    
+    -- 移除申请
+    guild_info.apply_list[applyer_uid] = nil
+    guild_info.apply_count = table.count(guild_info.apply_list)
+    
+    if agree then
+        -- 检查成员数量
+        if guild_info.member_count >= guild_info.member_max_num then
+            return ErrorCode.GuildFull
+        end
+        
+        -- 添加成员
+        local res = Guild.AddMemeber(applyer_uid)
+        if res.code ~= ErrorCode.None then
+            return res.code
+        end
+        
+        -- 通知申请人
+        context.send_users({ applyer_uid }, "GuildProxy.OnGuildApplyJoinResult", context.guild_id, true)
+    else
+        -- 拒绝申请
+        context.send_users({ applyer_uid }, "GuildProxy.OnGuildApplyJoinResult", context.guild_id, false)
+    end
+    
+    return ErrorCode.None
 end
 
----@param uid integer
----@return boolean, ErrorCode?
-function Guild.Exit(uid)
-    local scope_lock<close> = lock()
-    
-    local guild_id = context.members[uid]
-    if not guild_id then
-        return false, ErrorCode.GuildNotInGuild
-    end
-    
-    local guild = context.guild_data[guild_id]
-    if not guild then
-        context.members[uid] = nil
-        return false, ErrorCode.GuildDataCorrupted
-    end
-    
-    -- 移除成员
-    guild.members[uid] = nil
-    guild.member_count = guild.member_count - 1
-    context.members[uid] = nil
-    
-    -- 如果是会长退出且公会还有成员，需要转移会长
-    if guild.president_id == uid and next(guild.members) then
-        for new_president_uid, _ in pairs(guild.members) do
-            guild.president_id = new_president_uid
-            break
-        end
-    end
-    
-    -- 保存到数据库
-    local success = Database.SaveGuildData(context.addr_db_game, guild_id, guild)
-    if not success then
-        return false, ErrorCode.ServerInternalError
-    end
-    
-    return true
-end
 
---- 变更成员职位
----@param operator_uid integer 操作者UID
----@param target_uid integer 目标成员UID
----@param new_position integer 新职位(1:会长, 2:副会长, 3:成员)
----@return boolean, ErrorCode?
-function Guild.ChangePosition(operator_uid, target_uid, new_position)
-    local scope_lock<close> = lock()
-    
-    -- 检查操作者是否有权限
-    local guild_id = context.members[operator_uid]
-    if not guild_id then
-        return false, ErrorCode.GuildNotInGuild
-    end
-    
-    -- 检查目标成员是否存在
-    local target_guild_id = context.members[target_uid]
-    if not target_guild_id or target_guild_id ~= guild_id then
-        return false, ErrorCode.GuildMemberNotExist
-    end
-    
-    local guild = context.guild_data[guild_id]
-    if not guild then
-        return false, ErrorCode.GuildDataCorrupted
-    end
-    
-    -- 检查职位是否有效
-    if not context.positions[new_position] then
-        return false, ErrorCode.GuildInvalidPosition
-    end
-    
-    -- 检查操作者是否有权限变更职位
-    if not HasPermission(guild_id, operator_uid, "promote") then
-        return false, ErrorCode.GuildNoPermission
-    end
-    
-    -- 检查不能给自己变更职位
-    if operator_uid == target_uid then
-        return false, ErrorCode.GuildCannotChangeSelfPosition
-    end
-    
-    -- 获取目标成员当前职位
-    local target_member = guild.members[target_uid]
-    if not target_member then
-        return false, ErrorCode.GuildMemberNotExist
-    end
-    
-    -- 特殊处理会长职位变更
-    if new_position == 1 then
-        -- 会长只能由当前会长指定
-        if guild.president_id ~= operator_uid then
-            return false, ErrorCode.GuildNoPermission
-        end
-        
-        -- 更新会长
-        guild.president_id = target_uid
-        
-        -- 发送职位变更通知
-        scripts.guild_event.NotifyPositionChange(guild_id, target_uid, new_position)
-        
-        -- 记录职位变更日志
-        Database.LogGuildEvent(context.addr_db_game, guild_id, 
-            string.format("职位变更: %s -> %s", 
-                context.positions[target_member.position or 3].name,
-                context.positions[new_position].name),
-            operator_uid, target_uid)
-    end
-    
-    -- 更新职位
-    target_member.position = new_position
-    
-    -- 如果降职为普通成员，移除特殊权限
-    if new_position == 3 then
-        target_member.special_permissions = nil
-    end
-    
-    -- 保存到数据库
-    local success = Database.SaveGuildData(context.addr_db_game, guild_id, guild)
-    if not success then
-        return false, ErrorCode.ServerInternalError
-    end
-    
-    return true
-end
--- 处理客户端请求
 return Guild

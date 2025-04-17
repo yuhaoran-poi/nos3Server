@@ -122,6 +122,25 @@ local ErrorCode = {
     CreateGuildDataSaveErr = 1014,
     --- 创建公会失败
     GuildCreateFailed = 1015,
+    ---会长不能退出自己的公会
+    GuildPresidentCannotQuit = 1016,
+    ---公会退出失败
+    GuildQuitFailed = 1017,
+    ---查询公会节点和地址失败
+    GuildGetGuildNodeFailed = 1018,
+    ---申请加入公会失败
+    GuildApplyJoinGuildFailed = 1019,
+    ---公会申请不存在
+    GuildApplyNotFound = 1020,
+    ---公会状态异常
+    GuildStatusAbnormal = 1021,
+    --- 已经申请过
+    GuildAlreadyApplied = 1022,
+    --- 答复申请加入公会失败
+    GuildAnswerApplyJoinGuildFailed = 1023,
+    --- 不在申请列表中
+    GuildApplyNotExist = 1024,
+
 }
 
 return ErrorCode

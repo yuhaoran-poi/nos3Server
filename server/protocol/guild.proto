@@ -599,14 +599,14 @@ message PBGuildApplyJoinGuildReqCmd
 	int64 uid = 2;
 	bool b_apply = 3;		    //是否申请。false为取消申请
 	int64 applyer_uid = 4;	    //申请人uid
-	PBUserSimpleInfo simple_info = 5;	//玩家基础数据
 }
 
 //申请加入返回
 message PBGuildApplyJoinGuildRspCmd
 {
-    // 协议数据
-    int64 guild_id = 1;        //公会id
+    int32 code = 1;			   //错误码
+    int64 guild_id = 2;        //公会id
+	bytes guild_name = 3;      //公会名
 }
 
 //回复申请加入请求
