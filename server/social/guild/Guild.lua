@@ -237,6 +237,53 @@ function Guild.MemberQuit(uid)
     Guild.NotifyMemberQuit(uid)
     return  ErrorCode.None
 end
+
+--- 踢出公会成员
+---@param operator_uid integer 操作者UID
+---@param target_uid integer 目标成员UID
+---@return ErrorCode?
+function Guild.MemberExpel(operator_uid, target_uid)
+    local guild_db = scripts.GuildModel.Get()
+    if not guild_db then
+        return ErrorCode.GuildDataCorrupted
+    end
+    if not guild_db.GuildInfo then
+        return ErrorCode.GuildDataCorrupted
+    end
+    
+    -- 检查操作者权限
+    if operator_uid ~= guild_db.GuildInfo.president_id and 
+       not guild_db.GuildInfo.members[operator_uid].b_spoils_mgr then
+        return ErrorCode.GuildNoPermission
+    end
+    
+    -- 检查目标成员是否存在
+    if not guild_db.GuildInfo.members[target_uid] then
+        return ErrorCode.GuildMemberNotExist
+    end
+    
+    -- 不能踢出会长
+    if target_uid == guild_db.GuildInfo.president_id then
+        return ErrorCode.GuildCannotExpelPresident
+    end
+    
+    local guild_info = scripts.GuildModel.MutGetGuildInfoDB()
+    if not guild_info then
+        return ErrorCode.GuildDataCorrupted
+    end
+    
+    -- 移除成员
+    guild_info.members[target_uid] = nil
+    guild_info.member_count = table.count(guild_db.GuildInfo.members)
+    
+    -- 添加公会记录
+    scripts.GuildRecord.ExpelQuit(operator_uid, target_uid)
+    
+    -- 通知在线成员
+    Guild.NotifyMemberExpel(target_uid)
+    
+    return ErrorCode.None
+end
 function Guild.GetMembers()
     local guild_info = scripts.GuildModel.GetGuildInfoDB()
     local member_keys = {}
@@ -248,6 +295,10 @@ end
 function Guild.NotifyMemberQuit(uid)
      
     context.send_users(Guild.GetMembers, {}, "GuildProxy.OnGuildMemberQuit", context.guild_id, uid)
+end
+
+function Guild.NotifyMemberExpel(uid)
+    context.send_users(Guild.GetMembers, {}, "GuildProxy.OnGuildMemberExpel", context.guild_id, uid)
 end
 
 --- 处理玩家申请加入公会
@@ -340,5 +391,79 @@ function Guild.AnswerApplyJoinGuild(uid,applyer_uid, agree)
     return ErrorCode.None
 end
 
+
+--- 处理公会邀请加入
+---@param inviter_uid integer 邀请人UID
+---@param target_uid integer 目标玩家UID
+---@return ErrorCode?
+function Guild.InviteJoinGuild(inviter_uid, target_uid)
+    local guild_info = scripts.GuildModel.MutGetGuildInfoDB()
+    if not guild_info then
+        return ErrorCode.GuildDataCorrupted
+    end
+    
+    -- 检查邀请人是否在公会中
+    if not guild_info.members[inviter_uid] then
+        return ErrorCode.GuildNotInGuild
+    end
+    
+    -- 检查邀请人是否有权限
+    if inviter_uid ~= guild_info.president_id and not guild_info.members[inviter_uid].b_spoils_mgr then
+        return ErrorCode.GuildNoPermission
+    end
+    
+    -- 检查目标玩家是否已在公会中
+    if guild_info.members[target_uid] then
+        return ErrorCode.GuildAlreadyInGuild
+    end
+    
+    -- 检查公会成员数量
+    if guild_info.member_count >= guild_info.member_max_num then
+        return ErrorCode.GuildFull
+    end
+    
+    -- 发送邀请通知给目标玩家
+    context.send_users({target_uid}, "GuildProxy.OnGuildInviteJoin", context.guild_id, inviter_uid)
+    
+    return ErrorCode.None
+end
+
+--- 处理公会邀请加入回复
+---@param uid integer 玩家UID
+---@param inviter_uid integer 邀请人UID
+---@param agree boolean 是否同意
+---@return ErrorCode?
+function Guild.AnswerInviteJoinGuild(uid, inviter_uid, agree)
+    local guild_info = scripts.GuildModel.MutGetGuildInfoDB()
+    if not guild_info then
+        return ErrorCode.GuildDataCorrupted
+    end
+    
+    -- 检查玩家是否已在公会中
+    if guild_info.members[uid] then
+        return ErrorCode.GuildAlreadyInGuild
+    end
+    
+    -- 检查公会成员数量
+    if guild_info.member_count >= guild_info.member_max_num then
+        return ErrorCode.GuildFull
+    end
+    
+    if agree then
+        -- 添加成员
+        local res = Guild.AddMemeber(uid)
+        if res.code ~= ErrorCode.None then
+            return res.code
+        end
+        
+        -- 通知邀请人
+        context.send_users({inviter_uid}, "GuildProxy.OnGuildInviteJoinResult", context.guild_id, uid, true)
+    else
+        -- 通知邀请人
+        context.send_users({inviter_uid}, "GuildProxy.OnGuildInviteJoinResult", context.guild_id, uid, false)
+    end
+    
+    return ErrorCode.None
+end
 
 return Guild

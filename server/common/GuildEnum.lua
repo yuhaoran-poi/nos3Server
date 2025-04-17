@@ -28,7 +28,9 @@ local GuildEnum = {
 	--赛季积分变化记录
 	eRT_SEASON_POINT = 11,
 	--玩家充值记录
-	eRT_PLAYER_RECHARGE = 12,
+    eRT_PLAYER_RECHARGE = 12,
+    -- 踢人记录
+    eRT_KICKOUT = 13,
     },
 
 	-- 公会状态

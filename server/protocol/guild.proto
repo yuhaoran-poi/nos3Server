@@ -87,7 +87,7 @@ message PBGuildRecordInfo{
 	string duty_name = 4;			//只在 eRT_DUTY_CHANGE 有用（表示职位名称)
 	int32 guild_level = 5;		//只在 eRT_GUILD_LV_UP 有用
 	string guild_name = 6;			//只在 eRT_CHANGE_GUILD_NAME 有用
-	int32 target_uid = 7;			//目标玩家UID
+	int64 target_uid = 7;			//目标玩家UID
 	int32 duty_id = 8;			//只在 eRT_DUTY_CHANGE 有用 （表示职位ID)
 	int32  gkd_change_num = 9;     //eRT_GuildGKD变化记录 ,  
 	int32  gkd_cur_num    = 10;    //eRT_GuildGKD GKD当前值
@@ -99,6 +99,7 @@ message PBGuildRecordInfo{
 	int32   season_point = 16;      //只在ERT_SEASON_POINT时使用
     string  op_mgr_name = 17;       //发放管理员名字
     int32	 rechage_num = 18;       //玩家充值的灵石数量 
+	int64 operater_uid = 19;			//操作玩家UID
 }
 
 
@@ -666,7 +667,7 @@ message PBGuildAnswerInviteJoinGuildReqCmd
     // 协议数据
 	int64 inviter_uid = 1;	//邀请人uid
 	bool b_agree = 2;	//是否同意
-	int64 uid = 3;
+	int64 uid = 3;      //回复人uid
 	int32 applyer_uid = 4;	//回复人uid
 }
 
@@ -695,8 +696,8 @@ message PBGuildExpelQuitReqCmd
 //踢出公会返回
 message PBGuildExpelQuitRspCmd
 {
-    // 协议数据
-	int64 expel_uid = 1;	//被踢玩家uid
+    int32 code = 1;
+	int64 expel_uid = 2;	//被踢玩家uid
 }
 
 

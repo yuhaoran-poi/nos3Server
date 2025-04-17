@@ -35,7 +35,8 @@ local defaultGuildRecordInfoClass = {
 	spoils_item = {},       --只在战利品发放时使用，物品id
 	season_point = 0,       --只在ERT_SEASON_POINT时使用
     op_mgr_name = "",       --发放管理员名字
-    rechage_num = 0         --玩家充值的灵石数量 
+    rechage_num    = 0,     --玩家充值的灵石数量
+    operater_uid   = 0,     --操作人UID
 }
 
  
@@ -57,6 +58,27 @@ function GuildRecord.MemberQuit(uid)
     GuildRecord.AddRecord({
         uid = uid,
         record_type = GuildEnum.EGuildRecordType.eRT_QUIT,
+        time = os.time(),
+    })
+end
+-- 踢出公会成员记录
+---@param operater_uid integer 操作人UID
+---@param target_uid integer 目标UID
+function GuildRecord.ExpelQuit(operater_uid, target_uid)
+    GuildRecord.AddRecord({
+        target_uid = target_uid,
+        operater_uid = operater_uid,
+        record_type = GuildEnum.EGuildRecordType.eRT_KICKOUT,
+        time = os.time(),
+    })
+end
+ 
+-- 成员加入公会记录
+---@param uid integer 成员UID
+function GuildRecord.MemberJoin(uid)
+    GuildRecord.AddRecord({
+        uid = uid,
+        record_type = GuildEnum.EGuildRecordType.eRT_JOIN,
         time = os.time(),
     })
 end

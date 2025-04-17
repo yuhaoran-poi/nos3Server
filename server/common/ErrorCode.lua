@@ -140,6 +140,14 @@ local ErrorCode = {
     GuildAnswerApplyJoinGuildFailed = 1023,
     --- 不在申请列表中
     GuildApplyNotExist = 1024,
+    --- 邀请加入公会失败 
+    GuildInviteJoinGuildFailed = 1025,
+    --- 答复申请加入公会失败
+    GuildAnswerInviteJoinGuildFailed = 1026,
+    --- 踢出成员失败 
+    GuildExpelFailed = 1027,
+    --- 不能踢出会长
+    GuildCannotExpelPresident = 1028,
 
 }
 
