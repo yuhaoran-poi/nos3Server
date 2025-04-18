@@ -800,13 +800,17 @@
 ---@field User User
 ---@field Team Team
 ---@field UserModel UserModel
-
+---@field ItemDefine ItemDefine
 
 ---@class static_conf
 ---@field constant constant
 ---@field example example_cfg[]
----@field item item_cfg[]
+---@field Item Item_cfg[]
+---@field UniqueItem UniqueItem_cfg[]
 
+---@class Item_cfg
+---@field id integer
+---@field stack_count integer
 
 ---@class guild_scripts
 ---@field Guild Guild

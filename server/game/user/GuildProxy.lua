@@ -15,7 +15,6 @@ local GuildProxy = {}
 function GuildProxy.Init()
     
     local data = scripts.UserModel.MutGetUserData()
-    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if not data.guild then
         data.guild = {
             guild_id = 0,
@@ -70,7 +69,6 @@ end
 
 -- 创建公会请求
 function GuildProxy.PBGuildCreateGuildReqCmd(req)
-    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local DB = scripts.UserModel.MutGetUserData()
     if DB.guild.guild_id ~= 0 then
         context.R2C(CmdCode.PBGuildCreateGuildRspCmd, {
