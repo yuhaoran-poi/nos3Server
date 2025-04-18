@@ -38,7 +38,6 @@ local cur_index = 1
  
 local function read(fd)
     local now_cmd_data = {}
-    --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local data, err = socket.read(fd, 2)
     if not data then
         return false, err
@@ -49,7 +48,6 @@ local function read(fd)
     if not data then
         return false, err
     end
-    --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     --local _, rsp = protocol.decode(moon.decode(data, "B"))
     local name, t, id = protocol.decodestring(data)
     --local _, rsp = protocol.decode(data)
@@ -98,7 +96,6 @@ function Client.new(host, port)
     -- 启动异步读取循环
     moon.async(function()
         while client.ok do
-            local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
             local success,ret, result = pcall(read, client.fd)
             if not success or not ret then
                 client.ok = false
@@ -110,7 +107,6 @@ function Client.new(host, port)
             for _, v in pairs(result) do
                 moon.info("received: ",client.index, v.cmd, v.data)
                 print_r(v.data)
-                ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 if v.stub_id > 0 then
                     local cb = client.cb_map[v.stub_id]
                     if cb then
@@ -174,7 +170,6 @@ function Client:addlogin(index)
 end
 
 function Client:addbot(index)
-    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     index = tonumber(index) or 1
     local robot = Client.new(conf.host, conf.port)
     robot:Init()
@@ -210,7 +205,6 @@ end
 function Client:curbot(index)
     index = tonumber(index) or 1
     local robot = all_robot[index]
-    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if not robot then
         print("robot not found!")
         return

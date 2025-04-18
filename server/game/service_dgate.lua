@@ -26,7 +26,6 @@ setup(context)
 
 socket.on("accept", function(fd, msg)
     print("GAME SERVER: dugate accept ", fd, moon.decode(msg, "Z"))
-    --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP();
     socket.set_enable_chunked(fd, "w")
     --socket.settimeout(fd, 60)
 end)

@@ -15,9 +15,9 @@ local min_online_time = 60 --seconds，logout间隔大于这个时间的,并且�
 
 ---@type auth_context
 local context = ...
---local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+--
 local auth_queue = context.auth_queue
-local temp_openid = {}
+--local temp_openid = {}
 local NODE = math.tointeger(moon.env("NODE"))
 local function doDSAuth(req)
     local u = context.net_id_map[req.net_id]
@@ -118,7 +118,7 @@ local function doAuth(Auth,req)
     end
 
     local authkey, err = moon.call("lua", addr_user, "User.Login", req)
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --
     if not authkey then
         print(authkey, err)
         --moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
@@ -143,7 +143,6 @@ local function doAuth(Auth,req)
     print("doAuth uid_map", req.uid, u.addr_user)
 
     if req.pull then
-        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         print("doAuth pull", req.uid, req.net_id)
         return { code = 2003, error = "req.pull is true" }
     end
@@ -308,7 +307,6 @@ Auth.AllocGateNetId = function(isds)
 end
 
 Auth.PBClientLoginReqCmd = function (req)
-    --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local function processLogin()
         if req.msg.is_register then
 
@@ -317,13 +315,13 @@ Auth.PBClientLoginReqCmd = function (req)
             if check_err and not check_res and next(check_res) then
                 return { code = 1001, error = "USERNAME_EXISTS" }
             end
-            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+            --
             local create_res, create_err = db.createuser(
                 context.addr_db_game,
                 req.msg.login_data.authkey,
                 req.msg.password -- 直接使用客户端提供的MD5
             )
-            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+            --
             if create_err or not create_res.insert_id then
                 return { code = 1002, error = "CREATE_ACCOUNT_FAILED" }
             end
@@ -336,13 +334,12 @@ Auth.PBClientLoginReqCmd = function (req)
             -- 登录验证（直接比较MD5）
             local datas, err = db.getuserbyauthkey(context.addr_db_game, req.msg.login_data.authkey)
             print("datas=\n" .. print_r(datas, true))
-            local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
             -- 判断user_data是否为nil或空表
             if err or datas == nil or next(datas) == nil then
                 return { code = 1003, error = "INVALID_AUTHKEY" }
             end
             local data = datas[1]
-            --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+            --
             if req.msg.password ~= data.password_hash then
                 return { code = 1004, error = "INVALID_PASSWORD" }
             end
@@ -369,13 +366,12 @@ Auth.PBClientLoginReqCmd = function (req)
         local uid = context.openid_map[req.msg.login_data.authkey]
         if not uid then
             ---避免同一个玩家瞬间发送大量登录请求
-            local tmp = temp_openid[req.msg.login_data.authkey]
-            if tmp then
-                moon.error("user logining", req.fd, req.msg.login_data.authkey)
-                return { code = 1007, error = "USER_LOGINING" }
-            end
-            --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-            temp_openid[req.msg.login_data.authkey] = 1
+            -- local tmp = temp_openid[req.msg.login_data.authkey]
+            -- if tmp then
+            --     moon.error("user logining", req.fd, req.msg.login_data.authkey)
+            --     return { code = 1007, error = "USER_LOGINING" }
+            -- end
+            -- temp_openid[req.msg.login_data.authkey] = 1
         else
             moon.error("user online", req.fd, req.uid)
             return { code = 1008, error = "USER_ONLINE" }
@@ -384,8 +380,8 @@ Auth.PBClientLoginReqCmd = function (req)
         return processLogin()
     end
     
-    local res = func()
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    local res = func()
     local ret =
     {
         code = res.code,
@@ -418,11 +414,12 @@ Auth.C2SLogin = function (req)
         local uid = context.openid_map[req.authkey]
         if not uid then
             ---避免同一个玩家瞬间发送大量登录请求
-            uid = temp_openid[req.authkey]
-            if not uid then
-                uid = uuid.next()
-                temp_openid[req.authkey] = uid
-            end
+            -- uid = temp_openid[req.authkey]
+            -- if not uid then
+            --     uid = uuid.next()
+            --     temp_openid[req.authkey] = uid
+            -- end
+            uid = uuid.next()
 
             local res, err = db.insertuserid(context.addr_db_openid, req.authkey, uid)
             if not res then
@@ -431,7 +428,7 @@ Auth.C2SLogin = function (req)
                 return false
             end
 
-            temp_openid[req.authkey] = nil
+            --temp_openid[req.authkey] = nil
             context.openid_map[req.authkey] = uid
         end
         req.uid = uid
