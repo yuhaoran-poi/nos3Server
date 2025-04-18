@@ -35,6 +35,32 @@ message PBClientLoginRspCmd
     string reconn_key = 5; // 用户重连key
 }
 
+// DS登录网关数据
+message PBDSLoginData
+{
+    string authkey    = 1;
+    string auth_ticket = 2;
+	string version     = 3; //客户端版本号
+    string pb_version  = 4;	//协议版本号
+}
+
+// DS请求登录
+message PBDSLoginReqCmd
+{
+    // 协议数据
+    PBDSLoginData login_data = 1;
+}
+// 客户端请求登录 返回信息
+message PBDSLoginRspCmd
+{
+    int32 code        = 1; // 服务器验证返回,0成功,其他失败
+    string error      = 2; // 错误信息
+    int64 sid         = 3; // 服务器ID
+    int32 net_id      = 4; // DS网络id
+    string reconn_key = 5; // DS重连key
+}
+
+
 
 
 

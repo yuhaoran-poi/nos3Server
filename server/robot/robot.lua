@@ -25,6 +25,7 @@ require "robot.logic.ClientRoom"
 
 local all_robot = {}
 local cur_index = 1
+
  
 
 
@@ -169,9 +170,15 @@ function Client:addlogin(index)
    end
 end
 
-function Client:addbot(index)
+function Client:addbot(index,isds)
+    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     index = tonumber(index) or 1
-    local robot = Client.new(conf.host, conf.port)
+    local robot = nil
+    if isds then
+       robot = Client.new(conf.dhost, conf.dport)
+    else
+       robot = Client.new(conf.host, conf.port)
+    end
     robot:Init()
     robot.index = index
   

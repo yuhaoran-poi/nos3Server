@@ -46,7 +46,7 @@ socket.on("message", function(fd, msg)
               }
            local subname,submsg = protocol.DecodeMessagePack(MessagePack)
             --先校验协议版本号
-            if subname == "dsgatepb.AuthCmd" then
+            if subname == "PBDSLoginReqCmd" then
                reqmsg.msg = submsg
                reqmsg.sign = context.auth_watch[fd]
                reqmsg.fd = fd
@@ -61,23 +61,10 @@ socket.on("message", function(fd, msg)
     else
         if moon.DEBUG() then
             local buf = moon.decode(msg, "B")
-            protocol.print_message(c.net_id, buf,"message",1)
+            protocol.print_message(c.net_id, buf, "message", 1)
         end
-        local name, req = protocol.decode(moon.decode(msg,"B"))
-        for key, MessagePack in ipairs(req.messages) do
-            if MessagePack.gateNetId < GameDef.DSGateConst.MinNodeGateNetId then
-               if  MessagePack.gateNetId == GameDef.DSGateConst.GlobalGateNetId then
-                  -- 转发到ds全局服务器
-                  context.forwardD(MessagePack.gateNetId,MessagePack)
-               elseif   MessagePack.gateNetId == GameDef.DSGateConst.ExternalGateNetId then
-                   -- 外围服务器处理
-                   redirect(MessagePack, c.addr_dsnode, PTYPE_D2S, 0, 0)
-               end
-            else
-                --转发
-                context.forwardD(MessagePack.gateNetId,MessagePack)
-            end
-        end
+        redirect(msg, c.addr_dsnode, GameDef.PTYPE_D2S, 0, 0)
+         
     end
 
 end)

@@ -63,7 +63,9 @@ local function run(node_conf)
             unique = true,
             threadid = 1,
             host = "127.0.0.1",
-            port = 12108
+            port = 12108,
+            dhost = "127.0.0.1",
+            dport = 11288,
         },
         {
             name = "robotmgr",
