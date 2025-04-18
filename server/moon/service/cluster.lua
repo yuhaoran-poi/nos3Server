@@ -82,15 +82,18 @@ local function cluster_service()
         end
 
         if header.session < 0 then -- receive call message
-            moon.async(function ()
+            moon.async(function()
+                print("cluster receive call message", header.to_sname, header.to_node, header.session)
                 local address = services_address[header.to_sname]
                 if not address then
-                    local message = string.format("Service named '%s' not found for node '%s'.", header.to_sname, header.to_node)
+                    local message = string.format("Service named '%s' not found for node '%s'.", header.to_sname,
+                    header.to_node)
                     header.session = -header.session
                     socket.write(fd, pack(header, false, message)) -- response to sender node
                     moon.error("An error occurred while receiving the cluster.call message:", message)
                     return
                 end
+                print("cluster receive call message:address", address)
                 local session = moon.next_sequence()
                 redirect(msg, address, moon.PTYPE_LUA, moon.id, -session)
                 header.session = -header.session
@@ -101,12 +104,15 @@ local function cluster_service()
                 redirect(msg, header.from_addr, moon.PTYPE_LUA, moon.id, header.session)
             end
         else-- receive send message
-            local address = services_address[header.to_sname]
+            print("cluster receive send message", header.to_sname, header.to_node, header.session)
+            local address = sevrices_address[header.to_sname]
             if not address then
-                local message = string.format("Service named '%s' not found for node '%s'.", header.to_sname, header.to_node)
-                moon.error("An error occurred while receiving the cluster.send message:",message)
+                local message = string.format("Service named '%s' not found for node '%s'.", header.to_sname,
+                    header.to_node)
+                moon.error("An error occurred while receiving the cluster.send message:", message)
                 return
             end
+            print("cluster receive send message:address", address)
             redirect(msg, address, moon.PTYPE_LUA)
         end
     end)

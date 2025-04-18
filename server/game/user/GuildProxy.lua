@@ -274,7 +274,7 @@ function GuildProxy.PBGuildQuitReqCmd(req)
         return ErrorCode.GuildNotInGuild
     end
     -- 向公会服务发送退出公会请求
-    local res, err = cluster.call(DB.guild.guild_node, "guild", "Guild.MemberQuit", context.uid)
+    local res, err = cluster.call(DB.guild.guild_node, DB.guild.addr_guild, "Guild.MemberQuit", context.uid)
     if not res then
         print("Guild.PBGuildQuitReqCmd failed:", err)
         context.R2C(CmdCode.PBGuildQuitRspCmd, {
@@ -343,6 +343,38 @@ end
 
 -- 公会解散
 function GuildProxy.PBGuildDismissReqCmd(req)
+-- 检查是否有公会
+local DB = scripts.UserModel.GetUserData()
+    if DB.guild.guild_id == 0 then
+        context.R2C(CmdCode.PBGuildDismissRspCmd, {
+            code = ErrorCode.GuildNotInGuild,
+        }, req)
+        return ErrorCode.GuildNotInGuild
+    end
+    -- 发送到公会服务处理
+    local res, err = cluster.call(DB.guild.guild_node, DB.guild.addr_guild, "Guild.DismissGuild", context.uid)
+    if not res then
+        print("Guild.DismissGuild failed:", err)
+        context.R2C(CmdCode.PBGuildDismissRspCmd, {
+            code = ErrorCode.GuildDismissFailed,    
+        })
+        return ErrorCode.GuildDismissFailed
+    end
+    if res.code ~= ErrorCode.None then
+        context.R2C(CmdCode.PBGuildDismissRspCmd, {
+            code = res.code,
+        })
+        return res.code
+    end
+    -- 清空公会信息
+    DB.guild.guild_id = 0
+    DB.guild.guild_node = 0
+    DB.guild.addr_guild = 0
+    -- 返回处理结果
+    context.R2C(CmdCode.PBGuildDismissRspCmd, {
+        code = ErrorCode.None,
+    })
+
 end
 
 -- 公会解冻

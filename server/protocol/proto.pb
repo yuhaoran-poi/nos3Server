@@ -13,7 +13,7 @@ activityId
 error (	Rerror
 uid (Ruid6
 activity_datas (2.PBActivityDataRactivityDatasbproto3
-ï
+½
 
 auth.proto"È
 PBUserLoginData
@@ -36,6 +36,23 @@ isRegister
 code (Rcode
 error (	Rerror
 uid (Ruid
+net_id (RnetId
+
+reconn_key (	R	reconnKey"ƒ
+PBDSLoginData
+authkey (	Rauthkey
+auth_ticket (	R
+authTicket
+version (	Rversion
+
+pb_version (	R	pbVersion"@
+PBDSLoginReqCmd-
+
+login_data (2.PBDSLoginDataR	loginData"ƒ
+PBDSLoginRspCmd
+code (Rcode
+error (	Rerror
+sid (Rsid
 net_id (RnetId
 
 reconn_key (	R	reconnKeybproto3
@@ -468,7 +485,7 @@ monsConfid$
 ITEM_OPERATION_TYPE_UPDATA
 ITEM_OPERATION_TYPE_DELETE
 ITEM_OPERATION_TYPE_ADDbproto3
-¢w
+Øw
 guild.proto
 user.proto"y
 PBGuildItemData
@@ -504,7 +521,7 @@ bSpoilsMgr&
 PBGuildUserData
 uid (Ruid1
 
-guild_data (2.PBGuildMemberDataR	guildData"Ê
+guild_data (2.PBGuildMemberDataR	guildData"í
 PBGuildRecordInfo
 record_type (R
 recordType
@@ -517,7 +534,7 @@ guildLevel
 
 guild_name (	R	guildName
 
-target_uid (R	targetUid
+target_uid (R	targetUid
 duty_id (RdutyId$
 gkd_change_num	 (RgkdChangeNum
 gkd_cur_num
@@ -533,7 +550,8 @@ spoilsItem!
 season_point (RseasonPoint
 op_mgr_name (	R	opMgrName
 rechage_num (R
-rechageNum"…
+rechageNum!
+operater_uid (RoperaterUid"…
 PBGuildDutyInfo
 duty_id (RdutyId
 	duty_name (RdutyName
@@ -800,17 +818,18 @@ guild_name (R	guildName"h
 code (Rcode
 guild_id (RguildId
 
-guild_name (R	guildName"¸
+guild_name (R	guildName"„
 PBGuildApplyJoinGuildReqCmd
 guild_id (RguildId
 uid (Ruid
 b_apply (RbApply
 applyer_uid (R
-applyerUid2
-simple_info (2.PBUserSimpleInfoR
-simpleInfo"8
-PBGuildApplyJoinGuildRspCmd
-guild_id (RguildId"o
+applyerUid"k
+PBGuildApplyJoinGuildRspCmd
+code (Rcode
+guild_id (RguildId
+
+guild_name (R	guildName"o
 !PBGuildAnswerApplyJoinGuildReqCmd
 applyer_uid (R
 applyerUid
@@ -846,9 +865,10 @@ applyerUid"%
 code (Rcode"G
 PBGuildExpelQuitReqCmd
 	expel_uid (RexpelUid
-uid (Ruid"5
-PBGuildExpelQuitRspCmd
-	expel_uid (RexpelUid"^
+uid (Ruid"I
+PBGuildExpelQuitRspCmd
+code (Rcode
+	expel_uid (RexpelUid"^
 PBGuildGrantReqCmd
 
 target_uid (R	targetUid

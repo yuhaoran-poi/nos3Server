@@ -148,6 +148,8 @@ local ErrorCode = {
     GuildExpelFailed = 1027,
     --- 不能踢出会长
     GuildCannotExpelPresident = 1028,
+    --- 解释公会失败
+    GuildDismissFailed = 1029,
 
 }
 

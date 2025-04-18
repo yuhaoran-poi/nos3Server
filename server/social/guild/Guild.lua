@@ -57,7 +57,7 @@ local defaultGuildShopDB = {
     shop_item_list = {}, --商品列表
     last_refresh_time = 0, --上次刷新时间
 }
----@class defaultGuildBagDBClass
+---@class defaultGuildBagDBClass 
 local defaultGuildBagDB = {
     guild_id = 0, --公会id
     bag_item_list = {}, --背包物品列表
@@ -462,6 +462,37 @@ function Guild.AnswerInviteJoinGuild(uid, inviter_uid, agree)
         -- 通知邀请人
         context.send_users({inviter_uid}, "GuildProxy.OnGuildInviteJoinResult", context.guild_id, uid, false)
     end
+    
+    return ErrorCode.None
+end
+
+--- 解散公会
+---@param operator_uid integer 操作者UID
+---@return ErrorCode?
+function Guild.DismissGuild(operator_uid)
+    local guild_db = scripts.GuildModel.Get()
+    if not guild_db then
+        return ErrorCode.GuildDataCorrupted
+    end
+    if not guild_db.GuildInfo then
+        return ErrorCode.GuildDataCorrupted
+    end
+    
+    -- 检查操作者是否是会长
+    if operator_uid ~= guild_db.GuildInfo.president_id then
+        return ErrorCode.GuildNoPermission
+    end
+    
+    -- 更新公会状态为解散
+    local guild_info = scripts.GuildModel.MutGetGuildInfoDB()
+    guild_info.status = GuildEnum.EGuildStatus.eGS_Dismiss
+    guild_info.destory_time = os.time()
+    
+    -- 通知所有成员公会解散
+    context.send_users(Guild.GetMembers, {}, "GuildProxy.OnGuildDismiss", context.guild_id)
+    
+    -- 保存数据
+    scripts.GuildModel.Save()
     
     return ErrorCode.None
 end
