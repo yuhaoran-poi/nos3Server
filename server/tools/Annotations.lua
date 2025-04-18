@@ -814,8 +814,7 @@
 
 ---@class guild_scripts
 ---@field Guild Guild
----@field GuildAdmin GuildAdmin
----@field GuildLog GuildLog
+---@field GuildRecord GuildRecord
 ---@field GuildModel GuildModel
 ---@field GuildShop GuildShop
 ---@field GuildTask GuildTask

@@ -35,6 +35,8 @@ function GuildMgr.Start()
     
     return true
 end
+
+ 
 -- 从c_guild表读取所有公会id,根据负载均衡算法选择节点，并将其分配给该节点
 function GuildMgr.LoadGuilds()
     local scope <close> = lock()
