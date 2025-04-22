@@ -167,6 +167,12 @@ local ErrorCode = {
     --- 昵称已存在
     NicknameAlreadyExist = 1201,
     --- 创建账户失败
+    CreateAccountFailed = 1202,
+    --- 密码错误
+    PasswordError = 1203,
+    --- 用户已登录
+    UserAlreadyLogin = 1204,
+
     --聊天相关错误码
     --- 聊天频道已经存在
     ChannelAlreadyExists = 1301,
@@ -192,8 +198,6 @@ local ErrorCode = {
     LeaveGuildChannelErr = 1313,
     --- 初始化频道数据失败
     InitChatChannelDataErr = 1312,
-     
-
 }
 
 return ErrorCode
