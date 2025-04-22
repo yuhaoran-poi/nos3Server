@@ -35,7 +35,7 @@ function Room.PBCreateRoomReqCmd(req)
         msg = req.msg,
         self_info = user_data.simple,
     })
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    
     if err then
         return context.S2C(context.net_id, CmdCode["PBCreateRoomRspCmd"], {
             code = ErrorCode.ServerInternalError,
@@ -53,7 +53,7 @@ function Room.PBSearchRoomReqCmd(req)
         local res, err = clusterd.call(3999, "roommgr", "Roommgr.SearchRooms", {
             roomid = req.msg.roomid,
         })
-        --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        --
         if err then
             return context.S2C(context.net_id, CmdCode["PBSearchRoomRspCmd"], {
                 code = ErrorCode.ServerInternalError,
@@ -89,7 +89,7 @@ function Room.PBSearchRoomReqCmd(req)
                 end
             end
         end
-        --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        --
         return context.S2C(context.net_id, CmdCode["PBSearchRoomRspCmd"], res, req.msg_context.stub_id)
     end
 end
@@ -114,7 +114,9 @@ function Room.PBModRoomReqCmd(req)
 end
 
 function Room.OnRoomInfoSync(room_data)
-    context.S2C(context.net_id, CmdCode["PBOnRoomInfoSyncCmd"], { room_data = room_data }, 0)
+    moon.error("OnRoomInfoSync")
+    print_r(room_data)
+    context.S2C(context.net_id, CmdCode["PBRoomInfoSyncCmd"], { room_data = room_data }, 0)
 end
 
 function Room.PBApplyRoomReqCmd(req)
@@ -187,7 +189,7 @@ function Room.PBDealApplyRoomReqCmd(req)
 end
 
 function Room.OnMemberEnter(res)
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --
     moon.info("OnMemberEnter uid", context.uid, res.member_data.mem_info.uid)
     if res.member_data.mem_info.uid == context.uid then
         context.roomid = res.roomid
@@ -291,7 +293,7 @@ function Room.OnReadyStatusUpdate(res)
 end
 
 function Room.PBGetRoomInfoReqCmd(req)
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --
     if not context.roomid or context.roomid ~= req.msg.roomid then
         return context.S2C(CmdCode.PBReadyRoomRspCmd, {
             code = ErrorCode.RoomMemberNotFound,

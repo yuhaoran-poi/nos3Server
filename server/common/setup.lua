@@ -28,7 +28,6 @@ hotfix.addsearcher(function(file)
 end)
 
 local function load_scripts(context, sname)
-    --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP();
     local server_type = moon.env("SERVER_TYPE") or "game"
     local dir = strfmt("%s/%s/", server_type, sname)
     local scripts = moon.env_unpacked(dir)
@@ -151,6 +150,7 @@ local function _internal(context)
     ---@field addr_db_server integer
     ---@field addr_db_openid integer
     ---@field addr_mail integer
+    ---@field addr_dgate integer
     local base_context = context
 
     setmetatable(base_context, {
@@ -226,7 +226,6 @@ local function _internal(context)
             return
         end
         local node, addr_user = res.nid, res.addr_user
-        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         if not context.NODE then
             context.NODE = math.tointeger(moon.env("NODE"))
         end
@@ -238,7 +237,6 @@ local function _internal(context)
         end
     end
     base_context.send_users = function(uids, not_uids, cmd, ...)
-        --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         if not_uids then
             local tmp = {}
             for _,uid in ipairs(uids) do
@@ -250,7 +248,6 @@ local function _internal(context)
         end
         --查询在线用户列表
         local online_uids, err = cluster.call(3999, "usermgr", "Usermgr.getOnlineUsers", uids)
-        --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         if not online_uids then
             print(err)
             return false, "getOnlineUsers failed"
@@ -266,6 +263,7 @@ local function _internal(context)
                 if context.NODE == node then
                     moon.send("lua", addr_user, cmd, ...)
                 else
+                    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                     cluster.send(node, addr_user, cmd, ...)
                 end
             else
@@ -353,6 +351,23 @@ local function do_client_command(context, cmd, uid, req)
         end
     else
         moon.error(moon.name, "receive unknown PTYPE_C2S cmd " .. tostring(cmd) .. " " .. tostring(uid))
+    end
+end
+
+local function do_ds_command(context, cmd, dsid, req)
+    local fn = command[cmd]
+    if fn then
+        local ok, res = xpcall(fn, traceback, dsid, req)
+        if not ok then
+            moon.error(res)
+            context.S2D(dsid, CmdCode.S2DErrorCode, { code = 1 }) -- server internal error
+        else
+            if res and res > 0 then
+                context.S2D(dsid, CmdCode.S2DErrorCode, { code = res })
+            end
+        end
+    else
+        moon.error(moon.name, "receive unknown PTYPE_D2S cmd " .. tostring(cmd) .. " " .. tostring(uid))
     end
 end
 
@@ -495,7 +510,20 @@ return function(context, sname)
     moon.register_protocol({
         name = "D2S",
         PTYPE = GameDef.PTYPE_D2S,
-        dispatch = nil
+        israw = true,
+        dispatch = function(msg)
+            local buf = moon.decode(msg, "B")
+            --see: user service's forward
+            local dsid = unpack_one(buf, true)
+            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+            local ok, cmd, data = pcall(protocol.decode, buf)
+            if not ok then
+                moon.error("protobuffer decode client message failed", cmd)
+                moon.send("lua", context.dgate, "DGate.Kick", dsid)
+                return
+            end
+            moon.async(do_ds_command, context, cmd, dsid, data)
+        end
     })
     moon.register_protocol({
         name = "D2D",
@@ -540,10 +568,10 @@ return function(context, sname)
        -- moon.raw_send('S2D', context.addr_dgate, protocol.encodePacket(net_id, cmd_code, mtable,mc))
     end
     
-    context.D2S = function(net_id, cmd_code, mtable,stubId)
-        --forwardD(context,net_id,protocol.encodeMessagePacket(net_id, cmd_code, mtable,stubId or 0))
-       -- moon.raw_send('S2D', context.addr_dgate, protocol.encodePacket(net_id, cmd_code, mtable,mc))
-    end
+    -- context.D2S = function(net_id, cmd_code, mtable,stubId)
+    --     --forwardD(context,net_id,protocol.encodeMessagePacket(net_id, cmd_code, mtable,stubId or 0))
+    --    -- moon.raw_send('S2D', context.addr_dgate, protocol.encodePacket(net_id, cmd_code, mtable,mc))
+    -- end
 
     
 

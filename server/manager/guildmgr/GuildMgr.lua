@@ -141,7 +141,6 @@ function GuildMgr.CreateGuild(creator_uid, guild_name)
     if not min_node then
         return { code = ErrorCode.AgentNotAvailable }
     end
-    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
  
      
     -- 调用agent服务创建公会

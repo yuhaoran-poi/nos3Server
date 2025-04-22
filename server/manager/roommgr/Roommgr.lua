@@ -85,7 +85,7 @@ function Roommgr.CheckWaitDSRooms()
             
             if v.status == 0 then
                 local response = httpc.post(context.conf.allocate_url, v.allocate_data)
-                --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+                --
                 print_r(response)
                 local rsp_data = json.decode(response.body)
                 local success, ret = allocate_cb(rsp_data)
@@ -103,7 +103,7 @@ function Roommgr.CheckWaitDSRooms()
                 local get_url = context.conf.query_url .. "?name=" .. v.region
                 print_r(get_url)
                 local response = httpc.get(get_url)
-                --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+                --
                 print_r(response)
                 local rsp_data = json.decode(response.body)
                 local success, ret = query_cb(rsp_data)
@@ -124,7 +124,7 @@ function Roommgr.CheckWaitDSRooms()
     local allocated_rooms = {}
     local fail_rooms = {}
     for k, v in pairs(context.waitds_roomids) do
-        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        
         if v.status == 2 then
             allocated_rooms[k] = v
         elseif v.failcnt > 5 then
@@ -145,7 +145,7 @@ end
 
 function Roommgr.NotifyDsRooms(allocated_rooms, fail_rooms)
     for roomid, allocate_info in pairs(allocated_rooms) do
-        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        
         local room = context.rooms[roomid]
         if room then
             local notify_uids = {}
@@ -237,7 +237,7 @@ function Roommgr.CreateRoom(req)
         needpwd = room.needpwd,
         state = room.state,
     }
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --
     Database.upsert_room(context.addr_db_server, roomid, room_tags, redis_data)
 
     context.rooms[roomid] = room
@@ -313,10 +313,12 @@ function Roommgr.ModRoom(req)
 
     local notify_uids = {}
     for _, player in pairs(room.players) do
-        if player.mem_info.uid ~= req.uid then
-            table.insert(notify_uids, player.uid)
-        end
+        -- if player.mem_info.uid ~= req.uid then
+        --     table.insert(notify_uids, player.mem_info.uid)
+        -- end
+        table.insert(notify_uids, player.mem_info.uid)
     end
+    
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", {
         roomid = room.roomid,
         isopen = room.isopen,
@@ -373,7 +375,7 @@ function Roommgr.ApplyToRoom(req)
 end
 
 function Roommgr.DealApply(req)
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --
     local room = context.rooms[req.roomid]
     if not room then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }

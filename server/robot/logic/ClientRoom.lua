@@ -193,3 +193,21 @@ function Client:OnPBEnterDsRoomSyncCmd(msg)
     print("OnPBEnterDsRoomSyncCmd")
     print_r(msg)
 end
+
+function Client:apply_city()
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+
+    local req_msg = {
+        uid = self.uid,
+    }
+    self:send("PBApplyLoginCityReqCmd", req_msg, function(msg)
+        print("rpc PBApplyLoginCityRspCmd ret = ", self.index, msg)
+        print_r(msg)
+        if msg.code == 0 then
+
+        end
+    end)
+end

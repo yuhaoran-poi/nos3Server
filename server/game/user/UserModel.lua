@@ -47,7 +47,7 @@ function UserModel.Save(checkDirty)
         return
     end
 
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    
     Database.saveuserdata(context.addr_db_user, DBData.user_data.user_id, DBData.user_data)
     dirty = false
 end
@@ -61,7 +61,7 @@ function UserModel.GetUserData()
     return DBData.user_data
 end
 function UserModel.MutGetUserData()
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    
     dirty = true
     return DBData.user_data
 end
@@ -74,7 +74,7 @@ function UserModel.MutGet()
 end
 
 function UserModel.SetSimple(simple_data)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    
     DBData.simple = simple_data
 end
 

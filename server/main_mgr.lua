@@ -128,6 +128,21 @@ local function run(node_conf)
             poolsize = 5,
             opts = db_conf.mysql
         },
+        {
+            unique = true,
+            name = "citymgr",
+            file = "manager/service_citymgr.lua",
+            threadid = 7,
+            websocket = false,
+            city_startid = 0,
+            allocate_url = "http://43.136.214.127:8000/api/allocator",
+            query_url = "http://43.136.214.127:8000/api/gameservers",
+            fleet = "nos3-fleet-test",
+            redis_nginx_ip = "172.27.0.3",
+            redis_nginx_port = 3379,
+            redis_nginx_authkey = "acgameUI00",
+            redis_nginx_title = "battle_report_17",
+        },
     }
 
     local function Start()
@@ -137,10 +152,12 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("usermgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("teammgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("roommgr"), "Init"))
+        assert(moon.call("lua", moon.queryservice("citymgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("nodemgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("usermgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("teammgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("roommgr"), "Start"))
+        assert(moon.call("lua", moon.queryservice("citymgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("guildmgr"), "Start"))
         local data = db.loadserverdata(moon.queryservice("db_server"))
         if not data then

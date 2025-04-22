@@ -29,7 +29,6 @@ function Teammgr.CreateTeam(uid, match_type, base_data)
     
     -- 生成唯一队伍ID
     local team_id = uuid.next()
-    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 创建队伍数据
     context.team_info[team_id] = {
         team_id = team_id,

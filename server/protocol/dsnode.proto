@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+// 玩家进入主城
+message PBEnterCityReqCmd
+{
+    int64 uid		= 1;
+    int32 cityid    = 2;
+}
+
+message PBEnterCityRspCmd
+{
+    int32 code      = 1; // 服务器验证返回,0成功,其他失败
+    string error    = 2; // 错误信息
+}
+
+// 玩家退出主城
+message PBExitCityReqCmd
+{
+    int64 uid		= 1;
+    int32 cityid    = 2;
+}
+
+message PBExitCityRspCmd
+{
+    int32 code      = 1; // 服务器验证返回,0成功,其他失败
+    string error    = 2; // 错误信息
+}
+
+// 主城信息同步
+message PBUpdateCityReqCmd
+{
+    int32 cityid		= 1;
+    int32 player_num    = 2;
+}
+
+message PBUpdateCityRspCmd
+{
+    int32 code      = 1; // 服务器验证返回,0成功,其他失败
+    string error    = 2; // 错误信息
+}

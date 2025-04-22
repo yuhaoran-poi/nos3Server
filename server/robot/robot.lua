@@ -22,6 +22,7 @@ require "robot.logic.ClientFriend"
 require "robot.logic.ClientMail"
 require "robot.logic.ClientTeam"
 require "robot.logic.ClientRoom"
+require "robot.logic.ClientDSLogin"
 
 local all_robot = {}
 local cur_index = 1
@@ -39,7 +40,6 @@ local cur_index = 1
  
 local function read(fd)
     local now_cmd_data = {}
-    --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local data, err = socket.read(fd, 2)
     if not data then
         return false, err
@@ -50,7 +50,6 @@ local function read(fd)
     if not data then
         return false, err
     end
-    --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     --local _, rsp = protocol.decode(moon.decode(data, "B"))
     local name, t, id = protocol.decodestring(data)
     --local _, rsp = protocol.decode(data)
@@ -99,7 +98,6 @@ function Client.new(host, port)
     -- 启动异步读取循环
     moon.async(function()
         while client.ok do
-            local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
             local success,ret, result = pcall(read, client.fd)
             if not success or not ret then
                 client.ok = false
@@ -111,7 +109,6 @@ function Client.new(host, port)
             for _, v in pairs(result) do
                 moon.info("received: ",client.index, v.cmd, v.data)
                 print_r(v.data)
-                ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 if v.stub_id > 0 then
                     local cb = client.cb_map[v.stub_id]
                     if cb then
@@ -216,7 +213,6 @@ end
 function Client:curbot(index)
     index = tonumber(index) or 1
     local robot = all_robot[index]
-    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if not robot then
         print("robot not found!")
         return
@@ -245,6 +241,7 @@ Robot.DoCmd = function(params)
     local cmd = params[1]
     table.remove(params, 1)
     local f = Client[cmd]
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if f then
         local cur_bot = all_robot[cur_index] or Client
         local ok, err = pcall(f, cur_bot, table.unpack(params))

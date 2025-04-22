@@ -151,31 +151,47 @@ local ErrorCode = {
     --- 解释公会失败
     GuildDismissFailed = 1029,
 
+    ---主城相关错误码
+    --- 主城不存在
+    CityNotFound = 1101,
+    --- 已经在主城里
+    CityAlreadyInCity = 1102,
+    --- 玩家没进入主城
+    UserNotEnterCity = 1103,
+    --- 主城验证不通过
+    CityVerifyFailed = 1104,
+    --- 主城已连接
+    CityAlreadyConnected = 1105,
+
+    ---用户相关错误码
+    --- 昵称已存在
+    NicknameAlreadyExist = 1201,
+    --- 创建账户失败
     --聊天相关错误码
     --- 聊天频道已经存在
-    ChannelAlreadyExists = 1101,
+    ChannelAlreadyExists = 1301,
     --- 聊天频道不存在
-    ChannelNotExists = 1102,
+    ChannelNotExists = 1302,
     --- 聊天频道创建失败
-    CreateChatChannelServiceErr = 1103,
+    CreateChatChannelServiceErr = 1303,
     --- 禁言中
-    ChatSilence = 1104,
+    ChatSilence = 1304,
     --- 聊天参数错误
-    ChatInvalidParam = 1105,
+    ChatInvalidParam = 1305,
     --- 聊天内容过长
-    ChatWordLimit = 1106,
+    ChatWordLimit = 1306,
     --- 过于频繁发送聊天消息
-    ChatSendInterval = 1107,
+    ChatSendInterval = 1307,
     --- 不在聊天频道中
-    NotInChannel = 1108,
+    NotInChannel = 1308,
     --- 创建公会聊天频道失败
-    CreateGuildChannelErr = 1109,
+    CreateGuildChannelErr = 1309,
     --- 加入公会聊天频道失败
-    JoinGuildChannelErr = 1110,
+    JoinGuildChannelErr = 1310,
     --- 退出公会聊天频道失败
-    LeaveGuildChannelErr = 1111,
+    LeaveGuildChannelErr = 1313,
     --- 初始化频道数据失败
-    InitChatChannelDataErr = 1112,
+    InitChatChannelDataErr = 1312,
      
 
 }

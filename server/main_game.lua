@@ -28,6 +28,7 @@ local common = require("common")
 local schema = require("schema")
 local db = common.Database
 local CreateTable = common.CreateTable
+local GameCfg = common.GameCfg
 
 
 local arg = moon.args()
@@ -74,15 +75,6 @@ local function run(node_conf)
             poolsize = 5,
             opts = db_conf.redis
         },
-        -- {
-        --     unique = true,
-        --     name = "db_game",
-        --     file = "moon/service/sqldriver.lua",
-        --     provider = "moon.db.pg",
-        --     threadid = 2,
-        --     poolsize = 5,
-        --     opts = db_conf.pg
-        -- },
         {
             unique = true,
             name = "db_game",
@@ -96,6 +88,7 @@ local function run(node_conf)
             name = "auth",
             file = "game/service_auth.lua",
             threadid = 2,
+            ds_ticket = "qwerttyyuy"
         },
         {
             unique = true,
@@ -183,12 +176,18 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("cluster"), "Listen"))
         assert(moon.call("lua", moon.queryservice("gate"), "Start"))
         assert(moon.call("lua", moon.queryservice("dgate"), "Start"))
-        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP();
+        
         local nodeinfo = {
             nid = moon.env("NODE"),
             node_type = moon.env("SERVER_TYPE"),
         }
         moon.call("lua", moon.queryservice("node"), "Console.Notify_nodemgr", nodeinfo)
+
+        -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        -- GameCfg.Load()
+        -- local tmp_conf = GameCfg
+        -- local tmp_a = tmp_conf.ActionMission
+        -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
 
         moon.async(function()
             while true do

@@ -15,7 +15,6 @@ local GuildProxy = {}
 function GuildProxy.Init()
     
     local data = scripts.UserModel.MutGetUserData()
-    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if not data.guild then
         data.guild = {
             guild_id = 0,

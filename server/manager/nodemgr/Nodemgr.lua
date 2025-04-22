@@ -36,7 +36,6 @@ function Nodemgr.Shutdown()
 end
 
 function Nodemgr.BindNode(msg)
-    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local old = context.node_map[msg.nid]
     if old then
         return {error = "node already bind"}

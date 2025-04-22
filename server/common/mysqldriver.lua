@@ -23,7 +23,6 @@ if conf.name then
 
     moon.dispatch("lua", function(sender, sessionid, sql)
         -- 如果dbs为空，说明连接池已经满了，等待连接池有空闲连接
-        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP();
         while list.size(dbs) == 0 do
             moon.sleep(1)
         end
@@ -38,7 +37,6 @@ if conf.name then
             moon.error("mysql query failed:", res.message)
             moon.error("mysql query sql:", sql)
         end
-        --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP();
         list.push(dbs, db)
 
         if sessionid ~= 0 then
