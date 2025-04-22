@@ -13,7 +13,7 @@ local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
 local lock = queue()
----@type guild_context
+---@type chatchannel_context
 local context = ...
 local scripts = context.scripts
 
