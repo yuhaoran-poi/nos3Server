@@ -13,7 +13,7 @@ activityId
 error (	Rerror
 uid (Ruid6
 activity_datas (2.PBActivityDataRactivityDatasbproto3
-Ω
+Õ
 
 auth.proto"»
 PBUserLoginData
@@ -38,24 +38,37 @@ isRegister
 uid (Ruid
 net_id (RnetId
 
-reconn_key (	R	reconnKey"É
+reconn_key (	R	reconnKey"±
 PBDSLoginData
 authkey (	Rauthkey
 auth_ticket (	R
 authTicket
 version (	Rversion
 
-pb_version (	R	pbVersion"@
+pb_version (	R	pbVersion
+ds_type (RdsType
+ds_id (RdsId"@
 PBDSLoginReqCmd-
 
-login_data (2.PBDSLoginDataR	loginData"É
+login_data (2.PBDSLoginDataR	loginData"f
 PBDSLoginRspCmd
 code (Rcode
-error (	Rerror
-sid (Rsid
-net_id (RnetId
+error (	Rerror
+dsid (Rdsid
+net_id (RnetIdbproto3
+È
 
-reconn_key (	R	reconnKeybproto3
+city.proto"*
+PBApplyLoginCityReqCmd
+uid (Ruid"¶
+PBApplyLoginCityRspCmd
+code (Rcode
+error (	Rerror
+cityid (Rcityid
+region (	Rregion
+
+ds_address (	R	dsAddress
+ds_ip (	RdsIpbproto3
 ©
 common.proto"ì
 PBMessagePack
@@ -70,6 +83,27 @@ reconn_key (	R	reconnKeybproto3
 time (Rtime"
 	PBPongCmd
 time (Rtimebproto3
+ù
+dsnode.proto"=
+PBEnterCityReqCmd
+uid (Ruid
+cityid (Rcityid"=
+PBEnterCityRspCmd
+code (Rcode
+error (	Rerror"<
+PBExitCityReqCmd
+uid (Ruid
+cityid (Rcityid"<
+PBExitCityRspCmd
+code (Rcode
+error (	Rerror"K
+PBUpdateCityReqCmd
+cityid (Rcityid
+
+player_num (R	playerNum">
+PBUpdateCityRspCmd
+code (Rcode
+error (	Rerrorbproto3
 å
 friend.proto"Í
 PBFriendData
