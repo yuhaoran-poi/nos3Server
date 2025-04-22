@@ -12,30 +12,34 @@ enum PBChannelType
     CHANNEL_TYPE_SYSTEM = 6;  //系统	
 }
 
-// 聊天信息
-message PBChatMsgInfoDetail
-{
-    int64 unique_index = 1;             //聊天唯一索引
-	PBChannelType channel_type = 2;     //频道类型
-    int64 uid = 3;                      //发送者uid
-    string name = 4;                    //发送者昵称
-	int64 guild_id = 5;                 //发送者公会id
-    string msg = 6;                     //消息内容
-    int64 send_time = 7;                //发送时间
-	int64 to_uid = 8;                   //接收者uid	
-}
-
 // 频道聊天信息
 message PBChatMsgInfo
 {
-    PBChannelType channel_type = 1;                        //频道类型
-    repeated PBChatMsgInfoDetail chat_msg_info_detail = 2; //聊天信息
+    PBChannelType channel_type = 1;     //频道类型
+    int64 uid = 2;                      //发送者uid
+    string name = 3;                    //发送者昵称
+    string msg_content = 4;             //消息内容
+    int64 send_time = 5;                //发送时间
+	int64 to_uid = 6;                   //接收者uid	
 }
 
-// 聊天命令
-message PBChatCmd
+// 客户端聊天消息发送命令
+message PBChatReqCmd
 {
-   PBChatMsgInfo chat_msg_info = 1; 	
+    PBChannelType channel_type = 1;     //频道类型
+    string        msg_content  = 2;     //消息内容
+    int64         to_uid = 3;           //接收者uid	
+}
+// 服务器聊天消息发送命令
+message PBChatRspCmd
+{
+    int32 code = 1;  //错误码
+}
+
+// 服务器聊天消息发送命令
+message PBChatSynCmd
+{
+    repeated PBChatMsgInfo  infos = 1; 	
 }
 
 // 同步世界频道命令

@@ -6,10 +6,12 @@ local GameDef= common.GameDef
 local Database = common.Database
 local GameCfg = common.GameCfg --游戏配置
 local ErrorCode = common.ErrorCode --逻辑错误码
-local CmdCode = common.CmdCode --客户端通信消息码
+local CmdCode = common.CmdCode     --客户端通信消息码
+local CmdEnum = common.CmdEnum     
 local LuaExt = common.LuaExt
 local GuildEnum = require("common.GuildEnum") --公会枚举
 local cluster = require("cluster")
+local ChatLogic = require("common.ChatLogic") --聊天逻辑
 ---@type guild_context
 local context = ...
 local scripts = context.scripts ---方便访问同服务的其它lua模块
@@ -134,7 +136,11 @@ function Guild.Create(guild_id, guild_name, creator_uid)
         print("GuildModel.Save:", err)
         return { code = ErrorCode.CreateGuildDataSaveErr, error = err }
     end)
-    
+    -- 创建公会聊天频道
+    local res = ChatLogic.newGuildChannel(context.guild_id)
+    if res.code ~= ErrorCode.None then
+        return res
+    end
     return {code = ErrorCode.None}
 end
 
@@ -161,6 +167,11 @@ function Guild.AddMemeber(uid)
           last_send_spoil=0,    --上次发放战利品的时间戳
     }
     guild_data.member_count = table.count(guild_data.members)
+    -- 加入公会频道
+    local res = ChatLogic.joinGuildChannel(context.guild_id, uid)
+    if res.code ~= ErrorCode.None then
+        return res
+    end
     return {code = ErrorCode.None}
 end
 
@@ -200,12 +211,18 @@ function Guild.Load(guild_id, addr_guild)
         context.batch_invoke_throw("Init")
         ---初始化互相引用的数据
         context.batch_invoke_throw("Start")
+        --- 创建公会聊天频道
+        local res = ChatLogic.newGuildChannel(context.guild_id)
+        if res.code ~= ErrorCode.None then
+            return nil,res.code
+        end
         -- 通知guildmgr
-        cluster.send(3999, "guildmgr", "GuildMgr.GuildLoad", guild_id, addr_guild)
+        cluster.send(CmdEnum.FixedNodeId.MANAGER, "guildmgr", "GuildMgr.GuildLoad", guild_id, addr_guild)
     end
     return guild_db
 end
 
+ 
 --- 成员退出公会
 ---@param uid integer 成员UID
 ---@return ErrorCode?
@@ -235,6 +252,7 @@ function Guild.MemberQuit(uid)
     scripts.GuildRecord.MemberQuit(uid)
     -- 通知在线成员
     Guild.NotifyMemberQuit(uid)
+    ChatLogic.LeaveGuildChannel(context.guild_id,uid)
     return  ErrorCode.None
 end
 

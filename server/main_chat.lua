@@ -94,8 +94,8 @@ local function run(node_conf)
         },
         {
             unique = true,
-            name = "channelmgr",
-            file = "chat/service_channelmgr.lua",
+            name = "chatmgr",
+            file = "chat/service_chatmgr.lua",
             threadid = 5,
             websocket = false,
         },
@@ -105,7 +105,7 @@ local function run(node_conf)
     local function Start()
         ---控制服务初始化顺序,Init一般为加载DB
         assert(moon.call("lua", moon.queryservice("node"), "Init"))
-        assert(moon.call("lua", moon.queryservice("channelmgr"), "Init"))
+        assert(moon.call("lua", moon.queryservice("chatmgr"), "ChatMgr.Init"))
       
 
         local data = db.loadserverdata(moon.queryservice("db_server"))
@@ -162,7 +162,7 @@ local function run(node_conf)
                     i = i - 1
                 end
 
-                moon.kill(moon.queryservice("channelmgr"))
+                moon.kill(moon.queryservice("chatmgr"))
             else
                 moon.exit(-1)
             end

@@ -63,6 +63,11 @@ function User.Load(req)
                 user_data = {
                     user_id = req.uid,
                     name = req.msg.login_data.authkey,
+                    -- 聊天相关数据
+                    chat_info = {
+                        silence = 0, -- 禁言时间戳，0表示未禁言
+                    }
+                    
                 }
             }
         end

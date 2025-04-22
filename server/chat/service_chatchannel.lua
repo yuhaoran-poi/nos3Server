@@ -5,7 +5,11 @@ local setup = require("common.setup")
 ---@class chatchannel_context:base_context
 ---@field scripts chatchannel_scripts
 local context = {
-    chatchannel_id = 0,
+    channel_id = 0,
+    channel_type = 0,
+    channel_addr = 0,
+    memember_uids = {}, -- 频道玩家
+    channel_msgs = {},   -- 频道消息
     scripts = {},
 }
 
@@ -20,7 +24,7 @@ command.hotfix = function(names)
 end
 
 moon.shutdown(function()
-    print("chatchannel %d shutdown", context.chatchannel_id)
+    print("chatchannel %d shutdown", context.channel_id)
 end)
 
 ---垃圾收集器间歇率控制着收集器需要在开启新的循环前要等待多久。

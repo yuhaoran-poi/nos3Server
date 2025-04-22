@@ -23,6 +23,9 @@ function GuildProxy.Init()
             addr_guild = 0,
         }
     else
+        if data.guild.guild_id == 0 then
+             return
+        end
         -- 向公会管理器查询公会节点和地址
         local res, err = cluster.call(3999, "guildmgr", "GuildMgr.GetGuildNodeAndAddr", data.guild.guild_id)
         if res and res.code == ErrorCode.None then

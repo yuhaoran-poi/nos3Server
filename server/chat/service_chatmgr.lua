@@ -2,11 +2,13 @@
 local moon = require("moon")
 local setup = require("common.setup")
 
----@class channelmgr_context:base_context
----@field scripts channelmgr_scripts
+---@class chatmgr_context:base_context
+---@field scripts chatmgr_scripts
 local context = {
     scripts = {},
     addr_db_game = 0,
+    -- 频道组播id信息
+    Channels = {},
 }
 
 local command = setup(context)

@@ -151,6 +151,33 @@ local ErrorCode = {
     --- 解释公会失败
     GuildDismissFailed = 1029,
 
+    --聊天相关错误码
+    --- 聊天频道已经存在
+    ChannelAlreadyExists = 1101,
+    --- 聊天频道不存在
+    ChannelNotExists = 1102,
+    --- 聊天频道创建失败
+    CreateChatChannelServiceErr = 1103,
+    --- 禁言中
+    ChatSilence = 1104,
+    --- 聊天参数错误
+    ChatInvalidParam = 1105,
+    --- 聊天内容过长
+    ChatWordLimit = 1106,
+    --- 过于频繁发送聊天消息
+    ChatSendInterval = 1107,
+    --- 不在聊天频道中
+    NotInChannel = 1108,
+    --- 创建公会聊天频道失败
+    CreateGuildChannelErr = 1109,
+    --- 加入公会聊天频道失败
+    JoinGuildChannelErr = 1110,
+    --- 退出公会聊天频道失败
+    LeaveGuildChannelErr = 1111,
+    --- 初始化频道数据失败
+    InitChatChannelDataErr = 1112,
+     
+
 }
 
 return ErrorCode
