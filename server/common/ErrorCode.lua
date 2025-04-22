@@ -158,6 +158,15 @@ local ErrorCode = {
     CityAlreadyInCity = 1102,
     --- 玩家没进入主城
     UserNotEnterCity = 1103,
+    --- 主城验证不通过
+    CityVerifyFailed = 1104,
+    --- 主城已连接
+    CityAlreadyConnected = 1105,
+
+    ---用户相关错误码
+    --- 昵称已存在
+    NicknameAlreadyExist = 1201,
+    --- 创建账户失败
 }
 
 return ErrorCode

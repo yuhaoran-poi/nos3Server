@@ -316,7 +316,7 @@ Auth.PBClientLoginReqCmd = function (req)
             -- 注册逻辑（直接存储客户端提供的MD5）
             local check_res, check_err = db.checkuser(context.addr_db_game, req.msg.login_data.authkey)
             if check_err and not check_res and next(check_res) then
-                return { code = 1001, error = "USERNAME_EXISTS" }
+                return { code = ErrorCode.NicknameAlreadyExist, error = "USERNAME_EXISTS" }
             end
             --
             local create_res, create_err = db.createuser(
@@ -326,25 +326,25 @@ Auth.PBClientLoginReqCmd = function (req)
             )
             --
             if create_err or not create_res.insert_id then
-                return { code = 1002, error = "CREATE_ACCOUNT_FAILED" }
+                return { code = ErrorCode.CreateAccountFailed, error = "CREATE_ACCOUNT_FAILED" }
             end
 
             req.uid = create_res.insert_id
         else
             if req.msg.login_data.authkey == "" or req.msg.password == "" then
-                return { code = 1003, error = "INVALID_USERNAME_OR_PASSWORD" }
+                return { code = ErrorCode.PasswordError, error = "INVALID_USERNAME_OR_PASSWORD" }
             end
             -- 登录验证（直接比较MD5）
             local datas, err = db.getuserbyauthkey(context.addr_db_game, req.msg.login_data.authkey)
             print("datas=\n" .. print_r(datas, true))
             -- 判断user_data是否为nil或空表
             if err or datas == nil or next(datas) == nil then
-                return { code = 1003, error = "INVALID_AUTHKEY" }
+                return { code = ErrorCode.PasswordError, error = "INVALID_AUTHKEY" }
             end
             local data = datas[1]
             --
             if req.msg.password ~= data.password_hash then
-                return { code = 1004, error = "INVALID_PASSWORD" }
+                return { code = ErrorCode.PasswordError, error = "INVALID_PASSWORD" }
             end
 
             --db.updatelogin(context.addr_db_game, data.user_id)
@@ -356,11 +356,11 @@ Auth.PBClientLoginReqCmd = function (req)
 
     local function func()
         if not req then
-            return { code = 1005, error = "INVALID_REQUEST" }
+            return { code = ErrorCode.ParamInvalid, error = "INVALID_REQUEST" }
         end
         ---服务器关闭时,中断所有客户端的登录请求
         if context.server_exit and not req.pull then
-            return { code = 1006, error = "SERVER_CLOSED" }
+            return { code = ErrorCode.ServerInternalError, error = "SERVER_CLOSED" }
         end
 
         req.net_id = Auth.AllocGateNetId(0)
@@ -377,7 +377,7 @@ Auth.PBClientLoginReqCmd = function (req)
             -- temp_openid[req.msg.login_data.authkey] = 1
         else
             moon.error("user online", req.fd, req.uid)
-            return { code = 1008, error = "USER_ONLINE" }
+            return { code = ErrorCode.UserAlreadyLogin, error = "USER_ONLINE" }
         end
 
         return processLogin()
@@ -404,7 +404,7 @@ Auth.PBDSLoginReqCmd = function(req)
         -- DS连接验证
         if req.msg.login_data.authkey == ""
             or req.msg.login_data.auth_ticket ~= context.conf.ds_ticket then
-            return { code = 1003, error = "INVALID_DS" }
+            return { code = ErrorCode.CityVerifyFailed, error = "验证不通过" }
         end
 
         req.dsid = req.msg.login_data.ds_id
@@ -414,11 +414,11 @@ Auth.PBDSLoginReqCmd = function(req)
 
     local function func()
         if not req then
-            return { code = 1005, error = "INVALID_REQUEST" }
+            return { code = ErrorCode.ParamInvalid, error = "INVALID_REQUEST" }
         end
         ---服务器关闭时,中断所有客户端的登录请求
         if context.server_exit and not req.pull then
-            return { code = 1006, error = "SERVER_CLOSED" }
+            return { code = ErrorCode.ServerInternalError, error = "SERVER_CLOSED" }
         end
 
         req.net_id = Auth.AllocGateNetId(1)
@@ -427,7 +427,7 @@ Auth.PBDSLoginReqCmd = function(req)
         local dsid = context.openid_map[req.msg.login_data.authkey]
         if dsid then
             moon.error("user online", req.fd, dsid)
-            return { code = 1008, error = "USER_ONLINE" }
+            return { code = ErrorCode.CityAlreadyConnected, error = "USER_ONLINE" }
         end
 
         return processLogin()
