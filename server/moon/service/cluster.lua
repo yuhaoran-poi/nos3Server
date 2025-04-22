@@ -105,7 +105,7 @@ local function cluster_service()
             end
         else-- receive send message
             print("cluster receive send message", header.to_sname, header.to_node, header.session)
-            local address = sevrices_address[header.to_sname]
+            local address = services_address[header.to_sname]
             if not address then
                 local message = string.format("Service named '%s' not found for node '%s'.", header.to_sname,
                     header.to_node)
