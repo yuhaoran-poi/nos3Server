@@ -1,4 +1,4 @@
--- require("LuaPanda").start("127.0.0.1", 8818)
+require("common.LuaPanda").start("127.0.0.1", 8818)
 local moon = require("moon")
 local seri = require("seri")
 local buffer = require("buffer")
@@ -20,54 +20,107 @@ local id_to_name = protocol.name
 
 local redirect = moon.redirect
 
-local PTYPE_C2S = GameDef.PTYPE_C2S
+local PTYPE_D2S = GameDef.PTYPE_D2S
 
 ---@class dsnode_context:base_context
 ---@field scripts dsnode_scripts
 local context = {
+    dsid = 0,
     net_id = 0,
     scripts = {},
     ---other service address
-    addr_room = 0
+    --addr_room = 0
 }
 
 local command = setup(context, "dsnode")
 
-local function forward(msg, msgname)
+local function forward(subname, reqmsg)
     local address
-    local v = fwd_addr[msgname]
-    if v then
+    local v = fwd_addr[subname]
+    if v ~= "addr_auth" then
         address = context[v]
     end
 
     if not address then
-        moon.error("recv unknown message", msgname)
+        moon.error("recv unknown message", subname)
         return
     end
 
-    redirect(msg, address, PTYPE_C2S)
+    moon.send("lua", address, subname, reqmsg)
+    --redirect(msg, address, PTYPE_C2S)
 end
 
-moon.raw_dispatch("D2C",function(msg)
-    local buf = moon.decode(msg, "B")
-    local msgname = id_to_name(bunpack(buf, "<H"))
-    if not command[msgname] then
-        wfront(buf, seri.packs(context.net_id))
-        forward(msg, msgname)
-    else
-        local cmd, data = mdecode(buf)
-        local fn = command[cmd]
-        moon.async(function()
-            local ok, res = xpcall(fn, debug.traceback, data)
-            if not ok then
-                moon.error(res)
-                context.S2D(CmdCode.S2DErrorCode,{code = 1}) --server internal error
-            elseif res then
-                context.S2D(CmdCode.S2DErrorCode,{code = res})
-            end
-        end)
+-- local function forward(msg, msgname)
+--     local address
+--     local v = fwd_addr[msgname]
+--     if v then
+--         address = context[v]
+--     end
+
+--     if not address then
+--         moon.error("recv unknown message", msgname)
+--         return
+--     end
+
+--     redirect(msg, address, PTYPE_C2S)
+-- end
+
+moon.raw_dispatch("D2S", function(msg)
+    local name, req = protocol.decode(moon.decode(msg, "B"))
+    for key, MessagePack in ipairs(req.messages) do
+        local reqmsg = {}
+        reqmsg.msg_context = {
+            uid = context.dsid,
+            net_id = context.net_id,
+            broadcast = MessagePack.broadcast,
+            stub_id = MessagePack.stub_id,
+            msg_type = MessagePack.msg_type
+        }
+        --local subname, submsg = protocol.DecodeMessagePack(MessagePack)
+        local msg_name = id_to_name(MessagePack.msg_type)
+        if not command[msg_name] then
+            reqmsg.msg = MessagePack.msg_body
+            forward(msg_name, reqmsg)
+        else
+            local subname, submsg = protocol.DecodeMessagePack(MessagePack)
+            reqmsg.msg = submsg
+
+            local fn = command[subname]
+            moon.async(function()
+                local ok, res = xpcall(fn, debug.traceback, reqmsg)
+                --
+                if not ok then
+                    moon.error(res)
+                    --context.S2C(CmdCode.S2CErrorCode, { code = 1 }) --server internal error
+                elseif res then
+                    moon.info(res)
+                    --context.S2C(CmdCode.S2CErrorCode, { code = res })
+                end
+            end)
+        end
     end
 end)
+
+-- moon.raw_dispatch("D2C",function(msg)
+--     local buf = moon.decode(msg, "B")
+--     local msgname = id_to_name(bunpack(buf, "<H"))
+--     if not command[msgname] then
+--         wfront(buf, seri.packs(context.net_id))
+--         forward(msg, msgname)
+--     else
+--         local cmd, data = mdecode(buf)
+--         local fn = command[cmd]
+--         moon.async(function()
+--             local ok, res = xpcall(fn, debug.traceback, data)
+--             if not ok then
+--                 moon.error(res)
+--                 context.S2D(CmdCode.S2DErrorCode,{code = 1}) --server internal error
+--             elseif res then
+--                 context.S2D(CmdCode.S2DErrorCode,{code = res})
+--             end
+--         end)
+--     end
+-- end)
 
 context.addr_dgate = moon.queryservice("dgate")
 context.addr_db_dsnode = moon.queryservice("db_dsnode")

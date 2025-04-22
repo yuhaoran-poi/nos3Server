@@ -14,13 +14,15 @@ function Client:dslogin()
     end
     local login_msg = {
         login_data = {
-            authkey = self.username .. self.index,
-            auth_ticket = "123456",
+            authkey = self.username .. 1,
+            auth_ticket = "qwerttyyuy",
+            ds_type = 1,
+            ds_id = 1,
         },
        
     }
     self:send("PBDSLoginReqCmd", login_msg, function(msg)
-        print("rpc PBDSLoginReqCmd ret = ", self.index, msg)
+        print("rpc PBDSLoginRspCmd ret = ", self.index, msg)
         print_r(msg)
         if msg.code == 0 then
             self.login_ok = true
@@ -30,4 +32,22 @@ function Client:dslogin()
   
 end
 
- 
+function Client:enter_city()
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+    local req_msg = {
+        uid = 10001,
+        cityid = 1
+    }
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    self:send("PBEnterCityReqCmd", req_msg, function(msg)
+        print("rpc PBEnterCityRspCmd ret = ", self.index, msg)
+        print_r(msg)
+        if msg.code == 0 then
+            self.login_ok = true
+            self.uid = msg.uid
+        end
+    end)
+end

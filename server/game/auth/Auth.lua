@@ -3,10 +3,12 @@ local moon = require("moon")
 local uuid = require("uuid")
 local queue = require("moon.queue")
 local common = require("common")
+local clusterd = require("cluster")
 
 local db = common.Database
 local CmdCode = common.CmdCode
 local CmdEnum = common.CmdEnum
+local ErrorCode = common.ErrorCode
 local pb = require "pb"
 local traceback = debug.traceback
 
@@ -19,6 +21,7 @@ local context = ...
 local auth_queue = context.auth_queue
 --local temp_openid = {}
 local NODE = math.tointeger(moon.env("NODE"))
+
 local function doDSAuth(req)
     local u = context.net_id_map[req.net_id]
     local addr_dsnode
@@ -29,43 +32,43 @@ local function doDSAuth(req)
         }
         addr_dsnode = moon.new_service(conf)
         if addr_dsnode == 0 then
-            return "create dsnode service failed!"
+            return { code = 2001, error = "create dsnode service failed!" }
         end
+        req.addr_dsnode = addr_dsnode
 
         local ok, err = moon.call("lua", addr_dsnode, "DsNode.Load", req)
+        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         if not ok then
             moon.send("lua", context.addr_dgate, "DGate.Kick", 0, req.fd)
             moon.kill(addr_dsnode)
             context.net_id_map[req.net_id] = nil
-            return err
+            return { code = 2002, error = err }
         end
     else
         addr_dsnode = u.addr_dsnode
     end
 
-    local authkey, err = moon.call("lua", addr_dsnode, "DsNode.Login", req)
-    if not authkey then
-        print(authkey, err)
+    local dsid, err = moon.call("lua", addr_dsnode, "DsNode.Login", req)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if not dsid then
+        print(dsid, err)
         moon.send("lua", context.addr_dgate, "DGate.Kick", 0, req.fd)
         moon.kill(addr_dsnode)
         context.net_id_map[req.net_id] = nil
-        return err
+        return { code = 2003, error = err }
     end
 
     if not u then
         u = {
             addr_dsnode = addr_dsnode,
-            authkey = authkey,
+            dsid = dsid,
             net_id = req.net_id,
             logouttime = moon.time(),
             online = false
         }
 
+        context.ds_map[req.dsid] = u
         context.net_id_map[req.net_id] = u
-    end
-
-    if req.pull then
-        return
     end
 
     req.addr_dsnode = addr_dsnode
@@ -84,11 +87,11 @@ local function doDSAuth(req)
     local res = {
         result = pass and 0 or 1,---maybe banned
         connId = req.fd,
-        compressionType = 0,
-        net_id = req.net_id
+        net_id = req.net_id,
+        dsid = u.dsid,
     }
-    context.S2D(req.net_id, CmdCode["dsgatepb.AuthResultCmd"], res,req.msg_context.stub_id)
-
+    --context.S2D(req.net_id, CmdCode["dsgatepb.AuthResultCmd"], res, req.msg_context.stub_id)
+    return { code = 0, error = "sucess", res = res }
 end
 
 local function doAuth(Auth,req)
@@ -380,8 +383,8 @@ Auth.PBClientLoginReqCmd = function (req)
         return processLogin()
     end
     
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local res = func()
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local ret =
     {
         code = res.code,
@@ -396,8 +399,54 @@ Auth.PBClientLoginReqCmd = function (req)
     end
 end
  
-Auth.PBDSLoginReqCmd = function (req)
+Auth.PBDSLoginReqCmd = function(req)
+    local function processLogin()
+        -- DS连接验证
+        if req.msg.login_data.authkey == ""
+            or req.msg.login_data.auth_ticket ~= context.conf.ds_ticket then
+            return { code = 1003, error = "INVALID_DS" }
+        end
+
+        req.dsid = req.msg.login_data.ds_id
+
+        return doDSAuth(req)
+    end
+
+    local function func()
+        if not req then
+            return { code = 1005, error = "INVALID_REQUEST" }
+        end
+        ---服务器关闭时,中断所有客户端的登录请求
+        if context.server_exit and not req.pull then
+            return { code = 1006, error = "SERVER_CLOSED" }
+        end
+
+        req.net_id = Auth.AllocGateNetId(1)
+        --moon.send("lua", context.addr_dgate, "DGate.BindGnId", req)
+
+        local dsid = context.openid_map[req.msg.login_data.authkey]
+        if dsid then
+            moon.error("user online", req.fd, dsid)
+            return { code = 1008, error = "USER_ONLINE" }
+        end
+
+        return processLogin()
+    end
      
+    local res = func()
+    local ret =
+    {
+        code = res.code,
+        error = res.error or "",
+        dsid = res.res and res.res.dsid or 0,
+        net_id = res.res and res.res.net_id or 0,
+    }
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    context.S2D(req.net_id, CmdCode["PBDSLoginRspCmd"], ret, req.msg_context.stub_id)
+
+    if res.code ~= 0 then
+        moon.send("lua", context.addr_dgate, "DGate.Kick", 0, req.fd) -- body
+    end
 end
 
  

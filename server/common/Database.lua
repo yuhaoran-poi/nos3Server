@@ -358,7 +358,7 @@ function _M.upsert_room(addr_db, roomid, room_tags, room_data)
     -- 获取旧值
     local ola_values = {}
     local old_json, err = redis_call(addr_db, "MGET", ROOM_PREFIX .. roomid)
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --
     if old_json and next(old_json) ~= nil then
         ola_values = json.decode(old_json[1])
     end

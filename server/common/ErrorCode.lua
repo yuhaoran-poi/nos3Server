@@ -151,6 +151,13 @@ local ErrorCode = {
     --- 解释公会失败
     GuildDismissFailed = 1029,
 
+    ---主城相关错误码
+    --- 主城不存在
+    CityNotFound = 1101,
+    --- 已经在主城里
+    CityAlreadyInCity = 1102,
+    --- 玩家没进入主城
+    UserNotEnterCity = 1103,
 }
 
 return ErrorCode

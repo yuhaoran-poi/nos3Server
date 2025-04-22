@@ -22,6 +22,7 @@ require "robot.logic.ClientFriend"
 require "robot.logic.ClientMail"
 require "robot.logic.ClientTeam"
 require "robot.logic.ClientRoom"
+require "robot.logic.ClientDSLogin"
 
 local all_robot = {}
 local cur_index = 1
@@ -240,6 +241,7 @@ Robot.DoCmd = function(params)
     local cmd = params[1]
     table.remove(params, 1)
     local f = Client[cmd]
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if f then
         local cur_bot = all_robot[cur_index] or Client
         local ok, err = pcall(f, cur_bot, table.unpack(params))

@@ -9,15 +9,14 @@ local protocol = common.protocol
 
 local conf = ...
 
----@class roommgr_context:base_context
+---@class citymgr_context:base_context
 local context = {
     conf = conf,
-    room_nowid = conf.room_startid,
-    rooms = {}, --当前房间列表
-    uid_roomid = {}, --uid所在的房间id
-    waitds_roomids = {}, --等待DS的房间id列表 status:0--请求DS,1--查询DS状态
+    city_nowid = conf.city_startid,
+    citys = {},             --当前主城列表
+    uid_cityid = {},        --uid所在的主城id
+    waitds_citys = {},      --等待DS的主城id列表 status:0--请求DS,1--查询DS状态
 }
---
 
 setup(context)
 

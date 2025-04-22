@@ -2,6 +2,9 @@ local moon = require("moon")
 local common = require("common")
 local CmdCode = common.CmdCode
 local GameCfg = common.GameCfg
+local ErrorCode = common.ErrorCode
+local clusterd = require("cluster")
+local json = require "json"
 
 ---@type user_context
 local context = ...
@@ -16,14 +19,26 @@ local state = {
 local DsNode = {}
 function DsNode.Load(req)
     local function fn()
+        if req.msg.login_data.ds_type == 1 then
+            local res, err = clusterd.call(3999, "citymgr", "Citymgr.ConnectCity", {
+                cityid = req.dsid,
+                nid = moon.env("NODE"),
+                addr_dsnode = req.addr_dsnode,
+            })
+            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+            if err or res.code ~= ErrorCode.None then
+                return false, err
+            end
+        end
+
         local isnew = false
         local data = {
-                openid = req.openid,
+                dsid = req.dsid,
                 net_id = req.net_id,
-                name = req.openid,
-                level = 10,
-                score = 0
+                name = req.dsid,
         }
+
+        context.dsid = req.dsid
         --scripts.UserModel.Create(data)
         ---初始化自己数据
         context.batch_invoke("Init", isnew)
@@ -38,7 +53,7 @@ function DsNode.Load(req)
     end
 
     if not res then
-        local errmsg = string.format("user init failed, can not find user %d", req.net_id)
+        local errmsg = string.format("ds init failed, can not find ds %d", req.dsid)
         moon.error(errmsg)
         return false, errmsg
     end
@@ -52,7 +67,8 @@ function DsNode.Login(req)
         context.batch_invoke("Offline")
     end
     context.batch_invoke("Online")
-    return 0
+
+    return context.dsid
     --return scripts.UserModel.Get().openid
 end
 
@@ -101,6 +117,63 @@ end
 function DsNode.C2SPing(req)
     req.stime = moon.time()
     context.S2C(CmdCode.S2CPong, req)
+end
+
+function DsNode.PBEnterCityReqCmd(req)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    local res, err = clusterd.call(3999, "citymgr", "Citymgr.PlayerEnterCity", {
+        cityid = req.cityid,
+        uid = req.uid,
+    })
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if not err and res then
+        local ret = {
+            code = res.code,
+            error = res.error,
+        }
+        context.S2D(context.net_id, CmdCode["PBEnterCityRspCmd"], ret, req.msg_context.stub_id) -- body
+    else
+        --moon.error(err)
+        moon.error(string.format("err = %s", json.pretty_encode(res)))
+    end
+end
+
+function DsNode.PBExitCityReqCmd(req)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    local res, err = clusterd.call(3999, "citymgr", "Citymgr.PlayerExitCity", {
+        cityid = req.cityid,
+        uid = req.uid,
+    })
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if not err and res then
+        local ret = {
+            code = res.code,
+            error = res.error,
+        }
+        context.S2D(context.net_id, CmdCode["PBExitCityRspCmd"], ret, req.msg_context.stub_id) -- body
+    else
+        --moon.error(err)
+        moon.error(string.format("err = %s", json.pretty_encode(res)))
+    end
+end
+
+function DsNode.PBUpdateCityReqCmd(req)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    local res, err = clusterd.call(3999, "citymgr", "Citymgr.UpdateCityPlayer", {
+        cityid = req.cityid,
+        player_num = req.player_num,
+    })
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if not err and res then
+        local ret = {
+            code = res.code,
+            error = res.error,
+        }
+        context.S2D(context.net_id, CmdCode["PBUpdateCityRspCmd"], ret, req.msg_context.stub_id) -- body
+    else
+        --moon.error(err)
+        moon.error(string.format("err = %s", json.pretty_encode(res)))
+    end
 end
  
 return DsNode

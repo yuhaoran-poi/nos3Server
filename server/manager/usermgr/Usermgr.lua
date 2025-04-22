@@ -68,7 +68,6 @@ function Usermgr.NodeOffline(msg)
 end
 
 function Usermgr.ApplyLogin(msg)
-    --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if not context.node_info[msg.nid] then
         return { error = "not node" }
     end
@@ -121,6 +120,7 @@ end
 ---@param _uids table 用户ID列表，格式为 {uid1, uid2, ...}
 ---@return table 在线用户列表，格式为 {uid1 = {node_id1,addr_user1}, uid2 = {node_id2,addr_user2}, ...}
 function Usermgr.getOnlineUsers(_uids)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local online_users = {}
     for _,uid in ipairs(_uids or {}) do
         local info = context.user_node[uid]

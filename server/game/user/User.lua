@@ -19,7 +19,6 @@ local state = { ---内存中的状态
 ---@class User
 local User = {}
 function User.Load(req)
-    --local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local function fn()
         -- 向Usermgr申请是否允许登录
         local res, err = clusterd.call(3999, "usermgr", "Usermgr.ApplyLogin",
@@ -34,10 +33,9 @@ function User.Load(req)
         if data then
             return data
         end
-        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
      
         local user_data, err = Database.loaduserdata(context.addr_db_user, req.uid)
-        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        --
         if user_data   then
 
             data = {
@@ -55,7 +53,7 @@ function User.Load(req)
             end
 
             isnew = true
-            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+            --
 
             data = {
                 authkey = req.msg.login_data.authkey,
@@ -66,7 +64,6 @@ function User.Load(req)
                 }
             }
         end
-        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         scripts.UserModel.Create(data)
 
         context.uid = req.uid
@@ -86,6 +83,11 @@ function User.Load(req)
         return false, res
     end
 
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local tmp_conf = GameCfg
+    --print_r(tmp_conf)
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+
     if not res then
         local errmsg = string.format("user init failed, can not find user %d", req.uid)
         moon.error(errmsg)
@@ -96,7 +98,6 @@ end
 function User.LoadSimple()
     local DB = scripts.UserModel.Get()
     if not DB then
-        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         local res = { code = 2003, error = "no user_data" }
         return res
     end
@@ -104,10 +105,8 @@ function User.LoadSimple()
     if not DB.simple then
         --内存中不存在则查询数据库
         local redis_db_data = Database.GetUserSimple(context.addr_db_redis, context.uid)
-        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
  
         local db_data, err = Database.loaduser_simple(context.addr_db_user, context.uid)
-        ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         if db_data and #db_data == 1 then
             local pbname, tmp_data = protocol.decodewithname("PBUserSimpleInfo", db_data[1].value)
             DB.simple = tmp_data
@@ -160,7 +159,6 @@ function User.LoadSimple()
     
 end
 function User.Login(req)
-    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
  
     if req.pull then--服务器主动拉起玩家
         return scripts.UserModel.Get().authkey
@@ -178,6 +176,7 @@ function User.Logout()
 end
 
 function User.Init()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     GameCfg.Load()
 end
 
@@ -232,7 +231,7 @@ end
 function User.PBClientGetUsrSimInfoReqCmd(req)
   
     local res, err = User.LoadSimple()
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --
     if not err and res then
         local ret = {
             code = res.code,

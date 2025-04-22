@@ -63,8 +63,8 @@ socket.on("message", function(fd, msg)
             local buf = moon.decode(msg, "B")
             protocol.print_message(c.net_id, buf, "message", 1)
         end
+        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         redirect(msg, c.addr_dsnode, GameDef.PTYPE_D2S, 0, 0)
-         
     end
 
 end)
@@ -83,7 +83,8 @@ socket.on("close", function(fd, msg)
     print("GAME SERVER: close", fd, c.net_id, data)
 end)
 
-moon.raw_dispatch("S2D",function(msg)
+moon.raw_dispatch("S2D", function(msg)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local buf = moon.decode(msg, "L")
     local net_id = seri.unpack_one(buf, true)
     if type(net_id) == "number" then
@@ -100,11 +101,11 @@ moon.raw_dispatch("S2D",function(msg)
     else
         local p = moon.ref_buffer(buf)
         for _, one in ipairs(net_id) do
-            local c = context.GnId_map[one]
+            local c = context.net_id_map[one]
             if c then
-                socket.write_ref_buffer(c.fd,p)
+                socket.write_ref_buffer(c.fd, p)
                 if moon.DEBUG() then
-                    protocol.print_message(one, buf,"S2D")
+                    protocol.print_message(one, buf, "S2D")
                 end
             end
         end

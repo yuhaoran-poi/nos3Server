@@ -13,9 +13,7 @@ local scripts = context.scripts
 local Team = {}
 
 function Team.Init()
-    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local DB = scripts.UserModel.Get()
-    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if not DB.team then
         DB.team = {
             team_id = 0,
@@ -97,7 +95,6 @@ end
 function Team.PBTeamExitReqCmd(req)
     -- 如果不在队伍中则不能退出
     local DB = scripts.UserModel.Get()
-    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if DB.team.team_id == 0 then
         context.R2C(CmdCode.PBTeamExitRspCmd, {
             code = ErrorCode.TeamNotInTeam
