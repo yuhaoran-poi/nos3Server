@@ -43,5 +43,9 @@ function ChatLogic.LeaveGuildChannel(guild_id,uid)
     end
     return { code = ErrorCode.None }
 end
-
+-- 发送消息到频道
+function ChatLogic.SendMsgToChannel(channel_addr, msg)
+    cluster.send(CmdEnum.FixedNodeId.CHAT, channel_addr, "ChatChannel.AddMsg", msg)
+end
+    
 return ChatLogic

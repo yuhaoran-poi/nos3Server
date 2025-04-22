@@ -5,6 +5,7 @@ local ChatEnum = require("common.ChatEnum")
 local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
+local CmdEnum = common.CmdEnum
 local ChatLogic = require("common.ChatLogic")
 ---@type user_context
 local context = ...
@@ -27,7 +28,7 @@ end
 -- 客户端聊天消息请求
 function ChatProxy.PBChatReqCmd(req)
     local channel_type = req.msg.channel_type
-    local msg_context = req.msg.msg_context
+    local msg_content = req.msg.msg_content
     local to_uid = req.msg.to_uid
     local user_data = scripts.UserModel.GetUserData()
     local DB = scripts.UserModel.Get()
@@ -38,39 +39,39 @@ function ChatProxy.PBChatReqCmd(req)
         return { code = ErrorCode.ChatSilence }
     end
     -- 参数检查
-    if not channel_type or not msg_context then
+    if not channel_type or not msg_content then
         context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatInvalidParam }, req)
         return { code = ErrorCode.ChatInvalidParam }
     end
     -- 检查字符限制
     local ChatWordLimit = 100 -- todo 配置
-    if utf8.len(msg_context) > ChatWordLimit then
+    if utf8.len(msg_content) > ChatWordLimit then
         context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatWordLimit }, req)
         return { code = ErrorCode.ChatWordLimit }
     end
 
     local PBChatMsgInfo = {
         channel_type = channel_type,
-        uid = user_data.uid,
+        uid = context.uid,
         name = user_data.name,
-        msg_context = msg_context,
+        msg_content = msg_content,
         send_time = moon.time(),
         to_uid = to_uid,
     }
     -- 检查频道类型
-    if channel_type == ChatEnum.CHANNEL_TYPE_PRIVATE then --私聊
+    if channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_PRIVATE then --私聊
         if not to_uid then
             context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatInvalidParam }, req)
             return { code = ErrorCode.ChatInvalidParam }
         end
-    elseif channel_type == ChatEnum.CHANNEL_TYPE_WORLD then --世界
-    elseif channel_type == ChatEnum.CHANNEL_TYPE_GUILD then --公会
+    elseif channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_WORLD then --世界
+    elseif channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_GUILD then --公会
         -- 公会是否存在
         if user_data.guild.guild_id == 0 then
             context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.GuildNotExist }, req)
             return { code = ErrorCode.GuildNotExist }
         end
-    elseif channel_type == ChatEnum.CHANNEL_TYPE_TEAM then --队伍
+    elseif channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_TEAM then --队伍
         if DB.team.team_id == 0 then
             context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.TeamNotExist }, req)
             return { code = ErrorCode.TeamNotExist }
@@ -82,7 +83,7 @@ function ChatProxy.PBChatReqCmd(req)
 
     -- 检测发送间隔
     local last_send_time = chat_info.last_send_time or 0
-    local send_interval = 1000 -- 发送间隔，单位毫秒
+    local send_interval = 1 -- 发送间隔，单位秒
     if moon.time() - last_send_time < send_interval then
         context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatSendInterval }, req)
         return { code = ErrorCode.ChatSendInterval }
@@ -90,7 +91,7 @@ function ChatProxy.PBChatReqCmd(req)
     -- 记录发送时间
     chat_info.last_send_time = moon.time()
     -- 发送消息
-    if channel_type == ChatEnum.CHANNEL_TYPE_PRIVATE then --私聊
+    if channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_PRIVATE then --私聊
         context.send_user(to_uid, {}, "ChatProxy.OnChatMsg", PBChatMsgInfo)
     else
         local channel_addr = DB.chat_addrs[channel_type]
@@ -100,7 +101,7 @@ function ChatProxy.PBChatReqCmd(req)
             return { code = ErrorCode.NotInChannel }
         end
         -- 发送消息到频道
-        cluster.send(3001, channel_addr, "ChatChannel.AddMsg", PBChatMsgInfo)
+        ChatLogic.SendMsgToChannel(channel_addr, PBChatMsgInfo)
     end
 
     context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.None }, req)
@@ -109,6 +110,8 @@ end
 
 
 function ChatProxy.OnChatMsg(channel_msgs)
+    moon.info("OnChatMsg channel_msgs = ", channel_msgs)
+    
     local msg = { infos = {} }
     for _, v in ipairs(channel_msgs) do
         table.insert(msg.infos, v)
@@ -129,13 +132,13 @@ end
 function ChatProxy.Online()
     local DB = scripts.UserModel.GetUserData()
     if DB.guild.guild_id ~= 0 then
-        ChatLogic.JoinGuildChannel(DB.guild.guild_id, DB.uid)
+        ChatLogic.JoinGuildChannel(DB.guild.guild_id, context.uid)
     end
 end
 function ChatProxy.Offline()
     local DB = scripts.UserModel.GetUserData()
     if DB.guild.guild_id ~= 0 then
-        ChatLogic.LeaveGuildChannel(DB.guild.guild_id, DB.uid)
+        ChatLogic.LeaveGuildChannel(DB.guild.guild_id, context.uid)
     end
 end
 return ChatProxy
