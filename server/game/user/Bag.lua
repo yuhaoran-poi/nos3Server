@@ -51,6 +51,10 @@ function Bag.Init()
     end
 end
 
+function Bag.Start()
+    -- body
+end
+
 -- 添加物品（支持自动堆叠）
 function Bag.AddItem(bagType, itemId, count)
     -- 参数校验
@@ -58,7 +62,7 @@ function Bag.AddItem(bagType, itemId, count)
         return ErrorCode.ParamInvalid
     end
 
-    if bagType ~= BagType.Cangku and bagType ~= BagType.Consume and BagType.Booty then
+    if bagType ~= BagType.Cangku and bagType ~= BagType.Consume and bagType ~= BagType.Booty then
         return ErrorCode.BagNotExist
     end
 
@@ -75,7 +79,10 @@ function Bag.AddItem(bagType, itemId, count)
     end
 
     -- 处理物品增减
-    local changes = {}
+    local change = {
+        bagType = bagType,
+        items = {}
+    }
     if count > 0 then
         -- 添加逻辑
         local remaining = count
@@ -84,9 +91,9 @@ function Bag.AddItem(bagType, itemId, count)
         for pos, item in pairs(baginfo.items) do
             if item.id == itemId and item.count < item_cfg.stack_count then
                 local canAdd = math.min(item_cfg.stack_count - item.count, remaining)
-                changes[pos] = { old = item.count, new = item.count + canAdd }
+                change.items[pos] = { now_id = itemId, old = item.count, new = item.count + canAdd }
                 remaining = remaining - canAdd
-                
+
                 if remaining == 0 then
                     break
                 end
@@ -109,7 +116,7 @@ function Bag.AddItem(bagType, itemId, count)
 
             for _, pos in pairs(emptyPos) do
                 local canAdd = math.min(item_cfg.stack_count, remaining)
-                changes[pos] = { now_id = item_cfg.id, old = 0, new = canAdd }
+                change.items[pos] = { now_id = item_cfg.id, old = 0, new = canAdd }
                 remaining = remaining - canAdd
                 if remaining <= 0 then
                     break
@@ -118,13 +125,11 @@ function Bag.AddItem(bagType, itemId, count)
         end
 
         if remaining <= 0 then
-            for pos, change_value in pairs(changes) do
-                if change_value.now_id then
-                    baginfo.items[pos] = { id = change_value.now_id, count = change_value.new }
-                else
-                    baginfo.items[pos].count = change_value.new
-                end
+            for pos, change_value in pairs(change.items) do
+                baginfo.items[pos] = { id = change_value.now_id, count = change_value.new }
             end
+        else
+            return ErrorCode.BagFull
         end
     else
         local remaining = count
@@ -133,10 +138,10 @@ function Bag.AddItem(bagType, itemId, count)
         for pos, item in pairs(baginfo.items) do
             if item.id == itemId then
                 if item.count + remaining > 0 then
-                    changes[pos] = { old = item.count, new = item.count + remaining }
+                    change.items[pos] = { old = item.count, new = item.count + remaining }
                     remaining = 0
                 else
-                    changes[pos] = { old = item.count, new = 0 }
+                    change.items[pos] = { old = item.count, new = 0 }
                     remaining = remaining + item.count
                 end
 
@@ -147,122 +152,188 @@ function Bag.AddItem(bagType, itemId, count)
         end
 
         if remaining >= 0 then
-            for pos, change_value in pairs(changes) do
+            for pos, change_value in pairs(change.items) do
                 baginfo.items[pos].count = change_value.new
+                if baginfo.items[pos].count == 0 then
+                    baginfo.items[pos] = nil
+                end
             end
-        end
-
-        -- ... 减少逻辑需要先计算总数量 ...
-        if total < required then
+        else
             return ErrorCode.BagNotEnough
         end
     end
 
-    return ErrorCode.None
+    return ErrorCode.None, change
 end
 
-function Bag.Start()
-    -- body
-end
-
---检查物品数量是否足够
-function Bag.Check(id, count)
-    if count <=0 then
-        return ErrorCode.ParamInvalid
-    end
-    local DB = scripts.UserModel.Get()
-    local item = DB.itemlist[id]
-    if not item or item.count < count  then
-        return ErrorCode.BagNotEnough
-    end
-    return 0
-end
-
-
-function Bag.Cost(id, count, trace, send_list)
-    if count <=0 then
+function Bag.SplitItem(srcBagType, srcPos, destBagType, destPos, splitCount)
+    -- 参数校验
+    if splitCount <= 0 then
         return ErrorCode.ParamInvalid
     end
 
-    local DB = scripts.UserModel.MutGet()
-
-    local item = DB.itemlist[id]
-
-    if not item or item.count < count  then
-        return ErrorCode.BagNotEnough
+    if srcBagType ~= BagType.Cangku
+        and srcBagType ~= BagType.Consume
+        and srcBagType ~= BagType.Booty then
+        return ErrorCode.BagNotExist
     end
-    item.count = item.count - count
 
-    if not send_list then
-        --context.S2C(CmdCode.S2CUpdateBag,{list={item}})
-    else
-        table.insert(send_list, item)
+    if destBagType ~= BagType.Cangku
+        and destBagType ~= BagType.Consume
+        and destBagType ~= BagType.Booty then
+        return ErrorCode.BagNotExist
     end
+
+    local baginfos = scripts.UserModel.MutGet().bagData
+    local srcBag = baginfos.bags[srcBagType]
+    local destBag = baginfos.bags[destBagType]
+
+    -- 源物品校验
+    local srcItem = srcBag.items[srcPos]
+    if not srcItem or srcItem.count <= 1 then
+        return ErrorCode.SplitNotAllowed
+    end
+
+    if splitCount >= srcItem.count then
+        return ErrorCode.SplitCountInvalid
+    end
+
+    -- 检查目标位置是否被占用
+    if destBag.items[destPos] then
+        return ErrorCode.MoveTargetOccupied
+    end
+
+    -- 跨背包类型校验
+    local itemType = scripts.ItemDefine.GetItemType(srcItem.id)
+    if destBag.item_type ~= ItemType.ALL and destBag.item_type ~= itemType then
+        return ErrorCode.BagTypeMismatch
+    end
+
+    -- 执行拆分操作
+    local changes = {}
+
+    local srcChange = {
+        bagType = srcBagType,
+        items = {}
+    }
+    srcChange.items[srcPos] = {
+        id = srcItem.id,
+        old = srcItem.count,
+        new = srcItem.count - splitCount
+    }
+    table.insert(changes, srcChange)
+    srcItem.count = srcItem.count - splitCount
+
+    local destChange = {
+        bagType = destBagType,
+        items = {}
+    }
+    destChange.items[destPos] = {
+        id = srcItem.id,
+        old = 0,
+        new = splitCount
+    }
+    table.insert(changes, destChange)
+    destBag.items[destPos] = {
+        id = srcItem.id,
+        count = splitCount
+    }
+
+    return ErrorCode.None, changes
 end
 
-function Bag.Costlist(list, trace)
-    local DB = scripts.UserModel.MutGet()
-    for _, v in ipairs(list) do
-        local item = DB.itemlist[v[1]]
-        if not item or item.count < v[2]  then
-            return ErrorCode.BagNotEnough
+function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos)
+    -- 参数校验
+    if srcBagType ~= BagType.Cangku
+        and srcBagType ~= BagType.Consume
+        and srcBagType ~= BagType.Booty then
+        return ErrorCode.BagNotExist
+    end
+
+    if destBagType ~= BagType.Cangku
+        and destBagType ~= BagType.Consume
+        and destBagType ~= BagType.Booty then
+        return ErrorCode.BagNotExist
+    end
+
+    -- 获取数据副本
+    local baginfos = scripts.UserModel.MutGet().bagData
+    local srcBag = baginfos.bags[srcBagType]
+    local destBag = baginfos.bags[destBagType]
+
+    -- 源物品校验
+    local srcItem = srcBag.items[srcPos]
+    if not srcItem then
+        return ErrorCode.ItemNotExist
+    end
+
+    -- 目标背包类型校验
+    local itemType = scripts.ItemDefine.GetItemType(srcItem.id)
+    if destBag.item_type ~= ItemType.ALL and destBag.item_type ~= itemType then
+        return ErrorCode.BagTypeMismatch
+    end
+
+    local destItem = destBag.items[destPos]
+    if destItem then
+        -- 目标位置有物品，检查是否可以交换
+        local destItemType = scripts.ItemDefine.GetItemType(destItem.id)
+        if srcBag.item_type ~= ItemType.ALL and srcBag.item_type ~= destItemType then
+            return ErrorCode.BagTypeMismatch
         end
     end
 
-    local send_list = {}
-    for _, v in ipairs(list) do
-        Bag.Cost(v[1], v[2], trace, send_list)
-    end
-    context.S2C(CmdCode.S2CUpdateBag,{list= send_list})
-end
+    -- 执行移动
+    local changes = {}
+    if destItem then
+        -- 交换物品
+        srcBag.items[srcPos] = destItem
+        destBag.items[destPos] = srcItem
 
-function Bag.AddBagList(list, trace)
-    local send_list = {}
-    for _,v in ipairs(list) do
-        Bag.AddBag(v.id, v.count, trace, send_list)
-    end
-    if #send_list > 0 then
-        context.S2C(CmdCode.S2CUpdateBag,{list=send_list})
-    end
-end
-
-function Bag.AddBag(id, count, trace, send_list)
-    print("AddBag", id, count, trace)
-
-    local cfg = GameCfg.item[id]
-    if not cfg then
-        moon.error("item not exist", id)
-        return ErrorCode.BagNotExist
-    end
-
-    local DB = scripts.UserModel.MutGet()
-
-    local item = DB.itemlist[id]
-    if not item then
-        item = {count = 0}
-        DB.itemlist[id] = item
-    end
-    item.id = id
-    item.count = item.count + count
-
-    if not send_list then
-        --context.S2C(CmdCode.S2CUpdateBag,{list={item}})
+        local srcChange = {
+            bagType = srcBagType,
+            items = {}
+        }
+        srcChange.items[srcPos] = {
+            id = destItem.id,
+            new = destItem.count
+        }
+        table.insert(changes, srcChange)
+        local destChange = {
+            bagType = destBagType,
+            items = {}
+        }
+        destChange.items[destPos] = {
+            id = srcItem.id,
+            new = srcItem.count
+        }
+        table.insert(changes, destChange)
     else
-        table.insert(send_list, item)
-    end
-    return ErrorCode.None
-end
+        -- 移动到空位
+        destBag.items[destPos] = srcItem
+        srcBag.items[srcPos] = nil
 
-function Bag.C2SBagList()
-    context.S2C(CmdCode.S2CBagList, {list = scripts.UserModel.Get().itemlist})
-end
+        local destChange = {
+            bagType = destBagType,
+            items = {}
+        }
+        destChange.items[destPos] = {
+            id = srcItem.id,
+            new = srcItem.count
+        }
+        table.insert(changes, destChange)
 
----@param req C2SUseBag
-function Bag.C2SUseBag(req)
-    local cfg = GameCfg.item[req.id]
-    if not cfg then
-        return ErrorCode.BagNotExist
+        local srcChange = {
+            bagType = srcBagType,
+            items = {}
+        }
+        srcChange.items[srcPos] = {
+            id = 0,
+            new = 0
+        }
+        table.insert(changes, srcChange)
     end
+
+    return ErrorCode.None, changes
 end
 
 return Bag
