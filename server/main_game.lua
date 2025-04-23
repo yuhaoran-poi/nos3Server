@@ -16,7 +16,7 @@ if _G["__init__"] then
     }
 end
 
---require("common.LuaPanda").start("127.0.0.1", 8818)
+-- require("common.LuaPanda").start("127.0.0.1", 8818)
 
 local moon = require("moon")
 local socket = require("moon.socket")
@@ -78,7 +78,7 @@ local function run(node_conf)
         {
             unique = true,
             name = "db_game",
-            file = "common/mysqldriver.lua",
+            file = "common/service/mysqldriver.lua",
             threadid = 2,
             poolsize = 5,
             opts = db_conf.mysql
@@ -115,7 +115,7 @@ local function run(node_conf)
         {
             unique = true,
             name = "node",
-            file = "game/service_node.lua",
+            file = "common/service/service_node.lua",
             threadid = 6,
         },
         {

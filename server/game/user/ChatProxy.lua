@@ -92,7 +92,9 @@ function ChatProxy.PBChatReqCmd(req)
     chat_info.last_send_time = moon.time()
     -- 发送消息
     if channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_PRIVATE then --私聊
-        context.send_user(to_uid, {}, "ChatProxy.OnChatMsg", PBChatMsgInfo)
+        local private_msg = {}
+        table.insert(private_msg, PBChatMsgInfo)
+        context.send_user(to_uid, "ChatProxy.OnChatMsg", private_msg)
     else
         local channel_addr = DB.chat_addrs[channel_type]
         -- 检查频道是否存在
