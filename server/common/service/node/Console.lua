@@ -4,6 +4,7 @@ local fs = require("fs")
 local datetime = require("moon.datetime")
 local sharetable = require("sharetable")
 local clusterd = require("cluster")
+local ChatLogic = require("common.ChatLogic") --聊天逻辑
 
 ---@type node_context
 local context = ...
@@ -61,6 +62,7 @@ Command List:
 	mem:                               List all services's lua memory.
 	ping <address> :                   Ping the specificed service.
 	reload:                            Reload static table files.
+	syschat:                           Send system chat to all online users.
 	hotfix <servicename> <filename_no_path_no_ext_1> <filename_no_path_no_ext_2>....: Hotfix script file. e. S1 hotfix user Hello
 
 User command format:     U<uid> command params
@@ -71,7 +73,11 @@ Command List:
 function Console.help()
 	return help
 end
-
+-- 发送系统聊天
+function Console.syschat(msg_content)
+	ChatLogic.SendMsgToSystemChannel(msg_content)
+	return Response(0, "OK", msg_content)
+end
 ---热更某个服务目录下的脚本
 function Console.hotfix(sname, ...)
 	local modlist = { ... }

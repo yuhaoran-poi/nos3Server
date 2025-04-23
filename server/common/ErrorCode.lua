@@ -210,6 +210,10 @@ local ErrorCode = {
     RemoveGuildChannelErr = 1318,
     --- 删除队伍聊天频道失败
     RemoveTeamChannelErr = 1319,
+    --- 加入系统频道游戏节点失败
+    AddSystemChannelGameNodeErr = 1320,
+    --- 退出系统频道失败
+    RemoveSystemChannelGameNodeErr = 1321,
 }
 
 return ErrorCode

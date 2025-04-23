@@ -34,6 +34,8 @@ function ChatMgr.Init()
 end
 
 function ChatMgr.Start()
+    -- 创建系统聊天频道
+    ChatMgr.CreateSystemChannel()
     return true
 end
 
@@ -325,6 +327,15 @@ function ChatMgr.RemoveSystemChannelGameNode(node_id)
     moon.send("lua", channel.addr_channel, "ChatChannel.RemoveGameNode",node_id)
     return { code = ErrorCode.None }
 end
- 
+-- 发送系统频道消息
+function ChatMgr.SendSystemChannelMsg(msg)
+    local system_id = 0
+    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_SYSTEM][system_id]
+    if not channel then
+        return { code = ErrorCode.ChannelNotExists, error = "system chat channel not found!" }
+    end
+    moon.send("lua", channel.addr_channel, "ChatChannel.AddMsg", msg)
+    return { code = ErrorCode.None }
+end
  
 return ChatMgr

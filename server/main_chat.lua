@@ -122,6 +122,7 @@ local function run(node_conf)
 
         ---加载完数据后 开始接受网络连接
         assert(moon.call("lua", moon.queryservice("cluster"), "Listen"))
+        assert(moon.call("lua", moon.queryservice("chatmgr"), "ChatMgr.Start"))
         
     end
 
