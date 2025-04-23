@@ -31,7 +31,7 @@ local function load_scripts(context, sname)
     local server_type = moon.env("SERVER_TYPE") or "game"
     local dir = strfmt("%s/%s/", server_type, sname)
     local scripts = moon.env_unpacked(dir)
-    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+
     if not scripts then
         scripts = {}
         local list = fs.listdir(dir, 10)
@@ -44,7 +44,6 @@ local function load_scripts(context, sname)
         moon.env_packed(dir, scripts)
 
         -- 找不到去common/service目录找
-        local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         if table.size(scripts) == 0 then
             local tdir = strfmt("common/service/%s/", sname)
             scripts = moon.env_unpacked(tdir)
