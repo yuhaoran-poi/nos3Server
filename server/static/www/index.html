@@ -157,16 +157,6 @@
                 }
                 str = utils.StringFormat('{"command":"{0}"}',str)
             }
-            else if (gm.items[0] == "dsnet_id") {
-                str += "D"
-                for (var i = 0; i < gm.items.length; i++) {
-                    str += json[gm.items[i]] + " "
-                    if (i == 0) {
-                        str += gm.subcommand + " "
-                    }
-                }
-                str = utils.StringFormat('{"command":"{0}"}', str)
-            }
             else{
                 str = data
             }

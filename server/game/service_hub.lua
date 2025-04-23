@@ -8,14 +8,6 @@ local httpserver = require("moon.http.server")
 
 local node_list = {}
 
-local function get_globalds()
-    local data = moon.env("GloabalDsGnId")
-    if data then
-        return math.tointeger(data)
-    end    
-    return 0
-end
-
 local function split_cmdline(cmdline)
     local split = {}
     for i in string.gmatch(cmdline, "%S+") do
@@ -95,7 +87,7 @@ local function command_handler(cmdline, echo)
     if cmdline ~= "" then
         local split = split_cmdline(cmdline)
         local flag = string.sub(split[1],1,1)
-        if flag~="S" and flag ~= "U" and flag ~= 'T' and flag ~= 'D' then
+        if flag~="S" and flag ~= "U" and flag ~= 'T' then
             echo("Error console command: "..cmdline)
             return
         end
@@ -105,23 +97,8 @@ local function command_handler(cmdline, echo)
         end
 
         local serverid = -1
-        local dsnet_id = -1
-
         if flag == "S" then--server
             serverid = math.tointeger(string.sub(split[1],2))
-        elseif flag == "D" then --dsnet_id
-            dsnet_id = math.tointeger(string.sub(split[1],2))
-            if dsnet_id == 0 then
-              -- 全局DS
-              dsnet_id = get_globalds()
-              if dsnet_id == 0 then
-                echo("forwardD cur Node Cant find GloabalDsGnId!!!!"..dsnet_id)
-                return
-              end
-            end
-            local node,flag,index = extract_gn(dsnet_id)
-            serverid = node
-            echo("gm serverid:"..serverid) 
         elseif flag =="U" then--user gm
             local uid = math.tointeger(string.sub(split[1],2))
             if uuid.isuid(uid) then
@@ -185,9 +162,9 @@ end
 
 httpserver.content_max_len = 8192
 
-httpserver.on("/console",function(request, response)
-    local command = string.trim(request.content)
-    if request.header["content-type"] == "application/json" then
+httpserver.on("/console",function(request, response, next)
+    local command = string.trim(request.body)
+    if request.headers["content-type"] == "application/json" then
         command = json.decode(command).command
     end
 
@@ -218,7 +195,7 @@ httpserver.on("/console",function(request, response)
         response.status_code = Code
         response:write_header("Content-Type","application/text")
         response:write(table.concat(res,""))
-        moon.error(request.content, table.concat(res,""))
+        moon.error(request.body, table.concat(res,""))
     else
         response.status_code = Code
         local content = table.concat(res,"")
@@ -239,7 +216,7 @@ httpserver.on("/console",function(request, response)
     end
 end)
 
-httpserver.on("/conf.updatenode",function(request, response)
+httpserver.on("/conf.updatenode",function(request, response, next)
     local i = 1
     while true do
         local addr = moon.queryservice("hub"..i)
@@ -256,7 +233,7 @@ httpserver.on("/conf.updatenode",function(request, response)
     response:write("OK")
 end)
 
-httpserver.on("/conf.node",function(request, response)
+httpserver.on("/conf.node",function(request, response, next)
     local query = request:parse_query()
     local node = tonumber(query.node)
     local cfg = node_list[node]
@@ -271,7 +248,7 @@ httpserver.on("/conf.node",function(request, response)
     response:write(json.encode(cfg))
 end)
 
-httpserver.on("/conf.cluster", function(request, response)
+httpserver.on("/conf.cluster", function(request, response, next)
     local query = request:parse_query()
     local node = tonumber(query.node)
     local cfg = node_list[node]
@@ -319,7 +296,7 @@ function command.loadnode()
     node_list = {}
     local configname = moon.env("NODE_FILE_NAME")
     local res = json.decode(io.readfile(configname))
-    for _, v in ipairs(res) do
+    for _,v in ipairs(res) do
         local host, port = v.host:match("([^:]+):?(%d*)$")
         port = math.tointeger(port) or 80
         v.host = host
@@ -344,7 +321,6 @@ function command.loadnode()
     end
     print("loadnode")
 end
-
 
 local function xpcall_ret(ok, ...)
     if ok then

@@ -11,7 +11,7 @@ local context ={
     logics = {},
 }
 
-setup(context)
+setup(context,"node")
 
 moon.shutdown(function()
     moon.quit()

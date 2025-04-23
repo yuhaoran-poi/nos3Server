@@ -22,27 +22,5 @@
             "uid",
             "count"
         ]
-    },
-    {
-        "index": 4,
-        "name": "ds命令",
-        "subcommand": "dscommand",
-        "items": [
-            "dsnet_id",
-            "command"
-        ]
-    },
-    {
-        "index": 5,
-        "name": "创建对象",
-        "subcommand": "RpcGmCreateEntityCmd",
-        "items": [
-            "dsnet_id",
-            "entityid",
-            "mapid",
-            "x",
-            "y",
-            "z"
-        ]
     }
 ]

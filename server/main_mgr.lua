@@ -66,7 +66,7 @@ local function run(node_conf)
         {
             unique = true,
             name = "node",
-            file = "game/service_node.lua",
+            file = "common/service/service_node.lua",
             threadid = 2,
         },
         {
@@ -123,7 +123,7 @@ local function run(node_conf)
         {
             unique = true,
             name = "db_game",
-            file = "common/mysqldriver.lua",
+            file = "common/service/mysqldriver.lua",
             threadid = 9,
             poolsize = 5,
             opts = db_conf.mysql
