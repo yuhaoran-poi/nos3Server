@@ -47,9 +47,9 @@ function Team.PBTeamCreateReqCmd(req)
     if not team_id then
         print("CreateTeam failed:", err)
         context.R2C(CmdCode.PBTeamCreateRspCmd, {
-            code = err or ErrorCode.TeamCreateFailed
+            code =  ErrorCode.TeamCreateFailed
         },req)
-        return err or ErrorCode.TeamCreateFailed
+        return ErrorCode.TeamCreateFailed
     end
     
     -- 返回队伍ID

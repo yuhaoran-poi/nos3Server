@@ -50,7 +50,10 @@ function ChatChannel.InitData(channel_id, channel_type, channel_addr)
     end)
     return {code = ErrorCode.None}
 end
-
+function ChatChannel.Shutdown()
+    moon.quit()
+    return true
+end
 function ChatChannel.AddPlayer(uid)
     local scope <close> = lock()
     context.memember_uids[uid] = 1

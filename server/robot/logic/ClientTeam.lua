@@ -78,18 +78,5 @@ function Client:kick_team(target_uid)
     end)
 end
 
--- 解散队伍
-function Client:destroy_team()
-    if not self.ok then
-        print("connect failed, err = ", err)
-        return
-    end
-    local req_msg = {
-        uid = self.uid, 
-    }
-    self:send("PBTeamDestroyReqCmd", req_msg, function(msg)
-        print("rpc PBTeamDestroyReqCmd ret = ", self.index,msg)
-        print_r(msg)
-    end)
-end
+ 
 

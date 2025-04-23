@@ -508,7 +508,7 @@ function Guild.DismissGuild(operator_uid)
     
     -- 通知所有成员公会解散
     context.send_users(Guild.GetMembers, {}, "GuildProxy.OnGuildDismiss", context.guild_id)
-    
+    ChatLogic.DestoryGuildChannel(context.guild_id)
     -- 保存数据
     scripts.GuildModel.Save()
     

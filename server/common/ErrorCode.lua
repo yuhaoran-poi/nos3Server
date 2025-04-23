@@ -198,6 +198,18 @@ local ErrorCode = {
     LeaveGuildChannelErr = 1313,
     --- 初始化频道数据失败
     InitChatChannelDataErr = 1312,
+    --- 创建队伍聊天频道失败
+    CreateTeamChannelErr = 1314,
+    --- 加入队伍聊天频道失败
+    JoinTeamChannelErr = 1315,
+    --- 退出队伍聊天频道失败
+    LeaveTeamChannelErr = 1316,
+    --- 初始化队伍频道数据失败
+    InitTeamChannelDataErr = 1317,
+    --- 删除公会聊天频道失败
+    RemoveGuildChannelErr = 1318,
+    --- 删除队伍聊天频道失败
+    RemoveTeamChannelErr = 1319,
 }
 
 return ErrorCode

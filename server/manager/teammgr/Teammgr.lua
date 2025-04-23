@@ -2,10 +2,11 @@ local moon = require "moon"
 local cluster = require("cluster")
 local uuid = require("uuid")
 local common = require "common"
+local ChatLogic = require("common.ChatLogic") --聊天逻辑
 local CmdCode = common.CmdCode
 local ErrorCode = common.ErrorCode
 
----@type Teammgr_context
+---@type teammgr_context
 local context = ...
 
 ---@class Teammgr
@@ -41,6 +42,8 @@ function Teammgr.CreateTeam(uid, match_type, base_data)
     context.user_team[uid] = team_id
     
     context.send_user(uid, "Team.OnTeamCreated", uid, team_id)
+    ChatLogic.newTeamChannel(team_id)
+    ChatLogic.JoinTeamChannel(team_id, uid)
     return team_id
 end
 
@@ -65,13 +68,15 @@ function Teammgr.JoinTeam(uid, team_id, base_data)
     team.members[uid] = true
     -- 更新uidmap
     context.user_team[uid] = team_id
-    
+   
     -- 广播成员加入事件
     local member_keys = {}
     for k,_ in pairs(team.members) do
         table.insert(member_keys, k)
     end
     context.send_users(member_keys, {}, "Team.OnTeamMemberJoined", team_id, uid)
+
+    ChatLogic.JoinTeamChannel(team_id, uid)
     return true
 end
 
@@ -111,7 +116,9 @@ function Teammgr.ExitTeam(uid)
     -- 如果队伍没有成员了，则删除队伍
     if not next(team.members) then
         context.team_info[team_id] = nil
-        context.send_user(uid, "Team.OnTeamMemberExited", team_id,uid)
+        context.send_user(uid, "Team.OnTeamMemberExited", team_id, uid)
+        ChatLogic.LeaveTeamChannel(team_id, uid)
+        ChatLogic.RemoveTeamChannel(team_id)
     else
         -- 广播成员退出事件
         local member_keys = {}
@@ -119,6 +126,7 @@ function Teammgr.ExitTeam(uid)
             table.insert(member_keys, k)
         end
         context.send_users(member_keys, {}, "Team.OnTeamMemberExited", team_id, uid)
+        ChatLogic.LeaveTeamChannel(team_id, uid)
     end
     return true
 end
@@ -141,7 +149,7 @@ function Teammgr.KickoutMember(master_uid, target_uid)
     team.members[target_uid] = nil
     -- 更新uidmap
     context.user_team[target_uid] = nil
-    
+    ChatLogic.LeaveTeamChannel(team_id, target_uid)
     -- 广播成员被踢出事件
     context.send_user(target_uid, "Team.OnTeamMemberKicked", team_id, target_uid)
     
