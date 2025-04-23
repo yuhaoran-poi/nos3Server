@@ -233,11 +233,11 @@ end
 
 -- 队员被踢出事件
 function Team.OnTeamMemberKicked(team_id, target_uid)
-    moon.info("OnTeamMemberKicked:", context.uid,team_id, target_uid)
+    moon.info("OnTeamMemberKicked:", context.uid, team_id, target_uid)
     local DB = scripts.UserModel.Get()
     if DB.team.team_id == team_id then
         DB.team.members[target_uid] = nil
-        
+
         -- 如果被踢的是自己，则清除队伍信息
         if target_uid == context.uid then
             DB.team.team_id = 0
@@ -247,5 +247,21 @@ function Team.OnTeamMemberKicked(team_id, target_uid)
         end
     end
 end
+
+function Team.Online()
+    
+end
+
+function Team.Offline()
+    local DB = scripts.UserModel.GetUserData()
+    if DB.team.team_id ~= 0 then
+        -- 退出队伍
+        local success, err = cluster.call(3999, "teammgr", "Teammgr.ExitTeam", context.uid)
+        if not success then
+            print("ExitTeam failed:", err)
+        end
+    end
+end
+
 
 return Team
