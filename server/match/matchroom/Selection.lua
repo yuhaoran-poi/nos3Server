@@ -10,7 +10,7 @@ local common = require "common"
 local cluster = require("cluster")
 local queue = require "moon.queue"
 local lock = queue()
----@type selection_context
+---@type matchroom_context
 local context = ...
 local scripts = context.scripts
 
