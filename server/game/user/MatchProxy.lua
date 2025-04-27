@@ -5,7 +5,7 @@ local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
 local CmdEnum = common.CmdEnum
-local MatchEnum = require("common.MatchEnum")
+local MatchEnum = require("common.Enum.MatchEnum")
 ---@type user_context
 local context = ...
 local scripts = context.scripts
