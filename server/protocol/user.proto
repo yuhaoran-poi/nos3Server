@@ -197,7 +197,7 @@ message PBBag
 
 message PBBags
 {
-	map<int32, PBBag>	bags = 1;
+	map<string, PBBag>	bags = 1;
 }
 
 //----------------------------------新增协议----------------------------------//

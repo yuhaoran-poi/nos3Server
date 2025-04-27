@@ -254,6 +254,14 @@ local ErrorCode = {
     SplitCountInvalid = 1506,
     --- 移动目标已被占用
     MoveTargetOccupied = 1507,
+    --- 不允许堆叠
+    StackNotAllowed = 1508,
+    --- 堆叠类型不匹配
+    StackTypeMismatch = 1509,
+    --- 堆叠达到上限
+    StackFull = 1510,
+    --- 背包保存失败
+    BagSaveFailed = 1511,
 }
 
 return ErrorCode

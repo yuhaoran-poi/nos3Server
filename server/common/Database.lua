@@ -629,9 +629,12 @@ function _M.saveuserbags(addr, uid, bags_data)
         if data_str and pbdata then
             had_param = true
 
-            str_param1 = str_param1 .. ", " .. bagTypeName
-            str_param2 = str_param2 .. ", '" .. pbdata .. "'"
-            str_param3 = str_param3 .. " " .. bagTypeName .. "='" .. data_str .. "'"
+            str_param1 = str_param1 .. ", " .. bagTypeName .. ", " .. bagTypeName.. "_json"
+            str_param2 = str_param2 .. ", '" .. pbdata .. "', '" .. data_str .. "'"
+            if str_param3 ~= "" then
+                str_param3 = str_param3.. ", "
+            end
+            str_param3 = str_param3 .. " " .. bagTypeName .. "='" .. pbdata .. "', " .. bagTypeName .. "_json='" .. data_str .. "'"
         end
     end
     if not had_param then

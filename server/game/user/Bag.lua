@@ -33,6 +33,7 @@ function Bag.Init()
     table.insert(bagTypes, BagType.Cangku)
     table.insert(bagTypes, BagType.Consume)
     table.insert(bagTypes, BagType.Booty)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local baginfos = Bag.LoadBags(bagTypes)
     if baginfos then
         scripts.UserModel.SetBagData(baginfos)
@@ -96,8 +97,7 @@ function Bag.AddItem(bagType, itemId, count, itype)
 
     -- 处理物品增减
     local change = {
-        bagType = bagType,
-        items = {}
+        [bagType] = {}
     }
     if count > 0 then
         -- 添加逻辑
@@ -110,7 +110,7 @@ function Bag.AddItem(bagType, itemId, count, itype)
                 and itemdata.common_info.uniqid == 0
                 and itemdata.common_info.item_count < item_cfg.stack_count then
                 local canAdd = math.min(item_cfg.stack_count - itemdata.common_info.item_count, remaining)
-                change.items[pos] = {
+                change[bagType][pos] = {
                     now_id = itemId,
                     old = itemdata.common_info.item_count,
                     new = itemdata.common_info.item_count + canAdd
@@ -138,7 +138,7 @@ function Bag.AddItem(bagType, itemId, count, itype)
 
             for _, pos in pairs(emptyPos) do
                 local canAdd = math.min(item_cfg.stack_count, remaining)
-                change.items[pos] = { now_id = item_cfg.id, old = 0, new = canAdd }
+                change[bagType][pos] = { now_id = item_cfg.id, old = 0, new = canAdd }
                 remaining = remaining - canAdd
                 if remaining <= 0 then
                     break
@@ -147,7 +147,7 @@ function Bag.AddItem(bagType, itemId, count, itype)
         end
 
         if remaining <= 0 then
-            for pos, change_value in pairs(change.items) do
+            for pos, change_value in pairs(change[bagType]) do
                 if change_value.old == 0 then
                     baginfo.items[pos] = {
                         itype = itype,
@@ -176,14 +176,14 @@ function Bag.AddItem(bagType, itemId, count, itype)
                 and itemdata.common_info.uniqid == 0 then
 
                 if itemdata.common_info.item_count + remaining > 0 then
-                    change.items[pos] = {
+                    change[bagType][pos] = {
                         old = itemdata.common_info.item_count,
                         new = itemdata.common_info.item_count + remaining,
                     }
                  
                     remaining = 0
                 else
-                    change.items[pos] = { old = itemdata.common_info.item_count, new = 0 }
+                    change[bagType][pos] = { old = itemdata.common_info.item_count, new = 0 }
                     remaining = remaining + itemdata.common_info.item_count
                 end
 
@@ -194,7 +194,7 @@ function Bag.AddItem(bagType, itemId, count, itype)
         end
 
         if remaining >= 0 then
-            for pos, change_value in pairs(change.items) do
+            for pos, change_value in pairs(change[bagType]) do
                 baginfo.items[pos].common_info.item_count = change_value.new
                 if baginfo.items[pos].common_info.item_count == 0 then
                     baginfo.items[pos] = nil
@@ -234,13 +234,12 @@ function Bag.AddUniqItem(bagType, itemId, uniqid)
 
     -- 处理物品记录
     local change = {
-        bagType = bagType,
-        items = {}
+        [bagType] = {}
     }
 
     for pos = 1, baginfo.capacity do
         if not baginfo.items[pos] then
-            change.items[pos] = { now_id = item_cfg.id, uniqid = uniqid, old = 0, new = 1 }
+            change[bagType][pos] = { now_id = item_cfg.id, uniqid = uniqid, old = 0, new = 1 }
 
             baginfo.items[pos] = {
                 itype = item_cfg.type1,
@@ -259,6 +258,97 @@ function Bag.AddUniqItem(bagType, itemId, uniqid)
     end
 
     return ErrorCode.BagFull
+end
+
+function Bag.StackItems(srcBagType, srcPos, destBagType, destPos)
+    -- 参数校验
+    if srcBagType ~= BagType.Cangku
+        and srcBagType ~= BagType.Consume
+        and srcBagType ~= BagType.Booty then
+        return ErrorCode.BagNotExist
+    end
+
+    if destBagType ~= BagType.Cangku
+        and destBagType ~= BagType.Consume
+        and destBagType ~= BagType.Booty then
+        return ErrorCode.BagNotExist
+    end
+
+    if srcBagType == destBagType and srcPos == destPos then
+        return ErrorCode.StackNotAllowed
+    end
+
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata then
+        return ErrorCode.BagNotExist
+    end
+    local srcBag = bagdata[srcBagType]
+    local destBag = bagdata[destBagType]
+
+    -- 源道具校验
+    local srcItem = srcBag.items[srcPos]
+    if not srcItem or srcItem.common_info.uniqid ~= 0 or srcItem.special_info ~= nil then
+        return ErrorCode.StackNotAllowed
+    end
+
+    -- 目标道具校验
+    local destItem = destBag.items[destPos]
+    if not destItem or destItem.common_info.uniqid ~= 0 or destItem.special_info ~= nil then
+        return ErrorCode.StackNotAllowed
+    end
+
+    -- 类型一致性校验
+    if srcItem.common_info.config_id ~= destItem.common_info.config_id then
+        return ErrorCode.StackTypeMismatch
+    end
+
+    local item_cfg = GameCfg.Item[srcItem.common_info.config_id]
+    if not item_cfg then
+        return ErrorCode.ItemNotExist
+    end
+
+    -- 计算可堆叠数量
+    local available_count = item_cfg.stack_count - destItem.common_info.item_count
+    if available_count <= 0 then
+        return ErrorCode.StackFull
+    end
+
+    local move_count = math.min(available_count, srcItem.common_info.item_count)
+
+    -- 处理变更记录
+    local change = {}
+    change[srcBagType] = {
+        [srcPos] = {
+            now_id = srcItem.common_info.config_id,
+            old = srcItem.common_info.item_count,
+            new = srcItem.common_info.item_count - move_count
+        }
+    }
+    if change[destBagType] then
+        change[destBagType][destPos] = {
+            now_id = destItem.common_info.config_id,
+            old = destItem.common_info.item_count,
+            new = destItem.common_info.item_count + move_count
+        }
+    else
+        change[destBagType] = {
+            [destPos] = {
+                now_id = destItem.common_info.config_id,
+                old = destItem.common_info.item_count,
+                new = destItem.common_info.item_count + move_count
+            }
+        }
+    end
+
+    -- 执行堆叠操作
+    destItem.common_info.item_count = destItem.common_info.item_count + move_count
+    srcItem.common_info.item_count = srcItem.common_info.item_count - move_count
+    -- 清理空堆叠
+    if srcItem.common_info.item_count <= 0 then
+        srcBag.items[srcPos] = nil
+    end
+
+    return ErrorCode.None, change
 end
 
 function Bag.DelUniqItem(bagType, itemId, uniqid, pos)
@@ -284,10 +374,9 @@ function Bag.DelUniqItem(bagType, itemId, uniqid, pos)
 
     -- 处理物品记录
     local change = {
-        bagType = bagType,
-        items = {}
+        [bagType] = {}
     }
-    change.items[pos] = {
+    change[bagType][pos] = {
         now_id = baginfo.items[pos].common_info.config_id,
         uniqid = baginfo.items[pos].common_info.uniqid,
         old = 1,
@@ -313,6 +402,10 @@ function Bag.SplitItem(srcBagType, srcPos, destBagType, destPos, splitCount)
         and destBagType ~= BagType.Consume
         and destBagType ~= BagType.Booty then
         return ErrorCode.BagNotExist
+    end
+
+    if srcBagType == destBagType and srcPos == destPos then
+        return ErrorCode.StackNotAllowed
     end
 
     local bagdata = scripts.UserModel.GetBagData()
@@ -346,34 +439,35 @@ function Bag.SplitItem(srcBagType, srcPos, destBagType, destPos, splitCount)
     end
 
     -- 执行拆分操作
-    local changes = {}
-
-    local srcChange = {
-        bagType = srcBagType,
-        items = {}
+    local change = {
+        [srcBagType] = {}
     }
-    srcChange.items[srcPos] = {
+    change[srcBagType][srcPos] = {
         now_id = srcItem.common_info.config_id,
         old = srcItem.common_info.item_count,
         new = srcItem.common_info.item_count - splitCount
     }
-    table.insert(changes, srcChange)
-    srcItem.common_info.item_count = srcItem.common_info.item_count - splitCount
+    if change[destBagType] then
+        change[destBagType][destPos] = {
+            now_id = srcItem.common_info.config_id,
+            old = 0,
+            new = splitCount
+        }
+    else
+        change[destBagType] = {
+            [destPos] = {
+                now_id = srcItem.common_info.config_id,
+                old = 0,
+                new = splitCount
+            }
+        }
+    end
 
-    local destChange = {
-        bagType = destBagType,
-        items = {}
-    }
-    destChange.items[destPos] = {
-        now_id = srcItem.common_info.config_id,
-        old = 0,
-        new = splitCount
-    }
-    table.insert(changes, destChange)
+    srcItem.common_info.item_count = srcItem.common_info.item_count - splitCount
     table.copy(destBag.items[destPos], srcItem)
     destBag.items[destPos].common_info.item_count = splitCount
 
-    return ErrorCode.None, changes
+    return ErrorCode.None, change
 end
 
 function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos)
@@ -388,6 +482,10 @@ function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos)
         and destBagType ~= BagType.Consume
         and destBagType ~= BagType.Booty then
         return ErrorCode.BagNotExist
+    end
+
+    if srcBagType == destBagType and srcPos == destPos then
+        return ErrorCode.StackNotAllowed
     end
 
     -- 获取数据副本
@@ -420,70 +518,73 @@ function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos)
     end
 
     -- 执行移动
-    local changes = {}
+    local change = {}
     if destItem then
         -- 交换物品
         srcBag.items[srcPos] = destItem
         destBag.items[destPos] = srcItem
 
-        local srcChange = {
-            bagType = srcBagType,
-            items = {}
-        }
-        srcChange.items[srcPos] = {
-            now_id = destItem.common_info.config_id,
-            new = destItem.common_info.item_count
+        change[srcBagType] = {
+            [srcPos] = {
+                now_id = destItem.common_info.config_id,
+                new = destItem.common_info.item_count
+            }
         }
         if destItem.common_info.uniqid ~= 0 then
-            srcChange.items[srcPos].uniqid = destItem.common_info.uniqid
+            change[srcBagType][srcPos].uniqid = destItem.common_info.uniqid
         end
-        table.insert(changes, srcChange)
-        local destChange = {
-            bagType = destBagType,
-            items = {}
-        }
-        destChange.items[destPos] = {
-            now_id = srcItem.common_info.config_id,
-            new = srcItem.common_info.item_count
-        }
+
+        if change[destBagType] then
+            change[destBagType][destPos] = {
+                now_id = srcItem.common_info.config_id,
+                new = srcItem.common_info.item_count
+            }
+        else
+            change[destBagType] = {
+                [destPos] = {
+                    now_id = srcItem.common_info.config_id,
+                    new = srcItem.common_info.item_count
+                }
+            }
+        end
         if srcItem.common_info.uniqid ~= 0 then
-            destChange.items[destPos].uniqid = srcItem.common_info.uniqid
+            change[destBagType][destPos].uniqid = srcItem.common_info.uniqid
         end
-        table.insert(changes, destChange)
     else
         -- 移动到空位
         destBag.items[destPos] = srcItem
         srcBag.items[srcPos] = nil
 
-        local destChange = {
-            bagType = destBagType,
-            items = {}
-        }
-        destChange.items[destPos] = {
-            id = srcItem.common_info.config_id,
-            new = srcItem.common_info.item_count
+        change[destBagType] = {
+            [destPos] = {
+                now_id = srcItem.common_info.config_id,
+                new = srcItem.common_info.item_count
+            }
         }
         if srcItem.common_info.uniqid ~= 0 then
-            destChange.items[destPos].uniqid = srcItem.common_info.uniqid
+            change[destBagType][destPos].uniqid = srcItem.common_info.uniqid
         end
-        table.insert(changes, destChange)
 
-        local srcChange = {
-            bagType = srcBagType,
-            items = {}
-        }
-        srcChange.items[srcPos] = {
-            id = 0,
-            new = 0
-        }
-        table.insert(changes, srcChange)
+        if change[srcBagType] then
+            change[srcBagType][srcPos] = {
+                now_id = 0,
+                new = 0
+            }
+        else
+            change[srcBagType] = {
+                [srcPos] = {
+                    now_id = 0,
+                    new = 0
+                }
+            }
+        end
     end
 
-    return ErrorCode.None, changes
+    return ErrorCode.None, change
 end
 
 function Bag.AddMagicItem(bagType, itemId, uniqid, maxDurability, light_cnt, tags)
-    local errorCode, changes, add_pos = Bag.AddUniqItem(bagType, itemId, uniqid)
+    local errorCode, change, add_pos = Bag.AddUniqItem(bagType, itemId, uniqid)
     if errorCode ~= ErrorCode.None then
         return errorCode
     end
@@ -502,7 +603,7 @@ function Bag.AddMagicItem(bagType, itemId, uniqid, maxDurability, light_cnt, tag
         }
     }
 
-    return ErrorCode.None, changes, add_pos
+    return ErrorCode.None, change, add_pos
 end
 
 function Bag.SaveBagsNow(bagTypes)
@@ -511,7 +612,7 @@ function Bag.SaveBagsNow(bagTypes)
         return false
     end
     local save_bags = {}
-    for bagType, _ in pairs(bagTypes) do
+    for _, bagType in pairs(bagTypes) do
         if bagdata[bagType] then
             save_bags[bagType] = bagdata[bagType]
         end
@@ -524,6 +625,51 @@ end
 function Bag.LoadBags(bagTypes)
     local baginfos = Database.loaduserbags(context.addr_db_user, context.uid, bagTypes)
     return baginfos
+end
+
+function Bag.PBBagOperateItemReqCmd(req)
+    local err_code, change = ErrorCode.ParamInvalid, nil
+    if req.msg.operate_type == 1 then
+        err_code, change = Bag.StackItems(req.msg.src_bag, req.msg.src_pos, req.msg.dest_bag, req.msg.dest_pos)
+    elseif req.msg.operate_type == 2 then
+        err_code, change = Bag.SplitItem(req.msg.src_bag, req.msg.src_pos, req.msg.dest_bag, req.msg.dest_pos)
+    elseif req.msg.operate_type == 2 then
+        err_code, change = Bag.MoveItem(req.msg.src_bag, req.msg.src_pos, req.msg.dest_bag, req.msg.dest_pos)
+    end
+
+    if err_code ~= ErrorCode.None or not change then
+        return context.S2C(context.net_id, CmdCode["PBBagOperateItemRspCmd"],
+            { code = err_code, error = "执行出错", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local change_bags = {}
+    local res_change_items = {}
+    local bagdata = scripts.UserModel.GetBagData()
+    for bagtype, change_info in pairs(change) do
+        table.insert(change_bags, bagtype)
+
+        local change_bag = bagdata[bagtype]
+        res_change_items[bagtype].bag_item_type = change_bag.bag_item_type
+        res_change_items[bagtype].capacity = change_bag.capacity
+        res_change_items[bagtype].items = {}
+        for pos, _ in pairs(change_info) do
+            if change_bag.items[pos] then
+                res_change_items[bagtype].items[pos] = change_bag.items[pos]
+            else
+                res_change_items[bagtype].items[pos] = {}
+            end
+        end
+    end
+
+    local success = Bag.SaveBagsNow(change_bags)
+    if not success then
+        return context.S2C(context.net_id, CmdCode["PBBagOperateItemRspCmd"],
+            { code = ErrorCode.BagSaveFailed, error = "保存背包失败", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    return context.S2C(context.net_id, CmdCode["PBBagOperateItemRspCmd"],
+        { code = ErrorCode.None, error = "", uid = context.uid, change_items = res_change_items },
+        req.msg_context.stub_id)
 end
 
 return Bag
