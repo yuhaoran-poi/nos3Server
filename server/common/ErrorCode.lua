@@ -262,6 +262,8 @@ local ErrorCode = {
     StackFull = 1510,
     --- 背包保存失败
     BagSaveFailed = 1511,
+    --- 背包容量溢出
+    BagCapacityOverflow = 1512,
 }
 
 return ErrorCode

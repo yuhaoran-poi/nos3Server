@@ -24,6 +24,9 @@ local ItemType = {
 local init_cangku_capacity = 75
 local init_consume_capacity = 25
 local init_booty_capacity = 20
+local max_cangku_capacity = 150
+local max_consume_capacity = 50
+local max_booty_capacity = 40
 
 ---@class Bag
 local Bag = {}
@@ -66,6 +69,36 @@ end
 
 function Bag.Start()
     -- body
+end
+
+function Bag.AddCapacity(bagType, add_capacity)
+    if add_capacity <= 0 then
+        return ErrorCode.ParamInvalid
+    end
+
+    if bagType ~= BagType.Cangku and bagType ~= BagType.Consume and bagType ~= BagType.Booty then
+        return ErrorCode.BagNotExist
+    end
+
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata then
+        return ErrorCode.BagNotExist
+    end
+
+    local baginfo = bagdata[bagType]
+    if bagType == BagType.Cangku
+        and baginfo.capacity + add_capacity > max_cangku_capacity then
+        return ErrorCode.BagCapacityOverflow
+    elseif bagType == BagType.Consume
+        and baginfo.capacity + add_capacity > max_consume_capacity then
+        return ErrorCode.BagCapacityOverflow
+    elseif bagType == BagType.Booty
+        and baginfo.capacity + add_capacity > max_booty_capacity then
+        return ErrorCode.BagCapacityOverflow
+    end
+
+    baginfo.capacity = baginfo.capacity + add_capacity
+    return ErrorCode.None
 end
 
 -- 添加物品（支持自动堆叠）
@@ -282,8 +315,12 @@ function Bag.StackItems(srcBagType, srcPos, destBagType, destPos)
     if not bagdata then
         return ErrorCode.BagNotExist
     end
+
     local srcBag = bagdata[srcBagType]
     local destBag = bagdata[destBagType]
+    if srcBag.capacity < srcPos or destBag.capacity < destPos then
+        return ErrorCode.BagCapacityOverflow
+    end
 
     -- 源道具校验
     local srcItem = srcBag.items[srcPos]
@@ -412,8 +449,12 @@ function Bag.SplitItem(srcBagType, srcPos, destBagType, destPos, splitCount)
     if not bagdata then
         return ErrorCode.BagNotExist
     end
+
     local srcBag = bagdata[srcBagType]
     local destBag = bagdata[destBagType]
+    if srcBag.capacity < srcPos or destBag.capacity < destPos then
+        return ErrorCode.BagCapacityOverflow
+    end
 
     -- 源物品校验
     local srcItem = srcBag.items[srcPos]
@@ -493,8 +534,12 @@ function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos)
     if not bagdata then
         return ErrorCode.BagNotExist
     end
+    
     local srcBag = bagdata[srcBagType]
     local destBag = bagdata[destBagType]
+    if srcBag.capacity < srcPos or destBag.capacity < destPos then
+        return ErrorCode.BagCapacityOverflow
+    end
 
     -- 源物品校验
     local srcItem = srcBag.items[srcPos]
@@ -632,7 +677,7 @@ function Bag.PBBagOperateItemReqCmd(req)
     if req.msg.operate_type == 1 then
         err_code, change = Bag.StackItems(req.msg.src_bag, req.msg.src_pos, req.msg.dest_bag, req.msg.dest_pos)
     elseif req.msg.operate_type == 2 then
-        err_code, change = Bag.SplitItem(req.msg.src_bag, req.msg.src_pos, req.msg.dest_bag, req.msg.dest_pos)
+        err_code, change = Bag.SplitItem(req.msg.src_bag, req.msg.src_pos, req.msg.dest_bag, req.msg.dest_pos, req.msg.splitCount)
     elseif req.msg.operate_type == 2 then
         err_code, change = Bag.MoveItem(req.msg.src_bag, req.msg.src_pos, req.msg.dest_bag, req.msg.dest_pos)
     end

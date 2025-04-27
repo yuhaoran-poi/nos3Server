@@ -5,11 +5,12 @@ import "user.proto";
 message PBBagOperateItemReqCmd
 {
     int64 uid		= 1;
-    int32 operate_type  = 2;
+    int32 operate_type  = 2; // 1--堆叠,2--拆分,3--移动
     string src_bag  = 3;
     int32 src_pos   = 4;
     string dest_bag = 5;
     int32 dest_pos  = 6;
+    int32 splitCount = 7;
 }
 
 message PBBagOperateItemRspCmd
