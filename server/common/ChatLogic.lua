@@ -2,9 +2,8 @@ local moon = require "moon"
 local common = require "common"
 local ErrorCode = common.ErrorCode --逻辑错误码
 local CmdEnum = common.CmdEnum
- 
+local ChatEnum = require("common.ChatEnum")
 local cluster = require("cluster")
-
 local ChatLogic = {}
 -- 创建公会聊天频道
 function ChatLogic.newGuildChannel(guild_id)
@@ -96,9 +95,9 @@ function ChatLogic.JoinTeamChannel(team_id,uid)
 end
 
 -- 成员退出队伍聊天频道
-function ChatLogic.LeaveTeamChannel(team_id,uid)
+function ChatLogic.LeaveTeamChannel(team_id, uid)
     local res, err = cluster.call(CmdEnum.FixedNodeId.CHAT, "chatmgr", "ChatMgr.RemoveTeamChannelPlayer",
-          team_id, uid)
+        team_id, uid)
     if not res then
         return { code = ErrorCode.LeaveTeamChannelErr }
     end
@@ -107,5 +106,41 @@ function ChatLogic.LeaveTeamChannel(team_id,uid)
     end
     return { code = ErrorCode.None }
 end
+
+-- game节点加入系统聊天频道
+function ChatLogic.AddSystemChannelGameNode(node_id, addr_gate)
+    local res, err = cluster.call(CmdEnum.FixedNodeId.CHAT, "chatmgr", "ChatMgr.AddSystemChannelGameNode", node_id,
+    addr_gate)
+    if not res then
+        return { code = ErrorCode.AddSystemChannelGameNodeErr }
+    end
+    if res.code ~= ErrorCode.None then
+        return { code = res.code, error = res.error }
+    end
+    return { code = ErrorCode.None }
+end
+-- game节点退出系统聊天频道
+function ChatLogic.RemoveSystemChannelGameNode(node_id)
+    local res, err = cluster.call(CmdEnum.FixedNodeId.CHAT, "chatmgr", "ChatMgr.RemoveSystemChannelGameNode", node_id)
+    if not res then
+        return { code = ErrorCode.RemoveSystemChannelGameNodeErr }
+    end
+    if res.code ~= ErrorCode.None then
+        return { code = res.code, error = res.error }
+    end
+    return { code = ErrorCode.None }
+end
+-- 发送系统频道消息
+function ChatLogic.SendMsgToSystemChannel(msg_content)
     
+    local PBChatMsgInfo = {
+        channel_type = ChatEnum.EChannelType.CHANNEL_TYPE_SYSTEM, -- 系统频道类型
+        uid = 0, -- 系统消息的发送者UID
+        name = "系统", -- 系统消息的发送者名称
+        msg_content = msg_content, -- 消息内容
+        send_time = moon.time(), -- 发送时间
+        to_uid = 0, -- 目标UID，对于系统消息通常为0
+    }
+    cluster.send(CmdEnum.FixedNodeId.CHAT, "chatmgr", "ChatMgr.SendSystemChannelMsg", PBChatMsgInfo)
+end
 return ChatLogic

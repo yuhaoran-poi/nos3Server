@@ -26,6 +26,7 @@ local httpc = require("moon.http.client")
 local serverconf = require("serverconf")
 local common = require("common")
 local schema = require("schema")
+
 local db = common.Database
 local CreateTable = common.CreateTable
 local GameCfg = common.GameCfg
@@ -181,7 +182,10 @@ local function run(node_conf)
             nid = moon.env("NODE"),
             node_type = moon.env("SERVER_TYPE"),
         }
-        moon.call("lua", moon.queryservice("node"), "Console.Notify_nodemgr", nodeinfo)
+        assert(moon.call("lua", moon.queryservice("node"), "Console.Notify_nodemgr", nodeinfo))
+        local ChatLogic = require("common.ChatLogic") --聊天逻辑
+        -- 加入世界聊天频道
+        local res = ChatLogic.AddSystemChannelGameNode(moon.env("NODE"),moon.queryservice("gate"))
 
         -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         -- GameCfg.Load()
@@ -229,6 +233,10 @@ local function run(node_conf)
         print("receive shutdown")
         moon.async(function()
             if server_ok then
+                -- 退出世界聊天频道
+                local ChatLogic = require("common.ChatLogic") --聊天逻辑
+                ChatLogic.RemoveSystemChannelGameNode(moon.env("NODE"))
+                -- 通知节点管理器
                 assert(moon.call("lua", moon.queryservice("dgate"), "DGate.Shutdown"))
                 assert(moon.call("lua", moon.queryservice("gate"), "Gate.Shutdown"))
                 assert(moon.call("lua", moon.queryservice("center"), "Center.Shutdown"))

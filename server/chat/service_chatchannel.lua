@@ -9,7 +9,8 @@ local context = {
     channel_type = 0,
     channel_addr = 0,
     memember_uids = {}, -- 频道玩家
-    channel_msgs = {},   -- 频道消息
+    channel_msgs = {},  -- 频道消息
+    game_nodes = {},    -- 游戏节点
     scripts = {},
 }
 

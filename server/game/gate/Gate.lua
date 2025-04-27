@@ -90,8 +90,20 @@ function Gate.BindGnId(req)
     print(string.format("BindGnId fd:%d net_id:%d ", req.fd, req.net_id))
     return true
 end
-function Gate.ForwardD2C(GnId,MessagePack)
-    context.D2C(GnId,MessagePack)
+function Gate.ForwardD2C(GnId, MessagePack)
+    context.D2C(GnId, MessagePack)
+end
+-- 发送系统消息到本gate所有玩家
+function Gate.BroadcastSysChat(channel_msgs)
+    moon.info("BroadcastSysChat channel_msgs = ", channel_msgs)
+    for net_id, _ in pairs(context.net_id_map) do
+        local msg = { infos = {} }
+        for _, v in ipairs(channel_msgs) do
+            table.insert(msg.infos, v)
+        end
+        context.S2C(net_id, CmdCode.PBChatSynCmd, msg, 0)
+    end
+    return true
 end
 
 return Gate

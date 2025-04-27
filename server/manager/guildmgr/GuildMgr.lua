@@ -60,6 +60,7 @@ function GuildMgr.LoadGuilds()
         moon.warn("Node count is less than guild count / 1000 node_count:", node_count, "guild_count:", #guild_ids)
         return false
     end
+    local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     for _, guild_id in ipairs(guild_ids) do
         
         local node = GuildMgr.FindLeastLoadedNode()
