@@ -1,0 +1,228 @@
+syntax = "proto3";
+
+
+
+//----------------------匹配结构--------------------------
+ 
+// 操作类型
+enum PBSelectionOpType{
+    // 禁用
+    PBSelectionOp_Disable_Map       = 1; 
+    PBSelectionOp_Disable_Role      = 2;
+    // 选用
+    PBSelectionOp_Selection_Map     = 3; 
+    PBSelectionOp_Selection_Role    = 4;
+    // 装配
+
+    // 道具
+    PBSelectionOp_Setup_Item        = 5; 
+    // 皮肤
+    PBSelectionOp_Setup_Skin        = 6; 
+    // 狼人杀争抢道具
+	PBSelectionOp_Setup_LRSVieItem  = 7; 
+}
+// 扳选禁用阶段
+enum PBSelectionStateType{
+    // 禁用阶段
+    PBSelectionState_Disable    = 1; 
+    // 选择阶段
+    PBSelectionState_Selection  = 2; 
+    // 装配 道具 和技能 皮肤阶段
+    PBSelectionState_Setup      = 3; 
+    // 流程正常结束(开始创建ds房间)
+    PBSelectionState_Succ        = 4; 
+    // bp错误情况，房间关闭
+    PBSelectionState_Close      = 5; 
+	// 狼人杀鬼选择阶段
+	PBSelectionState_LRS_SelectionGhost      = 6;
+    // 狼人杀选鬼装配阶段
+	PBSelectionState_LRS_SetupGhost      = 7; 
+    // 据点战选鬼皮肤阶段
+	PBSelectionState_SH_Ghost_Select_Skin = 8; 
+}
+
+// 角色在扳选阶段的操作数据
+message PBUserSelectionOpt{ 
+    // 操作类型 @see PBSelectionOpType
+    int32 op_type  = 1;
+    // 发起的玩家id
+    int64 uid = 2;
+    // 操作对象id
+    int64 target_id = 3;
+    // 操作对象位置
+    int32 target_pos = 4;
+    // 选择角色确认
+    bool confirm_role = 5;
+    // 禁用角色id
+	repeated int32 ban_roleids	= 6;
+}
+// 角色在扳选阶段的数据
+message PBUserSelection{
+    // 玩家UID  初始设置
+    int64 uid                  = 1;
+    // 人鬼类型 初始设置
+    int32 camp_type            = 2;
+    // 禁用的地图ID
+    int32 disable_map_id       = 3;
+    // 禁用的角色id
+    repeated int32 disable_role_ids      = 4;
+    // 选择的地图ID
+    int32 selection_map_id     = 5;
+    // 选择的匹配模式 这里需要带上角色的皮肤信息 （战斗数据，数据会出传送到DS中）
+    PBRoleInfo selection_ghost = 6;
+    // 选择的匹配模式 这里需要带上角色的皮肤信息（战斗数据，数据会出传送到DS中）
+    PBRoleInfo selection_human = 7;
+    // 是否确认选用了
+    bool confirm_role_ok       = 8;
+}
+// 整个扳选过程中的所有玩家的数据
+message PBUserSelectionS{
+    // 扳选禁用阶段 @see PBSelectionStateType
+    int32 cur_state = 1;
+    // 选用阶段第几次选用 按照 人这边2-2-1的顺序选择    
+    int32 human_select_index    = 2;
+    // 人ban掉的地图
+    int32 human_disable_map    = 3;	
+    // 被鬼ban掉的人类角色
+    repeated int32 human_disable_roles   = 4;	
+    //鬼ban掉的地图
+    int32 ghost_disable_map    = 5;	
+    //被人ban掉的鬼怪角色
+    repeated int32 ghost_disable_roles   = 6;	
+    // 最终的地图    
+    int32 rand_map_id         = 7;
+    // 所有玩家的操作数据
+    PBUserSelection ghost      = 8;
+    // 人数据<座位号从1开始,玩家数据>
+    map<int32, PBUserSelection> humans = 9;
+    // 默认被ban的物品、角色、技能、诡术等
+	repeated uint32 system_ban_config_ids = 10;		
+    // 狼人杀模式的bp信息
+	PBUserSelectionLRS lrs_mode_selection = 11;		
+    // 驱灵模式选择信息
+	repeated PBUserSelection ql_mode_selection = 12;  
+    // 据点战模式bp信息         
+	repeated PBUserSelection stronghold_mode_selection = 13;	
+}
+
+//----------------------匹配命令--------------------------
+
+// 自定义房间，房主发起创建房间请求
+message PBMatchCreateRoomReqCmd
+{
+    // 玩家uid
+	int64 uid = 1;    
+    // 匹配类型    
+    int32 match_type = 2; 
+    // 阵营类型
+    int32 camp_type = 3; 
+    // 地图id
+    int32 map_id = 4;    
+}
+
+// 房主发起匹配请求
+message PBMatchReqCmd
+{
+    // 玩家uid
+	int64 uid = 1;    
+    // 匹配类型    
+    int32 match_type = 2; 
+    // 阵营类型
+    int32 camp_type = 3; 
+    // 是否需要ai
+    bool need_ai = 4; 
+}
+// 服务器回复匹配请求
+message PBMatchRspCmd
+{
+    // 操作结果
+    int32 code = 1;
+}
+
+// 通知客户端确认匹配
+message PBNotifyMatchAckCmd
+{
+    // 匹配房间id
+    int64 room_id = 1;
+}
+// 客户端确认匹配
+message PBMatchAckReqCmd
+{
+    // 玩家uid
+	int64 uid = 1;
+    // 匹配房间id
+    int64 room_id = 2;
+    // 是否同意
+    bool is_agree = 3;
+}
+
+// 客户端发送匹配操作请求
+message PBMatchSelectionOptReqCmd
+{
+    // 玩家uid
+	int64 uid = 1;
+    // 匹配房间id
+    int64 room_id = 2;
+    // 操作数据
+    PBUserSelectionOpt opt = 3;	
+}
+// 服务器返回匹配操作
+message PBMatchSelectionOptRspCmd
+{
+    // 操作结果
+    int32 code = 1;
+}
+// 服务器通知客户端进入DS
+message PBMatchNotifyEnterDSCmd
+{
+    // ds房间ip
+    string ds_ip = 1;
+    // ds房间端口
+    int32 ds_port = 2;
+    // 房间key
+    string room_key = 3;
+}
+// 通知客户端对局结束
+message PBMatchNotifyGameOverCmd
+{
+    // 房间id
+    int64 room_id = 1;
+    // error code
+    int32 code = 2;
+}
+// 客户端请求取消匹配
+message PBMatchCancelReqCmd
+{
+    // 玩家uid
+	int64 uid = 1;
+    // 匹配房间id
+    int64 room_id = 2;
+}
+// 服务器回复取消匹配
+message PBMatchCancelRspCmd
+{
+    // 操作结果
+    int32 code = 1;
+}
+// 服务器通知客户端匹配失败
+message PBMatchNotifyFailCmd
+{
+    // 房间id
+    int64 room_id = 1;
+    // error code
+    int32 code = 2;
+}
+// 服务器通知客户端匹配人数
+message PBMatchNotifyPlayerNumCmd
+{
+    // 房间id
+    int64 room_id = 1;
+    // human num
+    int32 human_num = 2;
+    // ghost num
+    int32 ghost_num = 3;
+    // red team num
+    int32 red_team_num = 4;
+    // blue team num
+    int32 blue_team_num = 5;
+}

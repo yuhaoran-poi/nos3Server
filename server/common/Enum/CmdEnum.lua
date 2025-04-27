@@ -44,14 +44,15 @@ MessageType = {
 -- 加密类型
 CompressionType = {
     NO_COMPRESSION = 0,
-    },
-    -- 固定节点ID
-    FixedNodeId = {
-        INVALID = 0,
-        CHAT = 3001,
-        MANAGER = 3999,
-        HUB = 10000,
-    }
+},
+-- 固定节点ID
+FixedNodeId = {
+    INVALID = 0,
+    CHAT = 3001,
+    MATCH = 3002,
+    MANAGER = 3999,
+    HUB = 10000,
+}
 
 }
 

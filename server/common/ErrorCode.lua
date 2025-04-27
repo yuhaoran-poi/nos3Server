@@ -66,6 +66,8 @@ local ErrorCode = {
     TeamFull = 810,
     ---队伍数据损坏
     TeamDataCorrupted = 811,
+    --- 队伍匹配中不能加入
+    TeamMatching = 812,
 
     ---房间系统错误码（900-910）
     --- 玩家没有全部准备
@@ -214,6 +216,28 @@ local ErrorCode = {
     AddSystemChannelGameNodeErr = 1320,
     --- 退出系统频道失败
     RemoveSystemChannelGameNodeErr = 1321,
+
+    --- 匹配相关错误码
+    --- 已有匹配房间
+    MatchRoomAlreadyExist = 1401,
+    --- 匹配房间不存在
+    MatchRoomNotExist = 1402,
+    --- 匹配房间未准备
+    MatchRoomNotReady = 1403,
+    --- 匹配房间已满
+    MatchRoomFull = 1404,
+    --- 匹配参数无效
+    MATCH_INVALID_PARAM = 1405,
+    --- 匹配类型无效
+    MATCH_INVALID_MATCH_TYPE = 1406,
+    --- 匹配阵营类型无效
+    MATCH_INVALID_CAMP_TYPE = 1407,
+    --- 队长才能创建匹配房间
+    MATCH_NOT_TEAM_LEADER = 1408,
+    --- 鬼阵营队伍人数不能超过1人
+    MATCH_GHOST_TEAM_MEMBER_COUNT_LIMIT = 1409,
+    --- 创建匹配房间失败
+    MATCH_CREATE_ROOM_FAILED = 1410,
 }
 
 return ErrorCode

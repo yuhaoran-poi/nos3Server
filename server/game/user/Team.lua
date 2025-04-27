@@ -20,7 +20,7 @@ function Team.Init()
             master_id = 0,
             members = {},
             match_type = 0,
-            user_list = {},
+            match_state = false, -- 匹配状态 true 匹配中 false 未匹配 
             is_del = false
         }
     end
@@ -29,7 +29,23 @@ end
 function Team.Start()
     -- body
 end
+-- 是否匹配中
+function Team.IsMatching()
+    local DB = scripts.UserModel.Get()
+    return DB.team.match_state
+end
+-- 设置匹配状态
+function Team.SetMatching(state)
+    local DB = scripts.UserModel.Get()
+    DB.team.match_state = state
+end
+-- 队伍是否满了
+function Team.IsFull()
+    local DB = scripts.UserModel.Get()
+    return table.size(DB.team.members) >= 5
+end
 
+-- 客户端消息请求
 -- 创建队伍
 function Team.PBTeamCreateReqCmd(req)
     -- 如果已经在队伍中则不能创建
@@ -71,7 +87,20 @@ function Team.PBTeamJoinReqCmd(req)
         },req)
         return ErrorCode.TeamAlreadyInTeam
     end
-    
+    -- 如果队伍已满则不能加入
+    if Team.IsFull() then
+        context.R2C(CmdCode.PBTeamJoinRspCmd, {
+            code = ErrorCode.TeamFull
+        }, req)
+        return ErrorCode.TeamFull
+    end
+    -- 匹配中不能加入
+    if Team.IsMatching() then
+        context.R2C(CmdCode.PBTeamJoinRspCmd, {
+            code = ErrorCode.TeamMatching
+        }, req)
+        return ErrorCode.TeamMatching
+    end
     -- 调用teammgr服务加入队伍
     local success, err = cluster.call(3999, "teammgr", "Teammgr.JoinTeam", context.uid, req.msg.team_id, DB.simple)
     if not success then

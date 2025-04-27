@@ -6,7 +6,7 @@ return {
     --protocol = require("common.protocol"), -- json
 
     CmdCode = require("common.CmdCode"),
-    CmdEnum = require("common.CmdEnum"),
+    CmdEnum = require("common.Enum.CmdEnum"),
     Database = require("common.Database"),
     GameCfg = require("common.GameCfg"),
     GameDef = require("common.GameDef"),
