@@ -214,6 +214,22 @@ local ErrorCode = {
     AddSystemChannelGameNodeErr = 1320,
     --- 退出系统频道失败
     RemoveSystemChannelGameNodeErr = 1321,
+
+    --背包相关错误码
+    --- 背包不存在
+    BagNotExist = 1401,
+    --- 背包类型不匹配
+    BagTypeMismatch = 1402,
+    --- 背包已满
+    BagFull = 1403,
+    --- 背包道具不足
+    BagNotEnough = 1404,
+    --- 不允许拆分
+    SplitNotAllowed = 1405,
+    --- 拆分数量不足
+    SplitCountInvalid = 1406,
+    --- 移动目标已被占用
+    MoveTargetOccupied = 1407,
 }
 
 return ErrorCode
