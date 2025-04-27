@@ -2,8 +2,8 @@
 local moon = require("moon")
 local setup = require("common.setup")
 
----@class selection_context:base_context
----@field scripts selection_scripts
+---@class matchroom_context:base_context
+---@field scripts matchroom_scripts
 local context = {
     selection_id = 0,
     selection_type = 0,

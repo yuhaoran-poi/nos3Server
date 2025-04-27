@@ -6,6 +6,7 @@ syntax = "proto3";
  
 // 操作类型
 enum PBSelectionOpType{
+    PBSelectionOp_None              = 0;
     // 禁用
     PBSelectionOp_Disable_Map       = 1; 
     PBSelectionOp_Disable_Role      = 2;
@@ -23,6 +24,7 @@ enum PBSelectionOpType{
 }
 // 扳选禁用阶段
 enum PBSelectionStateType{
+    PBSelectionState_None        = 0;
     // 禁用阶段
     PBSelectionState_Disable    = 1; 
     // 选择阶段
@@ -69,9 +71,9 @@ message PBUserSelection{
     // 选择的地图ID
     int32 selection_map_id     = 5;
     // 选择的匹配模式 这里需要带上角色的皮肤信息 （战斗数据，数据会出传送到DS中）
-    PBRoleInfo selection_ghost = 6;
+    //PBRoleInfo selection_ghost = 6;
     // 选择的匹配模式 这里需要带上角色的皮肤信息（战斗数据，数据会出传送到DS中）
-    PBRoleInfo selection_human = 7;
+    //PBRoleInfo selection_human = 7;
     // 是否确认选用了
     bool confirm_role_ok       = 8;
 }
@@ -98,11 +100,11 @@ message PBUserSelectionS{
     // 默认被ban的物品、角色、技能、诡术等
 	repeated uint32 system_ban_config_ids = 10;		
     // 狼人杀模式的bp信息
-	PBUserSelectionLRS lrs_mode_selection = 11;		
+	//PBUserSelectionLRS lrs_mode_selection = 11;		
     // 驱灵模式选择信息
-	repeated PBUserSelection ql_mode_selection = 12;  
+	//repeated PBUserSelection ql_mode_selection = 12;  
     // 据点战模式bp信息         
-	repeated PBUserSelection stronghold_mode_selection = 13;	
+	//repeated PBUserSelection stronghold_mode_selection = 13;	
 }
 
 //----------------------匹配命令--------------------------

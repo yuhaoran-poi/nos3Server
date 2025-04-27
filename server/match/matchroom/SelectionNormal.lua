@@ -1,7 +1,7 @@
 --[[
-* @file : SelectionRank.lua
+* @file : SelectionNormal.lua
 * @type: multi service
-* @brief : 排位模式
+* @brief : 普通模式
 * @author : yq
 ]]
 
@@ -10,26 +10,29 @@ local common = require "common"
 local cluster = require("cluster")
 local queue = require "moon.queue"
 local lock = queue()
----@type selection_context
+---@type matchroom_context
 local context = ...
 local scripts = context.scripts
 
 
 
 
----@class SelectionRank
-local SelectionRank = {}
+---@class SelectionNormal
+local SelectionNormal = {}
 
-function SelectionRank.Init()
+function SelectionNormal.Init()
     return true
      
 end
 
-function SelectionRank.Start()
+function SelectionNormal.Start()
     
     return true
 end
  
  
  
-return SelectionRank
+ 
+ 
+ 
+return SelectionNormal
