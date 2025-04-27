@@ -14,7 +14,7 @@ local Database = common.Database
 local GameCfg = common.GameCfg --游戏配置
 local ErrorCode = common.ErrorCode --逻辑错误码
 local CmdCode = common.CmdCode --客户端通信消息码
-local ChatEnum = require("common.ChatEnum") --聊天枚举
+local ChatEnum = require("common.Enum.ChatEnum") --聊天枚举
 ---@type chatmgr_context
 local context = ...
 local scripts = context.scripts ---方便访问同服务的其它lua模块

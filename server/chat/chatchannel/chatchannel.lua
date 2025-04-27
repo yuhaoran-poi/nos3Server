@@ -7,7 +7,7 @@
 
 local moon = require "moon"
 local common = require "common"
-local ChatEnum = require("common.ChatEnum") --聊天频道类型枚举
+local ChatEnum = require("common.Enum.ChatEnum") --聊天频道类型枚举
 local cluster = require("cluster")
 local queue = require "moon.queue"
 local GameCfg = common.GameCfg

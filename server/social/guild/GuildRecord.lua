@@ -10,7 +10,7 @@ local cluster = require("cluster")
 local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
-local GuildEnum = require("common.GuildEnum") --公会枚举
+local GuildEnum = require("common.Enum.GuildEnum") --公会枚举
 ---@type guild_context
 local context = ...
 local scripts = context.scripts

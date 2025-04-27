@@ -2,7 +2,7 @@ local moon = require "moon"
 local common = require "common"
 local ErrorCode = common.ErrorCode --逻辑错误码
 local CmdEnum = common.CmdEnum
-local ChatEnum = require("common.ChatEnum")
+local ChatEnum = require("common.Enum.ChatEnum")
 local cluster = require("cluster")
 local ChatLogic = {}
 -- 创建公会聊天频道

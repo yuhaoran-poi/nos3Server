@@ -1,7 +1,7 @@
 local moon = require "moon"
 local common = require "common"
 local cluster = require("cluster")
-local ChatEnum = require("common.ChatEnum")
+local ChatEnum = require("common.Enum.ChatEnum")
 local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode

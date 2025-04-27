@@ -9,7 +9,7 @@ local ErrorCode = common.ErrorCode --逻辑错误码
 local CmdCode = common.CmdCode     --客户端通信消息码
 local CmdEnum = common.CmdEnum     
 local LuaExt = common.LuaExt
-local GuildEnum = require("common.GuildEnum") --公会枚举
+local GuildEnum = require("common.Enum.GuildEnum") --公会枚举
 local cluster = require("cluster")
 local ChatLogic = require("common.ChatLogic") --聊天逻辑
 ---@type guild_context
