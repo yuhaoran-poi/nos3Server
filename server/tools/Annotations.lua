@@ -25,6 +25,7 @@
 ---@field public itemlist table<integer, ItemData> @道具列表
 ---@field public team TeamInfo @队伍信息
 ---@field public guild GuildInfo @公会信息
+---@field public bagData BagData @背包信息
 
 
 ---@class C2SMatch
@@ -47,8 +48,9 @@
 
 
 ---@class ItemData
----@field public id integer @道具id
----@field public count integer @道具数量
+---@field public itype integer @道具类型
+---@field public common_info PBItemCommon @道具id
+---@field public special_info PBItemSpecial @唯一id
 
 ---@class TeamInfo
 ---@field public team_id integer @队伍ID
@@ -65,6 +67,13 @@
 --@class GuildDbData
 --@field public guild_id integer @公会ID
 
+---@class BagInfo
+---@field public bag_item_type integer @背包物品类型
+---@field public capacity integer @背包容量
+---@field public items table<integer, ItemData> @背包物品列表
+
+---@class BagData
+---@field public bags table<integer, BagInfo> @背包信息
 
 
 ---@class MailData
@@ -801,6 +810,7 @@
 ---@field Team Team
 ---@field UserModel UserModel
 ---@field ItemDefine ItemDefine
+---@field Bag Bag
 
 ---@class static_conf
 ---@field constant constant
@@ -812,6 +822,7 @@
 ---@class Item_cfg
 ---@field id integer
 ---@field stack_count integer
+---@field type1 integer
 
 ---@class RankLevel_cfg
 ---@field id integer

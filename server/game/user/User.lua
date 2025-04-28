@@ -76,6 +76,8 @@ function User.Load(req)
 
         ---加载simple数据
         User.LoadSimple()
+        ---加载背包数据
+        scripts.Bag.Init()
         ---初始化自己数据
         context.batch_invoke_throw("Init", isnew)
         ---初始化互相引用的数据

@@ -229,10 +229,13 @@ local ErrorCode = {
     --- 匹配参数无效
     MatchInvalidParam = 1405,
     --- 匹配类型无效
+   
     MatchInvalidMatchType = 1406,
     --- 匹配阵营类型无效
+
     MatchInvalidCampType = 1407,
     --- 队长才能创建匹配房间
+
     MatchOnlyLeaderCanCreateRoom = 1408,
     --- 鬼阵营队伍人数不能超过1人
     MatchGhostTeamMemberCountLimit = 1409,
@@ -243,6 +246,32 @@ local ErrorCode = {
 
     
     
+
+    --背包相关错误码
+    --- 背包不存在
+    BagNotExist = 1501,
+    --- 背包类型不匹配
+    BagTypeMismatch = 1502,
+    --- 背包已满
+    BagFull = 1503,
+    --- 背包道具不足
+    BagNotEnough = 1504,
+    --- 不允许拆分
+    SplitNotAllowed = 1505,
+    --- 拆分数量不足
+    SplitCountInvalid = 1506,
+    --- 移动目标已被占用
+    MoveTargetOccupied = 1507,
+    --- 不允许堆叠
+    StackNotAllowed = 1508,
+    --- 堆叠类型不匹配
+    StackTypeMismatch = 1509,
+    --- 堆叠达到上限
+    StackFull = 1510,
+    --- 背包保存失败
+    BagSaveFailed = 1511,
+    --- 背包容量溢出
+    BagCapacityOverflow = 1512,
 }
 
 return ErrorCode

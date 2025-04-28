@@ -585,6 +585,7 @@ function _M.save_guildbag(addr, guild_id, data)
     ]], guild_id, pbdata, data_str, pbdata, data_str)
     return moon.call("lua", addr, cmd)
 end
+
 function _M.save_guildrecord(addr, guild_id, data)
     assert(data)
 
@@ -596,6 +597,89 @@ function _M.save_guildrecord(addr, guild_id, data)
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
     ]], guild_id, pbdata, data_str, pbdata, data_str)
     return moon.call("lua", addr, cmd)
+end
+
+-- 背包相关数据
+-- function _M.saveuserbag(addr, uid, data)
+--     assert(data)
+
+--     local data_str = jencode(data)
+--     --local _, pbdata = protocol.encodewithname("PBGuildRecordDB", data)
+
+--     local cmd = string.format([[
+--         INSERT INTO mgame.userbag (uid, data_json)
+--         VALUES (%d, '%s')
+--         ON DUPLICATE KEY UPDATE data_json = '%s';
+--     ]], uid, data_str, data_str)
+--     moon.send("lua", addr, cmd)
+-- end
+
+function _M.saveuserbags(addr, uid, bags_data)
+    assert(bags_data)
+
+    local str_sql = "INSERT INTO mgame.userbag(uid"
+    local str_param1 = ""
+    local str_param2 = ""
+    local str_param3 = ""
+    local had_param = false
+
+    for bagTypeName, bagData in pairs(bags_data) do
+        local data_str = jencode(bagData)
+        local _, pbdata = protocol.encodewithname("PBBag", bagData)
+        if data_str and pbdata then
+            had_param = true
+
+            str_param1 = str_param1 .. ", " .. bagTypeName .. ", " .. bagTypeName.. "_json"
+            str_param2 = str_param2 .. ", '" .. pbdata .. "', '" .. data_str .. "'"
+            if str_param3 ~= "" then
+                str_param3 = str_param3.. ", "
+            end
+            str_param3 = str_param3 .. " " .. bagTypeName .. "='" .. pbdata .. "', " .. bagTypeName .. "_json='" .. data_str .. "'"
+        end
+    end
+    if not had_param then
+        return false
+    end
+
+    str_sql = str_sql .. str_param1 .. ") VALUES (" .. uid .. str_param2 .. ")" .. "ON DUPLICATE KEY UPDATE" .. str_param3 .. ";"
+    moon.send("lua", addr, str_sql)
+
+    return true
+end
+
+function _M.loaduserbags(addr, uid, bags_name)
+    assert(bags_name)
+
+    local str_sql = "SELECT uid"
+    local str_param1 = ""
+    local had_param = false
+    for _, bagTypeName in pairs(bags_name) do
+        if bagTypeName then
+            had_param = true
+            str_param1 = str_param1.. ", ".. bagTypeName
+        end
+    end
+    if not had_param then
+        return nil
+    end
+
+    str_sql = str_sql .. str_param1 .. " FROM mgame.userbag WHERE uid=" .. uid
+    local sql_res, err = moon.call("lua", addr, str_sql)
+    if not err and sql_res and #sql_res > 0 then
+        local bag_res = {}
+        for _, bagTypeName in pairs(bags_name) do
+            if sql_res[1][bagTypeName] then
+                local _, tmp_data = protocol.decodewithname("PBBag", sql_res[1][bagTypeName])
+                if tmp_data then
+                    bag_res[bagTypeName] = tmp_data
+                end
+            end
+        end
+
+        return bag_res
+    end
+
+    return nil
 end
 
 return _M

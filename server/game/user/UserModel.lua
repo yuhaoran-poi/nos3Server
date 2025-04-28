@@ -46,7 +46,6 @@ function UserModel.Save(checkDirty)
     if checkDirty and not dirty then
         return
     end
-
     
     Database.saveuserdata(context.addr_db_user, DBData.user_data.user_id, DBData.user_data)
     dirty = false
@@ -74,8 +73,28 @@ function UserModel.MutGet()
 end
 
 function UserModel.SetSimple(simple_data)
-    
     DBData.simple = simple_data
+end
+
+function UserModel.GetBagData()
+    if DBData and DBData.bagdata then
+        return DBData.bagdata
+    end
+    return nil
+end
+
+function UserModel.SetBagData(baginfos)
+    if not DBData then
+        return
+    end
+
+    if not DBData.bagdata then
+        DBData.bagdata = baginfos
+    else
+        for bagtype, baginfo in ipairs(baginfos) do
+            DBData.bagdata[bagtype] = baginfo
+        end
+    end
 end
 
 return UserModel
