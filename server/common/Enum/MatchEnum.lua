@@ -50,6 +50,28 @@ local MatchEnum = {
          PBSelectionOp_Setup_Skin        = 6, -- 皮肤
 	     PBSelectionOp_Setup_LRSVieItem  = 7, -- 狼人杀争抢道具
     },
+    -- 匹配状态
+    MatchRoomState = {
+        -- 初始化
+        MatchRoomState_Init = 0,
+        -- 匹配中
+        MatchRoomState_Matching = 1,
+        -- 坂选状态
+        MatchRoomState_Selection = 2,
+        -- 创建DS房间
+        MatchRoomState_CreateDSRoom = 3,
+        -- 等待DS房间创建
+        MatchRoomState_WaitDSRoom = 4,
+        -- 战斗中
+        MatchRoomState_Fight = 5,
+        -- 结算中
+        MatchRoomState_Settle = 6,
+        -- 房间关闭
+        MatchRoomState_Close = 7,
+        -- 房间销毁
+        MatchRoomState_Destroy = 8,
+        
+    }
 }
 
 return MatchEnum

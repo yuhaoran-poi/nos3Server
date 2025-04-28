@@ -227,17 +227,22 @@ local ErrorCode = {
     --- 匹配房间已满
     MatchRoomFull = 1404,
     --- 匹配参数无效
-    MATCH_INVALID_PARAM = 1405,
+    MatchInvalidParam = 1405,
     --- 匹配类型无效
-    MATCH_INVALID_MATCH_TYPE = 1406,
+    MatchInvalidMatchType = 1406,
     --- 匹配阵营类型无效
-    MATCH_INVALID_CAMP_TYPE = 1407,
+    MatchInvalidCampType = 1407,
     --- 队长才能创建匹配房间
-    MATCH_NOT_TEAM_LEADER = 1408,
+    MatchOnlyLeaderCanCreateRoom = 1408,
     --- 鬼阵营队伍人数不能超过1人
-    MATCH_GHOST_TEAM_MEMBER_COUNT_LIMIT = 1409,
-    --- 创建匹配房间失败
-    MATCH_CREATE_ROOM_FAILED = 1410,
+    MatchGhostTeamMemberCountLimit = 1409,
+    --- 房主请求开始匹配失败
+    MatchReqFailed = 1410,
+    --- 创建匹配房间服务失败
+    CreateMatchRoomServiceErr = 1411,
+
+    
+    
 }
 
 return ErrorCode

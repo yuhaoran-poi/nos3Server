@@ -11,7 +11,7 @@ local CmdEnum = common.CmdEnum
 local LuaExt = common.LuaExt
 local GuildEnum = require("common.Enum.GuildEnum") --公会枚举
 local cluster = require("cluster")
-local ChatLogic = require("common.ChatLogic") --聊天逻辑
+local ChatLogic = require("common.Logic.ChatLogic") --聊天逻辑
 ---@type guild_context
 local context = ...
 local scripts = context.scripts ---方便访问同服务的其它lua模块

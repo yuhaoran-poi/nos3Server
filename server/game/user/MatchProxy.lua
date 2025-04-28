@@ -40,66 +40,66 @@ function MatchProxy.PBMatchReqCmd(req)
     -- 参数检查
     if not match_type or not camp_type or not need_ai then
         context.R2C(CmdCode.PBMatchRspCmd, {
-            code = ErrorCode.MATCH_INVALID_PARAM
+            code = ErrorCode.MatchInvalidParam
         }, req)
-        return ErrorCode.MATCH_INVALID_PARAM
+        return ErrorCode.MatchInvalidParam
     end
     -- 匹配类型检查
     if match_type < MatchEnum.MATCH_TYPE_DEF.MATCH_TYPE_NORMAL or match_type >= MatchEnum.MATCH_TYPE_DEF.MATCH_TYPE_MAX then
         context.R2C(CmdCode.PBMatchRspCmd, {
-            code = ErrorCode.MATCH_INVALID_MATCH_TYPE
+            code = ErrorCode.MatchInvalidMatchType
         }, req)
-        return ErrorCode.MATCH_INVALID_MATCH_TYPE
+        return ErrorCode.MatchInvalidMatchType
     end
     -- 阵营类型检查
     if camp_type < MatchEnum.MATCH_CAMP_DEF.MATCH_CAMP_NULL or camp_type >= MatchEnum.MATCH_CAMP_DEF.MATCH_CAMP_MAX then
         context.R2C(CmdCode.PBMatchRspCmd, {
-            code = ErrorCode.MATCH_INVALID_CAMP_TYPE
+            code = ErrorCode.MatchInvalidCampType
         }   , req)
-        return ErrorCode.MATCH_INVALID_CAMP_TYPE
+        return ErrorCode.MatchInvalidCampType
     end
     -- 狼人杀、驱灵模式和据点战模式只能选人
     if match_type == MatchEnum.MATCH_TYPE_DEF.MATCH_TYPE_LRS or match_type == MatchEnum.MATCH_TYPE_DEF.MATCH_TYPE_QL or match_type == MatchEnum.MATCH_TYPE_DEF.MATCH_TYPE_JDZ then
         if camp_type ~= MatchEnum.MATCH_CAMP_DEF.MATCH_CAMP_HUMAN then
             context.R2C(CmdCode.PBMatchRspCmd, {
-                code = ErrorCode.MATCH_INVALID_CAMP_TYPE
+                code = ErrorCode.MatchInvalidCampType
             }  , req)
-            return ErrorCode.MATCH_INVALID_CAMP_TYPE
+            return ErrorCode.MatchInvalidCampType
         end
     end
     -- 队伍判断
     local team_id = DB.team.team_id
     if team_id == 0 then
         context.R2C(CmdCode.PBMatchRspCmd, {
-            code = ErrorCode.MATCH_NOT_TEAM_LEADER
+            code = ErrorCode.TeamNotMaster
         }, req)
-        return ErrorCode.MATCH_NOT_TEAM_LEADER
+        return ErrorCode.TeamNotMaster
     else
         -- 有队伍，判断是否是队长
         local team_info = DB.teams[team_id]
         if team_info.leader_uid ~= context.uid then
             context.R2C(CmdCode.PBMatchRspCmd, {
-                code = ErrorCode.MATCH_NOT_TEAM_LEADER
+                code = ErrorCode.TeamNotMaster
             }, req)
-            return ErrorCode.MATCH_NOT_TEAM_LEADER
+            return ErrorCode.TeamNotMaster
         end
         -- 如果选择鬼阵营，队伍人数不能超过1人
         if camp_type == MatchEnum.MATCH_CAMP_DEF.MATCH_CAMP_GHOST and table.size(team_info.members) > 1 then
             context.R2C(CmdCode.PBMatchRspCmd, {
-                code = ErrorCode.MATCH_GHOST_TEAM_MEMBER_COUNT_LIMIT
+                code = ErrorCode.MatchGhostTeamMemberCountLimit
             }, req)
-            return ErrorCode.MATCH_GHOST_TEAM_MEMBER_COUNT_LIMIT -- 鬼阵营队伍人数不能超过1人
+            return ErrorCode.MatchGhostTeamMemberCountLimit -- 鬼阵营队伍人数不能超过1人
         end
     end
     -- 调用matchmgr服务创建匹配房间
-    local res, err = cluster.call(CmdEnum.FixedNodeId.MATCH, "matchmgr", "MatchMgr.CreateMatchRoom",
+    local res, err = cluster.call(CmdEnum.FixedNodeId.MATCH, "matchmgr", "MatchMgr.MatchReq",
                                   context.uid,team_id, match_type, camp_type, need_ai)
     if not res then
-        print("CreateMatchRoom failed:", err)
+        print("MatchReq failed:", err)
         context.R2C(CmdCode.PBMatchRspCmd, {
-            code = ErrorCode.MATCH_CREATE_ROOM_FAILED
+            code = ErrorCode.MatchReqFailed
         }, req)
-        return ErrorCode.MATCH_CREATE_ROOM_FAILED
+        return ErrorCode.MatchReqFailed
     end
     if res.code ~= ErrorCode.None then
         context.R2C(CmdCode.PBMatchRspCmd, {
@@ -109,8 +109,7 @@ function MatchProxy.PBMatchReqCmd(req)
     end
     -- 返回匹配成功
     context.R2C(CmdCode.PBMatchRspCmd, {
-        code = ErrorCode.None,
-        room_id = res.room_id
+        code = ErrorCode.None
     }, req)
 end
  

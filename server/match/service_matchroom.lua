@@ -5,10 +5,24 @@ local setup = require("common.setup")
 ---@class matchroom_context:base_context
 ---@field scripts matchroom_scripts
 local context = {
-    selection_id = 0,
-    selection_type = 0,
-    slection_addr = 0,
+    room_id = 0,        -- 房间ID
+    match_type = 0,     -- 匹配类型
+    room_addr = 0,      -- 房间地址
+    room_status = 0,    -- 房间状态
     memember_uids = {}, -- 房间玩家
+    ob_uids = {},       -- 房间观战列表
+    create_ds = {
+        create_count = 0, -- 创建房间次数
+        qurey_count = 0,  -- 查询房间次数
+        join_count = 0,   -- 加入房间次数
+    },
+    ds_info = {
+        ds_ip = "", -- ds ip
+        ds_port = 0, -- ds port
+    },       -- ds房间信息
+    teams = {},           -- 房间队伍
+    ob_teams = {},        -- 房间观战队伍
+       
     scripts = {},
 }
 
@@ -23,7 +37,7 @@ command.hotfix = function(names)
 end
 
 moon.shutdown(function()
-    print("selection %d shutdown", context.selection_id)
+    print("selection %d shutdown", context.room_id)
 end)
 
 ---垃圾收集器间歇率控制着收集器需要在开启新的循环前要等待多久。

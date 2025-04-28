@@ -807,10 +807,21 @@
 ---@field example example_cfg[]
 ---@field Item Item_cfg[]
 ---@field UniqueItem UniqueItem_cfg[]
+---@field RankLevel RankLevel_cfg[]
 
 ---@class Item_cfg
 ---@field id integer
 ---@field stack_count integer
+
+---@class RankLevel_cfg
+---@field id integer
+---@field grade_level integer
+---@field max_level integer
+---@field top_star integer
+---@field top_score integer
+---@field bottom_score integer
+
+
 
 ---@class guild_scripts
 ---@field Guild Guild

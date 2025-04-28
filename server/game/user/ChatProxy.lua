@@ -6,7 +6,7 @@ local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
 local CmdEnum = common.CmdEnum
-local ChatLogic = require("common.ChatLogic")
+local ChatLogic = require("common.Logic.ChatLogic")
 ---@type user_context
 local context = ...
 local scripts = context.scripts

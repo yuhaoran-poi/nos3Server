@@ -129,7 +129,7 @@ function User.LoadSimple()
                 account_level = 0,
                 account_exp = 0,
                 account_total_exp = 0,
-                guild_uid = 0,
+                guild_id = 0,
                 guild_name = "",
                 cur_show_role = {
                     role_id = 0,
@@ -146,6 +146,7 @@ function User.LoadSimple()
                 mons_uniqid = 0,
                 mons_confid = 0,
                 mons_skin_list = {},
+                
             }
 
             local pbname, pb_data = protocol.encodewithname("PBUserSimpleInfo", user_simple)

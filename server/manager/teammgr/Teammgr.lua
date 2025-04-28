@@ -2,7 +2,8 @@ local moon = require "moon"
 local cluster = require("cluster")
 local uuid = require("uuid")
 local common = require "common"
-local ChatLogic = require("common.ChatLogic") --聊天逻辑
+local ChatLogic = require("common.Logic.ChatLogic") --聊天逻辑
+local MatchEnum = require("common.Enum.MatchEnum") --匹配类型枚举
 local CmdCode = common.CmdCode
 local ErrorCode = common.ErrorCode
 
@@ -22,7 +23,7 @@ function Teammgr.Start()
 end
  
 -- 创建队伍
-function Teammgr.CreateTeam(uid, match_type, base_data)
+function Teammgr.CreateTeam(uid, match_type, simple_data)
     -- 检查用户是否已在队伍中
     if context.user_team[uid] then
         return nil, ErrorCode.TeamAlreadyInTeam
@@ -35,8 +36,7 @@ function Teammgr.CreateTeam(uid, match_type, base_data)
         team_id = team_id,
         master_uid = uid,
         match_type = match_type,
-        base_data = base_data,
-        members = {[uid] = true}
+        members = { [uid] = simple_data }
     }
     -- 更新uidmap
     context.user_team[uid] = team_id
@@ -48,7 +48,7 @@ function Teammgr.CreateTeam(uid, match_type, base_data)
 end
 
 -- 加入队伍
-function Teammgr.JoinTeam(uid, team_id, base_data)
+function Teammgr.JoinTeam(uid, team_id, simple_data)
     -- 检查用户是否已在其他队伍中
     if context.user_team[uid] then
         return false, ErrorCode.TeamAlreadyInTeam
@@ -65,7 +65,7 @@ function Teammgr.JoinTeam(uid, team_id, base_data)
     end
     
     -- 添加成员
-    team.members[uid] = true
+    team.members[uid] = simple_data
     -- 更新uidmap
     context.user_team[uid] = team_id
    
@@ -164,5 +164,29 @@ function Teammgr.GetTeamInfo(team_id)
     end
     return team
 end
+-- 获取队伍匹配信息
+function Teammgr.GetTeamMatchInfo(team_id, match_type)
+    local team = context.team_info[team_id]
+    if not team then
+        return nil
+    end
+    team.match_type = match_type
 
+    return team.match_info
+end
+-- 计算队伍分数
+function Teammgr.CalcTeamScore(team_id)
+    local RankScore = 0
+    local team = context.team_info[team_id]
+    if not team then
+        return RankScore
+    end
+    if team.match_type ~= MatchEnum.MATCH_TYPE_DEF.MATCH_TYPE_NORMAL and
+        team.match_type ~= MatchEnum.MATCH_TYPE_DEF.MATCH_TYPE_RANKING then
+        return RankScore
+    end
+    
+
+end
+ 
 return Teammgr
