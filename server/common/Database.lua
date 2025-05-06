@@ -335,16 +335,17 @@ function _M.loaduser_simple(addr, uid)
     return moon.call("lua", addr, cmd)
 end
 
-function _M.saveuser_simple(addr, uid, data, pbdata)
+function _M.saveuser_simple(addr, uid, data)
     assert(data)
 
+    local pbname, pb_data = protocol.encodewithname("PBUserSimpleInfo", data)
     local data_str = jencode(data)
 
     local cmd = string.format([[
         INSERT INTO mgame.user_simple (uid, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], uid, pbdata, data_str, pbdata, data_str)
+    ]], uid, pb_data, data_str, pb_data, data_str)
     return moon.call("lua", addr, cmd)
 end
 
@@ -656,7 +657,7 @@ function _M.loaduserbags(addr, uid, bags_name)
     for _, bagTypeName in pairs(bags_name) do
         if bagTypeName then
             had_param = true
-            str_param1 = str_param1.. ", ".. bagTypeName
+            str_param1 = str_param1 .. ", " .. bagTypeName
         end
     end
     if not had_param then
@@ -680,6 +681,60 @@ function _M.loaduserbags(addr, uid, bags_name)
     end
 
     return nil
+end
+
+function _M.loaduserroles(addr, uid)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.roles WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local _, tmp_data = protocol.decodewithname("PBUserRoleDatas", res[1].value)
+        return tmp_data
+    end
+    print("loaduserroles failed", uid, err)
+    return nil
+end
+
+function _M.saveuserroles(addr, uid, data)
+    assert(data)
+
+    local data_str = jencode(data)
+    local _, pbdata = protocol.encodewithname("PBUserRoleDatas", data)
+    local cmd = string.format([[
+        INSERT INTO mgame.roles (uid, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], uid, pbdata, data_str, pbdata, data_str)
+
+    return moon.send("lua", addr, cmd)
+end
+
+function _M.loaduserghosts(addr, uid)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.ghosts WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local _, tmp_data = protocol.decodewithname("PBUserGhostDatas", res[1].value)
+        return tmp_data
+    end
+    print("loaduserroles failed", uid, err)
+    return nil
+end
+
+function _M.saveuserghosts(addr, uid, data)
+    assert(data)
+
+    local data_str = jencode(data)
+    local _, pbdata = protocol.encodewithname("PBUserGhostDatas", data)
+    local cmd = string.format([[
+        INSERT INTO mgame.ghosts (uid, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], uid, pbdata, data_str, pbdata, data_str)
+
+    return moon.send("lua", addr, cmd)
 end
 
 return _M

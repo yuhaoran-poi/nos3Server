@@ -8,6 +8,7 @@ import traceback
 #from make_ue_proto import generate_header,generate_source
 from make_ue_proto import gen_ue_proto 
 import zlib
+import make_annotations
 ######################TEMPLATE BEGIN#######################
 
 
@@ -355,6 +356,14 @@ if __name__ == "__main__":
     try:
       sys_message,custom_message,version_crc,all_message = get_proto_message_names("../protocol")
       gen_id_dict(sys_message,custom_message,version_crc,all_message)
+      intelliSense = make_annotations.EmmyLuaIntelliSense()
+      intelliSense.run(
+        proto_src_dir= "../protocol/",
+        game_dir=["../game/","../social/","../match/","../chat/","../manager/","../common/service/"],
+        game_config_dir="../static/table/",
+        json_verify_out_file="../protocol/json_verify.json"
+      )
+
     except Exception as e:
       traceback.print_exc()
 

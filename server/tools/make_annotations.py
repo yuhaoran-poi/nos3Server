@@ -246,7 +246,7 @@ class EmmyLuaIntelliSense:
 
         return message_content, enum_content
 
-    def make_game_annotations(self, logicpath):
+    def make_game_annotations2(self, logicpath):
         logicsfiles = listdirs(logicpath, 2)
         logicannotations = dict()
         for filepath in logicsfiles:
@@ -268,6 +268,13 @@ class EmmyLuaIntelliSense:
             for one in v:
                 content += "---@field %s %s\n" % (one, one)
         return content
+    def make_game_annotations(self, logicpaths):
+        #遍历数组，每个元素是一个路径
+        content = "\n\n"
+        for logicpath in logicpaths:
+            content += self.make_game_annotations2(logicpath)
+        return content
+       
 
     def make_conf_annotations(self, confpath):
         conffiles = listdirs(confpath)

@@ -11,34 +11,12 @@ local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
 local GuildEnum = require("common.Enum.GuildEnum") --公会枚举
+local GuildDef = require("common.def.GuildDef") --公会定义
 ---@type guild_context
 local context = ...
 local scripts = context.scripts
 local guild_record 
---公会记录信息 
----@class defaultGuildRecordInfoClass
-local defaultGuildRecordInfoClass = {
-	record_type = 0,		--记录类型
-	nickname = "",			--目标玩家昵称
-	record_time = 0,		--记录时间;
-	duty_name = "",			--只在 eRT_DUTY_CHANGE 有用（表示职位名称)
-	guild_level = 0,        --只在 eRT_GUILD_LV_UP 有用
-	guild_name = "",	    --只在 eRT_CHANGE_GUILD_NAME 有用
-	target_uid = 0,			--目标玩家UID
-	duty_id = 0,			--只在 eRT_DUTY_CHANGE 有用 （表示职位ID)
-	gkd_change_num = 0,     --eRT_GuildGKD变化记录 ,  
-	gkd_cur_num    = 0,     --eRT_GuildGKD GKD当前值
-	gkd_desc = "",          --eRT_GuildGKD 备注
-	item_id = 0,            --只在ERT_JUANZENG时使用
-	gubi_num = 0,           --只在ERT_JUANZENG时使用，古币数量
-	contribute = 0,         --贡献值
-	spoils_item = {},       --只在战利品发放时使用，物品id
-	season_point = 0,       --只在ERT_SEASON_POINT时使用
-    op_mgr_name = "",       --发放管理员名字
-    rechage_num    = 0,     --玩家充值的灵石数量
-    operater_uid   = 0,     --操作人UID
-}
-
+ 
  
 
 ---@class GuildRecord
@@ -54,33 +32,33 @@ end
 -- 成员退出公会记录
 ---@param uid integer 成员UID
 function GuildRecord.MemberQuit(uid)
-
-    GuildRecord.AddRecord({
-        uid = uid,
-        record_type = GuildEnum.EGuildRecordType.eRT_QUIT,
-        time = os.time(),
-    })
+    local record = GuildDef.newPBGuildRecordInfo()
+    record.operater_uid = uid
+    record.record_type = GuildEnum.EGuildRecordType.eRT_QUIT
+    record.record_time = os.time()
+    GuildRecord.AddRecord(record)
 end
 -- 踢出公会成员记录
 ---@param operater_uid integer 操作人UID
 ---@param target_uid integer 目标UID
 function GuildRecord.ExpelQuit(operater_uid, target_uid)
-    GuildRecord.AddRecord({
-        target_uid = target_uid,
-        operater_uid = operater_uid,
-        record_type = GuildEnum.EGuildRecordType.eRT_KICKOUT,
-        time = os.time(),
-    })
+    local record = GuildDef.newPBGuildRecordInfo()
+    record.operater_uid = operater_uid
+    record.target_uid = target_uid
+    record.record_type = GuildEnum.EGuildRecordType.eRT_EXPEL
+    record.record_time = os.time()
+    GuildRecord.AddRecord(record)
 end
  
 -- 成员加入公会记录
 ---@param uid integer 成员UID
 function GuildRecord.MemberJoin(uid)
-    GuildRecord.AddRecord({
-        uid = uid,
-        record_type = GuildEnum.EGuildRecordType.eRT_JOIN,
-        time = os.time(),
-    })
+    local record = GuildDef.newPBGuildRecordInfo()
+    record.operater_uid = uid
+    record.record_type = GuildEnum.EGuildRecordType.eRT_JOIN
+    record.record_time = os.time()
+    GuildRecord.AddRecord(record)
+    
 end
 
 function GuildRecord.AddRecord(record)

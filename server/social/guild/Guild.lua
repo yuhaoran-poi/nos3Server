@@ -12,6 +12,7 @@ local LuaExt = common.LuaExt
 local GuildEnum = require("common.Enum.GuildEnum") --公会枚举
 local cluster = require("cluster")
 local ChatLogic = require("common.Logic.ChatLogic") --聊天逻辑
+local GuildDef = require("common.Def.GuildDef") --公会定义
 ---@type guild_context
 local context = ...
 local scripts = context.scripts ---方便访问同服务的其它lua模块
@@ -19,57 +20,7 @@ local lock = queue() -- 定义一个队列锁，用于保证线程安全
 ---@class Guild
 local Guild = {}
 
----@class defaultGuildInfoDBClass
-local defaultGuildInfoDB = {
-    guild_id = 0,               --公会id
-    name = "",                  --公会名
-    level = 1,                  --公会等级
-    president_id = 0,           --公会长ID
-    president_name = "",        --公会长名称
-    build_time = 0,             --创建时间
-    exp = 0,                    --公会经验
-    contribute = 0,             --公会贡献值
-    activeness = 0,             --公会活跃度
-    status = 0,                 --公会状态（正常，冻结或者销毁）
-    master_ids = {},            --公会管理员列表
-    members = {},                  --玩家列表
-    member_count = 0,              --公会成员人数（当前）
-    member_num_level = 1,          --成员人数等级(第几等级）
-    member_max_num = 10,            --最大成员人数
-    accouncenment = "",         --公会公告
-    apply_list = {},            --公会申请列表
-    freeze_time = 0,            --冻结开始时间
-    apply_count = 0,            --公会申请数量
-    destory_time = 0,           --销毁时间
-    duty_list = {},             --职位列表
-    announcenment_modify_time = 0, --公告上次修改时间
-    season_activeness = 0,      --本赛季活跃度
-    join_con = {},              --公会加入条件
-    name_modify_time = 0,       --公会名字上次修改时间
-    spoilsmgr_ids = {},         --公会战利品管理员
-    recommend_endtime = 0,      --公会推荐到期时间
-    item_headid = 0,            --公会头像ID
-    item_frameid = 0,           --公会头像框ID
-    open_juanzeng = 0,          --打开捐赠
-    ---------------------------------------以下数据不落地-------------------------
-}
----@class defaultGuildShopDBClass
-local defaultGuildShopDB = {
-    guild_id = 0, --公会id
-    shop_item_list = {}, --商品列表
-    last_refresh_time = 0, --上次刷新时间
-}
----@class defaultGuildBagDBClass 
-local defaultGuildBagDB = {
-    guild_id = 0, --公会id
-    bag_item_list = {}, --背包物品列表
-}
 
----@class defaultGuildRecordDBClass
-local defaultGuildRecordDB = {
-    guild_id = 0, --公会id
-    record_list = {}, --记录列表 
-}
 
  
 
@@ -96,11 +47,10 @@ function Guild.Create(guild_id, guild_name, creator_uid)
     if not guild_db then
         local data = 
         {
-            GuildInfo = LuaExt.const(table.copy(defaultGuildInfoDB)),
-            GuildShop = LuaExt.const(table.copy(defaultGuildShopDB)),
-            GuildBag = LuaExt.const(table.copy(defaultGuildBagDB)),
-            GuildRecord = LuaExt.const(table.copy(defaultGuildRecordDB)),
-          
+            GuildInfo = GuildDef.newPBGuildInfoDB(),
+            GuildShop = GuildDef.newPBGuildShopDB(),
+            GuildBag = GuildDef.newPBGuildBagDB(),
+            GuildRecord = GuildDef.newPBGuildRecordDB(),         
         }
         -- 初始化公会信息
         local guild_info = data.GuildInfo
@@ -122,13 +72,18 @@ function Guild.Create(guild_id, guild_name, creator_uid)
         guild_record.guild_id = guild_id
         -- 创建数据模型
         scripts.GuildModel.Create(data)
-        local res = Guild.AddMemeber(creator_uid)
-        if res.code ~= ErrorCode.None then
-            return res
-        end
+       
     end
-
-    -- 保存到数据库
+    -- 创建公会聊天频道
+    local res = ChatLogic.newGuildChannel(context.guild_id)
+    if res.code ~= ErrorCode.None then
+        return res
+    end
+    local res = Guild.AddMemeber(creator_uid)
+    if res.code ~= ErrorCode.None then
+        return res
+    end
+   
 
     xpcall(function()
         scripts.GuildModel.Save()
@@ -136,11 +91,7 @@ function Guild.Create(guild_id, guild_name, creator_uid)
         print("GuildModel.Save:", err)
         return { code = ErrorCode.CreateGuildDataSaveErr, error = err }
     end)
-    -- 创建公会聊天频道
-    local res = ChatLogic.newGuildChannel(context.guild_id)
-    if res.code ~= ErrorCode.None then
-        return res
-    end
+
     return {code = ErrorCode.None}
 end
 
@@ -168,7 +119,7 @@ function Guild.AddMemeber(uid)
     }
     guild_data.member_count = table.count(guild_data.members)
     -- 加入公会频道
-    local res = ChatLogic.joinGuildChannel(context.guild_id, uid)
+    local res = ChatLogic.JoinGuildChannel(context.guild_id, uid)
     if res.code ~= ErrorCode.None then
         return res
     end

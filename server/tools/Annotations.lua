@@ -3,290 +3,246 @@
 --- </auto-generated>
 
 
----@class AuthUser
----@field public addr_user integer @玩家服务address
----@field public openid string @
----@field public uid integer @玩家uid
----@field public logouttime integer @玩家登出时间,0表示在线
----@field public online boolean @@是否在线
+---@class PBActivityData
+---@field public activity_id integer
+---@field public beg_ts integer
+---@field public end_ts integer
 
 
----@class UserData
----@field public openid string @
----@field public uid integer @玩家uid
----@field public name string @玩家名字
----@field public level integer @玩家等级
----@field public score integer @玩家分数
----@field public logintime integer @玩家上线时间
----@field public diamond integer @宝石
----@field public gold integer @金币
----@field public chapterid integer @当前章节ID
----@field public exp integer @当前经验
----@field public itemlist table<integer, ItemData> @道具列表
----@field public team TeamInfo @队伍信息
----@field public guild GuildInfo @公会信息
----@field public bagData BagData @背包信息
+---@class PBGetActivityInfoReqCmd
+---@field public uid integer
 
 
----@class C2SMatch
+---@class PBGetActivityInfoRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public activity_datas PBActivityData[]
 
 
----@class S2CMatch
----@field public res boolean
+---@class PBUserLoginData
+---@field public uid integer
+---@field public steam_id integer
+---@field public authkey string
+---@field public auth_ticket string
+---@field public macid integer
+---@field public version string @客户端版本号
+---@field public pb_version string @协议版本号
 
 
----@class S2CMatchSuccess
+---@class PBClientLoginReqCmd
+---@field public login_data PBUserLoginData
+---@field public is_register boolean
+---@field public password string
 
 
----@class S2CGameOver
----@field public score integer
+---@class PBClientLoginRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer @用户ID
+---@field public net_id integer @用户网络id
+---@field public reconn_key string @用户重连key
 
 
----@class Vector2
----@field public x number
----@field public y number
+---@class PBDSLoginData
+---@field public authkey string
+---@field public auth_ticket string
+---@field public version string @客户端版本号
+---@field public pb_version string @协议版本号
+---@field public ds_type integer @ds类型 1-主城 2-副本
+---@field public ds_id integer
 
 
----@class ItemData
----@field public itype integer @道具类型
----@field public common_info PBItemCommon @道具id
----@field public special_info PBItemSpecial @唯一id
-
----@class TeamInfo
----@field public team_id integer @队伍ID
----@field public master_id integer @队长ID
----@field public user_list table<integer, PBUserSimpleInfo> @队伍成员列表
----@field public is_del boolean @是否解散
----@field public match_type integer @游戏模式
-
----@class GuildInfo
----@field public guild_id integer @公会ID
----@field public guild_node integer @公会节点
----@field public addr_guild integer @公会地址
-
---@class GuildDbData
---@field public guild_id integer @公会ID
-
----@class BagInfo
----@field public bag_item_type integer @背包物品类型
----@field public capacity integer @背包容量
----@field public items table<integer, ItemData> @背包物品列表
-
----@class BagData
----@field public bags table<integer, BagInfo> @背包信息
+---@class PBDSLoginReqCmd
+---@field public login_data PBDSLoginData
 
 
----@class MailData
----@field public id integer @邮件唯一ID
----@field public mail_key string @邮件配置key, 因为要在代码里面写死，推荐用有意义的字符串做key
----@field public ctime integer @邮件创建时间
----@field public flag integer @1<<0:是否可领取 1<<1:是否只展示 1<<2:是否已读 1<<3:是否锁定
----@field public rewards ItemData[] @可领取奖励列表 或者 奖励展示列表
----@field public trace integer @追踪奖励邮件的来源
----@field public parmas string @json格式邮件自定义参数
+---@class PBDSLoginRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public dsid integer @服务器ID
+---@field public net_id integer @DS网络id
 
 
----@class Packet
----@field public messages MessagePack[]
+---@class PBBagGetDataReqCmd
+---@field public uid integer
+---@field public bags_name string[]
 
 
----@class MessagePack
----@field public channelId integer
+---@class PBBagGetDataRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public bag_datas PBBags
+
+
+---@class PBBagOperateItemReqCmd
+---@field public uid integer
+---@field public operate_type integer @1--堆叠,2--拆分,3--移动
+---@field public src_bag string
+---@field public src_pos integer
+---@field public dest_bag string
+---@field public dest_pos integer
+---@field public splitCount integer
+
+
+---@class PBBagOperateItemRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public change_items PBBags
+
+
+---@class PBChatMsgInfo
+---@field public channel_type integer @频道类型
+---@field public uid integer @发送者uid
+---@field public name string @发送者昵称
+---@field public msg_content string @消息内容
+---@field public send_time integer @发送时间
+---@field public to_uid integer @接收者uid
+
+
+---@class PBChatReqCmd
+---@field public channel_type integer @频道类型
+---@field public msg_content string @消息内容
+---@field public to_uid integer @接收者uid
+
+
+---@class PBChatRspCmd
+---@field public code integer @错误码
+
+
+---@class PBChatSynCmd
+---@field public infos PBChatMsgInfo[]
+
+
+---@class PBSyncWorldChatCmd
+---@field public world_index integer[] @世界索引
+
+
+---@class PBChooseWorldChatReqCmd
+---@field public world_index integer @世界索引
+
+
+---@class PBChooseWorldChatRespCmd
+---@field public code integer @错误码
+---@field public world_index integer @世界索引
+
+
+---@class PBNotifyWorldChatCmd
+---@field public world_index integer @世界索引
+
+
+---@class PBApplyLoginCityReqCmd
+---@field public uid integer
+
+
+---@class PBApplyLoginCityRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public cityid integer
+---@field public region string
+---@field public ds_address string
+---@field public ds_ip string
+
+
+---@class PBMessagePack
+---@field public net_id integer
 ---@field public broadcast integer
----@field public stubId integer
----@field public msgType integer
----@field public msgBody string
+---@field public stub_id integer
+---@field public msg_type integer
+---@field public msg_body string
 
 
----@class ServerForwardMessage
----@field public clientConnId integer
----@field public payload string
+---@class PBPacketCmd
+---@field public messages PBMessagePack[]
 
 
----@class AuthMessage
----@field public playerIdentifierToken string
----@field public loginToken string
+---@class PBPingCmd
+---@field public time number @用户统计服务器之间延时
 
 
----@class AuthResultMessage
----@field public result AuthResult
----@field public connId integer
----@field public compressionType CompressionType
+---@class PBPongCmd
+---@field public time number @用户统计服务器之间延时
 
 
----@class ChannelSubscriptionOptions
----@field public dataAccess ChannelDataAccess
----@field public dataFieldMasks string[]
----@field public fanOutIntervalMs integer
----@field public fanOutDelayMs integer
----@field public skipSelfUpdateFanOut boolean
----@field public skipFirstFanOut boolean
+---@class PBEnterCityReqCmd
+---@field public uid integer
+---@field public cityid integer
 
 
----@class ChannelDataMergeOptions
----@field public shouldReplaceList boolean
----@field public listSizeLimit integer
----@field public truncateTop boolean
----@field public shouldCheckRemovableMapField boolean
+---@class PBEnterCityRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
 
 
----@class CreateChannelMessage
----@field public channelType ChannelType
----@field public metadata string
----@field public subOptions ChannelSubscriptionOptions
----@field public data Any
----@field public mergeOptions ChannelDataMergeOptions
+---@class PBExitCityReqCmd
+---@field public uid integer
+---@field public cityid integer
 
 
----@class CreateChannelResultMessage
----@field public channelType ChannelType
----@field public metadata string
----@field public ownerConnId integer
----@field public channelId integer
+---@class PBExitCityRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
 
 
----@class RemoveChannelMessage
----@field public channelId integer
+---@class PBUpdateCityReqCmd
+---@field public cityid integer
+---@field public player_num integer
 
 
----@class ListChannelMessage
----@field public typeFilter ChannelType
----@field public metadataFilters string[]
+---@class PBUpdateCityRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
 
 
----@class ChannelInfo
----@field public channelId integer
----@field public channelType ChannelType
----@field public metadata string
+---@class PBFriendData
+---@field public uid integer
+---@field public head_id integer @头像id
+---@field public nick_name string @昵称
+---@field public account_level integer @账号等级
+---@field public online_state integer @在线状态
+---@field public group_id integer @分组id
+---@field public friend_time integer @结交时间
+---@field public head_frame integer @头像框
+---@field public title integer @称号
+---@field public guild_id integer @公会id
+---@field public guild_name string @公会名
+---@field public name_remark string @备注名称
 
 
----@class ListChannelResultMessage
----@field public channels ChannelInfo[]
+---@class PBApplyFriendData
+---@field public uid integer
+---@field public head_id integer @头像id
+---@field public nick_name string @昵称
+---@field public account_level integer @账号等级
+---@field public head_frame integer @头像框
+---@field public title integer @称号
+---@field public guild_id integer @公会id
+---@field public guild_name string @公会名
 
 
----@class SubscribedToChannelMessage
----@field public connId integer
----@field public subOptions ChannelSubscriptionOptions
+---@class PBGetFriendInfoReqCmd
+---@field public uid integer
 
 
----@class SubscribedToChannelResultMessage
----@field public connId integer
----@field public subOptions ChannelSubscriptionOptions
----@field public connType ConnectionType
----@field public channelType ChannelType
+---@class PBGetFriendInfoRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public friend_datas PBFriendData[] @好友数据
+---@field public apply_datas PBApplyFriendData[] @申请数据
 
 
----@class UnsubscribedFromChannelMessage
----@field public connId integer
+---@class PBApplyFriendReqCmd
+---@field public uid integer
+---@field public apply_data PBApplyFriendData @申请数据
 
 
----@class UnsubscribedFromChannelResultMessage
----@field public connId integer
----@field public connType ConnectionType
----@field public channelType ChannelType
-
-
----@class ChannelDataUpdateMessage
----@field public data Any
----@field public contextConnId integer
-
-
----@class DisconnectMessage
----@field public connId integer
-
-
----@class SpatialInfo
----@field public x number
----@field public y number
----@field public z number
-
-
----@class CreateSpatialChannelsResultMessage
----@field public spatialChannelId integer[]
----@field public metadata string
----@field public ownerConnId integer
-
-
----@class QuerySpatialChannelMessage
----@field public spatialInfo SpatialInfo[]
-
-
----@class QuerySpatialChannelResultMessage
----@field public channelId integer[]
-
-
----@class ChannelDataHandoverMessage
----@field public srcChannelId integer
----@field public dstChannelId integer
----@field public contextConnId integer
----@field public data Any
-
-
----@class SpatialRegion
----@field public min SpatialInfo
----@field public max SpatialInfo
----@field public channelId integer
----@field public serverIndex integer
-
-
----@class SpatialRegionsUpdateMessage
----@field public regions SpatialRegion[]
-
-
----@class SpotsAOI
----@field public spots SpatialInfo[]
----@field public dists integer[]
-
-
----@class BoxAOI
----@field public center SpatialInfo
----@field public extent SpatialInfo
-
-
----@class SphereAOI
----@field public center SpatialInfo
----@field public radius number
-
-
----@class ConeAOI
----@field public center SpatialInfo
----@field public direction SpatialInfo
----@field public angle number
----@field public radius number
-
-
----@class SpatialInterestQuery
----@field public spotsAOI SpotsAOI
----@field public boxAOI BoxAOI
----@field public sphereAOI SphereAOI
----@field public coneAOI ConeAOI
-
-
----@class UpdateSpatialInterestMessage
----@field public connId integer
----@field public query SpatialInterestQuery
-
-
----@class CreateEntityChannelMessage
----@field public entityId integer
----@field public metadata string
----@field public subOptions ChannelSubscriptionOptions
----@field public data Any
----@field public mergeOptions ChannelDataMergeOptions
----@field public isWellKnown boolean
-
-
----@class AddEntityGroupMessage
----@field public type EntityGroupType
----@field public EntitiesToAdd integer[]
-
-
----@class RemoveEntityGroupMessage
----@field public type EntityGroupType
----@field public EntitiesToRemove integer[]
-
-
----@class DebugGetSpatialRegionsMessage
+---@class PBApplyFriendRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
 
 
 ---@class Any
@@ -294,472 +250,1560 @@
 ---@field public value string
 
 
----@class C2SMailList
+---@class PBGuildItemData
+---@field public grid_id integer @背包格子ID
+---@field public item_uid integer @物品实例ID
+---@field public item_id integer @配置文件ID
+---@field public item_num integer @数量
+
+
+---@class PBGuildItemListData
+---@field public item_list PBGuildItemData[]
+
+
+---@class PBGuildApplyUserBaseInfo
+---@field public playerSimpleInfo PBUserSimpleInfo
+---@field public apply_time integer @申请时间
+
+
+---@class PBGuildUserApplyList
+---@field public apply_list PBGuildApplyUserBaseInfo[]
 
 
----@class S2CMailList
----@field public mail_list table<integer, MailData>
+---@class PBGuildMemberData
+---@field public uid integer @玩家uID
+---@field public nickname string @玩家昵称
+---@field public duty_id integer @玩家职务Id
+---@field public contribute integer @玩家贡献
+---@field public week_contribute integer @玩家本周贡献
+---@field public online boolean @玩家在线状态 true 在线 false 不在线
+---@field public last_get_salary_time integer @上一次获取工资的时间戳
+---@field public join_time integer @加入公会时间
+---@field public dkp integer @个人的DKP值
+---@field public b_spoils_mgr boolean @是否战利品管理员
+---@field public last_send_spoil integer @上次发放战利品的时间戳
 
 
----@class S2CUpdateMail
----@field public mail_list MailData[]
+---@class PBGuildUserData
+---@field public uid integer @玩家uID
+---@field public guild_data PBGuildMemberData @玩家公会的数据
 
 
----@class C2SMailRead
----@field public id integer
+---@class PBGuildRecordInfo
+---@field public record_type integer
+---@field public nickname string @目标玩家昵称
+---@field public record_time integer
+---@field public duty_name string @只在 eRT_DUTY_CHANGE 有用（表示职位名称)
+---@field public guild_level integer @只在 eRT_GUILD_LV_UP 有用
+---@field public guild_name string @只在 eRT_CHANGE_GUILD_NAME 有用
+---@field public target_uid integer @目标玩家UID
+---@field public duty_id integer @只在 eRT_DUTY_CHANGE 有用 （表示职位ID)
+---@field public gkd_change_num integer @eRT_GuildGKD变化记录 ,
+---@field public gkd_cur_num integer @eRT_GuildGKD GKD当前值
+---@field public gkd_desc string @eRT_GuildGKD 备注
+---@field public item_id integer @只在ERT_JUANZENG时使用
+---@field public gubi_num integer @只在ERT_JUANZENG时使用，古币数量
+---@field public contribute integer @贡献值
+---@field public spoils_item PBItemData[] @只在战利品发放时使用，物品id
+---@field public season_point integer @只在ERT_SEASON_POINT时使用
+---@field public op_mgr_name string @发放管理员名字
+---@field public rechage_num integer @玩家充值的灵石数量
+---@field public operater_uid integer @操作玩家UID
 
 
----@class C2SMailLock
----@field public id integer
+---@class PBGuildDutyInfo
+---@field public duty_id integer
+---@field public duty_name string
+---@field public duty_right integer @按位读取
+---@field public duty_level integer @职位等级
+
+
+---@class PBGuidJoinCon
+---@field public can_join boolean @允许加入
+---@field public min_rank integer @最低段位（品阶<<16+品级）
+---@field public min_level integer @最低等级
+---@field public notice string @宣传语
+---@field public join_check boolean @加入工会需要审核
+
+
+---@class PBGuildSimpleInfo
+---@field public node_name string @所属节点名称
+---@field public guild_id integer @公会uid
+---@field public name string @公会名
+---@field public level integer @公会等级
+---@field public president_id integer @公会长ID
+---@field public president_name string @公会长名称
+---@field public build_time integer @创建时间
+---@field public exp integer @公会经验
+---@field public contribute integer @公会贡献值
+---@field public activeness integer @公会活跃度
+---@field public status integer @公会状态（正常，冻结或者销毁）
+---@field public accouncenment string @公会公告
+---@field public member_count integer @公会成员人数（当前）
+---@field public member_max_count integer @公会人数上限
+---@field public join_con PBGuidJoinCon @公会加入条件
+---@field public recommend_endtime integer @公会推荐到期时间
+---@field public item_headid integer @公会头像ID
+---@field public item_frameid integer @公会头像框ID
+
+
+---@class PBGuildSimpleList
+---@field public guild_list PBGuildSimpleInfo[] @公会列表
+
 
+---@class PBGuildMemberList
+---@field public member_list PBGuildUserData[] @成员列表
 
----@class C2SMailReward
----@field public mail_id_list integer[]
 
+---@class PBGuildDutyList
+---@field public duty_list PBGuildDutyInfo[] @职位列表
 
----@class C2SMailMark
----@field public id integer
 
+---@class PBGuildRewardInfo
+---@field public reward_id integer @奖励物品ID
+---@field public reward_num integer @奖励数量
 
----@class C2SMailDel
----@field public mail_id_list integer[]
 
+---@class PBGuildRewardList
+---@field public rewards PBGuildRewardInfo[] @奖励列表
 
----@class S2CMailDel
----@field public mail_id_list integer[]
 
+---@class PBGuildTaskInfo
+---@field public task_id integer @任务配置表ID
+---@field public start_time integer @接受任务时间
+---@field public cur_num integer @当前完成数量（任务进度）
+---@field public state integer @任务状态。0表示未接受，1表示已接受未完成，2表示已完成未领奖，3表示已领奖。
 
----@class C2SEnterRoom
----@field public name string @玩家名字
 
+---@class PBGuildTaskList
+---@field public items PBGuildTaskInfo[] @
 
----@class S2CEnterRoom
----@field public id integer @对象唯一ID
----@field public time integer @当前服务器时间ms
 
+---@class PBGuildShopItemPrice
+---@field public priclog_type integer
+---@field public price_count integer
 
----@class C2SMove
----@field public x number @方向
----@field public y number
 
+---@class PBGuildShopItemInfo
+---@field public s_id integer @唯一ID
+---@field public item_price PBGuildShopItemPrice @价格
+---@field public buy_count integer @已购买的数量
+---@field public item_id integer @物品id
+---@field public pre_time integer @上次刷新时间
 
----@class S2CMove
----@field public id integer @对象唯一ID
----@field public x number @当前位置x
----@field public y number @当前位置y
----@field public dirx number @当前方向x
----@field public diry number @当前方向y
----@field public movetime integer @当前服务器时间ms
 
+---@class PBGuildShopItemInfoList
+---@field public items PBGuildShopItemInfo[]
 
----@class S2CEnterView
----@field public id integer
----@field public x number
----@field public y number
----@field public radius number
----@field public spriteid integer
----@field public speed number
----@field public dir Vector2
----@field public name string
----@field public movetime integer
 
+---@class PBGuildInfoDB
+---@field public guild_id integer @公会uid
+---@field public name string @公会名
+---@field public level integer @公会等级
+---@field public president_id integer @公会长ID
+---@field public president_name string @公会长名称
+---@field public build_time integer @创建时间
+---@field public exp integer @公会经验
+---@field public contribute integer @公会贡献值
+---@field public activeness integer @公会活跃度
+---@field public status integer @公会状态（正常，冻结或者销毁）
+---@field public master_ids integer[] @公会管理员列表
+---@field public members table<integer, PBGuildMemberData> @玩家列表
+---@field public member_count integer @公会成员人数（当前）
+---@field public member_num_level integer @成员人数等级(第几等级）
+---@field public member_max_num integer @最大成员人数
+---@field public accouncenment string @公会公告
+---@field public apply_list PBGuildUserApplyList @公会申请列表
+---@field public freeze_time integer @冻结开始时间
+---@field public apply_count integer @公会申请数量
+---@field public destory_time integer @销毁时间
+---@field public duty_list PBGuildDutyList @职位列表
+---@field public announcenment_modify_time integer @公告上次修改时间
+---@field public season_activeness integer @本赛季活跃度
+---@field public join_con PBGuidJoinCon @公会加入条件
+---@field public name_modify_time integer @公会名字上次修改时间
+---@field public spoilsmgr_ids integer[] @公会战利品管理员
+---@field public recommend_endtime integer @公会推荐到期时间
+---@field public item_headid integer @公会头像ID
+---@field public item_frameid integer @公会头像框ID
+---@field public open_juanzeng boolean @打开捐赠
 
----@class S2CLeaveView
----@field public id integer @对象唯一ID
 
+---@class PBGuildShopDB
+---@field public guild_id integer @公会uid
+---@field public shop_item_list PBGuildShopItemInfoList @商店物品信息
+---@field public last_refresh_time integer @上次刷新时间
 
----@class S2CUpdateRadius
----@field public id integer
----@field public radius number
 
+---@class PBGuildBagDB
+---@field public guild_id integer @公会uid
+---@field public bag_item_list PBItemData[] @公会仓库（包含货币、普通物品、皮肤等）
 
----@class S2CDead
----@field public id integer
 
+---@class PBGuildRecordDB
+---@field public guild_id integer @公会uid
+---@field public record_list PBGuildRecordInfo[] @记录列表
 
----@class FVector
----@field public x number
----@field public y number
----@field public z number
 
+---@class PBGuildUserGuildFullData
+---@field public guild_info PBGuildInfoDB
+---@field public self_guild_data PBGuildMemberData @玩家自己的信息
 
----@class GuidCachedObject
----@field public netGUID integer
----@field public pathName string
----@field public outerGUID integer
 
+---@class PBGuildInviteRecordInfo
+---@field public invite_uid integer
+---@field public invite_name string
+---@field public invite_guild_simple PBGuildSimpleInfo
 
----@class UnrealObjectRef
----@field public netGUID integer
----@field public context GuidCachedObject[]
----@field public netGUIDBunch string
----@field public bunchBitsNum integer
----@field public classPath string
----@field public owningConnId integer
 
+---@class PBGuildInviteList
+---@field public invites PBGuildInviteRecordInfo[]
 
----@class ActorComponentRef
----@field public owner UnrealObjectRef
----@field public compName string
 
+---@class PBGuildSpoilsItem
+---@field public item_id integer @道具ID为配置文件中的ID 使用分段来区分道具类型 [货币/普通道具/皮肤]
+---@field public item_count integer
 
----@class AssetRef
----@field public objectPath string
 
+---@class PBGuildSpoilsItemList
+---@field public item_list PBGuildSpoilsItem[]
 
----@class RemoteFunctionMessage
----@field public targetObj UnrealObjectRef
----@field public functionName string
----@field public paramsPayload string
----@field public redirectionCounter integer
----@field public subObjectPath string
 
+---@class PBUserApplyInfo
+---@field public guild_id integer
+---@field public apply_time integer
 
----@class SpawnObjectMessage
----@field public obj UnrealObjectRef
----@field public channelId integer
----@field public localRole integer
----@field public location FVector
 
+---@class PBUserGuildApplyList
+---@field public apply_list PBUserApplyInfo[] @已申请的公会列表
 
----@class DestroyObjectMessage
----@field public netId integer
----@field public reason integer
 
+---@class PBGuildAddItems2BagCmd
+---@field public guild_id integer @公会ID
+---@field public items PBItemData[] @添加物品列表
+---@field public add_or_del boolean @加操作还是减操作
 
----@class HandoverContext
----@field public obj UnrealObjectRef
----@field public clientConnId integer
 
+---@class PBGuildAddItemsCmd
+---@field public items PBItemData[] @添加物品列表
 
----@class HandoverData
----@field public context HandoverContext[]
----@field public channelData Any
 
+---@class PBGuildDelItemsCmd
+---@field public items PBItemData[] @添加物品列表
 
----@class GetUnrealObjectRefMessage
----@field public netGUID integer[]
 
+---@class PBGuildUpdateGuildUserDataCmd
+---@field public user_data PBGuildMemberData @自己的最新公会数据
 
----@class GetUnrealObjectRefResultMessage
----@field public objRef UnrealObjectRef[]
 
+---@class PBGuildUpdateGuildBagCmd
+---@field public items PBItemData[] @变化的仓库物品列表
 
----@class NetIdPath
----@field public netId integer
----@field public path string
 
+---@class PBGuildUpdateGuildLevelCmd
+---@field public new_level integer @最新等级
 
----@class SyncNetIdMessage
----@field public netIdPaths NetIdPath[]
 
+---@class PBGuildUpgradeMemberMaxcountReqCmd
+---@field public uid integer
 
----@class SpatialEntityState
----@field public objRef UnrealObjectRef
----@field public removed boolean
----@field public entityData Any
 
+---@class PBGuildUpgradeMemberMaxcountRspCmd
+---@field public cur_member_maxcount integer
+---@field public sucucess integer @1成功 0提示灵币不足
 
----@class SpatialChannelData
----@field public entities table<integer, SpatialEntityState>
 
+---@class PBGuildDonateReqCmd
+---@field public uid integer
+---@field public num integer @捐赠数量（只能灵石）
+---@field public item_id integer @注意这个值如果不为0就是捐灵石，否则就是战利品
 
----@class FRepMovement
----@field public linearVelocity FVector
----@field public angularVelocity FVector
----@field public location FVector
----@field public rotation FVector
----@field public bSimulatedPhysicSleep boolean
----@field public bRepPhysics boolean
 
+---@class PBGuildDonateRspCmd
+---@field public num integer @捐赠数量（只能灵石）
+---@field public item_id integer @注意这个值如果不为0就是捐灵石，否则就是战利品
 
----@class FRepAttachment
----@field public attachParent UnrealObjectRef
----@field public locationOffset FVector
----@field public relativeScale FVector
----@field public rotationOffset FVector
----@field public attachSocket string
----@field public attachComponent ActorComponentRef
 
+---@class PBGuildGetSalaryReqCmd
+---@field public uid integer
 
----@class ActorState
----@field public removed boolean
----@field public owningConnId integer
----@field public bReplicateMovement boolean
----@field public localRole integer
----@field public remoteRole integer
----@field public owner UnrealObjectRef
----@field public bHidden boolean
----@field public bTearOff boolean
----@field public bCanBeDamaged boolean
----@field public instigator UnrealObjectRef
----@field public replicatedMovement FRepMovement
----@field public attachmentReplication FRepAttachment
-
 
----@class ActorComponentState
----@field public removed boolean
----@field public bIsActive boolean
----@field public bReplicated boolean
----@field public compName string
+---@class PBGuildGetSalaryRspCmd
+---@field public get_items PBItemData[] @获得的物品（列表）
 
 
----@class ActorComponentStates
----@field public states table<string, ActorComponentState>
+---@class PBGuildUpdateDutyListCmd
+---@field public duty_list PBGuildDutyList @职位列表
 
 
----@class SceneComponentState
----@field public removed boolean
----@field public bAbsoluteLocation boolean
----@field public bAbsoluteRotation boolean
----@field public bAbsoluteScale boolean
----@field public bVisible boolean
----@field public bShouldBeAttached boolean
----@field public bShouldSnapLocationWhenAttached boolean
----@field public bShouldSnapRotationWhenAttached boolean
----@field public attachParent ActorComponentRef
----@field public attachChildren ActorComponentRef[]
----@field public attachSocketName string
----@field public relativeLocation FVector
----@field public relativeRotation FVector
----@field public relativeScale FVector
+---@class PBGuildUpdateGuildRecordInfoCmd
+---@field public record_list PBGuildRecordDB
 
 
----@class FBasedMovementInfo
----@field public movementBase ActorComponentRef
----@field public boneName string
----@field public location FVector
----@field public rotation FVector
----@field public bServerHasBaseComponent boolean
----@field public bRelativeRotation boolean
----@field public bServerHasVelocity boolean
+---@class PBGuildGetMembersReqCmd
+---@field public page_index integer
+---@field public uid integer
 
 
----@class FRootMotionFinishVelocitySettings
----@field public mode integer
----@field public setVelocity FVector
----@field public clampVelocity number
+---@class PBGuildGetMembersRspCmd
+---@field public page_index integer @分页索引
+---@field public member_count integer @成员总数
+---@field public members PBGuildMemberList
 
 
----@class FRootMotionSource
----@field public priority integer
----@field public localId integer
----@field public accumulatedMode integer
----@field public instanceName string
----@field public startTime number
----@field public currentTime number
----@field public previousTime number
----@field public duration number
----@field public status integer
----@field public settings integer
----@field public bInLocalSpace boolean
----@field public bNeedsSimulatedCatchup boolean
----@field public bSimulatedNeedsSmoothing boolean
----@field public bHasRootMotion boolean
----@field public blendWeight number
----@field public finishVelocityParams FRootMotionFinishVelocitySettings
+---@class PBGuildBoardcastPlayerApplyCmd
+---@field public apply_count integer @申请消息数量
 
 
----@class FRootMotionSourceGroup
----@field public rootMotionSources FRootMotionSource[]
----@field public pendingAddRootMotionSources FRootMotionSource[]
----@field public bHasAdditiveSources boolean
----@field public bHasOverrideSources boolean
----@field public bHasOverrideSourcesWithIgnoreZAccumulate boolean
----@field public bIsAdditiveVelocityApplied boolean
----@field public lastAccumulatedSettings integer
----@field public lastPreAdditiveVelocity FVector
+---@class PBGuildBoardcastPlayerJoinCmd
+---@field public user_info PBGuildUserData
+---@field public guild_id integer @公会ID
 
 
----@class FRepRootMotionMontage
----@field public bIsActive boolean
----@field public animMontage UnrealObjectRef
----@field public position number
----@field public location FVector
----@field public rotation FVector
----@field public movementBase ActorComponentRef
----@field public movementBaseBoneName string
----@field public bRelativePosition boolean
----@field public bRelativeRotation boolean
----@field public authoritativeRootMotion FRootMotionSourceGroup
----@field public acceleration FVector
----@field public linearVelocity FVector
+---@class PBGuildBoardcastPlayerExitCmd
+---@field public uid integer
+---@field public guild_id integer @公会ID
 
 
----@class CharacterState
----@field public rootMotion FRepRootMotionMontage
----@field public basedMovement FBasedMovementInfo
----@field public serverLastTransformUpdateTimeStamp number
----@field public movementMode integer
----@field public bIsCrouched boolean
----@field public bProxyIsJumpForceApplied boolean
----@field public animRootMotionTranslationScale number
----@field public replayLastTransformUpdateTimeStamp number
+---@class PBGuildBoardcastGuildDismissCmd
+---@field public guild_id integer @公会ID
 
 
----@class Character_ServerMovePacked_Params
----@field public bitsNum integer
----@field public packedBits string
+---@class PBGuildUpdateMeApplyGuildListCmd
+---@field public me_apply_list PBUserGuildApplyList
+---@field public b_apply boolean @申请还是取消？
 
 
----@class Character_ClientMoveResponsePacked_Params
----@field public bitsNum integer
----@field public packedBits string
+---@class PBGuildFullDataUpdateCmd
+---@field public full_data PBGuildUserGuildFullData
 
 
----@class PlayerState
----@field public score number
----@field public playerId integer
----@field public ping integer
----@field public playerName string
+---@class PBGuildPlayerSetGuildInfoCmd
+---@field public node_id integer @公会所在节点ID
+---@field public guild_id integer @公会id
+---@field public guild_name string @公会name
+---@field public guild_level integer @公会等级
+---@field public guild_prosperity integer @公会繁荣度
 
 
----@class ControllerState
----@field public playerState UnrealObjectRef
----@field public pawn UnrealObjectRef
+---@class PBGuildGetGuildListReqCmd
+---@field public idx integer
+---@field public uid integer
+---@field public sort_type integer @排序类型。1
+---@field public b_asc boolean @是否升序
+---@field public min_level integer @最低等级
+---@field public max_level integer @最高等级
+---@field public min_member_count integer @最低人数
+---@field public max_member_count integer @最高人数
+---@field public page_count integer @固定每页多少条记录
+---@field public brecomment boolean @只搜索推荐列表
+---@field public bjoin_con boolean @只搜索可以加入的公会
 
 
----@class Controller_ClientSetLocation_Params
----@field public newLocation FVector
----@field public newRotation FVector
+---@class PBGuildGetGuildListRspCmd
+---@field public guild_list PBGuildSimpleList @公会列表
+---@field public sort_type integer @排序类型。1
+---@field public b_asc boolean @是否升序
+---@field public min_level integer @最低等级
+---@field public max_level integer @最高等级
+---@field public min_member_count integer @最低人数
+---@field public max_member_count integer @最高人数
+---@field public max_count integer @总人数
+---@field public page_count integer @固定每页多少条记录
+---@field public brecomment boolean @只搜索推荐列表
+---@field public bjoin_con boolean @只搜索可以加入的公会
 
 
----@class Controller_ClientSetRotation_Params
----@field public newRotation FVector
----@field public bResetCamera boolean
+---@class PBGuildCreateGuildReqCmd
+---@field public uid integer
+---@field public guild_name string @公会名
 
 
----@class PlayerControllerState
----@field public targetViewRotation FVector
----@field public spawnLocation FVector
-
-
----@class PlayerController_ServerUpdateCamera_Params
----@field public camLoc FVector
----@field public camPitchAndYaw integer
-
-
----@class PlayerController_ClientSetHUD_Params
----@field public hudClassName string
-
-
----@class PlayerController_ClientSetViewTarget_Params
----@field public actor UnrealObjectRef
----@field public blendTime number
----@field public blendFunction integer
----@field public blendExp number
----@field public bLockOutgoing boolean
-
-
----@class PlayerController_ClientEnableNetworkVoice_Params
----@field public bEnable boolean
-
-
----@class PlayerController_ClientCapBandwidth_Params
----@field public cap integer
-
-
----@class PlayerController_ClientRestart_Params
----@field public pawn UnrealObjectRef
-
-
----@class PlayerController_ClientSetCameraMode_Params
----@field public newCamMode string
-
-
----@class PlayerController_ClientRetryClientRestart_Params
----@field public pawn UnrealObjectRef
-
-
----@class PlayerController_ServerSetSpectatorLocation_Params
----@field public newLoc FVector
----@field public newRot FVector
-
-
----@class PlayerController_ServerAcknowledgePossession_Params
----@field public pawn UnrealObjectRef
-
-
----@class PlayerController_ClientGotoState_Params
----@field public newState string
-
-
----@class PlayerController_ClientReceiveLocalizedMessage_Params
----@field public message string
----@field public switch integer
----@field public relatedPlayerState_1 UnrealObjectRef
----@field public relatedPlayerState_2 UnrealObjectRef
----@field public optionalObject UnrealObjectRef
-
-
----@class GameStateBase
----@field public spectatorClassName string
----@field public gameModeClassName string
----@field public replicatedWorldTimeSeconds number
----@field public bReplicatedHasBegunPlay boolean
-
-
----@class PawnState
----@field public playerState UnrealObjectRef
----@field public controller UnrealObjectRef
----@field public remoteViewPitch integer
-
-
----@class FClientAdjustment
----@field public bAckGoodMove boolean
----@field public timeStamp number
----@field public newLoc FVector
----@field public newVel FVector
----@field public newRot FVector
----@field public newBase UnrealObjectRef
----@field public newBaseBoneName string
----@field public bBaseRelativePosition boolean
----@field public rootMotionSourceCorrection FRootMotionSourceGroup
----@field public rootMotionRotation FVector
----@field public movementMode integer
-
-
----@class StaticMeshComponentState
----@field public removed boolean
----@field public staticMesh AssetRef
-
-
----@class S2CErrorCode
+---@class PBGuildCreateGuildRspCmd
 ---@field public code integer @错误码
+---@field public guild_id integer @公会id
+---@field public guild_name string @公会名
 
 
----@class C2SLogin
----@field public openid string @openid
+---@class PBGuildApplyJoinGuildReqCmd
+---@field public guild_id integer @公会id
+---@field public uid integer
+---@field public b_apply boolean @是否申请。false为取消申请
+---@field public applyer_uid integer @申请人uid
 
 
----@class S2CLogin
----@field public ok boolean @是否登录成功
----@field public time integer @服务器当前时间ms
----@field public timezone integer @服务器当前时区
+---@class PBGuildApplyJoinGuildRspCmd
+---@field public code integer @错误码
+---@field public guild_id integer @公会id
+---@field public guild_name string @公会名
 
 
----@class C2SItemList
+---@class PBGuildAnswerApplyJoinGuildReqCmd
+---@field public applyer_uid integer @申请人uid
+---@field public b_agree boolean @是否同意
+---@field public uid integer
 
 
----@class S2CItemList
----@field public list table<integer, ItemData> @道具列表
+---@class PBGuildAnswerApplyJoinGuildRspCmd
+---@field public applyer_uid integer @申请人uid
+---@field public b_agree boolean @是否同意
 
 
----@class C2SUseItem
+---@class PBGuildSearchGuildReqCmd
+---@field public key string
+---@field public uid integer
+
+
+---@class PBGuildSearchGuildRspCmd
+---@field public guid_info PBGuildSimpleInfo @公会简略信息
+
+
+---@class PBGuildInviteJoinGuildReqCmd
+---@field public uid integer
+---@field public invited_key string @被邀请人的名称、uid或steam_id
+---@field public be_invite_uid integer @被邀请人uid
+
+
+---@class PBGuildInviteJoinGuildRspCmd
+---@field public invited_uid integer @被邀请人uid
+
+
+---@class PBGuildAnswerInviteJoinGuildReqCmd
+---@field public inviter_uid integer @邀请人uid
+---@field public b_agree boolean @是否同意
+---@field public uid integer @回复人uid
+---@field public applyer_uid integer @回复人uid
+
+
+---@class PBGuildQuitReqCmd
+---@field public uid integer
+
+
+---@class PBGuildQuitRspCmd
+---@field public code integer
+
+
+---@class PBGuildExpelQuitReqCmd
+---@field public expel_uid integer @被踢玩家uid
+---@field public uid integer
+
+
+---@class PBGuildExpelQuitRspCmd
+---@field public code integer
+---@field public expel_uid integer @被踢玩家uid
+
+
+---@class PBGuildGrantReqCmd
+---@field public target_uid integer @目标玩家uid
+---@field public duty_id integer @职务ID
+---@field public uid integer
+
+
+---@class PBGuildGrantRspCmd
+---@field public target_uid integer @目标玩家uid
+---@field public duty_id integer @职务ID
+
+
+---@class PBGuildDemiseReqCmd
+---@field public target_uid integer @目标玩家uid
+---@field public uid integer
+
+
+---@class PBGuildDemiseRspCmd
+---@field public new_master_uid integer @新会长ID
+---@field public new_master_name string @新会长名称
+
+
+---@class PBGuildDismissReqCmd
+---@field public uid integer
+
+
+---@class PBGuildDismissRspCmd
+
+
+---@class PBGuildThawReqCmd
+---@field public uid integer
+
+
+---@class PBGuildThawRspCmd
+
+
+---@class PBGuildModifyAnnouncementReqCmd
+---@field public new_announcement string
+---@field public uid integer
+
+
+---@class PBGuildModifyAnnouncementRspCmd
+---@field public new_announcement string
+---@field public modify_time integer
+
+
+---@class PBGuildAddDutyReqCmd
+---@field public duty_name string @职位名称
+---@field public uid integer
+
+
+---@class PBGuildAddDutyRspCmd
+---@field public new_duty_id integer @新职位ID
+---@field public duty_name string @职位名称
+
+
+---@class PBGuildDelDutyReqCmd
+---@field public duty_id integer
+---@field public uid integer
+
+
+---@class PBGuildDelDutyRspCmd
+---@field public duty_id integer
+
+
+---@class PBGuildModifyDutyRightReqCmd
+---@field public uid integer
+---@field public duty integer @职位ID
+---@field public new_right integer @新增或删除的权限
+---@field public b_set boolean @true为设置，false为取消
+
+
+---@class PBGuildModifyDutyRightRspCmd
+---@field public duty integer @职位ID
+---@field public new_right integer @最新的权限
+
+
+---@class PBGuildModifyDutyNameReqCmd
+---@field public duty_id integer
+---@field public new_name string
+---@field public uid integer
+
+
+---@class PBGuildModifyDutyNameRspCmd
+---@field public duty_id integer
+---@field public new_name string
+
+
+---@class PBGuildModifyDutyLevelReqCmd
+---@field public duty_id integer
+---@field public new_level integer
+---@field public uid integer
+
+
+---@class PBGuildModifyDutyLevelRspCmd
+---@field public duty_id integer
+---@field public new_level integer
+
+
+---@class PBGuildUpgradeReqCmd
+---@field public uid integer
+
+
+---@class PBGuildUpgradeRspCmd
+---@field public new_level integer @新等级
+
+
+---@class PBGuildModifyHeadIconReqCmd
+---@field public head_icon integer
+---@field public uid integer
+
+
+---@class PBGuildModifyHeadIconRspCmd
+---@field public head_icon integer
+
+
+---@class PBGuildGetApplyListReqCmd
+---@field public uid integer
+
+
+---@class PBGuildGetApplyListRspCmd
+---@field public apply_list PBGuildUserApplyList
+---@field public total_count integer @总申请数
+
+
+---@class PBGuildModifyGuildNameReqCmd
+---@field public new_name string
+---@field public uid integer
+
+
+---@class PBGuildModifyGuildNameRspCmd
+---@field public new_name string
+---@field public uid integer
+
+
+---@class PBGuildExchangeItemReqCmd
+---@field public uid integer
+---@field public item_id integer @兑换物品ID
+---@field public item_num integer @兑换物品数量
+
+
+---@class PBGuildExchangeItemRspCmd
+---@field public item_id integer @兑换物品ID
+---@field public item_num integer @兑换物品数量
+
+
+---@class PBGuildAcceptTaskReqCmd
+---@field public uid integer
+---@field public task_id integer @任务ID
+
+
+---@class PBGuildAcceptTaskRspCmd
+---@field public task_id integer @任务ID
+
+
+---@class PBGuildGetTaskRewardReqCmd
+---@field public uid integer
+---@field public task_id integer @任务ID
+
+
+---@class PBGuildGetTaskRewardRspCmd
+---@field public task_id integer @任务ID
+---@field public reward_list PBGuildRewardList @任务奖励信息
+
+
+---@class PBGuildUpdateTaskInfoRspCmd
+---@field public task_info PBGuildTaskInfo @任务奖励信息
+
+
+---@class PBGuildUpdateTaskListRspCmd
+---@field public all_tasks PBGuildTaskList
+
+
+---@class PBGuildUpdateGuildInfoRspCmd
+---@field public guild_info PBGuildUserGuildFullData
+
+
+---@class PBSetGuildJoinConditionReqCmd
+---@field public uid integer
+---@field public join_con PBGuidJoinCon
+
+
+---@class PBSetGuildJoinConditionRspCmd
+---@field public join_con PBGuidJoinCon
+
+
+---@class PBGuildUpdateMeInviteGuildListCmd
+---@field public me_invite_list PBGuildInviteList
+
+
+---@class PBGuildRecordListReqCmd
+---@field public log_type integer @1
+---@field public idx integer @
+---@field public uid integer
+---@field public sort_type integer @排序类型。1按记录时间 2按玩家昵称
+---@field public b_asc boolean @是否升序
+---@field public b_manager boolean
+---@field public des_uid integer @制定用户记录 如果des_uid=0,查询所有玩家
+---@field public page_count integer @固定每页多少条记录
+
+
+---@class PBGuildRecordListRspCmd
+---@field public log_type integer @
+---@field public idx integer @
+---@field public uid integer
+---@field public sort_type integer @排序类型。1
+---@field public b_asc boolean @是否升序
+---@field public record_list PBGuildRecordDB
+---@field public total_count integer @总记录条数
+---@field public page_count integer @固定每页多少条记录
+
+
+---@class PBGuildSetSpoilsMgrReqCmd
+---@field public uid integer
+---@field public b_set boolean @true任命，false为取消
+---@field public des_uid integer @目标uid
+
+
+---@class PBGuildSetSpoilsMgrRspCmd
+---@field public sucess boolean @成功true,失败false
+---@field public b_set boolean @true任命，false为取消
+---@field public des_uid integer @目标uid
+
+
+---@class PBGuildDkpChangeReqCmd
+---@field public uid integer
+---@field public change_num integer @修改的值
+---@field public des_uid integer @目标uid
+---@field public desc string @备注
+
+
+---@class PBGuildDkpChangeRspCmd
+---@field public change_num integer @修改的值
+---@field public des_uid integer @目标uid
+---@field public cur_dkp integer @当前dkp的值
+---@field public desc string @备注
+
+
+---@class PBGuildSendSpoilsReqCmd
+---@field public uid integer
+---@field public des_uid integer @目标uid
+---@field public slist PBGuildSpoilsItemList @发送的物品
+
+
+---@class PBGuildSendSpoilsRspCmd
+---@field public sucess boolean
+
+
+---@class PBGuildUpdateShopReqCmd
+---@field public uid integer
+---@field public tab_index integer @所在标签页
+
+
+---@class PBGuildUpdateShopInfoCmd
+---@field public tab_index integer @所在标签页
+---@field public item_list PBGuildShopItemInfoList @物品列表
+
+
+---@class PBGuildShopBuyItemReqCmd
+---@field public uid integer
+---@field public tab_index integer @所在标签页
+---@field public s_id integer @商店物品id
+---@field public item_count integer @物品数量
+
+
+---@class PBGuildShopBuyItemRspCmd
+---@field public tab_index integer @所在标签页
+---@field public s_id integer @商店物品id
+---@field public item_count integer @物品数量
+---@field public sucess boolean @是否成功
+
+
+---@class PBGuildDayMissionAwardReqCmd
+---@field public uid integer
+---@field public day_mission boolean
+---@field public mission_id integer
+
+
+---@class PBGuildDayMissionAwardRspCmd
+---@field public code integer
+---@field public item_list PBItemData[]
+---@field public day_mission boolean
+
+
+---@class PBGuildBuyRecommentReqCmd
+---@field public uid integer
+
+
+---@class PBGuildBuyRecommentRspCmd
+---@field public uid integer
+---@field public sucess boolean @是否成功
+---@field public recommend_endtime integer @推荐位到期时间
+
+
+---@class PBGuildSetHeadReqCmd
+---@field public uid integer
+---@field public item_headid integer
+---@field public item_frameid integer
+
+
+---@class PBGuildSetHeadRspCmd
+---@field public item_headid integer
+---@field public item_frameid integer
+
+
+---@class PBSetGuildStatusCmd
+---@field public guild_id integer @公会ID
+---@field public status integer @状态
+
+
+---@class PBOpenGuildJuanZengCmd
+---@field public guild_id integer @公会ID
+---@field public open_juanzeng boolean @是否开启捐赠
+
+
+---@class PBMailItem
+---@field public item_id integer @道具ID为配置文件中的ID 使用分段来区分道具类型 [货币/普通道具/皮肤]
+---@field public item_count integer
+
+
+---@class PBMailData
+---@field public mail_id integer
+---@field public mail_type integer
+---@field public beg_ts integer
+---@field public end_ts integer
+---@field public mail_title string
+---@field public mail_content string
+---@field public is_read integer
+---@field public is_get integer
+---@field public is_del integer
+---@field public items PBMailItem[]
+
+
+---@class PBGetMailItemReqCmd
+---@field public uid integer
+---@field public mail_id integer
+
+
+---@class PBGetMailItemRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public mail_data PBMailData
+
+
+---@class PBUserSelectionOpt
+---@field public op_type integer
+---@field public uid integer
+---@field public target_id integer
+---@field public target_pos integer
+---@field public confirm_role boolean
+---@field public ban_roleids integer[]
+
+
+---@class PBUserSelection
+---@field public uid integer
+---@field public camp_type integer
+---@field public disable_map_id integer
+---@field public disable_role_ids integer[]
+---@field public selection_map_id integer
+---@field public confirm_role_ok boolean
+
+
+---@class PBUserSelectionS
+---@field public cur_state integer
+---@field public human_select_index integer
+---@field public human_disable_map integer
+---@field public human_disable_roles integer[]
+---@field public ghost_disable_map integer
+---@field public ghost_disable_roles integer[]
+---@field public rand_map_id integer
+---@field public ghost PBUserSelection
+---@field public humans table<integer, PBUserSelection>
+---@field public system_ban_config_ids integer[]
+
+
+---@class PBMatchCreateRoomReqCmd
+---@field public uid integer
+---@field public match_type integer
+---@field public camp_type integer
+---@field public map_id integer
+
+
+---@class PBMatchReqCmd
+---@field public uid integer
+---@field public match_type integer
+---@field public camp_type integer
+---@field public need_ai boolean
+
+
+---@class PBMatchRspCmd
+---@field public code integer
+
+
+---@class PBNotifyMatchAckCmd
+---@field public room_id integer
+
+
+---@class PBMatchAckReqCmd
+---@field public uid integer
+---@field public room_id integer
+---@field public is_agree boolean
+
+
+---@class PBMatchSelectionOptReqCmd
+---@field public uid integer
+---@field public room_id integer
+---@field public opt PBUserSelectionOpt
+
+
+---@class PBMatchSelectionOptRspCmd
+---@field public code integer
+
+
+---@class PBMatchNotifyEnterDSCmd
+---@field public ds_ip string
+---@field public ds_port integer
+---@field public room_key string
+
+
+---@class PBMatchNotifyGameOverCmd
+---@field public room_id integer
+---@field public code integer
+
+
+---@class PBMatchCancelReqCmd
+---@field public uid integer
+---@field public room_id integer
+
+
+---@class PBMatchCancelRspCmd
+---@field public code integer
+
+
+---@class PBMatchNotifyFailCmd
+---@field public room_id integer
+---@field public code integer
+
+
+---@class PBMatchNotifyPlayerNumCmd
+---@field public room_id integer
+---@field public human_num integer
+---@field public ghost_num integer
+---@field public red_team_num integer
+---@field public blue_team_num integer
+
+
+---@class PBConditionData
+---@field public cond_id integer
+---@field public cond_type integer
+---@field public cond_target integer
+---@field public progress integer
+---@field public is_complete integer
+
+
+---@class PBMissionData
+---@field public mission_id integer
+---@field public mission_type integer
+---@field public is_complete integer
+---@field public is_get integer
+---@field public beg_ts integer
+---@field public end_ts integer
+---@field public cond_datas PBConditionData[]
+
+
+---@class PBUpdateMissionSeverSyncCmd
+---@field public uid integer
+---@field public cond_id integer
+---@field public cond_type integer
+---@field public update_progress integer
+
+
+---@class PBUpdateMissionClientSyncCmd
+---@field public update_mission_datas PBMissionData[] @好友数据
+
+
+---@class PBRankData
+---@field public id integer @宗门id或者玩家id
+---@field public idx integer
+---@field public score integer
+---@field public rank_data string
+
+
+---@class PBRankInfo
+---@field public rank_id integer
+---@field public beg_ts integer
+---@field public end_ts integer
+---@field public datas PBRankData[]
+
+
+---@class PBGetRankInfoReqCmd
+---@field public uid integer
+---@field public rank_id integer
+
+
+---@class PBGetRankInfoRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public rank_info PBRankInfo @排行榜数据
+---@field public self_data PBRankData @本榜中玩家自身数据
+
+
+---@class PBRoomSearchInfo
+---@field public roomid integer
+---@field public chapter integer @章节
+---@field public difficulty integer @难度
+---@field public playercnt integer @当前玩家人数
+---@field public master_id integer @房主id
+---@field public master_name string @房主昵称
+---@field public needpwd integer @是否需要密码
+
+
+---@class PBRoomMemberInfo
+---@field public seat_idx integer
+---@field public is_ready integer
+---@field public mem_info PBUserSimpleInfo
+
+
+---@class PBRoomInfo
+---@field public roomid integer
+---@field public isopen integer
+---@field public needpwd integer
+---@field public pwd string
+---@field public chapter integer
+---@field public difficulty integer
+---@field public state integer
+
+
+---@class PBCreateRoomReqCmd
+---@field public uid integer
+---@field public isopen integer
+---@field public needpwd integer
+---@field public pwd string
+---@field public chapter integer
+---@field public difficulty integer
+
+
+---@class PBCreateRoomRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public roomid integer
+
+
+---@class PBSearchRoomReqCmd
+---@field public uid integer
+---@field public roomid integer
+---@field public chapter integer
+---@field public difficulty integer
+---@field public start_idx integer @搜索的起始序号
+
+
+---@class PBSearchRoomRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public roomid integer
+---@field public chapter integer
+---@field public difficulty integer
+---@field public start_idx integer @搜索的起始序号
+---@field public search_data PBRoomSearchInfo[]
+
+
+---@class PBModRoomReqCmd
+---@field public uid integer
+---@field public roomid integer
+---@field public isopen integer
+---@field public needpwd integer
+---@field public pwd string
+---@field public chapter integer
+---@field public difficulty integer
+
+
+---@class PBModRoomRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public isopen integer
+---@field public needpwd integer
+---@field public pwd string
+---@field public chapter integer
+---@field public difficulty integer
+
+
+---@class PBRoomInfoSyncCmd
+---@field public room_data PBRoomInfo
+
+
+---@class PBApplyRoomReqCmd
+---@field public uid integer
+---@field public roomid integer
+
+
+---@class PBApplyRoomRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public roomid integer
+
+
+---@class PBApplyRoomSyncCmd
+---@field public uid integer
+---@field public roomid integer
+---@field public apply_info PBUserSimpleInfo
+
+
+---@class PBDealApplyRoomReqCmd
+---@field public deal_uid integer
+---@field public deal_op integer
+
+
+---@class PBDealApplyRoomRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public deal_uid integer
+---@field public deal_op integer
+
+
+---@class PBDealApplyRoomSyncCmd
+---@field public roomid integer
+---@field public deal_op integer
+---@field public master_uid integer
+---@field public master_name string
+---@field public pwd string
+
+
+---@class PBEnterRoomReqCmd
+---@field public uid integer
+---@field public roomid integer
+---@field public pwd string
+
+
+---@class PBEnterRoomRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roomid integer
+
+
+---@class PBEnterRoomSyncCmd
+---@field public roomid integer
+---@field public member_data PBRoomMemberInfo
+
+
+---@class PBExitRoomReqCmd
+---@field public uid integer
+---@field public roomid integer
+
+
+---@class PBExitRoomRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roomid integer
+
+
+---@class PBExitRoomSyncCmd
+---@field public uid integer
+---@field public roomid integer
+
+
+---@class PBKickRoomReqCmd
+---@field public self_uid integer
+---@field public roomid integer
+---@field public kick_uid integer
+
+
+---@class PBKickRoomRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public self_uid integer
+---@field public roomid integer
+---@field public kick_uid integer
+
+
+---@class PBKickRoomSyncCmd
+---@field public roomid integer
+---@field public kick_uid integer
+
+
+---@class PBReadyRoomReqCmd
+---@field public uid integer
+---@field public roomid integer
+---@field public ready_op integer @1--准备, 2--取消准备
+
+
+---@class PBReadyRoomRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roomid integer
+---@field public is_ready integer
+
+
+---@class PBReadyRoomSyncCmd
+---@field public uid integer
+---@field public roomid integer
+---@field public is_ready integer
+
+
+---@class PBGetRoomInfoReqCmd
+---@field public uid integer
+---@field public roomid integer
+
+
+---@class PBGetRoomInfoRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public room_data PBRoomInfo
+---@field public member_datas PBRoomMemberInfo[]
+
+
+---@class PBStartGameRoomReqCmd
+---@field public uid integer
+---@field public roomid integer
+
+
+---@class PBStartGameRoomRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roomid integer
+
+
+---@class PBEnterDsRoomSyncCmd
+---@field public roomid integer
+---@field public ds_address string
+---@field public ds_ip string
+
+
+---@class PBTeamInfo
+---@field public team_id integer
+---@field public master_id integer @队长id
+---@field public user_list PBUserSimpleInfo[] @
+---@field public is_del boolean @是否解散
+---@field public match_type integer @游戏模式
+
+
+---@class PBTeamStatusCmd
+---@field public team_id integer @team_id
+---@field public team_status boolean @team status
+
+
+---@class PBTeamInfoReqCmd
+---@field public team_id integer @team_id
+
+
+---@class PBTeamInfoRspCmd
+---@field public code integer
+---@field public team_info PBTeamInfo @队伍信息
+
+
+---@class PBTeamCreateReqCmd
+---@field public uid integer
+---@field public base_data PBUserSimpleInfo @游戏基础数据
+---@field public match_type integer @
+
+
+---@class PBTeamCreateRspCmd
+---@field public code integer
+---@field public team_id integer @队伍ID
+
+
+---@class PBTeamExitReqCmd
+---@field public uid integer
+
+
+---@class PBTeamExitRspCmd
+---@field public code integer @fail 1 success 0
+
+
+---@class PBTeamKickoutReqCmd
+---@field public uid integer
+---@field public target_uid integer @uid
+
+
+---@class PBTeamKickoutRspCmd
+---@field public code integer
+---@field public target_uid integer @uid
+
+
+---@class PBTeamJoinReqCmd
+---@field public uid integer
+---@field public master_uid integer @uid（队长的ID)
+---@field public team_id integer @队伍id
+---@field public base_data PBUserSimpleInfo @游戏基础数据
+
+
+---@class PBTeamJoinRspCmd
+---@field public code integer
+---@field public master_uid integer @uid（队长的ID)
+---@field public team_id integer @队伍id
+
+
+---@class PBTradeBankProductData
+---@field public trade_id integer @交易id
+---@field public product_id integer @商品id(道具的配置id)
+---@field public cur_num integer @当前剩余数量
+---@field public book_num integer @被预订数量
+---@field public sale_num integer @售出数量
+---@field public price integer @单价
+---@field public uid integer @卖家id
+---@field public beg_ts integer @本商品创建时间
+---@field public end_ts integer @本商品下架时间
+---@field public state integer @当前商品状态
+
+
+---@class PBSelfTradeBankData
+---@field public box_capacity integer @交易行货架数
+---@field public product_list PBTradeBankProductData[]
+
+
+---@class PBGetTradeBankInfoReqCmd
+---@field public uid integer
+
+
+---@class PBGetTradeBankInfoRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public self_trade_bank_info PBSelfTradeBankData @自己的交易行数据
+
+
+---@class PBCoin
+---@field public coin_type integer
+---@field public coin_count integer
+
+
+---@class PBBlessing
+---@field public bless_id integer
+---@field public idx integer
+
+
+---@class PBAttribute
 ---@field public id integer
----@field public count integer
+---@field public val integer
 
 
----@class S2CUpdateItem
----@field public list ItemData[]
+---@class PBTag
+---@field public id integer
+---@field public val integer
 
 
----@class C2SHello
----@field public hello string
+---@class PBSkill
+---@field public config_id integer
+---@field public star integer
 
 
----@class S2CWorld
----@field public world string
+---@class PBBlock
+---@field public idx integer
+---@field public config_id integer
+---@field public uniqid integer
+---@field public item_detail PBItemData @插槽道具详情(可省略)
+
+
+---@class PBDurabItem
+---@field public cur_durability integer @当前耐久度
+---@field public max_durability integer @耐久度上限
+
+
+---@class PBMagicItem
+---@field public cur_durability integer @当前耐久度
+---@field public max_durability integer @耐久度上限
+---@field public light_cnt integer
+---@field public tags PBTag[] @随机词条id,最大10条
+
+
+---@class PBDiagramsCard
+---@field public cur_durability integer @当前耐久度
+---@field public max_durability integer @耐久度上限
+---@field public light_cnt integer
+---@field public tags PBTag[] @随机词条id,最大10条
+
+
+---@class PBAweItem
+---@field public idx integer
+---@field public up_lv_fail_cnt integer @当前等级升级失败次数
+
+
+---@class PBAntique
+---@field public price PBCoin @价格
+---@field public remain_identify_num integer @剩余鉴定次数
+---@field public tags PBTag[] @词条数量,最大10个
+---@field public is_fake integer
+---@field public identify_histroy integer[] @历史鉴定结果
+
+
+---@class PBItemCommon
+---@field public config_id integer
+---@field public uniqid integer
+---@field public item_count integer
+---@field public item_type integer @道具类型
+---@field public trade_cnt integer @可交易次数
+
+
+---@class PBItemSpecial
+---@field public durab_item PBDurabItem
+---@field public magic_item PBMagicItem
+---@field public diagrams_item PBDiagramsCard
+---@field public awe_item PBAweItem
+---@field public antique_item PBAntique
+
+
+---@class PBItemData
+---@field public itype integer
+---@field public common_info PBItemCommon
+---@field public special_info PBItemSpecial
+
+
+---@class PBItemSimple
+---@field public config_id integer
+---@field public item_count integer
+---@field public uniqid integer
+
+
+---@class PBMagicItemImage
+---@field public config_id integer @道具id
+---@field public get_ts integer @图鉴解锁时间
+---@field public up_level integer @升级
+---@field public up_exp integer
+---@field public star_level integer @升星
+---@field public tier integer @升阶
+
+
+---@class PBDiagramsCardImage
+---@field public config_id integer @道具id
+---@field public get_ts integer @图鉴解锁时间
+---@field public up_level integer @升级
+---@field public up_exp integer
+---@field public star_level integer @升星
+---@field public tier integer @升阶
+
+
+---@class PBAuctionExtra
+---@field public up_level integer @升级
+---@field public up_exp integer
+---@field public star_level integer @升星
+---@field public exattr_list PBAttribute[] @额外属性
+---@field public element_tags PBTag[] @元素词条id
+---@field public tags PBTag[] @普通词条id
+---@field public life integer @阴寿
+---@field public ghost_air integer @阴气
+---@field public monster_skills PBSkill[] @鬼怪技能
+---@field public unlock_equip_num integer @解锁装备数量
+---@field public nick_name string @怪物昵称
+
+
+---@class PBPlayedGodsData
+---@field public idx integer @槽位
+---@field public gods_id integer @神明id
+
+
+---@class PBPlayedGodsDataS
+---@field public played_gods_list PBPlayedGodsData[]
+
+
+---@class PBGodsDataS
+---@field public gods_list integer[] @神明列表
+---@field public played_gods_data PBPlayedGodsDataS @出战的神明数据
+
+
+---@class PBBag
+---@field public bag_item_type integer
+---@field public capacity integer
+---@field public items table<integer, PBItemData>
+
+
+---@class PBBags
+---@field public bags table<string, PBBag>
+
+
+---@class PBRankNode
+---@field public grade integer @品阶
+---@field public level integer @品级
+---@field public star integer @当前星星数量
+---@field public score integer @隐藏分
+---@field public zhu_ji_points integer @筑基点（用于升星或抵扣星星）
+---@field public all_stars integer @所有星星数（记录玩家所有的星星数量，用于换算品阶、品级这些）
+
+
+---@class PBRankLevel
+---@field public ghost_rank PBRankNode
+---@field public human_rank PBRankNode
+---@field public ghost_top_rank PBRankNode
+---@field public human_top_rank PBRankNode
+
+
+---@class PBPinchFaceData
+---@field public setting_data string
+
+
+---@class PBSimpleRoleData
+---@field public config_id integer @配置ID
+---@field public skins table<integer, PBItemData> @穿戴皮肤
+
+
+---@class PBRoleData
+---@field public config_id integer @配置ID
+---@field public star_level integer @星级
+---@field public exp integer @经验值
+---@field public magic_item PBItemData @法器
+---@field public digrams_cards table<integer, PBItemData> @八卦牌
+---@field public equip_books integer[] @已装备真经
+---@field public study_books integer[] @学习中真经
+---@field public skins table<integer, PBItemData> @穿戴皮肤
+---@field public cur_main_skill_id integer @选定主技能id
+---@field public main_skill table<integer, PBSkill> @可选主技能
+---@field public cur_minor_skill1_id integer @选定小技能1id
+---@field public minor_skill1 table<integer, PBSkill> @可选小技能1
+---@field public cur_minor_skill2_id integer @选定小技能2id
+---@field public minor_skill2 table<integer, PBSkill> @可选小技能2
+---@field public passive_skill PBSkill @被动技能
+---@field public emoji integer[] @表情槽
+
+
+---@class PBUserRoleDatas
+---@field public battle_role_id integer
+---@field public role_list table<integer, PBRoleData>
+
+
+---@class PBSimpleGhostData
+---@field public config_id integer @配置ID
+---@field public skin_id integer @穿戴皮肤
+
+
+---@class PBGhostData
+---@field public config_id integer @配置ID
+---@field public uniqid integer @唯一ID
+---@field public star_level integer @星级
+---@field public exp integer @经验值
+---@field public digrams_cards table<integer, PBItemData> @八卦牌
+---@field public passive_skills PBSkill[] @被动技能
+---@field public active_skills PBSkill[] @主动技能
+---@field public attrs PBAttribute[] @属性
+---@field public nature integer @性格
+
+
+---@class PBGhostImage
+---@field public config_id integer @配置ID
+---@field public star_level integer @星级
+---@field public exp integer @经验值
+---@field public cur_skin_id integer @当前装备皮肤
+---@field public skin_id_list integer[] @拥有皮肤
+
+
+---@class PBUserGhostDatas
+---@field public battle_ghost_id integer @出战的鬼宠配置id
+---@field public battle_ghost_uniqid integer @出战的鬼宠唯一id
+---@field public ghost_list table<integer, PBGhostData>
+---@field public ghost_image_list table<integer, PBGhostImage>
+
+
+---@class PBGourd
+---@field public gourd_id integer @葫芦id
+---@field public nick_name string @葫芦昵称
+---@field public up_level integer @葫芦等级
+---@field public up_exp integer @葫芦经验
+---@field public total_talent integer @总天赋点
+---@field public cur_talent integer @当前天赋点
+---@field public talent_attr PBAttribute[] @天赋属性
+---@field public cd_end_ts integer @葫芦冷却时间
+
+
+---@class PBGourdS
+---@field public gourd_list PBGourd[]
+
+
+---@class PBImage
+---@field public config_id integer @配置ID
+---@field public star_level integer @星级
+---@field public exp integer @经验值
+
+
+---@class PBUserImage
+---@field public item_image PBImage @道具图鉴
+---@field public magic_item_image PBImage @法器图鉴
+---@field public human_diagrams_image PBImage @角色八卦牌图鉴
+---@field public ghost_diagrams_image PBImage @鬼宠八卦牌图鉴
+
+
+---@class PBUserSimpleInfo
+---@field public uid integer
+---@field public plateform_id string
+---@field public nick_name string
+---@field public head_icon integer
+---@field public sex integer @0-未选 1-男 2-女
+---@field public praise_num integer @点赞
+---@field public head_frame integer @头像框
+---@field public account_create_time integer @账户创建时间
+---@field public account_level integer
+---@field public account_exp integer
+---@field public guild_uid integer
+---@field public guild_name string
+---@field public rank_level PBRankLevel
+---@field public cur_show_role PBSimpleRoleData
+---@field public pinch_face_data PBPinchFaceData @捏脸数据
+---@field public title integer @当前佩戴的称号
+---@field public player_flag integer @玩家标签
+---@field public online_time integer @最后一次在线时间
+---@field public sum_online_time integer @累计在线时长 单位秒
+---@field public pa_flag integer @是否禁言等操作
+---@field public cur_show_ghost PBSimpleGhostData
+
+
+---@class PBClientGetUsrSimInfoReqCmd
+---@field public uid integer
+
+
+---@class PBClientGetUsrSimInfoRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer @用户ID
+---@field public info PBUserSimpleInfo @简略信息
+
+
 
 
 
@@ -774,16 +1818,12 @@
 ---@field Center Center
 
 
----@class cugate_scripts
----@field CuGate CuGate
+---@class dgate_scripts
+---@field DGate DGate
 
 
----@class ds_scripts
+---@class dsnode_scripts
 ---@field DsNode DsNode
-
-
----@class dugate_scripts
----@field DuGate DuGate
 
 
 ---@class gate_scripts
@@ -794,50 +1834,280 @@
 ---@field Mail Mail
 
 
----@class node_scripts
----@field Console Console
-
-
 ---@class room_scripts
 ---@field Aoi Aoi
 ---@field Room Room
 
 
 ---@class user_scripts
+---@field Bag Bag
+---@field ChatProxy ChatProxy
+---@field City City
+---@field Ghost Ghost
+---@field GuildProxy GuildProxy
 ---@field Hello Hello
 ---@field Item Item
----@field User User
----@field Team Team
----@field UserModel UserModel
 ---@field ItemDefine ItemDefine
----@field Bag Bag
+---@field MatchProxy MatchProxy
+---@field Role Role
+---@field Room Room
+---@field Team Team
+---@field User User
+---@field UserModel UserModel
 
----@class static_conf
----@field constant constant
----@field example example_cfg[]
----@field Item Item_cfg[]
----@field UniqueItem UniqueItem_cfg[]
----@field RankLevel RankLevel_cfg[]
 
----@class Item_cfg
----@field id integer
----@field stack_count integer
----@field type1 integer
 
----@class RankLevel_cfg
----@field id integer
----@field grade_level integer
----@field max_level integer
----@field top_star integer
----@field top_score integer
----@field bottom_score integer
 
+---@class agent_scripts
+---@field Agent Agent
 
 
 ---@class guild_scripts
 ---@field Guild Guild
----@field GuildRecord GuildRecord
 ---@field GuildModel GuildModel
+---@field GuildRecord GuildRecord
 ---@field GuildShop GuildShop
 ---@field GuildTask GuildTask
 ---@field GuildTreasury GuildTreasury
+
+
+
+
+---@class matchmgr_scripts
+---@field MatchMgr MatchMgr
+
+
+---@class matchroom_scripts
+---@field CreateDS CreateDS
+---@field Matching Matching
+---@field MatchRoom MatchRoom
+---@field Selection Selection
+---@field Settle Settle
+
+
+
+
+---@class chatchannel_scripts
+---@field chatchannel chatchannel
+
+
+---@class chatmgr_scripts
+---@field ChatMgr ChatMgr
+
+
+
+
+---@class citymgr_scripts
+---@field Citymgr Citymgr
+
+
+---@class guildmgr_scripts
+---@field GuildMgr GuildMgr
+
+
+---@class guildnamemgr_scripts
+---@field GuildNameMgr GuildNameMgr
+
+
+---@class nodemgr_scripts
+---@field Nodemgr Nodemgr
+
+
+---@class roommgr_scripts
+---@field Roommgr Roommgr
+
+
+---@class teammgr_scripts
+---@field Teammgr Teammgr
+
+
+---@class usermgr_scripts
+---@field Usermgr Usermgr
+
+
+
+
+---@class node_scripts
+---@field Console Console
+
+
+---@class static_conf
+---@field ActionMission ActionMission_cfg[]
+---@field ActionMissionAward ActionMissionAward_cfg[]
+---@field ActiveInfo ActiveInfo_cfg[]
+---@field AIUseConfig AIUseConfig_cfg[]
+---@field allconfigs allconfigs_cfg[]
+---@field AntiqueItem AntiqueItem_cfg[]
+---@field AntiquePriceTagChangeRate AntiquePriceTagChangeRate_cfg[]
+---@field AntiqueTagPool AntiqueTagPool_cfg[]
+---@field Attribute Attribute_cfg[]
+---@field AwardPoint AwardPoint_cfg[]
+---@field AweItemUpLv AweItemUpLv_cfg[]
+---@field BaGuaBrand BaGuaBrand_cfg[]
+---@field BaGuaBrandUpLv BaGuaBrandUpLv_cfg[]
+---@field BaGuaTagPool BaGuaTagPool_cfg[]
+---@field BanPick BanPick_cfg[]
+---@field BanPickConfig BanPickConfig_cfg[]
+---@field BianQueGift BianQueGift_cfg[]
+---@field Blessing Blessing_cfg[]
+---@field Book Book_cfg[]
+---@field Buff Buff_cfg[]
+---@field CDKEY CDKEY_cfg[]
+---@field CodexMission CodexMission_cfg[]
+---@field Coin Coin_cfg[]
+---@field CommonConfig CommonConfig_cfg[]
+---@field Composite Composite_cfg[]
+---@field DayMission DayMission_cfg[]
+---@field DayMissionAward DayMissionAward_cfg[]
+---@field DayPromotion DayPromotion_cfg[]
+---@field DayPromotionAward DayPromotionAward_cfg[]
+---@field Equipment Equipment_cfg[]
+---@field EquipmentTagPool EquipmentTagPool_cfg[]
+---@field ExperienceLevel ExperienceLevel_cfg[]
+---@field FallBox FallBox_cfg[]
+---@field FriendIntimacy FriendIntimacy_cfg[]
+---@field GameChapter GameChapter_cfg[]
+---@field GameControl GameControl_cfg[]
+---@field GamePropUpLv GamePropUpLv_cfg[]
+---@field GhostCommonConfig GhostCommonConfig_cfg[]
+---@field GhostEquipmentSlotCost GhostEquipmentSlotCost_cfg[]
+---@field GhostEquipmentUpLv GhostEquipmentUpLv_cfg[]
+---@field GhostGourdTalent GhostGourdTalent_cfg[]
+---@field GhostGourdUpLv GhostGourdUpLv_cfg[]
+---@field GhostGourdUse GhostGourdUse_cfg[]
+---@field GhostInfo GhostInfo_cfg[]
+---@field GhostInfoAttribute GhostInfoAttribute_cfg[]
+---@field GhostItem GhostItem_cfg[]
+---@field GhostManagerUpLv GhostManagerUpLv_cfg[]
+---@field GhostSkill GhostSkill_cfg[]
+---@field GhostSkin GhostSkin_cfg[]
+---@field GhostTabooWordSlot GhostTabooWordSlot_cfg[]
+---@field GhostUpLv GhostUpLv_cfg[]
+---@field Gift Gift_cfg[]
+---@field GlobalConfig GlobalConfig_cfg[]
+---@field GmInstruction GmInstruction_cfg[]
+---@field GrowFund GrowFund_cfg[]
+---@field GuildDayMission GuildDayMission_cfg[]
+---@field GuildExp GuildExp_cfg[]
+---@field GuildHead GuildHead_cfg[]
+---@field GuildMemberNum GuildMemberNum_cfg[]
+---@field Guildseason Guildseason_cfg[]
+---@field Guildshop Guildshop_cfg[]
+---@field GuildWeekMission GuildWeekMission_cfg[]
+---@field HcSystem HcSystem_cfg[]
+---@field HomeConfig HomeConfig_cfg[]
+---@field HomeHotSpringBuy HomeHotSpringBuy_cfg[]
+---@field HomeHotSpringIntimacyLevel HomeHotSpringIntimacyLevel_cfg[]
+---@field HomeHotSpringLevel HomeHotSpringLevel_cfg[]
+---@field HomeHotSpringQuestion HomeHotSpringQuestion_cfg[]
+---@field HomeIntimacyToLikeScore HomeIntimacyToLikeScore_cfg[]
+---@field HomeMarketConfig HomeMarketConfig_cfg[]
+---@field HomePeiFang HomePeiFang_cfg[]
+---@field HomeTask HomeTask_cfg[]
+---@field HumanRole HumanRole_cfg[]
+---@field HumanSkill HumanSkill_cfg[]
+---@field HumanTabooWordSlot HumanTabooWordSlot_cfg[]
+---@field IdList IdList_cfg[]
+---@field Init Init_cfg[]
+---@field Intimacy Intimacy_cfg[]
+---@field IntimacyAward IntimacyAward_cfg[]
+---@field InvitationAward InvitationAward_cfg[]
+---@field Item Item_cfg[]
+---@field Itembox Itembox_cfg[]
+---@field ItemHome ItemHome_cfg[]
+---@field ItemMix ItemMix_cfg[]
+---@field ItemTypes ItemTypes_cfg[]
+---@field LightConvert LightConvert_cfg[]
+---@field LimitGift LimitGift_cfg[]
+---@field LingShiPass LingShiPass_cfg[]
+---@field LoginAward LoginAward_cfg[]
+---@field MagicItem MagicItem_cfg[]
+---@field MagicItemElementTagPool MagicItemElementTagPool_cfg[]
+---@field MagicItemTagPool MagicItemTagPool_cfg[]
+---@field MagicItemUpLv MagicItemUpLv_cfg[]
+---@field MainStar MainStar_cfg[]
+---@field Map Map_cfg[]
+---@field MarketConfig MarketConfig_cfg[]
+---@field MinorStar MinorStar_cfg[]
+---@field MissionAchieve MissionAchieve_cfg[]
+---@field MissionType MissionType_cfg[]
+---@field MonthCard1 MonthCard1_cfg[]
+---@field MonthCard1_LJ MonthCard1_LJ_cfg[]
+---@field MonthCard2 MonthCard2_cfg[]
+---@field MonthCard2_LJ MonthCard2_LJ_cfg[]
+---@field MonthCard3 MonthCard3_cfg[]
+---@field MonthCard3_LJ MonthCard3_LJ_cfg[]
+---@field NewCharacterGift NewCharacterGift_cfg[]
+---@field NoviceMission NoviceMission_cfg[]
+---@field NoviceTimeLimitMission NoviceTimeLimitMission_cfg[]
+---@field OldUserAward OldUserAward_cfg[]
+---@field OnlyOneItem OnlyOneItem_cfg[]
+---@field OrdinaryItem OrdinaryItem_cfg[]
+---@field PeriodAwardPoint PeriodAwardPoint_cfg[]
+---@field PeriodMission PeriodMission_cfg[]
+---@field PinchFace PinchFace_cfg[]
+---@field PropCompose PropCompose_cfg[]
+---@field RandomComposite RandomComposite_cfg[]
+---@field RankLevel RankLevel_cfg[]
+---@field RankLevelMission RankLevelMission_cfg[]
+---@field RankLianSheng2Score RankLianSheng2Score_cfg[]
+---@field RankList RankList_cfg[]
+---@field RankListAward RankListAward_cfg[]
+---@field RankMVP2Score RankMVP2Score_cfg[]
+---@field RankOfflineDay2Score RankOfflineDay2Score_cfg[]
+---@field RankStar2Score RankStar2Score_cfg[]
+---@field RankTeam2Score RankTeam2Score_cfg[]
+---@field Ranktitle Ranktitle_cfg[]
+---@field RankWin2Score RankWin2Score_cfg[]
+---@field RechargeMission RechargeMission_cfg[]
+---@field RefineComposite RefineComposite_cfg[]
+---@field RoleLvAward RoleLvAward_cfg[]
+---@field RoleUpLv RoleUpLv_cfg[]
+---@field SeasonAward SeasonAward_cfg[]
+---@field SeasonBuy SeasonBuy_cfg[]
+---@field SeasonMission SeasonMission_cfg[]
+---@field SeasonMissionRand SeasonMissionRand_cfg[]
+---@field SeasonPass SeasonPass_cfg[]
+---@field SeasonPassBuy SeasonPassBuy_cfg[]
+---@field SeasonPassExp SeasonPassExp_cfg[]
+---@field SeasonPassExpAdd SeasonPassExpAdd_cfg[]
+---@field SeasonPassExpDouble SeasonPassExpDouble_cfg[]
+---@field SeasonPassMission SeasonPassMission_cfg[]
+---@field SeasonRankLevelMission SeasonRankLevelMission_cfg[]
+---@field SeasonRankRefreshCycle SeasonRankRefreshCycle_cfg[]
+---@field SecretPaper SecretPaper_cfg[]
+---@field Settle Settle_cfg[]
+---@field SignAward SignAward_cfg[]
+---@field SignAward7Day SignAward7Day_cfg[]
+---@field Skin Skin_cfg[]
+---@field SkinRand SkinRand_cfg[]
+---@field SkinSuiYu SkinSuiYu_cfg[]
+---@field SkinXiaofeijifen SkinXiaofeijifen_cfg[]
+---@field SkinZhuti SkinZhuti_cfg[]
+---@field StarSymbolData StarSymbolData_cfg[]
+---@field StarSymbolDescription StarSymbolDescription_cfg[]
+---@field StarSymbolEffect StarSymbolEffect_cfg[]
+---@field StarSymbolEvent StarSymbolEvent_cfg[]
+---@field TabooWordsCompose TabooWordsCompose_cfg[]
+---@field Tardeaddprice Tardeaddprice_cfg[]
+---@field Tardeblank Tardeblank_cfg[]
+---@field Title Title_cfg[]
+---@field TitleType TitleType_cfg[]
+---@field TopUpAword TopUpAword_cfg[]
+---@field TradeBankItem TradeBankItem_cfg[]
+---@field TradingCommonConfig TradingCommonConfig_cfg[]
+---@field TradingIDConvert TradingIDConvert_cfg[]
+---@field TradingLimitID TradingLimitID_cfg[]
+---@field TreasureBox TreasureBox_cfg[]
+---@field TreasureBoxAward TreasureBoxAward_cfg[]
+---@field TreasureBoxPoint TreasureBoxPoint_cfg[]
+---@field TreasureMission TreasureMission_cfg[]
+---@field TreasureRandGift TreasureRandGift_cfg[]
+---@field TreasureRandItem TreasureRandItem_cfg[]
+---@field UniqueItem UniqueItem_cfg[]
+---@field UpLvCostIDMapping UpLvCostIDMapping_cfg[]
+---@field UpStar UpStar_cfg[]
+---@field UpTier UpTier_cfg[]
+---@field WaizhuanMission WaizhuanMission_cfg[]
+---@field WaizhuanMissionAward WaizhuanMissionAward_cfg[]
+---@field WeekFreeRole WeekFreeRole_cfg[]

@@ -5,62 +5,35 @@ local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
 local Database = common.Database
+local BagDef = require("common.def.BagDef")
 
 ---@type user_context
 local context = ...
 local scripts = context.scripts
 
-local BagType = {
-    Cangku = "cangku",
-    Consume = "consume",
-    Booty = "booty",
-}
-
-local ItemType = {
-    ALL = 1,
-    Consume = 2,
-}
-
-local init_cangku_capacity = 75
-local init_consume_capacity = 25
-local init_booty_capacity = 20
-local max_cangku_capacity = 150
-local max_consume_capacity = 50
-local max_booty_capacity = 40
+-- local ItemType = {
+--     ALL = 1,
+--     Consume = 2,
+-- }
 
 ---@class Bag
 local Bag = {}
 
 function Bag.Init()
     local bagTypes = {}
-    table.insert(bagTypes, BagType.Cangku)
-    table.insert(bagTypes, BagType.Consume)
-    table.insert(bagTypes, BagType.Booty)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    table.insert(bagTypes, BagDef.BagType.Cangku)
+    table.insert(bagTypes, BagDef.BagType.Consume)
+    table.insert(bagTypes, BagDef.BagType.Booty)
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local baginfos = Bag.LoadBags(bagTypes)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if baginfos then
         scripts.UserModel.SetBagData(baginfos)
     end
 
     local bagdata = scripts.UserModel.GetBagData()
     if not bagdata then
-        bagdata = {
-            [BagType.Cangku] = {
-                bag_item_type = ItemType.ALL,
-                capacity = init_cangku_capacity,
-                items = {}     -- map
-            },
-            [BagType.Consume] = {
-                bag_item_type = ItemType.Consume,
-                capacity = init_consume_capacity,
-                items = {}     -- map
-            },
-            [BagType.Booty] = {
-                bag_item_type = ItemType.ALL,
-                capacity = init_booty_capacity,
-                items = {}     -- map
-            },
-        }
+        bagdata = BagDef.newBags()
 
         scripts.UserModel.SetBagData(bagdata)
         Bag.SaveBagsNow(bagTypes)
@@ -76,7 +49,9 @@ function Bag.AddCapacity(bagType, add_capacity)
         return ErrorCode.ParamInvalid
     end
 
-    if bagType ~= BagType.Cangku and bagType ~= BagType.Consume and bagType ~= BagType.Booty then
+    if bagType ~= BagDef.BagType.Cangku
+        and bagType ~= BagDef.BagType.Consume
+        and bagType ~= BagDef.BagType.Booty then
         return ErrorCode.BagNotExist
     end
 
@@ -86,14 +61,14 @@ function Bag.AddCapacity(bagType, add_capacity)
     end
 
     local baginfo = bagdata[bagType]
-    if bagType == BagType.Cangku
-        and baginfo.capacity + add_capacity > max_cangku_capacity then
+    if bagType == BagDef.BagType.Cangku
+        and baginfo.capacity + add_capacity > BagDef.max_cangku_capacity then
         return ErrorCode.BagCapacityOverflow
-    elseif bagType == BagType.Consume
-        and baginfo.capacity + add_capacity > max_consume_capacity then
+    elseif bagType == BagDef.BagType.Consume
+        and baginfo.capacity + add_capacity > BagDef.max_consume_capacity then
         return ErrorCode.BagCapacityOverflow
-    elseif bagType == BagType.Booty
-        and baginfo.capacity + add_capacity > max_booty_capacity then
+    elseif bagType == BagDef.BagType.Booty
+        and baginfo.capacity + add_capacity > BagDef.max_booty_capacity then
         return ErrorCode.BagCapacityOverflow
     end
 
@@ -108,7 +83,9 @@ function Bag.AddItem(bagType, itemId, count, itype)
         return ErrorCode.ParamInvalid
     end
 
-    if bagType ~= BagType.Cangku and bagType ~= BagType.Consume and bagType ~= BagType.Booty then
+    if bagType ~= BagDef.BagType.Cangku
+        and bagType ~= BagDef.BagType.Consume
+        and bagType ~= BagDef.BagType.Booty then
         return ErrorCode.BagNotExist
     end
 
@@ -123,8 +100,9 @@ function Bag.AddItem(bagType, itemId, count, itype)
     end
     local baginfo = bagdata[bagType]
     -- 类型检查
-    local item_type = scripts.ItemDefine.GetItemType(itemId)
-    if baginfo.bag_item_type ~= ItemType.ALL and baginfo.bag_item_type ~= item_type then
+    local item_type = scripts.ItemDefine.GetItemBagType(itemId)
+    if baginfo.bag_item_type ~= scripts.ItemDefine.ItemBagType.ALL
+        and baginfo.bag_item_type ~= item_type then
         return ErrorCode.BagTypeMismatch
     end
 
@@ -243,9 +221,9 @@ end
 
 function Bag.AddUniqItem(bagType, itemId, uniqid)
     -- 参数校验
-    if bagType ~= BagType.Cangku
-        and bagType ~= BagType.Consume
-        and bagType ~= BagType.Booty then
+    if bagType ~= BagDef.BagType.Cangku
+        and bagType ~= BagDef.BagType.Consume
+        and bagType ~= BagDef.BagType.Booty then
         return ErrorCode.BagNotExist
     end
 
@@ -260,8 +238,9 @@ function Bag.AddUniqItem(bagType, itemId, uniqid)
     end
     local baginfo = bagdata[bagType]
     -- 类型检查
-    local item_type = scripts.ItemDefine.GetItemType(itemId)
-    if baginfo.bag_item_type ~= ItemType.ALL and baginfo.bag_item_type ~= item_type then
+    local item_type = scripts.ItemDefine.GetItemBagType(itemId)
+    if baginfo.bag_item_type ~= scripts.ItemDefine.ItemBagType.ALL
+        and baginfo.bag_item_type ~= item_type then
         return ErrorCode.BagTypeMismatch
     end
 
@@ -295,15 +274,15 @@ end
 
 function Bag.StackItems(srcBagType, srcPos, destBagType, destPos)
     -- 参数校验
-    if srcBagType ~= BagType.Cangku
-        and srcBagType ~= BagType.Consume
-        and srcBagType ~= BagType.Booty then
+    if srcBagType ~= BagDef.BagType.Cangku
+        and srcBagType ~= BagDef.BagType.Consume
+        and srcBagType ~= BagDef.BagType.Booty then
         return ErrorCode.BagNotExist
     end
 
-    if destBagType ~= BagType.Cangku
-        and destBagType ~= BagType.Consume
-        and destBagType ~= BagType.Booty then
+    if destBagType ~= BagDef.BagType.Cangku
+        and destBagType ~= BagDef.BagType.Consume
+        and destBagType ~= BagDef.BagType.Booty then
         return ErrorCode.BagNotExist
     end
 
@@ -390,9 +369,9 @@ end
 
 function Bag.DelUniqItem(bagType, itemId, uniqid, pos)
     -- 参数校验
-    if bagType ~= BagType.Cangku
-        and bagType ~= BagType.Consume
-        and bagType ~= BagType.Booty then
+    if bagType ~= BagDef.BagType.Cangku
+        and bagType ~= BagDef.BagType.Consume
+        and bagType ~= BagDef.BagType.Booty then
         return ErrorCode.BagNotExist
     end
 
@@ -429,15 +408,15 @@ function Bag.SplitItem(srcBagType, srcPos, destBagType, destPos, splitCount)
         return ErrorCode.ParamInvalid
     end
 
-    if srcBagType ~= BagType.Cangku
-        and srcBagType ~= BagType.Consume
-        and srcBagType ~= BagType.Booty then
+    if srcBagType ~= BagDef.BagType.Cangku
+        and srcBagType ~= BagDef.BagType.Consume
+        and srcBagType ~= BagDef.BagType.Booty then
         return ErrorCode.BagNotExist
     end
 
-    if destBagType ~= BagType.Cangku
-        and destBagType ~= BagType.Consume
-        and destBagType ~= BagType.Booty then
+    if destBagType ~= BagDef.BagType.Cangku
+        and destBagType ~= BagDef.BagType.Consume
+        and destBagType ~= BagDef.BagType.Booty then
         return ErrorCode.BagNotExist
     end
 
@@ -474,8 +453,9 @@ function Bag.SplitItem(srcBagType, srcPos, destBagType, destPos, splitCount)
     end
 
     -- 跨背包类型校验
-    local itemType = scripts.ItemDefine.GetItemType(srcItem.common_info.config_id)
-    if destBag.bag_item_type ~= ItemType.ALL and destBag.bag_item_type ~= itemType then
+    local itemType = scripts.ItemDefine.GetItemBagType(srcItem.common_info.config_id)
+    if destBag.bag_item_type ~= scripts.ItemDefine.ItemBagType.ALL
+        and destBag.bag_item_type ~= itemType then
         return ErrorCode.BagTypeMismatch
     end
 
@@ -513,15 +493,15 @@ end
 
 function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos)
     -- 参数校验
-    if srcBagType ~= BagType.Cangku
-        and srcBagType ~= BagType.Consume
-        and srcBagType ~= BagType.Booty then
+    if srcBagType ~= BagDef.BagType.Cangku
+        and srcBagType ~= BagDef.BagType.Consume
+        and srcBagType ~= BagDef.BagType.Booty then
         return ErrorCode.BagNotExist
     end
 
-    if destBagType ~= BagType.Cangku
-        and destBagType ~= BagType.Consume
-        and destBagType ~= BagType.Booty then
+    if destBagType ~= BagDef.BagType.Cangku
+        and destBagType ~= BagDef.BagType.Consume
+        and destBagType ~= BagDef.BagType.Booty then
         return ErrorCode.BagNotExist
     end
 
@@ -548,16 +528,18 @@ function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos)
     end
 
     -- 目标背包类型校验
-    local itemType = scripts.ItemDefine.GetItemType(srcItem.common_info.config_id)
-    if destBag.bag_item_type ~= ItemType.ALL and destBag.bag_item_type ~= itemType then
+    local itemType = scripts.ItemDefine.GetItemBagType(srcItem.common_info.config_id)
+    if destBag.bag_item_type ~= scripts.ItemDefine.ItemBagType.ALL
+        and destBag.bag_item_type ~= itemType then
         return ErrorCode.BagTypeMismatch
     end
 
     local destItem = destBag.items[destPos]
     if destItem then
         -- 目标位置有物品，检查是否可以交换
-        local destItemType = scripts.ItemDefine.GetItemType(destItem.common_info.config_id)
-        if srcBag.bag_item_type ~= ItemType.ALL and srcBag.bag_item_type ~= destItemType then
+        local destItemType = scripts.ItemDefine.GetItemBagType(destItem.common_info.config_id)
+        if srcBag.bag_item_type ~= scripts.ItemDefine.ItemBagType.ALL
+            and srcBag.bag_item_type ~= destItemType then
             return ErrorCode.BagTypeMismatch
         end
     end
@@ -672,6 +654,68 @@ function Bag.LoadBags(bagTypes)
     return baginfos
 end
 
+function Bag.PBBagSaveWithChange(change)
+    local change_bags = {}
+    for bagtype, change_info in pairs(change) do
+        table.insert(change_bags, bagtype)
+    end
+
+    local success = Bag.SaveBagsNow(change_bags)
+    return success
+end
+
+function Bag.PBBagGetChangeItems(change)
+    local change_items = {}
+    
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata then
+        return change_items
+    end
+
+    for bagtype, change_info in pairs(change) do
+        local change_bag = bagdata[bagtype]
+        change_items[bagtype].bag_item_type = change_bag.bag_item_type
+        change_items[bagtype].capacity = change_bag.capacity
+        change_items[bagtype].items = {}
+        for pos, _ in pairs(change_info) do
+            if change_bag.items[pos] then
+                change_items[bagtype].items[pos] = change_bag.items[pos]
+            else
+                change_items[bagtype].items[pos] = {}
+            end
+        end
+    end
+
+    return change_items
+end
+
+function Bag.PBBagGetDataReqCmd(req)
+    if table.size(req.msg.bags_name) <= 0 then
+        return context.S2C(context.net_id, CmdCode["PBBagGetDataRspCmd"],
+            { code = ErrorCode.ParamInvalid, error = "参数错误", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata then
+        return context.S2C(context.net_id, CmdCode["PBBagGetDataRspCmd"],
+            { code = ErrorCode.BagNotExist, error = "背包未加载", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local res = {
+        code = ErrorCode.None,
+        error = "",
+        uid = context.uid,
+        bags = {}
+    }
+    for _, bag_name in pairs(req.msg.bags_name) do
+        if bagdata[bag_name] then
+            res.bags[bag_name] = bagdata[bag_name]
+        end
+    end
+    
+    return context.S2C(context.net_id, CmdCode["PBBagGetDataRspCmd"], res, req.msg_context.stub_id)
+end
+
 function Bag.PBBagOperateItemReqCmd(req)
     local err_code, change = ErrorCode.ParamInvalid, nil
     if req.msg.operate_type == 1 then
@@ -687,33 +731,15 @@ function Bag.PBBagOperateItemReqCmd(req)
             { code = err_code, error = "执行出错", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    local change_bags = {}
-    local res_change_items = {}
-    local bagdata = scripts.UserModel.GetBagData()
-    for bagtype, change_info in pairs(change) do
-        table.insert(change_bags, bagtype)
-
-        local change_bag = bagdata[bagtype]
-        res_change_items[bagtype].bag_item_type = change_bag.bag_item_type
-        res_change_items[bagtype].capacity = change_bag.capacity
-        res_change_items[bagtype].items = {}
-        for pos, _ in pairs(change_info) do
-            if change_bag.items[pos] then
-                res_change_items[bagtype].items[pos] = change_bag.items[pos]
-            else
-                res_change_items[bagtype].items[pos] = {}
-            end
-        end
-    end
-
-    local success = Bag.SaveBagsNow(change_bags)
+    local success = Bag.PBBagSaveWithChange(change)
     if not success then
         return context.S2C(context.net_id, CmdCode["PBBagOperateItemRspCmd"],
             { code = ErrorCode.BagSaveFailed, error = "保存背包失败", uid = context.uid }, req.msg_context.stub_id)
     end
 
+    local change_items = Bag.PBBagGetChangeItems(change)
     return context.S2C(context.net_id, CmdCode["PBBagOperateItemRspCmd"],
-        { code = ErrorCode.None, error = "", uid = context.uid, change_items = res_change_items },
+        { code = ErrorCode.None, error = "", uid = context.uid, change_items = change_items },
         req.msg_context.stub_id)
 end
 

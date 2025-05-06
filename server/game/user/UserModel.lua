@@ -17,13 +17,15 @@ local DBData
 local UserModel = {}
 
 function UserModel.Create(data)
-
     if DBData then
         return DBData
     end
 
     DBData = data
+    return data
+end
 
+function UserModel.SaveRun()
     ---定义自动存储
     moon.async(function()
         while true do
@@ -36,8 +38,6 @@ function UserModel.Create(data)
             end
         end
     end)
-
-    return data
 end
 
 ---需要立刻保存重要数据时,使用这个函数,参数使用默认值即可
@@ -52,30 +52,37 @@ function UserModel.Save(checkDirty)
 end
 
 ---只读,使用这个函数
- 
 function UserModel.Get()
     return DBData
 end
 function UserModel.GetUserData()
     return DBData.user_data
 end
+
 function UserModel.MutGetUserData()
-    
     dirty = true
     return DBData.user_data
 end
 
 ---需要修改数据时,使用这个函数
----@return UserData
 function UserModel.MutGet()
     dirty = true
     return DBData
+end
+
+---@return PBUserSimpleInfo ? nil
+function UserModel.GetSimple()
+    if DBData and DBData.simple then
+        return DBData.simple
+    end
+    return nil
 end
 
 function UserModel.SetSimple(simple_data)
     DBData.simple = simple_data
 end
 
+---@return PBBags ? nil
 function UserModel.GetBagData()
     if DBData and DBData.bagdata then
         return DBData.bagdata
@@ -95,6 +102,30 @@ function UserModel.SetBagData(baginfos)
             DBData.bagdata[bagtype] = baginfo
         end
     end
+end
+
+---@return PBUserRoleDatas ? nil
+function UserModel.GetRoles()
+    if DBData and DBData.roles then
+        return DBData.roles
+    end
+    return nil
+end
+
+function UserModel.SetRoles(roleinfos)
+    DBData.roles = roleinfos
+end
+
+---@return PBUserGhostDatas ? nil
+function UserModel.GetGhosts()
+    if DBData and DBData.ghosts then
+        return DBData.ghosts
+    end
+    return nil
+end
+
+function UserModel.SetGhosts(ghostinfos)
+    DBData.ghosts = ghostinfos
 end
 
 return UserModel

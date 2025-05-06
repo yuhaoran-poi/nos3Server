@@ -384,7 +384,7 @@ Auth.PBClientLoginReqCmd = function (req)
     end
     
     local res = func()
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local ret =
     {
         code = res.code,

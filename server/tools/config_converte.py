@@ -547,24 +547,8 @@ struct F{{ struct_name }}Conf
     
     def _processComment(self,field):
         comment_lines = field['comment'].split('\n')
-        # 格式化每行注释
-        formatted_lines = []
-        for idx, line in enumerate(comment_lines):
-            stripped = line.strip()
-            if not stripped:
-                continue
-                
-            # 首行添加注释符
-            if idx == 0:
-                formatted = f"{stripped}"
-            # 后续行对齐注释符
-            else:
-                formatted = f"  {stripped}"
-            
-            formatted_lines.append(formatted)
-        
-        # 合并为统一注释块
-        field['comment'] = '\n    '.join(formatted_lines)
+        # 合并多行注释为单行并用空格分隔
+        field['comment'] = ' '.join(line.strip() for line in comment_lines if line.strip())
         
     def _validate_first_field(self, field, base_name):
         if field['name'].lower() != 'id':
@@ -706,6 +690,38 @@ struct F{{ struct_name }}Conf
     
 
     def generate_lua_module(self, base_name, fields, data):
+        """生成Lua模块文件，包含类型注释"""
+        # 生成类型注释头
+        type_annotations = [f"---@class {base_name}_cfg"]
+        for field in fields:
+            # 获取Lua类型
+            lua_type = ""
+            if field['type_info'][0] == 'basic':
+                if field['type_info'][1] == 'int32' or field['type_info'][1] == 'int64':
+                    lua_type = "integer"
+                elif field['type_info'][1] == 'float':
+                    lua_type = "number"
+                elif field['type_info'][1] == 'string':
+                    lua_type = "string"
+                elif field['type_info'][1] == 'bool':
+                    lua_type = "boolean"
+            elif field['type_info'][0] == 'array':
+                base_type = field['type_info'][1]
+                if base_type == 'int32' or base_type == 'int64':
+                    lua_type = "integer[]"
+                elif base_type == 'float':
+                    lua_type = "number[]"
+                elif base_type == 'string':
+                    lua_type = "string[]"
+                elif base_type == 'bool':
+                    lua_type = "boolean[]"
+            elif field['type_info'][0] == 'map':
+                lua_type = "table"
+            
+            # 添加字段注释
+            type_annotations.append(f"---@field public {field['name']} {lua_type} @{field['comment']}")
+        
+        type_annotations_str = '\n'.join(type_annotations) + '\n'
         """生成Lua模块"""
         lua_records = {}
         for excel_row, record in data:
@@ -715,7 +731,11 @@ struct F{{ struct_name }}Conf
             }
             lua_records[record['id']] = lua_record
         
-        content = self.LUA_TEMPLATE.render(records=lua_records, fields=fields)
+        # 将类型注释添加到模板输出
+        content = type_annotations_str + self.LUA_TEMPLATE.render(
+            records=lua_records,
+            fields=fields
+        )
         content = re.sub(r',\s*}', '}', content)  # 修复最后字段逗号
         (self.output_dir / "gen_lua" / f"{base_name}.lua").write_text(content, encoding='utf-8')
 

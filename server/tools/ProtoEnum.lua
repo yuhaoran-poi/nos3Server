@@ -1,122 +1,79 @@
----@class BroadcastType
-local BroadcastType = {
-    NO_BROADCAST = 0,
-    SINGLE_CONNECTION = 1,
-    ALL = 2,
-    ALL_BUT_SENDER = 4,
-    ALL_BUT_OWNER = 8,
-    ALL_BUT_CLIENT = 16,
-    ALL_BUT_SERVER = 32,
-    ADJACENT_CHANNELS = 64,
+---@class PBChannelType
+local PBChannelType = {
+    CHANNEL_TYPE_NONE = 0, -- 无
+    CHANNEL_TYPE_NEARBY = 1, -- 附近
+    CHANNEL_TYPE_WORLD = 2, -- 世界
+    CHANNEL_TYPE_TEAM = 3, -- 队伍
+    CHANNEL_TYPE_GUILD = 4, -- 公会
+    CHANNEL_TYPE_PRIVATE = 5, -- 私聊
+    CHANNEL_TYPE_SYSTEM = 6, -- 系统
 }
 
----@class ConnectionType
-local ConnectionType = {
-    NO_CONNECTION = 0,
-    SERVER = 1,
-    CLIENT = 2,
+---@class enPBGuildStatus
+local enPBGuildStatus = {
+    eNone = 0,
+    eGS_Creating = 1, -- 创建中
+    eGS_Init = 2, -- 初始化中
+    eGS_Normal = 3, -- 正常
+    eGS_Freeze = 4, -- 冻结中
+    eGS_Destory = 5, -- 已销毁
 }
 
----@class ChannelType
-local ChannelType = {
-    UNKNOWN = 0,
-    GLOBAL = 1,
-    PRIVATE = 2,
-    SUBWORLD = 3,
-    SPATIAL = 4,
-    ENTITY = 5,
-    TEST = 100,
-    TEST1 = 101,
-    TEST2 = 102,
-    TEST3 = 103,
-    TEST4 = 104,
+---@class enGuildRecordType
+local enGuildRecordType = {
+    eRT_DUTY_CHANGE = 1, -- 身份变更（职位变更）+
+    eRT_JOIN = 2, -- 加入 +
+    eRT_QUIT = 3, -- 退出 +
+    eRT_CHANGE_GUILD_NAME = 4, -- 战队改名 +
+    ERT_JUANZENG = 5, -- 战队捐赠 +
+    eRT_GUILD_LV_UP = 6, -- 战队升级
+    ERT_GUILDBAG = 7, -- 使用战队仓库
+    ERT_GUILDRANKRECORD = 8, -- 战队排位积分变更记录
+    ERT_GUILDGKD = 9, -- 战队GKD变化记录
+    ERT_SPOILS_GRANT = 10, -- 战利品发放记录
+    ERT_SEASON_POINT = 11, -- 赛季积分变化记录
+    ERT_PLAYER_RECHARGE = 12, -- 玩家充值记录
 }
 
----@class MessageType
-local MessageType = {
-    INVALID = 0,
-    AUTH = 1,
-    CREATE_CHANNEL = 3,
-    REMOVE_CHANNEL = 4,
-    LIST_CHANNEL = 5,
-    SUB_TO_CHANNEL = 6,
-    UNSUB_FROM_CHANNEL = 7,
-    CHANNEL_DATA_UPDATE = 8,
-    DISCONNECT = 9,
-    CREATE_SPATIAL_CHANNEL = 10,
-    QUERY_SPATIAL_CHANNEL = 11,
-    CHANNEL_DATA_HANDOVER = 12,
-    SPATIAL_REGIONS_UPDATE = 13,
-    UPDATE_SPATIAL_INTEREST = 14,
-    CREATE_ENTITY_CHANNEL = 15,
-    ENTITY_GROUP_ADD = 16,
-    ENTITY_GROUP_REMOVE = 17,
-    DEBUG_GET_SPATIAL_REGIONS = 99,
-    USER_SPACE_START = 100,
+---@class eApplyOpt
+local eApplyOpt = {
+    AO_NONE = 0,
+    AO_ADD = 1,
+    AO_DEL = 2,
 }
 
----@class CompressionType
-local CompressionType = {
-    NO_COMPRESSION = 0,
-    SNAPPY = 1,
+---@class PBSelectionOpType
+local PBSelectionOpType = {
+    PBSelectionOp_None = 0,
+    PBSelectionOp_Disable_Map = 1,
+    PBSelectionOp_Disable_Role = 2,
+    PBSelectionOp_Selection_Map = 3,
+    PBSelectionOp_Selection_Role = 4,
+    PBSelectionOp_Setup_Item = 5,
+    PBSelectionOp_Setup_Skin = 6,
+    PBSelectionOp_Setup_LRSVieItem = 7,
 }
 
----@class AuthResult
-local AuthResult = {
-    SUCCESSFUL = 0,
-    INVALID_PIT = 1,
-    INVALID_LT = 2,
-}
-
----@class ChannelDataAccess
-local ChannelDataAccess = {
-    NO_ACCESS = 0,
-    READ_ACCESS = 1,
-    WRITE_ACCESS = 2,
-}
-
----@class EntityGroupType
-local EntityGroupType = {
-    HANDOVER = 0,
-    LOCK = 1,
-}
-
----@class MessageType
-local MessageType = {
-    INVALID = 0,
-    LOW_LEVEL = 100,
-    ANY = 101,
-    RPC = 102,
-    SPAWN = 103,
-    DESTROY = 104,
-    SYNC_NET_ID = 107,
-    SERVER_PLAYER_SPAWNED = 201,
-    SERVER_PLAYER_LEAVE = 202,
-}
-
----@class UnrealObjectType
-local UnrealObjectType = {
-    UOT_Unknown = 0,
-    UOT_GameState = 1,
-    UOT_Actor = 2,
-    UOT_Pawn = 3,
-    UOT_Character = 4,
-    UOT_PlayerState = 5,
-    UOT_Controller = 6,
-    UOT_PlayerController = 7,
+---@class PBSelectionStateType
+local PBSelectionStateType = {
+    PBSelectionState_None = 0,
+    PBSelectionState_Disable = 1,
+    PBSelectionState_Selection = 2,
+    PBSelectionState_Setup = 3,
+    PBSelectionState_Succ = 4,
+    PBSelectionState_Close = 5,
+    PBSelectionState_LRS_SelectionGhost = 6,
+    PBSelectionState_LRS_SetupGhost = 7,
+    PBSelectionState_SH_Ghost_Select_Skin = 8,
 }
 
 
 
 return {
-    BroadcastType=BroadcastType,
-    ConnectionType=ConnectionType,
-    ChannelType=ChannelType,
-    MessageType=MessageType,
-    CompressionType=CompressionType,
-    AuthResult=AuthResult,
-    ChannelDataAccess=ChannelDataAccess,
-    EntityGroupType=EntityGroupType,
-    MessageType=MessageType,
-    UnrealObjectType=UnrealObjectType,
+    PBChannelType=PBChannelType,
+    enPBGuildStatus=enPBGuildStatus,
+    enGuildRecordType=enGuildRecordType,
+    eApplyOpt=eApplyOpt,
+    PBSelectionOpType=PBSelectionOpType,
+    PBSelectionStateType=PBSelectionStateType,
 }

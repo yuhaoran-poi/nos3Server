@@ -1,6 +1,21 @@
 syntax = "proto3";
 import "user.proto";
 
+// 客户端背包数据
+message PBBagGetDataReqCmd
+{
+    int64 uid		= 1;
+    repeated string bags_name   = 2;
+}
+
+message PBBagGetDataRspCmd
+{
+    int32   code    = 1; // 服务器验证返回,0成功,其他失败
+    string  error   = 2; // 错误信息
+    int64   uid     = 3;
+    PBBags  bag_datas	= 4;
+}
+
 // 客户端请求堆叠,拆分,移动道具
 message PBBagOperateItemReqCmd
 {

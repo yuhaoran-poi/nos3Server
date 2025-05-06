@@ -2,7 +2,7 @@ local moon = require("moon")
 local common = require("common")
 local Database = common.Database
 local protocol = common.protocol
-
+local GuildDef = require("common.def.GuildDef")
 ----DB Model 标准定义格式
 
 ---@type guild_context
@@ -111,52 +111,52 @@ function GuildModel.Get()
     return DBData
 end
 ---只读,使用这个函数
----@return defaultGuildInfoDBClass
+---@return PBGuildInfoDB
 function GuildModel.GetGuildInfoDB()
     return DBData.GuildInfo.db_data
 end
 
 ---需要修改数据时,使用这个函数
----@return defaultGuildInfoDBClass
+---@return PBGuildInfoDB
 function GuildModel.MutGetGuildInfoDB()
     dirty = true
     DBData.GuildInfo.dirty = true
     return DBData.GuildInfo.db_data
 end
 ---只读,使用这个函数
----@return defaultGuildShopDBClass
+---@return PBGuildShopDB
 function GuildModel.GetGuildShopDB()
     return DBData.GuildShop.db_data
 end
 
 ---需要修改数据时,使用这个函数
----@return defaultGuildShopDBClass
+---@return PBGuildShopDB
 function GuildModel.MutGetGuildShopDB()
     dirty = true
     DBData.GuildShop.dirty = true
     return DBData.GuildShop.db_data
 end
 ---只读,使用这个函数
----@return defaultGuildBagDBClass
+---@return PBGuildBagDB
 function GuildModel.GetGuildBagDB()
     return DBData.GuildBag.db_data
 end
 
 ---需要修改数据时,使用这个函数
----@return defaultGuildBagDBClass
+---@return PBGuildBagDB
 function GuildModel.MutGetGuildBagDB()
     dirty = true
     DBData.GuildBag.dirty = true
     return DBData.GuildBag.db_data
 end
 ---只读,使用这个函数
----@return defaultGuildRecordDBClass
+---@return PBGuildRecordDB
 function GuildModel.GetGuildRecordDB()
     return DBData.GuildRecord.db_data
 end
 
 ---需要修改数据时,使用这个函数
----@return defaultGuildRecordDBClass
+---@return PBGuildRecordDB
 function GuildModel.MutGetGuildRecordDB()
     dirty = true
     DBData.GuildRecord.dirty = true
