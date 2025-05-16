@@ -20,6 +20,10 @@ local GhostDefine = {
 local Ghost = {}
 
 function Ghost.Init()
+    
+end
+
+function Ghost.Start()
     --加载全部角色数据
     local ghostinfos = Ghost.LoadGhosts()
     if ghostinfos then
@@ -29,7 +33,7 @@ function Ghost.Init()
     local ghosts = scripts.UserModel.GetGhosts()
     if not ghosts then
         ghosts = GhostDef.newUserGhostDatas()
-
+        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         local init_cfg = GameCfg.Init[1]
         if not init_cfg then
             return { code = ErrorCode.ConfigError, error = "no init_cfg" }
@@ -71,11 +75,7 @@ function Ghost.Init()
     return { code = ErrorCode.None }
 end
 
-function Ghost.Start()
-    -- body
-end
-
-function Ghost.SaveGhostsNow(ghostTypes)
+function Ghost.SaveGhostsNow()
     local ghosts = scripts.UserModel.GetGhosts()
     if not ghosts then
         return false
@@ -88,6 +88,45 @@ end
 function Ghost.LoadGhosts()
     local ghostinfos = Database.loaduserghosts(context.addr_db_user, context.uid)
     return ghostinfos
+end
+
+function Ghost.AddLog(ghostid, reason)
+    local ghosts = scripts.UserModel.GetGhosts()
+    if not ghosts or not ghosts.ghost_list or not ghosts.ghost_list[ghostid] then
+        return false
+    end
+
+    local log_info = {
+        reason = reason,
+        info = {},
+    }
+    table.copy(log_info.info, ghosts.ghost_list[ghostid])
+
+    --存储日志
+
+    return true
+end
+
+---@return integer, PBGhostData
+function Ghost.GetGhostInfo(ghostid)
+    local ghosts = scripts.UserModel.GetGhosts()
+    if not ghosts or not ghosts.ghost_list or not ghosts.ghost_list[ghostid] then
+        return ErrorCode.RoleNotExist, nil
+    end
+
+    return ErrorCode.None, ghosts.ghost_list[ghostid]
+end
+
+function Ghost.ModDiagramsCard(ghostid, item_data, slot)
+    local ghosts = scripts.UserModel.GetGhosts()
+    if not ghosts or not ghosts.ghost_list or not ghosts.ghost_list[ghostid] then
+        return ErrorCode.RoleNotExist
+    end
+
+    local ghost_info = ghosts.ghost_list[ghostid]
+    ghost_info.digrams_cards[slot] = item_data
+
+    return ErrorCode.None
 end
 
 return Ghost

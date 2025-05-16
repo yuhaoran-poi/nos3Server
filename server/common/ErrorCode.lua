@@ -23,6 +23,16 @@ local ErrorCode = {
     ItemNotEnough = 301,
     ---道具不存在
     ItemNotExist = 302,
+    ---道具类型不匹配
+    ItemTypeMismatch = 303,
+    ---不是法器
+    NoMagicItem = 304,
+    ---八卦牌不存在
+    DigramsCardNotExist = 305,
+    --- 货币不存在
+    CoinNotExist = 306,
+    --- 货币不足
+    CoinNotEnough = 307,
 
     ---宝物相关错误码
     ---没有拥有该宝物
@@ -244,9 +254,6 @@ local ErrorCode = {
     --- 创建匹配房间服务失败
     CreateMatchRoomServiceErr = 1411,
 
-    
-    
-
     --背包相关错误码
     --- 背包不存在
     BagNotExist = 1501,
@@ -272,6 +279,26 @@ local ErrorCode = {
     BagSaveFailed = 1511,
     --- 背包容量溢出
     BagCapacityOverflow = 1512,
+
+    --装备强化系列错误码
+    --- 开光次数达到上限
+    LightMax = 1601,
+    --- 词条池不存在
+    TagPoolNotExist = 1602,
+    --- 词条不存在
+    TagNotExist = 1603,
+    --- 词条重复
+    TagDuplicate = 1604,
+    --- 开光法器失败
+    LightMagicItemFail = 1605,
+    --- 开光八卦牌失败
+    LightDigramsCardFail = 1606,
+
+    --角色相关错误码
+    --- 角色不存在
+    RoleNotExist = 1701,
+    --- 鬼宠不存在
+    GhostNotExist = 1702,
 }
 
 return ErrorCode

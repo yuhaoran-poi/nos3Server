@@ -3,8 +3,13 @@ syntax = "proto3";
 // 货币
 message PBCoin
 {
-    int32     coin_type   = 1;
+    int32     coin_id   = 1;
     int64     coin_count  = 2;
+}
+
+message PBUserCoins
+{
+	map<int32, PBCoin> coins	= 1; 
 }
 
 // 赐福数据
@@ -32,15 +37,6 @@ message PBSkill
 {
 	int32		config_id	= 1;
 	int32		star		= 2;
-}
-
-// 通用槽位
-message PBBlock
-{
-	int32		idx 		= 1;
-	int32		config_id	= 2;
-	int64		uniqid		= 3;
-	PBItemData	item_detail	= 4; //插槽道具详情(可省略)
 }
 
 // 拥有耐久度的不可堆叠道具
@@ -118,28 +114,6 @@ message PBItemSimple
 	int32     	config_id	= 1;
 	int32     	item_count	= 2;
 	int64		uniqid		= 3;
-}
-
-// 法器图鉴
-message PBMagicItemImage
-{
-	int32		config_id	= 1;	//道具id
-	int64		get_ts		= 2;	//图鉴解锁时间
-	int32		up_level	= 3;	//升级
-	int32		up_exp		= 4;
-	int32		star_level	= 5;	//升星
-	int32		tier		= 6;	//升阶
-}
-
-// 八卦牌图鉴
-message PBDiagramsCardImage
-{
-	int32		config_id	= 1;	//道具id
-	int64		get_ts		= 2;	//图鉴解锁时间
-	int32		up_level	= 3;	//升级
-	int32		up_exp		= 4;
-	int32		star_level	= 5;	//升星
-	int32		tier		= 6;	//升阶
 }
 
 // 拍卖行额外数据
@@ -319,10 +293,10 @@ message PBImage
 
 message PBUserImage
 {
-	PBImage item_image				= 1;	//道具图鉴
-	PBImage magic_item_image		= 2;	//法器图鉴
-	PBImage human_diagrams_image	= 3;	//角色八卦牌图鉴
-	PBImage ghost_diagrams_image	= 4;	//鬼宠八卦牌图鉴
+	map<int32, PBImage> item_image				= 1;	//道具图鉴
+	map<int32, PBImage> magic_item_image		= 2;	//法器图鉴
+	map<int32, PBImage> human_diagrams_image	= 3;	//角色八卦牌图鉴
+	map<int32, PBImage> ghost_diagrams_image	= 4;	//鬼宠八卦牌图鉴
 }
 
 message PBUserSimpleInfo
@@ -367,4 +341,63 @@ message PBClientGetUsrSimInfoRspCmd
     string error      = 2; // 错误信息
     int64 uid         = 3; // 用户ID
     PBUserSimpleInfo info = 4;	// 简略信息
+}
+
+// 客户端请求所有背包数据
+message PBClientGetUsrBagsInfoReqCmd
+{
+    // 协议数据
+    int64 uid             = 1;
+}
+
+message PBClientGetUsrBagsInfoRspCmd
+{
+    int32 code        = 1; // 服务器验证返回,0成功,其他失败
+    string error      = 2; // 错误信息
+    int64 uid         = 3; // 用户ID
+    PBBags bags_info	= 4;	// 所有背包数据
+}
+
+// 客户端请求--装备开光
+message PBClientLightReqCmd
+{
+	int64 uid		= 1;
+	int32 roleid	= 2;
+	int64 ghostid	= 3;
+	int32 bagid		= 4;
+	int32 pos		= 5;
+	int32 config_id = 6;
+	int64 uniqid	= 7;
+}
+
+message PBClientLightRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 roleid	= 4;
+	int64 ghostid	= 5;
+	int32 bagid		= 6;
+	int32 pos		= 7;
+	int32 config_id = 8;
+	int64 uniqid	= 9;
+	PBItemData itemdata	= 10;
+}
+
+// 客户端请求--法器升级
+message PBClientMagicItemUpLvReqCmd
+{
+	int64 uid		= 1;
+	int32 config_id = 2;
+	int32 add_exp	= 3;
+}
+
+message PBClientMagicItemUpLvRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 config_id = 4;
+	int32 add_exp	= 5;
+	int32 now_exp	= 6;
 }

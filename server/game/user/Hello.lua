@@ -43,7 +43,7 @@ end
 ---注册客户端消息处理函数
 ---@param req C2SHello
 function Hello.C2SHello(req)
-    local cfg = GameCfg.item[1]
+    local cfg = GameCfg.Item[1]
     if not cfg then
         return ErrorCode.ItemNotExist ---直接返回错误码, 会给玩家发送 S2CErrorCode 消息
     end

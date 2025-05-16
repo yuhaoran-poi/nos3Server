@@ -276,6 +276,7 @@ message PBStartGameRoomRspCmd
 	int64 roomid	= 4;
 }
 
+// 通知玩家进入ds
 message PBEnterDsRoomSyncCmd
 {
     int64 roomid        = 1;
@@ -283,5 +284,21 @@ message PBEnterDsRoomSyncCmd
     string ds_ip        = 3;
 }
 
+// DS请求玩家数据
+message PBDsGetPlayerDataReqCmd
+{
+    int64 uid		= 1;
+	int64 roomid	= 2;
+    int32 data_type = 3; // 0--全部 1--个人简略数据 2--战斗角色数据 3--背包数据
+}
 
-
+message PBDsGetPlayerDataRspCmd
+{
+    int32 code      = 1; // 服务器返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int32 data_type = 3;
+    PBUserSimpleInfo simple_data    = 4;
+    PBRoleData battle_role          = 5;
+    PBGhostData battle_ghost        = 6;
+    PBBag consume_bag               = 7;
+}

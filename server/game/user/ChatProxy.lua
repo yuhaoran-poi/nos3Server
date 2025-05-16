@@ -15,15 +15,15 @@ local scripts = context.scripts
 local ChatProxy = {}
 
 function ChatProxy.Init()
+    
+end
+
+function ChatProxy.Start()
     local user_info = scripts.UserModel.MutGetUserData()
     user_info.chat_info = user_info.chat_info or {}
     local DB = scripts.UserModel.Get()
     DB.chat_addrs = {
     }
-end
-
-function ChatProxy.Start()
-    -- body
 end
 -- 客户端聊天消息请求
 function ChatProxy.PBChatReqCmd(req)

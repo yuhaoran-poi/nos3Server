@@ -1,7 +1,6 @@
 local LuaExt = require "common.LuaExt"
 local ItemDef = {}
 
- 
 -- 通用道具数据
 local defaultPBItemCommonData = {
     config_id = 0,
@@ -9,41 +8,81 @@ local defaultPBItemCommonData = {
     item_count = 0,
     item_type = 0,
     trade_cnt = 0,
+    lock_count = 0,
 }
 
- 
--- 拥有耐久度的不可堆叠道具
 local defaultPBDurabItem = {
     cur_durability = 0,
     max_durability = 0,
 }
- 
--- 特殊道具数据
-local defaultPBItemSpecial = {
-    durab_item = LuaExt.const(table.copy(defaultPBDurabItem)),
-    
+
+local defaultPBMagicItem = {
+    cur_durability = 0,
+    max_durability = 0,
+    light_cnt = 0,
+    tags = {},
 }
+
+local defaultPBDiagramsCard = {
+    cur_durability = 0,
+    max_durability = 0,
+    light_cnt = 0,
+    tags = {},
+}
+
 -- 道具数据
 local defaultPBItemData = {
     itype = 0,
     common_info =  LuaExt.const(table.copy(defaultPBItemCommonData)),
-    special_info = LuaExt.const(table.copy(defaultPBItemSpecial))
+    special_info = {},
 }
+
+local defaultPBImage = {
+    config_id = 0,
+    star_level = 0,
+    exp = 0,
+}
+
+local defaultPBUserImage = {
+    item_image = {},
+    magic_item_image = {},
+    human_diagrams_image = {},
+    ghost_diagrams_image = {},
+}
+
 --- @return PBItemCommon
-function ItemDef.newPBItemCommonData()
+function ItemDef.newItemCommonData()
     return LuaExt.const(table.copy(defaultPBItemCommonData))
 end
+
 --- @return PBDurabItem
-function ItemDef.newPBDurabItem()
+function ItemDef.newDurabItem()
     return LuaExt.const(table.copy(defaultPBDurabItem))
 end
---- @return PBItemSpecial
-function ItemDef.newPBItemSpecialData()
-    return LuaExt.const(table.copy(defaultPBItemSpecial))
+
+--- @return PBMagicItem
+function ItemDef.newMagicItem()
+    return LuaExt.const(table.copy(defaultPBMagicItem))
 end
+
+--- @return PBDiagramsCard
+function ItemDef.newDiagramsCard()
+    return LuaExt.const(table.copy(defaultPBDiagramsCard))
+end
+
 --- @return PBItemData
-function ItemDef.newPBItemData()
+function ItemDef.newItemData()
     return LuaExt.const(table.copy(defaultPBItemData))
+end
+
+--- @return PBImage
+function ItemDef.newImage()
+    return LuaExt.const(table.copy(defaultPBImage))
+end
+
+--- @return PBUserImage
+function ItemDef.newUserImage()
+    return LuaExt.const(table.copy(defaultPBUserImage))
 end
 
 return ItemDef

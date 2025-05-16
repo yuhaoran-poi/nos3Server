@@ -1,6 +1,13 @@
 local LuaExt = require "common.LuaExt"
 
-local RoleDef = {}
+local RoleDef = {
+    LogType = {
+        AllInfo = 1,
+        SimpleInfo = 2,
+        MagicInfo = 3,
+        DiagramsInfo = 4,
+    }
+}
 
 local defaultPBSimpleRoleData = {
     config_id = 0,

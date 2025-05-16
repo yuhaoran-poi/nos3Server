@@ -14,14 +14,14 @@ local scripts = context.scripts
 local MatchProxy = {}
 
 function MatchProxy.Init()
+    
+end
+
+function MatchProxy.Start()
     local DB = scripts.UserModel.Get()
     DB.match_info = {
         room_id = 0, -- 房间ID
     }
-end
-
-function MatchProxy.Start()
-    -- body
 end
 -- 客户端消息请求
 -- 房主发起匹配请求

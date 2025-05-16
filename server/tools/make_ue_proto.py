@@ -254,7 +254,7 @@ def generate_struct(message, content, message_types, prefix="F"):
         struct_definition = [
         f'{struct_comment}',
         f'UCLASS(BlueprintType)',
-        f'class U{struct_name} : public UProtobufMessage',
+        f'class COMMONNETUE_API U{struct_name} : public UProtobufMessage',
         '{',
         '\tGENERATED_BODY()',
         'public:',

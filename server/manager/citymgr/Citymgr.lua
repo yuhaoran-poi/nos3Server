@@ -10,6 +10,7 @@ local json = require("json")
 local crypt = require("crypt")
 local lock_wait = require("moon.queue")()
 local lock_run = require("moon.queue")()
+local protocol = require("common.protocol_pb")
 local jencode = json.encode
 local jdecode = json.decode
 
@@ -30,7 +31,7 @@ function Citymgr.Init()
     context.addr_db_server = moon.queryservice("db_server")
 
     for i = 1, 1 do
-        --Citymgr.CreateCity()
+        Citymgr.CreateCity()
     end
     -- 新增定时器轮询
     moon.async(function()
@@ -229,17 +230,16 @@ function Citymgr.CreateCity()
     local cityid = generate_cityid()
 
     local city_info = {
-        city_id = cityid,
+        ds_id = cityid,
         chapter = 0,
         difficulty = 0,
         map_id = 0,
         boss_id = 0,
-        redis_ip = context.conf.redis_nginx_ip,
-        redis_port = context.conf.redis_nginx_port,
-        redis_authkey = context.conf.redis_nginx_authkey,
-        redis_listkey = context.conf.redis_nginx_title,
+        server_ip = context.conf.mgr_host_ip,
+        server_port = context.conf.mgr_host_port,
     }
-    local city_str = crypt.base64encode(json.encode(city_info))
+    local _, pbdata = protocol.encodewithname("PBDsCreateData", city_info)
+    local city_str = crypt.base64encode(pbdata)
     local allocate_data = {
         fleet = context.conf.fleet,
         city = city_str,

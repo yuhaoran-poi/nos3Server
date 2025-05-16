@@ -24,6 +24,19 @@ message PBMessagePack {
 
 }
 
+// DS创建数据
+message PBDsCreateData
+{
+	int64 ds_id         = 1;
+	int32 chapter		= 2;
+	int32 difficulty	= 3;
+	int32 map_id		= 4;
+	int32 boss_id		= 5;
+	string server_ip    = 6;
+	int32 server_port	= 7;
+	repeated int32 uids = 8;
+}
+
 // 客户端和服务器直接通信的消息
 message PBPacketCmd {
     repeated PBMessagePack messages = 1;

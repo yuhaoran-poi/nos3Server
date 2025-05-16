@@ -13,6 +13,10 @@ local scripts = context.scripts
 local Team = {}
 
 function Team.Init()
+    
+end
+
+function Team.Start()
     local DB = scripts.UserModel.Get()
     if not DB.team then
         DB.team = {
@@ -20,14 +24,10 @@ function Team.Init()
             master_id = 0,
             members = {},
             match_type = 0,
-            match_state = false, -- 匹配状态 true 匹配中 false 未匹配 
+            match_state = false, -- 匹配状态 true 匹配中 false 未匹配
             is_del = false
         }
     end
-end
-
-function Team.Start()
-    -- body
 end
 -- 是否匹配中
 function Team.IsMatching()

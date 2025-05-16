@@ -13,7 +13,10 @@ local scripts = context.scripts
 local GuildProxy = {}
 
 function GuildProxy.Init()
-    
+
+end
+
+function GuildProxy.Start()
     local data = scripts.UserModel.MutGetUserData()
     if not data.guild then
         data.guild = {
@@ -23,7 +26,7 @@ function GuildProxy.Init()
         }
     else
         if data.guild.guild_id == 0 then
-             return
+            return
         end
         -- 向公会管理器查询公会节点和地址
         local res, err = cluster.call(3999, "guildmgr", "GuildMgr.GetGuildNodeAndAddr", data.guild.guild_id)
@@ -37,10 +40,6 @@ function GuildProxy.Init()
             data.guild.addr_guild = 0
         end
     end
-end
-
-function GuildProxy.Start()
-    -- body
 end
 -- 添加公会物品
 function GuildProxy.PBGuildAddItemsCmd(req)

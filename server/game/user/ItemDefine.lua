@@ -9,9 +9,9 @@ local context = ...
 ---@field public EItemSmallType table
 ---@field public EItemBigType table
 ---@field public ItemBagType table
----@field public GetItemType fun(nConfigId: number): number
----@field public GetItemPosType fun(nConfigId: number): number
----@field public GetItemBagType fun(nConfigId: number): number
+---@field public GetItemType fun(nConfigId: integer): integer
+---@field public GetItemPosType fun(nConfigId: integer): integer
+---@field public GetItemBagType fun(nConfigId: integer): integer
 
 local ItemDefine = {
     Coin = { start = 1, End = 99 },

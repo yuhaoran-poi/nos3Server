@@ -128,4 +128,38 @@ function UserModel.SetGhosts(ghostinfos)
     DBData.ghosts = ghostinfos
 end
 
+---@return PBUserImage ? nil
+function UserModel.GetItemImages()
+    if DBData and DBData.itemimages then
+        return DBData.itemimages
+    end
+    return nil
+end
+
+function UserModel.SetItemImages(itemImageinfos)
+    DBData.itemimages = itemImageinfos
+end
+
+---@return PBUserCoins ? nil
+function UserModel.GetCoinsData()
+    if DBData and DBData.coinsdata then
+        return DBData.coinsdata
+    end
+    return nil
+end
+
+function UserModel.SetCoinsData(coininfos)
+    if not DBData then
+        return
+    end
+
+    if not DBData.coinsdata then
+        DBData.coinsdata = coininfos
+    else
+        for coin_id, coin_info in ipairs(coininfos) do
+            DBData.coinsdata[coin_id] = coin_info
+        end
+    end
+end
+
 return UserModel

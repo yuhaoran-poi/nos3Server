@@ -9,6 +9,7 @@ local lock = require("moon.queue")()
 local httpc = require("moon.http.client")
 local json = require("json")
 local crypt = require("crypt")
+local protocol = require("common.protocol_pb")
 local jencode = json.encode
 local jdecode = json.decode
 
@@ -640,18 +641,20 @@ function Roommgr.StartGame(req)
 
     -- 准备进入DS
     local room_info = {
-        room_id = room.roomid,
+        ds_id = room.roomid,
         chapter = room.chapter,
         difficulty = room.difficulty,
         map_id = 1,
         boss_id = 1,
         redis_ip = context.conf.redis_nginx_ip,
         redis_port = context.conf.redis_nginx_port,
-        redis_authkey = context.conf.redis_nginx_authkey,
-        redis_listkey = context.conf.redis_nginx_title,
-        users = room.players,
+        uids = {},
     }
-    local room_str = crypt.base64encode(json.encode(room_info))
+    for _, player in pairs(room.players) do
+        table.insert(room_info.uids, player.mem_info.uid)
+    end
+    local _, pbdata = protocol.encodewithname("PBDsCreateData", room_info)
+    local room_str = crypt.base64encode(pbdata)
     local allocate_data = {
         fleet = context.conf.fleet,
         room = room_str,

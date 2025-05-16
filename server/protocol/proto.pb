@@ -56,13 +56,19 @@ login_data (2.PBDSLoginDataR	loginData"f
 error (	Rerror
 dsid (Rdsid
 net_id (RnetIdbproto3
-Ë:
+¨B
 
-user.proto"D
-PBCoin
-	coin_type (RcoinType
+user.proto"@
+PBCoin
+coin_id (RcoinId
 
-coin_count (R	coinCount"9
+coin_count (R	coinCount"
+PBUserCoins-
+coins (2.PBUserCoins.CoinsEntryRcoinsA
+
+CoinsEntry
+key (Rkey
+value (2.PBCoinRvalue:8"9
 
 PBBlessing
 bless_id (RblessId
@@ -75,13 +81,7 @@ PBBlessing
 val (Rval":
 PBSkill
 	config_id (RconfigId
-star (Rstar"~
-PBBlock
-idx (Ridx
-	config_id (RconfigId
-uniqid (Runiqid,
-item_detail (2.PBItemDataR
-itemDetail"[
+star (Rstar"[
 PBDurabItem%
 cur_durability (RcurDurability%
 max_durability (RmaxDurability"î
@@ -131,23 +131,7 @@ commonInfo1
 	config_id (RconfigId
 
 item_count (R	itemCount
-uniqid (Runiqid"´
-PBMagicItemImage
-	config_id (RconfigId
-get_ts (RgetTs
-up_level (RupLevel
-up_exp (RupExp
-
-star_level (R	starLevel
-tier (Rtier"Æ
-PBDiagramsCardImage
-	config_id (RconfigId
-get_ts (RgetTs
-up_level (RupLevel
-up_exp (RupExp
-
-star_level (R	starLevel
-tier (Rtier"Ä
+uniqid (Runiqid"Ä
 PBAuctionExtra
 up_level (RupLevel
 up_exp (RupExp
@@ -309,13 +293,25 @@ gourd_list (2.PBGourdR	gourdList"W
 	config_id (RconfigId
 
 star_level (R	starLevel
-exp (Rexp"‚
-PBUserImage'
+exp (Rexp"¸
+PBUserImage:
 
-item_image (2.PBImageR	itemImage2
-magic_item_image (2.PBImageRmagicItemImage:
-human_diagrams_image (2.PBImageRhumanDiagramsImage:
-ghost_diagrams_image (2.PBImageRghostDiagramsImage"Ù
+item_image (2.PBUserImage.ItemImageEntryR	itemImageJ
+magic_item_image (2 .PBUserImage.MagicItemImageEntryRmagicItemImageV
+human_diagrams_image (2$.PBUserImage.HumanDiagramsImageEntryRhumanDiagramsImageV
+ghost_diagrams_image (2$.PBUserImage.GhostDiagramsImageEntryRghostDiagramsImageF
+ItemImageEntry
+key (Rkey
+value (2.PBImageRvalue:8K
+MagicItemImageEntry
+key (Rkey
+value (2.PBImageRvalue:8O
+HumanDiagramsImageEntry
+key (Rkey
+value (2.PBImageRvalue:8O
+GhostDiagramsImageEntry
+key (Rkey
+value (2.PBImageRvalue:8"Ù
 PBUserSimpleInfo
 uid (Ruid!
 plateform_id (	RplateformId
@@ -352,7 +348,45 @@ onlineTime&
 code (Rcode
 error (	Rerror
 uid (Ruid%
-info (2.PBUserSimpleInfoRinfobproto3
+info (2.PBUserSimpleInfoRinfo"0
+PBClientGetUsrBagsInfoReqCmd
+uid (Ruid"Ä
+PBClientGetUsrBagsInfoRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid$
+	bags_info (2.PBBagsRbagsInfo"∂
+PBClientLightReqCmd
+uid (Ruid
+roleid (Rroleid
+ghostid (Rghostid
+bagid (Rbagid
+pos (Rpos
+	config_id (RconfigId
+uniqid (Runiqid"â
+PBClientLightRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+roleid (Rroleid
+ghostid (Rghostid
+bagid (Rbagid
+pos (Rpos
+	config_id (RconfigId
+uniqid	 (Runiqid'
+itemdata
+ (2.PBItemDataRitemdata"e
+PBClientMagicItemUpLvReqCmd
+uid (Ruid
+	config_id (RconfigId
+add_exp (RaddExp"®
+PBClientMagicItemUpLvRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+	config_id (RconfigId
+add_exp (RaddExp
+now_exp (RnowExpbproto3
 ∑
 	bag.proto
 user.proto"C
@@ -433,14 +467,26 @@ city.proto"*
 
 ds_address (	R	dsAddress
 ds_ip (	RdsIpbproto3
-©
+ç
 common.proto"ì
 PBMessagePack
 net_id (RnetId
 	broadcast (R	broadcast
 stub_id (RstubId
 msg_type (RmsgType
-msg_body (RmsgBody"9
+msg_body (RmsgBody"·
+PBDsCreateData
+ds_id (RdsId
+chapter (Rchapter
+
+difficulty (R
+difficulty
+map_id (RmapId
+boss_id (RbossId
+	server_ip (	RserverIp
+server_port (R
+serverPort
+uids (Ruids"9
 PBPacketCmd*
 messages (2.PBMessagePackRmessages"
 	PBPingCmd
@@ -1205,7 +1251,7 @@ banRoleids"‚
 ghost (2.PBUserSelectionRghost5
 humans	 (2.PBUserSelectionS.HumansEntryRhumans1
 system_ban_config_ids
- (RsystemBanConfigIdsK
+ (RsystemBanConfigIdsK
 HumansEntry
 key (Rkey&
 value (2.PBUserSelectionRvalue:8"~
@@ -1328,7 +1374,7 @@ PBRankInfo
 uid (Ruid(
 	rank_info (2.PBRankInfoRrankInfo(
 	self_data (2.PBRankDataRselfDatabproto3
-µ
+∂!
 
 room.proto
 user.proto"⁄
@@ -1511,7 +1557,22 @@ memberData"<
 roomid (Rroomid
 
 ds_address (	R	dsAddress
-ds_ip (	RdsIpbproto3
+ds_ip (	RdsIp"`
+PBDsGetPlayerDataReqCmd
+uid (Ruid
+roomid (Rroomid
+	data_type (RdataType"ú
+PBDsGetPlayerDataRspCmd
+code (Rcode
+error (	Rerror
+	data_type (RdataType2
+simple_data (2.PBUserSimpleInfoR
+simpleData,
+battle_role (2.PBRoleDataR
+battleRole/
+battle_ghost (2.PBGhostDataRbattleGhost'
+consume_bag (2.PBBagR
+consumeBagbproto3
 †
 
 team.proto

@@ -648,13 +648,13 @@ function _M.saveuserbags(addr, uid, bags_data)
     return true
 end
 
-function _M.loaduserbags(addr, uid, bags_name)
-    assert(bags_name)
+function _M.loaduserbags(addr, uid, bags_id)
+    assert(bags_id)
 
     local str_sql = "SELECT uid"
     local str_param1 = ""
     local had_param = false
-    for _, bagTypeName in pairs(bags_name) do
+    for _, bagTypeName in pairs(bags_id) do
         if bagTypeName then
             had_param = true
             str_param1 = str_param1 .. ", " .. bagTypeName
@@ -668,7 +668,7 @@ function _M.loaduserbags(addr, uid, bags_name)
     local sql_res, err = moon.call("lua", addr, str_sql)
     if not err and sql_res and #sql_res > 0 then
         local bag_res = {}
-        for _, bagTypeName in pairs(bags_name) do
+        for _, bagTypeName in pairs(bags_id) do
             if sql_res[1][bagTypeName] then
                 local _, tmp_data = protocol.decodewithname("PBBag", sql_res[1][bagTypeName])
                 if tmp_data then
@@ -719,7 +719,7 @@ function _M.loaduserghosts(addr, uid)
         local _, tmp_data = protocol.decodewithname("PBUserGhostDatas", res[1].value)
         return tmp_data
     end
-    print("loaduserroles failed", uid, err)
+    print("loaduserghosts failed", uid, err)
     return nil
 end
 
@@ -730,6 +730,61 @@ function _M.saveuserghosts(addr, uid, data)
     local _, pbdata = protocol.encodewithname("PBUserGhostDatas", data)
     local cmd = string.format([[
         INSERT INTO mgame.ghosts (uid, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], uid, pbdata, data_str, pbdata, data_str)
+
+    return moon.send("lua", addr, cmd)
+end
+
+function _M.loaduseritemimages(addr, uid)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.itemimages WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local _, tmp_data = protocol.decodewithname("PBUserImage", res[1].value)
+        return tmp_data
+    end
+    print("loaduseritemimages failed", uid, err)
+    return nil
+end
+
+function _M.saveuseritemimages(addr, uid, data)
+    assert(data)
+
+    local data_str = jencode(data)
+    local _, pbdata = protocol.encodewithname("PBUserImage", data)
+    local cmd = string.format([[
+        INSERT INTO mgame.itemimages (uid, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], uid, pbdata, data_str, pbdata, data_str)
+
+    return moon.send("lua", addr, cmd)
+end
+
+function _M.loadusercoins(addr, uid)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.coins WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local _, tmp_data = protocol.decodewithname("PBUserCoins", res[1].value)
+        return tmp_data
+    end
+    print("loadusercoins failed", uid, err)
+
+    return nil
+end
+
+function _M.saveusercoins(addr, uid, data)
+    assert(data)
+
+    local data_str = jencode(data)
+    local _, pbdata = protocol.encodewithname("PBUserCoins", data)
+    local cmd = string.format([[
+        INSERT INTO mgame.coins (uid, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
     ]], uid, pbdata, data_str, pbdata, data_str)

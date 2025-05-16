@@ -83,15 +83,20 @@ function User.Load(req)
         if simple_res.code ~= ErrorCode.None then
             return false
         end
+        ---加载道具图鉴数据
+        -- local image_res = scripts.ItemImage.Init()
+        -- if image_res.code ~= ErrorCode.None then
+        --     return false
+        -- end
         ---加载背包数据
-        scripts.Bag.Init()
+        scripts.Bag.Start()
         ---加载角色数据
-        local role_res = scripts.Role.Init()
+        local role_res = scripts.Role.Start()
         if role_res.code ~= ErrorCode.None then
             return false
         end
         ---加载鬼宠数据
-        local ghost_res = scripts.Ghost.Init()
+        local ghost_res = scripts.Ghost.Start()
         if ghost_res.code ~= ErrorCode.None then
             return false
         end
@@ -159,7 +164,6 @@ function User.LoadSimple()
 end
 
 function User.Login(req)
- 
     if req.pull then--服务器主动拉起玩家
         return scripts.UserModel.Get().authkey
     end
@@ -260,45 +264,6 @@ function User.PBPingCmd(req)
     context.S2C(context.net_id, CmdCode.PBPongCmd, ret, req.msg_context.stub_id)
 end
 
---请求匹配
-function User.C2SMatch()
-    if state.ismatching then
-        return
-    end
-
-    state.ismatching = true
-    --向匹配服务器请求
-    local ok, err = moon.call("lua", context.addr_center, "Center.Match", context.uid, moon.id)
-    if not ok then
-        state.ismatching = false
-        moon.error(err)
-        return
-    end
-    context.S2C(CmdCode.S2CMatch,{res=true})
-end
-
-function User.MatchSuccess(addr_room, roomid)
-    state.ismatching = false
-    context.addr_room = addr_room
-    state.roomid = roomid
-    context.S2C(CmdCode.S2CMatchSuccess,{res=true})
-end
-
---房间一局结束
-function User.GameOver(score)
-    print("GameOver, add score", score)
-    local data = scripts.UserModel.MutGet()
-    data.score = data.score + score
-    context.addr_room = 0
-    context.S2C(CmdCode.S2CGameOver,{score=score})
-end
-
-function User.AddScore(count)
-    local data = scripts.UserModel.MutGet()
-    data.score = data.score + count
-    return true
-end
-
 function User.SimpleSetShowRole(role_info)
     local simple_data = scripts.UserModel.GetSimple()
     if not simple_data then
@@ -323,6 +288,228 @@ function User.SimpleSetShowGhost(ghost_info, ghost_image)
     simple_data.cur_show_ghost.skin_id = ghost_image.cur_skin_id
 
     return true
+end
+
+local function LightRoleEquipment(msg)
+    local err_role_code, role_info = scripts.Role.GetRoleInfo(msg.roleid)
+    if err_role_code ~= ErrorCode.None or role_info then
+        return ErrorCode.RoleNotExist
+    end
+
+    if role_info.magic_item
+        and role_info.magic_item.common_info
+        and role_info.magic_item.common_info.uniqid == msg.uniqid then
+        local item_data = role_info.magic_item
+        local err_code, change_log = scripts.Bag.Light(item_data)
+        if err_code ~= ErrorCode.None or not change_log then
+            return ErrorCode.LightMagicItemFail
+        end
+
+        -- 存储背包数据
+        local save_bags = {}
+        for bagType, _ in pairs(change_log) do
+            save_bags[bagType] = 1
+        end
+        if table.size(save_bags) then
+            scripts.Bag.SaveAndLog(save_bags, change_log)
+        end
+        -- 存储角色数据
+        scripts.Role.ModMagicItem(msg.roleid, item_data)
+        scripts.Role.SaveRolesNow()
+        scripts.Role.AddLog(msg.roleid, "LightMagicItem")
+
+        return ErrorCode.None, item_data
+    else
+        local slot = 0
+        for k, v in pairs(role_info.digrams_cards) do
+            if v.common_info.uniqid == msg.uniqid then
+                slot = k
+                break
+            end
+        end
+        if slot == 0 then
+            return ErrorCode.DigramsCardNotExist
+        end
+
+        local item_data = role_info.digrams_cards[slot]
+        local err_code, change_log = scripts.Bag.Light(item_data)
+        if err_code ~= ErrorCode.None or not change_log then
+            return ErrorCode.LightDigramsCardFail
+        end
+
+        -- 存储背包数据
+        local save_bags = {}
+        for bagType, _ in pairs(change_log) do
+            save_bags[bagType] = 1
+        end
+        if table.size(save_bags) then
+            scripts.Bag.SaveAndLog(save_bags, change_log)
+        end
+        -- 存储角色数据
+        scripts.Role.ModDiagramsCard(msg.roleid, item_data, slot)
+        scripts.Role.SaveRolesNow()
+        scripts.Role.AddLog(msg.roleid, "LightDiagramsCard")
+
+        return ErrorCode.None, item_data
+    end
+end
+
+local function LightGhostEquipment(msg)
+    local err_ghost_code, ghost_info = scripts.Ghost.GetGhostInfo(msg.ghostid)
+    if err_ghost_code ~= ErrorCode.None or ghost_info then
+        return ErrorCode.GhostNotExist
+    end
+
+    if ghost_info.digrams_cards then
+        local slot = 0
+        for k, v in pairs(ghost_info.digrams_cards) do
+            if v.common_info.uniqid == msg.uniqid then
+                slot = k
+                break
+            end
+        end
+        if slot == 0 then
+            return ErrorCode.DigramsCardNotExist
+        end
+
+        local item_data = ghost_info.digrams_cards[slot]
+        local err_code, change_log = scripts.Bag.Light(item_data)
+        if err_code ~= ErrorCode.None or not change_log then
+            return ErrorCode.LightDigramsCardFail
+        end
+
+        -- 存储背包数据
+        local save_bags = {}
+        for bagType, _ in pairs(change_log) do
+            save_bags[bagType] = 1
+        end
+        if table.size(save_bags) then
+            scripts.Bag.SaveAndLog(save_bags, change_log)
+        end
+        -- 存储角色数据
+        scripts.Ghost.ModDiagramsCard(msg.ghostid, item_data, slot)
+        scripts.Ghost.SaveGhostsNow()
+        scripts.Ghost.AddLog(msg.ghostid, "LightDiagramsCard")
+
+        return ErrorCode.None, item_data
+    else
+        return ErrorCode.DigramsCardNotExist
+    end
+end
+
+local function LightBagItem(msg)
+    local light_bagid = msg.bagid
+    local light_pos = msg.pos
+
+    if not msg.uniqid then
+        local err_code, change_log = scripts.Bag.GetSpecialItemFromCommonItem(msg.bagid, msg.pos, msg.config_id)
+        if err_code ~= ErrorCode.None or not change_log then
+            return err_code
+        end
+
+        local save_bags = {}
+        for bagType, bag_info in pairs(change_log) do
+            save_bags[bagType] = 1
+            for pos, value in pairs(bag_info) do
+                if value.uniqid ~= 0 and value.count == 1 then
+                    light_bagid = bagType
+                    light_pos = pos
+                    break
+                end
+            end
+        end
+
+        -- 生成新唯一道具，进行保存
+        scripts.Bag.SaveAndLog(save_bags, change_log)
+    end
+
+    local get_err_code, item_data = scripts.Bag.GetOneItemData(light_bagid, light_pos)
+    if get_err_code ~= ErrorCode.None
+        or not item_data
+        or (msg.uniqid ~= 0 and item_data.common_info.uniqid ~= msg.uniqid) then
+        return get_err_code
+    end
+
+    local light_err_code, change_log = scripts.Bag.Light(item_data)
+    if light_err_code ~= ErrorCode.None or not change_log then
+        return light_err_code
+    end
+
+    -- 存储数据
+    local info_change_log = {}
+    local info_log = {
+        bagType = light_bagid,
+        pos = light_pos,
+        item_data = item_data
+    }
+    table.insert(info_change_log, info_log)
+
+    local save_bags = {}
+    for bagType, _ in pairs(change_log) do
+        save_bags[bagType] = 1
+    end
+    if not change_log[light_bagid] then
+        change_log[light_bagid] = 1
+    end
+
+    if table.size(save_bags) then
+        scripts.Bag.SaveAndLog(save_bags, change_log, info_change_log)
+    end
+
+    return ErrorCode.None, item_data
+end
+
+-- 客户端请求--装备开光
+function User.PBClientLightReqCmd(req)
+    local err_code, item_data = ErrorCode.None, nil
+
+    -- 参数有效性验证
+    if req.msg.roleid and req.msg.uniqid then
+        err_code, item_data = LightRoleEquipment(req.msg)
+    elseif req.msg.ghostid and req.msg.uniqid then
+        err_code, item_data = LightGhostEquipment(req.msg)
+    elseif req.msg.bagid and req.msg.pos then
+        err_code, item_data = LightBagItem(req.msg)
+    else
+        return context.S2C(context.net_id, CmdCode.PBClientLightRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            roleid = req.msg.roleid or 0,
+            ghostid = req.msg.ghostid or 0,
+            bagid = req.msg.bagid or 0,
+            pos = req.msg.pos or 0,
+            config_id = req.msg.config_id or 0,
+            uniqid = req.msg.uniqid or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    if err_code == ErrorCode.None and item_data then
+        return context.S2C(context.net_id, CmdCode.PBClientLightRspCmd, {
+            code = ErrorCode.None,
+            error = "",
+            uid = context.uid,
+            roleid = req.msg.roleid or 0,
+            ghostid = req.msg.ghostid or 0,
+            bagid = req.msg.bagid or 0,
+            pos = req.msg.pos or 0,
+            config_id = req.msg.config_id or 0,
+            uniqid = req.msg.uniqid or 0,
+            itemdata = item_data,
+        })
+    else
+        return context.S2C(context.net_id, CmdCode.PBClientLightRspCmd, {
+            code = err_code,
+            error = "开光失败",
+            uid = context.uid,
+            roleid = req.msg.roleid or 0,
+            ghostid = req.msg.ghostid or 0,
+            bagid = req.msg.bagid or 0,
+            pos = req.msg.pos or 0,
+            config_id = req.msg.config_id or 0,
+            uniqid = req.msg.uniqid or 0,
+        })
+    end
 end
 
 return User

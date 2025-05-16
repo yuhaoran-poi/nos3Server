@@ -98,7 +98,7 @@ message PBUserSelectionS{
     // 人数据<座位号从1开始,玩家数据>
     map<int32, PBUserSelection> humans = 9;
     // 默认被ban的物品、角色、技能、诡术等
-	repeated uint32 system_ban_config_ids = 10;		
+	repeated int32 system_ban_config_ids = 10;		
     // 狼人杀模式的bp信息
 	//PBUserSelectionLRS lrs_mode_selection = 11;		
     // 驱灵模式选择信息

@@ -20,6 +20,10 @@ local RoleDefine = {
 local Role = {}
 
 function Role.Init()
+    
+end
+
+function Role.Start()
     --加载全部角色数据
     local roleinfos = Role.LoadRoles()
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
@@ -87,11 +91,7 @@ function Role.Init()
     return { code = ErrorCode.None }
 end
 
-function Role.Start()
-    -- body
-end
-
-function Role.SaveRolesNow(roleTypes)
+function Role.SaveRolesNow()
     local roles = scripts.UserModel.GetRoles()
     if not roles then
         return false
@@ -104,6 +104,71 @@ end
 function Role.LoadRoles()
     local roleinfos = Database.loaduserroles(context.addr_db_user, context.uid)
     return roleinfos
+end
+
+function Role.AddLog(roleid, reason)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list or not roles.role_list[roleid] then
+        return false
+    end
+
+    local log_info = {
+        reason = reason,
+        info = {},
+    }
+    table.copy(log_info.info, roles.role_list[roleid])
+
+    --存储日志
+
+    return true
+end
+
+---@return integer, PBRoleData
+function Role.GetRoleInfo(roleid)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list or not roles.role_list[roleid] then
+        return ErrorCode.RoleNotExist, nil
+    end
+
+    return ErrorCode.None, roles.role_list[roleid]
+end
+
+function Role.GetMagicItemData(roleid)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list or not roles.role_list[roleid] then
+        return ErrorCode.RoleNotExist
+    end
+
+    local role_info = roles.role_list[roleid]
+    if table.size(role_info.magic_item) < 0 then
+        return ErrorCode.NoMagicItem
+    end
+
+    return ErrorCode.None, role_info.magic_item
+end
+
+function Role.ModMagicItem(roleid, item_data)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list or not roles.role_list[roleid] then
+        return ErrorCode.RoleNotExist
+    end
+
+    local role_info = roles.role_list[roleid]
+    role_info.magic_item = item_data
+
+    return ErrorCode.None
+end
+
+function Role.ModDiagramsCard(roleid, item_data, slot)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list or not roles.role_list[roleid] then
+        return ErrorCode.RoleNotExist
+    end
+
+    local role_info = roles.role_list[roleid]
+    role_info.digrams_cards[slot] = item_data
+
+    return ErrorCode.None
 end
 
 return Role
