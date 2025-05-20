@@ -116,7 +116,7 @@ function Role.AddLog(roleid, reason)
         reason = reason,
         info = {},
     }
-    table.copy(log_info.info, roles.role_list[roleid])
+    log_info.info = table.copy(roles.role_list[roleid])
 
     --存储日志
 

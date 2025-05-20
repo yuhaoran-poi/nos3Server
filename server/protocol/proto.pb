@@ -56,7 +56,7 @@ login_data (2.PBDSLoginDataR	loginData"f
 error (	Rerror
 dsid (Rdsid
 net_id (RnetIdbproto3
-¬B
+ƒB
 
 user.proto"@
 PBCoin
@@ -363,7 +363,7 @@ onlineTime&
 bagid (Rbagid
 pos (Rpos
 	config_id (RconfigId
-uniqid (Runiqid"‰
+uniqid (Runiqid"à
 PBClientLightRspCmd
 code (Rcode
 error (	Rerror
@@ -373,9 +373,7 @@ onlineTime&
 bagid (Rbagid
 pos (Rpos
 	config_id (RconfigId
-uniqid	 (Runiqid'
-itemdata
- (2.PBItemDataRitemdata"e
+uniqid	 (Runiqid"e
 PBClientMagicItemUpLvReqCmd
 uid (Ruid
 	config_id (RconfigId
@@ -387,7 +385,7 @@ onlineTime&
 	config_id (RconfigId
 add_exp (RaddExp
 now_exp (RnowExpbproto3
-·
+ý
 	bag.proto
 user.proto"C
 PBBagGetDataReqCmd
@@ -397,7 +395,10 @@ user.proto"C
 code (Rcode
 error (	Rerror
 uid (Ruid$
-	bag_datas (2.PBBagsRbagDatas"Õ
+	bag_datas (2.PBBagsRbagDatas"q
+PBBagUpdateSyncCmd*
+update_items (2.PBBagsRupdateItems/
+update_coins (2.PBUserCoinsRupdateCoins"Õ
 PBBagOperateItemReqCmd
 uid (Ruid!
 operate_type (RoperateType
@@ -407,12 +408,11 @@ user.proto"C
 dest_pos (RdestPos
 
 splitCount (R
-splitCount"€
+splitCount"T
 PBBagOperateItemRspCmd
 code (Rcode
 error (	Rerror
-uid (Ruid*
-change_items (2.PBBagsRchangeItemsbproto3
+uid (Ruidbproto3
 Â
 
 chat.proto"­

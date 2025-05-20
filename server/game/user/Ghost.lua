@@ -100,7 +100,7 @@ function Ghost.AddLog(ghostid, reason)
         reason = reason,
         info = {},
     }
-    table.copy(log_info.info, ghosts.ghost_list[ghostid])
+    log_info.info = table.copy(ghosts.ghost_list[ghostid])
 
     --存储日志
 

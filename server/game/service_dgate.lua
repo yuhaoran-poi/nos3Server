@@ -34,6 +34,7 @@ socket.on("message", function(fd, msg)
     local c = context.fd_map[fd]
     if not c then
         ---first message must be auth message
+        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         context.auth_watch[fd] = tostring(msg)
         local name, req = protocol.decode(moon.decode(msg,"B"))
         for key, MessagePack in ipairs(req.messages) do

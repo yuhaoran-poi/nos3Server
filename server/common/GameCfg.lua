@@ -8,7 +8,7 @@ local static
 
 function M.Load()
     static = sharetable.queryall()
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     static.__index = static
     setmetatable(M, static)
 end

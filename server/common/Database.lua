@@ -737,7 +737,7 @@ function _M.saveuserghosts(addr, uid, data)
     return moon.send("lua", addr, cmd)
 end
 
-function _M.loaduseritemimages(addr, uid)
+function _M.loaduseritemimage(addr, uid)
     local cmd = string.format([[
         SELECT value, json FROM mgame.itemimages WHERE uid = %d;
     ]], uid)
@@ -746,11 +746,11 @@ function _M.loaduseritemimages(addr, uid)
         local _, tmp_data = protocol.decodewithname("PBUserImage", res[1].value)
         return tmp_data
     end
-    print("loaduseritemimages failed", uid, err)
+    print("loaduseritemimage failed", uid, err)
     return nil
 end
 
-function _M.saveuseritemimages(addr, uid, data)
+function _M.saveuseritemimage(addr, uid, data)
     assert(data)
 
     local data_str = jencode(data)

@@ -282,14 +282,14 @@ function Team.Online()
 end
 
 function Team.Offline()
-    local DB = scripts.UserModel.GetUserData()
-    if DB.team.team_id ~= 0 then
-        -- 退出队伍
-        local success, err = cluster.call(3999, "teammgr", "Teammgr.ExitTeam", context.uid)
-        if not success then
-            print("ExitTeam failed:", err)
-        end
-    end
+    -- local DB = scripts.UserModel.GetUserData()
+    -- if DB.team.team_id ~= 0 then
+    --     -- 退出队伍
+    --     local success, err = cluster.call(3999, "teammgr", "Teammgr.ExitTeam", context.uid)
+    --     if not success then
+    --         print("ExitTeam failed:", err)
+    --     end
+    -- end
 end
 
 

@@ -381,7 +381,6 @@ message PBClientLightRspCmd
 	int32 pos		= 7;
 	int32 config_id = 8;
 	int64 uniqid	= 9;
-	PBItemData itemdata	= 10;
 }
 
 // 客户端请求--法器升级

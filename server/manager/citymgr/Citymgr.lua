@@ -30,9 +30,9 @@ function Citymgr.Init()
     context.waitds_citys = {} -- 等待中主城列表
     context.addr_db_server = moon.queryservice("db_server")
 
-    for i = 1, 1 do
-        Citymgr.CreateCity()
-    end
+    -- for i = 1, 1 do
+    --     Citymgr.CreateCity()
+    -- end
     -- 新增定时器轮询
     moon.async(function()
         while true do

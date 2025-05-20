@@ -10,6 +10,7 @@ local ErrorCode = common.ErrorCode
 local UserSimpleDef = require("common.def.UserSimpleDef")
 local RoleDef = require("common.def.RoleDef")
 local GhostDef = require("common.def.GhostDef")
+local BagDef = require("common.def.BagDef")
 
 ---@type user_context
 local context = ...
@@ -84,12 +85,12 @@ function User.Load(req)
             return false
         end
         ---加载道具图鉴数据
-        -- local image_res = scripts.ItemImage.Init()
-        -- if image_res.code ~= ErrorCode.None then
-        --     return false
-        -- end
+        local image_res = scripts.ItemImage.Start()
+        if image_res.code ~= ErrorCode.None then
+            return false
+        end
         ---加载背包数据
-        scripts.Bag.Start()
+        ---scripts.Bag.Start()
         ---加载角色数据
         local role_res = scripts.Role.Start()
         if role_res.code ~= ErrorCode.None then
@@ -311,6 +312,7 @@ local function LightRoleEquipment(msg)
             save_bags[bagType] = 1
         end
         if table.size(save_bags) then
+            -- 只存储了背包变更数据
             scripts.Bag.SaveAndLog(save_bags, change_log)
         end
         -- 存储角色数据
@@ -343,6 +345,7 @@ local function LightRoleEquipment(msg)
             save_bags[bagType] = 1
         end
         if table.size(save_bags) then
+            -- 只存储了背包变更数据
             scripts.Bag.SaveAndLog(save_bags, change_log)
         end
         -- 存储角色数据
@@ -384,6 +387,7 @@ local function LightGhostEquipment(msg)
             save_bags[bagType] = 1
         end
         if table.size(save_bags) then
+            -- 只存储了背包变更数据
             scripts.Bag.SaveAndLog(save_bags, change_log)
         end
         -- 存储角色数据
@@ -430,30 +434,27 @@ local function LightBagItem(msg)
         return get_err_code
     end
 
+    -- 记录旧道具数据
+    local old_itemdata = table.copy(item_data)
     local light_err_code, change_log = scripts.Bag.Light(item_data)
     if light_err_code ~= ErrorCode.None or not change_log then
         return light_err_code
     end
 
     -- 存储数据
-    local info_change_log = {}
-    local info_log = {
-        bagType = light_bagid,
-        pos = light_pos,
-        item_data = item_data
-    }
-    table.insert(info_change_log, info_log)
+    if not change_log[light_bagid] then
+        change_log[light_bagid] = {}
+    end
+    scripts.Bag.AddLog(change_log[light_bagid], light_pos, BagDef.LogType.ChangeInfo, old_itemdata.common_info.config_id,
+        old_itemdata.common_info.uniqid, item_data.common_info.item_count, old_itemdata)
 
     local save_bags = {}
     for bagType, _ in pairs(change_log) do
         save_bags[bagType] = 1
     end
-    if not change_log[light_bagid] then
-        change_log[light_bagid] = 1
-    end
 
     if table.size(save_bags) then
-        scripts.Bag.SaveAndLog(save_bags, change_log, info_change_log)
+        scripts.Bag.SaveAndLog(save_bags, change_log)
     end
 
     return ErrorCode.None, item_data
@@ -495,7 +496,6 @@ function User.PBClientLightReqCmd(req)
             pos = req.msg.pos or 0,
             config_id = req.msg.config_id or 0,
             uniqid = req.msg.uniqid or 0,
-            itemdata = item_data,
         })
     else
         return context.S2C(context.net_id, CmdCode.PBClientLightRspCmd, {

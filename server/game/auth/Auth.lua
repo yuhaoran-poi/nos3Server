@@ -400,6 +400,7 @@ Auth.PBClientLoginReqCmd = function (req)
 end
  
 Auth.PBDSLoginReqCmd = function(req)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local function processLogin()
         -- DS连接验证
         if req.msg.login_data.authkey == ""
@@ -441,7 +442,6 @@ Auth.PBDSLoginReqCmd = function(req)
         dsid = res.res and res.res.dsid or 0,
         net_id = res.res and res.res.net_id or 0,
     }
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     context.S2D(req.net_id, CmdCode["PBDSLoginRspCmd"], ret, req.msg_context.stub_id)
 
     if res.code ~= 0 then

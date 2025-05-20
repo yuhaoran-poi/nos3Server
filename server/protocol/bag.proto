@@ -16,6 +16,12 @@ message PBBagGetDataRspCmd
     PBBags  bag_datas	= 4;
 }
 
+message PBBagUpdateSyncCmd
+{
+    PBBags update_items         = 1;
+    PBUserCoins update_coins    = 2;
+}
+
 // 客户端请求堆叠,拆分,移动道具
 message PBBagOperateItemReqCmd
 {
@@ -33,5 +39,4 @@ message PBBagOperateItemRspCmd
     int32   code    = 1; // 服务器验证返回,0成功,其他失败
     string  error   = 2; // 错误信息
     int64   uid     = 3;
-    PBBags  change_items	= 4;
 }
