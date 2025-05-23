@@ -1,0 +1,43 @@
+syntax = "proto3";
+import "item.proto";
+
+// 捏脸数据定义
+message PBPinchFaceData
+{
+    string setting_data = 1;
+}
+
+// 角色简略信息
+message PBSimpleRoleData
+{
+    int32 config_id					= 1;// 配置ID
+    map<int32, PBItemData> skins	= 2;// 穿戴皮肤
+}
+
+// 角色详细数据
+message PBRoleData
+{
+	int32 config_id			= 1;	//配置ID
+	int32 star_level		= 2;	//星级
+	int32 exp				= 3;	//经验值
+	PBItemData magic_item	= 4;	//法器
+	map<int32, PBItemData> digrams_cards	= 5;	//八卦牌
+	repeated int32 equip_books		= 6;	//已装备真经
+	repeated int32 study_books		= 7;	//学习中真经
+	map<int32, PBItemData> skins	= 8;	//穿戴皮肤
+	int32 cur_main_skill_id			= 9;	//选定主技能id
+	map<int32, PBSkill> main_skill	= 10;	//可选主技能
+	int32 cur_minor_skill1_id			= 11;	//选定小技能1id
+	map<int32, PBSkill> minor_skill1	= 12;	//可选小技能1
+	int32 cur_minor_skill2_id			= 13;	//选定小技能2id
+	map<int32, PBSkill> minor_skill2	= 14;	//可选小技能2
+	PBSkill passive_skill				= 15;	//被动技能
+	repeated int32 emoji				= 16;	//表情槽
+}
+
+// 角色数据
+message PBUserRoleDatas
+{
+	int32 battle_role_id			= 1;
+	map<int32, PBRoleData> role_list	= 2;
+}

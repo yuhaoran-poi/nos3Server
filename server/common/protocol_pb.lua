@@ -159,7 +159,7 @@ function M.print_message(uid, buf,str,isRecv)
                           if isRecv then
                                 moon.debug(string.format("[%s] Recv[from:%d][%d] MessagePack[stub_id:%d,net_id:%d]  Message:%s \n%s", str,uid,len,MessagePack.stub_id,MessagePack.net_id, subname, json.pretty_encode(submsg)))
                            else
-                                 moon.debug(string.format("[%s] Send[to:%d][%d] MessagePack[stub_id:%d,net_id:%d] Message:%s \n%s",str, uid,len, MessagePack.stub_id,MessagePack.net_id,subname,json.pretty_encode(submsg)))
+                                moon.debug(string.format("[%s] Send[to:%d][%d] MessagePack[stub_id:%d,net_id:%d] Message:%s \n%s",str, uid,len, MessagePack.stub_id,MessagePack.net_id,subname,json.pretty_encode(submsg)))
                           end
                        end
                     end

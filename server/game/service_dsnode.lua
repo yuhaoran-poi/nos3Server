@@ -77,6 +77,7 @@ moon.raw_dispatch("D2S", function(msg)
             msg_type = MessagePack.msg_type
         }
         --local subname, submsg = protocol.DecodeMessagePack(MessagePack)
+        --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         local msg_name = id_to_name(MessagePack.msg_type)
         if not command[msg_name] then
             reqmsg.msg = MessagePack.msg_body

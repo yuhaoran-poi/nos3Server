@@ -28,7 +28,9 @@ local defaultPBBags = {
     [BagDef.BagType.Booty] = { bag_item_type = 3, capacity = BagDef.init_booty_capacity, items = {} },
 }
 
-local defaultPBUserCoins = {}
+local defaultPBUserCoins = {
+    coins = {}
+}
 
 ---@return PBBags
 function BagDef.newBags()

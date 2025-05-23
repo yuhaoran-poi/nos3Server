@@ -1,0 +1,60 @@
+syntax = "proto3";
+import "item.proto";
+
+// 鬼宠简略信息
+message PBSimpleGhostData
+{
+    int32 config_id	= 1;// 配置ID
+   	int32 skin_id	= 2;// 穿戴皮肤
+}
+
+// 鬼宠详细数据
+message PBGhostData
+{
+	int32 config_id			= 1;	//配置ID
+	int64 uniqid			= 2;	//唯一ID
+	int32 star_level		= 3;	//星级
+	int32 exp				= 4;	//经验值
+	map<int32, PBItemData> digrams_cards	= 5;	//八卦牌
+	repeated PBSkill passive_skills			= 6;	//被动技能
+	repeated PBSkill active_skills			= 7;	//主动技能
+	repeated PBAttribute attrs				= 8;	//属性
+	int32 nature			= 9;	//性格
+}
+
+// 鬼宠图鉴
+message PBGhostImage
+{
+	int32 config_id		= 1;	//配置ID
+	int32 star_level	= 2;	//星级
+	int32 exp			= 3;	//经验值
+	int32 cur_skin_id	= 4;	//当前装备皮肤
+	repeated int32 skin_id_list	= 5;	//拥有皮肤
+}
+
+// 鬼宠数据
+message PBUserGhostDatas
+{
+	int32 battle_ghost_id			= 1;	//出战的鬼宠配置id
+	int64 battle_ghost_uniqid		= 2;	//出战的鬼宠唯一id
+	map<int64, PBGhostData> ghost_list	= 3;
+	map<int32, PBGhostImage> ghost_image_list	= 4;
+}
+
+// 鬼宠葫芦
+message PBGourd
+{
+	int32 gourd_id		= 1;	//葫芦id
+	string nick_name	= 2;	//葫芦昵称
+	int32 up_level		= 3;	//葫芦等级
+	int32 up_exp		= 4;	//葫芦经验
+	int32 total_talent	= 5;	//总天赋点
+	int32 cur_talent	= 6;	//当前天赋点
+	repeated PBAttribute talent_attr = 8;	//天赋属性
+	int64 cd_end_ts		= 9;	//葫芦冷却时间
+}
+
+message PBGourdS
+{
+	repeated PBGourd gourd_list   = 1;
+}

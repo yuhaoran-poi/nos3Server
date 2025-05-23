@@ -23,15 +23,18 @@ local ItemDefine = {
     TempCard = { start = 37000, End = 39999 },
     PlayItem = { start = 40000, End = 40999 },
     GrowthItem = { start = 41000, End = 50999 },
+    StackMagicItem = { start = 51000, End = 75999 },
     GhostSkillBook = { start = 95000, End = 95999 },
+    HumanStackDiagrams = { start = 96000, End = 105999 },
+    GhostStackDiagrams = { start = 106000, End = 115999 },
     HumanTabooWord = { start = 116000, End = 119999 },
     GhostTabooWord = { start = 120000, End = 123999 },
     Gift = { start = 320000, End = 329999 },
     DurabItem = { start = 500000, End = 500999 },
-    HumanDiagrams = { start = 524000, End = 533999 },
-    GhostDiagrams = { start = 534000, End = 543999 },
-    MagicItem = { start = 600000, End = 619999 },
-    Antique = { start = 620000, End = 624999 },
+    MagicItem = { start = 600000, End = 624999 },
+    Antique = { start = 625000, End = 629999 },
+    HumanDiagrams = { start = 630000, End = 639999 },
+    GhostDiagrams = { start = 640000, End = 649999 },
 
     EItemSmallType = {
         Coin = 1,
@@ -43,15 +46,18 @@ local ItemDefine = {
         TempCard = 7,
         PlayItem = 8,
         GrowthItem = 9,
-        GhostSkillBook = 10,
-        HumanTabooWord = 11,
-        GhostTabooWord = 12,
-        Gift = 13,
-        DurabItem = 14,
-        HumanDiagrams = 15,
-        GhostDiagrams = 16,
-        MagicItem = 17,
-        Antique = 18,
+        StackMagicItem = 10,
+        GhostSkillBook = 11,
+        HumanStackDiagrams = 12,
+        GhostStackDiagrams = 13,
+        HumanTabooWord = 14,
+        GhostTabooWord = 15,
+        Gift = 16,
+        DurabItem = 17,
+        MagicItem = 18,
+        Antique = 19,
+        HumanDiagrams = 20,
+        GhostDiagrams = 21,
         Other = 255,
     },
 
@@ -88,8 +94,14 @@ function ItemDefine.GetItemType(nConfigId)
         return ItemDefine.EItemSmallType.PlayItem
     elseif nConfigId >= ItemDefine.GrowthItem.start and nConfigId <= ItemDefine.GrowthItem.End then
         return ItemDefine.EItemSmallType.GrowthItem
+    elseif nConfigId >= ItemDefine.StackMagicItem.start and nConfigId <= ItemDefine.StackMagicItem.End then
+        return ItemDefine.EItemSmallType.StackMagicItem
     elseif nConfigId >= ItemDefine.GhostSkillBook.start and nConfigId <= ItemDefine.GhostSkillBook.End then
         return ItemDefine.EItemSmallType.GhostSkillBook
+    elseif nConfigId >= ItemDefine.HumanStackDiagrams.start and nConfigId <= ItemDefine.HumanStackDiagrams.End then
+        return ItemDefine.EItemSmallType.HumanStackDiagrams
+    elseif nConfigId >= ItemDefine.GhostStackDiagrams.start and nConfigId <= ItemDefine.GhostStackDiagrams.End then
+        return ItemDefine.EItemSmallType.GhostStackDiagrams
     elseif nConfigId >= ItemDefine.HumanTabooWord.start and nConfigId <= ItemDefine.HumanTabooWord.End then
         return ItemDefine.EItemSmallType.HumanTabooWord
     elseif nConfigId >= ItemDefine.GhostTabooWord.start and nConfigId <= ItemDefine.GhostTabooWord.End then
@@ -98,14 +110,14 @@ function ItemDefine.GetItemType(nConfigId)
         return ItemDefine.EItemSmallType.Gift
     elseif nConfigId >= ItemDefine.DurabItem.start and nConfigId <= ItemDefine.DurabItem.End then
         return ItemDefine.EItemSmallType.DurabItem
-    elseif nConfigId >= ItemDefine.HumanDiagrams.start and nConfigId <= ItemDefine.HumanDiagrams.End then
-        return ItemDefine.EItemSmallType.HumanDiagrams
-    elseif nConfigId >= ItemDefine.GhostDiagrams.start and nConfigId <= ItemDefine.GhostDiagrams.End then
-        return ItemDefine.EItemSmallType.GhostDiagrams
     elseif nConfigId >= ItemDefine.MagicItem.start and nConfigId <= ItemDefine.MagicItem.End then
         return ItemDefine.EItemSmallType.MagicItem
     elseif nConfigId >= ItemDefine.Antique.start and nConfigId <= ItemDefine.Antique.End then
         return ItemDefine.EItemSmallType.Antique
+    elseif nConfigId >= ItemDefine.HumanDiagrams.start and nConfigId <= ItemDefine.HumanDiagrams.End then
+        return ItemDefine.EItemSmallType.HumanDiagrams
+    elseif nConfigId >= ItemDefine.GhostDiagrams.start and nConfigId <= ItemDefine.GhostDiagrams.End then
+        return ItemDefine.EItemSmallType.GhostDiagrams
     else
         moon.error("GetItemType - unknown config_id:", nConfigId)
         return ItemDefine.EItemSmallType.Other
@@ -121,8 +133,8 @@ function ItemDefine.GetItemPosType(nConfigId)
         return ItemDefine.EItemBigType.StackItem
     elseif nItemType == ItemDefine.EItemSmallType.DurabItem then
         return ItemDefine.EItemBigType.UnStackItem
-    elseif nItemType >= ItemDefine.EItemSmallType.HumanDiagrams
-        and nItemType <= ItemDefine.EItemSmallType.Antique then
+    elseif nItemType >= ItemDefine.EItemSmallType.MagicItem
+        and nItemType <= ItemDefine.EItemSmallType.GhostDiagrams then
         return ItemDefine.EItemBigType.UniqueItem
     else
         moon.error("GetItemPosType - unknown config_id:", nConfigId)

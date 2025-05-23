@@ -26,7 +26,7 @@ end
 function Role.Start()
     --加载全部角色数据
     local roleinfos = Role.LoadRoles()
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if roleinfos then
         scripts.UserModel.SetRoles(roleinfos)
     end

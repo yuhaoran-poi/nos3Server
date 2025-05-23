@@ -1,0 +1,169 @@
+syntax = "proto3";
+
+// 货币
+message PBCoin
+{
+    int32     coin_id   = 1;
+    int64     coin_count  = 2;
+}
+
+message PBUserCoins
+{
+	map<int32, PBCoin> coins	= 1; 
+}
+
+// 赐福数据
+message PBBlessing {
+	int32 bless_id = 1;
+	int32 idx = 2;
+}
+
+// 通用属性
+message PBAttribute
+{
+	int32		id	= 1;
+	int32		val = 2;
+}
+
+// 通用词条
+message PBTag
+{
+	int32	id	= 1;
+	int32	val	= 2;
+}
+
+// 通用技能
+message PBSkill
+{
+	int32		config_id	= 1;
+	int32		star		= 2;
+}
+
+// 拥有耐久度的不可堆叠道具
+message PBDurabItem
+{
+	int32	cur_durability = 1;	//当前耐久度
+	int32	max_durability = 2;	//耐久度上限
+}
+
+// 法器
+message PBMagicItem
+{
+	int32		cur_durability = 1;	//当前耐久度
+	int32		max_durability = 2;	//耐久度上限
+	int32		light_cnt	= 3;
+	repeated PBTag	tags	= 4;	//随机词条id,最大10条
+}
+
+// 八卦牌
+message PBDiagramsCard
+{
+	int32		cur_durability = 1;	//当前耐久度
+	int32		max_durability = 2;	//耐久度上限
+	int32		light_cnt	= 3;
+	repeated PBTag	tags	= 4;	//随机词条id,最大10条
+}
+
+// 镇山之宝
+message PBAweItem
+{
+	int32	idx				= 1;
+	int32	up_lv_fail_cnt	= 2;		// 当前等级升级失败次数
+}
+
+// 古董
+message PBAntique
+{
+	PBCoin		price = 1;					// 价格
+	int32		remain_identify_num = 2;	// 剩余鉴定次数
+	repeated PBTag	tags = 3;	// 词条数量,最大10个
+	int32		is_fake = 4;
+	repeated int32	identify_histroy = 5;	// 历史鉴定结果
+}
+
+// 通用道具数据
+message PBItemCommon
+{
+    int32     	config_id	= 1;
+	int64		uniqid		= 2;
+    int32     	item_count	= 3;
+	int32		item_type	= 4;//道具类型
+	int32		trade_cnt	= 5;//可交易次数
+}
+
+// 特殊道具数据
+message PBItemSpecial
+{
+	PBDurabItem	durab_item	= 1;
+	PBMagicItem magic_item	= 2;
+	PBDiagramsCard	diagrams_item	= 3;
+	PBAweItem	awe_item	= 4;
+	PBAntique	antique_item		= 5;
+}
+
+message PBItemData
+{
+	int32	itype	= 1;
+	PBItemCommon	common_info		= 2;
+	PBItemSpecial	special_info	= 3;
+}
+
+// 道具简化信息
+message PBItemSimple
+{
+	int32     	config_id	= 1;
+	int32     	item_count	= 2;
+	int64		uniqid		= 3;
+}
+
+// 拍卖行额外数据
+message PBAuctionExtra
+{
+	int32			up_level	= 1;//升级
+	int32			up_exp		= 2;
+	int32			star_level	= 3;//升星
+	repeated PBAttribute	exattr_list	= 4;//额外属性
+	//法器
+	repeated PBTag			element_tags	= 5; //元素词条id
+	repeated PBTag			tags			= 6; //普通词条id
+	//鬼怪
+	int32		life		= 7;	//阴寿
+	int32		ghost_air	= 8;	//阴气
+	repeated PBSkill	monster_skills	= 9;	//鬼怪技能
+	int32		unlock_equip_num = 10;	//解锁装备数量
+	string		nick_name	= 11;	//怪物昵称
+}
+
+message PBPlayedGodsData
+{
+	int32 idx = 1;		// 槽位
+	int32 gods_id = 2;	// 神明id
+}
+
+message PBPlayedGodsDataS
+{
+	repeated PBPlayedGodsData played_gods_list = 1;
+}
+
+// 神明
+message PBGodsDataS
+{
+	repeated int32		gods_list = 1;						// 神明列表
+	PBPlayedGodsDataS		played_gods_data = 2;	// 出战的神明数据
+}
+
+// 道具图鉴
+message PBImage
+{
+	int32 config_id		= 1;	//配置ID
+	int32 star_level	= 2;	//星级
+	int32 exp			= 3;	//经验值
+}
+
+message PBUserImage
+{
+	map<int32, PBImage> item_image				= 1;	//道具图鉴
+	map<int32, PBImage> magic_item_image		= 2;	//法器图鉴
+	map<int32, PBImage> human_diagrams_image	= 3;	//角色八卦牌图鉴
+	map<int32, PBImage> ghost_diagrams_image	= 4;	//鬼宠八卦牌图鉴
+}

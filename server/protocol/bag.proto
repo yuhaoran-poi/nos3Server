@@ -1,5 +1,17 @@
 syntax = "proto3";
-import "user.proto";
+import "item.proto";
+
+message PBBag
+{
+	int32 bag_item_type	= 1;
+	int32 capacity		= 2;
+	map<int32, PBItemData>	items	= 3;
+}
+
+message PBBags
+{
+	map<string, PBBag>	bags = 1;
+}
 
 // 客户端背包数据
 message PBBagGetDataReqCmd
@@ -13,13 +25,26 @@ message PBBagGetDataRspCmd
     int32   code    = 1; // 服务器验证返回,0成功,其他失败
     string  error   = 2; // 错误信息
     int64   uid     = 3;
-    PBBags  bag_datas	= 4;
+    map<string, PBBag>  bag_datas	= 4;
+}
+
+message PBBagGetCoinsReqCmd
+{
+    int64 uid		= 1;
+}
+
+message PBBagGetCoinsRspCmd
+{
+    int32   code    = 1; // 服务器验证返回,0成功,其他失败
+    string  error   = 2; // 错误信息
+    int64   uid     = 3;
+    PBUserCoins  coin_datas	= 4;
 }
 
 message PBBagUpdateSyncCmd
 {
-    PBBags update_items         = 1;
-    PBUserCoins update_coins    = 2;
+    map<string, PBBag> update_items = 1;
+    map<int32, PBCoin> update_coins = 2;
 }
 
 // 客户端请求堆叠,拆分,移动道具

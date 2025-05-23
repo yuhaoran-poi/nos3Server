@@ -34,7 +34,6 @@ socket.on("message", function(fd, msg)
     local c = context.fd_map[fd]
     if not c then
         ---first message must be auth message
-        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         context.auth_watch[fd] = tostring(msg)
         local name, req = protocol.decode(moon.decode(msg,"B"))
         for key, MessagePack in ipairs(req.messages) do
@@ -44,7 +43,8 @@ socket.on("message", function(fd, msg)
                 broadcast = MessagePack.broadcast,
                 stub_id =    MessagePack.stub_id,
                 msg_type =   MessagePack.msg_type
-              }
+            }
+            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
            local subname,submsg = protocol.DecodeMessagePack(MessagePack)
             --先校验协议版本号
             if subname == "PBDSLoginReqCmd" then

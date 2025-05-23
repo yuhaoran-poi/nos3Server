@@ -654,7 +654,7 @@ function _M.loaduserbags(addr, uid, bags_id)
     local str_sql = "SELECT uid"
     local str_param1 = ""
     local had_param = false
-    for _, bagTypeName in pairs(bags_id) do
+    for bagTypeName, _ in pairs(bags_id) do
         if bagTypeName then
             had_param = true
             str_param1 = str_param1 .. ", " .. bagTypeName
@@ -668,7 +668,7 @@ function _M.loaduserbags(addr, uid, bags_id)
     local sql_res, err = moon.call("lua", addr, str_sql)
     if not err and sql_res and #sql_res > 0 then
         local bag_res = {}
-        for _, bagTypeName in pairs(bags_id) do
+        for bagTypeName, _ in pairs(bags_id) do
             if sql_res[1][bagTypeName] then
                 local _, tmp_data = protocol.decodewithname("PBBag", sql_res[1][bagTypeName])
                 if tmp_data then

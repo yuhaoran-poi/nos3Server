@@ -24,6 +24,7 @@ require "robot.logic.ClientTeam"
 require "robot.logic.ClientRoom"
 require "robot.logic.ClientDSLogin"
 require "robot.logic.ClientChat"
+require "robot.logic.ClientBag"
 local all_robot = {}
 local cur_index = 1
 

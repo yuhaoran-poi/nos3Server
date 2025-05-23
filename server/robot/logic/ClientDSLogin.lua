@@ -51,3 +51,26 @@ function Client:enter_city()
         end
     end)
 end
+
+function Client:add_items_city_player(uid, cityid)
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+    local req_msg = {
+        uid = uid,
+        cityid = cityid,
+        simple_items = {},
+    }
+    local item = {
+        config_id = 1,
+        item_count = 10000,
+        uniqid = 0
+    }
+    table.insert(req_msg.simple_items, item)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    self:send("PBAddItemsCityPlayerReqCmd", req_msg, function(msg)
+        print("rpc PBAddItemsCityPlayerRspCmd ret = ", self.index, msg)
+        print_r(msg)
+    end)
+end

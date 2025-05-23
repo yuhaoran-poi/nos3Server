@@ -19,13 +19,13 @@ local state = {
 local DsNode = {}
 function DsNode.Load(req)
     local function fn()
+        --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         if req.msg.login_data.ds_type == 1 then
             local res, err = clusterd.call(3999, "citymgr", "Citymgr.ConnectCity", {
                 cityid = req.dsid,
                 nid = moon.env("NODE"),
                 addr_dsnode = req.addr_dsnode,
             })
-            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
             if err or res.code ~= ErrorCode.None then
                 return false, err
             end
@@ -122,8 +122,8 @@ end
 function DsNode.PBEnterCityReqCmd(req)
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local res, err = clusterd.call(3999, "citymgr", "Citymgr.PlayerEnterCity", {
-        cityid = req.cityid,
-        uid = req.uid,
+        cityid = req.msg.cityid,
+        uid = req.msg.uid,
     })
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if not err and res then
@@ -141,8 +141,8 @@ end
 function DsNode.PBExitCityReqCmd(req)
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local res, err = clusterd.call(3999, "citymgr", "Citymgr.PlayerExitCity", {
-        cityid = req.cityid,
-        uid = req.uid,
+        cityid = req.msg.cityid,
+        uid = req.msg.uid,
     })
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if not err and res then
@@ -160,8 +160,8 @@ end
 function DsNode.PBUpdateCityReqCmd(req)
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local res, err = clusterd.call(3999, "citymgr", "Citymgr.UpdateCityPlayer", {
-        cityid = req.cityid,
-        player_num = req.player_num,
+        cityid = req.msg.cityid,
+        player_num = req.msg.player_num,
     })
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if not err and res then
@@ -175,5 +175,16 @@ function DsNode.PBUpdateCityReqCmd(req)
         moon.error(string.format("err = %s", json.pretty_encode(res)))
     end
 end
- 
+
+function DsNode.PBAddItemsCityPlayerReqCmd(req)
+    -- 暂时省略校验，直接转发给玩家
+    local res, err = context.call_user(req.msg.uid, "User.DsAddItems", req.msg.simple_items)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if err then
+        moon.error(string.format("err = %s", json.pretty_encode(err)))
+    end
+
+    context.S2D(context.net_id, CmdCode["PBAddItemsCityPlayerRspCmd"], { code = res }, req.msg_context.stub_id)
+end
+
 return DsNode

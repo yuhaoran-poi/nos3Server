@@ -1,4 +1,5 @@
 syntax = "proto3";
+import "item.proto";
 import "user.proto";
 
 enum enPBGuildStatus

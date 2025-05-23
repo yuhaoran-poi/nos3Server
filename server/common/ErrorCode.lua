@@ -4,7 +4,7 @@ local ErrorCode = {
     None = 0,
     ServerInternalError = 1,
     ParamInvalid = 2,
-    ConfigError =3,
+    ConfigError = 3,
     OperationNotPermit = 4,
 
     ---没有这个装备

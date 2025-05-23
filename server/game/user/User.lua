@@ -90,7 +90,7 @@ function User.Load(req)
             return false
         end
         ---加载背包数据
-        ---scripts.Bag.Start()
+        scripts.Bag.Start()
         ---加载角色数据
         local role_res = scripts.Role.Start()
         if role_res.code ~= ErrorCode.None then
@@ -402,23 +402,24 @@ local function LightGhostEquipment(msg)
 end
 
 local function LightBagItem(msg)
-    local light_bagid = msg.bagid
+    local light_bagid = msg.bag_name
     local light_pos = msg.pos
 
-    if not msg.uniqid then
-        local err_code, change_log = scripts.Bag.GetSpecialItemFromCommonItem(msg.bagid, msg.pos, msg.config_id)
+    if not msg.uniqid or msg.uniqid == 0 then
+        local err_code, change_log = scripts.Bag.GetSpecialItemFromCommonItem(msg.bag_name, msg.pos, msg.config_id)
         if err_code ~= ErrorCode.None or not change_log then
             return err_code
         end
 
         local save_bags = {}
-        for bagType, bag_info in pairs(change_log) do
+        for bagType, logs in pairs(change_log) do
             save_bags[bagType] = 1
-            for pos, value in pairs(bag_info) do
-                if value.uniqid ~= 0 and value.count == 1 then
+            for pos, log in pairs(logs) do
+                if log.log_type == BagDef.LogType.ChangeNum
+                    and log.old_config_id == 0
+                    and log.old_count == 0 then
                     light_bagid = bagType
                     light_pos = pos
-                    break
                 end
             end
         end
@@ -427,6 +428,7 @@ local function LightBagItem(msg)
         scripts.Bag.SaveAndLog(save_bags, change_log)
     end
 
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local get_err_code, item_data = scripts.Bag.GetOneItemData(light_bagid, light_pos)
     if get_err_code ~= ErrorCode.None
         or not item_data
@@ -463,13 +465,16 @@ end
 -- 客户端请求--装备开光
 function User.PBClientLightReqCmd(req)
     local err_code, item_data = ErrorCode.None, nil
-
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 参数有效性验证
-    if req.msg.roleid and req.msg.uniqid then
+    if req.msg.roleid and req.msg.roleid ~= 0
+        and req.msg.uniqid and req.msg.uniqid ~= 0 then
         err_code, item_data = LightRoleEquipment(req.msg)
-    elseif req.msg.ghostid and req.msg.uniqid then
+    elseif req.msg.ghostid and req.msg.ghostid ~= 0
+        and req.msg.uniqid and req.msg.uniqid ~= 0 then
         err_code, item_data = LightGhostEquipment(req.msg)
-    elseif req.msg.bagid and req.msg.pos then
+    elseif req.msg.bag_name and req.msg.bag_name ~= ""
+        and req.msg.pos and req.msg.pos ~= 0 then
         err_code, item_data = LightBagItem(req.msg)
     else
         return context.S2C(context.net_id, CmdCode.PBClientLightRspCmd, {
@@ -478,7 +483,7 @@ function User.PBClientLightReqCmd(req)
             uid = context.uid,
             roleid = req.msg.roleid or 0,
             ghostid = req.msg.ghostid or 0,
-            bagid = req.msg.bagid or 0,
+            bag_name = req.msg.bag_name or "",
             pos = req.msg.pos or 0,
             config_id = req.msg.config_id or 0,
             uniqid = req.msg.uniqid or 0,
@@ -492,7 +497,7 @@ function User.PBClientLightReqCmd(req)
             uid = context.uid,
             roleid = req.msg.roleid or 0,
             ghostid = req.msg.ghostid or 0,
-            bagid = req.msg.bagid or 0,
+            bag_name = req.msg.bag_name or "",
             pos = req.msg.pos or 0,
             config_id = req.msg.config_id or 0,
             uniqid = req.msg.uniqid or 0,
@@ -504,12 +509,93 @@ function User.PBClientLightReqCmd(req)
             uid = context.uid,
             roleid = req.msg.roleid or 0,
             ghostid = req.msg.ghostid or 0,
-            bagid = req.msg.bagid or 0,
+            bag_name = req.msg.bag_name or "",
             pos = req.msg.pos or 0,
             config_id = req.msg.config_id or 0,
             uniqid = req.msg.uniqid or 0,
         })
     end
+end
+
+-- 客户端请求--所有背包和货币信息
+function User.PBClientGetUsrBagsInfoReqCmd(req)
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata then
+        return context.S2C(context.net_id, CmdCode["PBClientGetUsrBagsInfoRspCmd"],
+            { code = ErrorCode.BagNotExist, error = "背包未加载", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local coinsdata = scripts.UserModel.GetCoinsData()
+    if not coinsdata then
+        return context.S2C(context.net_id, CmdCode["PBClientGetUsrBagsInfoRspCmd"],
+            { code = ErrorCode.BagNotExist, error = "货币未加载", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local res = {
+        code = ErrorCode.None,
+        error = "",
+        uid = context.uid,
+        bags_info = {
+            bags = {}
+        },
+        coins_info = coinsdata,
+    }
+    for _, bag_name in pairs(req.msg.bags_name) do
+        if bagdata[bag_name] then
+            res.bags_info.bags[bag_name] = bagdata[bag_name]
+        end
+    end
+
+    return context.S2C(context.net_id, CmdCode["PBClientGetUsrBagsInfoRspCmd"], res, req.msg_context.stub_id)
+end
+
+-- DS给玩家加道具
+function User.DsAddItems(simple_items)
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata then
+        return ErrorCode.BagNotExist
+    end
+
+    local coinsdata = scripts.UserModel.GetCoinsData()
+    if not coinsdata then
+        return ErrorCode.BagNotExist
+    end
+
+    local add_items = {}
+    local add_coins = {}
+    local change_log = {}
+    local err_code = ErrorCode.None
+    for _, item in pairs(simple_items) do
+        local smallType = scripts.ItemDefine.GetItemType(item.config_id)
+        if smallType == scripts.ItemDefine.EItemSmallType.Coin then
+            add_coins[item.config_id] = {
+                coin_id = item.config_id,
+                count = item.item_count,
+            }
+        end
+        add_items[item.config_id] = { count = item.item_count }
+    end
+
+    if table.size(add_items) + table.size(add_coins) <= 0 then
+        err_code = ErrorCode.ItemNotExist
+    end
+
+    if table.size(add_items) > 0 then
+        err_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, add_items, change_log)
+    end
+    if table.size(add_coins) > 0 then
+        err_code = scripts.Bag.DealCoins(add_coins, change_log)
+    end
+
+    if err_code == ErrorCode.None then
+        local save_bags = {}
+        for bagType, _ in pairs(change_log) do
+            save_bags[bagType] = 1
+        end
+        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        scripts.Bag.SaveAndLog(save_bags, change_log)
+    end
+    return err_code
 end
 
 return User
