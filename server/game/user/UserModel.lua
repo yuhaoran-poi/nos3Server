@@ -22,9 +22,6 @@ function UserModel.Create(data)
     end
 
     DBData = data
-    if not DBData.user_attr then
-        DBData.user_attr = {}
-    end
     return data
 end
 
@@ -50,7 +47,8 @@ function UserModel.Save(checkDirty)
         return
     end
     
-    Database.saveuserdata(context.addr_db_user, DBData.user_data.user_id, DBData.user_data)
+    --Database.saveuserdata(context.addr_db_user, DBData.user_data.user_id, DBData.user_data)
+    Database.saveuser_attr(context.addr_db_user, DBData.user_attr.uid, DBData.user_attr)
     dirty = false
 end
 
@@ -58,14 +56,14 @@ end
 function UserModel.Get()
     return DBData
 end
-function UserModel.GetUserData()
-    return DBData.user_data
-end
+-- function UserModel.GetUserData()
+--     return DBData.user_data
+-- end
 
-function UserModel.MutGetUserData()
-    dirty = true
-    return DBData.user_data
-end
+-- function UserModel.MutGetUserData()
+--     dirty = true
+--     return DBData.user_data
+-- end
 
 ---需要修改数据时,使用这个函数
 function UserModel.MutGet()

@@ -39,7 +39,7 @@ message PBUserAttr
     int32 account_level   = 9;
     int32 account_exp     = 10;
     // 战队ID
-    int64 guild_uid       = 11;
+    int64 guild_id       = 11;
     bytes guild_name      = 12;
 	// 段位信息
 	PBRankLevel rank_level	= 13;

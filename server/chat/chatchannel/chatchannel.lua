@@ -1,7 +1,7 @@
 --[[
 * @file : ChatChannel.lua
 * @type: multi service
-* @brief : 聊天频道服务
+* @brief : 聊天频道服务1
 * @author : yq
 ]]
 

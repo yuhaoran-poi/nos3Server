@@ -48,6 +48,7 @@ end
 function Citymgr.CheckWaitDSCitys()
     local now = moon.time()
     local scope <close> = lock_wait()
+    moon.debug(string.format("CheckWaitDSCitys time:%d", now))
 
     local function allocate_cb(rsp_data)
         if not rsp_data or not rsp_data.error or rsp_data.error ~= "success" then
@@ -96,6 +97,7 @@ function Citymgr.CheckWaitDSCitys()
                 local rsp_data = json.decode(response.body)
                 local success, ret = allocate_cb(rsp_data)
                 if not success or not ret then
+                    moon.error(string.format("allocate_cb rsp_data:\n%s", json.pretty_encode(rsp_data)))
                     v.failcnt = v.failcnt + 1
                 else
                     v.ds_ip = ret.ds_ip
@@ -112,6 +114,7 @@ function Citymgr.CheckWaitDSCitys()
                 local rsp_data = json.decode(response.body)
                 local success, ret = query_cb(rsp_data)
                 if not success or not ret then
+                    moon.error(string.format("query_cb rsp_data:\n%s", json.pretty_encode(rsp_data)))
                     v.failcnt = v.failcnt + 1
                 else
                     v.ds_address = ret
@@ -314,12 +317,20 @@ function Citymgr.ApplyLoginToCity(uid)
         return { code = ErrorCode.CityAlreadyInCity, error = "已在其他主城", cityid = context.uid_cityid[uid] }
     end
 
-    local res = findFreeCity()
-    if not res then
-        return { code = ErrorCode.CityNotFound, error = "没有空闲主城" }
-    end
+    -- local res = findFreeCity()
+    -- if not res then
+    --     return { code = ErrorCode.CityNotFound, error = "没有空闲主城" }
+    -- end
 
-    return res
+    -- return res
+    return {
+        code = ErrorCode.None,
+        error = "允许加入",
+        cityid = 1,
+        region = "",
+        ds_address = "localhost",
+        ds_ip = "localhost",
+    }
 end
 
 function Citymgr.PlayerEnterCity(req)

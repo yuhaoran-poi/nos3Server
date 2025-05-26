@@ -119,6 +119,14 @@ function DsNode.C2SPing(req)
     context.S2C(CmdCode.S2CPong, req)
 end
 
+function DsNode.PBPingCmd(req)
+    local ret =
+    {
+        time = req.msg.time
+    }
+    context.S2C(context.net_id, CmdCode.PBPongCmd, ret, req.msg_context.stub_id)
+end
+
 function DsNode.PBEnterCityReqCmd(req)
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local res, err = clusterd.call(3999, "citymgr", "Citymgr.PlayerEnterCity", {

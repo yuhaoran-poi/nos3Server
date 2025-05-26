@@ -40,12 +40,13 @@ function User.Load(req)
             return data
         end
 
-        local user_data, err = Database.loaduserdata(context.addr_db_user, req.uid)
-        if user_data then
+        ---加载UserAttr数据
+        local db_user_attr, err = Database.loaduser_attr(context.addr_db_user, req.uid)
+        if db_user_attr then
             data = {
-                user_id = user_data.user_id,
+                user_id = db_user_attr.uid,
                 authkey = req.msg.login_data.authkey,
-                user_data = user_data, -- 取出结果集第一条记录
+                user_attr = db_user_attr, -- 取出结果集第一条记录
             }
         end
 
@@ -56,17 +57,17 @@ function User.Load(req)
             end
 
             isnew = true
-            local new_user_data = {
-                user_id = req.uid,
-                nick_name = req.msg.login_data.authkey,
-                create_time = moon.time(),
-            }
-
+            --数据库中不存在则视为新用户初始化
             data = {
                 authkey = req.msg.login_data.authkey,
                 user_id = req.uid,
-                user_data = new_user_data,
+                user_attr = UserAttrDef.newUserAttr(),
             }
+            data.user_attr.uid = data.user_id
+            data.user_attr.plateform_id = data.authkey
+            data.user_attr.nick_name = data.name or data.authkey
+            data.user_attr.account_create_time = moon.time()
+            data.user_attr.online_time = moon.time()
         end
 
         scripts.UserModel.Create(data)
@@ -78,11 +79,21 @@ function User.Load(req)
         ---初始化互相引用的数据
         context.batch_invoke_throw("Start")
 
-        ---加载UserAttr数据
-        local user_attr_res = User.LoadUserAttr()
-        if user_attr_res.code ~= ErrorCode.None then
-            return false
+        if isnew then
+            ---根据初始化表进行user_attr初始化
+            local init_cfg = GameCfg.Init[1]
+            if not init_cfg then
+                return false
+            end
+
+            ---存储UserAttr数据
+            local user_attr = scripts.UserModel.MutGetUserAttr()
+            user_attr.head_icon = init_cfg.head
+            user_attr.head_frame = init_cfg.head_box
+            user_attr.account_exp = init_cfg.exp
+            user_attr.title = init_cfg.title
         end
+
         ---加载道具图鉴数据
         local image_res = scripts.ItemImage.Start()
         if image_res.code ~= ErrorCode.None then
@@ -100,6 +111,14 @@ function User.Load(req)
         if ghost_res.code ~= ErrorCode.None then
             return false
         end
+
+        -- 同步到redis
+        local to_redis_data = scripts.UserModel.GetUserAttr()
+        Database.RedisSetUserAttr(context.addr_db_redis, context.uid, to_redis_data)
+        --local user_attr_res = User.LoadUserAttr()
+        --if user_attr_res.code ~= ErrorCode.None then
+        --    return false
+        --end
 
         scripts.UserModel.SaveRun()
 
@@ -119,10 +138,10 @@ function User.Load(req)
     return true
 end
 
-function User.LoadUserAttr()
+function User.QueryUserAttr()
     local DB = scripts.UserModel.Get()
     if not DB then
-        local res = { code = ErrorCode.ServerInternalError, error = "no user_data" }
+        local res = { code = ErrorCode.ServerInternalError, error = "no user_attr" }
         return res
     end
 
@@ -130,34 +149,15 @@ function User.LoadUserAttr()
         --内存中不存在则查询数据库
         local user_attr = Database.RedisGetUserAttr(context.addr_db_redis, context.uid)
         if not user_attr or table.size(user_attr) <= 0 then
-            local db_data, err = Database.loaduser_attr(context.addr_db_user, context.uid)
-            if db_data then
-                DB.user_attr = db_data
+            local db_data = Database.loaduser_attr(context.addr_db_user, context.uid)
+            if not db_data then
+                local res = { code = ErrorCode.ServerInternalError, error = "no user_attr" }
+                return res
             else
-                local init_cfg = GameCfg.Init[1]
-                if not init_cfg then
-                    return { code = ErrorCode.ConfigError, error = "no init" }
-                end
-                --数据库中不存在则视为新用户初始化
-                local user_attr = UserAttrDef.newUserAttr()
-                user_attr.uid = DB.user_id
-                user_attr.plateform_id = DB.authkey
-                user_attr.nick_name = DB.name or DB.authkey
-                user_attr.head_icon = init_cfg.head
-                user_attr.head_frame = init_cfg.head_box
-                user_attr.account_create_time = moon.time()
-                user_attr.account_exp = init_cfg.exp
-                user_attr.title = init_cfg.title
-                user_attr.online_time = moon.time()
-
-                local db_op, err = Database.saveuser_attr(context.addr_db_user, context.uid, user_attr)
-                if not db_op or err then
-                    local res = { code = ErrorCode.ServerInternalError, error = "no user_attr" }
-                    return res
-                end
-                Database.RedisSetUserAttr(context.addr_db_redis, context.uid, user_attr)
-                User.SetUserAttr(user_attr)
+                DB.user_attr = db_data
             end
+        else
+            DB.user_attr = user_attr
         end
     end
 
@@ -218,7 +218,7 @@ function User.GetUserSimpleData()
         ProtoEnum.UserAttrType.head_frame,
         ProtoEnum.UserAttrType.account_create_time,
         ProtoEnum.UserAttrType.account_exp,
-        ProtoEnum.UserAttrType.guild_uid,
+        ProtoEnum.UserAttrType.guild_id,
         ProtoEnum.UserAttrType.guild_name,
         ProtoEnum.UserAttrType.cur_show_role,
         ProtoEnum.UserAttrType.pinch_face_data,

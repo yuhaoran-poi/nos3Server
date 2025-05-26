@@ -17,28 +17,21 @@ function GuildProxy.Init()
 end
 
 function GuildProxy.Start()
-    local data = scripts.UserModel.MutGetUserData()
-    if not data.guild then
-        data.guild = {
-            guild_id = 0,
-            guild_node = 0,
-            addr_guild = 0,
-        }
+    local data = scripts.UserModel.MutGetUserAttr()
+    if data.guild_id == 0 then
+        return
+    end
+    -- 向公会管理器查询公会节点和地址
+    local res, err = cluster.call(CmdEnum.FixedNodeId.MANAGER, "guildmgr", "GuildMgr.GetGuildNodeAndAddr",
+        data.guild.guild_id)
+    if res and res.code == ErrorCode.None then
+        guild_node = res.guild_node
+        addr_guild = res.addr_guild
     else
-        if data.guild.guild_id == 0 then
-            return
-        end
-        -- 向公会管理器查询公会节点和地址
-        local res, err = cluster.call(3999, "guildmgr", "GuildMgr.GetGuildNodeAndAddr", data.guild.guild_id)
-        if res and res.code == ErrorCode.None then
-            data.guild.guild_node = res.guild_node
-            data.guild.addr_guild = res.addr_guild
-        else
-            -- 处理查询失败的情况，例如记录日志或返回错误码
-            print("Failed to query guild node and address:", err)
-            data.guild.guild_node = 0
-            data.guild.addr_guild = 0
-        end
+        -- 处理查询失败的情况，例如记录日志或返回错误码
+        print("Failed to query guild node and address:", err)
+        guild_node = 0
+        addr_guild = 0
     end
 end
 -- 添加公会物品
@@ -72,7 +65,7 @@ end
 -- 创建公会请求
 function GuildProxy.PBGuildCreateGuildReqCmd(req)
  
-    local DB = scripts.UserModel.GetUserData()
+    local DB = scripts.UserModel.GetUserAttr()
     if DB.guild.guild_id ~= 0 then
         context.R2C(CmdCode.PBGuildCreateGuildRspCmd, {
             code = ErrorCode.GuildAlreadyInGuild,
@@ -115,7 +108,7 @@ end
 
 -- 申请加入请求
 function GuildProxy.PBGuildApplyJoinGuildReqCmd(req)
-    local DB = scripts.UserModel.GetUserData()
+    local DB = scripts.UserModel.GetUserAttr()
     if DB.guild.guild_id ~= 0 then
         context.R2C(CmdCode.PBGuildApplyJoinGuildRspCmd, {
             code = ErrorCode.GuildAlreadyInGuild,
@@ -168,7 +161,7 @@ end
 -- 回复申请加入请求
 function GuildProxy.PBGuildAnswerApplyJoinGuildReqCmd(req)
     -- 检查是否有公会
-    local DB = scripts.UserModel.GetUserData()
+    local DB = scripts.UserModel.GetUserAttr()
     if DB.guild.guild_id == 0 then
         context.R2C(CmdCode.PBGuildAnswerApplyJoinGuildRspCmd, {
             code = ErrorCode.GuildNotInGuild,
@@ -204,7 +197,7 @@ end
 -- 邀请加入公会
 function GuildProxy.PBGuildInviteJoinGuildReqCmd(req)
     -- 检查是否有公会
-    local DB = scripts.UserModel.GetUserData()
+    local DB = scripts.UserModel.GetUserAttr()
     if DB.guild.guild_id == 0 then
         context.R2C(CmdCode.PBGuildInviteJoinGuildRspCmd, {
         }, req)
@@ -235,7 +228,7 @@ end
 -- 回复邀请加入公会
 function GuildProxy.PBGuildAnswerInviteJoinGuildReqCmd(req)
     -- 有公会不能回复
-    local DB = scripts.UserModel.GetUserData()
+    local DB = scripts.UserModel.GetUserAttr()
     if DB.guild.guild_id ~= 0 then
         context.R2C(CmdCode.PBGuildAnswerInviteJoinGuildRspCmd, {
             code = ErrorCode.GuildAlreadyInGuild,
@@ -267,7 +260,7 @@ end
 -- 退出公会
 function GuildProxy.PBGuildQuitReqCmd(req)
     -- 会长不能退出自己的公会
-    local DB = scripts.UserModel.MutGetUserData()
+    local DB = scripts.UserModel.MutGetUserAttr()
     if DB.guild.guild_id == 0 then
         context.R2C(CmdCode.PBGuildQuitRspCmd, {
             code = ErrorCode.GuildNotInGuild,
@@ -304,7 +297,7 @@ end
 -- 踢出公会
 function GuildProxy.PBGuildExpelQuitReqCmd(req)
     -- 检查是否有公会
-    local DB = scripts.UserModel.GetUserData()
+    local DB = scripts.UserModel.GetUserAttr()
     if DB.guild.guild_id == 0 then
         context.R2C(CmdCode.PBGuildExpelQuitRspCmd, {
             code = ErrorCode.GuildNotInGuild,
@@ -345,7 +338,7 @@ end
 -- 公会解散
 function GuildProxy.PBGuildDismissReqCmd(req)
 -- 检查是否有公会
-local DB = scripts.UserModel.GetUserData()
+local DB = scripts.UserModel.GetUserAttr()
     if DB.guild.guild_id == 0 then
         context.R2C(CmdCode.PBGuildDismissRspCmd, {
             code = ErrorCode.GuildNotInGuild,

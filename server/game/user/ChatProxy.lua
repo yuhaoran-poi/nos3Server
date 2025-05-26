@@ -15,26 +15,26 @@ local scripts = context.scripts
 local ChatProxy = {}
 
 function ChatProxy.Init()
-    
-end
-
-function ChatProxy.Start()
-    local user_info = scripts.UserModel.MutGetUserData()
+    local user_info = scripts.UserModel.MutGet()
     user_info.chat_info = user_info.chat_info or {}
     local DB = scripts.UserModel.Get()
     DB.chat_addrs = {
     }
+end
+
+function ChatProxy.Start()
+    -- body
 end
 -- 客户端聊天消息请求
 function ChatProxy.PBChatReqCmd(req)
     local channel_type = req.msg.channel_type
     local msg_content = req.msg.msg_content
     local to_uid = req.msg.to_uid
-    local user_data = scripts.UserModel.GetUserData()
+    local user_attr = scripts.UserModel.GetUserAttr()
     local DB = scripts.UserModel.Get()
     --是否处于禁言状态
-    local chat_info = user_data.chat_info
-    if chat_info.silence and chat_info.silence_time > moon.time() then
+     
+    if user_attr.chat_ban and user_attr.chat_ban_time > moon.time() then
         context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatSilence }, req)
         return { code = ErrorCode.ChatSilence }
     end
@@ -53,7 +53,7 @@ function ChatProxy.PBChatReqCmd(req)
     local PBChatMsgInfo = {
         channel_type = channel_type,
         uid = context.uid,
-        name = user_data.name,
+        name = user_attr.nick_name,
         msg_content = msg_content,
         send_time = moon.time(),
         to_uid = to_uid,
@@ -67,7 +67,7 @@ function ChatProxy.PBChatReqCmd(req)
     elseif channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_WORLD then --世界
     elseif channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_GUILD then --公会
         -- 公会是否存在
-        if user_data.guild.guild_id == 0 then
+        if user_attr.guild_id == 0 then
             context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.GuildNotExist }, req)
             return { code = ErrorCode.GuildNotExist }
         end
@@ -82,14 +82,14 @@ function ChatProxy.PBChatReqCmd(req)
     end
 
     -- 检测发送间隔
-    local last_send_time = chat_info.last_send_time or 0
+    local last_send_time = user_attr.last_send_time or 0
     local send_interval = 1 -- 发送间隔，单位秒
     if moon.time() - last_send_time < send_interval then
         context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatSendInterval }, req)
         return { code = ErrorCode.ChatSendInterval }
     end
     -- 记录发送时间
-    chat_info.last_send_time = moon.time()
+    user_attr.last_send_time = moon.time()
     -- 发送消息
     if channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_PRIVATE then --私聊
         local private_msg = {}
@@ -132,15 +132,15 @@ function ChatProxy.OnLeaveChannel(channel_type)
 end
 
 function ChatProxy.Online()
-    local DB = scripts.UserModel.GetUserData()
-    if DB.guild.guild_id ~= 0 then
-        ChatLogic.JoinGuildChannel(DB.guild.guild_id, context.uid)
+    local DB = scripts.UserModel.GetUserAttr()
+    if DB.guild_id ~= 0 then
+        ChatLogic.JoinGuildChannel(DB.guild_id, context.uid)
     end
 end
 function ChatProxy.Offline()
-    local DB = scripts.UserModel.GetUserData()
-    if DB.guild.guild_id ~= 0 then
-        ChatLogic.LeaveGuildChannel(DB.guild.guild_id, context.uid)
+    local DB = scripts.UserModel.GetUserAttr()
+    if DB.guild_id ~= 0 then
+        ChatLogic.LeaveGuildChannel(DB.guild_id, context.uid)
     end
 end
 return ChatProxy

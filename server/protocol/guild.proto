@@ -47,8 +47,8 @@ message PBGuildMemberData{
 	int32 contribute= 4;		//玩家贡献
 	int32 week_contribute= 5;		//玩家本周贡献
 	bool online = 6;		//玩家在线状态 true 在线 false 不在线
-	int32 last_get_salary_time = 7;	//上一次获取工资的时间戳
-	int32 join_time = 8;	//加入公会时间
+	int64 last_get_salary_time = 7;	//上一次获取工资的时间戳
+	int64 join_time = 8;	//加入公会时间
 	int32 dkp = 9;        //个人的DKP值
 	bool   b_spoils_mgr=10;   //是否战利品管理员
 	int64 last_send_spoil=11;//上次发放战利品的时间戳
@@ -84,7 +84,7 @@ enum enGuildRecordType
 message PBGuildRecordInfo{
 	int32 record_type = 1;
 	bytes nickname = 2;			//目标玩家昵称
-	int32 record_time = 3;
+	int64 record_time = 3;
 	string duty_name = 4;			//只在 eRT_DUTY_CHANGE 有用（表示职位名称)
 	int32 guild_level = 5;		//只在 eRT_GUILD_LV_UP 有用
 	string guild_name = 6;			//只在 eRT_CHANGE_GUILD_NAME 有用
@@ -359,7 +359,7 @@ message PBGuildUpdateGuildBagCmd
 {
     // 协议数据
     // 公会记录
-	repeated PBItemData items = 1;	//变化的仓库物品列表
+	repeated PBItemDataData items = 1;	//变化的仓库物品列表
 }
 
 // 更新公会等级
