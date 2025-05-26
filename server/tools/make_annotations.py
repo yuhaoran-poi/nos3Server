@@ -192,6 +192,10 @@ class EmmyLuaIntelliSense:
         enum_content = ""
         enum_name_list = list()
 
+        # 生成PBUserAttr相关的枚举
+        user_attr_type = dict()
+       
+
         jsonconcept = dict()
 
         for one in proto_list:
@@ -234,6 +238,29 @@ class EmmyLuaIntelliSense:
                 enum_name_list.append(name)
             elif protoType == ProtoType.Message:
                 message_content += make_message(name, fields)
+                # 如果是PBUserAttr消息，生成对应的枚举类型
+                if name == "PBUserAttr":
+                    attr_type_content = ""
+                  
+                    attr_type_content += "---@class UserAttrType\n"
+                    attr_type_content += "local UserAttrType = {\n"
+                
+                    
+                    
+                    for line_tuple in fields:
+                        if line_tuple[0] is None and len(line_tuple) >= 4:
+                            attr_name = line_tuple[2]
+                            attr_id = line_tuple[3]
+                            if line_tuple[4] is not None:
+                               attr_type_content += f"    {attr_name} = \"{attr_name}\", -- {line_tuple[4].strip('\n \t/')}\n"
+                            else:
+                               attr_type_content += f"    {attr_name} = \"{attr_name}\",\n"
+                            
+                    
+                    attr_type_content += "}\n"
+                
+                    enum_content += attr_type_content + "\n" 
+                    enum_name_list.extend(["UserAttrType"])
 
         with open(json_verify_out_file, "w+", encoding='utf-8') as fobj:
             fobj.write(json.dumps(jsonconcept, ensure_ascii=False))

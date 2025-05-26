@@ -1,6 +1,6 @@
 local LuaExt = require "common.LuaExt"
 
-local UserSimpleDef = {}
+local UserAttrDef = {}
 
 local defaultPBRankNode = {
 	grade = 0,--品阶
@@ -46,7 +46,7 @@ local defaultPBSimpleGhostData = {
     skin_id = 0,
 }
 
-local defaultPBUserSimpleInfo = {
+local defaultPBUserAttr = {
     uid = 0,                                                             --用户ID
     plateform_id = "",                                                   --平台ID
     nick_name = "",                                                      --昵称
@@ -70,9 +70,9 @@ local defaultPBUserSimpleInfo = {
     cur_show_ghost = LuaExt.const(table.copy(defaultPBSimpleGhostData)), --当前展示的鬼宠
 }
 
----@return PBUserSimpleInfo
-function UserSimpleDef.newUserSimpleInfo()
-    return LuaExt.const(table.copy(defaultPBUserSimpleInfo))
+---@return PBUserAttr
+function UserAttrDef.newUserAttr()
+    return LuaExt.const(table.copy(defaultPBUserAttr))
 end
 
-return UserSimpleDef
+return UserAttrDef

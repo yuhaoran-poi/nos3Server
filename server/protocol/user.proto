@@ -24,7 +24,8 @@ message PBRankLevel
 	PBRankNode human_top_rank = 4;
 }
 
-message PBUserSimpleInfo
+// 玩家账号属性信息
+message PBUserAttr
 {
 	int64 uid             = 1;
     string plateform_id    = 2;
@@ -65,7 +66,28 @@ message PBClientGetUsrSimInfoRspCmd
     int32 code        = 1; // 服务器验证返回,0成功,其他失败
     string error      = 2; // 错误信息
     int64 uid         = 3; // 用户ID
-    PBUserSimpleInfo info = 4;	// 简略信息
+    PBUserAttr info = 4;	// 简略信息
+}
+
+// 客户端修改个人信息数据--类型受限
+message PBSetUserAttrReqCmd
+{
+	int64 uid	= 1;
+	int32 type	= 2; // 个人信息类型 @see PBPersonInfoType
+	int32 value	= 3; // 个人信息值
+}
+
+message PBSetUserAttrRspCmd
+{
+	int32 code = 1; // 服务器验证返回,0成功,其他失败
+	string error = 2; // 错误信息
+	int32 type = 3;  // 个人信息类型 @see PBPersonInfoType
+	int32 value = 4; // 个人信息值
+}
+
+// 服务器同步玩家属性信息
+message PBUserAttrSyncCmd{
+	PBUserAttr attr = 1;
 }
 
 // 客户端请求所有背包数据

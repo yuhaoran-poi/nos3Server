@@ -201,47 +201,40 @@ function _M.query_role(addr_db, uid)
     return role_data
 end
 
-function _M.GetUserSimple(addr_db, uid)
-    local res, err = redis_call(addr_db, "HGETALL", "user_simple_"..uid)
-    if res == false then
-        error("GetUserSimple failed:"..tostring(err))
-    end
-    
-    local simple_data = {}
-    if res and #res > 0 then
-        for i=1,#res,2 do
-            simple_data[res[i]] = json.decode(res[i+1] or "null")
+function _M.RedisGetUserAttr(addr_db, uid, fields)
+    local user_attr = {}
+    if fields and type(fields) == "table" and table.size(fields) > 0 then
+        local res, err = redis_call(addr_db, "HMGET", "user_attr_" .. uid, table.unpack(fields))
+        if res == false then
+            error("RedisGetUserAttr failed:" .. tostring(err))
+        end
+        if res and #res > 0 then
+            for i = 1, #res, 2 do
+                user_attr[res[i]] = json.decode(res[i + 1] or "null")
+            end
+        end
+    else
+        local res, err = redis_call(addr_db, "HGETALL", "user_attr_" .. uid)
+        if res == false then
+            error("RedisGetUserAttr failed:" .. tostring(err))
+        end
+        if res and #res > 0 then
+            for i = 1, #res, 2 do
+                user_attr[res[i]] = json.decode(res[i + 1] or "null")
+            end
         end
     end
-    return simple_data
+
+    return user_attr
 end
 
-function _M.GetUserSimpleF(addr_db, uid, field)
-    local res, err = redis_call(addr_db, "HGET", "user_simple_"..uid, field)
-    if res == false then
-        error("GetUserSimpleF failed:"..tostring(err))
-    end
-    
-    if res then
-        return json.decode(res)
-    end
-    return nil
-end
-
-function _M.SetUserSimple(addr_db, uid, simple)
-    assert(simple)
-    
+function _M.RedisSetUserAttr(addr_db, uid, user_attr)
     local tmp = {}
-    for k,v in pairs(simple) do
+    for k, v in pairs(user_attr) do
         table.insert(tmp, k)
         table.insert(tmp, json.encode(v))
     end
-    
-    redis_send(addr_db, "HMSET", "user_simple_"..uid, table.unpack(tmp))
-end
-
-function _M.SetUserSimpleF(addr_db, uid, field, value)
-    redis_send(addr_db, "HSET", "user_simple_"..uid, field, json.encode(value))
+    redis_send(addr_db, "HMSET", "user_attr_" .. uid, table.unpack(tmp))
 end
 
 -- 新增分布式会话管理（核心改造点）
@@ -328,21 +321,28 @@ function _M.saveuserdata(addr, uid, data)
     moon.send("lua", addr, cmd)
 end
 
-function _M.loaduser_simple(addr, uid)
+function _M.loaduser_attr(addr, uid)
     local cmd = string.format([[
-        SELECT uid, value, json FROM mgame.user_simple WHERE uid = %d;
+        SELECT uid, value, json FROM mgame.user_attr WHERE uid = %d;
     ]], uid)
-    return moon.call("lua", addr, cmd)
+
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local _, tmp_data = protocol.decodewithname("PBUserAttr", res[1].value)
+        return tmp_data
+    end
+
+    return nil
 end
 
-function _M.saveuser_simple(addr, uid, data)
+function _M.saveuser_attr(addr, uid, data)
     assert(data)
 
-    local pbname, pb_data = protocol.encodewithname("PBUserSimpleInfo", data)
+    local pbname, pb_data = protocol.encodewithname("PBUserAttr", data)
     local data_str = jencode(data)
 
     local cmd = string.format([[
-        INSERT INTO mgame.user_simple (uid, value, json)
+        INSERT INTO mgame.user_attr (uid, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
     ]], uid, pb_data, data_str, pb_data, data_str)

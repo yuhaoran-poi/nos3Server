@@ -42,7 +42,7 @@ function Role.Start()
 
         for k, v in pairs(init_cfg.item) do
             if k >= RoleDefine.RoleID.Start and k <= RoleDefine.RoleID.End then
-                local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+                --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 local role_cfg = GameCfg.HumanRole[k]
                 if not role_cfg then
                     return { code = ErrorCode.ConfigError, error = "no role_cfg" }

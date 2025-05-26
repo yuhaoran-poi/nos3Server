@@ -22,6 +22,9 @@ function UserModel.Create(data)
     end
 
     DBData = data
+    if not DBData.user_attr then
+        DBData.user_attr = {}
+    end
     return data
 end
 
@@ -70,16 +73,27 @@ function UserModel.MutGet()
     return DBData
 end
 
----@return PBUserSimpleInfo ? nil
-function UserModel.GetSimple()
-    if DBData and DBData.simple then
-        return DBData.simple
-    end
-    return nil
+-- ---@return PBUserSimpleInfo ? nil
+-- function UserModel.GetSimple()
+--     if DBData and DBData.simple then
+--         return DBData.simple
+--     end
+--     return nil
+-- end
+
+-- function UserModel.SetSimple(simple_data)
+--     DBData.simple = simple_data
+-- end
+
+---@return PBUserAttr
+function UserModel.GetUserAttr()
+    return DBData.user_attr
 end
 
-function UserModel.SetSimple(simple_data)
-    DBData.simple = simple_data
+---@return PBUserAttr
+function UserModel.MutGetUserAttr()
+    dirty = true
+    return DBData.user_attr
 end
 
 ---@return PBBags ? nil

@@ -6,7 +6,7 @@ message PBTeamInfo
 {
     int64 team_id = 1;
 	int64 master_id = 2;		//队长id
-	repeated PBUserSimpleInfo user_list = 3;//
+	repeated PBUserAttr user_list = 3;//
 	bool is_del = 4;		//是否解散
 	int32 match_type = 5;		//游戏模式
 }
@@ -34,7 +34,7 @@ message PBTeamInfoRspCmd
 message PBTeamCreateReqCmd
 {
 	int64 uid = 1;
-	PBUserSimpleInfo base_data = 2;		//游戏基础数据
+	PBUserAttr base_data = 2;		//游戏基础数据
 	int32 match_type = 3;					    //
 }
 
@@ -78,7 +78,7 @@ message PBTeamJoinReqCmd
 	int64 uid = 1;
 	int64 master_uid = 2;					   //uid（队长的ID)
 	int64 team_id = 3;					       //队伍id
-	PBUserSimpleInfo base_data = 4;	   //游戏基础数据
+	PBUserAttr base_data = 4;	   //游戏基础数据
 }
 
 //组队 队伍加入返回

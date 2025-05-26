@@ -28,7 +28,7 @@ message PBGuildItemListData{
 
 // 公会申请信息
 message PBGuildApplyUserBaseInfo{
-	PBUserSimpleInfo playerSimpleInfo = 1;
+	PBUserAttr playerSimpleInfo = 1;
 	int64 apply_time = 2;		//申请时间
 }
 

@@ -7,10 +7,11 @@ local GameCfg = common.GameCfg
 local Database = common.Database
 local protocol = common.protocol
 local ErrorCode = common.ErrorCode
-local UserSimpleDef = require("common.def.UserSimpleDef")
+local UserAttrDef = require("common.def.UserAttrDef")
 local RoleDef = require("common.def.RoleDef")
 local GhostDef = require("common.def.GhostDef")
 local BagDef = require("common.def.BagDef")
+local ProtoEnum = require("tools.ProtoEnum")
 
 ---@type user_context
 local context = ...
@@ -43,8 +44,8 @@ function User.Load(req)
         if user_data then
             data = {
                 user_id = user_data.user_id,
+                authkey = req.msg.login_data.authkey,
                 user_data = user_data, -- 取出结果集第一条记录
-                authkey = req.msg.login_data.authkey
             }
         end
 
@@ -55,18 +56,16 @@ function User.Load(req)
             end
 
             isnew = true
+            local new_user_data = {
+                user_id = req.uid,
+                nick_name = req.msg.login_data.authkey,
+                create_time = moon.time(),
+            }
 
             data = {
                 authkey = req.msg.login_data.authkey,
                 user_id = req.uid,
-                user_data = {
-                    user_id = req.uid,
-                    name = req.msg.login_data.authkey,
-                    -- 聊天相关数据
-                    chat_info = {
-                        silence = 0, -- 禁言时间戳，0表示未禁言
-                    }
-                }
+                user_data = new_user_data,
             }
         end
 
@@ -79,9 +78,9 @@ function User.Load(req)
         ---初始化互相引用的数据
         context.batch_invoke_throw("Start")
 
-        ---加载simple数据
-        local simple_res = User.LoadSimple()
-        if simple_res.code ~= ErrorCode.None then
+        ---加载UserAttr数据
+        local user_attr_res = User.LoadUserAttr()
+        if user_attr_res.code ~= ErrorCode.None then
             return false
         end
         ---加载道具图鉴数据
@@ -120,48 +119,119 @@ function User.Load(req)
     return true
 end
 
-function User.LoadSimple()
+function User.LoadUserAttr()
     local DB = scripts.UserModel.Get()
     if not DB then
-        local res = { code = 2003, error = "no user_data" }
+        local res = { code = ErrorCode.ServerInternalError, error = "no user_data" }
         return res
     end
 
-    if not DB.simple then
+    if not DB.user_attr or table.size(DB.user_attr) <= 0 then
         --内存中不存在则查询数据库
-        local redis_db_data = Database.GetUserSimple(context.addr_db_redis, context.uid)
+        local user_attr = Database.RedisGetUserAttr(context.addr_db_redis, context.uid)
+        if not user_attr or table.size(user_attr) <= 0 then
+            local db_data, err = Database.loaduser_attr(context.addr_db_user, context.uid)
+            if db_data then
+                DB.user_attr = db_data
+            else
+                local init_cfg = GameCfg.Init[1]
+                if not init_cfg then
+                    return { code = ErrorCode.ConfigError, error = "no init" }
+                end
+                --数据库中不存在则视为新用户初始化
+                local user_attr = UserAttrDef.newUserAttr()
+                user_attr.uid = DB.user_id
+                user_attr.plateform_id = DB.authkey
+                user_attr.nick_name = DB.name or DB.authkey
+                user_attr.head_icon = init_cfg.head
+                user_attr.head_frame = init_cfg.head_box
+                user_attr.account_create_time = moon.time()
+                user_attr.account_exp = init_cfg.exp
+                user_attr.title = init_cfg.title
+                user_attr.online_time = moon.time()
 
-        local db_data, err = Database.loaduser_simple(context.addr_db_user, context.uid)
-        if db_data and #db_data == 1 then
-            local pbname, tmp_data = protocol.decodewithname("PBUserSimpleInfo", db_data[1].value)
-            DB.simple = tmp_data
-        else
-            local init_cfg = GameCfg.Init[1]
-            if not init_cfg then
-                return { code = ErrorCode.ConfigError, error = "no init" }
+                local db_op, err = Database.saveuser_attr(context.addr_db_user, context.uid, user_attr)
+                if not db_op or err then
+                    local res = { code = ErrorCode.ServerInternalError, error = "no user_attr" }
+                    return res
+                end
+                Database.RedisSetUserAttr(context.addr_db_redis, context.uid, user_attr)
+                User.SetUserAttr(user_attr)
             end
-            --数据库中不存在则视为新用户初始化
-            local user_simple = UserSimpleDef.newUserSimpleInfo()
-            user_simple.uid = DB.user_id
-            user_simple.plateform_id = DB.authkey
-            user_simple.nick_name = DB.name or DB.authkey
-            user_simple.head_icon = init_cfg.head
-            user_simple.head_frame = init_cfg.head_box
-            user_simple.account_create_time = moon.time()
-            user_simple.account_exp = init_cfg.exp
-            user_simple.title = init_cfg.title
-            user_simple.online_time = moon.time()
-
-            local db_op, err = Database.saveuser_simple(context.addr_db_user, context.uid, user_simple)
-            if not db_op or err then
-                local res = { code = 2004, error = "no user_simple" }
-                return res
-            end
-            Database.SetUserSimple(context.addr_db_redis, context.uid, user_simple)
-            scripts.UserModel.SetSimple(DB.simple)
         end
     end
-    return { code = 0, error = "success", user_simple = DB.simple }
+
+    return { code = ErrorCode.None, error = "success", user_attr = DB.user_attr }
+end
+
+function User.SetUserAttr(user_attr, sync_client)
+    if not user_attr or type(user_attr) ~= "table" or table.size(user_attr) <= 0 then
+        return false
+    end
+
+    local t = {}
+    local db_user_attr = scripts.UserModel.MutGetUserAttr()
+    -- 同步到内存
+    for field, value in pairs(user_attr) do
+        if user_attr[field] ~= nil then
+            db_user_attr[field] = value
+            t[field] = value
+        end
+    end
+    -- 同步到redis
+    Database.RedisSetUserAttr(context.addr_db_redis, context.uid, t)
+
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- 同步到客户端
+    if sync_client then
+        local msg_data = {
+            user_attr = t
+        }
+        context.S2C(context.net_id, CmdCode["PBUserAttrSyncCmd"], msg_data, 0)
+    end
+end
+
+function User.GetUserAttr(fields)
+    local db_user_attr = scripts.UserModel.GetUserAttr()
+    local user_attr = {}
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if type(fields) == "table" then
+        for _, field in pairs(fields) do
+            if db_user_attr[field] then
+                user_attr[field] = db_user_attr[field]
+            end
+        end
+    else
+        -- 取全数据
+        return db_user_attr
+    end
+    return user_attr
+end
+
+function User.GetUserSimpleData()
+    local simple_fields = {
+        ProtoEnum.UserAttrType.uid,
+        ProtoEnum.UserAttrType.nick_name,
+        ProtoEnum.UserAttrType.head_icon,
+        ProtoEnum.UserAttrType.sex,
+        ProtoEnum.UserAttrType.praise_num,
+        ProtoEnum.UserAttrType.head_frame,
+        ProtoEnum.UserAttrType.account_create_time,
+        ProtoEnum.UserAttrType.account_exp,
+        ProtoEnum.UserAttrType.guild_uid,
+        ProtoEnum.UserAttrType.guild_name,
+        ProtoEnum.UserAttrType.cur_show_role,
+        ProtoEnum.UserAttrType.pinch_face_data,
+        ProtoEnum.UserAttrType.title,
+        ProtoEnum.UserAttrType.player_flag,
+        ProtoEnum.UserAttrType.online_time,
+        ProtoEnum.UserAttrType.sum_online_time,
+        ProtoEnum.UserAttrType.pa_flag,
+        ProtoEnum.UserAttrType.cur_show_ghost,
+    }
+    local simple_data = User.GetUserAttr(simple_fields)
+
+    return simple_data
 end
 
 function User.Login(req)
@@ -234,21 +304,15 @@ function User.C2SUserData()
 end
 
 function User.PBClientGetUsrSimInfoReqCmd(req)
-  
-    local res, err = User.LoadSimple()
-    --
-    if not err and res then
-        local ret = {
-            code = res.code,
-            error = res.error,
-            uid = context.uid,
-            info = res.user_simple
-        }
-        context.S2C(context.net_id, CmdCode["PBClientGetUsrSimInfoRspCmd"], ret, req.msg_context.stub_id) -- body
-    else
-        --moon.error(err)
-        moon.error(string.format("err = %s", json.pretty_encode(res)))
-    end
+    local simple_data = User.GetUserSimpleData()
+
+    local ret = {
+        code = ErrorCode.None,
+        error = "success",
+        uid = context.uid,
+        info = simple_data,
+    }
+    context.S2C(context.net_id, CmdCode["PBClientGetUsrSimInfoRspCmd"], ret, req.msg_context.stub_id)
 end
 
 function User.C2SPing(req)
@@ -266,27 +330,31 @@ function User.PBPingCmd(req)
 end
 
 function User.SimpleSetShowRole(role_info)
-    local simple_data = scripts.UserModel.GetSimple()
-    if not simple_data then
+    local user_attr = scripts.UserModel.GetUserAttr()
+    if not user_attr then
         return false
     end
 
-    simple_data.cur_show_role = RoleDef.newSimpleRoleData()
-    simple_data.cur_show_role.config_id = role_info.config_id
-    simple_data.cur_show_role.skins = role_info.skins
+    if not user_attr.cur_show_role then
+        user_attr.cur_show_role = RoleDef.newSimpleRoleData()
+    end
+    user_attr.cur_show_role.config_id = role_info.config_id
+    user_attr.cur_show_role.skins = role_info.skins
 
     return true
 end
 
 function User.SimpleSetShowGhost(ghost_info, ghost_image)
-    local simple_data = scripts.UserModel.GetSimple()
-    if not simple_data then
+    local user_attr = scripts.UserModel.GetUserAttr()
+    if not user_attr then
         return false
     end
 
-    simple_data.cur_show_ghost = GhostDef.newSimpleGhostData()
-    simple_data.cur_show_ghost.config_id = ghost_info.config_id
-    simple_data.cur_show_ghost.skin_id = ghost_image.cur_skin_id
+    if not user_attr.cur_show_ghost then
+        user_attr.cur_show_ghost = GhostDef.newSimpleGhostData()
+    end
+    user_attr.cur_show_ghost.config_id = ghost_info.config_id
+    user_attr.cur_show_ghost.skin_id = ghost_image.cur_skin_id
 
     return true
 end

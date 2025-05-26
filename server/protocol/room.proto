@@ -31,7 +31,7 @@ message PBRoomMemberInfo
 {
     int32 seat_idx      = 1;
     int32 is_ready      = 2;
-    PBUserSimpleInfo mem_info   = 3;
+    PBUserAttr mem_info   = 3;
 }
 
 message PBRoomInfo
@@ -132,7 +132,7 @@ message PBApplyRoomSyncCmd
 {
     int64 uid		= 1;
 	int64 roomid	= 2;
-	PBUserSimpleInfo apply_info	= 3;
+	PBUserAttr apply_info	= 3;
 }
 
 // 房主处理加入房间请求
@@ -299,7 +299,7 @@ message PBDsGetPlayerDataRspCmd
     int32 code      = 1; // 服务器返回,0成功,其他失败
     string error    = 2; // 错误信息
     int32 data_type = 3;
-    PBUserSimpleInfo simple_data    = 4;
+    PBUserAttr simple_data    = 4;
     PBRoleData battle_role          = 5;
     PBGhostData battle_ghost        = 6;
     PBBag consume_bag               = 7;

@@ -23,8 +23,8 @@ function Room.PBCreateRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local user_data = scripts.UserModel.Get()
-    if not user_data or not user_data.simple then
+    local simple_data = scripts.User.GetUserSimpleData()
+    if not simple_data or table.size(simple_data) then
         return context.S2C(context.net_id, CmdCode["PBCreateRoomRspCmd"], {
             code = ErrorCode.ServerInternalError,
             error = "用户不存在",
@@ -33,7 +33,7 @@ function Room.PBCreateRoomReqCmd(req)
 
     local res, err = clusterd.call(3999, "roommgr", "Roommgr.CreateRoom", {
         msg = req.msg,
-        self_info = user_data.simple,
+        self_info = simple_data,
     })
     
     if err then
@@ -128,8 +128,9 @@ function Room.PBApplyRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local user_data = scripts.UserModel.Get()
-    if not user_data or not user_data.simple then
+    --local user_data = scripts.UserModel.Get()
+    local simple_data = scripts.User.GetUserSimpleData()
+    if not simple_data or table.size(simple_data) then
         return context.S2C(context.net_id, CmdCode["PBApplyRoomRspCmd"], {
             code = ErrorCode.ServerInternalError,
             error = "用户不存在",
@@ -138,7 +139,7 @@ function Room.PBApplyRoomReqCmd(req)
 
     local res, err = clusterd.call(3999, "roommgr", "Roommgr.ApplyToRoom", {
         msg = req.msg,
-        apply_info = user_data.simple,
+        apply_info = simple_data,
     })
     if err then
         return context.S2C(context.net_id, CmdCode["PBApplyRoomRspCmd"], {
