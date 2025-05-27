@@ -792,4 +792,13 @@ function _M.saveusercoins(addr, uid, data)
     return moon.send("lua", addr, cmd)
 end
 
+-- 记录道具变更日志
+function _M.ItemChangeLog(addr, uid, item_id, change_num, before_num, after_num, reason, reason_detail)
+    local cmd = string.format([[
+        INSERT INTO mlog.t_item_change (uid, item_id, change_num, before_num, after_num, reason, reason_detail)
+        VALUES (%d, %d, %d, %d, %d, %d, '%s');
+    ]], uid, item_id, change_num, before_num, after_num, reason, reason_detail)
+    moon.send("lua", addr, cmd)
+end
+
 return _M

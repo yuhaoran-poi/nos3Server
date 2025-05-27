@@ -67,6 +67,31 @@ local PBSelectionStateType = {
     PBSelectionState_SH_Ghost_Select_Skin = 8,
 }
 
+---@class UserAttrType
+local UserAttrType = {
+    uid = "uid",
+    plateform_id = "plateform_id",
+    nick_name = "nick_name",
+    head_icon = "head_icon",
+    sex = "sex", -- 0-未选 1-男 2-女
+    praise_num = "praise_num", -- 点赞
+    head_frame = "head_frame", -- 头像框
+    account_create_time = "account_create_time", -- 账户创建时间
+    account_level = "account_level",
+    account_exp = "account_exp",
+    guild_id = "guild_id",
+    guild_name = "guild_name",
+    rank_level = "rank_level",
+    cur_show_role = "cur_show_role",
+    pinch_face_data = "pinch_face_data", -- 捏脸数据
+    title = "title", -- 当前佩戴的称号
+    player_flag = "player_flag", -- 玩家标签
+    online_time = "online_time", -- 最后一次在线时间
+    sum_online_time = "sum_online_time", -- 累计在线时长 单位秒
+    pa_flag = "pa_flag", -- 是否禁言等操作
+    cur_show_ghost = "cur_show_ghost",
+}
+
 
 
 return {
@@ -76,4 +101,5 @@ return {
     eApplyOpt=eApplyOpt,
     PBSelectionOpType=PBSelectionOpType,
     PBSelectionStateType=PBSelectionStateType,
+    UserAttrType=UserAttrType,
 }

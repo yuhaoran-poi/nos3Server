@@ -64,6 +64,16 @@
 ---@field public net_id integer @DS网络id
 
 
+---@class PBBag
+---@field public bag_item_type integer
+---@field public capacity integer
+---@field public items table<integer, PBItemData>
+
+
+---@class PBBags
+---@field public bags table<string, PBBag>
+
+
 ---@class PBBagGetDataReqCmd
 ---@field public uid integer
 ---@field public bags_name string[]
@@ -73,7 +83,23 @@
 ---@field public code integer @服务器验证返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public uid integer
----@field public bag_datas PBBags
+---@field public bag_datas table<string, PBBag>
+
+
+---@class PBBagGetCoinsReqCmd
+---@field public uid integer
+
+
+---@class PBBagGetCoinsRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public coin_datas PBUserCoins
+
+
+---@class PBBagUpdateSyncCmd
+---@field public update_items table<string, PBBag>
+---@field public update_coins table<integer, PBCoin>
 
 
 ---@class PBBagOperateItemReqCmd
@@ -90,7 +116,6 @@
 ---@field public code integer @服务器验证返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public uid integer
----@field public change_items PBBags
 
 
 ---@class PBChatMsgInfo
@@ -154,6 +179,17 @@
 ---@field public msg_body string
 
 
+---@class PBDsCreateData
+---@field public ds_id integer
+---@field public chapter integer
+---@field public difficulty integer
+---@field public map_id integer
+---@field public boss_id integer
+---@field public server_ip string
+---@field public server_port integer
+---@field public uids integer[]
+
+
 ---@class PBPacketCmd
 ---@field public messages PBMessagePack[]
 
@@ -192,6 +228,17 @@
 
 
 ---@class PBUpdateCityRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+
+
+---@class PBAddItemsCityPlayerReqCmd
+---@field public uid integer
+---@field public cityid integer
+---@field public simple_items PBItemSimple[]
+
+
+---@class PBAddItemsCityPlayerRspCmd
 ---@field public code integer @服务器验证返回,0成功,其他失败
 ---@field public error string @错误信息
 
@@ -245,6 +292,53 @@
 ---@field public uid integer
 
 
+---@class PBSimpleGhostData
+---@field public config_id integer @配置ID
+---@field public skin_id integer @穿戴皮肤
+
+
+---@class PBGhostData
+---@field public config_id integer @配置ID
+---@field public uniqid integer @唯一ID
+---@field public star_level integer @星级
+---@field public exp integer @经验值
+---@field public digrams_cards table<integer, PBItemData> @八卦牌
+---@field public passive_skills PBSkill[] @被动技能
+---@field public active_skills PBSkill[] @主动技能
+---@field public attrs PBAttribute[] @属性
+---@field public nature integer @性格
+
+
+---@class PBGhostImage
+---@field public config_id integer @配置ID
+---@field public star_level integer @星级
+---@field public exp integer @经验值
+---@field public cur_skin_id integer @当前装备皮肤
+---@field public skin_id_list integer[] @拥有皮肤
+
+
+---@class PBUserGhostDatas
+---@field public battle_ghost_id integer @出战的鬼宠配置id
+---@field public battle_ghost_uniqid integer @出战的鬼宠唯一id
+---@field public ghost_list table<integer, PBGhostData>
+---@field public ghost_image_list table<integer, PBGhostImage>
+
+
+---@class PBGourd
+---@field public gourd_id integer @葫芦id
+---@field public nick_name string @葫芦昵称
+---@field public up_level integer @葫芦等级
+---@field public up_exp integer @葫芦经验
+---@field public total_talent integer @总天赋点
+---@field public cur_talent integer @当前天赋点
+---@field public talent_attr PBAttribute[] @天赋属性
+---@field public cd_end_ts integer @葫芦冷却时间
+
+
+---@class PBGourdS
+---@field public gourd_list PBGourd[]
+
+
 ---@class Any
 ---@field public type_url string
 ---@field public value string
@@ -262,7 +356,7 @@
 
 
 ---@class PBGuildApplyUserBaseInfo
----@field public playerSimpleInfo PBUserSimpleInfo
+---@field public playerSimpleInfo PBUserAttr
 ---@field public apply_time integer @申请时间
 
 
@@ -1007,6 +1101,140 @@
 ---@field public open_juanzeng boolean @是否开启捐赠
 
 
+---@class PBCoin
+---@field public coin_id integer
+---@field public coin_count integer
+
+
+---@class PBUserCoins
+---@field public coins table<integer, PBCoin>
+
+
+---@class PBBlessing
+---@field public bless_id integer
+---@field public idx integer
+
+
+---@class PBAttribute
+---@field public id integer
+---@field public val integer
+
+
+---@class PBTag
+---@field public id integer
+---@field public val integer
+
+
+---@class PBSkill
+---@field public config_id integer
+---@field public star integer
+
+
+---@class PBDurabItem
+---@field public cur_durability integer @当前耐久度
+---@field public max_durability integer @耐久度上限
+
+
+---@class PBMagicItem
+---@field public cur_durability integer @当前耐久度
+---@field public max_durability integer @耐久度上限
+---@field public light_cnt integer
+---@field public tags PBTag[] @随机词条id,最大10条
+
+
+---@class PBDiagramsCard
+---@field public cur_durability integer @当前耐久度
+---@field public max_durability integer @耐久度上限
+---@field public light_cnt integer
+---@field public tags PBTag[] @随机词条id,最大10条
+
+
+---@class PBAweItem
+---@field public idx integer
+---@field public up_lv_fail_cnt integer @当前等级升级失败次数
+
+
+---@class PBAntique
+---@field public price PBCoin @价格
+---@field public remain_identify_num integer @剩余鉴定次数
+---@field public tags PBTag[] @词条数量,最大10个
+---@field public is_fake integer
+---@field public identify_histroy integer[] @历史鉴定结果
+
+
+---@class PBItemCommon
+---@field public config_id integer
+---@field public uniqid integer
+---@field public item_count integer
+---@field public item_type integer @道具类型
+---@field public trade_cnt integer @可交易次数
+
+
+---@class PBItemSpecial
+---@field public durab_item PBDurabItem
+---@field public magic_item PBMagicItem
+---@field public diagrams_item PBDiagramsCard
+---@field public awe_item PBAweItem
+---@field public antique_item PBAntique
+
+
+---@class PBItemData
+---@field public itype integer
+---@field public common_info PBItemCommon
+---@field public special_info PBItemSpecial
+
+
+---@class PBItemSimple
+---@field public config_id integer
+---@field public item_count integer
+---@field public uniqid integer
+
+
+---@class PBAuctionExtra
+---@field public up_level integer @升级
+---@field public up_exp integer
+---@field public star_level integer @升星
+---@field public exattr_list PBAttribute[] @额外属性
+---@field public element_tags PBTag[] @元素词条id
+---@field public tags PBTag[] @普通词条id
+---@field public life integer @阴寿
+---@field public ghost_air integer @阴气
+---@field public monster_skills PBSkill[] @鬼怪技能
+---@field public unlock_equip_num integer @解锁装备数量
+---@field public nick_name string @怪物昵称
+
+
+---@class PBPlayedGodsData
+---@field public idx integer @槽位
+---@field public gods_id integer @神明id
+
+
+---@class PBPlayedGodsDataS
+---@field public played_gods_list PBPlayedGodsData[]
+
+
+---@class PBGodsDataS
+---@field public gods_list integer[] @神明列表
+---@field public played_gods_data PBPlayedGodsDataS @出战的神明数据
+
+
+---@class PBImage
+---@field public config_id integer @配置ID
+---@field public star_level integer @星级
+---@field public exp integer @经验值
+
+
+---@class PBUserImage
+---@field public item_image table<integer, PBImage> @道具图鉴
+---@field public magic_item_image table<integer, PBImage> @法器图鉴
+---@field public human_diagrams_image table<integer, PBImage> @角色八卦牌图鉴
+---@field public ghost_diagrams_image table<integer, PBImage> @鬼宠八卦牌图鉴
+
+
+---@class PBImageUpdateSyncCmd
+---@field public update_images PBUserImage
+
+
 ---@class PBMailItem
 ---@field public item_id integer @道具ID为配置文件中的ID 使用分段来区分道具类型 [货币/普通道具/皮肤]
 ---@field public item_count integer
@@ -1195,6 +1423,39 @@
 ---@field public self_data PBRankData @本榜中玩家自身数据
 
 
+---@class PBPinchFaceData
+---@field public setting_data string
+
+
+---@class PBSimpleRoleData
+---@field public config_id integer @配置ID
+---@field public skins table<integer, PBItemData> @穿戴皮肤
+
+
+---@class PBRoleData
+---@field public config_id integer @配置ID
+---@field public star_level integer @星级
+---@field public exp integer @经验值
+---@field public magic_item PBItemData @法器
+---@field public digrams_cards table<integer, PBItemData> @八卦牌
+---@field public equip_books integer[] @已装备真经
+---@field public study_books integer[] @学习中真经
+---@field public skins table<integer, PBItemData> @穿戴皮肤
+---@field public cur_main_skill_id integer @选定主技能id
+---@field public main_skill table<integer, PBSkill> @可选主技能
+---@field public cur_minor_skill1_id integer @选定小技能1id
+---@field public minor_skill1 table<integer, PBSkill> @可选小技能1
+---@field public cur_minor_skill2_id integer @选定小技能2id
+---@field public minor_skill2 table<integer, PBSkill> @可选小技能2
+---@field public passive_skill PBSkill @被动技能
+---@field public emoji integer[] @表情槽
+
+
+---@class PBUserRoleDatas
+---@field public battle_role_id integer
+---@field public role_list table<integer, PBRoleData>
+
+
 ---@class PBRoomSearchInfo
 ---@field public roomid integer
 ---@field public chapter integer @章节
@@ -1208,7 +1469,7 @@
 ---@class PBRoomMemberInfo
 ---@field public seat_idx integer
 ---@field public is_ready integer
----@field public mem_info PBUserSimpleInfo
+---@field public mem_info PBUserAttr
 
 
 ---@class PBRoomInfo
@@ -1292,7 +1553,7 @@
 ---@class PBApplyRoomSyncCmd
 ---@field public uid integer
 ---@field public roomid integer
----@field public apply_info PBUserSimpleInfo
+---@field public apply_info PBUserAttr
 
 
 ---@class PBDealApplyRoomReqCmd
@@ -1419,10 +1680,26 @@
 ---@field public ds_ip string
 
 
+---@class PBDsGetPlayerDataReqCmd
+---@field public uid integer
+---@field public roomid integer
+---@field public data_type integer @0--全部 1--个人简略数据 2--战斗角色数据 3--背包数据
+
+
+---@class PBDsGetPlayerDataRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public data_type integer
+---@field public simple_data PBUserAttr
+---@field public battle_role PBRoleData
+---@field public battle_ghost PBGhostData
+---@field public consume_bag PBBag
+
+
 ---@class PBTeamInfo
 ---@field public team_id integer
 ---@field public master_id integer @队长id
----@field public user_list PBUserSimpleInfo[] @
+---@field public user_list PBUserAttr[] @
 ---@field public is_del boolean @是否解散
 ---@field public match_type integer @游戏模式
 
@@ -1443,7 +1720,7 @@
 
 ---@class PBTeamCreateReqCmd
 ---@field public uid integer
----@field public base_data PBUserSimpleInfo @游戏基础数据
+---@field public base_data PBUserAttr @游戏基础数据
 ---@field public match_type integer @
 
 
@@ -1474,7 +1751,7 @@
 ---@field public uid integer
 ---@field public master_uid integer @uid（队长的ID)
 ---@field public team_id integer @队伍id
----@field public base_data PBUserSimpleInfo @游戏基础数据
+---@field public base_data PBUserAttr @游戏基础数据
 
 
 ---@class PBTeamJoinRspCmd
@@ -1512,154 +1789,6 @@
 ---@field public self_trade_bank_info PBSelfTradeBankData @自己的交易行数据
 
 
----@class PBCoin
----@field public coin_type integer
----@field public coin_count integer
-
-
----@class PBBlessing
----@field public bless_id integer
----@field public idx integer
-
-
----@class PBAttribute
----@field public id integer
----@field public val integer
-
-
----@class PBTag
----@field public id integer
----@field public val integer
-
-
----@class PBSkill
----@field public config_id integer
----@field public star integer
-
-
----@class PBBlock
----@field public idx integer
----@field public config_id integer
----@field public uniqid integer
----@field public item_detail PBItemData @插槽道具详情(可省略)
-
-
----@class PBDurabItem
----@field public cur_durability integer @当前耐久度
----@field public max_durability integer @耐久度上限
-
-
----@class PBMagicItem
----@field public cur_durability integer @当前耐久度
----@field public max_durability integer @耐久度上限
----@field public light_cnt integer
----@field public tags PBTag[] @随机词条id,最大10条
-
-
----@class PBDiagramsCard
----@field public cur_durability integer @当前耐久度
----@field public max_durability integer @耐久度上限
----@field public light_cnt integer
----@field public tags PBTag[] @随机词条id,最大10条
-
-
----@class PBAweItem
----@field public idx integer
----@field public up_lv_fail_cnt integer @当前等级升级失败次数
-
-
----@class PBAntique
----@field public price PBCoin @价格
----@field public remain_identify_num integer @剩余鉴定次数
----@field public tags PBTag[] @词条数量,最大10个
----@field public is_fake integer
----@field public identify_histroy integer[] @历史鉴定结果
-
-
----@class PBItemCommon
----@field public config_id integer
----@field public uniqid integer
----@field public item_count integer
----@field public item_type integer @道具类型
----@field public trade_cnt integer @可交易次数
-
-
----@class PBItemSpecial
----@field public durab_item PBDurabItem
----@field public magic_item PBMagicItem
----@field public diagrams_item PBDiagramsCard
----@field public awe_item PBAweItem
----@field public antique_item PBAntique
-
-
----@class PBItemData
----@field public itype integer
----@field public common_info PBItemCommon
----@field public special_info PBItemSpecial
-
-
----@class PBItemSimple
----@field public config_id integer
----@field public item_count integer
----@field public uniqid integer
-
-
----@class PBMagicItemImage
----@field public config_id integer @道具id
----@field public get_ts integer @图鉴解锁时间
----@field public up_level integer @升级
----@field public up_exp integer
----@field public star_level integer @升星
----@field public tier integer @升阶
-
-
----@class PBDiagramsCardImage
----@field public config_id integer @道具id
----@field public get_ts integer @图鉴解锁时间
----@field public up_level integer @升级
----@field public up_exp integer
----@field public star_level integer @升星
----@field public tier integer @升阶
-
-
----@class PBAuctionExtra
----@field public up_level integer @升级
----@field public up_exp integer
----@field public star_level integer @升星
----@field public exattr_list PBAttribute[] @额外属性
----@field public element_tags PBTag[] @元素词条id
----@field public tags PBTag[] @普通词条id
----@field public life integer @阴寿
----@field public ghost_air integer @阴气
----@field public monster_skills PBSkill[] @鬼怪技能
----@field public unlock_equip_num integer @解锁装备数量
----@field public nick_name string @怪物昵称
-
-
----@class PBPlayedGodsData
----@field public idx integer @槽位
----@field public gods_id integer @神明id
-
-
----@class PBPlayedGodsDataS
----@field public played_gods_list PBPlayedGodsData[]
-
-
----@class PBGodsDataS
----@field public gods_list integer[] @神明列表
----@field public played_gods_data PBPlayedGodsDataS @出战的神明数据
-
-
----@class PBBag
----@field public bag_item_type integer
----@field public capacity integer
----@field public items table<integer, PBItemData>
-
-
----@class PBBags
----@field public bags table<string, PBBag>
-
-
 ---@class PBRankNode
 ---@field public grade integer @品阶
 ---@field public level integer @品级
@@ -1676,100 +1805,7 @@
 ---@field public human_top_rank PBRankNode
 
 
----@class PBPinchFaceData
----@field public setting_data string
-
-
----@class PBSimpleRoleData
----@field public config_id integer @配置ID
----@field public skins table<integer, PBItemData> @穿戴皮肤
-
-
----@class PBRoleData
----@field public config_id integer @配置ID
----@field public star_level integer @星级
----@field public exp integer @经验值
----@field public magic_item PBItemData @法器
----@field public digrams_cards table<integer, PBItemData> @八卦牌
----@field public equip_books integer[] @已装备真经
----@field public study_books integer[] @学习中真经
----@field public skins table<integer, PBItemData> @穿戴皮肤
----@field public cur_main_skill_id integer @选定主技能id
----@field public main_skill table<integer, PBSkill> @可选主技能
----@field public cur_minor_skill1_id integer @选定小技能1id
----@field public minor_skill1 table<integer, PBSkill> @可选小技能1
----@field public cur_minor_skill2_id integer @选定小技能2id
----@field public minor_skill2 table<integer, PBSkill> @可选小技能2
----@field public passive_skill PBSkill @被动技能
----@field public emoji integer[] @表情槽
-
-
----@class PBUserRoleDatas
----@field public battle_role_id integer
----@field public role_list table<integer, PBRoleData>
-
-
----@class PBSimpleGhostData
----@field public config_id integer @配置ID
----@field public skin_id integer @穿戴皮肤
-
-
----@class PBGhostData
----@field public config_id integer @配置ID
----@field public uniqid integer @唯一ID
----@field public star_level integer @星级
----@field public exp integer @经验值
----@field public digrams_cards table<integer, PBItemData> @八卦牌
----@field public passive_skills PBSkill[] @被动技能
----@field public active_skills PBSkill[] @主动技能
----@field public attrs PBAttribute[] @属性
----@field public nature integer @性格
-
-
----@class PBGhostImage
----@field public config_id integer @配置ID
----@field public star_level integer @星级
----@field public exp integer @经验值
----@field public cur_skin_id integer @当前装备皮肤
----@field public skin_id_list integer[] @拥有皮肤
-
-
----@class PBUserGhostDatas
----@field public battle_ghost_id integer @出战的鬼宠配置id
----@field public battle_ghost_uniqid integer @出战的鬼宠唯一id
----@field public ghost_list table<integer, PBGhostData>
----@field public ghost_image_list table<integer, PBGhostImage>
-
-
----@class PBGourd
----@field public gourd_id integer @葫芦id
----@field public nick_name string @葫芦昵称
----@field public up_level integer @葫芦等级
----@field public up_exp integer @葫芦经验
----@field public total_talent integer @总天赋点
----@field public cur_talent integer @当前天赋点
----@field public talent_attr PBAttribute[] @天赋属性
----@field public cd_end_ts integer @葫芦冷却时间
-
-
----@class PBGourdS
----@field public gourd_list PBGourd[]
-
-
----@class PBImage
----@field public config_id integer @配置ID
----@field public star_level integer @星级
----@field public exp integer @经验值
-
-
----@class PBUserImage
----@field public item_image PBImage @道具图鉴
----@field public magic_item_image PBImage @法器图鉴
----@field public human_diagrams_image PBImage @角色八卦牌图鉴
----@field public ghost_diagrams_image PBImage @鬼宠八卦牌图鉴
-
-
----@class PBUserSimpleInfo
+---@class PBUserAttr
 ---@field public uid integer
 ---@field public plateform_id string
 ---@field public nick_name string
@@ -1780,7 +1816,7 @@
 ---@field public account_create_time integer @账户创建时间
 ---@field public account_level integer
 ---@field public account_exp integer
----@field public guild_uid integer
+---@field public guild_id integer
 ---@field public guild_name string
 ---@field public rank_level PBRankLevel
 ---@field public cur_show_role PBSimpleRoleData
@@ -1801,7 +1837,73 @@
 ---@field public code integer @服务器验证返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public uid integer @用户ID
----@field public info PBUserSimpleInfo @简略信息
+---@field public info PBUserAttr @简略信息
+
+
+---@class PBSetUserAttrReqCmd
+---@field public uid integer
+---@field public type integer @个人信息类型 @see PBPersonInfoType
+---@field public value integer @个人信息值
+
+
+---@class PBSetUserAttrRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public type integer @个人信息类型 @see PBPersonInfoType
+---@field public value integer @个人信息值
+
+
+---@class PBUserAttrSyncCmd
+---@field public attr PBUserAttr
+
+
+---@class PBClientGetUsrBagsInfoReqCmd
+---@field public uid integer
+
+
+---@class PBClientGetUsrBagsInfoRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer @用户ID
+---@field public bags_info PBBags @所有背包数据
+---@field public coins_info PBUserCoins @所有货币数据
+
+
+---@class PBClientLightReqCmd
+---@field public uid integer
+---@field public roleid integer
+---@field public ghostid integer
+---@field public bag_name string
+---@field public pos integer
+---@field public config_id integer
+---@field public uniqid integer
+
+
+---@class PBClientLightRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roleid integer
+---@field public ghostid integer
+---@field public bag_name string
+---@field public pos integer
+---@field public config_id integer
+---@field public uniqid integer
+
+
+---@class PBClientMagicItemUpLvReqCmd
+---@field public uid integer
+---@field public config_id integer
+---@field public add_exp integer
+
+
+---@class PBClientMagicItemUpLvRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public config_id integer
+---@field public add_exp integer
+---@field public now_exp integer
 
 
 
@@ -1848,6 +1950,7 @@
 ---@field Hello Hello
 ---@field Item Item
 ---@field ItemDefine ItemDefine
+---@field ItemImage ItemImage
 ---@field MatchProxy MatchProxy
 ---@field Role Role
 ---@field Room Room
@@ -1888,7 +1991,7 @@
 
 
 ---@class chatchannel_scripts
----@field chatchannel chatchannel
+---@field ChatChannel ChatChannel
 
 
 ---@class chatmgr_scripts
@@ -1932,182 +2035,17 @@
 
 
 ---@class static_conf
----@field ActionMission ActionMission_cfg[]
----@field ActionMissionAward ActionMissionAward_cfg[]
----@field ActiveInfo ActiveInfo_cfg[]
----@field AIUseConfig AIUseConfig_cfg[]
----@field allconfigs allconfigs_cfg[]
----@field AntiqueItem AntiqueItem_cfg[]
----@field AntiquePriceTagChangeRate AntiquePriceTagChangeRate_cfg[]
----@field AntiqueTagPool AntiqueTagPool_cfg[]
----@field Attribute Attribute_cfg[]
----@field AwardPoint AwardPoint_cfg[]
----@field AweItemUpLv AweItemUpLv_cfg[]
----@field BaGuaBrand BaGuaBrand_cfg[]
----@field BaGuaBrandUpLv BaGuaBrandUpLv_cfg[]
----@field BaGuaTagPool BaGuaTagPool_cfg[]
----@field BanPick BanPick_cfg[]
----@field BanPickConfig BanPickConfig_cfg[]
----@field BianQueGift BianQueGift_cfg[]
----@field Blessing Blessing_cfg[]
----@field Book Book_cfg[]
----@field Buff Buff_cfg[]
----@field CDKEY CDKEY_cfg[]
----@field CodexMission CodexMission_cfg[]
----@field Coin Coin_cfg[]
----@field CommonConfig CommonConfig_cfg[]
----@field Composite Composite_cfg[]
----@field DayMission DayMission_cfg[]
----@field DayMissionAward DayMissionAward_cfg[]
----@field DayPromotion DayPromotion_cfg[]
----@field DayPromotionAward DayPromotionAward_cfg[]
----@field Equipment Equipment_cfg[]
+---@field AllTag AllTag_cfg[]
+---@field AllTagPool AllTagPool_cfg[]
 ---@field EquipmentTagPool EquipmentTagPool_cfg[]
----@field ExperienceLevel ExperienceLevel_cfg[]
----@field FallBox FallBox_cfg[]
----@field FriendIntimacy FriendIntimacy_cfg[]
----@field GameChapter GameChapter_cfg[]
----@field GameControl GameControl_cfg[]
 ---@field GamePropUpLv GamePropUpLv_cfg[]
----@field GhostCommonConfig GhostCommonConfig_cfg[]
----@field GhostEquipmentSlotCost GhostEquipmentSlotCost_cfg[]
----@field GhostEquipmentUpLv GhostEquipmentUpLv_cfg[]
----@field GhostGourdTalent GhostGourdTalent_cfg[]
----@field GhostGourdUpLv GhostGourdUpLv_cfg[]
----@field GhostGourdUse GhostGourdUse_cfg[]
 ---@field GhostInfo GhostInfo_cfg[]
----@field GhostInfoAttribute GhostInfoAttribute_cfg[]
----@field GhostItem GhostItem_cfg[]
----@field GhostManagerUpLv GhostManagerUpLv_cfg[]
----@field GhostSkill GhostSkill_cfg[]
----@field GhostSkin GhostSkin_cfg[]
----@field GhostTabooWordSlot GhostTabooWordSlot_cfg[]
----@field GhostUpLv GhostUpLv_cfg[]
----@field Gift Gift_cfg[]
----@field GlobalConfig GlobalConfig_cfg[]
----@field GmInstruction GmInstruction_cfg[]
----@field GrowFund GrowFund_cfg[]
----@field GuildDayMission GuildDayMission_cfg[]
----@field GuildExp GuildExp_cfg[]
----@field GuildHead GuildHead_cfg[]
----@field GuildMemberNum GuildMemberNum_cfg[]
----@field Guildseason Guildseason_cfg[]
----@field Guildshop Guildshop_cfg[]
----@field GuildWeekMission GuildWeekMission_cfg[]
----@field HcSystem HcSystem_cfg[]
----@field HomeConfig HomeConfig_cfg[]
----@field HomeHotSpringBuy HomeHotSpringBuy_cfg[]
----@field HomeHotSpringIntimacyLevel HomeHotSpringIntimacyLevel_cfg[]
----@field HomeHotSpringLevel HomeHotSpringLevel_cfg[]
----@field HomeHotSpringQuestion HomeHotSpringQuestion_cfg[]
----@field HomeIntimacyToLikeScore HomeIntimacyToLikeScore_cfg[]
----@field HomeMarketConfig HomeMarketConfig_cfg[]
----@field HomePeiFang HomePeiFang_cfg[]
----@field HomeTask HomeTask_cfg[]
 ---@field HumanRole HumanRole_cfg[]
----@field HumanSkill HumanSkill_cfg[]
----@field HumanTabooWordSlot HumanTabooWordSlot_cfg[]
----@field IdList IdList_cfg[]
 ---@field Init Init_cfg[]
----@field Intimacy Intimacy_cfg[]
----@field IntimacyAward IntimacyAward_cfg[]
----@field InvitationAward InvitationAward_cfg[]
 ---@field Item Item_cfg[]
----@field Itembox Itembox_cfg[]
----@field ItemHome ItemHome_cfg[]
----@field ItemMix ItemMix_cfg[]
----@field ItemTypes ItemTypes_cfg[]
 ---@field LightConvert LightConvert_cfg[]
----@field LimitGift LimitGift_cfg[]
----@field LingShiPass LingShiPass_cfg[]
----@field LoginAward LoginAward_cfg[]
----@field MagicItem MagicItem_cfg[]
----@field MagicItemElementTagPool MagicItemElementTagPool_cfg[]
----@field MagicItemTagPool MagicItemTagPool_cfg[]
+---@field LightCost LightCost_cfg[]
 ---@field MagicItemUpLv MagicItemUpLv_cfg[]
----@field MainStar MainStar_cfg[]
----@field Map Map_cfg[]
----@field MarketConfig MarketConfig_cfg[]
----@field MinorStar MinorStar_cfg[]
----@field MissionAchieve MissionAchieve_cfg[]
----@field MissionType MissionType_cfg[]
----@field MonthCard1 MonthCard1_cfg[]
----@field MonthCard1_LJ MonthCard1_LJ_cfg[]
----@field MonthCard2 MonthCard2_cfg[]
----@field MonthCard2_LJ MonthCard2_LJ_cfg[]
----@field MonthCard3 MonthCard3_cfg[]
----@field MonthCard3_LJ MonthCard3_LJ_cfg[]
----@field NewCharacterGift NewCharacterGift_cfg[]
----@field NoviceMission NoviceMission_cfg[]
----@field NoviceTimeLimitMission NoviceTimeLimitMission_cfg[]
----@field OldUserAward OldUserAward_cfg[]
----@field OnlyOneItem OnlyOneItem_cfg[]
----@field OrdinaryItem OrdinaryItem_cfg[]
----@field PeriodAwardPoint PeriodAwardPoint_cfg[]
----@field PeriodMission PeriodMission_cfg[]
----@field PinchFace PinchFace_cfg[]
----@field PropCompose PropCompose_cfg[]
----@field RandomComposite RandomComposite_cfg[]
 ---@field RankLevel RankLevel_cfg[]
----@field RankLevelMission RankLevelMission_cfg[]
----@field RankLianSheng2Score RankLianSheng2Score_cfg[]
----@field RankList RankList_cfg[]
----@field RankListAward RankListAward_cfg[]
----@field RankMVP2Score RankMVP2Score_cfg[]
----@field RankOfflineDay2Score RankOfflineDay2Score_cfg[]
----@field RankStar2Score RankStar2Score_cfg[]
----@field RankTeam2Score RankTeam2Score_cfg[]
----@field Ranktitle Ranktitle_cfg[]
----@field RankWin2Score RankWin2Score_cfg[]
----@field RechargeMission RechargeMission_cfg[]
----@field RefineComposite RefineComposite_cfg[]
----@field RoleLvAward RoleLvAward_cfg[]
----@field RoleUpLv RoleUpLv_cfg[]
----@field SeasonAward SeasonAward_cfg[]
----@field SeasonBuy SeasonBuy_cfg[]
----@field SeasonMission SeasonMission_cfg[]
----@field SeasonMissionRand SeasonMissionRand_cfg[]
----@field SeasonPass SeasonPass_cfg[]
----@field SeasonPassBuy SeasonPassBuy_cfg[]
----@field SeasonPassExp SeasonPassExp_cfg[]
----@field SeasonPassExpAdd SeasonPassExpAdd_cfg[]
----@field SeasonPassExpDouble SeasonPassExpDouble_cfg[]
----@field SeasonPassMission SeasonPassMission_cfg[]
----@field SeasonRankLevelMission SeasonRankLevelMission_cfg[]
----@field SeasonRankRefreshCycle SeasonRankRefreshCycle_cfg[]
----@field SecretPaper SecretPaper_cfg[]
----@field Settle Settle_cfg[]
----@field SignAward SignAward_cfg[]
----@field SignAward7Day SignAward7Day_cfg[]
----@field Skin Skin_cfg[]
----@field SkinRand SkinRand_cfg[]
----@field SkinSuiYu SkinSuiYu_cfg[]
----@field SkinXiaofeijifen SkinXiaofeijifen_cfg[]
----@field SkinZhuti SkinZhuti_cfg[]
----@field StarSymbolData StarSymbolData_cfg[]
----@field StarSymbolDescription StarSymbolDescription_cfg[]
----@field StarSymbolEffect StarSymbolEffect_cfg[]
----@field StarSymbolEvent StarSymbolEvent_cfg[]
----@field TabooWordsCompose TabooWordsCompose_cfg[]
----@field Tardeaddprice Tardeaddprice_cfg[]
----@field Tardeblank Tardeblank_cfg[]
----@field Title Title_cfg[]
----@field TitleType TitleType_cfg[]
----@field TopUpAword TopUpAword_cfg[]
----@field TradeBankItem TradeBankItem_cfg[]
----@field TradingCommonConfig TradingCommonConfig_cfg[]
----@field TradingIDConvert TradingIDConvert_cfg[]
----@field TradingLimitID TradingLimitID_cfg[]
----@field TreasureBox TreasureBox_cfg[]
----@field TreasureBoxAward TreasureBoxAward_cfg[]
----@field TreasureBoxPoint TreasureBoxPoint_cfg[]
----@field TreasureMission TreasureMission_cfg[]
----@field TreasureRandGift TreasureRandGift_cfg[]
----@field TreasureRandItem TreasureRandItem_cfg[]
 ---@field UniqueItem UniqueItem_cfg[]
 ---@field UpLvCostIDMapping UpLvCostIDMapping_cfg[]
----@field UpStar UpStar_cfg[]
----@field UpTier UpTier_cfg[]
----@field WaizhuanMission WaizhuanMission_cfg[]
----@field WaizhuanMissionAward WaizhuanMissionAward_cfg[]
----@field WeekFreeRole WeekFreeRole_cfg[]

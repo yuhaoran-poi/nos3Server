@@ -23,7 +23,7 @@ local defaultTeamMatchData = {
 --- @class TeamDataClass
 --- @field team_id number 队伍ID
 --- @field master_uid number 队长UID
---- @field members table<number, PBUserAttrClass> 成员列表，key为UID，value为用户简单信息
+--- @field members table<number, PBUserAttr> 成员列表，key为UID，value为用户简单信息
 --- @field match_data TeamMatchDataClass 匹配相关数据
 local defaultTeamData = {
     team_id = 0,

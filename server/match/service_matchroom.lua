@@ -22,7 +22,7 @@ local context = {
     },       -- ds房间信息
     teams = {},           -- 房间队伍
     ob_teams = {},        -- 房间观战队伍
-       
+    
     scripts = {},
 }
 
