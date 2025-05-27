@@ -666,4 +666,59 @@ function User.DsAddItems(simple_items)
     return err_code
 end
 
+-- 客户端请求--法器升级
+function User.PBClientMagicItemUpLvReqCmd(req)
+    -- 参数验证
+    if not req.msg.config_id or req.msg.add_exp <= 0 then
+        return context.S2C(context.net_id, CmdCode.PBClientMagicItemUpLvRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            config_id = req.msg.config_id or 0,
+            add_exp = req.msg.add_exp or 0,
+            now_exp = 0
+        }, req.msg_context.stub_id)
+    end
+
+    -- 图鉴升级
+    local err_code, change_log = scripts.ItemImage.UpLvImage(req.msg.config_id)
+    if err_code ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBClientMagicItemUpLvRspCmd, {
+            code = ErrorCode.ItemNotExist,
+            error = "图鉴不存在",
+            uid = context.uid,
+            config_id = req.msg.config_id,
+            add_exp = req.msg.add_exp,
+            now_exp = 0
+        }, req.msg_context.stub_id)
+    end
+
+    context.S2C(context.net_id, CmdCode.PBClientMagicItemUpLvRspCmd, {
+        code = ErrorCode.None,
+        error = "",
+        uid = context.uid,
+        config_id = req.msg.config_id,
+        add_exp = req.msg.add_exp,
+        now_exp = new_exp
+    }, req.msg_context.stub_id)
+
+    -- 存储背包变更
+    if change_log then
+        local save_bags = {}
+        for bagType, _ in pairs(change_log) do
+            save_bags[bagType] = 1
+        end
+
+        if table.size(save_bags) then
+            scripts.Bag.SaveAndLog(save_bags, change_log)
+        end
+    end
+    -- 图鉴信息变更
+    local change_image_ids = {}
+    table.insert(change_image_ids, req.msg.config_id)
+    scripts.ItemImage.UpdateAndSave(change_image_ids)
+
+    return 
+end
+
 return User

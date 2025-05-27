@@ -359,7 +359,7 @@ message PBGuildUpdateGuildBagCmd
 {
     // 协议数据
     // 公会记录
-	repeated PBItemDataData items = 1;	//变化的仓库物品列表
+	repeated PBItemData items = 1;	//变化的仓库物品列表
 }
 
 // 更新公会等级

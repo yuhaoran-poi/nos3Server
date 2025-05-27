@@ -167,3 +167,8 @@ message PBUserImage
 	map<int32, PBImage> human_diagrams_image	= 3;	//角色八卦牌图鉴
 	map<int32, PBImage> ghost_diagrams_image	= 4;	//鬼宠八卦牌图鉴
 }
+
+message PBImageUpdateSyncCmd
+{
+    PBUserImage update_images = 1;
+}

@@ -6,6 +6,7 @@ local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
 local Database = common.Database
 local ItemImageDef = require("common.def.ItemImageDef")
+local BagDef = require("common.def.BagDef")
 
 ---@type user_context
 local context = ...
@@ -56,7 +57,54 @@ function ItemImage.LoadItemImages()
     return itemImageinfos
 end
 
-function ItemImage.AddMagicItemImage(config_id)
+function ItemImage.UpdateAndSave(config_ids)
+    local itemImages = scripts.UserModel.GetItemImages()
+    if not itemImages then
+        return false
+    end
+    
+    local update_msg = {
+        update_images = {},
+    }
+    for _, config_id in pairs(config_ids) do
+        local item_type = scripts.ItemDefine.GetItemType(config_id)
+        if item_type == scripts.ItemDefine.EItemSmallType.MagicItem then
+            if itemImages.magic_item_image[config_id] then
+                if not update_msg.update_images.magic_item_image then
+                    update_msg.update_images.magic_item_image = {}
+                end
+                update_msg.update_images.magic_item_image[config_id] = itemImages.magic_item_image[config_id]
+            end
+        elseif item_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+            if itemImages.human_diagrams_image[config_id] then
+                if not update_msg.update_images.human_diagrams_image then
+                    update_msg.update_images.human_diagrams_image = {}
+                end
+                update_msg.update_images.human_diagrams_image[config_id] = itemImages.human_diagrams_image[config_id]
+            end
+        elseif item_type == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
+            if itemImages.ghost_diagrams_image[config_id] then
+                if not update_msg.update_images.ghost_diagrams_image then
+                    update_msg.update_images.ghost_diagrams_image = {}
+                end
+                update_msg.update_images.ghost_diagrams_image[config_id] = itemImages.ghost_diagrams_image[config_id]
+            end
+        else
+            if itemImages.item_image[config_id] then
+                if not update_msg.update_images.item_image then
+                    update_msg.update_images.item_image = {}
+                end
+                update_msg.update_images.item_image[config_id] = itemImages.item_image[config_id]
+            end
+        end
+    end
+
+    context.S2C(context.net_id, CmdCode["PBImageUpdateSyncCmd"], update_msg, 0)
+
+    ItemImage.SaveItemImagesNow()
+end
+
+function ItemImage.AddMagicItemImage(config_id, change_image_ids)
     local itemImages = scripts.UserModel.GetItemImages()
     if not itemImages then
         return false
@@ -66,12 +114,14 @@ function ItemImage.AddMagicItemImage(config_id)
         local itemImage_info = ItemImageDef.newImage()
         itemImage_info.config_id = config_id
         itemImages.magic_item_image[config_id] = itemImage_info
+
+        table.insert(change_image_ids, config_id)
     end
 
     return true
 end
 
-function ItemImage.AddDiagramsCardImage(config_id)
+function ItemImage.AddDiagramsCardImage(config_id, change_image_ids)
     local itemImages = scripts.UserModel.GetItemImages()
     if not itemImages then
         return false
@@ -84,18 +134,93 @@ function ItemImage.AddDiagramsCardImage(config_id)
             local itemImage_info = ItemImageDef.newImage()
             itemImage_info.config_id = config_id
             itemImages.human_diagrams_image[config_id] = itemImage_info
+
+            table.insert(change_image_ids, config_id)
         end
     elseif item_type == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
         if not itemImages.ghost_diagrams_image[config_id] then
             local itemImage_info = ItemImageDef.newImage()
             itemImage_info.config_id = config_id
             itemImages.ghost_diagrams_image[config_id] = itemImage_info
+
+            table.insert(change_image_ids, config_id)
         end
     else
         return false
     end
 
     return true
+end
+
+function ItemImage.GetImage(config_id)
+    local itemImages = scripts.UserModel.GetItemImages()
+    if not itemImages then
+        return false
+    end
+
+    local item_type = scripts.ItemDefine.GetItemType(config_id)
+    if item_type == scripts.ItemDefine.EItemSmallType.MagicItem then
+        return itemImages.magic_item_image[config_id], item_type
+    elseif item_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+        return itemImages.human_diagrams_image[config_id], item_type
+    elseif item_type == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
+        return itemImages.ghost_diagrams_image[config_id], item_type
+    else
+        return itemImages.item_image[config_id], item_type
+    end
+end
+
+function ItemImage.UpLvImage(config_id, add_exp)
+    local image_data, item_type = ItemImage.GetImage(config_id)
+    if not image_data then
+        return ErrorCode.ItemNotExist
+    end
+
+    -- 检索升级配置
+    if item_type == scripts.ItemDefine.EItemSmallType.MagicItem then
+        local up_exp_cfgs = GameCfg.MagicItemUpLv
+        for _, cfg in pairs(up_exp_cfgs) do
+            if cfg.allexp then
+                
+            end
+        end
+    end
+
+    -- 计算消耗资源
+    local cost_items = {}
+    local cost_coins = {}
+    local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    if err_code_items ~= ErrorCode.None then
+        return err_code_items
+    end
+    local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
+    if err_code_coins ~= ErrorCode.None then
+        return err_code_coins
+    end
+
+    -- 增加经验
+    local new_exp = image_data.exp + add_exp
+    image_data.exp = new_exp
+
+    -- 扣除消耗
+    local change_log = {}
+    local err_code_del = ErrorCode.None
+    if table.size(cost_items) > 0 then
+        err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(change_log)
+            return err_code_del
+        end
+    end
+    if table.size(cost_coins) > 0 then
+        err_code_del = scripts.Bag.DealCoins(cost_coins, change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(change_log)
+            return err_code_del
+        end
+    end
+
+    return ErrorCode.None, change_log
 end
 
 return ItemImage

@@ -892,6 +892,7 @@ function Bag.AddItems(bagType, add_items, change_log)
 
     -- 判断图鉴是否需要更新
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    local change_image_ids = {}
     for pos, log in pairs(change_log[bagType]) do
         if log.log_type == BagDef.LogType.ChangeNum
             and log.old_config_id == 0
@@ -900,11 +901,15 @@ function Bag.AddItems(bagType, add_items, change_log)
             local item_small_type = scripts.ItemDefine.GetItemType(baginfo.items[pos].common_info.config_id)
             if item_small_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams
                 or item_small_type == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
-                scripts.ItemImage.AddDiagramsCardImage(baginfo.items[pos].common_info.config_id)
+                scripts.ItemImage.AddDiagramsCardImage(baginfo.items[pos].common_info.config_id, change_image_ids)
             elseif item_small_type == scripts.ItemDefine.EItemSmallType.MagicItem then
-                scripts.ItemImage.AddMagicItemImage(baginfo.items[pos].common_info.config_id)
+                scripts.ItemImage.AddMagicItemImage(baginfo.items[pos].common_info.config_id, change_image_ids)
             end
         end
+    end
+    -- 发送图鉴更新消息
+    if table.size(change_image_ids) > 0 then
+        scripts.ItemImage.UpdateAndSave(change_image_ids)
     end
 
     return ErrorCode.None
