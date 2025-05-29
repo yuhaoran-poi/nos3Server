@@ -12,6 +12,7 @@ message PBSimpleRoleData
 {
     int32 config_id					= 1;// 配置ID
     map<int32, PBItemData> skins	= 2;// 穿戴皮肤
+	int32 magic_item_id				= 3;// 携带法器id
 }
 
 // 角色详细数据

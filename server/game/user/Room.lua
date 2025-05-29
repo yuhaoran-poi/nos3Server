@@ -23,8 +23,8 @@ function Room.PBCreateRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local simple_data = scripts.User.GetUserSimpleData()
-    if not simple_data or table.size(simple_data) then
+    local brief_data = scripts.User.GetUsrRoomBriefData()
+    if not brief_data or table.size(brief_data) then
         return context.S2C(context.net_id, CmdCode["PBCreateRoomRspCmd"], {
             code = ErrorCode.ServerInternalError,
             error = "用户不存在",
@@ -33,7 +33,7 @@ function Room.PBCreateRoomReqCmd(req)
 
     local res, err = clusterd.call(3999, "roommgr", "Roommgr.CreateRoom", {
         msg = req.msg,
-        self_info = simple_data,
+        self_info = brief_data,
     })
     
     if err then
@@ -76,17 +76,16 @@ function Room.PBSearchRoomReqCmd(req)
         }
         if result.total > 0 then
             for k, v in pairs(result.data) do
-                if v.isopen == 1 then
-                    table.insert(res.search_data, {
-                        roomid = v.roomid,
-                        chapter = v.chapter,
-                        difficulty = v.difficulty,
-                        playercnt = v.players,
-                        master_id = v.master_id,
-                        master_name = v.master_name,
-                        needpwd = v.needpwd
-                    })
-                end
+                table.insert(res.search_data, {
+                    roomid = v.roomid,
+                    chapter = v.chapter,
+                    difficulty = v.difficulty,
+                    playercnt = v.players,
+                    master_id = v.master_id,
+                    master_name = v.master_name,
+                    isopen = v.isopen,
+                    needpwd = v.needpwd
+                })
             end
         end
         --
@@ -113,10 +112,10 @@ function Room.PBModRoomReqCmd(req)
     return context.S2C(context.net_id, CmdCode["PBModRoomRspCmd"], res, req.msg_context.stub_id)
 end
 
-function Room.OnRoomInfoSync(room_data)
+function Room.OnRoomInfoSync(sync_msg)
     moon.error("OnRoomInfoSync")
-    print_r(room_data)
-    context.S2C(context.net_id, CmdCode["PBRoomInfoSyncCmd"], { room_data = room_data }, 0)
+    print_r(sync_msg)
+    context.S2C(context.net_id, CmdCode["PBRoomSyncCmd"], sync_msg, 0)
 end
 
 function Room.PBApplyRoomReqCmd(req)
@@ -129,8 +128,8 @@ function Room.PBApplyRoomReqCmd(req)
     end
 
     --local user_data = scripts.UserModel.Get()
-    local simple_data = scripts.User.GetUserSimpleData()
-    if not simple_data or table.size(simple_data) then
+    local brief_data = scripts.User.GetUsrRoomBriefData()
+    if not brief_data or table.size(brief_data) then
         return context.S2C(context.net_id, CmdCode["PBApplyRoomRspCmd"], {
             code = ErrorCode.ServerInternalError,
             error = "用户不存在",
@@ -139,7 +138,7 @@ function Room.PBApplyRoomReqCmd(req)
 
     local res, err = clusterd.call(3999, "roommgr", "Roommgr.ApplyToRoom", {
         msg = req.msg,
-        apply_info = simple_data,
+        apply_info = brief_data,
     })
     if err then
         return context.S2C(context.net_id, CmdCode["PBApplyRoomRspCmd"], {
@@ -149,15 +148,6 @@ function Room.PBApplyRoomReqCmd(req)
     end
     
     return context.S2C(context.net_id, CmdCode["PBApplyRoomRspCmd"], res, req.msg_context.stub_id)
-end
-
--- 新增申请通知回调
-function Room.OnApplyNotify(data)
-    context.S2C(context.net_id, CmdCode["PBApplyRoomSyncCmd"], {
-        uid = data.apply_info.uid,
-        roomid = data.roomid,
-        apply_info = data.apply_info
-    }, 0)
 end
 
 function Room.PBDealApplyRoomReqCmd(req)
@@ -189,8 +179,40 @@ function Room.PBDealApplyRoomReqCmd(req)
     }, req.msg_context.stub_id)
 end
 
+function Room.PBEnterRoomReqCmd(req)
+    if context.roomid and context.roomid > 0 then
+        return context.S2C(context.net_id, CmdCode["PBEnterRoomRspCmd"], {
+            code = ErrorCode.RoomAlreadyInRoom,
+            error = "你已在房间中",
+            uid = context.uid,
+            roomid = context.roomid,
+        }, req.msg_context.stub_id)
+    end
+
+    local brief_data = scripts.User.GetUsrRoomBriefData()
+    if not brief_data or table.size(brief_data) then
+        return context.S2C(context.net_id, CmdCode["PBEnterRoomRspCmd"], {
+            code = ErrorCode.ServerInternalError,
+            error = "用户不存在",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local res, err = clusterd.call(3999, "roommgr", "Roommgr.EnterRoom", {
+        msg = req.msg,
+        mem_info = brief_data,
+    })
+    if err then
+        return context.S2C(context.net_id, CmdCode["PBEnterRoomRspCmd"], {
+            code = ErrorCode.ServerInternalError,
+            error = "system error",
+        }, req.msg_context.stub_id)
+    end
+
+    return context.S2C(context.net_id, CmdCode["PBEnterRoomRspCmd"], res, req.msg_context.stub_id)
+end
+
 function Room.OnMemberEnter(res)
-    --
     moon.info("OnMemberEnter uid", context.uid, res.member_data.mem_info.uid)
     if res.member_data.mem_info.uid == context.uid then
         context.roomid = res.roomid

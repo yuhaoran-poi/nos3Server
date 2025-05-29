@@ -574,7 +574,7 @@ function Bag.AddMagicItem(bagType, baginfo, itemId, count, change_log)
             magic_item = ItemDef.newMagicItem(),
         }
         itemdata.special_info.magic_item.cur_durability = 0
-        itemdata.special_info.magic_item.max_durability = 0
+        itemdata.special_info.magic_item.strong_value = 0
         itemdata.special_info.magic_item.light_cnt = 0
         itemdata.special_info.magic_item.tags = {}
     end
@@ -599,7 +599,7 @@ function Bag.AddDiagramsCard(bagType, baginfo, itemId, count, change_log)
             diagrams_item = ItemDef.newDiagramsCard(),
         }
         itemdata.special_info.diagrams_item.cur_durability = 0
-        itemdata.special_info.diagrams_item.max_durability = 0
+        itemdata.special_info.diagrams_item.strong_value = 0
         itemdata.special_info.diagrams_item.light_cnt = 0
         itemdata.special_info.diagrams_item.tags = {}
     end

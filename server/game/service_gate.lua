@@ -6,6 +6,7 @@ local socket = require("moon.socket")
 local common = require("common")
 local setup = require("common.setup")
 local buffer = require("buffer")
+local json = require "json"
 local protocol = common.protocol
 local GameDef = common.GameDef
 local CmdCode = common.CmdCode
@@ -51,6 +52,7 @@ socket.on("message", function(fd, msg)
            local subname,submsg = protocol.DecodeMessagePack(MessagePack)
             --先校验协议版本号
             if subname == "PBClientLoginReqCmd" then
+                moon.debug(string.format("PBClientLoginReqCmd recv Message:\n%s", json.pretty_encode(submsg)))
                reqmsg.msg = submsg
                reqmsg.sign = context.auth_watch[fd]
                reqmsg.fd = fd

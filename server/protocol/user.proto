@@ -131,20 +131,52 @@ message PBClientLightRspCmd
 	int64 uniqid	= 9;
 }
 
-// 客户端请求--法器升级
-message PBClientMagicItemUpLvReqCmd
+// 客户端请求--道具升级
+message PBClientItemUpLvReqCmd
 {
 	int64 uid		= 1;
 	int32 config_id = 2;
 	int32 add_exp	= 3;
 }
 
-message PBClientMagicItemUpLvRspCmd
+message PBClientItemUpLvRspCmd
 {
 	int32 code		= 1; // 服务器验证返回,0成功,其他失败
     string error	= 2; // 错误信息
 	int64 uid		= 3;
 	int32 config_id = 4;
 	int32 add_exp	= 5;
-	int32 now_exp	= 6;
+}
+
+// 客户端请求--道具维修
+message PBClientItemRepairReqCmd
+{
+	int64 uid			= 1;
+	int64 repair_uniqid	= 2;
+}
+
+message PBClientItemRepairRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid			= 3;
+	int64 repair_uniqid	= 4;
+}
+
+// 客户端请求他人详细信息
+message PBGetOtherDetailReqCmd
+{
+    // 协议数据
+    int64 uid		= 1;
+	int64 quest_uid	= 2;
+}
+
+// 客户端请求他人详细信息 返回信息
+message PBGetOtherDetailRspCmd
+{
+    int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+    int64 uid			= 3; // 自己的uid
+	int64 quest_uid		= 4; // 他人uid
+    PBUserAttr info		= 5; // 简略信息
 }

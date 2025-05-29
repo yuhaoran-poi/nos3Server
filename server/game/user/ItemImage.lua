@@ -176,19 +176,77 @@ function ItemImage.UpLvImage(config_id, add_exp)
         return ErrorCode.ItemNotExist
     end
 
-    -- 检索升级配置
+    -- 检索加经验配置
+    local exps = {}
+    local remain_exp = add_exp
     if item_type == scripts.ItemDefine.EItemSmallType.MagicItem then
         local up_exp_cfgs = GameCfg.MagicItemUpLv
         for _, cfg in pairs(up_exp_cfgs) do
-            if cfg.allexp then
-                
+            if cfg.allexp > image_data.exp then
+                if image_data.exp + add_exp >= cfg.allexp then
+                    local canAdd = math.min(cfg.allexp - image_data.exp, remain_exp)
+                    if not exps[cfg.cost] then
+                        exps[cfg.cost] = 0
+                    end
+                    exps[cfg.cost] = exps[cfg.cost] + canAdd
+                    remain_exp = remain_exp - canAdd
+                else
+                    if not exps[cfg.cost] then
+                        exps[cfg.cost] = 0
+                    end
+                    exps[cfg.cost] = exps[cfg.cost] + remain_exp
+                    remain_exp = 0
+
+                    break
+                end
             end
         end
+    elseif item_type == scripts.ItemDefine.EItemSmallType.PlayItem
+        or item_type == scripts.ItemDefine.EItemSmallType.UnStackItem then
+        local up_exp_cfgs = GameCfg.GamePropUpLv
+        for _, cfg in pairs(up_exp_cfgs) do
+            if cfg.allexp > image_data.exp then
+                if image_data.exp + add_exp >= cfg.allexp then
+                    local canAdd = math.min(cfg.allexp - image_data.exp, remain_exp)
+                    if not exps[cfg.cost] then
+                        exps[cfg.cost] = 0
+                    end
+                    exps[cfg.cost] = exps[cfg.cost] + canAdd
+                    remain_exp = remain_exp - canAdd
+                else
+                    if not exps[cfg.cost] then
+                        exps[cfg.cost] = 0
+                    end
+                    exps[cfg.cost] = exps[cfg.cost] + remain_exp
+                    remain_exp = 0
+                    break
+                end
+            end
+        end
+    end
+    if remain_exp > 0 or table.size(exps) <= 0 then
+        return ErrorCode.ItemMaxExp
     end
 
     -- 计算消耗资源
     local cost_items = {}
     local cost_coins = {}
+    for id, count in pairs(exps) do
+        local cost_cfg = GameCfg.UpLvCostIDMapping[id]
+        if not cost_cfg then
+            return ErrorCode.ItemUpLvCostNotExist
+        end
+
+        for cost_id, cost_cnt in pairs(cost_cfg.cost) do
+            if scripts.ItemDefine.GetItemType(cost_id) == scripts.ItemDefine.EItemSmallType.Coin then
+                cost_coins[cost_id] = cost_cnt * (count / cost_cfg.cnt)
+            else
+                cost_items[cost_id] = cost_cnt * (count / cost_cfg.cnt)
+            end
+        end
+    end
+    
+    -- 检查资源是否足够
     local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
     if err_code_items ~= ErrorCode.None then
         return err_code_items

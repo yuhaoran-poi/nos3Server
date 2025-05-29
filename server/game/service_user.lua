@@ -5,6 +5,7 @@ local seri = require("seri")
 local buffer = require("buffer")
 local common = require("common")
 local setup = require("common.setup")
+local json = require "json"
 local protocol = common.protocol
 local CmdCode = common.CmdCode
 local GameDef = common.GameDef
@@ -70,6 +71,7 @@ moon.raw_dispatch("C2S", function(msg)
             forward(msg_name, reqmsg)
         else
             local subname, submsg = protocol.DecodeMessagePack(MessagePack)
+            moon.debug(string.format("recv Message:\n%s", json.pretty_encode(submsg)))
             reqmsg.msg = submsg
 
             local fn = command[subname]

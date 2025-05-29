@@ -10,6 +10,7 @@ local httpc = require("moon.http.client")
 local json = require("json")
 local crypt = require("crypt")
 local protocol = require("common.protocol_pb")
+local RoomDef = require("common.def.RoomDef")
 local jencode = json.encode
 local jdecode = json.decode
 
@@ -174,8 +175,8 @@ function Roommgr.NotifyDsRooms(allocated_rooms, fail_rooms)
                 ds_ip = fail_info.ds_ip,
             })
 
-            room.state = 0
-            room.isopen = 0
+            room.room_data.state = 0
+            room.room_data.isopen = 0
         end
     end
 end
@@ -206,38 +207,29 @@ function Roommgr.CreateRoom(req)
         return { code = ErrorCode.RoomAlreadyInRoom, error = "用户已经在房间中", roomid = context.uid_roomid[req.msg.uid] }
     end
 
+    local room = RoomDef.newRoomWholeInfo()
     local roomid = generate_roomid()
-    local room = {
-        roomid = roomid,
-        isopen = req.msg.isopen,
-        needpwd = req.msg.needpwd,
-        pwd = req.msg.pwd,
-        chapter = req.msg.chapter,
-        difficulty = req.msg.difficulty,
-        master_id = req.msg.uid,
-        master_name = req.self_info.nick_name,
-        state = 0, -- 0: 等待中, 1: 游戏中, 2: 已关闭
-        players = {},
-        apply_list = {},
-    }
+    room.room_data.roomid = roomid
+    room.room_data.isopen = req.msg.isopen
+    room.room_data.needpwd = req.msg.needpwd
+    room.room_data.pwd = req.msg.pwd
+    room.room_data.chapter = req.msg.chapter
+    room.room_data.difficulty = req.msg.difficulty
+    room.room_data.describe = req.msg.describe
+    room.master_id = req.msg.uid
+    room.master_name = req.self_info.nick_name
     table.insert(room.players, { is_ready = 1, mem_info = req.self_info })
     
     local room_tags = {
-        isopen = room.isopen,
-        chapter = room.chapter,
-        difficulty = room.difficulty,
+        isopen = room.room_data.isopen,
+        chapter = room.room_data.chapter,
+        difficulty = room.room_data.difficulty,
     }
-    local redis_data = {
-        roomid = room.roomid,
-        isopen = room.isopen,
-        chapter = room.chapter,
-	    difficulty = room.difficulty,
-	    playercnt = #room.players,
-	    master_id = room.master_id,
-        master_name = room.master_name,
-        needpwd = room.needpwd,
-        state = room.state,
-    }
+    local redis_data = table.copy(room.room_data)
+    redis_data.pwd = nil
+    redis_data.playercnt = #room.players
+    redis_data.master_id = room.master_id
+    redis_data.master_name = room.master_name
     --
     Database.upsert_room(context.addr_db_server, roomid, room_tags, redis_data)
 
@@ -251,17 +243,18 @@ function Roommgr.SearchRooms(req)
 
     if req.roomid then
         local room = context.rooms[req.roomid]
-        if room and room.isopen == 1 then
-            table.insert(result, {
-                roomid = room.roomid,
-                chapter = room.chapter,
-                difficulty = room.difficulty,
-                playercnt = #room.players,
-                master_id = room.master_id,
-                master_name = room.master_name,
-                needpwd = room.needpwd,
-                state = room.state,
-            })
+        if room then
+            local search_data = RoomDef.newRoomSearchInfo()
+            search_data.roomid = room.room_data.roomid
+            search_data.chapter = room.room_data.chapter
+            search_data.difficulty = room.room_data.difficulty
+            search_data.playercnt = #room.players
+            search_data.master_id = room.master_id
+            search_data.master_name = room.master_name
+            search_data.isopen = room.room_data.isopen
+            search_data.needpwd = room.room_data.needpwd
+            search_data.describe = room.room_data.describe
+            table.insert(result, search_data)
         end
     end
 
@@ -280,37 +273,33 @@ function Roommgr.ModRoom(req)
         return {
             code = ErrorCode.RoomPermissionDenied,
             error = "无修改权限",
-            isopen = room.isopen,
-            needpwd = room.needpwd,
-            pwd = room.pwd,
-            chapter = room.chapter,
-            difficulty = room.difficulty
+            isopen = room.room_data.isopen,
+            needpwd = room.room_data.needpwd,
+            pwd = room.room_data.pwd,
+            chapter = room.room_data.chapter,
+            difficulty = room.room_data.difficulty,
+            describe = room.room_data.describe,
         }
     end
 
-    room.isopen = req.isopen or room.isopen
-    room.needpwd = req.needpwd or room.needpwd
-    room.pwd = req.pwd or room.pwd
-    room.chapter = req.chapter or room.chapter
-    room.difficulty = req.difficulty or room.difficulty
+    room.room_data.isopen = req.isopen or room.room_data.isopen
+    room.room_data.needpwd = req.needpwd or room.room_data.needpwd
+    room.room_data.pwd = req.pwd or room.room_data.pwd
+    room.room_data.chapter = req.chapter or room.room_data.chapter
+    room.room_data.difficulty = req.difficulty or room.room_data.difficulty
+    room.room_data.describe = req.describe or room.room_data.describe
 
     local room_tags = {
-        isopen = room.isopen,
-        chapter = room.chapter,
-        difficulty = room.difficulty,
+        isopen = room.room_data.isopen,
+        chapter = room.room_data.chapter,
+        difficulty = room.room_data.difficulty,
     }
-    local redis_data = {
-        roomid = room.roomid,
-        isopen = room.isopen,
-        chapter = room.chapter,
-        difficulty = room.difficulty,
-        playercnt = #room.players,
-        master_id = room.master_id,
-        master_name = room.master_name,
-        needpwd = room.needpwd,
-        state = room.state,
-    }
-    Database.upsert_room(context.addr_db_server, room.roomid, room_tags, redis_data)
+    local redis_data = table.copy(room.room_data)
+    redis_data.pwd = nil
+    redis_data.playercnt = #room.players
+    redis_data.master_id = room.master_id
+    redis_data.master_name = room.master_name
+    Database.upsert_room(context.addr_db_server, room.room_data.roomid, room_tags, redis_data)
 
     local notify_uids = {}
     for _, player in pairs(room.players) do
@@ -321,23 +310,20 @@ function Roommgr.ModRoom(req)
     end
     
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", {
-        roomid = room.roomid,
-        isopen = room.isopen,
-        needpwd = room.needpwd,
-        pwd = room.pwd,
-        chapter = room.chapter,
-        difficulty = room.difficulty,
-        state = room.state,
+        roomid = room.room_data.roomid,
+        sync_info = {
+            room_data = room.room_data,
+        },
     })
 
     return {
         code = ErrorCode.None,
         error = "修改完成",
-        isopen = room.isopen,
-        needpwd = room.needpwd,
-        pwd = room.pwd,
-        chapter = room.chapter,
-        difficulty = room.difficulty
+        isopen = room.room_data.isopen,
+        needpwd = room.room_data.needpwd,
+        pwd = room.room_data.pwd,
+        chapter = room.room_data.chapter,
+        difficulty = room.room_data.difficulty
     }
 end
 
@@ -367,9 +353,11 @@ function Roommgr.ApplyToRoom(req)
     })
 
     -- 通知房主有新申请
-    context.send_user(room.master_id, "Room.OnApplyNotify", {
-        roomid = req.msg.roomid,
-        apply_info = req.apply_info
+    context.send_users(room.master_id, {}, "Room.OnRoomInfoSync", {
+        roomid = room.room_data.roomid,
+        sync_info = {
+            apply_list = room.apply_list,
+        },
     })
 
     return { code = ErrorCode.None, error = "申请已提交", roomid = req.msg.roomid }
@@ -414,22 +402,16 @@ function Roommgr.DealApply(req)
         context.uid_roomid[req.deal_uid] = req.roomid
 
         local room_tags = {
-            isopen = room.isopen,
-            chapter = room.chapter,
-            difficulty = room.difficulty,
+            isopen = room.room_data.isopen,
+            chapter = room.room_data.chapter,
+            difficulty = room.room_data.difficulty,
         }
-        local redis_data = {
-            roomid = room.roomid,
-            isopen = room.isopen,
-            chapter = room.chapter,
-            difficulty = room.difficulty,
-            playercnt = #room.players,
-            master_id = room.master_id,
-            master_name = room.master_name,
-            needpwd = room.needpwd,
-            state = room.state,
-        }
-        Database.upsert_room(context.addr_db_server, room.roomid, room_tags, redis_data)
+        local redis_data = table.copy(room.room_data)
+        redis_data.pwd = nil
+        redis_data.playercnt = #room.players
+        redis_data.master_id = room.master_id
+        redis_data.master_name = room.master_name
+        Database.upsert_room(context.addr_db_server, room.room_data.roomid, room_tags, redis_data)
 
         -- 广播新成员加入
         local notify_uids = {}
@@ -448,6 +430,60 @@ function Roommgr.DealApply(req)
 
     local res = { code = ErrorCode.None, error = "操作成功", deal_uid = req.deal_uid, deal_op = req.deal_op }
     return res
+end
+
+function Roommgr.EnterRoom(req)
+    local room = context.rooms[req.msg.roomid]
+    if not room then
+        return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+
+    -- 检查是否已在房间
+    if context.uid_roomid[req.msg.uid] then
+        return { code = ErrorCode.RoomAlreadyInRoom, error = "已在其他房间", roomid = context.uid_roomid[req.msg.uid] }
+    end
+
+    -- 检查是否可以直接加入
+    if room.room_data.isopen == 0 and room.room_data.needpwd == 0 then
+        return { code = ErrorCode.RoomNotOpen, error = "房间未开放" }
+    end
+
+    -- 检查密码
+    if room.room_data.needpwd == 1 and room.room_data.pwd ~= req.msg.pwd then
+        return { code = ErrorCode.RoomPwdError, error = "密码错误" }
+    end
+
+    -- 添加玩家到房间
+    table.insert(room.players, { is_ready = 0, mem_info = req.mem_info })
+    context.uid_roomid[req.msg.uid] = req.roomid
+
+    local room_tags = {
+        isopen = room.room_data.isopen,
+        chapter = room.room_data.chapter,
+        difficulty = room.room_data.difficulty,
+    }
+    local redis_data = table.copy(room.room_data)
+    redis_data.pwd = nil
+    redis_data.playercnt = #room.players
+    redis_data.master_id = room.master_id
+    redis_data.master_name = room.master_name
+    Database.upsert_room(context.addr_db_server, room.room_data.roomid, room_tags, redis_data)
+
+    -- 广播新成员加入
+    local notify_uids = {}
+    for _, player in pairs(room.players) do
+        table.insert(notify_uids, player.mem_info.uid)
+    end
+    context.send_users(notify_uids, {}, "Room.OnMemberEnter", {
+        roomid = req.roomid,
+        member_data = {
+            seat_idx = #room.players,
+            is_ready = 0,
+            mem_info = req.mem_info
+        }
+    })
+
+    return { code = ErrorCode.None, error = "操作成功", uid = req.msg.uid, roomid = req.req.msg.roomid }
 end
 
 function Roommgr.ExitRoom(req)
@@ -597,15 +633,7 @@ function Roommgr.GetRoomInfo(req)
     local res = {
         code = ErrorCode.None,
         error = "房间信息查询成功",
-        room_data = {
-            roomid = room.roomid,
-            isopen = room.isopen,
-            needpwd = room.needpwd,
-            pwd = room.pwd,
-            chapter = room.chapter,
-            difficulty = room.difficulty,
-            state = room.state,
-        },
+        room_data = room.room_data,
         member_datas = {}
     }
 
@@ -628,7 +656,7 @@ function Roommgr.StartGame(req)
     end
 
     -- 验证房主身份
-    if room.master_id ~= req.uid or room.state ~= 0 then
+    if room.master_id ~= req.uid or room.room_data.state ~= 0 then
         return { code = ErrorCode.RoomPermissionDenied, error = "无开始游戏权限" }
     end
 
@@ -641,9 +669,9 @@ function Roommgr.StartGame(req)
 
     -- 准备进入DS
     local room_info = {
-        ds_id = room.roomid,
-        chapter = room.chapter,
-        difficulty = room.difficulty,
+        ds_id = room.room_data.roomid,
+        chapter = room.room_data.chapter,
+        difficulty = room.room_data.difficulty,
         map_id = 1,
         boss_id = 1,
         redis_ip = context.conf.redis_nginx_ip,
@@ -662,24 +690,18 @@ function Roommgr.StartGame(req)
     Roommgr.AddWaitDSRooms(room.roomid, json.encode(allocate_data))
 
     -- 更新房间状态
-    room.state = 1 -- 游戏中状态
-    room.isopen = 0 -- 游戏开始后关闭房间
+    room.room_data.state = 1  -- 游戏中状态
+    room.room_data.isopen = 0 -- 游戏开始后关闭房间
     local room_tags = {
-        isopen = room.isopen, -- 游戏开始后关闭房间
-        chapter = room.chapter,
-        difficulty = room.difficulty,
+        isopen = room.room_data.isopen, -- 游戏开始后关闭房间
+        chapter = room.room_data.chapter,
+        difficulty = room.room_data.difficulty,
     }
-    local redis_data = {
-        roomid = room.roomid,
-        isopen = room.isopen,
-        chapter = room.chapter,
-        difficulty = room.difficulty,
-        playercnt = #room.players,
-        master_id = room.master_id,
-        master_name = room.master_name,
-        needpwd = room.needpwd,
-        state = room.state,
-    }
+    local redis_data = table.copy(room.room_data)
+    redis_data.pwd = nil
+    redis_data.playercnt = #room.players
+    redis_data.master_id = room.master_id
+    redis_data.master_name = room.master_name
     Database.upsert_room(context.addr_db_server, req.roomid, room_tags, redis_data)
 
     return { code = ErrorCode.None, error = "游戏开始成功" }
