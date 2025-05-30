@@ -78,6 +78,8 @@ local ErrorCode = {
     TeamDataCorrupted = 811,
     --- 队伍匹配中不能加入
     TeamMatching = 812,
+    --- 初始化匹配数据失败
+    InitMatchDataErr = 813,
 
     ---房间系统错误码（900-910）
     --- 玩家没有全部准备
@@ -102,6 +104,10 @@ local ErrorCode = {
     RoomInvalidState = 909,
     ---房间申请不存在
     RoomApplyNotFound = 910,
+    ---房间未公开
+    RoomNotOpen = 911,
+    ---房间密码错误
+    RoomPwdError = 912,
 
     ---公会相关错误码
     ---已在公会中
@@ -184,6 +190,8 @@ local ErrorCode = {
     PasswordError = 1203,
     --- 用户已登录
     UserAlreadyLogin = 1204,
+    --- 用户不在线
+    UserOffline = 1205,
 
     --聊天相关错误码
     --- 聊天频道已经存在

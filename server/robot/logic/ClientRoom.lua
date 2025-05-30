@@ -112,6 +112,33 @@ function Client:deal_apply_room(deal_uid, deal_op)
     end)
 end
 
+-- message
+-- PBEnterRoomReqCmd
+-- {
+--     int64 uid = 1,
+--     int64 roomid = 2,
+--     string pwd = 3,
+-- }
+function Client:enter_room(enter_roomid)
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+
+    local req_msg = {
+        uid = self.uid,
+        roomid = enter_roomid or 0,
+        pwd = "",
+    }
+    self:send("PBEnterRoomReqCmd", req_msg, function(msg)
+        print("rpc PBEnterRoomReqCmd ret = ", self.index, msg)
+        print_r(msg)
+        if msg.code == 0 then
+            self.roomid = msg.roomid
+        end
+    end)
+end
+
 function Client:exit_room(exit_roomid)
     if not self.ok then
         print("connect failed, err = ", err)
@@ -162,6 +189,13 @@ function Client:get_room_info(get_roomid)
         roomid = self.roomid or get_roomid,
     }
     self:send("PBGetRoomInfoReqCmd", req_msg, function(msg)
+        if msg.member_datas and msg.member_datas[1] and msg.member_datas[1].mem_info then
+            if msg.member_datas[1].mem_info.guild_id then
+                print("guild " .. msg.member_datas[1].mem_info.guild_id)
+            else
+                print("not guild_id")
+            end
+        end
         print("rpc PBGetRoomInfoReqCmd ret = ", self.index, msg)
         print_r(msg)
         if msg.code == 0 then

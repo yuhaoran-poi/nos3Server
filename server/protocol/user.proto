@@ -29,7 +29,7 @@ message PBUserAttr
 {
 	int64 uid             = 1;
     string plateform_id    = 2;
-	bytes nick_name       = 3;
+	string nick_name       = 3;
     int32 head_icon       = 4;
     int32 sex             = 5;// 0-未选 1-男 2-女
     int32 praise_num      = 6;// 点赞
@@ -40,7 +40,7 @@ message PBUserAttr
     int32 account_exp     = 10;
     // 战队ID
     int64 guild_id       = 11;
-    bytes guild_name      = 12;
+    string guild_name      = 12;
 	// 段位信息
 	PBRankLevel rank_level	= 13;
     PBSimpleRoleData cur_show_role = 14;

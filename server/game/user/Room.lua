@@ -24,19 +24,19 @@ function Room.PBCreateRoomReqCmd(req)
     end
 
     local brief_data = scripts.User.GetUsrRoomBriefData()
-    if not brief_data or table.size(brief_data) then
+    if not brief_data or table.size(brief_data) <= 0 then
         return context.S2C(context.net_id, CmdCode["PBCreateRoomRspCmd"], {
             code = ErrorCode.ServerInternalError,
             error = "用户不存在",
         }, req.msg_context.stub_id)
     end
-
+    moon.debug(string.format("brief_data err:\n%s", json.pretty_encode(brief_data)))
     local res, err = clusterd.call(3999, "roommgr", "Roommgr.CreateRoom", {
         msg = req.msg,
         self_info = brief_data,
     })
-    
     if err then
+        moon.error(string.format("Roommgr.CreateRoom err:\n%s", json.pretty_encode(err)))
         return context.S2C(context.net_id, CmdCode["PBCreateRoomRspCmd"], {
             code = ErrorCode.ServerInternalError,
             error = "system error",
@@ -129,7 +129,7 @@ function Room.PBApplyRoomReqCmd(req)
 
     --local user_data = scripts.UserModel.Get()
     local brief_data = scripts.User.GetUsrRoomBriefData()
-    if not brief_data or table.size(brief_data) then
+    if not brief_data or table.size(brief_data) <= 0 then
         return context.S2C(context.net_id, CmdCode["PBApplyRoomRspCmd"], {
             code = ErrorCode.ServerInternalError,
             error = "用户不存在",
@@ -190,7 +190,7 @@ function Room.PBEnterRoomReqCmd(req)
     end
 
     local brief_data = scripts.User.GetUsrRoomBriefData()
-    if not brief_data or table.size(brief_data) then
+    if not brief_data or table.size(brief_data) <= 0 then
         return context.S2C(context.net_id, CmdCode["PBEnterRoomRspCmd"], {
             code = ErrorCode.ServerInternalError,
             error = "用户不存在",
@@ -331,7 +331,15 @@ function Room.PBGetRoomInfoReqCmd(req)
             error = "system error",
         }, req.msg_context.stub_id)
     end
-
+    if res.member_datas and res.member_datas[1] and res.member_datas[1].mem_info then
+        if res.member_datas[1].mem_info.guild_id then
+            moon.error(string.format("Roommgr.GetRoomInfo guild_id:%d", res.member_datas[1].mem_info.guild_id))
+        else
+            moon.error(string.format("Roommgr.GetRoomInfo not guild_id"))
+        end
+    end
+    --print_r(res)
+    --moon.info(string.format("Roommgr.GetRoomInfo res:\n%s", json.pretty_encode(res)))
     -- 返回查询结果
     return context.S2C(context.net_id, CmdCode["PBGetRoomInfoRspCmd"], res, req.msg_context.stub_id)
 end

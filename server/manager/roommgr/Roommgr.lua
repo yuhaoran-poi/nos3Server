@@ -206,7 +206,7 @@ function Roommgr.CreateRoom(req)
     if context.uid_roomid[req.msg.uid] then
         return { code = ErrorCode.RoomAlreadyInRoom, error = "用户已经在房间中", roomid = context.uid_roomid[req.msg.uid] }
     end
-
+    --moon.info(string.format("Roommgr.CreateRoom self_info:\n%s", json.pretty_encode(req.self_info)))
     local room = RoomDef.newRoomWholeInfo()
     local roomid = generate_roomid()
     room.room_data.roomid = roomid
@@ -219,13 +219,14 @@ function Roommgr.CreateRoom(req)
     room.master_id = req.msg.uid
     room.master_name = req.self_info.nick_name
     table.insert(room.players, { is_ready = 1, mem_info = req.self_info })
+    --moon.info(string.format("Roommgr.CreateRoom mem_info:\n%s", json.pretty_encode(room.players[1].mem_info)))
     
     local room_tags = {
         isopen = room.room_data.isopen,
         chapter = room.room_data.chapter,
         difficulty = room.room_data.difficulty,
     }
-    local redis_data = table.copy(room.room_data)
+    local redis_data = table.copy(room.room_data, true)
     redis_data.pwd = nil
     redis_data.playercnt = #room.players
     redis_data.master_id = room.master_id
@@ -294,7 +295,7 @@ function Roommgr.ModRoom(req)
         chapter = room.room_data.chapter,
         difficulty = room.room_data.difficulty,
     }
-    local redis_data = table.copy(room.room_data)
+    local redis_data = table.copy(room.room_data, true)
     redis_data.pwd = nil
     redis_data.playercnt = #room.players
     redis_data.master_id = room.master_id
@@ -406,7 +407,7 @@ function Roommgr.DealApply(req)
             chapter = room.room_data.chapter,
             difficulty = room.room_data.difficulty,
         }
-        local redis_data = table.copy(room.room_data)
+        local redis_data = table.copy(room.room_data, true)
         redis_data.pwd = nil
         redis_data.playercnt = #room.players
         redis_data.master_id = room.master_id
@@ -462,7 +463,7 @@ function Roommgr.EnterRoom(req)
         chapter = room.room_data.chapter,
         difficulty = room.room_data.difficulty,
     }
-    local redis_data = table.copy(room.room_data)
+    local redis_data = table.copy(room.room_data, true)
     redis_data.pwd = nil
     redis_data.playercnt = #room.players
     redis_data.master_id = room.master_id
@@ -639,13 +640,14 @@ function Roommgr.GetRoomInfo(req)
 
     -- 填充成员数据
     for i, member in pairs(room.players) do
+        --moon.info(string.format("Roommgr.GetRoomInfo member.mem_info:\n%s", json.pretty_encode(member.mem_info)))
         table.insert(res.member_datas, {
             seat_idx = i,
             is_ready = member.is_ready,
             mem_info = member.mem_info
         })
     end
-
+    --moon.info(string.format("Roommgr.GetRoomInfo res:\n%s", json.pretty_encode(res)))
     return res
 end
 
@@ -697,7 +699,7 @@ function Roommgr.StartGame(req)
         chapter = room.room_data.chapter,
         difficulty = room.room_data.difficulty,
     }
-    local redis_data = table.copy(room.room_data)
+    local redis_data = table.copy(room.room_data, true)
     redis_data.pwd = nil
     redis_data.playercnt = #room.players
     redis_data.master_id = room.master_id
