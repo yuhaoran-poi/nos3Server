@@ -27,6 +27,7 @@ local PTYPE_C2S = GameDef.PTYPE_C2S
 ---@field scripts user_scripts
 local context = {
     uid = 0,
+---@diagnostic disable-next-line: missing-fields
     scripts = {},
     ---other service address
     net_id = 0,
@@ -79,7 +80,7 @@ moon.raw_dispatch("C2S", function(msg)
                 local ok, res = xpcall(fn, debug.traceback, reqmsg)
                 --
                 if not ok then
-                    moon.error(res)
+                    moon.error(string.format("err res:\n%s", json.pretty_encode(res)))
                     --context.S2C(CmdCode.S2CErrorCode, { code = 1 }) --server internal error
                 elseif res then
                     moon.info(res)

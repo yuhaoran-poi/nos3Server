@@ -434,6 +434,7 @@ function Roommgr.DealApply(req)
 end
 
 function Roommgr.EnterRoom(req)
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local room = context.rooms[req.msg.roomid]
     if not room then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
@@ -476,7 +477,7 @@ function Roommgr.EnterRoom(req)
         table.insert(notify_uids, player.mem_info.uid)
     end
     context.send_users(notify_uids, {}, "Room.OnMemberEnter", {
-        roomid = req.roomid,
+        roomid = room.room_data.roomid,
         member_data = {
             seat_idx = #room.players,
             is_ready = 0,
@@ -484,7 +485,7 @@ function Roommgr.EnterRoom(req)
         }
     })
 
-    return { code = ErrorCode.None, error = "操作成功", uid = req.msg.uid, roomid = req.req.msg.roomid }
+    return { code = ErrorCode.None, error = "操作成功", uid = req.msg.uid, roomid = req.msg.roomid }
 end
 
 function Roommgr.ExitRoom(req)
@@ -505,21 +506,21 @@ function Roommgr.ExitRoom(req)
         return { code = ErrorCode.RoomMemberNotFound, error = "不在该房间内" }
     end
 
-    -- 房主退出特殊处理
-    if req.uid == room.master_id then
-        -- 转移房主给下一个玩家或解散房间
-        if #room.players > 1 then
-            room.master_id = room.players[2].mem_info.uid
-            room.master_name = room.players[2].mem_info.nick_name
-        else
-            context.rooms[req.roomid] = nil
-            Database.delete_room(context.addr_db_server, req.roomid)
-        end
-    end
-
     -- 移除玩家数据
     table.remove(room.players, member_index)
     context.uid_roomid[req.uid] = nil
+
+    local room_tags = {
+        isopen = room.room_data.isopen,
+        chapter = room.room_data.chapter,
+        difficulty = room.room_data.difficulty,
+    }
+    local redis_data = table.copy(room.room_data, true)
+    redis_data.pwd = nil
+    redis_data.playercnt = #room.players
+    redis_data.master_id = room.master_id
+    redis_data.master_name = room.master_name
+    Database.upsert_room(context.addr_db_server, room.room_data.roomid, room_tags, redis_data)
 
     -- 广播玩家退出
     local notify_uids = {}
@@ -530,6 +531,19 @@ function Roommgr.ExitRoom(req)
         uid = req.uid,
         roomid = req.roomid,
     })
+
+    -- 房主退出特殊处理
+    if req.uid == room.master_id then
+        -- 转移房主给下一个玩家或解散房间
+        if #room.players > 1 then
+            room.master_id = room.players[2].mem_info.uid
+            room.master_name = room.players[2].mem_info.nick_name
+        else
+            context.rooms[req.roomid] = nil
+            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+            Database.delete_room(context.addr_db_server, req.roomid)
+        end
+    end
 
     return { code = ErrorCode.None, error = "退出成功", uid = req.uid, roomid = req.roomid }
 end
@@ -595,7 +609,7 @@ function Roommgr.UpdateReadyStatus(req)
     end
 
     -- 更新准备状态（1-准备 2-取消准备）
-    room.players[member_index].is_ready = req.is_ready
+    room.players[member_index].is_ready = req.ready_op
 
     -- 广播状态更新
     local notify_uids = {}
@@ -605,7 +619,7 @@ function Roommgr.UpdateReadyStatus(req)
     context.send_users(notify_uids, {}, "Room.OnReadyStatusUpdate", {
         uid = req.uid,
         roomid = req.roomid,
-        is_ready = req.is_ready,
+        is_ready = req.ready_op,
     })
 
     return { code = ErrorCode.None, error = "更新准备状态", uid = req.uid, roomid = req.roomid, is_ready = req.is_ready }
@@ -689,11 +703,12 @@ function Roommgr.StartGame(req)
         fleet = context.conf.fleet,
         room = room_str,
     }
-    Roommgr.AddWaitDSRooms(room.roomid, json.encode(allocate_data))
+    Roommgr.AddWaitDSRooms(room.room_data.roomid, json.encode(allocate_data))
 
     -- 更新房间状态
     room.room_data.state = 1  -- 游戏中状态
     room.room_data.isopen = 0 -- 游戏开始后关闭房间
+    
     local room_tags = {
         isopen = room.room_data.isopen, -- 游戏开始后关闭房间
         chapter = room.room_data.chapter,
@@ -706,7 +721,20 @@ function Roommgr.StartGame(req)
     redis_data.master_name = room.master_name
     Database.upsert_room(context.addr_db_server, req.roomid, room_tags, redis_data)
 
-    return { code = ErrorCode.None, error = "游戏开始成功" }
+    -----临时通知所有玩家进入DS------------
+    local notify_uids = {}
+    for _, player in pairs(room.players) do
+        table.insert(notify_uids, player.mem_info.uid)
+        moon.error("OnEnterDs ", player.mem_info.uid)
+    end
+    context.send_users(notify_uids, {}, "Room.OnEnterDs", {
+        roomid = req.roomid,
+        ds_address = "ds_address",
+        ds_ip = "127.0.0.1-12121",
+    })
+    -----临时通知所有玩家进入DS------------
+
+    return { code = ErrorCode.None, error = "游戏开始成功", roomid = req.roomid }
 end
 
 function Roommgr.Start()

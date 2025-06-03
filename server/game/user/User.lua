@@ -286,6 +286,28 @@ function User.GetUsrRoomBriefData()
     return room_member_data
 end
 
+function User.GetUserDetails()
+    local details_fields = {
+        ProtoEnum.UserAttrType.uid,
+        ProtoEnum.UserAttrType.nick_name,
+        ProtoEnum.UserAttrType.head_icon,
+        ProtoEnum.UserAttrType.sex,
+        ProtoEnum.UserAttrType.head_frame,
+        ProtoEnum.UserAttrType.rank_level,
+        ProtoEnum.UserAttrType.guild_id,
+        ProtoEnum.UserAttrType.guild_name,
+        ProtoEnum.UserAttrType.cur_show_role,
+        ProtoEnum.UserAttrType.title,
+        ProtoEnum.UserAttrType.player_flag,
+        ProtoEnum.UserAttrType.cur_show_ghost,
+    }
+    local details_data = User.GetUserAttr(details_fields)
+    local role_data = scripts.Role.GetRoleInfo(details_data.cur_show_role.config_id)
+    local ghost_data = scripts.Ghost.GetGhostInfo(details_data.cur_show_ghost.config_id)
+
+    return {user_attr = details_data, role_data = role_data, ghost_data = ghost_data}
+end
+
 function User.Login(req)
     if req.pull then--服务器主动拉起玩家
         return scripts.UserModel.Get().authkey
@@ -774,6 +796,51 @@ end
 function User.PBClientItemRepairReqCmd(req)
 end
 
+-- function User.PBGetOtherDetailReqCmd(req)
+--     if context.uid ~= req.msg.uid
+--         or req.msg.quest_uid == 0
+--         or req.msg.uid == req.msg.quest_uid then
+--         return context.S2C(context.net_id, CmdCode.PBGetOtherDetailReqCmd, {
+--             code = ErrorCode.ParamInvalid,
+--             error = "无效请求参数",
+--             uid = context.uid,
+--             quest_uid = req.msg.quest_uid or 0,
+--         }, req.msg_context.stub_id)
+--     end
+
+--     local detail_fields = {
+--         ProtoEnum.UserAttrType.uid,
+--         ProtoEnum.UserAttrType.nick_name,
+--         ProtoEnum.UserAttrType.head_icon,
+--         ProtoEnum.UserAttrType.sex,
+--         ProtoEnum.UserAttrType.head_frame,
+--         ProtoEnum.UserAttrType.account_exp,
+--         ProtoEnum.UserAttrType.guild_id,
+--         ProtoEnum.UserAttrType.guild_name,
+--         ProtoEnum.UserAttrType.rank_level,
+--         ProtoEnum.UserAttrType.cur_show_role,
+--         ProtoEnum.UserAttrType.title,
+--         ProtoEnum.UserAttrType.player_flag,
+--     }
+--     local user_attr_res = UserAttrLogic.GetOtherUserAttr(context, req.msg.uid, detail_fields)
+--     if user_attr_res then
+--         return context.S2C(context.net_id, CmdCode.PBGetOtherDetailReqCmd, {
+--             code = ErrorCode.None,
+--             error = "",
+--             uid = context.uid,
+--             quest_uid = req.msg.quest_uid,
+--             user_attr = user_attr_res,
+--         })
+--     else
+--         return context.S2C(context.net_id, CmdCode.PBGetOtherDetailReqCmd, {
+--             code = ErrorCode.UserOffline,
+--             error = "用户离线",
+--             uid = context.uid,
+--             quest_uid = req.msg.quest_uid or 0,
+--         }, req.msg_context.stub_id)
+--     end
+-- end
+
 function User.PBGetOtherDetailReqCmd(req)
     if context.uid ~= req.msg.uid
         or req.msg.quest_uid == 0
@@ -786,21 +853,7 @@ function User.PBGetOtherDetailReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local detail_fields = {
-        ProtoEnum.UserAttrType.uid,
-        ProtoEnum.UserAttrType.nick_name,
-        ProtoEnum.UserAttrType.head_icon,
-        ProtoEnum.UserAttrType.sex,
-        ProtoEnum.UserAttrType.head_frame,
-        ProtoEnum.UserAttrType.account_exp,
-        ProtoEnum.UserAttrType.guild_id,
-        ProtoEnum.UserAttrType.guild_name,
-        ProtoEnum.UserAttrType.rank_level,
-        ProtoEnum.UserAttrType.cur_show_role,
-        ProtoEnum.UserAttrType.title,
-        ProtoEnum.UserAttrType.player_flag,
-    }
-    local user_attr_res = UserAttrLogic.GetOtherUserAttr(context, req.msg.uid, detail_fields)
+    local user_attr_res = UserAttrLogic.GetOtherUserDetails(context, req.msg.quest_uid)
     if user_attr_res then
         return context.S2C(context.net_id, CmdCode.PBGetOtherDetailReqCmd, {
             code = ErrorCode.None,

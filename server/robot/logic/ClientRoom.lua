@@ -204,6 +204,26 @@ function Client:get_room_info(get_roomid)
     end)
 end
 
+function Client:ready_room(ready_op)
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+
+    local req_msg = {
+        uid = self.uid,
+        roomid = self.roomid,
+        ready_op = ready_op or 1,
+    }
+    self:send("PBReadyRoomReqCmd", req_msg, function(msg)
+        print("rpc PBReadyRoomReqCmd ret = ", self.index, msg)
+        print_r(msg)
+        if msg.code == 0 then
+
+        end
+    end)
+end
+
 function Client:start_room()
     if not self.ok then
         print("connect failed, err = ", err)

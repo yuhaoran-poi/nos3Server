@@ -337,13 +337,13 @@ function Citymgr.PlayerEnterCity(req)
     local function enterCity()
         local scope <close> = lock_run()
 
-        -- if not context.citys[req.cityid] then
-        --     return { code = ErrorCode.CityNotFound, error = "主城不存在" }
-        -- end
-        -- local city = context.citys[req.cityid]
-        -- city.now_num = city.now_num + 1
-        -- city.players[req.uid] = 1
-        -- context.uid_cityid[req.uid] = req.cityid
+        if not context.citys[req.cityid] then
+            return { code = ErrorCode.CityNotFound, error = "主城不存在" }
+        end
+        local city = context.citys[req.cityid]
+        city.now_num = city.now_num + 1
+        city.players[req.uid] = 1
+        context.uid_cityid[req.uid] = req.cityid
 
         return { code = ErrorCode.None, error = "进入主城成功" }
     end

@@ -80,7 +80,7 @@ function Room.PBSearchRoomReqCmd(req)
                     roomid = v.roomid,
                     chapter = v.chapter,
                     difficulty = v.difficulty,
-                    playercnt = v.players,
+                    playercnt = v.playercnt,
                     master_id = v.master_id,
                     master_name = v.master_name,
                     isopen = v.isopen,
@@ -189,6 +189,7 @@ function Room.PBEnterRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local brief_data = scripts.User.GetUsrRoomBriefData()
     if not brief_data or table.size(brief_data) <= 0 then
         return context.S2C(context.net_id, CmdCode["PBEnterRoomRspCmd"], {
@@ -203,6 +204,7 @@ function Room.PBEnterRoomReqCmd(req)
         mem_info = brief_data,
     })
     if err then
+        moon.error(string.format("Roommgr.EnterRoom err:\n%s", json.pretty_encode(err)))
         return context.S2C(context.net_id, CmdCode["PBEnterRoomRspCmd"], {
             code = ErrorCode.ServerInternalError,
             error = "system error",
@@ -231,12 +233,14 @@ function Room.PBExitRoomReqCmd(req)
 
     local res, err = clusterd.call(3999, "roommgr", "Roommgr.ExitRoom", req.msg)
     if err then
+        moon.error(string.format("Roommgr.EnterRoom err:\n%s", json.pretty_encode(err)))
         return context.S2C(context.net_id, CmdCode["PBExitRoomRspCmd"], {
             code = ErrorCode.ServerInternalError,
             error = "system error",
         }, req.msg_context.stub_id)
     end
 
+    context.roomid = nil
     return context.S2C(context.net_id, CmdCode["PBExitRoomRspCmd"], {
         code = res.code,
         error = res.error or "",
@@ -246,6 +250,7 @@ function Room.PBExitRoomReqCmd(req)
 end
 
 function Room.OnMemberExit(res)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if res.uid == context.uid then
         context.roomid = nil -- body
     end
@@ -354,6 +359,7 @@ function Room.PBStartGameRoomReqCmd(req)
 
     local res, err = clusterd.call(3999, "roommgr", "Roommgr.StartGame", req.msg)
     if err then
+        moon.error(string.format("Roommgr.StartGame err:\n%s", json.pretty_encode(err)))
         return context.S2C(context.net_id, CmdCode["PBStartGameRoomRspCmd"], {
             code = ErrorCode.ServerInternalError,
             error = "system error",
@@ -365,6 +371,7 @@ end
 
 function Room.OnEnterDs(res)
     -- 加入DS广播
+    moon.error("OnEnterDs ", context.net_id, context.uid)
     context.S2C(context.net_id, CmdCode["PBEnterDsRoomSyncCmd"], res, 0)
 end
 
