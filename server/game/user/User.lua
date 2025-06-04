@@ -458,9 +458,13 @@ local function LightRoleEquipment(msg)
             scripts.Bag.SaveAndLog(save_bags, change_log)
         end
         -- 存储角色数据
-        scripts.Role.ModMagicItem(msg.roleid, item_data)
-        scripts.Role.SaveRolesNow()
-        scripts.Role.AddLog(msg.roleid, "LightMagicItem")
+        if scripts.Role.ModMagicItem(msg.roleid, item_data) == ErrorCode.None then
+            local change_roles = {}
+            change_roles[msg.roleid] = "LightMagicItem"
+            scripts.Role.SaveAndLog(change_roles)
+        else
+            moon.error("LightRoleEquipment LightMagicItem Fail:", msg.roleid)
+        end
 
         return ErrorCode.None, item_data
     else
@@ -491,9 +495,13 @@ local function LightRoleEquipment(msg)
             scripts.Bag.SaveAndLog(save_bags, change_log)
         end
         -- 存储角色数据
-        scripts.Role.ModDiagramsCard(msg.roleid, item_data, slot)
-        scripts.Role.SaveRolesNow()
-        scripts.Role.AddLog(msg.roleid, "LightDiagramsCard")
+        if scripts.Role.ModDiagramsCard(msg.roleid, item_data, slot) then
+            local change_roles = {}
+            change_roles[msg.roleid] = "LightDiagramsCard"
+            scripts.Role.SaveAndLog(change_roles)
+        else
+            moon.error("LightRoleEquipment LightDiagramsCard Fail:", msg.roleid)
+        end
 
         return ErrorCode.None, item_data
     end

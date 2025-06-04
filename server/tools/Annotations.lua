@@ -339,6 +339,17 @@
 ---@field public gourd_list PBGourd[]
 
 
+---@class PBClientGetUsrGhostsInfoReqCmd
+---@field public uid integer
+
+
+---@class PBClientGetUsrGhostsInfoRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer @用户ID
+---@field public ghosts_info PBUserGhostDatas @所有鬼宠数据
+
+
 ---@class Any
 ---@field public type_url string
 ---@field public value string
@@ -1457,6 +1468,35 @@
 ---@class PBUserRoleDatas
 ---@field public battle_role_id integer
 ---@field public role_list table<integer, PBRoleData>
+
+
+---@class PBClientGetUsrRolesInfoReqCmd
+---@field public uid integer
+
+
+---@class PBClientGetUsrRolesInfoRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer @用户ID
+---@field public roles_info PBUserRoleDatas @所有角色数据
+
+
+---@class PBRoleInfoSyncCmd
+---@field public roles_info PBUserRoleDatas @变更的角色数据
+
+
+---@class PBRoleWearEquipsReqCmd
+---@field public uid integer
+---@field public roleid integer
+---@field public equip_config_id integer
+---@field public equip_uniqid integer
+
+
+---@class PBRoleWearEquipsRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer @用户ID
+---@field public roleid integer @角色id
 
 
 ---@class PBRoomSearchInfo

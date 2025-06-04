@@ -42,3 +42,43 @@ message PBUserRoleDatas
 	int32 battle_role_id			= 1;
 	map<int32, PBRoleData> role_list	= 2;
 }
+
+// 客户端请求所有角色数据
+message PBClientGetUsrRolesInfoReqCmd
+{
+    // 协议数据
+    int64 uid             = 1;
+}
+
+message PBClientGetUsrRolesInfoRspCmd
+{
+    int32 code        = 1; // 服务器验证返回,0成功,其他失败
+    string error      = 2; // 错误信息
+    int64 uid         = 3; // 用户ID
+    PBUserRoleDatas roles_info	= 4;	// 所有角色数据
+}
+
+// 角色数据变更同步
+message PBRoleInfoSyncCmd
+{
+	PBUserRoleDatas roles_info	= 1;	// 变更的角色数据
+}
+
+// 角色装备法器或者八卦牌
+message PBRoleWearEquipsReqCmd
+{
+	// 协议数据
+    int64 uid		= 1;
+	int32 roleid	= 2;
+	int32 equip_config_id	= 3;
+	int64 equip_uniqid		= 4;
+}
+
+message PBRoleWearEquipsRspCmd
+{
+	// 协议数据
+    int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+    int64 uid		= 3; // 用户ID
+    int32 roleid	= 4; // 角色id
+}

@@ -308,7 +308,7 @@ function Bag.SaveAndLog(bagTypes, change_logs)
                             update_msg.update_items[bagType].items[pos] = {}
                         else
                             -- 记录ChangeInfo后的新itemdata
-                            loginfo.new_itemdata = table.copy(now_itemdata)
+                            loginfo.new_itemdata = table.copy(now_itemdata, true)
                         end
                     end
                 end
