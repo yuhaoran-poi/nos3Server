@@ -371,7 +371,7 @@ void {{ manager_class }}::ParseConfig(FArchive& Ar, F{{ struct_name }}& Config)
         int32 Count = 0;
         Ar << Count;
         for(int32 i=0; i<Count; ++i){
-            {{ field.type_info[1]|upper }} Element;
+            {{ field.type_info[1]|lower }} Element;
             {% if field.type_info[1] == 'FString' -%}
             // 嵌套FString处理
             int32 StrLen;
@@ -392,8 +392,8 @@ void {{ manager_class }}::ParseConfig(FArchive& Ar, F{{ struct_name }}& Config)
         int32 Count = 0;
         Ar << Count;
         for(int32 i=0; i<Count; ++i){
-            {{ field.type_info[1]|upper }} Key;
-            {{ field.type_info[2]|upper }} Value;
+            {{ field.type_info[1]|lower }} Key;
+            {{ field.type_info[2]|lower }} Value;
             {% if field.type_info[1] == 'FString' -%}
             // Key是FString
             int32 KeyLen;

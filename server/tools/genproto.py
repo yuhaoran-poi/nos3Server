@@ -46,6 +46,7 @@ cmdcode_h_template = '''\
 #pragma once
 #include "CoreMinimal.h"
 #include <map>
+#include <string>
 namespace google::protobuf
 {
 	class Message;
