@@ -52,6 +52,7 @@ local function read(fd)
         return false, err
     end
     --local _, rsp = protocol.decode(moon.decode(data, "B"))
+    
     local name, t, id = protocol.decodestring(data)
     --local _, rsp = protocol.decode(data)
     for _, MessagePack in ipairs(t.messages) do
@@ -62,6 +63,7 @@ local function read(fd)
             data = submsg
         })
     end
+    --pb.option("use_default_values")
 
     return true, now_cmd_data
 end

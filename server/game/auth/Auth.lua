@@ -311,14 +311,13 @@ end
 
 Auth.PBClientLoginReqCmd = function (req)
     local function processLogin()
-        if req.msg.is_register then
-
-            -- 注册逻辑（直接存储客户端提供的MD5）
-            local check_res, check_err = db.checkuser(context.addr_db_game, req.msg.login_data.authkey)
-            if check_err and not check_res and next(check_res) then
-                return { code = ErrorCode.NicknameAlreadyExist, error = "USERNAME_EXISTS" }
-            end
-            --
+        -- 注册逻辑（直接存储客户端提供的MD5）
+        local check_res, check_err = db.checkuser(context.addr_db_game, req.msg.login_data.authkey)
+        if check_err then
+            return { code = ErrorCode.NicknameAlreadyExist, error = "USERNAME_EXISTS" }
+        end
+        
+        if not check_res or next(check_res) == nil then
             local create_res, create_err = db.createuser(
                 context.addr_db_game,
                 req.msg.login_data.authkey,

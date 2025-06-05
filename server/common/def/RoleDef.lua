@@ -11,7 +11,8 @@ local RoleDef = {
 
 local defaultPBSimpleRoleData = {
     config_id = 0,
-    skins = {}
+    skins = {},
+    magic_item_id = 0,
 }
 
 local defaultPBRoleData = {

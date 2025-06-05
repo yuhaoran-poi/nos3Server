@@ -12,6 +12,7 @@ local RoleDef = require("common.def.RoleDef")
 local GhostDef = require("common.def.GhostDef")
 local BagDef = require("common.def.BagDef")
 local ProtoEnum = require("tools.ProtoEnum")
+local UserAttrLogic = require("common.logic.UserAttrLogic")
 
 ---@type user_context
 local context = ...
@@ -138,30 +139,46 @@ function User.Load(req)
     return true
 end
 
-function User.QueryUserAttr()
+function User.QueryUserAttr(fields)
     local DB = scripts.UserModel.Get()
-    if not DB then
-        local res = { code = ErrorCode.ServerInternalError, error = "no user_attr" }
-        return res
-    end
 
-    if not DB.user_attr or table.size(DB.user_attr) <= 0 then
+    if not DB or not DB.user_attr or table.size(DB.user_attr) <= 0 then
         --内存中不存在则查询数据库
-        local user_attr = Database.RedisGetUserAttr(context.addr_db_redis, context.uid)
+        local user_attr = Database.RedisGetUserAttr(context.addr_db_redis, context.uid, fields)
         if not user_attr or table.size(user_attr) <= 0 then
             local db_data = Database.loaduser_attr(context.addr_db_user, context.uid)
             if not db_data then
-                local res = { code = ErrorCode.ServerInternalError, error = "no user_attr" }
-                return res
+                return { code = ErrorCode.ServerInternalError, error = "no user_attr" }
             else
-                DB.user_attr = db_data
+                local res_attr = {}
+                if type(fields) == "table" then
+                    for _, field in pairs(fields) do
+                        if db_data[field] then
+                            res_attr[field] = db_data[field]
+                        end
+                    end
+                else
+                    res_attr = db_data
+                end
+                
+                return { code = ErrorCode.None, error = "success", user_attr = res_attr }
             end
         else
-            DB.user_attr = user_attr
+            return { code = ErrorCode.None, error = "success", user_attr = user_attr }
         end
+    else
+        local res_attr = {}
+        if type(fields) == "table" then
+            for _, field in pairs(fields) do
+                if DB.user_attr[field] then
+                    res_attr[field] = DB.user_attr[field]
+                end
+            end
+        else
+            res_attr = DB.user_attr
+        end
+        return { code = ErrorCode.None, error = "success", user_attr = DB.user_attr }
     end
-
-    return { code = ErrorCode.None, error = "success", user_attr = DB.user_attr }
 end
 
 function User.SetUserAttr(user_attr, sync_client)
@@ -208,30 +225,87 @@ function User.GetUserAttr(fields)
     return user_attr
 end
 
+	-- int64 uid             = 1;
+    -- string plateform_id    = 2;
+	-- bytes nick_name       = 3;
+    -- int32 head_icon       = 4;
+    -- int32 sex             = 5;// 0-未选 1-男 2-女
+    -- int32 praise_num      = 6;// 点赞
+    -- int32 head_frame      = 7;// 头像框
+    -- int64 account_create_time = 8;// 账户创建时间
+	-- // 账户经验 账户等级
+    -- int32 account_level   = 9;
+    -- int32 account_exp     = 10;
+    -- // 战队ID
+    -- int64 guild_id       = 11;
+    -- bytes guild_name      = 12;
+	-- // 段位信息
+	-- PBRankLevel rank_level	= 13;
+    -- PBSimpleRoleData cur_show_role = 14;
+    -- PBPinchFaceData pinch_face_data = 15;	// 捏脸数据
+	-- int32 title     = 16;	//当前佩戴的称号
+	-- int32 player_flag  = 17;	//玩家标签
+	-- int32 online_time   = 18;	//最后一次在线时间
+	-- int64 sum_online_time = 19;	//累计在线时长 单位秒
+	-- int32 pa_flag  = 20;		// 是否禁言等操作
+	-- PBSimpleGhostData cur_show_ghost	= 21;
 function User.GetUserSimpleData()
     local simple_fields = {
         ProtoEnum.UserAttrType.uid,
         ProtoEnum.UserAttrType.nick_name,
         ProtoEnum.UserAttrType.head_icon,
         ProtoEnum.UserAttrType.sex,
-        ProtoEnum.UserAttrType.praise_num,
         ProtoEnum.UserAttrType.head_frame,
-        ProtoEnum.UserAttrType.account_create_time,
         ProtoEnum.UserAttrType.account_exp,
         ProtoEnum.UserAttrType.guild_id,
         ProtoEnum.UserAttrType.guild_name,
         ProtoEnum.UserAttrType.cur_show_role,
-        ProtoEnum.UserAttrType.pinch_face_data,
         ProtoEnum.UserAttrType.title,
         ProtoEnum.UserAttrType.player_flag,
-        ProtoEnum.UserAttrType.online_time,
-        ProtoEnum.UserAttrType.sum_online_time,
-        ProtoEnum.UserAttrType.pa_flag,
-        ProtoEnum.UserAttrType.cur_show_ghost,
     }
     local simple_data = User.GetUserAttr(simple_fields)
 
     return simple_data
+end
+
+function User.GetUsrRoomBriefData()
+    local room_member_fields = {
+        ProtoEnum.UserAttrType.uid,
+        ProtoEnum.UserAttrType.nick_name,
+        ProtoEnum.UserAttrType.head_icon,
+        ProtoEnum.UserAttrType.sex,
+        ProtoEnum.UserAttrType.head_frame,
+        ProtoEnum.UserAttrType.rank_level,
+        ProtoEnum.UserAttrType.cur_show_role,
+        ProtoEnum.UserAttrType.title,
+        ProtoEnum.UserAttrType.player_flag,
+        ProtoEnum.UserAttrType.cur_show_ghost,
+    }
+    local room_member_data = User.GetUserAttr(room_member_fields)
+
+    return room_member_data
+end
+
+function User.GetUserDetails()
+    local details_fields = {
+        ProtoEnum.UserAttrType.uid,
+        ProtoEnum.UserAttrType.nick_name,
+        ProtoEnum.UserAttrType.head_icon,
+        ProtoEnum.UserAttrType.sex,
+        ProtoEnum.UserAttrType.head_frame,
+        ProtoEnum.UserAttrType.rank_level,
+        ProtoEnum.UserAttrType.guild_id,
+        ProtoEnum.UserAttrType.guild_name,
+        ProtoEnum.UserAttrType.cur_show_role,
+        ProtoEnum.UserAttrType.title,
+        ProtoEnum.UserAttrType.player_flag,
+        ProtoEnum.UserAttrType.cur_show_ghost,
+    }
+    local details_data = User.GetUserAttr(details_fields)
+    local role_data = scripts.Role.GetRoleInfo(details_data.cur_show_role.config_id)
+    local ghost_data = scripts.Ghost.GetGhostInfo(details_data.cur_show_ghost.config_id)
+
+    return {user_attr = details_data, role_data = role_data, ghost_data = ghost_data}
 end
 
 function User.Login(req)
@@ -384,9 +458,13 @@ local function LightRoleEquipment(msg)
             scripts.Bag.SaveAndLog(save_bags, change_log)
         end
         -- 存储角色数据
-        scripts.Role.ModMagicItem(msg.roleid, item_data)
-        scripts.Role.SaveRolesNow()
-        scripts.Role.AddLog(msg.roleid, "LightMagicItem")
+        if scripts.Role.ModMagicItem(msg.roleid, item_data) == ErrorCode.None then
+            local change_roles = {}
+            change_roles[msg.roleid] = "LightMagicItem"
+            scripts.Role.SaveAndLog(change_roles)
+        else
+            moon.error("LightRoleEquipment LightMagicItem Fail:", msg.roleid)
+        end
 
         return ErrorCode.None, item_data
     else
@@ -417,9 +495,13 @@ local function LightRoleEquipment(msg)
             scripts.Bag.SaveAndLog(save_bags, change_log)
         end
         -- 存储角色数据
-        scripts.Role.ModDiagramsCard(msg.roleid, item_data, slot)
-        scripts.Role.SaveRolesNow()
-        scripts.Role.AddLog(msg.roleid, "LightDiagramsCard")
+        if scripts.Role.ModDiagramsCard(msg.roleid, item_data, slot) then
+            local change_roles = {}
+            change_roles[msg.roleid] = "LightDiagramsCard"
+            scripts.Role.SaveAndLog(change_roles)
+        else
+            moon.error("LightRoleEquipment LightDiagramsCard Fail:", msg.roleid)
+        end
 
         return ErrorCode.None, item_data
     end
@@ -667,39 +749,36 @@ function User.DsAddItems(simple_items)
 end
 
 -- 客户端请求--法器升级
-function User.PBClientMagicItemUpLvReqCmd(req)
+function User.PBClientItemUpLvReqCmd(req)
     -- 参数验证
     if not req.msg.config_id or req.msg.add_exp <= 0 then
-        return context.S2C(context.net_id, CmdCode.PBClientMagicItemUpLvRspCmd, {
+        return context.S2C(context.net_id, CmdCode.PBClientItemUpLvRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
             uid = context.uid,
             config_id = req.msg.config_id or 0,
             add_exp = req.msg.add_exp or 0,
-            now_exp = 0
         }, req.msg_context.stub_id)
     end
 
     -- 图鉴升级
     local err_code, change_log = scripts.ItemImage.UpLvImage(req.msg.config_id)
     if err_code ~= ErrorCode.None then
-        return context.S2C(context.net_id, CmdCode.PBClientMagicItemUpLvRspCmd, {
+        return context.S2C(context.net_id, CmdCode.PBClientItemUpLvRspCmd, {
             code = ErrorCode.ItemNotExist,
             error = "图鉴不存在",
             uid = context.uid,
             config_id = req.msg.config_id,
             add_exp = req.msg.add_exp,
-            now_exp = 0
         }, req.msg_context.stub_id)
     end
 
-    context.S2C(context.net_id, CmdCode.PBClientMagicItemUpLvRspCmd, {
+    context.S2C(context.net_id, CmdCode.PBClientUpLvRspCmd, {
         code = ErrorCode.None,
         error = "",
         uid = context.uid,
         config_id = req.msg.config_id,
         add_exp = req.msg.add_exp,
-        now_exp = new_exp
     }, req.msg_context.stub_id)
 
     -- 存储背包变更
@@ -718,7 +797,87 @@ function User.PBClientMagicItemUpLvReqCmd(req)
     table.insert(change_image_ids, req.msg.config_id)
     scripts.ItemImage.UpdateAndSave(change_image_ids)
 
-    return 
+    return
+end
+
+-- 客户端请求--道具修复
+function User.PBClientItemRepairReqCmd(req)
+end
+
+-- function User.PBGetOtherDetailReqCmd(req)
+--     if context.uid ~= req.msg.uid
+--         or req.msg.quest_uid == 0
+--         or req.msg.uid == req.msg.quest_uid then
+--         return context.S2C(context.net_id, CmdCode.PBGetOtherDetailReqCmd, {
+--             code = ErrorCode.ParamInvalid,
+--             error = "无效请求参数",
+--             uid = context.uid,
+--             quest_uid = req.msg.quest_uid or 0,
+--         }, req.msg_context.stub_id)
+--     end
+
+--     local detail_fields = {
+--         ProtoEnum.UserAttrType.uid,
+--         ProtoEnum.UserAttrType.nick_name,
+--         ProtoEnum.UserAttrType.head_icon,
+--         ProtoEnum.UserAttrType.sex,
+--         ProtoEnum.UserAttrType.head_frame,
+--         ProtoEnum.UserAttrType.account_exp,
+--         ProtoEnum.UserAttrType.guild_id,
+--         ProtoEnum.UserAttrType.guild_name,
+--         ProtoEnum.UserAttrType.rank_level,
+--         ProtoEnum.UserAttrType.cur_show_role,
+--         ProtoEnum.UserAttrType.title,
+--         ProtoEnum.UserAttrType.player_flag,
+--     }
+--     local user_attr_res = UserAttrLogic.GetOtherUserAttr(context, req.msg.uid, detail_fields)
+--     if user_attr_res then
+--         return context.S2C(context.net_id, CmdCode.PBGetOtherDetailReqCmd, {
+--             code = ErrorCode.None,
+--             error = "",
+--             uid = context.uid,
+--             quest_uid = req.msg.quest_uid,
+--             user_attr = user_attr_res,
+--         })
+--     else
+--         return context.S2C(context.net_id, CmdCode.PBGetOtherDetailReqCmd, {
+--             code = ErrorCode.UserOffline,
+--             error = "用户离线",
+--             uid = context.uid,
+--             quest_uid = req.msg.quest_uid or 0,
+--         }, req.msg_context.stub_id)
+--     end
+-- end
+
+function User.PBGetOtherDetailReqCmd(req)
+    if context.uid ~= req.msg.uid
+        or req.msg.quest_uid == 0
+        or req.msg.uid == req.msg.quest_uid then
+        return context.S2C(context.net_id, CmdCode.PBGetOtherDetailReqCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            quest_uid = req.msg.quest_uid or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    local user_attr_res = UserAttrLogic.GetOtherUserDetails(context, req.msg.quest_uid)
+    if user_attr_res then
+        return context.S2C(context.net_id, CmdCode.PBGetOtherDetailReqCmd, {
+            code = ErrorCode.None,
+            error = "",
+            uid = context.uid,
+            quest_uid = req.msg.quest_uid,
+            user_attr = user_attr_res,
+        })
+    else
+        return context.S2C(context.net_id, CmdCode.PBGetOtherDetailReqCmd, {
+            code = ErrorCode.UserOffline,
+            error = "用户离线",
+            uid = context.uid,
+            quest_uid = req.msg.quest_uid or 0,
+        }, req.msg_context.stub_id)
+    end
 end
 
 return User

@@ -462,9 +462,10 @@ end
 -- 删除房间
 function _M.delete_room(addr_db, roomid)
     -- 获取房间信息
+    local ola_values = {}
     local old_json, err = redis_call(addr_db, "MGET", ROOM_PREFIX .. roomid)
     if old_json and next(old_json) ~= nil then
-        local ola_values = json.decode(old_json[1])
+        ola_values = json.decode(old_json[1])
         if not ola_values then
             ola_values = {}
         end
@@ -481,6 +482,13 @@ function _M.delete_room(addr_db, roomid)
         table.insert(del_pipeline, roomid)
 
         redis_send(addr_db, table.unpack(del_pipeline))
+
+        -- 删除0索引
+        local del_pipeline_0 = {}
+        table.insert(del_pipeline_0, "SREM")
+        table.insert(del_pipeline_0, INDEX_PREFIX .. k .. ":" .. 0)
+        table.insert(del_pipeline_0, roomid)
+        redis_send(addr_db, table.unpack(del_pipeline_0))
     end
 end
  

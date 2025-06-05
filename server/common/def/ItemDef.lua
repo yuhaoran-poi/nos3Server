@@ -13,19 +13,19 @@ local defaultPBItemCommonData = {
 
 local defaultPBDurabItem = {
     cur_durability = 0,
-    max_durability = 0,
+    strong_value = 0,
 }
 
 local defaultPBMagicItem = {
     cur_durability = 0,
-    max_durability = 0,
+    strong_value = 0,
     light_cnt = 0,
     tags = {},
 }
 
 local defaultPBDiagramsCard = {
     cur_durability = 0,
-    max_durability = 0,
+    strong_value = 0,
     light_cnt = 0,
     tags = {},
 }

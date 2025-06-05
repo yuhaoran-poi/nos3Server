@@ -16,3 +16,5 @@ BallAction/Logs
 /server/tools/build
 /.vscode
 /server/tools/proto_out
+/server/tools/Annotations.lua
+/server/tools/ProtoEnum.lua

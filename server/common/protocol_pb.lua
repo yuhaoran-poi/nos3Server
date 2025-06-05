@@ -111,7 +111,18 @@ function M.DecodeMessagePack(msg)
     end
     return name, pdecode(name, msg.msg_body, msg.msg_body.len)
 end
-
+function M.RobotDecodeMessagePack(msg)
+    local id = msg.msg_type
+    local name = id_name[id]
+    if not name then
+        error(string.format("recv unknown message CmdCode: %d. client server version mismatch", id))
+    end
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    pb.option("no_default_values")
+    local msg, err = pdecode(name, msg.msg_body, msg.msg_body.len)
+    pb.option("use_default_values")
+    return name, msg
+end
 function M.decodestring(data)
     local id = string.unpack("<H", data)
     local pbdata = string.sub(data, 3)

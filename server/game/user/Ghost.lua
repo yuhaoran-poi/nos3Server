@@ -100,7 +100,7 @@ function Ghost.AddLog(ghostid, reason)
         reason = reason,
         info = {},
     }
-    log_info.info = table.copy(ghosts.ghost_list[ghostid])
+    log_info.info = table.copy(ghosts.ghost_list[ghostid], true)
 
     --存储日志
 
@@ -127,6 +127,23 @@ function Ghost.ModDiagramsCard(ghostid, item_data, slot)
     ghost_info.digrams_cards[slot] = item_data
 
     return ErrorCode.None
+end
+
+function Ghost.PBClientGetUsrGhostsInfoReqCmd(req)
+    local ghosts = scripts.UserModel.GetGhosts()
+    if not ghosts then
+        return context.S2C(context.net_id, CmdCode["PBClientGetUsrGhostsInfoRspCmd"],
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local rsp_msg = {
+        code = ErrorCode.None,
+        error = "",
+        uid = req.msg.uid,
+        ghosts_info = ghosts,
+    }
+
+    return context.S2C(context.net_id, CmdCode["PBClientGetUsrGhostsInfoRspCmd"], rsp_msg, req.msg_context.stub_id)
 end
 
 return Ghost

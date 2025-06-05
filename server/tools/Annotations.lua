@@ -339,6 +339,17 @@
 ---@field public gourd_list PBGourd[]
 
 
+---@class PBClientGetUsrGhostsInfoReqCmd
+---@field public uid integer
+
+
+---@class PBClientGetUsrGhostsInfoRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer @用户ID
+---@field public ghosts_info PBUserGhostDatas @所有鬼宠数据
+
+
 ---@class Any
 ---@field public type_url string
 ---@field public value string
@@ -1132,19 +1143,21 @@
 
 ---@class PBDurabItem
 ---@field public cur_durability integer @当前耐久度
----@field public max_durability integer @耐久度上限
+---@field public strong_value integer @坚固值
+---@field public max_durability integer @最大耐久度
 
 
 ---@class PBMagicItem
 ---@field public cur_durability integer @当前耐久度
----@field public max_durability integer @耐久度上限
+---@field public strong_value integer @耐久度上限
 ---@field public light_cnt integer
 ---@field public tags PBTag[] @随机词条id,最大10条
+---@field public max_durability integer @最大耐久度
 
 
 ---@class PBDiagramsCard
 ---@field public cur_durability integer @当前耐久度
----@field public max_durability integer @耐久度上限
+---@field public strong_value integer @耐久度上限
 ---@field public light_cnt integer
 ---@field public tags PBTag[] @随机词条id,最大10条
 
@@ -1430,6 +1443,7 @@
 ---@class PBSimpleRoleData
 ---@field public config_id integer @配置ID
 ---@field public skins table<integer, PBItemData> @穿戴皮肤
+---@field public magic_item_id integer @携带法器id
 
 
 ---@class PBRoleData
@@ -1456,6 +1470,35 @@
 ---@field public role_list table<integer, PBRoleData>
 
 
+---@class PBClientGetUsrRolesInfoReqCmd
+---@field public uid integer
+
+
+---@class PBClientGetUsrRolesInfoRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer @用户ID
+---@field public roles_info PBUserRoleDatas @所有角色数据
+
+
+---@class PBRoleInfoSyncCmd
+---@field public roles_info PBUserRoleDatas @变更的角色数据
+
+
+---@class PBRoleWearEquipsReqCmd
+---@field public uid integer
+---@field public roleid integer
+---@field public equip_config_id integer
+---@field public equip_uniqid integer
+
+
+---@class PBRoleWearEquipsRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer @用户ID
+---@field public roleid integer @角色id
+
+
 ---@class PBRoomSearchInfo
 ---@field public roomid integer
 ---@field public chapter integer @章节
@@ -1463,7 +1506,9 @@
 ---@field public playercnt integer @当前玩家人数
 ---@field public master_id integer @房主id
 ---@field public master_name string @房主昵称
+---@field public isopen integer @是否公开
 ---@field public needpwd integer @是否需要密码
+---@field public describe string @房间描述
 
 
 ---@class PBRoomMemberInfo
@@ -1480,6 +1525,21 @@
 ---@field public chapter integer
 ---@field public difficulty integer
 ---@field public state integer
+---@field public describe string
+
+
+---@class PBRoomApplyInfo
+---@field public uid integer
+---@field public apply_info PBUserAttr
+---@field public apply_time integer
+
+
+---@class PBRoomWholeInfo
+---@field public room_data PBRoomInfo
+---@field public master_id integer @房主id
+---@field public master_name string @房主昵称
+---@field public players PBRoomMemberInfo[] @成员信息
+---@field public apply_list PBRoomApplyInfo[] @申请信息
 
 
 ---@class PBCreateRoomReqCmd
@@ -1489,6 +1549,7 @@
 ---@field public pwd string
 ---@field public chapter integer
 ---@field public difficulty integer
+---@field public describe string
 
 
 ---@class PBCreateRoomRspCmd
@@ -1523,6 +1584,7 @@
 ---@field public pwd string
 ---@field public chapter integer
 ---@field public difficulty integer
+---@field public describe string
 
 
 ---@class PBModRoomRspCmd
@@ -1535,8 +1597,9 @@
 ---@field public difficulty integer
 
 
----@class PBRoomInfoSyncCmd
----@field public room_data PBRoomInfo
+---@class PBRoomSyncCmd
+---@field public roomid integer
+---@field public sync_info PBRoomWholeInfo
 
 
 ---@class PBApplyRoomReqCmd
@@ -1550,12 +1613,6 @@
 ---@field public roomid integer
 
 
----@class PBApplyRoomSyncCmd
----@field public uid integer
----@field public roomid integer
----@field public apply_info PBUserAttr
-
-
 ---@class PBDealApplyRoomReqCmd
 ---@field public deal_uid integer
 ---@field public deal_op integer
@@ -1566,14 +1623,6 @@
 ---@field public error string @错误信息
 ---@field public deal_uid integer
 ---@field public deal_op integer
-
-
----@class PBDealApplyRoomSyncCmd
----@field public roomid integer
----@field public deal_op integer
----@field public master_uid integer
----@field public master_name string
----@field public pwd string
 
 
 ---@class PBEnterRoomReqCmd
@@ -1891,19 +1940,43 @@
 ---@field public uniqid integer
 
 
----@class PBClientMagicItemUpLvReqCmd
+---@class PBClientItemUpLvReqCmd
 ---@field public uid integer
 ---@field public config_id integer
 ---@field public add_exp integer
 
 
----@class PBClientMagicItemUpLvRspCmd
+---@class PBClientItemUpLvRspCmd
 ---@field public code integer @服务器验证返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public config_id integer
 ---@field public add_exp integer
----@field public now_exp integer
+
+
+---@class PBClientItemRepairReqCmd
+---@field public uid integer
+---@field public repair_uniqid integer
+
+
+---@class PBClientItemRepairRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public repair_uniqid integer
+
+
+---@class PBGetOtherDetailReqCmd
+---@field public uid integer
+---@field public quest_uid integer
+
+
+---@class PBGetOtherDetailRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer @自己的uid
+---@field public quest_uid integer @他人uid
+---@field public info PBUserAttr @简略信息
 
 
 
@@ -1974,6 +2047,10 @@
 ---@field GuildTreasury GuildTreasury
 
 
+
+
+---@class matchhelp_scripts
+---@field MatchHelp MatchHelp
 
 
 ---@class matchmgr_scripts

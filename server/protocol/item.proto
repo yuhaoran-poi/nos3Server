@@ -42,24 +42,26 @@ message PBSkill
 // 拥有耐久度的不可堆叠道具
 message PBDurabItem
 {
-	int32	cur_durability = 1;	//当前耐久度
-	int32	max_durability = 2;	//耐久度上限
+	int32	cur_durability	= 1;	//当前耐久度
+	int32	strong_value	= 2;	//坚固值
+	int32	max_durability	= 3;	//最大耐久度
 }
 
 // 法器
 message PBMagicItem
 {
 	int32		cur_durability = 1;	//当前耐久度
-	int32		max_durability = 2;	//耐久度上限
+	int32		strong_value = 2;	//耐久度上限
 	int32		light_cnt	= 3;
 	repeated PBTag	tags	= 4;	//随机词条id,最大10条
+	int32	max_durability	= 5;	//最大耐久度
 }
 
 // 八卦牌
 message PBDiagramsCard
 {
 	int32		cur_durability = 1;	//当前耐久度
-	int32		max_durability = 2;	//耐久度上限
+	int32		strong_value = 2;	//耐久度上限
 	int32		light_cnt	= 3;
 	repeated PBTag	tags	= 4;	//随机词条id,最大10条
 }

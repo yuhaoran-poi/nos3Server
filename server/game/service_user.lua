@@ -5,6 +5,7 @@ local seri = require("seri")
 local buffer = require("buffer")
 local common = require("common")
 local setup = require("common.setup")
+local json = require "json"
 local protocol = common.protocol
 local CmdCode = common.CmdCode
 local GameDef = common.GameDef
@@ -26,6 +27,7 @@ local PTYPE_C2S = GameDef.PTYPE_C2S
 ---@field scripts user_scripts
 local context = {
     uid = 0,
+---@diagnostic disable-next-line: missing-fields
     scripts = {},
     ---other service address
     net_id = 0,
@@ -70,6 +72,7 @@ moon.raw_dispatch("C2S", function(msg)
             forward(msg_name, reqmsg)
         else
             local subname, submsg = protocol.DecodeMessagePack(MessagePack)
+            moon.debug(string.format("recv Message:\n%s", json.pretty_encode(submsg)))
             reqmsg.msg = submsg
 
             local fn = command[subname]
@@ -77,7 +80,7 @@ moon.raw_dispatch("C2S", function(msg)
                 local ok, res = xpcall(fn, debug.traceback, reqmsg)
                 --
                 if not ok then
-                    moon.error(res)
+                    moon.error(string.format("err res:\n%s", json.pretty_encode(res)))
                     --context.S2C(CmdCode.S2CErrorCode, { code = 1 }) --server internal error
                 elseif res then
                     moon.info(res)
