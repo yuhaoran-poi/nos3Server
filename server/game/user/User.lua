@@ -198,11 +198,11 @@ function User.SetUserAttr(user_attr, sync_client)
     -- 同步到redis
     Database.RedisSetUserAttr(context.addr_db_redis, context.uid, t)
 
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 同步到客户端
     if sync_client then
         local msg_data = {
-            user_attr = t
+            attr = t
         }
         context.S2C(context.net_id, CmdCode["PBUserAttrSyncCmd"], msg_data, 0)
     end
@@ -225,30 +225,6 @@ function User.GetUserAttr(fields)
     return user_attr
 end
 
-	-- int64 uid             = 1;
-    -- string plateform_id    = 2;
-	-- bytes nick_name       = 3;
-    -- int32 head_icon       = 4;
-    -- int32 sex             = 5;// 0-未选 1-男 2-女
-    -- int32 praise_num      = 6;// 点赞
-    -- int32 head_frame      = 7;// 头像框
-    -- int64 account_create_time = 8;// 账户创建时间
-	-- // 账户经验 账户等级
-    -- int32 account_level   = 9;
-    -- int32 account_exp     = 10;
-    -- // 战队ID
-    -- int64 guild_id       = 11;
-    -- bytes guild_name      = 12;
-	-- // 段位信息
-	-- PBRankLevel rank_level	= 13;
-    -- PBSimpleRoleData cur_show_role = 14;
-    -- PBPinchFaceData pinch_face_data = 15;	// 捏脸数据
-	-- int32 title     = 16;	//当前佩戴的称号
-	-- int32 player_flag  = 17;	//玩家标签
-	-- int32 online_time   = 18;	//最后一次在线时间
-	-- int64 sum_online_time = 19;	//累计在线时长 单位秒
-	-- int32 pa_flag  = 20;		// 是否禁言等操作
-	-- PBSimpleGhostData cur_show_ghost	= 21;
 function User.GetUserSimpleData()
     local simple_fields = {
         ProtoEnum.UserAttrType.uid,
@@ -389,6 +365,18 @@ function User.PBClientGetUsrSimInfoReqCmd(req)
     context.S2C(context.net_id, CmdCode["PBClientGetUsrSimInfoRspCmd"], ret, req.msg_context.stub_id)
 end
 
+function User.PBClientGetAllUserAttrReqCmd(req)
+    local total_attr = User.GetUserAttr()
+
+    local ret = {
+        code = ErrorCode.None,
+        error = "success",
+        uid = context.uid,
+        info = total_attr,
+    }
+    context.S2C(context.net_id, CmdCode["PBClientGetAllUserAttrRspCmd"], ret, req.msg_context.stub_id)
+end
+
 function User.C2SPing(req)
     req.stime = moon.time()
     context.S2C(CmdCode.S2CPong, req)
@@ -435,7 +423,7 @@ end
 
 local function LightRoleEquipment(msg)
     local err_role_code, role_info = scripts.Role.GetRoleInfo(msg.roleid)
-    if err_role_code ~= ErrorCode.None or role_info then
+    if err_role_code ~= ErrorCode.None or not role_info then
         return ErrorCode.RoleNotExist
     end
 
@@ -579,7 +567,7 @@ local function LightBagItem(msg)
     end
 
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    local get_err_code, item_data = scripts.Bag.GetOneItemData(light_bagid, light_pos)
+    local get_err_code, item_data = scripts.Bag.MutOneItemData(light_bagid, light_pos)
     if get_err_code ~= ErrorCode.None
         or not item_data
         or (msg.uniqid ~= 0 and item_data.common_info.uniqid ~= msg.uniqid) then
@@ -588,6 +576,10 @@ local function LightBagItem(msg)
 
     -- 记录旧道具数据
     local old_itemdata = table.copy(item_data)
+    if not old_itemdata then
+        return ErrorCode.BagNotExist
+    end
+    
     local light_err_code, change_log = scripts.Bag.Light(item_data)
     if light_err_code ~= ErrorCode.None or not change_log then
         return light_err_code
@@ -598,7 +590,7 @@ local function LightBagItem(msg)
         change_log[light_bagid] = {}
     end
     scripts.Bag.AddLog(change_log[light_bagid], light_pos, BagDef.LogType.ChangeInfo, old_itemdata.common_info.config_id,
-        old_itemdata.common_info.uniqid, item_data.common_info.item_count, old_itemdata)
+        old_itemdata.common_info.uniqid, old_itemdata.common_info.item_count, old_itemdata)
 
     local save_bags = {}
     for bagType, _ in pairs(change_log) do
@@ -722,16 +714,18 @@ function User.DsAddItems(simple_items)
                 coin_id = item.config_id,
                 count = item.item_count,
             }
+        else
+            add_items[item.config_id] = { count = item.item_count }
         end
-        add_items[item.config_id] = { count = item.item_count }
     end
 
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if table.size(add_items) + table.size(add_coins) <= 0 then
         err_code = ErrorCode.ItemNotExist
     end
 
     if table.size(add_items) > 0 then
-        err_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, add_items, change_log)
+        err_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, add_items, {}, change_log)
     end
     if table.size(add_coins) > 0 then
         err_code = scripts.Bag.DealCoins(add_coins, change_log)

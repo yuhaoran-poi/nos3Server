@@ -278,22 +278,18 @@ function Bag.SaveAndLog(bagTypes, change_logs)
                     Bag.dataMap[loginfo.new_config_id][bagType].allCount = Bag.dataMap
                         [loginfo.new_config_id][bagType].allCount + loginfo.new_count
 
-                    if loginfo.old_config_id ~= loginfo.new_config_id
-                        or loginfo.old_uniqid ~= loginfo.new_uniqid then
-                        if Bag.dataMap[loginfo.old_config_id]
-                            and Bag.dataMap[loginfo.old_config_id][bagType] then
-                            if loginfo.old_uniqid ~= 0 then
-                                Bag.dataMap[loginfo.old_config_id][bagType].uniqid_pos[loginfo.old_uniqid] = nil
-                            else
-                                Bag.dataMap[loginfo.old_config_id][bagType].pos_count[pos] = nil
-                            end
-                        end
-
-                        if loginfo.new_uniqid ~= 0 then
-                            Bag.dataMap[loginfo.new_config_id][bagType].uniqid_pos[loginfo.new_uniqid] = pos
+                    if Bag.dataMap[loginfo.old_config_id]
+                        and Bag.dataMap[loginfo.old_config_id][bagType] then
+                        if loginfo.old_uniqid ~= 0 then
+                            Bag.dataMap[loginfo.old_config_id][bagType].uniqid_pos[loginfo.old_uniqid] = nil
                         else
-                            Bag.dataMap[loginfo.new_config_id][bagType].pos_count[pos] = loginfo.log_type
+                            Bag.dataMap[loginfo.old_config_id][bagType].pos_count[pos] = nil
                         end
+                    end
+                    if loginfo.new_uniqid ~= 0 then
+                        Bag.dataMap[loginfo.new_config_id][bagType].uniqid_pos[loginfo.new_uniqid] = pos
+                    else
+                        Bag.dataMap[loginfo.new_config_id][bagType].pos_count[pos] = loginfo.new_count
                     end
 
                     -- 去掉已经为0的道具格子
@@ -541,6 +537,25 @@ function Bag.AddUniqItem(bagType, baginfo, itemId, uniqid, itype, logs)
     return ErrorCode.BagFull
 end
 
+function Bag.AddUniqItemData(bagType, baginfo, item_data, logs)
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if not item_data or not item_data.common_info then
+        return ErrorCode.ItemNotExist
+    end
+
+    -- 处理物品记录
+    for pos = 1, baginfo.capacity do
+        if not baginfo.items[pos] then
+            baginfo.items[pos] = table.copy(item_data)
+            Bag.AddLog(logs, pos, BagDef.LogType.ChangeNum, 0, 0, 0)
+
+            return ErrorCode.None, pos
+        end
+    end
+
+    return ErrorCode.BagFull
+end
+
 function Bag.DelUniqItem(bagType, baginfo, itemId, uniqid, pos, logs)
     -- 参数校验
     if not baginfo.items[pos] then
@@ -548,7 +563,7 @@ function Bag.DelUniqItem(bagType, baginfo, itemId, uniqid, pos, logs)
     end
     if baginfo.items[pos].common_info.config_id ~= itemId
         or baginfo.items[pos].common_info.uniqid ~= uniqid
-        or baginfo.items[pos].common_info.item_count == 1 then
+        or baginfo.items[pos].common_info.item_count ~= 1 then
         return ErrorCode.ItemNotExist
     end
 
@@ -835,7 +850,7 @@ function Bag.DelItems(bagType, del_items, del_unique_items, change_log)
     return ErrorCode.None
 end
 
-function Bag.AddItems(bagType, add_items, change_log)
+function Bag.AddItems(bagType, add_items, add_item_datas, change_log)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
@@ -887,6 +902,13 @@ function Bag.AddItems(bagType, add_items, change_log)
             end
         else
             return ErrorCode.ItemNotExist
+        end
+    end
+
+    for uniqid, item_data in pairs(add_item_datas) do
+        err_code = Bag.AddUniqItemData(bagType, baginfo, item_data, change_log[bagType])
+        if err_code ~= ErrorCode.None then
+            return err_code
         end
     end
 
@@ -1207,7 +1229,24 @@ function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos, change_log)
     return ErrorCode.None
 end
 
+---@return integer, PBItemData ? nil
 function Bag.GetOneItemData(bagType, pos)
+    -- 获取数据副本
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata then
+        return ErrorCode.BagNotExist
+    end
+
+    local baginfo = bagdata[bagType]
+    if not baginfo or not baginfo.items[pos] then
+        return ErrorCode.ItemNotExist
+    end
+
+    return ErrorCode.None, table.copy(baginfo.items[pos])
+end
+
+---@return integer, PBItemData ? nil
+function Bag.MutOneItemData(bagType, pos)
     -- 获取数据副本
     local bagdata = scripts.UserModel.GetBagData()
     if not bagdata then
@@ -1358,7 +1397,7 @@ function Bag.GetSpecialItemFromCommonItem(srcBagType, srcPos, item_id)
         return err_code
     end
     -- 添加道具
-    err_code = Bag.AddItems(BagDef.BagType.Cangku, add_items, change_log)
+    err_code = Bag.AddItems(BagDef.BagType.Cangku, add_items, {}, change_log)
     if err_code ~= ErrorCode.None then
         Bag.RollBackWithChange(change_log)
         return err_code

@@ -59,7 +59,7 @@ function Client:light_item(pos, id)
         bag_name = "Cangku",
         pos = pos,
         config_id = id,
-        uniqid = 1099812306946,
+        uniqid = 0,
     }
     self:send("PBClientLightReqCmd", req_msg, function(msg)
         print("rpc PBClientLightRspCmd ret = ", self.index, msg)

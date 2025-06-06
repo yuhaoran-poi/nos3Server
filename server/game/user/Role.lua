@@ -77,10 +77,7 @@ function Role.SaveAndLog(change_roles)
         return false
     end
 
-    -- 修改dataMap
-    -- 去掉已经为0的道具格子
-    -- 将变更记录作为PBBagUpdateSyncCmd发送
-    local update_msg = {
+    local update_info = {
         battle_role_id = roles.battle_role_id,
         role_list = {},
     }
@@ -90,12 +87,12 @@ function Role.SaveAndLog(change_roles)
             if not roleinfo then
                 return false
             end
-            update_msg.role_list[roleid] = table.copy(roleinfo)
+            update_info.role_list[roleid] = table.copy(roleinfo)
         end
     end
 
     Role.SaveRolesNow()
-    context.S2C(context.net_id, CmdCode["PBRoleInfoSyncCmd"], update_msg, 0)
+    context.S2C(context.net_id, CmdCode["PBRoleInfoSyncCmd"], { roles_info = update_info }, 0)
 
     --存储日志
 
@@ -157,7 +154,7 @@ function Role.SetRoleBattle(roleid, sync_client)
         local show_role = RoleDef.newSimpleRoleData()
         show_role.config_id = role_info.config_id
         show_role.skins = role_info.skins
-        if role_info.magic_item then
+        if role_info.magic_item and role_info.magic_item.common_info then
             show_role.magic_item_id = role_info.magic_item.common_info.config_id
         end
 
@@ -167,7 +164,7 @@ function Role.SetRoleBattle(roleid, sync_client)
     end
 end
 
----@return integer, PBRoleData
+---@return integer, PBRoleData ? nil
 function Role.GetRoleInfo(roleid)
     local roles = scripts.UserModel.GetRoles()
     if not roles or not roles.role_list or not roles.role_list[roleid] then
@@ -230,6 +227,232 @@ function Role.PBClientGetUsrRolesInfoReqCmd(req)
     }
 
     return context.S2C(context.net_id, CmdCode["PBClientGetUsrRolesInfoRspCmd"], rsp_msg, req.msg_context.stub_id)
+end
+
+function Role.GetRoleEquipment(role_info, config_id, equip_idx)
+    local item_small_type = scripts.ItemDefine.GetItemType(config_id)
+    if item_small_type == scripts.ItemDefine.EItemSmallType.MagicItem then
+        -- 检测现在是否携带有法器
+        if role_info.magic_item and role_info.magic_item.common_info then
+            return item_small_type, role_info.magic_item
+        end
+    elseif item_small_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+        -- 检测现在是否携带有相应位置八卦牌
+        if role_info.digrams_cards
+            and role_info.digrams_cards[equip_idx]
+            and role_info.digrams_cards[equip_idx].common_info then
+            return item_small_type, role_info.digrams_cards[equip_idx]
+        end
+    end
+
+    return item_small_type, nil
+end
+
+function Role.ChangeEquipment(battle_role_id, role_info, config_id, equip_idx, equip_item_data)
+    local item_small_type = scripts.ItemDefine.GetItemType(config_id)
+    if item_small_type == scripts.ItemDefine.EItemSmallType.MagicItem then
+        if equip_item_data then
+            role_info.magic_item = equip_item_data
+        else
+            role_info.magic_item = nil
+        end
+        
+        -- 同步到玩家属性上
+        if battle_role_id == role_info.config_id then
+            local show_role = RoleDef.newSimpleRoleData()
+            show_role.config_id = role_info.config_id
+            show_role.skins = role_info.skins
+            if role_info.magic_item and role_info.magic_item.common_info then
+                show_role.magic_item_id = role_info.magic_item.common_info.config_id
+            else
+                show_role.magic_item_id = 0
+            end
+
+            local update_user_attr = {}
+            update_user_attr[ProtoEnum.UserAttrType.cur_show_role] = show_role
+            scripts.User.SetUserAttr(update_user_attr, true)
+        end
+    elseif item_small_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+        if equip_item_data then
+            role_info.digrams_cards[equip_idx] = equip_item_data
+        else
+            role_info.digrams_cards[equip_idx] = nil
+        end
+    end
+end
+
+function Role.PBRoleWearEquipReqCmd(req)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles then
+        return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local role_info = roles.role_list[req.msg.roleid]
+    if not role_info then
+        return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
+            { code = ErrorCode.RoleNotExist, error = "角色不存在", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local errcode, item_data = scripts.Bag.GetOneItemData(req.msg.bag_name, req.msg.pos)
+    if errcode ~= ErrorCode.None or not item_data then
+        return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
+            { code = errcode, error = "装备不存在", uid = context.uid }, req.msg_context.stub_id)
+    end
+    if item_data.common_info.config_id ~= req.msg.equip_config_id
+        or item_data.common_info.uniqid ~= req.msg.equip_uniqid then
+        return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
+            { code = ErrorCode.ItemNotExist, error = "装备不存在", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local del_unique_items = {}
+    del_unique_items[item_data.common_info.uniqid] = {
+        config_id = item_data.common_info.config_id,
+        uniqid = item_data.common_info.uniqid,
+        pos = req.msg.pos,
+    }
+    local bag_change_log = {}
+    local err_code = ErrorCode.None
+    local takeoff_items = {}
+
+    local item_small_type, takeoff_item_data = Role.GetRoleEquipment(role_info, item_data.common_info.config_id,
+        req.msg.equip_idx)
+    if item_small_type ~= scripts.ItemDefine.EItemSmallType.MagicItem
+        and item_small_type ~= item_small_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+        return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
+            { code = ErrorCode.ItemNotExist, error = "装备不存在", uid = context.uid }, req.msg_context.stub_id)
+    end
+    if item_small_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+        -- 检测八卦牌位置是否正确
+        local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+        if not uniqitem_cfg or uniqitem_cfg.type5 ~= req.msg.equip_idx then
+            return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
+                { code = ErrorCode.ConfigError, error = "八卦牌配置不存在", uid = context.uid }, req.msg_context.stub_id)
+        end
+    end
+    if takeoff_item_data then
+        takeoff_items[takeoff_item_data.common_info.uniqid] = takeoff_item_data
+    end
+
+    -- 扣除道具消耗
+    err_code = scripts.Bag.DelItems(req.msg.bag_name, {}, del_unique_items, bag_change_log)
+    if err_code ~= ErrorCode.None then
+        scripts.Bag.RollBackWithChange(bag_change_log)
+        return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
+            { code = err_code, error = "更换装备失败", uid = context.uid }, req.msg_context.stub_id)
+    end
+    -- 添加道具
+    err_code = scripts.Bag.AddItems(req.msg.bag_name, {}, takeoff_items, bag_change_log)
+    if err_code ~= ErrorCode.None then
+        scripts.Bag.RollBackWithChange(bag_change_log)
+        return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
+            { code = err_code, error = "更换装备失败", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    -- 角色穿戴新装备
+    Role.ChangeEquipment(roles.battle_role_id, role_info, item_data.common_info.config_id, req.msg.equip_idx, item_data)
+
+    -- 保存数据并同步给客户端
+    local save_bags = {}
+    for bagType, _ in pairs(bag_change_log) do
+        save_bags[bagType] = 1
+    end
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+
+    local change_roles = {}
+    change_roles[req.msg.roleid] = "WearEquipment"
+    scripts.Role.SaveAndLog(change_roles)
+
+    local rsp_msg = {
+        code = ErrorCode.None,
+        error = "",
+        uid = req.msg.uid,
+        roleid = req.msg.roleid,
+        bag_name = req.msg.bag_name,
+        pos = req.msg.pos,
+        equip_config_id = req.msg.equip_config_id,
+        equip_uniqid = req.msg.equip_uniqid,
+        equip_idx = req.msg.equip_idx,
+    }
+    return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"], rsp_msg, req.msg_context.stub_id)
+end
+
+function Role.PBRoleTakeOffEquipReqCmd(req)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles then
+        return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"],
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local role_info = roles.role_list[req.msg.roleid]
+    if not role_info then
+        return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"],
+            { code = ErrorCode.RoleNotExist, error = "角色不存在", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local bag_change_log = {}
+    local err_code = ErrorCode.None
+    local takeoff_items = {}
+    local item_small_type, takeoff_item_data = Role.GetRoleEquipment(role_info, req.msg.takeoff_config_id, req.msg.takeoff_idx)
+    if item_small_type ~= scripts.ItemDefine.EItemSmallType.MagicItem
+        and item_small_type ~= item_small_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+        return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"],
+            { code = ErrorCode.ItemNotExist, error = "装备不存在", uid = context.uid }, req.msg_context.stub_id)
+    end
+    if item_small_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+        -- 检测八卦牌位置是否正确
+        local uniqitem_cfg = GameCfg.UniqueItem[req.msg.takeoff_config_id]
+        if not uniqitem_cfg or uniqitem_cfg.type5 ~= req.msg.takeoff_idx then
+            return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"],
+                { code = ErrorCode.ConfigError, error = "八卦牌配置不存在", uid = context.uid }, req.msg_context.stub_id)
+        end
+    end
+    if takeoff_item_data then
+        takeoff_items[takeoff_item_data.common_info.uniqid] = takeoff_item_data
+    end
+
+    -- 判断卸下的装备是否一致
+    if not takeoff_items[req.msg.takeoff_uniqid]
+        or not takeoff_items[req.msg.takeoff_uniqid].common_info
+        or takeoff_items[req.msg.takeoff_uniqid].common_info.config_id ~= req.msg.takeoff_config_id
+        or takeoff_items[req.msg.takeoff_uniqid].common_info.uniqid ~= req.msg.takeoff_uniqid then
+        return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"],
+            { code = ErrorCode.ItemNotExist, error = "装备不存在", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    -- 添加道具
+    err_code = scripts.Bag.AddItems(req.msg.bag_name, {}, takeoff_items, bag_change_log)
+    if err_code ~= ErrorCode.None then
+        scripts.Bag.RollBackWithChange(bag_change_log)
+        return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"],
+            { code = err_code, error = "更换装备失败", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    -- 角色卸下新装备
+    Role.ChangeEquipment(roles.battle_role_id, role_info, req.msg.takeoff_config_id, req.msg.takeoff_idx, nil)
+
+    -- 保存数据并同步给客户端
+    local save_bags = {}
+    for bagType, _ in pairs(bag_change_log) do
+        save_bags[bagType] = 1
+    end
+    scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    local change_roles = {}
+    change_roles[req.msg.roleid] = "TakeOffEquipment"
+    scripts.Role.SaveAndLog(change_roles)
+    
+    local rsp_msg = {
+        code = ErrorCode.None,
+        error = "",
+        uid = req.msg.uid,
+        roleid = req.msg.roleid,
+        bag_name = req.msg.bag_name,
+        takeoff_config_id = req.msg.takeoff_config_id,
+        takeoff_uniqid = req.msg.takeoff_uniqid,
+        takeoff_idx = req.msg.takeoff_idx,
+    }
+    return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"], rsp_msg, req.msg_context.stub_id)
 end
 
 return Role

@@ -69,6 +69,22 @@ message PBClientGetUsrSimInfoRspCmd
     PBUserAttr info = 4;	// 简略信息
 }
 
+// 客户端请求账号属性全数据
+message PBClientGetAllUserAttrReqCmd
+{
+    // 协议数据
+    int64 uid             = 1;
+}
+
+// 客户端请求账号属性全数据 返回信息
+message PBClientGetAllUserAttrRspCmd
+{
+    int32 code        = 1; // 服务器验证返回,0成功,其他失败
+    string error      = 2; // 错误信息
+    int64 uid         = 3; // 用户ID
+    PBUserAttr info = 4;	// 简略信息
+}
+
 // 客户端修改个人信息数据--类型受限
 message PBSetUserAttrReqCmd
 {

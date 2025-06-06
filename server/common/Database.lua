@@ -3,6 +3,7 @@ local json = require("json")
 local redisd = require("redisd")
 local uuid = require("uuid")
 local protocol = require("common.protocol_pb")
+local crypt = require("crypt")
  
  
 
@@ -697,7 +698,8 @@ function _M.loaduserroles(addr, uid)
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local _, tmp_data = protocol.decodewithname("PBUserRoleDatas", res[1].value)
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBUserRoleDatas", pbdata)
         return tmp_data
     end
     print("loaduserroles failed", uid, err)
@@ -709,11 +711,12 @@ function _M.saveuserroles(addr, uid, data)
 
     local data_str = jencode(data)
     local _, pbdata = protocol.encodewithname("PBUserRoleDatas", data)
+    local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.roles (uid, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], uid, pbdata, data_str, pbdata, data_str)
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
 
     return moon.send("lua", addr, cmd)
 end
