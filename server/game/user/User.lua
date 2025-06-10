@@ -391,35 +391,35 @@ function User.PBPingCmd(req)
     context.S2C(context.net_id, CmdCode.PBPongCmd, ret, req.msg_context.stub_id)
 end
 
-function User.SimpleSetShowRole(role_info)
-    local user_attr = scripts.UserModel.GetUserAttr()
-    if not user_attr then
-        return false
-    end
+-- function User.SimpleSetShowRole(role_info)
+--     local user_attr = scripts.UserModel.GetUserAttr()
+--     if not user_attr then
+--         return false
+--     end
 
-    if not user_attr.cur_show_role then
-        user_attr.cur_show_role = RoleDef.newSimpleRoleData()
-    end
-    user_attr.cur_show_role.config_id = role_info.config_id
-    user_attr.cur_show_role.skins = role_info.skins
+--     if not user_attr.cur_show_role then
+--         user_attr.cur_show_role = RoleDef.newSimpleRoleData()
+--     end
+--     user_attr.cur_show_role.config_id = role_info.config_id
+--     user_attr.cur_show_role.skins = role_info.skins
 
-    return true
-end
+--     return true
+-- end
 
-function User.SimpleSetShowGhost(ghost_info, ghost_image)
-    local user_attr = scripts.UserModel.GetUserAttr()
-    if not user_attr then
-        return false
-    end
+-- function User.SimpleSetShowGhost(ghost_info, ghost_image)
+--     local user_attr = scripts.UserModel.GetUserAttr()
+--     if not user_attr then
+--         return false
+--     end
 
-    if not user_attr.cur_show_ghost then
-        user_attr.cur_show_ghost = GhostDef.newSimpleGhostData()
-    end
-    user_attr.cur_show_ghost.config_id = ghost_info.config_id
-    user_attr.cur_show_ghost.skin_id = ghost_image.cur_skin_id
+--     if not user_attr.cur_show_ghost then
+--         user_attr.cur_show_ghost = GhostDef.newSimpleGhostData()
+--     end
+--     user_attr.cur_show_ghost.config_id = ghost_info.config_id
+--     user_attr.cur_show_ghost.skin_id = ghost_image.cur_skin_id
 
-    return true
-end
+--     return true
+-- end
 
 local function LightRoleEquipment(msg)
     local err_role_code, role_info = scripts.Role.GetRoleInfo(msg.roleid)
@@ -497,7 +497,7 @@ end
 
 local function LightGhostEquipment(msg)
     local err_ghost_code, ghost_info = scripts.Ghost.GetGhostInfo(msg.ghostid)
-    if err_ghost_code ~= ErrorCode.None or ghost_info then
+    if err_ghost_code ~= ErrorCode.None or not ghost_info then
         return ErrorCode.GhostNotExist
     end
 
@@ -579,7 +579,7 @@ local function LightBagItem(msg)
     if not old_itemdata then
         return ErrorCode.BagNotExist
     end
-    
+
     local light_err_code, change_log = scripts.Bag.Light(item_data)
     if light_err_code ~= ErrorCode.None or not change_log then
         return light_err_code
@@ -794,10 +794,6 @@ function User.PBClientItemUpLvReqCmd(req)
     return
 end
 
--- 客户端请求--道具修复
-function User.PBClientItemRepairReqCmd(req)
-end
-
 -- function User.PBGetOtherDetailReqCmd(req)
 --     if context.uid ~= req.msg.uid
 --         or req.msg.quest_uid == 0
@@ -872,6 +868,92 @@ function User.PBGetOtherDetailReqCmd(req)
             quest_uid = req.msg.quest_uid or 0,
         }, req.msg_context.stub_id)
     end
+end
+
+-- 客户端请求--道具修复
+function User.PBClientItemRepairReqCmd(req)
+    -- 参数验证
+    if not req.msg.repair_uniqid or not req.msg.pos then
+        return context.S2C(context.net_id, CmdCode.PBClientItemUpLvRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            repair_uniqid = req.msg.repair_uniqid or 0,
+            pos = req.msg.pos or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    local function repair_func()
+        local errcode, item_data = scripts.Bag.MutOneItemData(BagDef.BagType.Cangku, req.msg.pos)
+        if errcode ~= ErrorCode.None or not item_data then
+            return errcode
+        end
+        local old_item_data = table.copy(item_data)
+        local smallType = scripts.ItemDefine.GetItemType(item_data.common_info.config_id)
+        if smallType == scripts.ItemDefine.EItemSmallType.MagicItem then
+            if item_data.special_info.magic_item.strong_value <= 0 then
+                return ErrorCode.StrongNotEnough
+            end
+            local magic_cfg = GameCfg.MagicItem[item_data.common_info.config_id]
+            if not magic_cfg then
+                return ErrorCode.ConfigError
+            end
+            if item_data.special_info.magic_item.cur_durability >= magic_cfg.durability then
+                return ErrorCode.DurabilityMax
+            end
+
+            local change_logs = {}
+            local add_durability = math.min(magic_cfg.durability - item_data.special_info.magic_item.cur_durability,
+            item_data.special_info.magic_item.strong_value)
+            local cost_items = {}
+            -- 检测道具是否足够
+            errcode = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+            if errcode ~= ErrorCode.None then
+                return errcode
+            end
+            -- 扣除道具
+            errcode = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_logs)
+            if errcode ~= ErrorCode.None then
+                scripts.Bag.RollBackWithChange(change_logs)
+                return errcode
+            end
+            -- 增加法器耐久度
+            item_data.special_info.magic_item.cur_durability = item_data.special_info.magic_item.cur_durability
+                + add_durability
+            item_data.special_info.magic_item.strong_value = item_data.special_info.magic_item.strong_value
+                - add_durability
+
+            -- 存储数据
+            if not change_logs[BagDef.BagType.Cangku] then
+                change_logs[BagDef.BagType.Cangku] = {}
+            end
+            scripts.Bag.AddLog(change_logs[BagDef.BagType.Cangku], req.msg.pos, BagDef.LogType.ChangeInfo,
+                item_data.common_info.config_id,
+                item_data.common_info.uniqid, item_data.common_info.item_count, old_item_data)
+
+            local save_bags = {}
+            for bagType, _ in pairs(change_logs) do
+                save_bags[bagType] = 1
+            end
+
+            if table.size(save_bags) then
+                scripts.Bag.SaveAndLog(save_bags, change_logs)
+            end
+
+            return ErrorCode.None, item_data
+        else
+            return ErrorCode.ItemTypeMismatch
+        end
+    end
+
+    local errcode = repair_func()
+    return context.S2C(context.net_id, CmdCode.PBClientItemUpLvRspCmd, {
+        code = errcode,
+        error = "",
+        uid = context.uid,
+        repair_uniqid = req.msg.repair_uniqid or 0,
+        pos = req.msg.pos or 0,
+    }, req.msg_context.stub_id)
 end
 
 return User

@@ -329,7 +329,8 @@ function _M.loaduser_attr(addr, uid)
 
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local _, tmp_data = protocol.decodewithname("PBUserAttr", res[1].value)
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBUserAttr", pbdata)
         return tmp_data
     end
 
@@ -340,13 +341,14 @@ function _M.saveuser_attr(addr, uid, data)
     assert(data)
 
     local pbname, pb_data = protocol.encodewithname("PBUserAttr", data)
+    local pbvalue = crypt.base64encode(pb_data)
     local data_str = jencode(data)
 
     local cmd = string.format([[
         INSERT INTO mgame.user_attr (uid, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], uid, pb_data, data_str, pb_data, data_str)
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
     return moon.call("lua", addr, cmd)
 end
 
@@ -516,7 +518,8 @@ function _M.load_guildinfo(addr, guild_id)
     ]], guild_id)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local _, tmp_data = protocol.decodewithname("PBGuildInfoDB", res[1].value)
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBGuildInfoDB", pbdata)
         return tmp_data
     end
     print("load_guildinfo failed", guild_id, err)
@@ -528,7 +531,8 @@ function _M.load_guildshop(addr, guild_id)
     ]], guild_id)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local _, tmp_data = protocol.decodewithname("PBGuildShopDB", res[1].value)
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBGuildShopDB", pbdata)
         return tmp_data
     end
     print("load_guildshop failed", guild_id, err)
@@ -540,7 +544,8 @@ function _M.load_guildbag(addr, guild_id)
     ]],guild_id)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local _, tmp_data = protocol.decodewithname("PBGuildBagDB", res[1].value)
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBGuildBagDB", pbdata)
         return tmp_data
     end
     print("load_guildbag failed", guild_id, err)
@@ -552,7 +557,8 @@ function _M.load_guildrecord(addr, guild_id)
     ]], guild_id)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local _, tmp_data = protocol.decodewithname("PBGuildRecordDB", res[1].value)
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBGuildRecordDB", pbdata)
         return tmp_data
     end
     print("load_guildrecord failed", guild_id, err)
@@ -563,11 +569,12 @@ function _M.save_guildinfo(addr, guild_id, data)
 
     local data_str = jencode(data)
     local _, pbdata = protocol.encodewithname("PBGuildInfoDB", data)
+    local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.c_guild (guildId, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], guild_id, pbdata, data_str, pbdata, data_str)
+    ]], guild_id, pbvalue, data_str, pbvalue, data_str)
     return moon.call("lua", addr, cmd)
 end
 function _M.save_guildshop(addr, guild_id, data)
@@ -575,11 +582,12 @@ function _M.save_guildshop(addr, guild_id, data)
 
     local data_str = jencode(data)
     local _, pbdata = protocol.encodewithname("PBGuildShopDB", data)
+    local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.c_guild_shop (guildId, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], guild_id, pbdata, data_str, pbdata, data_str)
+    ]], guild_id, pbvalue, data_str, pbvalue, data_str)
     return moon.call("lua", addr, cmd)
 end
 
@@ -588,11 +596,12 @@ function _M.save_guildbag(addr, guild_id, data)
 
     local data_str = jencode(data)
     local _, pbdata = protocol.encodewithname("PBGuildBagDB", data)
+    local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.c_guild_bag (guildId, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], guild_id, pbdata, data_str, pbdata, data_str)
+    ]], guild_id, pbvalue, data_str, pbvalue, data_str)
     return moon.call("lua", addr, cmd)
 end
 
@@ -601,11 +610,12 @@ function _M.save_guildrecord(addr, guild_id, data)
 
     local data_str = jencode(data)
     local _, pbdata = protocol.encodewithname("PBGuildRecordDB", data)
+    local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.c_guild_record (guildId, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], guild_id, pbdata, data_str, pbdata, data_str)
+    ]], guild_id, pbvalue, data_str, pbvalue, data_str)
     return moon.call("lua", addr, cmd)
 end
 
@@ -637,14 +647,16 @@ function _M.saveuserbags(addr, uid, bags_data)
         local data_str = jencode(bagData)
         local _, pbdata = protocol.encodewithname("PBBag", bagData)
         if data_str and pbdata then
+            local pbvalue = crypt.base64encode(pbdata)
             had_param = true
 
             str_param1 = str_param1 .. ", " .. bagTypeName .. ", " .. bagTypeName.. "_json"
-            str_param2 = str_param2 .. ", '" .. pbdata .. "', '" .. data_str .. "'"
+            str_param2 = str_param2 .. ", '" .. pbvalue .. "', '" .. data_str .. "'"
             if str_param3 ~= "" then
                 str_param3 = str_param3.. ", "
             end
-            str_param3 = str_param3 .. " " .. bagTypeName .. "='" .. pbdata .. "', " .. bagTypeName .. "_json='" .. data_str .. "'"
+            str_param3 = str_param3 ..
+            " " .. bagTypeName .. "='" .. pbvalue .. "', " .. bagTypeName .. "_json='" .. data_str .. "'"
         end
     end
     if not had_param then
@@ -679,7 +691,8 @@ function _M.loaduserbags(addr, uid, bags_id)
         local bag_res = {}
         for bagTypeName, _ in pairs(bags_id) do
             if sql_res[1][bagTypeName] then
-                local _, tmp_data = protocol.decodewithname("PBBag", sql_res[1][bagTypeName])
+                local pbdata = crypt.base64decode(sql_res[1][bagTypeName])
+                local _, tmp_data = protocol.decodewithname("PBBag", pbdata)
                 if tmp_data then
                     bag_res[bagTypeName] = tmp_data
                 end
@@ -727,7 +740,8 @@ function _M.loaduserghosts(addr, uid)
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local _, tmp_data = protocol.decodewithname("PBUserGhostDatas", res[1].value)
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBUserGhostDatas", pbdata)
         return tmp_data
     end
     print("loaduserghosts failed", uid, err)
@@ -739,11 +753,12 @@ function _M.saveuserghosts(addr, uid, data)
 
     local data_str = jencode(data)
     local _, pbdata = protocol.encodewithname("PBUserGhostDatas", data)
+    local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.ghosts (uid, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], uid, pbdata, data_str, pbdata, data_str)
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
 
     return moon.send("lua", addr, cmd)
 end
@@ -754,7 +769,8 @@ function _M.loaduseritemimage(addr, uid)
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local _, tmp_data = protocol.decodewithname("PBUserImage", res[1].value)
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBUserImage", pbdata)
         return tmp_data
     end
     print("loaduseritemimage failed", uid, err)
@@ -766,11 +782,12 @@ function _M.saveuseritemimage(addr, uid, data)
 
     local data_str = jencode(data)
     local _, pbdata = protocol.encodewithname("PBUserImage", data)
+    local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.itemimages (uid, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], uid, pbdata, data_str, pbdata, data_str)
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
 
     return moon.send("lua", addr, cmd)
 end
@@ -781,7 +798,8 @@ function _M.loadusercoins(addr, uid)
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local _, tmp_data = protocol.decodewithname("PBUserCoins", res[1].value)
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBUserCoins", pbdata)
         return tmp_data
     end
     print("loadusercoins failed", uid, err)
@@ -794,11 +812,12 @@ function _M.saveusercoins(addr, uid, data)
 
     local data_str = jencode(data)
     local _, pbdata = protocol.encodewithname("PBUserCoins", data)
+    local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.coins (uid, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], uid, pbdata, data_str, pbdata, data_str)
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
 
     return moon.send("lua", addr, cmd)
 end

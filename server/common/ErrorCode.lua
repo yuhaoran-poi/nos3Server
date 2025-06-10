@@ -301,6 +301,10 @@ local ErrorCode = {
     LightMagicItemFail = 1605,
     --- 开光八卦牌失败
     LightDigramsCardFail = 1606,
+    --- 坚固值不足
+    StrongNotEnough = 1607,
+    --- 耐久度上限
+    DurabilityMax = 1608,
 
     --角色相关错误码
     --- 角色不存在

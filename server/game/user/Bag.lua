@@ -1261,22 +1261,22 @@ function Bag.MutOneItemData(bagType, pos)
     return ErrorCode.None, baginfo.items[pos]
 end
 
-function Bag.SetOneItemData(bagType, pos, itemdata)
-    -- 获取数据副本
-    local bagdata = scripts.UserModel.GetBagData()
-    if not bagdata then
-        return ErrorCode.BagNotExist
-    end
+-- function Bag.SetOneItemData(bagType, pos, itemdata)
+--     -- 获取数据副本
+--     local bagdata = scripts.UserModel.GetBagData()
+--     if not bagdata then
+--         return ErrorCode.BagNotExist
+--     end
 
-    local baginfo = bagdata[bagType]
-    if not baginfo then
-        return ErrorCode.BagNotExist
-    end
+--     local baginfo = bagdata[bagType]
+--     if not baginfo then
+--         return ErrorCode.BagNotExist
+--     end
 
-    baginfo.items[pos] = table.copy(itemdata)
+--     baginfo.items[pos] = table.copy(itemdata)
 
-    return ErrorCode.None, baginfo.items[pos]
-end
+--     return ErrorCode.None, baginfo.items[pos]
+-- end
 
 function Bag.PBBagGetDataReqCmd(req)
     if table.size(req.msg.bags_name) <= 0 then
