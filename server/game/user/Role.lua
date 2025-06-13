@@ -174,6 +174,32 @@ function Role.GetRoleInfo(roleid)
     return ErrorCode.None, roles.role_list[roleid]
 end
 
+function Role.GetRolesInfo(roleids)
+    local res = {
+        errcode = ErrorCode.None,
+        roles_info = {},
+    }
+    if not roleids or table.size(roleids) <= 0 then
+        res.errcode = ErrorCode.RoleNotExist
+        return res
+    end
+
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list then
+        res.errcode = ErrorCode.RoleNotExist
+        return res
+    end
+
+    for _, roleid in pairs(roleids) do
+        local role_info = roles.role_list[roleid]
+        if role_info then
+            res.roles_info[roleid] = role_info
+        end
+    end
+    
+    return res
+end
+
 -- function Role.GetMagicItemData(roleid)
 --     local roles = scripts.UserModel.GetRoles()
 --     if not roles or not roles.role_list or not roles.role_list[roleid] then

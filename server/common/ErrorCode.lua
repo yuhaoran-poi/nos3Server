@@ -108,6 +108,8 @@ local ErrorCode = {
     RoomNotOpen = 911,
     ---房间密码错误
     RoomPwdError = 912,
+    ---房间邀请不存在
+    RoomInviteNotFound = 913,
 
     ---公会相关错误码
     ---已在公会中
@@ -305,6 +307,10 @@ local ErrorCode = {
     StrongNotEnough = 1607,
     --- 耐久度上限
     DurabilityMax = 1608,
+    --- 道具经验上限
+    ItemMaxExp = 1609,
+    --- 道具升级消耗不足
+    ItemUpLvCostNotExist = 1610,
 
     --角色相关错误码
     --- 角色不存在

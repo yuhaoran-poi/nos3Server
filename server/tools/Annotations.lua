@@ -243,6 +243,47 @@
 ---@field public error string @错误信息
 
 
+---@class PBGetDsUserAttrReqCmd
+---@field public dsid integer
+---@field public quest_uid integer @请求的玩家uid
+
+
+---@class PBGetDsUserAttrRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public dsid integer
+---@field public quest_uid integer
+---@field public info PBUserAttr
+
+
+---@class PBGetDsUserBagsReqCmd
+---@field public dsid integer
+---@field public quest_uid integer @请求的玩家uid
+---@field public bags_name string[] @背包类型
+
+
+---@class PBGetDsUserBagsRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public dsid integer
+---@field public quest_uid integer
+---@field public bag_datas table<string, PBBag>
+
+
+---@class PBGetDsUserRolesReqCmd
+---@field public dsid integer
+---@field public quest_uid integer @请求的玩家uid
+---@field public roleids integer[] @角色id
+
+
+---@class PBGetDsUserRolessRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public dsid integer
+---@field public quest_uid integer
+---@field public role_datas table<integer, PBRoleData>
+
+
 ---@class PBFriendData
 ---@field public uid integer
 ---@field public head_id integer @头像id
@@ -348,6 +389,52 @@
 ---@field public error string @错误信息
 ---@field public uid integer @用户ID
 ---@field public ghosts_info PBUserGhostDatas @所有鬼宠数据
+
+
+---@class PBGhostInfoSyncCmd
+---@field public ghosts_info PBUserGhostDatas @变更的鬼宠数据
+
+
+---@class PBGhostWearEquipReqCmd
+---@field public uid integer
+---@field public ghost_uniqid integer @鬼宠唯一id
+---@field public bag_name string @背包名
+---@field public pos integer @准备穿戴的装备在背包中的格子号
+---@field public equip_config_id integer @准备穿戴的装备配置id
+---@field public equip_uniqid integer @准备穿戴的装备唯一id
+---@field public equip_idx integer @装备的位置
+
+
+---@class PBGhostWearEquipRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public ghost_uniqid integer
+---@field public bag_name string
+---@field public pos integer
+---@field public equip_config_id integer
+---@field public equip_uniqid integer
+---@field public equip_idx integer
+
+
+---@class PBGhostTakeOffEquipReqCmd
+---@field public uid integer
+---@field public ghost_uniqid integer @宠唯一id
+---@field public bag_name string @背包名
+---@field public takeoff_config_id integer @准备卸下的装备配置id
+---@field public takeoff_uniqid integer @准备卸下的装备唯一id
+---@field public takeoff_idx integer @卸下的位置
+
+
+---@class PBGhostTakeOffEquipRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public ghost_uniqid integer @角色id
+---@field public bag_name string @背包名
+---@field public takeoff_config_id integer @准备卸下的装备配置id
+---@field public takeoff_uniqid integer @准备卸下的装备唯一id
+---@field public takeoff_idx integer @卸下的位置
 
 
 ---@class Any
@@ -1244,6 +1331,17 @@
 ---@field public ghost_diagrams_image table<integer, PBImage> @鬼宠八卦牌图鉴
 
 
+---@class PBImageGetDataReqCmd
+---@field public uid integer
+
+
+---@class PBImageGetDataRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public image_data PBUserImage
+
+
 ---@class PBImageUpdateSyncCmd
 ---@field public update_images PBUserImage
 
@@ -1485,18 +1583,46 @@
 ---@field public roles_info PBUserRoleDatas @变更的角色数据
 
 
----@class PBRoleWearEquipsReqCmd
+---@class PBRoleWearEquipReqCmd
 ---@field public uid integer
----@field public roleid integer
----@field public equip_config_id integer
----@field public equip_uniqid integer
+---@field public roleid integer @角色id
+---@field public bag_name string @背包名
+---@field public pos integer @准备穿戴的装备在背包中的格子号
+---@field public equip_config_id integer @准备穿戴的装备配置id
+---@field public equip_uniqid integer @准备穿戴的装备唯一id
+---@field public equip_idx integer @装备的位置
 
 
----@class PBRoleWearEquipsRspCmd
+---@class PBRoleWearEquipRspCmd
 ---@field public code integer @服务器验证返回,0成功,其他失败
 ---@field public error string @错误信息
----@field public uid integer @用户ID
+---@field public uid integer
+---@field public roleid integer
+---@field public bag_name string
+---@field public pos integer
+---@field public equip_config_id integer
+---@field public equip_uniqid integer
+---@field public equip_idx integer
+
+
+---@class PBRoleTakeOffEquipReqCmd
+---@field public uid integer
 ---@field public roleid integer @角色id
+---@field public bag_name string @背包名
+---@field public takeoff_config_id integer @准备卸下的装备配置id
+---@field public takeoff_uniqid integer @准备卸下的装备唯一id
+---@field public takeoff_idx integer @卸下的位置
+
+
+---@class PBRoleTakeOffEquipRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roleid integer @角色id
+---@field public bag_name string @背包名
+---@field public takeoff_config_id integer @准备卸下的装备配置id
+---@field public takeoff_uniqid integer @准备卸下的装备唯一id
+---@field public takeoff_idx integer @卸下的位置
 
 
 ---@class PBRoomSearchInfo
@@ -1534,12 +1660,18 @@
 ---@field public apply_time integer
 
 
+---@class PBRoomInviteInfo
+---@field public invite_uid integer
+---@field public mem_uid integer
+
+
 ---@class PBRoomWholeInfo
 ---@field public room_data PBRoomInfo
 ---@field public master_id integer @房主id
 ---@field public master_name string @房主昵称
 ---@field public players PBRoomMemberInfo[] @成员信息
 ---@field public apply_list PBRoomApplyInfo[] @申请信息
+---@field public invite_list PBRoomInviteInfo[] @邀请信息
 
 
 ---@class PBCreateRoomReqCmd
@@ -1677,6 +1809,46 @@
 ---@class PBKickRoomSyncCmd
 ---@field public roomid integer
 ---@field public kick_uid integer
+
+
+---@class PBInviteRoomReqCmd
+---@field public uid integer
+---@field public roomid integer
+---@field public invite_uid integer
+
+
+---@class PBInviteRoomRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roomid integer
+---@field public invite_uid integer
+
+
+---@class PBInviteRoomSyncCmd
+---@field public roomid integer
+---@field public mem_uid integer
+---@field public mem_name string
+---@field public room_info PBRoomInfo
+
+
+---@class PBDealInviteRoomReqCmd
+---@field public uid integer
+---@field public roomid integer
+---@field public deal_op integer @1--同意, 2--拒绝
+
+
+---@class PBDealInviteRoomRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roomid integer
+---@field public deal_op integer
+
+
+---@class PBDealInviteRoomSyncCmd
+---@field public invite_uid integer
+---@field public deal_op integer
 
 
 ---@class PBReadyRoomReqCmd
@@ -1889,6 +2061,17 @@
 ---@field public info PBUserAttr @简略信息
 
 
+---@class PBClientGetAllUserAttrReqCmd
+---@field public uid integer
+
+
+---@class PBClientGetAllUserAttrRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer @用户ID
+---@field public info PBUserAttr @简略信息
+
+
 ---@class PBSetUserAttrReqCmd
 ---@field public uid integer
 ---@field public type integer @个人信息类型 @see PBPersonInfoType
@@ -1956,7 +2139,8 @@
 
 ---@class PBClientItemRepairReqCmd
 ---@field public uid integer
----@field public repair_uniqid integer
+---@field public repair_uniqid integer @要修复的装备唯一id
+---@field public pos integer @装备所在的格子号
 
 
 ---@class PBClientItemRepairRspCmd
@@ -1964,6 +2148,7 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public repair_uniqid integer
+---@field public pos integer @装备所在的格子号
 
 
 ---@class PBGetOtherDetailReqCmd
@@ -2122,6 +2307,7 @@
 ---@field Item Item_cfg[]
 ---@field LightConvert LightConvert_cfg[]
 ---@field LightCost LightCost_cfg[]
+---@field MagicItem MagicItem_cfg[]
 ---@field MagicItemUpLv MagicItemUpLv_cfg[]
 ---@field RankLevel RankLevel_cfg[]
 ---@field UniqueItem UniqueItem_cfg[]

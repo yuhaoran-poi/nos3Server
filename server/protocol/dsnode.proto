@@ -1,5 +1,8 @@
 syntax = "proto3";
 import "item.proto";
+import "user.proto";
+import "bag.proto";
+import "role.proto";
 
 // 玩家进入主城
 message PBEnterCityReqCmd
@@ -52,4 +55,57 @@ message PBAddItemsCityPlayerRspCmd
 {
     int32 code      = 1; // 服务器验证返回,0成功,其他失败
     string error    = 2; // 错误信息
+}
+
+// DS获取玩家账号数据
+message PBGetDsUserAttrReqCmd
+{
+    // 协议数据
+    int32 dsid		= 1;
+	int64 quest_uid	= 2;    // 请求的玩家uid
+}
+
+message PBGetDsUserAttrRspCmd
+{
+    int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+    int32 dsid			= 3;
+	int64 quest_uid		= 4;
+    PBUserAttr info		= 5;
+}
+
+// DS获取玩家背包数据
+message PBGetDsUserBagsReqCmd
+{
+    // 协议数据
+    int32 dsid		= 1;
+	int64 quest_uid	= 2;    // 请求的玩家uid
+    repeated string bags_name   = 3;    // 背包类型
+}
+
+message PBGetDsUserBagsRspCmd
+{
+    int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+    int32 dsid			= 3;
+	int64 quest_uid		= 4;
+    map<string, PBBag>  bag_datas	= 5;
+}
+
+// DS获取玩家角色数据
+message PBGetDsUserRolesReqCmd
+{
+    // 协议数据
+    int32 dsid		= 1;
+	int64 quest_uid	= 2;    // 请求的玩家uid
+    repeated int32 roleids   = 3;    // 角色id
+}
+
+message PBGetDsUserRolessRspCmd
+{
+    int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+    int32 dsid			= 3;
+	int64 quest_uid		= 4;
+    map<int32, PBRoleData>  role_datas	= 5;
 }

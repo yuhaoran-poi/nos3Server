@@ -30,6 +30,7 @@ local defaultPBRoomWholeInfo = {
     master_name = "",
     players = {},
     apply_list = {},
+    invite_list = {},
 }
 
 ---@return PBRoomSearchInfo

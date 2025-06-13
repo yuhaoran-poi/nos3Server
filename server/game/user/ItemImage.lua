@@ -245,7 +245,7 @@ function ItemImage.UpLvImage(config_id, add_exp)
             end
         end
     end
-    
+
     -- 检查资源是否足够
     local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
     if err_code_items ~= ErrorCode.None then
@@ -279,6 +279,21 @@ function ItemImage.UpLvImage(config_id, add_exp)
     end
 
     return ErrorCode.None, change_log
+end
+
+function ItemImage.PBImageGetDataReqCmd(req)
+    local itemImages = scripts.UserModel.GetItemImages()
+    if not itemImages then
+        return context.S2C(context.net_id, CmdCode["PBImageGetDataRspCmd"], {code = ErrorCode.ServerInternalError, error = "服务器内部错误"}, req.msg_context.stub_id)
+    end
+
+    local res = {
+        code = ErrorCode.None,
+        error = "",
+        uid = context.uid,
+        image_data = itemImages,
+    }
+    return context.S2C(context.net_id, CmdCode["PBImageGetDataRspCmd"], res, req.msg_context.stub_id)
 end
 
 return ItemImage

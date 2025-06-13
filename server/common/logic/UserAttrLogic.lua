@@ -8,7 +8,7 @@ local UserAttrLogic = {}
 
 function UserAttrLogic.GetOtherUserAttr(context, quest_uid, fields)
     local res, err = context.call_user(quest_uid, "User.GetUserAttr", fields)
-    if err then
+    if not res then
         moon.error("GetOtherUserAttr failed:", err)
         return nil
     end

@@ -80,3 +80,50 @@ function Client:add_items_city_player(uid, cityid)
         print_r(msg)
     end)
 end
+
+function Client:get_ds_user_attr(uid)
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+    local req_msg = {
+        dsid = 1,
+        quest_uid = uid,
+    }
+    self:send("PBGetDsUserAttrReqCmd", req_msg, function(msg)
+        print("rpc PBGetDsUserAttrReqCmd ret = ", self.index, msg)
+        print_r(msg)
+    end)
+end
+
+function Client:get_ds_user_bags(uid)
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+    local req_msg = {
+        dsid = 1,
+        quest_uid = uid,
+    }
+    self:send("PBGetDsUserBagsReqCmd", req_msg, function(msg)
+        print("rpc PBGetDsUserBagsReqCmd ret = ", self.index, msg)
+        print_r(msg)
+    end)
+end
+
+function Client:get_ds_user_roles(uid, roleid)
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+    local req_msg = {
+        dsid = 1,
+        quest_uid = uid,
+        roleids = {}
+    }
+    table.insert(req_msg.roleids, roleid)
+    self:send("PBGetDsUserRolesReqCmd", req_msg, function(msg)
+        print("rpc PBGetDsUserRolesReqCmd ret = ", self.index, msg)
+        print_r(msg)
+    end)
+end

@@ -1278,32 +1278,45 @@ end
 --     return ErrorCode.None, baginfo.items[pos]
 -- end
 
+function Bag.GetBagdata(bags_name)
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata then
+        return { errcode = ErrorCode.BagNotExist }
+    end
+
+    local res = {
+        errcode = ErrorCode.None,
+        bag_datas = {}
+    }
+    for _, bag_name in pairs(bags_name) do
+        if bagdata[bag_name] then
+            res.bag_datas[bag_name] = bagdata[bag_name]
+        end
+    end
+
+    return res
+end
+
 function Bag.PBBagGetDataReqCmd(req)
     if table.size(req.msg.bags_name) <= 0 then
         return context.S2C(context.net_id, CmdCode["PBBagGetDataRspCmd"],
             { code = ErrorCode.ParamInvalid, error = "参数错误", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    local bagdata = scripts.UserModel.GetBagData()
-    if not bagdata then
-        return context.S2C(context.net_id, CmdCode["PBBagGetDataRspCmd"],
-            { code = ErrorCode.BagNotExist, error = "背包未加载", uid = context.uid }, req.msg_context.stub_id)
-    end
-
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local res = {
         code = ErrorCode.None,
         error = "",
         uid = context.uid,
         bag_datas = {},
     }
-    for _, bag_name in pairs(req.msg.bags_name) do
-        if bagdata[bag_name] then
-            res.bag_datas[bag_name] = bagdata[bag_name]
-        end
+    local ret = Bag.GetBagdata(req.msg.bags_name)
+    if ret.errcode ~= ErrorCode.None or table.size(ret.bag_datas) <= 0 then
+        res.code = ret.errcode
+        return context.S2C(context.net_id, CmdCode["PBBagGetDataRspCmd"], res, req.msg_context.stub_id)
+    else
+        res.bag_datas = ret.bag_datas
+        return context.S2C(context.net_id, CmdCode["PBBagGetDataRspCmd"], res, req.msg_context.stub_id)
     end
-    
-    return context.S2C(context.net_id, CmdCode["PBBagGetDataRspCmd"], res, req.msg_context.stub_id)
 end
 
 function Bag.PBBagGetCoinsReqCmd(req)

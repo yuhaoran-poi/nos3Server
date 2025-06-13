@@ -18,6 +18,7 @@ local jdecode = json.decode
 local context = ...
 
 local listenfd
+local maxplayers = 10
 
 ---@class Roommgr
 local Roommgr = {}
@@ -339,6 +340,14 @@ function Roommgr.ApplyToRoom(req)
         return { code = ErrorCode.RoomAlreadyInRoom, error = "已在其他房间", roomid = context.uid_roomid[req.msg.uid] }
     end
 
+    -- 检查是否可以申请
+    if room.room_data.isopen == 0 then
+        return { code = ErrorCode.RoomNotOpen, error = "房间未开放" }
+    end
+    if room.room_data.needpwd == 1 then
+        return { code = ErrorCode.RoomPwdError, error = "密码错误" }
+    end
+
     -- 检查重复申请
     for _, apply in pairs(room.apply_list) do
         if apply.uid == req.msg.uid then
@@ -354,7 +363,9 @@ function Roommgr.ApplyToRoom(req)
     })
 
     -- 通知房主有新申请
-    context.send_users(room.master_id, {}, "Room.OnRoomInfoSync", {
+    local notify_uids = {}
+    table.insert(notify_uids, room.master_id)
+    context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", {
         roomid = room.room_data.roomid,
         sync_info = {
             apply_list = room.apply_list,
@@ -365,10 +376,14 @@ function Roommgr.ApplyToRoom(req)
 end
 
 function Roommgr.DealApply(req)
-    --
     local room = context.rooms[req.roomid]
     if not room then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+
+    -- 检查是否可以申请
+    if room.room_data.isopen == 0 or room.room_data.needpwd == 1 then
+        return { code = ErrorCode.RoomPermissionDenied, error = "无操作权限" }
     end
 
     -- 验证房主身份
@@ -384,11 +399,9 @@ function Roommgr.DealApply(req)
             break
         end
     end
-
     if not apply_index then
         return { code = ErrorCode.RoomApplyNotFound, error = "申请不存在" }
     end
-
     local apply_data = table.remove(room.apply_list, apply_index)
 
     -- 处理申请
@@ -446,7 +459,7 @@ function Roommgr.EnterRoom(req)
     end
 
     -- 检查是否可以直接加入
-    if room.room_data.isopen == 0 and room.room_data.needpwd == 0 then
+    if room.room_data.isopen == 0 then
         return { code = ErrorCode.RoomNotOpen, error = "房间未开放" }
     end
 
@@ -535,9 +548,9 @@ function Roommgr.ExitRoom(req)
     -- 房主退出特殊处理
     if req.uid == room.master_id then
         -- 转移房主给下一个玩家或解散房间
-        if #room.players > 1 then
-            room.master_id = room.players[2].mem_info.uid
-            room.master_name = room.players[2].mem_info.nick_name
+        if #room.players > 0 then
+            room.master_id = room.players[1].mem_info.uid
+            room.master_name = room.players[1].mem_info.nick_name
         else
             context.rooms[req.roomid] = nil
             local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
@@ -587,6 +600,133 @@ function Roommgr.KickMember(req)
     })
 
     return { code = ErrorCode.None, error = "踢出成功", roomid = req.roomid, kick_uid = req.kick_uid }
+end
+
+-- 新增邀请功能
+function Roommgr.InviteMember(req)
+    local room = context.rooms[req.roomid]
+    if not room then
+        return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+
+    -- 查找玩家在房间中的位置
+    local self_index, invite_index = nil, nil
+    local mem_name = ""
+    for i, member in pairs(room.players) do
+        if member.mem_info.uid == req.uid then
+            self_index = i
+            mem_name = member.mem_info.nick_name
+        end
+        if member.mem_info.uid == req.invite_uid then
+            invite_index = i
+        end
+    end
+    if not self_index then
+        return { code = ErrorCode.RoomMemberNotFound, error = "自己不在房间内" }
+    end
+    if invite_index then
+        return { code = ErrorCode.RoomMemberNotFound, error = "玩家已在房间内" }
+    end
+
+    -- 记录申请信息
+    local had_invite = false
+    for _, invite in pairs(room.invite_list) do
+        if invite.invite_uid == req.invite_uid then
+            invite.mem_uid = req.uid
+            had_invite = true
+            break
+        end
+    end
+    if not had_invite then
+        table.insert(room.invite_list, {
+            mem_uid = req.uid,
+            invite_uid = req.invite_uid,
+            invite_time = moon.time()
+        })
+    end
+
+    -- 通知被邀请方
+    local notify_uids = {}
+    table.insert(notify_uids, req.invite_uid)
+    context.send_users(notify_uids, {}, "Room.OnInviteRoomSync", {
+        roomid = room.room_data.roomid,
+        mem_uid = req.invite_uid,
+        mem_name = req.invite_name,
+        room_info = room.room_data,
+    })
+
+    return { code = ErrorCode.None, error = "邀请已提交", uid = req.uid, roomid = req.roomid, invite_uid = req.invite_uid }
+end
+
+function Roommgr.DealInvite(req)
+    local room = context.rooms[req.msg.roomid]
+    if not room then
+        return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+
+    -- 检查是否已在其他房间
+    if context.uid_roomid[req.msg.uid] then
+        return { code = ErrorCode.RoomAlreadyInRoom, error = "你已在其他房间" }
+    end
+
+    -- 查找对应申请
+    local invite_index = nil
+    for i, invite in pairs(room.invite_list) do
+        if invite.invite_uid == req.msg.uid then
+            invite_index = i
+            break
+        end
+    end
+    
+    if not invite_index then
+        return { code = ErrorCode.RoomInviteNotFound, error = "邀请不存在" }
+    end
+    local invite_data = table.remove(room.invite_list, invite_index)
+
+    -- 处理邀请
+    if req.msg.deal_op == 1 then -- 同意邀请
+        if table.size(room.players) >= maxplayers then
+            return { code = ErrorCode.RoomFull, error = "房间已满" }
+        end
+        -- 添加玩家到房间
+        table.insert(room.players, { is_ready = 0, mem_info = req.invite_info })
+        context.uid_roomid[req.msg.uid] = req.roomid
+
+        local room_tags = {
+            isopen = room.room_data.isopen,
+            chapter = room.room_data.chapter,
+            difficulty = room.room_data.difficulty,
+        }
+        local redis_data = table.copy(room.room_data, true)
+        redis_data.pwd = nil
+        redis_data.playercnt = #room.players
+        redis_data.master_id = room.master_id
+        redis_data.master_name = room.master_name
+        Database.upsert_room(context.addr_db_server, room.room_data.roomid, room_tags, redis_data)
+
+        -- 广播新成员加入
+        local notify_uids = {}
+        for _, player in pairs(room.players) do
+            table.insert(notify_uids, player.mem_info.uid)
+        end
+        context.send_users(notify_uids, {}, "Room.OnMemberEnter", {
+            roomid = req.msg.roomid,
+            member_data = {
+                seat_idx = #room.players,
+                is_ready = 0,
+                mem_info = req.invite_info
+            }
+        })
+    else
+        local notify_uids = {}
+        table.insert(notify_uids, invite_data.mem_info)
+        context.send_users(notify_uids, {}, "Room.OnDealInviteRoomSync", {
+            invite_uid = invite_data.inviter_uid,
+            deal_op = req.msg.deal_op,
+        })
+    end
+
+    return { code = ErrorCode.None, error = "", uid = req.msg.uid, roomid = req.msg.roomid, deal_op = req.msg.deal_op }
 end
 
 function Roommgr.UpdateReadyStatus(req)

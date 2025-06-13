@@ -281,7 +281,7 @@ local function _internal(context)
                 if context.NODE == node then
                     moon.send("lua", addr_user, cmd, ...)
                 else
-                    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+                    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                     cluster.send(node, addr_user, cmd, ...)
                 end
             else

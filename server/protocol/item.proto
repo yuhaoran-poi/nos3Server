@@ -170,6 +170,20 @@ message PBUserImage
 	map<int32, PBImage> ghost_diagrams_image	= 4;	//鬼宠八卦牌图鉴
 }
 
+// 客户端获取图鉴数据
+message PBImageGetDataReqCmd
+{
+    int64 uid		= 1;
+}
+
+message PBImageGetDataRspCmd
+{
+    int32   code    = 1; // 服务器验证返回,0成功,其他失败
+    string  error   = 2; // 错误信息
+    int64   uid     = 3;
+    PBUserImage image_data	= 4;
+}
+
 message PBImageUpdateSyncCmd
 {
     PBUserImage update_images = 1;

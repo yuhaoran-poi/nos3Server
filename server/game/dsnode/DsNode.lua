@@ -5,6 +5,7 @@ local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local clusterd = require("cluster")
 local json = require "json"
+local UserAttrLogic = require("common.logic.UserAttrLogic")
 
 ---@type user_context
 local context = ...
@@ -38,6 +39,7 @@ function DsNode.Load(req)
                 name = req.dsid,
         }
 
+        context.ds_type = req.msg.login_data.ds_type
         context.dsid = req.dsid
         --scripts.UserModel.Create(data)
         ---初始化自己数据
@@ -193,6 +195,105 @@ function DsNode.PBAddItemsCityPlayerReqCmd(req)
     end
 
     context.S2D(context.net_id, CmdCode["PBAddItemsCityPlayerRspCmd"], { code = res }, req.msg_context.stub_id)
+end
+
+function DsNode.PBGetDsUserAttrReqCmd(req)
+    if not req.msg.dsid or not req.msg.quest_uid then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "no cityid"
+        }
+        context.S2D(context.net_id, CmdCode["PBGetDsUserAttrRspCmd"], ret, req.msg_context.stub_id)
+
+        return
+    end
+
+    local ret = {
+        code = ErrorCode.None,
+        error = "",
+        dsid = req.msg.dsid,
+        quest_uid = req.msg.quest_uid,
+    }
+    local ret_attr = UserAttrLogic.GetOtherUserAttr(context, req.msg.quest_uid)
+    if not ret_attr then
+        ret.code = ErrorCode.UserOffline
+        context.S2D(context.net_id, CmdCode["PBGetDsUserAttrRspCmd"], ret, req.msg_context.stub_id)
+    else
+        ret.info = ret_attr
+        context.S2D(context.net_id, CmdCode["PBGetDsUserAttrRspCmd"], ret, req.msg_context.stub_id)
+    end
+end
+
+function DsNode.PBGetDsUserBagsReqCmd(req)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if not req.msg.dsid or not req.msg.quest_uid then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "no cityid"
+        }
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserBagsRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    local res, err = context.call_user(req.msg.quest_uid, "Bag.GetBagdata", req.msg.bags_name)
+    if not res then
+        moon.error("GetDsUserBags failed:", err)
+        local ret = {
+            code = ErrorCode.UserOffline,
+            error = "no user"
+        }
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserBagsRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    local ret = {
+        code = res.errcode,
+        error = "",
+        dsid = context.dsid,
+        quest_uid = req.msg.quest_uid,
+    }
+    if res.bag_datas and table.size(res.bag_datas) >= 0 then
+        ret.bag_datas = res.bag_datas
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserBagsRspCmd"], ret, req.msg_context.stub_id)
+    else
+        ret.code = res.errcode
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserBagsRspCmd"], ret, req.msg_context.stub_id)
+    end
+end
+
+function DsNode.PBGetDsUserRolesReqCmd(req)
+    if not req.msg.dsid
+        or not req.msg.quest_uid
+        or not req.msg.roleids
+        or table.size(req.msg.roleids) <= 0 then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "no cityid"
+        }
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserRolesRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    local res, err = context.call_user(req.msg.quest_uid, "Role.GetRolesInfo", req.msg.roleids)
+    if not res then
+        moon.error("GetDsUserRoles failed:", err)
+        local ret = {
+            code = ErrorCode.UserOffline,
+            error = "no user"
+        }
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserRolesRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    local ret = {
+        code = res.errcode,
+        error = "",
+        dsid = context.dsid,
+        quest_uid = req.msg.quest_uid,
+    }
+    if res.bag_datas and table.size(res.bag_datas) >= 0 then
+        ret.role_datas = res.bag_datas
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserRolesRspCmd"], ret, req.msg_context.stub_id)
+    else
+        ret.code = res.errcode
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserRolesRspCmd"], ret, req.msg_context.stub_id)
+    end
 end
 
 return DsNode

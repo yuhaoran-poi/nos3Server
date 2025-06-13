@@ -55,6 +55,12 @@ message PBRoomApplyInfo
     int64 apply_time        = 3;
 }
 
+message PBRoomInviteInfo
+{
+    int64 invite_uid   = 1;
+    int64 mem_uid      = 2;
+}
+
 // 房间全数据信息
 message PBRoomWholeInfo
 {
@@ -63,6 +69,7 @@ message PBRoomWholeInfo
     string master_name      = 3;    // 房主昵称
     repeated PBRoomMemberInfo players   = 4;    // 成员信息
     repeated PBRoomApplyInfo apply_list = 5;    // 申请信息
+    repeated PBRoomInviteInfo invite_list = 6;  // 邀请信息
 }
 
 // 客户端创建房间
@@ -229,6 +236,56 @@ message PBKickRoomSyncCmd
 {
 	int64 roomid	= 1;
     int64 kick_uid  = 2;
+}
+
+// 邀请其他玩家进入房间
+message PBInviteRoomReqCmd
+{
+    int64 uid		= 1;
+	int64 roomid	= 2;
+    int64 invite_uid  = 3;
+}
+
+message PBInviteRoomRspCmd
+{
+    int32 code      = 1; // 服务器返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int64 uid		= 3;
+	int64 roomid	= 4;
+    int64 invite_uid  = 5;
+}
+
+// 通知玩家被邀请加入房间
+message PBInviteRoomSyncCmd
+{
+    int64 roomid	= 1;
+    int64 mem_uid  = 2;
+    string mem_name = 3;
+    PBRoomInfo room_info = 4;
+}
+
+// 处理房间邀请
+message PBDealInviteRoomReqCmd
+{
+    int64 uid		= 1;
+	int64 roomid	= 2;
+    int32 deal_op   = 3; // 1--同意, 2--拒绝
+}
+
+message PBDealInviteRoomRspCmd
+{
+    int32 code      = 1; // 服务器返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int64 uid		= 3;
+	int64 roomid	= 4;
+    int32 deal_op   = 5;
+}
+
+// 通知玩家邀请处理结果
+message PBDealInviteRoomSyncCmd
+{
+    int64 invite_uid    = 1;
+    int32 deal_op       = 2;
 }
 
 // 房间成员准备

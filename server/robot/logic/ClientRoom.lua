@@ -248,6 +248,56 @@ function Client:OnPBEnterDsRoomSyncCmd(msg)
     print_r(msg)
 end
 
+function Client:invite_room(invite_uid)
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+
+    local req_msg = {
+        uid = self.uid,
+        roomid = self.roomid,
+        invite_uid = invite_uid,
+    }
+    self:send("PBInviteRoomReqCmd", req_msg, function(msg)
+        print("rpc PBInviteRoomReqCmd ret = ", self.index, msg)
+        print_r(msg)
+        if msg.code == 0 then
+
+        end
+    end)
+end
+
+function Client:OnPBInviteRoomSyncCmd(msg)
+    print("OnPBInviteRoomSyncCmd")
+    print_r(msg)
+end
+
+function Client:deal_invite_room(roomid, deal_op)
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+
+    local req_msg = {
+        uid = self.uid,
+        roomid = roomid,
+        deal_op = deal_op,
+    }
+    self:send("PBDealInviteRoomReqCmd", req_msg, function(msg)
+        print("rpc PBDealInviteRoomReqCmd ret = ", self.index, msg)
+        print_r(msg)
+        if msg.code == 0 then
+
+        end
+    end)
+end
+
+function Client:OnPBDealInviteRoomSyncCmd(msg)
+    print("OnPBDealInviteRoomSyncCmd")
+    print_r(msg)
+end
+
 function Client:apply_city()
     if not self.ok then
         print("connect failed, err = ", err)
