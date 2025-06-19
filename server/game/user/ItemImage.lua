@@ -25,7 +25,7 @@ function ItemImage.Init()
 end
 
 function ItemImage.Start()
-    --加载全部角色数据
+    --加载全部图鉴数据
     local itemImageinfos = ItemImage.LoadItemImages()
     if itemImageinfos then
         scripts.UserModel.SetItemImages(itemImageinfos)
@@ -239,9 +239,17 @@ function ItemImage.UpLvImage(config_id, add_exp)
 
         for cost_id, cost_cnt in pairs(cost_cfg.cost) do
             if scripts.ItemDefine.GetItemType(cost_id) == scripts.ItemDefine.EItemSmallType.Coin then
-                cost_coins[cost_id] = cost_cnt * (count / cost_cfg.cnt)
+                if cost_coins[cost_id] then
+                    cost_coins[cost_id] = cost_coins[cost_id] + cost_cnt * (count / cost_cfg.cnt)
+                else
+                    cost_coins[cost_id] = cost_cnt * (count / cost_cfg.cnt)
+                end
             else
-                cost_items[cost_id] = cost_cnt * (count / cost_cfg.cnt)
+                if cost_items[cost_id] then
+                    cost_items[cost_id] = cost_items[cost_id] + cost_cnt * (count / cost_cfg.cnt)
+                else
+                    cost_items[cost_id] = cost_cnt * (count / cost_cfg.cnt)
+                end
             end
         end
     end
@@ -279,6 +287,88 @@ function ItemImage.UpLvImage(config_id, add_exp)
     end
 
     return ErrorCode.None, change_log
+end
+
+function ItemImage.UpStarImage(config_id)
+    local image_data, item_type = ItemImage.GetImage(config_id)
+    if not image_data then
+        return ErrorCode.ItemNotExist
+    end
+    
+    local star_cfg = GameCfg.UpStar[image_data.config_id]
+    if not star_cfg then
+        return ErrorCode.ConfigError
+    end
+    if image_data.star_level >= star_cfg.maxlv then
+        return ErrorCode.ItemMaxStar
+    end
+
+    local cost_key = "cost" .. (image_data.star_level + 1)
+    if not star_cfg[cost_key] then
+        return ErrorCode.ConfigError
+    end
+    local cost_cfg = star_cfg[cost_key]
+
+    -- 计算消耗资源
+    local cost_items = {}
+    local cost_coins = {}
+    for cost_id, cost_cnt in pairs(cost_cfg.cost) do
+        if scripts.ItemDefine.GetItemType(cost_id) == scripts.ItemDefine.EItemSmallType.Coin then
+            if cost_coins[cost_id] then
+                cost_coins[cost_id] = cost_coins[cost_id] + cost_cnt
+            else
+                cost_coins[cost_id] = cost_cnt
+            end
+        else
+            if cost_items[cost_id] then
+                cost_items[cost_id] = cost_items[cost_id] + cost_cnt
+            else
+                cost_items[cost_id] = cost_cnt
+            end
+        end
+    end
+
+    -- 检查资源是否足够
+    local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    if err_code_items ~= ErrorCode.None then
+        return err_code_items
+    end
+    local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
+    if err_code_coins ~= ErrorCode.None then
+        return err_code_coins
+    end
+
+    -- 增加星星
+    image_data.star_level = image_data.star_level + 1
+
+    -- 扣除消耗
+    local change_log = {}
+    local err_code_del = ErrorCode.None
+    if table.size(cost_items) > 0 then
+        err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(change_log)
+            return err_code_del
+        end
+    end
+    if table.size(cost_coins) > 0 then
+        err_code_del = scripts.Bag.DealCoins(cost_coins, change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(change_log)
+            return err_code_del
+        end
+    end
+
+    return ErrorCode.None, change_log
+end
+
+function ItemImage.GetImagesInfo()
+    local itemImages = scripts.UserModel.GetItemImages()
+    if not itemImages then
+        return { errcode = ErrorCode.ServerInternalError }
+    end
+
+    return { errcode = ErrorCode.None, image_data = itemImages }
 end
 
 function ItemImage.PBImageGetDataReqCmd(req)

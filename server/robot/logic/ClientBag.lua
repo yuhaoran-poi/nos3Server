@@ -66,3 +66,18 @@ function Client:light_item(pos, id)
         print_r(msg)
     end)
 end
+
+function Client:get_images()
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+
+    local req_msg = {
+        uid = self.uid,
+    }
+    self:send("PBImageGetDataReqCmd", req_msg, function(msg)
+        print("rpc PBImageGetDataRspCmd ret = ", self.index, msg)
+        print_r(msg)
+    end)
+end

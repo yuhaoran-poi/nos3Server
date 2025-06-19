@@ -1,7 +1,7 @@
 syntax = "proto3";
-import "bag.proto";
-import "role.proto";
-import "ghost.proto";
+//import "bag.proto";
+//import "role.proto";
+//import "ghost.proto";
 import "user.proto";
 
 //message PBRoomApplyData
@@ -46,6 +46,8 @@ message PBRoomInfo
 	int32 difficulty    = 6;
     int32 state     = 7;
     string describe = 8;
+    int32 map_id    = 9;
+    int32 boss_id   = 10;
 }
 
 message PBRoomApplyInfo
@@ -350,21 +352,21 @@ message PBEnterDsRoomSyncCmd
     string ds_ip        = 3;
 }
 
-// DS请求玩家数据
-message PBDsGetPlayerDataReqCmd
-{
-    int64 uid		= 1;
-	int64 roomid	= 2;
-    int32 data_type = 3; // 0--全部 1--个人简略数据 2--战斗角色数据 3--背包数据
-}
+// 请求玩家DS相关数据
+//message PBGetPlayerDsDataReqCmd
+//{
+//    int64 uid		= 1;
+//	int64 roomid	= 2;
+//    int32 data_type = 3; // 0--全部 1--个人简略数据 2--战斗角色数据 3--背包数据
+//}
 
-message PBDsGetPlayerDataRspCmd
-{
-    int32 code      = 1; // 服务器返回,0成功,其他失败
-    string error    = 2; // 错误信息
-    int32 data_type = 3;
-    PBUserAttr simple_data    = 4;
-    PBRoleData battle_role          = 5;
-    PBGhostData battle_ghost        = 6;
-    PBBag consume_bag               = 7;
-}
+//message PBGetPlayerDsDataRspCmd
+//{
+//    int32 code      = 1; // 服务器返回,0成功,其他失败
+//    string error    = 2; // 错误信息
+//    int32 data_type = 3;
+//    PBUserAttr simple_data    = 4;
+//    PBRoleData battle_role          = 5;
+//    PBGhostData battle_ghost        = 6;
+//    PBBag consume_bag               = 7;
+//}

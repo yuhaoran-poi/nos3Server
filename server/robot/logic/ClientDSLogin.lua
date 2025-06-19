@@ -127,3 +127,18 @@ function Client:get_ds_user_roles(uid, roleid)
         print_r(msg)
     end)
 end
+
+function Client:get_ds_user_images(uid)
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+    local req_msg = {
+        dsid = 1,
+        quest_uid = uid,
+    }
+    self:send("PBGetDsUserImageReqCmd", req_msg, function(msg)
+        print("rpc PBGetDsUserImageRspCmd ret = ", self.index, msg)
+        print_r(msg)
+    end)
+end

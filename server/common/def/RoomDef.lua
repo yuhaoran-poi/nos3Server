@@ -21,7 +21,9 @@ local defaultPBRoomInfo = {
     chapter = 0,
     difficulty = 0,
     state = 0,
-    describe = ""
+    describe = "",
+    map_id = 0,
+    boss_id = 0,
 }
 
 local defaultPBRoomWholeInfo = {

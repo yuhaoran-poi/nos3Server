@@ -86,41 +86,41 @@ function Roommgr.CheckWaitDSRooms()
         if now - v.lasttime >= 10 then
             v.lasttime = now
             
-            if v.status == 0 then
-                local response = httpc.post(context.conf.allocate_url, v.allocate_data)
-                --
-                print_r(response)
-                local rsp_data = json.decode(response.body)
-                local success, ret = allocate_cb(rsp_data)
-                if not success or not ret then
-                    v.failcnt = v.failcnt + 1
-                else
-                    v.ds_ip = ret.ds_ip
-                    v.region = ret.region
-                    v.serverssion = ret.serverssion
+            -- if v.status == 0 then
+            --     local response = httpc.post(context.conf.allocate_url, v.allocate_data)
+            --     --
+            --     print_r(response)
+            --     local rsp_data = json.decode(response.body)
+            --     local success, ret = allocate_cb(rsp_data)
+            --     if not success or not ret then
+            --         v.failcnt = v.failcnt + 1
+            --     else
+            --         v.ds_ip = ret.ds_ip
+            --         v.region = ret.region
+            --         v.serverssion = ret.serverssion
 
-                    v.status = 1
-                    v.failcnt = 0
-                end
-            elseif v.status == 1 then
-                local get_url = context.conf.query_url .. "?name=" .. v.region
-                print_r(get_url)
-                local response = httpc.get(get_url)
-                --
-                print_r(response)
-                local rsp_data = json.decode(response.body)
-                local success, ret = query_cb(rsp_data)
-                if not success or not ret then
-                    v.failcnt = v.failcnt + 1
-                else
-                    v.ds_address = ret
+            --         v.status = 1
+            --         v.failcnt = 0
+            --     end
+            -- elseif v.status == 1 then
+            --     local get_url = context.conf.query_url .. "?name=" .. v.region
+            --     print_r(get_url)
+            --     local response = httpc.get(get_url)
+            --     --
+            --     print_r(response)
+            --     local rsp_data = json.decode(response.body)
+            --     local success, ret = query_cb(rsp_data)
+            --     if not success or not ret then
+            --         v.failcnt = v.failcnt + 1
+            --     else
+            --         v.ds_address = ret
                     
-                    v.status = 2
-                    v.failcnt = 0
-                end
-            else
-                v.failcnt = v.failcnt + 1
-            end
+            --         v.status = 2
+            --         v.failcnt = 0
+            --     end
+            -- else
+            --     v.failcnt = v.failcnt + 1
+            -- end
         end
     end
 
@@ -209,7 +209,8 @@ function Roommgr.CreateRoom(req)
     end
     --moon.info(string.format("Roommgr.CreateRoom self_info:\n%s", json.pretty_encode(req.self_info)))
     local room = RoomDef.newRoomWholeInfo()
-    local roomid = generate_roomid()
+    --local roomid = generate_roomid()
+    local roomid = 10001
     room.room_data.roomid = roomid
     room.room_data.isopen = req.msg.isopen
     room.room_data.needpwd = req.msg.needpwd
@@ -805,6 +806,54 @@ function Roommgr.GetRoomInfo(req)
     return res
 end
 
+function Roommgr.RandomMapAndBoss(room_data)
+    if table.size(GameCfg.GameChapter) <= 0 then
+        return ErrorCode.ConfigError
+    end
+
+    local cur_idx = 0
+    for idx, tmp_conf in pairs(GameCfg.GameChapter) do
+        if tmp_conf.chapterid == room_data.chapter
+            and tmp_conf.difficulty == room_data.difficulty then
+            cur_idx = idx
+            break
+        end
+    end
+    if cur_idx == 0 then
+        return ErrorCode.ConfigError
+    end
+
+    local tmp_conf = GameCfg.GameChapter[cur_idx]
+
+    local map_total_weight = 0
+    for id, weight in pairs(tmp_conf.mapid) do
+        map_total_weight = map_total_weight + weight
+    end
+    local map_rand = math.random(map_total_weight)
+    for id, weight in pairs(tmp_conf.mapid) do
+        map_rand = map_rand - weight
+        if map_rand <= 0 then
+            room_data.map_id = id
+            break
+        end
+    end
+
+    local boss_total_weight = 0
+    for id, weight in pairs(tmp_conf.bossid) do
+        boss_total_weight = boss_total_weight + weight
+    end
+    local boss_rand = math.random(boss_total_weight)
+    for id, weight in pairs(tmp_conf.bossid) do
+        boss_rand = boss_rand - weight
+        if boss_rand <= 0 then
+            room_data.boss_id = id
+            break
+        end
+    end
+
+    return ErrorCode.None
+end
+
 function Roommgr.StartGame(req)
     local room = context.rooms[req.roomid]
     if not room then
@@ -823,13 +872,18 @@ function Roommgr.StartGame(req)
         end
     end
 
+    local map_errcode = Roommgr.RandomMapAndBoss(room.room_data)
+    if map_errcode ~= ErrorCode.None then
+        return { code = map_errcode, error = "随机地图失败" }
+    end
+
     -- 准备进入DS
     local room_info = {
         ds_id = room.room_data.roomid,
         chapter = room.room_data.chapter,
         difficulty = room.room_data.difficulty,
-        map_id = 1,
-        boss_id = 1,
+        map_id = room.room_data.map_id,
+        boss_id = room.room_data.boss_id,
         redis_ip = context.conf.redis_nginx_ip,
         redis_port = context.conf.redis_nginx_port,
         uids = {},
@@ -848,7 +902,7 @@ function Roommgr.StartGame(req)
     -- 更新房间状态
     room.room_data.state = 1  -- 游戏中状态
     room.room_data.isopen = 0 -- 游戏开始后关闭房间
-    
+
     local room_tags = {
         isopen = room.room_data.isopen, -- 游戏开始后关闭房间
         chapter = room.room_data.chapter,
@@ -870,11 +924,39 @@ function Roommgr.StartGame(req)
     context.send_users(notify_uids, {}, "Room.OnEnterDs", {
         roomid = req.roomid,
         ds_address = "ds_address",
-        ds_ip = "127.0.0.1-12121",
+        ds_ip = "192.168.2.38-7800",
     })
     -----临时通知所有玩家进入DS------------
 
     return { code = ErrorCode.None, error = "游戏开始成功", roomid = req.roomid }
+end
+
+function Roommgr.GetRoomCreateData(req)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if not req.roomid then
+        return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+
+    local room = context.rooms[req.roomid]
+    if not room then
+        return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+    local room_info = {
+        ds_id = room.room_data.roomid,
+        chapter = room.room_data.chapter,
+        difficulty = room.room_data.difficulty,
+        map_id = room.room_data.map_id,
+        boss_id = room.room_data.boss_id,
+        redis_ip = context.conf.redis_nginx_ip,
+        redis_port = context.conf.redis_nginx_port,
+        uids = {},
+    }
+    for _, player in pairs(room.players) do
+        table.insert(room_info.uids, player.mem_info.uid)
+    end
+    local _, pbdata = protocol.encodewithname("PBDsCreateData", room_info)
+    local room_str = crypt.base64encode(pbdata)
+    return { code = ErrorCode.None, error = "success", roomid = req.roomid, room_str = room_str }
 end
 
 function Roommgr.Start()

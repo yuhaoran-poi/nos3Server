@@ -287,12 +287,86 @@ function DsNode.PBGetDsUserRolesReqCmd(req)
         dsid = context.dsid,
         quest_uid = req.msg.quest_uid,
     }
-    if res.bag_datas and table.size(res.bag_datas) >= 0 then
-        ret.role_datas = res.bag_datas
+    if res.roles_info and table.size(res.roles_info) >= 0 then
+        ret.role_datas = res.roles_info
         return context.S2D(context.net_id, CmdCode["PBGetDsUserRolesRspCmd"], ret, req.msg_context.stub_id)
     else
         ret.code = res.errcode
         return context.S2D(context.net_id, CmdCode["PBGetDsUserRolesRspCmd"], ret, req.msg_context.stub_id)
+    end
+end
+
+function DsNode.PBGetDsCreateDataReqCmd(req)
+    if not req.msg.roomid then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "no roomid"
+        }
+        context.S2D(context.net_id, CmdCode["PBGetDsCreateDataRspCmd"], ret, req.msg_context.stub_id)
+
+        return
+    end
+
+    local res, err = clusterd.call(3999, "roommgr", "Roommgr.GetRoomCreateData", {
+        roomid = req.msg.roomid,
+    })
+    if res then
+        moon.warn(string.format("res = %s", json.pretty_encode(res)))
+    end
+    if err then
+        moon.warn(string.format("err = %s", json.pretty_encode(err)))
+    end
+    if res.code == ErrorCode.None then
+        local ret = {
+            code = res.code,
+            error = res.error,
+            roomid = req.msg.roomid,
+            room_str = res.room_str,
+        }
+        context.S2D(context.net_id, CmdCode["PBGetDsCreateDataRspCmd"], ret, req.msg_context.stub_id)
+    else
+        local ret = {
+            code = res.code,
+            error = res.error,
+            roomid = req.msg.roomid,
+        }
+        context.S2D(context.net_id, CmdCode["PBGetDsCreateDataRspCmd"], ret, req.msg_context.stub_id)
+    end
+end
+
+function DsNode.PBGetDsUserImageReqCmd(req)
+    if not req.msg.dsid or not req.msg.quest_uid then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "no cityid"
+        }
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserImageRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    local res, err = context.call_user(req.msg.quest_uid, "ItemImage.GetImagesInfo")
+    if not res then
+        moon.error("GetDsUserRoles failed:", err)
+        local ret = {
+            code = ErrorCode.UserOffline,
+            error = "no user"
+        }
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserImageRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    --moon.warn(string.format("GetImagesInfo res = %s", json.pretty_encode(res)))
+
+    local ret = {
+        code = res.errcode,
+        error = "",
+        dsid = context.dsid,
+        quest_uid = req.msg.quest_uid,
+    }
+    if res.errcode == ErrorCode.None and res.image_data then
+        ret.image_data = res.image_data
+        --moon.warn(string.format("GetImagesInfo ret = %s", json.pretty_encode(ret)))
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserImageRspCmd"], ret, req.msg_context.stub_id)
+    else
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserImageRspCmd"], ret, req.msg_context.stub_id)
     end
 end
 

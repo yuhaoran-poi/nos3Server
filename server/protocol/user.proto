@@ -164,6 +164,21 @@ message PBClientItemUpLvRspCmd
 	int32 add_exp	= 5;
 }
 
+// 客户端请求--道具升星
+message PBClientItemUpStarReqCmd
+{
+	int64 uid		= 1;
+	int32 config_id = 2;
+}
+
+message PBClientItemUpStarRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 config_id = 4;
+}
+
 // 客户端请求--道具维修
 message PBClientItemRepairReqCmd
 {

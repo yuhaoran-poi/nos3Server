@@ -177,6 +177,7 @@ local function _internal(context)
                 local addr = moon.queryservice(string.sub(key, 6))
                 if addr == 0 then
                     error("Can not found service: " .. tostring(key))
+                    print(debug.traceback("Error stack trace:", 2))
                 end
                 t[key] = addr
                 return addr

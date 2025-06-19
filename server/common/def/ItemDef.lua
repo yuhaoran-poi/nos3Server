@@ -21,6 +21,7 @@ local defaultPBMagicItem = {
     strong_value = 0,
     light_cnt = 0,
     tags = {},
+    ability_tag = {},
 }
 
 local defaultPBDiagramsCard = {
@@ -28,6 +29,7 @@ local defaultPBDiagramsCard = {
     strong_value = 0,
     light_cnt = 0,
     tags = {},
+    ability_tag = {},
 }
 
 -- 道具数据

@@ -13,6 +13,7 @@ local GhostDef = require("common.def.GhostDef")
 local BagDef = require("common.def.BagDef")
 local ProtoEnum = require("tools.ProtoEnum")
 local UserAttrLogic = require("common.logic.UserAttrLogic")
+local CommonCfgDef = require("common.def.CommonCfgDef")
 
 ---@type user_context
 local context = ...
@@ -790,8 +791,54 @@ function User.PBClientItemUpLvReqCmd(req)
     local change_image_ids = {}
     table.insert(change_image_ids, req.msg.config_id)
     scripts.ItemImage.UpdateAndSave(change_image_ids)
+end
 
-    return
+-- 客户端请求--法器升星
+function User.PBClientItemUpStarReqCmd(req)
+    -- 参数验证
+    if not req.msg.config_id then
+        return context.S2C(context.net_id, CmdCode.PBClientItemUpStarRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            config_id = req.msg.config_id or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    -- 图鉴升星
+    local err_code, change_log = scripts.ItemImage.UpStarImage(req.msg.config_id)
+    if err_code ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBClientItemUpStarRspCmd, {
+            code = ErrorCode.ItemNotExist,
+            error = "图鉴不存在",
+            uid = context.uid,
+            config_id = req.msg.config_id,
+        }, req.msg_context.stub_id)
+    end
+
+    context.S2C(context.net_id, CmdCode.PBClientItemUpStarRspCmd, {
+        code = ErrorCode.None,
+        error = "",
+        uid = context.uid,
+        config_id = req.msg.config_id,
+    }, req.msg_context.stub_id)
+
+    -- 存储背包变更
+    if change_log then
+        local save_bags = {}
+        for bagType, _ in pairs(change_log) do
+            save_bags[bagType] = 1
+        end
+
+        if table.size(save_bags) then
+            scripts.Bag.SaveAndLog(save_bags, change_log)
+        end
+    end
+
+    -- 图鉴信息变更
+    local change_image_ids = {}
+    table.insert(change_image_ids, req.msg.config_id)
+    scripts.ItemImage.UpdateAndSave(change_image_ids)
 end
 
 -- function User.PBGetOtherDetailReqCmd(req)
@@ -904,19 +951,64 @@ function User.PBClientItemRepairReqCmd(req)
 
             local change_logs = {}
             local add_durability = math.min(magic_cfg.durability - item_data.special_info.magic_item.cur_durability,
-            item_data.special_info.magic_item.strong_value)
+                item_data.special_info.magic_item.strong_value)
+            
+            -- 消耗配置
+            local common_cfg = CommonCfgDef.getConf("MaintenanceCost")
+            if not common_cfg then
+                return ErrorCode.ConfigError
+            end
             local cost_items = {}
+            local cost_coins = {}
+            for config_id, item_count in pairs(common_cfg.items) do
+                local small_type = scripts.ItemDefine.GetItemType(config_id)
+                if small_type == scripts.ItemDefine.EItemSmallType.Coin then
+                    if not cost_coins[config_id] then
+                        cost_coins[config_id] = {
+                            coin_id = 0,
+                            count = 0,
+                        }
+                    end
+
+                    cost_coins[config_id].count = cost_coins[config_id].count - item_count * add_durability
+                else
+                    if not cost_items[config_id] then
+                        cost_items[config_id] = {
+                            count = 0,
+                            pos = 0,
+                        }
+                    end
+
+                    cost_items[config_id].count = cost_items[config_id].count - item_count * add_durability
+                end
+            end
+
             -- 检测道具是否足够
             errcode = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
             if errcode ~= ErrorCode.None then
                 return errcode
             end
-            -- 扣除道具
-            errcode = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_logs)
+            errcode = scripts.Bag.CheckCoinsEnough(cost_coins)
             if errcode ~= ErrorCode.None then
-                scripts.Bag.RollBackWithChange(change_logs)
                 return errcode
             end
+
+            -- 扣除道具
+            if table.size(cost_items) > 0 then
+                errcode = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_logs)
+                if errcode ~= ErrorCode.None then
+                    scripts.Bag.RollBackWithChange(change_logs)
+                    return errcode
+                end
+            end
+            if table.size(cost_coins) > 0 then
+                errcode = scripts.Bag.DealCoins(cost_coins, change_logs)
+                if errcode ~= ErrorCode.None then
+                    scripts.Bag.RollBackWithChange(change_logs)
+                    return errcode
+                end
+            end
+            
             -- 增加法器耐久度
             item_data.special_info.magic_item.cur_durability = item_data.special_info.magic_item.cur_durability
                 + add_durability

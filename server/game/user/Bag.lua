@@ -12,6 +12,7 @@ local ItemDef = require("common.def.ItemDef")
 ---@type user_context
 local context = ...
 local scripts = context.scripts
+local AbilityTagIdMin = 1000000
 
 -- local ItemType = {
 --     ALL = 1,
@@ -592,6 +593,7 @@ function Bag.AddMagicItem(bagType, baginfo, itemId, count, change_log)
         itemdata.special_info.magic_item.strong_value = 0
         itemdata.special_info.magic_item.light_cnt = 0
         itemdata.special_info.magic_item.tags = {}
+        itemdata.special_info.magic_item.ability_tag = {}
     end
 
     --添加法器图鉴
@@ -617,6 +619,7 @@ function Bag.AddDiagramsCard(bagType, baginfo, itemId, count, change_log)
         itemdata.special_info.diagrams_item.strong_value = 0
         itemdata.special_info.diagrams_item.light_cnt = 0
         itemdata.special_info.diagrams_item.tags = {}
+        itemdata.special_info.diagrams_item.ability_tag = {}
     end
 
     --添加八卦牌图鉴
@@ -1432,10 +1435,12 @@ function Bag.Light(op_itemdata)
     -- 获取当前开光次数和词条
     local cur_light_cnt = 0
     local cur_tags = {}
+    local cur_ability_tag = {}
     if op_itemdata.itype == scripts.ItemDefine.EItemSmallType.MagicItem then
         if op_itemdata.special_info and op_itemdata.special_info.magic_item then
             cur_light_cnt = op_itemdata.special_info.magic_item.light_cnt
             cur_tags = op_itemdata.special_info.magic_item.tags
+            cur_ability_tag = op_itemdata.special_info.magic_item.ability_tag
         else
             return ErrorCode.ItemNotExist
         end
@@ -1444,6 +1449,7 @@ function Bag.Light(op_itemdata)
         if op_itemdata.special_info and op_itemdata.special_info.diagrams_item then
             cur_light_cnt = op_itemdata.special_info.diagrams_item.light_cnt
             cur_tags = op_itemdata.special_info.diagrams_item.tags
+            cur_ability_tag = op_itemdata.special_info.diagrams_item.ability_tag
         else
             return ErrorCode.ItemNotExist
         end
@@ -1520,7 +1526,7 @@ function Bag.Light(op_itemdata)
         return err_code_coins
     end
 
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 随机出词条池子
     local id_weight = {}
     for pool_id, pool_weight in pairs(uniqitem_cfg.lightpooltype) do
@@ -1552,12 +1558,34 @@ function Bag.Light(op_itemdata)
             end
         end
     end
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if table.size(cur_ability_tag) == 0 then
+        for pool_id, pool_weight in pairs(uniqitem_cfg.lightpooltype2) do
+            local pool_cfg = GameCfg.AllTagPool[pool_id]
+            if not pool_cfg then
+                return ErrorCode.TagPoolNotExist
+            end
+
+            for tag_id, tag_weight in pairs(pool_cfg.all_tag) do
+                local tag_cfg = GameCfg.AllTag[tag_id]
+                if not tag_cfg then
+                    return ErrorCode.TagNotExist
+                end
+
+                if not id_weight[tag_id] then
+                    id_weight[tag_id] = tag_weight * pool_weight
+                else
+                    id_weight[tag_id] = id_weight[tag_id] + (tag_weight * pool_weight)
+                end
+            end
+        end
+    end
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if table.size(id_weight) <= 0 then
         return ErrorCode.TagNotExist
     end
 
     moon.debug(string.format("cur_tags:\n%s", json.pretty_encode(cur_tags)))
+    moon.debug(string.format("cur_ability_tag:\n%s", json.pretty_encode(cur_ability_tag)))
     moon.debug(string.format("id_weight:\n%s", json.pretty_encode(id_weight)))
     -- 随机词条
     local new_tag_id = scripts.Item.RangeTags(id_weight)
@@ -1599,11 +1627,19 @@ function Bag.Light(op_itemdata)
     moon.debug(string.format("new_tag:\n%s", json.pretty_encode(new_tag)))
     if op_itemdata.itype == scripts.ItemDefine.EItemSmallType.MagicItem then
         op_itemdata.special_info.magic_item.light_cnt = cur_light_cnt + 1
-        table.insert(op_itemdata.special_info.magic_item.tags, new_tag)
+        if new_tag_id >= AbilityTagIdMin then
+            table.insert(op_itemdata.special_info.magic_item.ability_tag, new_tag)
+        else
+            table.insert(op_itemdata.special_info.magic_item.tags, new_tag)
+        end
     elseif op_itemdata.itype == scripts.ItemDefine.EItemSmallType.HumanDiagrams
         or op_itemdata.itype == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
         op_itemdata.special_info.diagrams_item.light_cnt = cur_light_cnt + 1
-        table.insert(op_itemdata.special_info.diagrams_item.tags, new_tag)
+        if new_tag_id >= AbilityTagIdMin then
+            table.insert(op_itemdata.special_info.diagrams_item.ability_tag, new_tag)
+        else
+            table.insert(op_itemdata.special_info.diagrams_item.tags, new_tag)
+        end
     else
         Bag.RollBackWithChange(change_log)
         return ErrorCode.ItemNotExist

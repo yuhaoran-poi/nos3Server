@@ -28,6 +28,7 @@ local context = {
     dsid = 0,
     ds_type = 0,
     net_id = 0,
+---@diagnostic disable-next-line: missing-fields
     scripts = {},
     ---other service address
     --addr_room = 0

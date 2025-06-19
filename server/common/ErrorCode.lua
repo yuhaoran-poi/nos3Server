@@ -311,6 +311,8 @@ local ErrorCode = {
     ItemMaxExp = 1609,
     --- 道具升级消耗不足
     ItemUpLvCostNotExist = 1610,
+    --- 道具星级上限
+    ItemMaxStar = 1611,
 
     --角色相关错误码
     --- 角色不存在
