@@ -1,6 +1,8 @@
 local moon = require("moon")
 local socket = require("moon.socket")
 local common = require("common")
+local cluster = require("cluster")
+local json = require "json"
 local CmdCode = common.CmdCode
 local GameCfg = common.GameCfg --游戏配置
 ---@type usermgr_context
@@ -67,6 +69,7 @@ function Usermgr.NodeOffline(msg)
     print(string.format("Usermgr.NodeOffline nid:%d, removed %d users", msg.nid, #removed_users))
 end
 
+-- 增强玩家状态管理，分为在线，下线中，离线状态，存储到redis
 function Usermgr.ApplyLogin(msg)
     if not context.node_info[msg.nid] then
         return { error = "not node" }
@@ -88,7 +91,7 @@ function Usermgr.ApplyLogin(msg)
         return { error = "user already login", res }
     end
 
-    context.user_node[msg.uid] = {nid = msg.nid, addr_user = msg.addr_user}
+    context.user_node[msg.uid] = { nid = msg.nid, addr_user = msg.addr_user }
     if not old then
         context.node_info[msg.nid].user_num = context.node_info[msg.nid].user_num + 1
     end
@@ -97,16 +100,35 @@ function Usermgr.ApplyLogin(msg)
     return { error = "success" }
 end
 
+function Usermgr.ForceKick(msg)
+    if not context.node_info[msg.nid] then
+        return { error = "not node" }
+    end
+
+    local old = context.user_node[msg.uid]
+    if old then
+        local node, addr_user = old.nid, old.addr_user
+        cluster.send(node, addr_user, "User.ForceLogout")
+    end
+
+    print(string.format("Usermgr.ForceKick uid:%d", msg.uid))
+    return { error = "success" }
+end
+
 function Usermgr.NotifyLogout(msg)
     local old = context.user_node[msg.uid]
-    if not old or old ~= msg.nid then
-        return
+    if not old or old.nid ~= msg.nid then
+        --moon.error(string.format("Usermgr.NotifyLogout msg = %s", json.pretty_encode(msg)))
+        --moon.error(string.format("Usermgr.NotifyLogout context.user_node = %s", json.pretty_encode(context.user_node)))
+        return { error = "failed" }
     end
 
     if context.node_info[msg.nid] then
         context.node_info[msg.nid].user_num = context.node_info[msg.nid].user_num - 1
     end
     context.user_node[msg.uid] = nil
+
+    return { error = "success" }
 end
 
 --- 获取用户user_addr

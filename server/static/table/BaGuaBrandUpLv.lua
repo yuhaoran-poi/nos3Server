@@ -1,0 +1,47 @@
+---@class BaGuaBrandUpLv_cfg
+---@field public id integer @等级
+---@field public exp integer @该等级升级需要的经验值
+---@field public allexp integer @该等级至少需要达到的经验值
+---@field public cost integer @升级资源消耗映射ID
+return {
+[1] = { id=1,exp=0,allexp=0,cost=100 },
+[2] = { id=2,exp=100,allexp=100,cost=100 },
+[3] = { id=3,exp=100,allexp=200,cost=100 },
+[4] = { id=4,exp=100,allexp=300,cost=100 },
+[5] = { id=5,exp=100,allexp=400,cost=100 },
+[6] = { id=6,exp=100,allexp=500,cost=100 },
+[7] = { id=7,exp=100,allexp=600,cost=100 },
+[8] = { id=8,exp=100,allexp=700,cost=100 },
+[9] = { id=9,exp=100,allexp=800,cost=100 },
+[10] = { id=10,exp=100,allexp=900,cost=100 },
+[11] = { id=11,exp=100,allexp=1000,cost=100 },
+[12] = { id=12,exp=100,allexp=1100,cost=100 },
+[13] = { id=13,exp=100,allexp=1200,cost=100 },
+[14] = { id=14,exp=100,allexp=1300,cost=100 },
+[15] = { id=15,exp=100,allexp=1400,cost=100 },
+[16] = { id=16,exp=100,allexp=1500,cost=100 },
+[17] = { id=17,exp=100,allexp=1600,cost=100 },
+[18] = { id=18,exp=100,allexp=1700,cost=100 },
+[19] = { id=19,exp=100,allexp=1800,cost=100 },
+[20] = { id=20,exp=100,allexp=1900,cost=100 },
+[21] = { id=21,exp=100,allexp=2000,cost=100 },
+[22] = { id=22,exp=100,allexp=2100,cost=100 },
+[23] = { id=23,exp=100,allexp=2200,cost=100 },
+[24] = { id=24,exp=100,allexp=2300,cost=100 },
+[25] = { id=25,exp=100,allexp=2400,cost=100 },
+[26] = { id=26,exp=100,allexp=2500,cost=100 },
+[27] = { id=27,exp=100,allexp=2600,cost=100 },
+[28] = { id=28,exp=100,allexp=2700,cost=100 },
+[29] = { id=29,exp=100,allexp=2800,cost=100 },
+[30] = { id=30,exp=100,allexp=2900,cost=100 },
+[31] = { id=31,exp=100,allexp=3000,cost=100 },
+[32] = { id=32,exp=100,allexp=3100,cost=100 },
+[33] = { id=33,exp=100,allexp=3200,cost=100 },
+[34] = { id=34,exp=100,allexp=3300,cost=100 },
+[35] = { id=35,exp=100,allexp=3400,cost=100 },
+[36] = { id=36,exp=100,allexp=3500,cost=100 },
+[37] = { id=37,exp=100,allexp=3600,cost=100 },
+[38] = { id=38,exp=100,allexp=3700,cost=100 },
+[39] = { id=39,exp=100,allexp=3800,cost=100 },
+[40] = { id=40,exp=100,allexp=3900,cost=100 }
+}

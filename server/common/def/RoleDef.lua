@@ -6,7 +6,11 @@ local RoleDef = {
         SimpleInfo = 2,
         MagicInfo = 3,
         DiagramsInfo = 4,
-    }
+    },
+    RoleDefine = {
+        RoleID = { Start = 1000000, End = 1000999 },
+        RoleSkill = { Start = 1001000, End = 1012999 },
+    },
 }
 
 local defaultPBSimpleRoleData = {

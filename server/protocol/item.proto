@@ -162,12 +162,19 @@ message PBImage
 	int32 exp			= 3;	//经验值
 }
 
+// 皮肤动作表情图鉴
+message PBSkinImage
+{
+	int32 config_id		= 1;	//配置ID
+}
+
 message PBUserImage
 {
 	map<int32, PBImage> item_image				= 1;	//道具图鉴
 	map<int32, PBImage> magic_item_image		= 2;	//法器图鉴
 	map<int32, PBImage> human_diagrams_image	= 3;	//角色八卦牌图鉴
 	map<int32, PBImage> ghost_diagrams_image	= 4;	//鬼宠八卦牌图鉴
+	map<int32, PBSkinImage> skin_image			= 5;	//皮肤动作表情图鉴
 }
 
 // 客户端获取图鉴数据

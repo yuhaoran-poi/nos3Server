@@ -6,16 +6,12 @@ local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
 local Database = common.Database
 local RoleDef = require("common.def.RoleDef")
+local BagDef = require("common.def.BagDef")
 local ProtoEnum = require("tools.ProtoEnum")
 
 ---@type user_context
 local context = ...
 local scripts = context.scripts
-
-local RoleDefine = {
-    RoleID = { Start = 1000000, End = 1000999 },
-    RoleSkill = { Start = 1001000, End = 1012999 },
-}
 
 ---@class Role
 local Role = {}
@@ -43,7 +39,7 @@ function Role.Start()
         scripts.UserModel.SetRoles(roles)
 
         for k, v in pairs(init_cfg.item) do
-            if k >= RoleDefine.RoleID.Start and k <= RoleDefine.RoleID.End then
+            if k >= RoleDef.RoleDefine.RoleID.Start and k <= RoleDef.RoleDefine.RoleID.End then
                 --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 Role.AddRole(k)
             end
@@ -88,6 +84,20 @@ function Role.SaveAndLog(change_roles)
                 return false
             end
             update_info.role_list[roleid] = table.copy(roleinfo)
+
+            if roleid == roles.battle_role_id then
+                -- 同步到玩家属性上
+                local show_role = RoleDef.newSimpleRoleData()
+                show_role.config_id = roleinfo.config_id
+                show_role.skins = roleinfo.skins
+                if roleinfo.magic_item and roleinfo.magic_item.common_info then
+                    show_role.magic_item_id = roleinfo.magic_item.common_info.config_id
+                end
+
+                local update_user_attr = {}
+                update_user_attr[ProtoEnum.UserAttrType.cur_show_role] = show_role
+                scripts.User.SetUserAttr(update_user_attr, true)
+            end
         end
     end
 
@@ -118,7 +128,7 @@ function Role.AddRole(roleid)
             config_id = skillid,
             star_level = 0,
         }
-        table.insert(role_info.main_skill, skill_info)
+        role_info.main_skill[skillid] = skill_info
     end
     role_info.cur_minor_skill1_id = role_cfg.init_q_skill
     for _, skillid in pairs(role_cfg.q_skill) do
@@ -126,7 +136,7 @@ function Role.AddRole(roleid)
             config_id = skillid,
             star_level = 0,
         }
-        table.insert(role_info.minor_skill1, skill_info)
+        role_info.minor_skill1[skillid] = skill_info
     end
     role_info.cur_minor_skill2_id = role_cfg.init_e_skill
     for _, skillid in pairs(role_cfg.e_skill) do
@@ -134,7 +144,7 @@ function Role.AddRole(roleid)
             config_id = skillid,
             star_level = 0,
         }
-        table.insert(role_info.minor_skill2, skill_info)
+        role_info.minor_skill2[skillid] = skill_info
     end
 
     roles.role_list[roleid] = role_info
@@ -307,6 +317,179 @@ function Role.ChangeEquipment(battle_role_id, role_info, config_id, equip_idx, e
     end
 end
 
+function Role.UpLv(roleid, add_exp)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list or not roles.role_list[roleid] then
+        return ErrorCode.RoleNotExist
+    end
+
+    local role_info = roles.role_list[roleid]
+    local up_exp_cfgs = GameCfg.RoleUpLv
+    if not up_exp_cfgs then
+        return ErrorCode.ConfigError
+    end
+
+    local exps = {}
+    local remain_exp = add_exp
+    for _, cfg in pairs(up_exp_cfgs) do
+        if cfg.allexp > role_info.exp then
+            if role_info.exp + add_exp >= cfg.allexp then
+                local canAdd = math.min(cfg.allexp - role_info.exp, remain_exp)
+                if not exps[cfg.cost] then
+                    exps[cfg.cost] = 0
+                end
+                exps[cfg.cost] = exps[cfg.cost] + canAdd
+                remain_exp = remain_exp - canAdd
+            else
+                if not exps[cfg.cost] then
+                    exps[cfg.cost] = 0
+                end
+                exps[cfg.cost] = exps[cfg.cost] + remain_exp
+                remain_exp = 0
+
+                break
+            end
+        end
+    end
+    if remain_exp > 0 or table.size(exps) <= 0 then
+        return ErrorCode.RoleMaxExp
+    end
+
+    -- 计算消耗资源
+    local cost_items = {}
+    local cost_coins = {}
+    for id, count in pairs(exps) do
+        local cost_cfg = GameCfg.UpLvCostIDMapping[id]
+        if not cost_cfg then
+            return ErrorCode.ItemUpLvCostNotExist
+        end
+
+        for cost_id, cost_cnt in pairs(cost_cfg.cost) do
+            if scripts.ItemDefine.GetItemType(cost_id) == scripts.ItemDefine.EItemSmallType.Coin then
+                if cost_coins[cost_id] then
+                    cost_coins[cost_id] = cost_coins[cost_id] + cost_cnt * (count / cost_cfg.cnt)
+                else
+                    cost_coins[cost_id] = cost_cnt * (count / cost_cfg.cnt)
+                end
+            else
+                if cost_items[cost_id] then
+                    cost_items[cost_id] = cost_items[cost_id] + cost_cnt * (count / cost_cfg.cnt)
+                else
+                    cost_items[cost_id] = cost_cnt * (count / cost_cfg.cnt)
+                end
+            end
+        end
+    end
+
+    -- 检查资源是否足够
+    local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    if err_code_items ~= ErrorCode.None then
+        return err_code_items
+    end
+    local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
+    if err_code_coins ~= ErrorCode.None then
+        return err_code_coins
+    end
+
+    -- 增加经验
+    local new_exp = role_info.exp + add_exp
+    role_info.exp = new_exp
+
+    -- 扣除消耗
+    local change_log = {}
+    local err_code_del = ErrorCode.None
+    if table.size(cost_items) > 0 then
+        err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(change_log)
+            return err_code_del
+        end
+    end
+    if table.size(cost_coins) > 0 then
+        err_code_del = scripts.Bag.DealCoins(cost_coins, change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(change_log)
+            return err_code_del
+        end
+    end
+
+    return ErrorCode.None, change_log
+end
+
+function Role.UpStar(roleid)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list or not roles.role_list[roleid] then
+        return ErrorCode.RoleNotExist
+    end
+
+    local role_info = roles.role_list[roleid]
+    local star_cfg = GameCfg.UpStar[role_info.config_id]
+    if not star_cfg then
+        return ErrorCode.ConfigError
+    end
+    if role_info.star_level >= star_cfg.maxlv then
+        return ErrorCode.ItemMaxStar
+    end
+
+    local cost_key = "cost" .. (role_info.star_level + 1)
+    if not star_cfg[cost_key] then
+        return ErrorCode.ConfigError
+    end
+    local cost_cfg = star_cfg[cost_key]
+
+    -- 计算消耗资源
+    local cost_items = {}
+    local cost_coins = {}
+    for cost_id, cost_cnt in pairs(cost_cfg.cost) do
+        if scripts.ItemDefine.GetItemType(cost_id) == scripts.ItemDefine.EItemSmallType.Coin then
+            if cost_coins[cost_id] then
+                cost_coins[cost_id] = cost_coins[cost_id] + cost_cnt
+            else
+                cost_coins[cost_id] = cost_cnt
+            end
+        else
+            if cost_items[cost_id] then
+                cost_items[cost_id] = cost_items[cost_id] + cost_cnt
+            else
+                cost_items[cost_id] = cost_cnt
+            end
+        end
+    end
+
+    -- 检查资源是否足够
+    local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    if err_code_items ~= ErrorCode.None then
+        return err_code_items
+    end
+    local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
+    if err_code_coins ~= ErrorCode.None then
+        return err_code_coins
+    end
+
+    -- 增加星星
+    role_info.star_level = role_info.star_level + 1
+
+    -- 扣除消耗
+    local change_log = {}
+    local err_code_del = ErrorCode.None
+    if table.size(cost_items) > 0 then
+        err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(change_log)
+            return err_code_del
+        end
+    end
+    if table.size(cost_coins) > 0 then
+        err_code_del = scripts.Bag.DealCoins(cost_coins, change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(change_log)
+            return err_code_del
+        end
+    end
+
+    return ErrorCode.None, change_log
+end
+
 function Role.PBRoleWearEquipReqCmd(req)
     local roles = scripts.UserModel.GetRoles()
     if not roles then
@@ -388,7 +571,7 @@ function Role.PBRoleWearEquipReqCmd(req)
 
     local change_roles = {}
     change_roles[req.msg.roleid] = "WearEquipment"
-    scripts.Role.SaveAndLog(change_roles)
+    Role.SaveAndLog(change_roles)
 
     local rsp_msg = {
         code = ErrorCode.None,
@@ -420,7 +603,8 @@ function Role.PBRoleTakeOffEquipReqCmd(req)
     local bag_change_log = {}
     local err_code = ErrorCode.None
     local takeoff_items = {}
-    local item_small_type, takeoff_item_data = Role.GetRoleEquipment(role_info, req.msg.takeoff_config_id, req.msg.takeoff_idx)
+    local item_small_type, takeoff_item_data = Role.GetRoleEquipment(role_info, req.msg.takeoff_config_id,
+        req.msg.takeoff_idx)
     if item_small_type ~= scripts.ItemDefine.EItemSmallType.MagicItem
         and item_small_type ~= item_small_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
         return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"],
@@ -466,8 +650,8 @@ function Role.PBRoleTakeOffEquipReqCmd(req)
     scripts.Bag.SaveAndLog(save_bags, bag_change_log)
     local change_roles = {}
     change_roles[req.msg.roleid] = "TakeOffEquipment"
-    scripts.Role.SaveAndLog(change_roles)
-    
+    Role.SaveAndLog(change_roles)
+
     local rsp_msg = {
         code = ErrorCode.None,
         error = "",
@@ -479,6 +663,58 @@ function Role.PBRoleTakeOffEquipReqCmd(req)
         takeoff_idx = req.msg.takeoff_idx,
     }
     return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"], rsp_msg, req.msg_context.stub_id)
+end
+
+function Role.PBRoleWearSkinReqCmd(req)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles then
+        return context.S2C(context.net_id, CmdCode["PBRoleWearSkinRspCmd"],
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local role_info = roles.role_list[req.msg.roleid]
+    if not role_info then
+        return context.S2C(context.net_id, CmdCode["PBRoleWearSkinRspCmd"],
+            { code = ErrorCode.RoleNotExist, error = "角色不存在", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    for idx, skin_id in pairs(req.msg.change_skins) do
+        local skin_image, itype = scripts.ItemImage.GetImage(skin_id)
+        if not skin_image then
+            return context.S2C(context.net_id, CmdCode["PBRoleWearSkinRspCmd"],
+                { code = ErrorCode.ItemNotExist, error = "皮肤不存在", uid = context.uid }, req.msg_context.stub_id)
+        end
+    end
+
+    for idx, skin_id in pairs(req.msg.change_skins) do
+        role_info.skins[idx] = skin_id
+    end
+
+    context.S2C(context.net_id, CmdCode["PBRoleWearSkinRspCmd"],
+        { code = ErrorCode.None, error = "", uid = context.uid }, req.msg_context.stub_id)
+
+    local change_roles = {}
+    change_roles[req.msg.roleid] = "WearSkin"
+    Role.SaveAndLog(change_roles)
+end
+
+function Role.PBChangeBattleRoleReqCmd(req)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles then
+        return context.S2C(context.net_id, CmdCode["PBChangeBattleRoleRspCmd"],
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local role_info = roles.role_list[req.msg.roleid]
+    if not role_info then
+        return context.S2C(context.net_id, CmdCode["PBChangeBattleRoleRspCmd"],
+            { code = ErrorCode.RoleNotExist, error = "角色不存在", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    Role.SetRoleBattle(req.msg.roleid, true)
+    Role.SaveRolesNow()
+    return context.S2C(context.net_id, CmdCode["PBChangeBattleRoleRspCmd"],
+        { code = ErrorCode.None, error = "success", uid = context.uid, roleid = req.msg.roleid }, req.msg_context.stub_id)
 end
 
 return Role

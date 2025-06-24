@@ -6,16 +6,12 @@ local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
 local Database = common.Database
 local GhostDef = require("common.def.GhostDef")
+local BagDef = require("common.def.BagDef")
 local ProtoEnum = require("tools.ProtoEnum")
 
 ---@type user_context
 local context = ...
 local scripts = context.scripts
-
-local GhostDefine = {
-    GhostID = { Start = 1017000, End = 1017999 },
-    GhostSkin = { Start = 1070000, End = 1119999 },
-}
 
 ---@class Ghost
 local Ghost = {}
@@ -41,7 +37,7 @@ function Ghost.Start()
         end
 
         for k, v in pairs(init_cfg.item) do
-            if k >= GhostDefine.GhostID.Start and k <= GhostDefine.GhostID.End then
+            if k >= GhostDef.GhostDefine.GhostID.Start and k <= GhostDef.GhostDefine.GhostID.End then
                 local ret = Ghost.AddGhost(k)
 
                 if ret.code == ErrorCode.None and k == init_cfg.battle_ghost then
@@ -101,8 +97,8 @@ function Ghost.SaveAndLog(change_ghosts)
         ghost_list = {},
         ghost_image_list = {},
     }
-    if change_ghosts then
-        for uniqid, reason in pairs(change_ghosts) do
+    if change_ghosts.ghost then
+        for uniqid, reason in pairs(change_ghosts.ghost) do
             local ghostinfo = ghosts.ghost_list[uniqid]
             if not ghostinfo then
                 return false
@@ -114,6 +110,17 @@ function Ghost.SaveAndLog(change_ghosts)
             end
             if not update_info.ghost_image_list[ghostinfo.config_id] then
                 update_info.ghost_image_list[ghostinfo.config_id] = ghostimage
+            end
+        end
+    end
+    if change_ghosts.image then
+        for config_id, reason in pairs(change_ghosts.image) do
+            local ghostimage = ghosts.ghost_image_list[config_id]
+            if not ghostimage then
+                return false
+            end
+            if not update_info.ghost_image_list[config_id] then
+                update_info.ghost_image_list[config_id] = ghostimage
             end
         end
     end
@@ -195,6 +202,179 @@ function Ghost.ModDiagramsCard(ghostid, item_data, slot)
     ghost_info.digrams_cards[slot] = item_data
 
     return ErrorCode.None
+end
+
+function Ghost.UpLv(config_id, add_exp)
+    local ghosts = scripts.UserModel.GetGhosts()
+    if not ghosts or not ghosts.ghost_image_list or not ghosts.ghost_image_list[config_id] then
+        return ErrorCode.GhostNotExist
+    end
+
+    local ghost_image_info = ghosts.ghost_image_list[config_id]
+    local up_exp_cfgs = GameCfg.GhostUpLv
+    if not up_exp_cfgs then
+        return ErrorCode.ConfigError
+    end
+
+    local exps = {}
+    local remain_exp = add_exp
+    for _, cfg in pairs(up_exp_cfgs) do
+        if cfg.allexp > ghost_image_info.exp then
+            if ghost_image_info.exp + add_exp >= cfg.allexp then
+                local canAdd = math.min(cfg.allexp - ghost_image_info.exp, remain_exp)
+                if not exps[cfg.cost] then
+                    exps[cfg.cost] = 0
+                end
+                exps[cfg.cost] = exps[cfg.cost] + canAdd
+                remain_exp = remain_exp - canAdd
+            else
+                if not exps[cfg.cost] then
+                    exps[cfg.cost] = 0
+                end
+                exps[cfg.cost] = exps[cfg.cost] + remain_exp
+                remain_exp = 0
+
+                break
+            end
+        end
+    end
+    if remain_exp > 0 or table.size(exps) <= 0 then
+        return ErrorCode.GhostMaxExp
+    end
+
+    -- 计算消耗资源
+    local cost_items = {}
+    local cost_coins = {}
+    for id, count in pairs(exps) do
+        local cost_cfg = GameCfg.UpLvCostIDMapping[id]
+        if not cost_cfg then
+            return ErrorCode.ItemUpLvCostNotExist
+        end
+
+        for cost_id, cost_cnt in pairs(cost_cfg.cost) do
+            if scripts.ItemDefine.GetItemType(cost_id) == scripts.ItemDefine.EItemSmallType.Coin then
+                if cost_coins[cost_id] then
+                    cost_coins[cost_id] = cost_coins[cost_id] + cost_cnt * (count / cost_cfg.cnt)
+                else
+                    cost_coins[cost_id] = cost_cnt * (count / cost_cfg.cnt)
+                end
+            else
+                if cost_items[cost_id] then
+                    cost_items[cost_id] = cost_items[cost_id] + cost_cnt * (count / cost_cfg.cnt)
+                else
+                    cost_items[cost_id] = cost_cnt * (count / cost_cfg.cnt)
+                end
+            end
+        end
+    end
+
+    -- 检查资源是否足够
+    local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    if err_code_items ~= ErrorCode.None then
+        return err_code_items
+    end
+    local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
+    if err_code_coins ~= ErrorCode.None then
+        return err_code_coins
+    end
+
+    -- 增加经验
+    local new_exp = ghost_image_info.exp + add_exp
+    ghost_image_info.exp = new_exp
+
+    -- 扣除消耗
+    local change_log = {}
+    local err_code_del = ErrorCode.None
+    if table.size(cost_items) > 0 then
+        err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(change_log)
+            return err_code_del
+        end
+    end
+    if table.size(cost_coins) > 0 then
+        err_code_del = scripts.Bag.DealCoins(cost_coins, change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(change_log)
+            return err_code_del
+        end
+    end
+
+    return ErrorCode.None, change_log
+end
+
+function Ghost.UpStar(config_id)
+    local ghosts = scripts.UserModel.GetGhosts()
+    if not ghosts or not ghosts.ghost_image_list or not ghosts.ghost_image_list[config_id] then
+        return ErrorCode.GhostNotExist
+    end
+
+    local ghost_image_info = ghosts.ghost_image_list[config_id]
+    local star_cfg = GameCfg.UpStar[ghost_image_info.config_id]
+    if not star_cfg then
+        return ErrorCode.ConfigError
+    end
+    if ghost_image_info.star_level >= star_cfg.maxlv then
+        return ErrorCode.ItemMaxStar
+    end
+
+    local cost_key = "cost" .. (ghost_image_info.star_level + 1)
+    if not star_cfg[cost_key] then
+        return ErrorCode.ConfigError
+    end
+    local cost_cfg = star_cfg[cost_key]
+
+    -- 计算消耗资源
+    local cost_items = {}
+    local cost_coins = {}
+    for cost_id, cost_cnt in pairs(cost_cfg.cost) do
+        if scripts.ItemDefine.GetItemType(cost_id) == scripts.ItemDefine.EItemSmallType.Coin then
+            if cost_coins[cost_id] then
+                cost_coins[cost_id] = cost_coins[cost_id] + cost_cnt
+            else
+                cost_coins[cost_id] = cost_cnt
+            end
+        else
+            if cost_items[cost_id] then
+                cost_items[cost_id] = cost_items[cost_id] + cost_cnt
+            else
+                cost_items[cost_id] = cost_cnt
+            end
+        end
+    end
+
+    -- 检查资源是否足够
+    local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    if err_code_items ~= ErrorCode.None then
+        return err_code_items
+    end
+    local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
+    if err_code_coins ~= ErrorCode.None then
+        return err_code_coins
+    end
+
+    -- 增加星星
+    ghost_image_info.star_level = ghost_image_info.star_level + 1
+
+    -- 扣除消耗
+    local change_log = {}
+    local err_code_del = ErrorCode.None
+    if table.size(cost_items) > 0 then
+        err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(change_log)
+            return err_code_del
+        end
+    end
+    if table.size(cost_coins) > 0 then
+        err_code_del = scripts.Bag.DealCoins(cost_coins, change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(change_log)
+            return err_code_del
+        end
+    end
+
+    return ErrorCode.None, change_log
 end
 
 function Ghost.PBClientGetUsrGhostsInfoReqCmd(req)
@@ -315,8 +495,11 @@ function Ghost.PBGhostWearEquipReqCmd(req)
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     scripts.Bag.SaveAndLog(save_bags, bag_change_log)
 
-    local change_ghosts = {}
-    change_ghosts[req.msg.ghost_uniqid] = "WearEquipment"
+    local change_ghosts = {
+        ghost = {},
+        image = {},
+    }
+    change_ghosts.ghost[req.msg.ghost_uniqid] = "WearEquipment"
     scripts.Ghost.SaveAndLog(change_ghosts)
 
     local rsp_msg = {
@@ -389,8 +572,11 @@ function Ghost.PBGhostTakeOffEquipReqCmd(req)
         save_bags[bagType] = 1
     end
     scripts.Bag.SaveAndLog(save_bags, bag_change_log)
-    local change_ghosts = {}
-    change_ghosts[req.msg.ghost_uniqid] = "TakeOffEquipment"
+    local change_ghosts = {
+        ghost = {},
+        image = {},
+    }
+    change_ghosts.ghost[req.msg.ghost_uniqid] = "TakeOffEquipment"
     scripts.Ghost.SaveAndLog(change_ghosts)
 
     local rsp_msg = {
@@ -404,6 +590,70 @@ function Ghost.PBGhostTakeOffEquipReqCmd(req)
         takeoff_idx = req.msg.takeoff_idx,
     }
     return context.S2C(context.net_id, CmdCode["PBGhostTakeOffEquipRspCmd"], rsp_msg, req.msg_context.stub_id)
+end
+
+function Ghost.PBGhostWearSkinReqCmd(req)
+    local ghosts = scripts.UserModel.GetGhosts()
+    if not ghosts
+        or not ghosts.ghost_image_list
+        or not ghosts.ghost_image_list[req.msg.ghost_config_id] then
+        return context.S2C(context.net_id, CmdCode["PBGhostWearSkinRspCmd"],
+            {
+                code = ErrorCode.GhostNotExist,
+                error = "",
+                uid = context.uid,
+                ghost_config_id = req.msg.ghost_config_id,
+                skin = req.msg.skin
+            }, req.msg_context.stub_id)
+    end
+    local ghost_image_info = ghosts.ghost_image_list[req.msg.ghost_config_id]
+
+    if table.size(ghost_image_info.skin_id_list) <= 0 then
+        return context.S2C(context.net_id, CmdCode["PBGhostWearSkinRspCmd"],
+            {
+                code = ErrorCode.ItemNotExist,
+                error = "",
+                uid = context.uid,
+                ghost_config_id = req.msg.ghost_config_id,
+                skin = req.msg.skin
+            }, req.msg_context.stub_id)
+    end
+
+    local find_skin = false
+    for _, skin_id in pairs(ghost_image_info.skin_id_list) do
+        if skin_id == req.msg.skin then
+            ghost_image_info.cur_skin_id = skin_id
+            find_skin = true
+            break
+        end
+    end
+
+    if find_skin then
+        context.S2C(context.net_id, CmdCode["PBGhostWearSkinRspCmd"],
+            {
+                code = ErrorCode.None,
+                error = "",
+                uid = context.uid,
+                ghost_config_id = req.msg.ghost_config_id,
+                skin = req.msg.skin
+            }, req.msg_context.stub_id)
+    else
+        return context.S2C(context.net_id, CmdCode["PBGhostWearSkinRspCmd"],
+            {
+                code = ErrorCode.ItemNotExist,
+                error = "",
+                uid = context.uid,
+                ghost_config_id = req.msg.ghost_config_id,
+                skin = req.msg.skin
+            }, req.msg_context.stub_id)
+    end
+
+    local change_ghosts = {
+        ghost = {},
+        image = {},
+    }
+    change_ghosts.image[req.msg.ghost_config_id] = "WearSkin"
+    scripts.Ghost.SaveAndLog(change_ghosts)
 end
 
 return Ghost

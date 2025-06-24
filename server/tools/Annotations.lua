@@ -276,12 +276,36 @@
 ---@field public roleids integer[] @角色id
 
 
----@class PBGetDsUserRolessRspCmd
+---@class PBGetDsUserRolesRspCmd
 ---@field public code integer @服务器验证返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public dsid integer
 ---@field public quest_uid integer
 ---@field public role_datas table<integer, PBRoleData>
+
+
+---@class PBGetDsCreateDataReqCmd
+---@field public roomid integer
+
+
+---@class PBGetDsCreateDataRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public roomid integer
+---@field public room_str string
+
+
+---@class PBGetDsUserImageReqCmd
+---@field public dsid integer
+---@field public quest_uid integer @请求的玩家uid
+
+
+---@class PBGetDsUserImageRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public dsid integer
+---@field public quest_uid integer
+---@field public image_data PBUserImage
 
 
 ---@class PBFriendData
@@ -435,6 +459,20 @@
 ---@field public takeoff_config_id integer @准备卸下的装备配置id
 ---@field public takeoff_uniqid integer @准备卸下的装备唯一id
 ---@field public takeoff_idx integer @卸下的位置
+
+
+---@class PBGhostWearSkinReqCmd
+---@field public uid integer
+---@field public ghost_config_id integer @鬼宠id
+---@field public skin integer @穿戴皮肤
+
+
+---@class PBGhostWearSkinRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public ghost_config_id integer @鬼宠id
+---@field public skin integer @穿戴皮肤
 
 
 ---@class Any
@@ -1231,7 +1269,6 @@
 ---@class PBDurabItem
 ---@field public cur_durability integer @当前耐久度
 ---@field public strong_value integer @坚固值
----@field public max_durability integer @最大耐久度
 
 
 ---@class PBMagicItem
@@ -1239,7 +1276,7 @@
 ---@field public strong_value integer @耐久度上限
 ---@field public light_cnt integer
 ---@field public tags PBTag[] @随机词条id,最大10条
----@field public max_durability integer @最大耐久度
+---@field public ability_tag PBTag[] @能力词条
 
 
 ---@class PBDiagramsCard
@@ -1247,6 +1284,7 @@
 ---@field public strong_value integer @耐久度上限
 ---@field public light_cnt integer
 ---@field public tags PBTag[] @随机词条id,最大10条
+---@field public ability_tag PBTag[] @能力词条
 
 
 ---@class PBAweItem
@@ -1324,11 +1362,16 @@
 ---@field public exp integer @经验值
 
 
+---@class PBSkinImage
+---@field public config_id integer @配置ID
+
+
 ---@class PBUserImage
 ---@field public item_image table<integer, PBImage> @道具图鉴
 ---@field public magic_item_image table<integer, PBImage> @法器图鉴
 ---@field public human_diagrams_image table<integer, PBImage> @角色八卦牌图鉴
 ---@field public ghost_diagrams_image table<integer, PBImage> @鬼宠八卦牌图鉴
+---@field public skin_image table<integer, PBSkinImage> @皮肤动作表情图鉴
 
 
 ---@class PBImageGetDataReqCmd
@@ -1540,7 +1583,7 @@
 
 ---@class PBSimpleRoleData
 ---@field public config_id integer @配置ID
----@field public skins table<integer, PBItemData> @穿戴皮肤
+---@field public skins table<integer, integer> @穿戴皮肤
 ---@field public magic_item_id integer @携带法器id
 
 
@@ -1552,7 +1595,7 @@
 ---@field public digrams_cards table<integer, PBItemData> @八卦牌
 ---@field public equip_books integer[] @已装备真经
 ---@field public study_books integer[] @学习中真经
----@field public skins table<integer, PBItemData> @穿戴皮肤
+---@field public skins table<integer, integer> @穿戴皮肤
 ---@field public cur_main_skill_id integer @选定主技能id
 ---@field public main_skill table<integer, PBSkill> @可选主技能
 ---@field public cur_minor_skill1_id integer @选定小技能1id
@@ -1625,6 +1668,32 @@
 ---@field public takeoff_idx integer @卸下的位置
 
 
+---@class PBRoleWearSkinReqCmd
+---@field public uid integer
+---@field public roleid integer @角色id
+---@field public skins table<integer, integer> @穿戴皮肤
+
+
+---@class PBRoleWearSkinRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roleid integer @角色id
+---@field public skins table<integer, integer> @穿戴皮肤
+
+
+---@class PBChangeBattleRoleReqCmd
+---@field public uid integer
+---@field public roleid integer @角色id
+
+
+---@class PBChangeBattleRoleRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roleid integer @角色id
+
+
 ---@class PBRoomSearchInfo
 ---@field public roomid integer
 ---@field public chapter integer @章节
@@ -1652,6 +1721,8 @@
 ---@field public difficulty integer
 ---@field public state integer
 ---@field public describe string
+---@field public map_id integer
+---@field public boss_id integer
 
 
 ---@class PBRoomApplyInfo
@@ -1901,22 +1972,6 @@
 ---@field public ds_ip string
 
 
----@class PBDsGetPlayerDataReqCmd
----@field public uid integer
----@field public roomid integer
----@field public data_type integer @0--全部 1--个人简略数据 2--战斗角色数据 3--背包数据
-
-
----@class PBDsGetPlayerDataRspCmd
----@field public code integer @服务器返回,0成功,其他失败
----@field public error string @错误信息
----@field public data_type integer
----@field public simple_data PBUserAttr
----@field public battle_role PBRoleData
----@field public battle_ghost PBGhostData
----@field public consume_bag PBBag
-
-
 ---@class PBTeamInfo
 ---@field public team_id integer
 ---@field public master_id integer @队长id
@@ -2137,6 +2192,18 @@
 ---@field public add_exp integer
 
 
+---@class PBClientItemUpStarReqCmd
+---@field public uid integer
+---@field public config_id integer
+
+
+---@class PBClientItemUpStarRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public config_id integer
+
+
 ---@class PBClientItemRepairReqCmd
 ---@field public uid integer
 ---@field public repair_uniqid integer @要修复的装备唯一id
@@ -2162,6 +2229,30 @@
 ---@field public uid integer @自己的uid
 ---@field public quest_uid integer @他人uid
 ---@field public info PBUserAttr @简略信息
+
+
+---@class PBUseSkinGiftReqCmd
+---@field public uid integer @自己的uid
+---@field public gift_id integer @礼包id
+
+
+---@class PBUseSkinGiftRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer @自己的uid
+---@field public gift_id integer @礼包id
+
+
+---@class PBSureCompositeReqCmd
+---@field public uid integer
+---@field public composite_id integer @合成id
+
+
+---@class PBSureCompositeRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public composite_id integer @合成id
 
 
 
@@ -2299,9 +2390,16 @@
 ---@class static_conf
 ---@field AllTag AllTag_cfg[]
 ---@field AllTagPool AllTagPool_cfg[]
+---@field BaGuaBrand BaGuaBrand_cfg[]
+---@field BaGuaBrandUpLv BaGuaBrandUpLv_cfg[]
+---@field CommonConfig CommonConfig_cfg[]
+---@field Composite Composite_cfg[]
 ---@field EquipmentTagPool EquipmentTagPool_cfg[]
+---@field GameChapter GameChapter_cfg[]
 ---@field GamePropUpLv GamePropUpLv_cfg[]
+---@field GhostEquipmentUpLv GhostEquipmentUpLv_cfg[]
 ---@field GhostInfo GhostInfo_cfg[]
+---@field GhostUpLv GhostUpLv_cfg[]
 ---@field HumanRole HumanRole_cfg[]
 ---@field Init Init_cfg[]
 ---@field Item Item_cfg[]
@@ -2309,6 +2407,9 @@
 ---@field LightCost LightCost_cfg[]
 ---@field MagicItem MagicItem_cfg[]
 ---@field MagicItemUpLv MagicItemUpLv_cfg[]
+---@field RandomComposite RandomComposite_cfg[]
 ---@field RankLevel RankLevel_cfg[]
+---@field RoleUpLv RoleUpLv_cfg[]
 ---@field UniqueItem UniqueItem_cfg[]
 ---@field UpLvCostIDMapping UpLvCostIDMapping_cfg[]
+---@field UpStar UpStar_cfg[]

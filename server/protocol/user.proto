@@ -147,7 +147,7 @@ message PBClientLightRspCmd
 	int64 uniqid	= 9;
 }
 
-// 客户端请求--道具升级
+// 客户端请求--道具、角色、鬼宠升级
 message PBClientItemUpLvReqCmd
 {
 	int64 uid		= 1;
@@ -212,4 +212,34 @@ message PBGetOtherDetailRspCmd
     int64 uid			= 3; // 自己的uid
 	int64 quest_uid		= 4; // 他人uid
     PBUserAttr info		= 5; // 简略信息
+}
+
+// 客户端使用皮肤礼包
+message PBUseSkinGiftReqCmd
+{
+    int64 uid			= 1; // 自己的uid
+    int32 gift_id		= 3; // 礼包id
+}
+
+message PBUseSkinGiftRspCmd
+{
+    int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+    int64 uid			= 3; // 自己的uid
+    int32 gift_id		= 4; // 礼包id
+}
+
+// 客户端固定合成
+message PBSureCompositeReqCmd
+{
+	int64 uid			= 1;
+	int32 composite_id	= 2; // 合成id
+}
+
+message PBSureCompositeRspCmd
+{
+	int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+	int64 uid			= 3;
+	int32 composite_id	= 4; // 合成id
 }

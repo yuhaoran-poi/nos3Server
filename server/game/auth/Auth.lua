@@ -4,6 +4,7 @@ local uuid = require("uuid")
 local queue = require("moon.queue")
 local common = require("common")
 local clusterd = require("cluster")
+local json = require "json"
 
 local db = common.Database
 local CmdCode = common.CmdCode
@@ -94,10 +95,13 @@ local function doDSAuth(req)
     return { code = 0, error = "sucess", res = res }
 end
 
-local function doAuth(Auth,req)
+local function doAuth(Auth, req)
     local u = context.uid_map[req.uid]
+    -- moon.warn(string.format("req.uid %d", req.uid))
+    -- moon.error(string.format("doAuth context.uid_map = %s", json.pretty_encode(context.uid_map)))
     local addr_user
     if not u then
+        moon.warn(string.format("doAuth uid = %d not found", req.uid))
         local conf = {
             name = "user" .. req.uid,
             file = "game/service_user.lua"
@@ -106,18 +110,21 @@ local function doAuth(Auth,req)
         if addr_user == 0 then
             return { code = 2001, error = "create user service failed!" }
         end
-
         req.addr_user = addr_user
+
         local ok, err = moon.call("lua", addr_user, "User.Load", req)
         if not ok then
-            --moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
+            moon.error(string.format("doAuth User.Load err = %s", json.pretty_encode(err)))
             moon.kill(addr_user)
             context.uid_map[req.uid] = nil
             return { code = 2002, error = err }
         end
     else
-        addr_user = u.addr_user
-        req.addr_user = addr_user
+        -- 本节点顶号登录，直接重定向
+        -- moon.send("lua", context.addr_gate, "Gate.Kick", req.uid)
+        -- addr_user = u.addr_user
+        -- req.addr_user = addr_user
+        return { code = 2005, error = "player online" }
     end
 
     local authkey, err = moon.call("lua", addr_user, "User.Login", req)
@@ -142,16 +149,17 @@ local function doAuth(Auth,req)
 
     context.uid_map[req.uid] = u
     context.net_id_map[req.net_id] = u
+    moon.warn(string.format("doAuth net_id = %d, u.net_id = %d", req.net_id, u.net_id))
 
     print("doAuth uid_map", req.uid, u.addr_user)
 
     if req.pull then
         print("doAuth pull", req.uid, req.net_id)
-        return { code = 2003, error = "req.pull is true" }
+        return { code = 2004, error = "req.pull is true" }
     end
 
     --req.addr_user = addr_user
-    
+
     -- local pass = true
     -- if pass then
     --     u.logouttime = 0
@@ -175,6 +183,7 @@ local function QuitOneUser(u)
     moon.send("lua", u.addr_user, "User.Exit")
     context.uid_map[u.uid] = nil
     context.net_id_map[u.net_id] = nil
+    moon.error(string.format("QuitOneUser net_id = %d", u.net_id))
 end
 
 ---@class Auth
@@ -507,10 +516,15 @@ end
 
 function Auth.Disconnect(uid)
     local u = context.uid_map[uid]
+    -- moon.error(string.format("Auth.Disconnect begin context.uid_map = %s", json.pretty_encode(context.uid_map)))
+    -- moon.error(string.format("Auth.Disconnect begin context.net_id_map = %s", json.pretty_encode(context.net_id_map)))
     if u then
-        assert(moon.call("lua", u.addr_user, "User.Logout"))
+        QuitOneUser(u)
+        --assert(moon.call("lua", u.addr_user, "User.Logout"))
         u.logouttime = moon.time()
     end
+    -- moon.error(string.format("Auth.Disconnect end context.uid_map = %s", json.pretty_encode(context.uid_map)))
+    -- moon.error(string.format("Auth.Disconnect end context.net_id_map = %s", json.pretty_encode(context.net_id_map)))
 end
 
 return Auth

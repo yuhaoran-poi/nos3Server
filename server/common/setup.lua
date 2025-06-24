@@ -136,13 +136,18 @@ end
 
 -- 转发发往客户端的消息(只能向客户端转发)
 local function forwardD2C(context, GnId, MessagePack)
+    --moon.warn("GnId = ", GnId)
     if GnId == 0 then
         return
     end
     if not context.NODE then
         context.NODE = math.tointeger(moon.env("NODE"))
     end
+    --moon.warn("context.NODE = ", context.NODE)
     local node, flag, index = extract_gn(GnId)
+    --moon.warn("node = ", node)
+    --moon.warn("flag = ", flag)
+    --moon.warn("index = ", index)
     if context.NODE == node then
         -- 本节点转发
         if flag == 0 then

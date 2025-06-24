@@ -32,13 +32,14 @@ function User.Load(req)
         local res, err = clusterd.call(3999, "usermgr", "Usermgr.ApplyLogin",
             { uid = req.uid, nid = moon.env("NODE"), addr_user = req.addr_user })
 
-        print("Usermgr.ApplyLogin", res, err)
         if res.error ~= "success" then
+            -- moon.error(string.format("User.Load res = %s", json.pretty_encode(res)))
             return false
         end
 
         local data = scripts.UserModel.Get()
         if data then
+            --moon.error(string.format("User.Load return data = %s", json.pretty_encode(data)))
             return data
         end
 
@@ -75,6 +76,7 @@ function User.Load(req)
         scripts.UserModel.Create(data)
         context.uid = req.uid
         context.net_id = req.net_id
+        -- moon.warn(string.format("User.Load context.net_id = %d", context.net_id))
 
         ---初始化自己数据
         context.batch_invoke_throw("Init", isnew)
@@ -286,7 +288,7 @@ function User.GetUserDetails()
 end
 
 function User.Login(req)
-    if req.pull then--服务器主动拉起玩家
+    if req.pull then --服务器主动拉起玩家
         return scripts.UserModel.Get().authkey
     end
     if state.online then
@@ -343,8 +345,16 @@ function User.Exit()
         moon.error("user exit save db error", err)
     end
 
+    User.Logout()
+
     -- 通知usermgr
-    clusterd.call(3999, "usermgr", "Usermgr.NotifyLogout", { uid = context.uid, nid = moon.env("NODE") })
+    local res, err = clusterd.call(3999, "usermgr", "Usermgr.NotifyLogout", { uid = context.uid, nid = moon.env("NODE") })
+    if err then
+        moon.error(string.format("User.Exit err = %s", json.pretty_encode(err)))
+    end
+    if res.error ~= "success" then
+        moon.error(string.format("User.Exit res = %s", json.pretty_encode(res)))
+    end
     
     moon.quit()
     return true
@@ -356,13 +366,15 @@ end
 
 function User.PBClientGetUsrSimInfoReqCmd(req)
     local simple_data = User.GetUserSimpleData()
-
+    
     local ret = {
         code = ErrorCode.None,
         error = "success",
         uid = context.uid,
         info = simple_data,
     }
+    -- moon.warn(string.format("PBClientGetUsrSimInfoReqCmd ret = %s", json.pretty_encode(ret)))
+    -- moon.warn(string.format("PBClientGetUsrSimInfoReqCmd req.msg_context.stub_id = %d", req.msg_context.stub_id))
     context.S2C(context.net_id, CmdCode["PBClientGetUsrSimInfoRspCmd"], ret, req.msg_context.stub_id)
 end
 
@@ -743,7 +755,7 @@ function User.DsAddItems(simple_items)
     return err_code
 end
 
--- 客户端请求--法器升级
+-- 客户端请求--图鉴升级
 function User.PBClientItemUpLvReqCmd(req)
     -- 参数验证
     if not req.msg.config_id or req.msg.add_exp <= 0 then
@@ -756,8 +768,18 @@ function User.PBClientItemUpLvReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    -- 图鉴升级
-    local err_code, change_log = scripts.ItemImage.UpLvImage(req.msg.config_id)
+    local err_code, change_log = ErrorCode.None, nil
+    if RoleDef.RoleDefine.RoleID.Start <= req.msg.config_id
+        and req.msg.config_id <= RoleDef.RoleDefine.RoleID.End then
+        err_code, change_log = scripts.Role.UpLv(req.msg.config_id, req.msg.add_exp)
+    elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.config_id
+        and req.msg.config_id <= GhostDef.GhostDefine.GhostID.End then
+        err_code, change_log = scripts.Ghost.UpLv(req.msg.config_id, req.msg.add_exp)
+    else
+        -- 图鉴升级
+        err_code, change_log = scripts.ItemImage.UpLvImage(req.msg.config_id, req.msg.add_exp)
+    end
+    
     if err_code ~= ErrorCode.None then
         return context.S2C(context.net_id, CmdCode.PBClientItemUpLvRspCmd, {
             code = ErrorCode.ItemNotExist,
@@ -787,13 +809,28 @@ function User.PBClientItemUpLvReqCmd(req)
             scripts.Bag.SaveAndLog(save_bags, change_log)
         end
     end
-    -- 图鉴信息变更
-    local change_image_ids = {}
-    table.insert(change_image_ids, req.msg.config_id)
-    scripts.ItemImage.UpdateAndSave(change_image_ids)
+    if RoleDef.RoleDefine.RoleID.Start <= req.msg.config_id
+        and req.msg.config_id <= RoleDef.RoleDefine.RoleID.End then
+        local change_roles = {}
+        change_roles[req.msg.config_id] = "UpLv"
+        scripts.Role.SaveAndLog(change_roles)
+    elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.config_id
+        and req.msg.config_id <= GhostDef.GhostDefine.GhostID.End then
+        local change_ghosts = {
+            ghost = {},
+            image = {},
+        }
+        change_ghosts.image[req.msg.config_id] = "UpLv"
+        scripts.Ghost.SaveAndLog(change_ghosts)
+    else
+        -- 图鉴信息变更
+        local change_image_ids = {}
+        table.insert(change_image_ids, req.msg.config_id)
+        scripts.ItemImage.SaveAndLog(change_image_ids)
+    end
 end
 
--- 客户端请求--法器升星
+-- 客户端请求--图鉴升星
 function User.PBClientItemUpStarReqCmd(req)
     -- 参数验证
     if not req.msg.config_id then
@@ -805,8 +842,17 @@ function User.PBClientItemUpStarReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    -- 图鉴升星
-    local err_code, change_log = scripts.ItemImage.UpStarImage(req.msg.config_id)
+    local err_code, change_log = ErrorCode.None, nil
+    if RoleDef.RoleDefine.RoleID.Start <= req.msg.config_id
+        and req.msg.config_id <= RoleDef.RoleDefine.RoleID.End then
+        err_code, change_log = scripts.Role.UpStar(req.msg.config_id)
+    elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.config_id
+        and req.msg.config_id <= GhostDef.GhostDefine.GhostID.End then
+        err_code, change_log = scripts.Ghost.UpStar(req.msg.config_id)
+    else
+        -- 图鉴升星
+        err_code, change_log = scripts.ItemImage.UpStarImage(req.msg.config_id)
+    end
     if err_code ~= ErrorCode.None then
         return context.S2C(context.net_id, CmdCode.PBClientItemUpStarRspCmd, {
             code = ErrorCode.ItemNotExist,
@@ -835,10 +881,25 @@ function User.PBClientItemUpStarReqCmd(req)
         end
     end
 
-    -- 图鉴信息变更
-    local change_image_ids = {}
-    table.insert(change_image_ids, req.msg.config_id)
-    scripts.ItemImage.UpdateAndSave(change_image_ids)
+    if RoleDef.RoleDefine.RoleID.Start <= req.msg.config_id
+        and req.msg.config_id <= RoleDef.RoleDefine.RoleID.End then
+        local change_roles = {}
+        change_roles[req.msg.config_id] = "UpStar"
+        scripts.Role.SaveAndLog(change_roles)
+    elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.config_id
+        and req.msg.config_id <= GhostDef.GhostDefine.GhostID.End then
+        local change_ghosts = {
+            ghost = {},
+            image = {},
+        }
+        change_ghosts.image[req.msg.config_id] = "UpStar"
+        scripts.Ghost.SaveAndLog(change_ghosts)
+    else
+        -- 图鉴信息变更
+        local change_image_ids = {}
+        table.insert(change_image_ids, req.msg.config_id)
+        scripts.ItemImage.SaveAndLog(change_image_ids)
+    end
 end
 
 -- function User.PBGetOtherDetailReqCmd(req)
@@ -1046,6 +1107,146 @@ function User.PBClientItemRepairReqCmd(req)
         repair_uniqid = req.msg.repair_uniqid or 0,
         pos = req.msg.pos or 0,
     }, req.msg_context.stub_id)
+end
+
+function User.PBUseSkinGiftReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid or not req.msg.gift_id then
+        return context.S2C(context.net_id, CmdCode.PBUseSkinGiftRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            gift_id = req.msg.gift_id or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    -- 读取皮肤礼包表
+end
+
+function User.PBSureCompositeReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid or not req.msg.composite_id then
+        return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            gift_id = req.msg.gift_id or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    local rsp_msg = {
+        code = ErrorCode.None,
+        error = "",
+        uid = context.uid,
+        gift_id = req.msg.gift_id or 0,
+    }
+    local composite_cfg = GameCfg.Composite[req.msg.composite_id]
+    if not composite_cfg then
+        rsp_msg.code = ErrorCode.ConfigError
+        rsp_msg.error = "配置不存在"
+        return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
+
+    if RoleDef.RoleDefine.RoleID.Start <= composite_cfg.item_id
+        and composite_cfg.item_id <= RoleDef.RoleDefine.RoleID.End then
+        local role_info = scripts.Role.GetRoleInfo(composite_cfg.item_id)
+        if role_info then
+            rsp_msg.code = ErrorCode.RoleExist
+            rsp_msg.error = "角色已拥有"
+            return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    end
+
+    local cost_items = {}
+    local cost_coins = {}
+    for config_id, item_count in pairs(composite_cfg.cost) do
+        local small_type = scripts.ItemDefine.GetItemType(config_id)
+        if small_type == scripts.ItemDefine.EItemSmallType.Coin then
+            if not cost_coins[config_id] then
+                cost_coins[config_id] = {
+                    coin_id = 0,
+                    count = 0,
+                }
+            end
+            cost_coins[config_id].count = cost_coins[config_id].count - item_count
+        else
+            if not cost_items[config_id] then
+                cost_items[config_id] = {
+                    count = 0,
+                    pos = 0,
+                }
+            end
+            cost_items[config_id].count = cost_items[config_id].count - item_count
+        end
+    end
+
+    -- 检测道具是否足够
+    rsp_msg.code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    if rsp_msg.code ~= ErrorCode.None then
+        rsp_msg.error = "道具不足"
+        return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
+    rsp_msg.code = scripts.Bag.CheckCoinsEnough(cost_coins)
+    if rsp_msg.code ~= ErrorCode.None then
+        rsp_msg.error = "货币不足"
+        return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
+
+    local bag_change_log = {}
+    local change_roles = {}
+    -- 扣除道具消耗
+    rsp_msg.code = scripts.Bag.DelItems(req.msg.bag_name, cost_items, {}, bag_change_log)
+    if rsp_msg.code ~= ErrorCode.None then
+        scripts.Bag.RollBackWithChange(bag_change_log)
+        return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
+
+    -- 随机概率
+    local random_num = math.random(1, 10000)
+    if random_num > composite_cfg.rate then
+        rsp_msg.code = ErrorCode.CompositeFail
+        rsp_msg.error = "合成失败"
+    else
+        rsp_msg.code = ErrorCode.None
+        rsp_msg.error = "合成成功"
+
+        if RoleDef.RoleDefine.RoleID.Start <= composite_cfg.item_id
+            and composite_cfg.item_id <= RoleDef.RoleDefine.RoleID.End then
+            local add_success = scripts.Role.AddRole(composite_cfg.item_id)
+            if not add_success then
+                rsp_msg.code = ErrorCode.RoleAddFail
+                rsp_msg.error = "角色添加失败"
+
+                scripts.Bag.RollBackWithChange(bag_change_log)
+                return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+            end
+
+            change_roles[req.msg.roleid] = "AddRole"
+        else
+            local add_items = {}
+            add_items[composite_cfg.item_id] = { count = 1 }
+
+            rsp_msg.code = scripts.Bag.AddItems(BagDef.BagType.Cangku, add_items, {}, bag_change_log)
+            if rsp_msg.code ~= ErrorCode.None then
+                scripts.Bag.RollBackWithChange(bag_change_log)
+                return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+            end
+        end
+    end
+    
+    -- 执行完成回复
+    context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+
+    -- 数据存储更新
+    local save_bags = {}
+    for bagType, _ in pairs(bag_change_log) do
+        save_bags[bagType] = 1
+    end
+    scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    
+    if table.size(change_roles) then
+        scripts.Role.SaveAndLog(change_roles)
+    end
 end
 
 return User

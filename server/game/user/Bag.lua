@@ -49,7 +49,26 @@ function Bag.Start()
         bagdata[BagDef.BagType.Consume].bag_item_type = scripts.ItemDefine.ItemBagType.CONSUME
         bagdata[BagDef.BagType.Booty].bag_item_type = scripts.ItemDefine.ItemBagType.ALL
 
+        local init_cfg = GameCfg.Init[1]
+        if not init_cfg then
+            return { code = ErrorCode.ConfigError, error = "no init_cfg" }
+        end
         scripts.UserModel.SetBagData(bagdata)
+
+        local init_items = {}
+        local change_log = {}
+        for k, v in pairs(init_cfg.item) do
+            local bigType = scripts.ItemDefine.GetItemPosType(k)
+            if bigType == scripts.ItemDefine.EItemBigType.StackItem
+                or bigType == scripts.ItemDefine.EItemBigType.UnStackItem
+                or bigType == scripts.ItemDefine.EItemBigType.UniqueItem then
+                init_items[k] = { count = v }
+            end
+        end
+        if table.size(init_items) > 0 then
+            scripts.Bag.AddItems(BagDef.BagType.Cangku, init_items, {}, change_log)
+        end
+
         Bag.SaveBagsNow(bagTypes)
     end
 
@@ -62,7 +81,27 @@ function Bag.Start()
     if not coinsdata then
         coinsdata = BagDef.newPBUserCoins()
 
+        local init_cfg = GameCfg.Init[1]
+        if not init_cfg then
+            return { code = ErrorCode.ConfigError, error = "no init_cfg" }
+        end
         scripts.UserModel.SetCoinsData(coinsdata)
+
+        local init_coins = {}
+        local change_log = {}
+        for k, v in pairs(init_cfg.item) do
+            local bigType = scripts.ItemDefine.GetItemPosType(k)
+            if bigType == scripts.ItemDefine.EItemBigType.Coin then
+                init_coins[k] = {
+                    coin_id = k,
+                    count = v,
+                }
+            end
+        end
+        if table.size(init_coins) > 0 then
+            scripts.Bag.DealCoins(init_coins, change_log)
+        end
+
         Bag.SaveCoinsNow()
     end
 
@@ -934,7 +973,7 @@ function Bag.AddItems(bagType, add_items, add_item_datas, change_log)
     end
     -- 发送图鉴更新消息
     if table.size(change_image_ids) > 0 then
-        scripts.ItemImage.UpdateAndSave(change_image_ids)
+        scripts.ItemImage.SaveAndLog(change_image_ids)
     end
 
     return ErrorCode.None
@@ -1292,6 +1331,12 @@ function Bag.GetBagdata(bags_name)
         bag_datas = {}
     }
     for _, bag_name in pairs(bags_name) do
+        if bag_name ~= BagDef.BagType.Cangku
+            and bag_name ~= BagDef.BagType.Consume
+            and bag_name ~= BagDef.BagType.Booty then
+            return { errcode = ErrorCode.BagNotExist }
+        end
+
         if bagdata[bag_name] then
             res.bag_datas[bag_name] = bagdata[bag_name]
         end

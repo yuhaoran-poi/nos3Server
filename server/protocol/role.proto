@@ -11,7 +11,7 @@ message PBPinchFaceData
 message PBSimpleRoleData
 {
     int32 config_id					= 1;// 配置ID
-    map<int32, PBItemData> skins	= 2;// 穿戴皮肤
+    map<int32, int32> skins	= 2;// 穿戴皮肤
 	int32 magic_item_id				= 3;// 携带法器id
 }
 
@@ -25,7 +25,7 @@ message PBRoleData
 	map<int32, PBItemData> digrams_cards	= 5;	//八卦牌
 	repeated int32 equip_books		= 6;	//已装备真经
 	repeated int32 study_books		= 7;	//学习中真经
-	map<int32, PBItemData> skins	= 8;	//穿戴皮肤
+	map<int32, int32> skins	= 8;	//穿戴皮肤
 	int32 cur_main_skill_id			= 9;	//选定主技能id
 	map<int32, PBSkill> main_skill	= 10;	//可选主技能
 	int32 cur_minor_skill1_id			= 11;	//选定小技能1id
@@ -110,4 +110,36 @@ message PBRoleTakeOffEquipRspCmd
 	int32 takeoff_config_id	= 6; // 准备卸下的装备配置id
 	int64 takeoff_uniqid	= 7; // 准备卸下的装备唯一id
 	int32 takeoff_idx		= 8; // 卸下的位置
+}
+
+// 角色更换皮肤
+message PBRoleWearSkinReqCmd
+{
+	int64 uid		= 1;
+	int32 roleid	= 2; // 角色id
+	map<int32, int32> skins	= 3;// 穿戴皮肤
+}
+
+message PBRoleWearSkinRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 roleid	= 4; // 角色id
+	map<int32, int32> skins	= 5;// 穿戴皮肤
+}
+
+// 更换出战角色
+message PBChangeBattleRoleReqCmd
+{
+    int64 uid		= 1;
+    int32 roleid	= 2; // 角色id
+}
+
+message PBChangeBattleRoleRspCmd
+{
+    int32 code        = 1; // 服务器验证返回,0成功,其他失败
+    string error      = 2; // 错误信息
+    int64 uid         = 3;
+	int32 roleid      = 4; // 角色id
 }

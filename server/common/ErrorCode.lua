@@ -313,12 +313,22 @@ local ErrorCode = {
     ItemUpLvCostNotExist = 1610,
     --- 道具星级上限
     ItemMaxStar = 1611,
+    --- 合成失败
+    CompositeFail = 1612,
 
     --角色相关错误码
     --- 角色不存在
     RoleNotExist = 1701,
     --- 鬼宠不存在
     GhostNotExist = 1702,
+    --- 角色经验上限
+    RoleMaxExp = 1703,
+    --- 鬼宠经验上限
+    GhostMaxExp = 1704,
+    --- 角色已存在
+    RoleExist = 1705,
+    --- 角色添加失败
+    RoleAddFail = 1706,
 }
 
 return ErrorCode
