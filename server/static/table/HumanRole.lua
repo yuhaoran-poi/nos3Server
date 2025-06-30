@@ -6,21 +6,9 @@
 ---@field public default_faqi integer @默认装备法器id
 ---@field public book_slot_num integer @真经最大学习数量
 ---@field public book_study integer @正在学习的真经最大数量
----@field public bagua_slot1_type integer @八卦牌类型 1-乾（☰） 2-巽（☴） 3-坎（☵） 4-艮（☶） 5-坤（☷） 6-震（☳） 7-离（☲） 8-兑（☱）
----@field public bagua_slot2_type integer @八卦牌类型 1-乾（☰） 2-巽（☴） 3-坎（☵） 4-艮（☶） 5-坤（☷） 6-震（☳） 7-离（☲） 8-兑（☱）
----@field public bagua_slot3_type integer @八卦牌类型 1-乾（☰） 2-巽（☴） 3-坎（☵） 4-艮（☶） 5-坤（☷） 6-震（☳） 7-离（☲） 8-兑（☱）
----@field public bagua_slot4_type integer @八卦牌类型 1-乾（☰） 2-巽（☴） 3-坎（☵） 4-艮（☶） 5-坤（☷） 6-震（☳） 7-离（☲） 8-兑（☱）
----@field public bagua_slot5_type integer @八卦牌类型 1-乾（☰） 2-巽（☴） 3-坎（☵） 4-艮（☶） 5-坤（☷） 6-震（☳） 7-离（☲） 8-兑（☱）
----@field public bagua_slot6_type integer @八卦牌类型 1-乾（☰） 2-巽（☴） 3-坎（☵） 4-艮（☶） 5-坤（☷） 6-震（☳） 7-离（☲） 8-兑（☱）
----@field public bagua_slot7_type integer @八卦牌类型 1-乾（☰） 2-巽（☴） 3-坎（☵） 4-艮（☶） 5-坤（☷） 6-震（☳） 7-离（☲） 8-兑（☱）
----@field public bagua_slot8_type integer @八卦牌类型 1-乾（☰） 2-巽（☴） 3-坎（☵） 4-艮（☶） 5-坤（☷） 6-震（☳） 7-离（☲） 8-兑（☱）
----@field public skin_slot1_type integer @皮肤类型 1-角色槽（脸） 2-头饰槽（头饰、帽子、发型、发色） 3-面饰槽（眼睛、面纱） 4-上衣槽 5-下装槽（裤子、鞋子、丝袜） 6-武器槽（特效、武器外观） 7-套装槽（上下装）
----@field public skin_slot2_type integer @皮肤类型 1-角色槽（脸） 2-头饰槽（头饰、帽子、发型、发色） 3-面饰槽（眼睛、面纱） 4-上衣槽 5-下装槽（裤子、鞋子、丝袜） 6-武器槽（特效、武器外观） 7-套装槽（上下装）
----@field public skin_slot3_type integer @皮肤类型 1-角色槽（脸） 2-头饰槽（头饰、帽子、发型、发色） 3-面饰槽（眼睛、面纱） 4-上衣槽 5-下装槽（裤子、鞋子、丝袜） 6-武器槽（特效、武器外观） 7-套装槽（上下装）
----@field public skin_slot4_type integer @皮肤类型 1-角色槽（脸） 2-头饰槽（头饰、帽子、发型、发色） 3-面饰槽（眼睛、面纱） 4-上衣槽 5-下装槽（裤子、鞋子、丝袜） 6-武器槽（特效、武器外观） 7-套装槽（上下装）
----@field public skin_slot5_type integer @皮肤类型 1-角色槽（脸） 2-头饰槽（头饰、帽子、发型、发色） 3-面饰槽（眼睛、面纱） 4-上衣槽 5-下装槽（裤子、鞋子、丝袜） 6-武器槽（特效、武器外观） 7-套装槽（上下装）
----@field public skin_slot6_type integer @皮肤类型 1-角色槽（脸） 2-头饰槽（头饰、帽子、发型、发色） 3-面饰槽（眼睛、面纱） 4-上衣槽 5-下装槽（裤子、鞋子、丝袜） 6-武器槽（特效、武器外观） 7-套装槽（上下装）
----@field public skin_slot7_type integer @皮肤类型 1-角色槽（脸） 2-头饰槽（头饰、帽子、发型、发色） 3-面饰槽（眼睛、面纱） 4-上衣槽 5-下装槽（裤子、鞋子、丝袜） 6-武器槽（特效、武器外观） 7-套装槽（上下装）
+---@field public bagua_slot_num integer @八卦牌槽位数量（每种类型1个） 1-乾（☰） 2-巽（☴） 3-坎（☵） 4-艮（☶） 5-坤（☷） 6-震（☳） 7-离（☲） 8-兑（☱）
+---@field public skin_slot_num integer @皮肤槽位数量（每种类型1个） 1-角色槽（脸） 2-头饰槽（头饰、帽子、发型、发色） 3-面饰槽（眼睛、面纱） 4-上衣槽 5-下装槽（裤子、鞋子、丝袜） 6-武器槽（特效、武器外观） 7-套装槽（上下装）
+---@field public action_slot_type integer[] @表情动作槽可以装配的类型
 ---@field public action_slot_num integer @表情动作可装配数量
 ---@field public init_passive_skill integer @初始被动
 ---@field public passive_skill integer[] @全部被动
@@ -32,9 +20,9 @@
 ---@field public e_skill integer[] @全部E技能
 ---@field public disable_match integer @禁用模式（后续可能增加） 0-不禁用 1-全模式禁用 2-主线模式禁用
 return {
-[1000000] = { id=1000000,lv=50,star=10,magic_slot_type=101,default_faqi=600000,book_slot_num=999,book_study=5,bagua_slot1_type=1,bagua_slot2_type=2,bagua_slot3_type=3,bagua_slot4_type=4,bagua_slot5_type=5,bagua_slot6_type=6,bagua_slot7_type=7,bagua_slot8_type=8,skin_slot1_type=1,skin_slot2_type=2,skin_slot3_type=3,skin_slot4_type=4,skin_slot5_type=5,skin_slot6_type=6,skin_slot7_type=7,action_slot_num=8,init_passive_skill=1130000,passive_skill={1130000,1130001},init_main_skill=1001000,main_skill={1001000,1001001},init_q_skill=1001000,q_skill={1001000,1001001,1001002},init_e_skill=1001000,e_skill={1001000,1001001,1001002},disable_match=0 },
-[1000001] = { id=1000001,lv=50,star=10,magic_slot_type=101,default_faqi=600000,book_slot_num=999,book_study=5,bagua_slot1_type=1,bagua_slot2_type=2,bagua_slot3_type=3,bagua_slot4_type=4,bagua_slot5_type=5,bagua_slot6_type=6,bagua_slot7_type=7,bagua_slot8_type=8,skin_slot1_type=1,skin_slot2_type=2,skin_slot3_type=3,skin_slot4_type=4,skin_slot5_type=5,skin_slot6_type=6,skin_slot7_type=7,action_slot_num=8,init_passive_skill=1130000,passive_skill={1130000,1130001},init_main_skill=1001000,main_skill={1001000,1001002},init_q_skill=1001000,q_skill={1001000,1001001,1001003},init_e_skill=1001000,e_skill={1001000,1001001,1001003},disable_match=0 },
-[1000002] = { id=1000002,lv=50,star=10,magic_slot_type=101,default_faqi=600000,book_slot_num=999,book_study=5,bagua_slot1_type=1,bagua_slot2_type=2,bagua_slot3_type=3,bagua_slot4_type=4,bagua_slot5_type=5,bagua_slot6_type=6,bagua_slot7_type=7,bagua_slot8_type=8,skin_slot1_type=1,skin_slot2_type=2,skin_slot3_type=3,skin_slot4_type=4,skin_slot5_type=5,skin_slot6_type=6,skin_slot7_type=7,action_slot_num=8,init_passive_skill=1130000,passive_skill={1130000,1130001},init_main_skill=1001000,main_skill={1001000,1001003},init_q_skill=1001000,q_skill={1001000,1001001,1001004},init_e_skill=1001000,e_skill={1001000,1001001,1001004},disable_match=0 },
-[1000003] = { id=1000003,lv=50,star=10,magic_slot_type=101,default_faqi=600000,book_slot_num=999,book_study=5,bagua_slot1_type=1,bagua_slot2_type=2,bagua_slot3_type=3,bagua_slot4_type=4,bagua_slot5_type=5,bagua_slot6_type=6,bagua_slot7_type=7,bagua_slot8_type=8,skin_slot1_type=1,skin_slot2_type=2,skin_slot3_type=3,skin_slot4_type=4,skin_slot5_type=5,skin_slot6_type=6,skin_slot7_type=7,action_slot_num=8,init_passive_skill=1130000,passive_skill={1130000,1130001},init_main_skill=1001000,main_skill={1001000,1001004},init_q_skill=1001000,q_skill={1001000,1001001,1001005},init_e_skill=1001000,e_skill={1001000,1001001,1001005},disable_match=0 },
-[1000004] = { id=1000004,lv=50,star=10,magic_slot_type=101,default_faqi=600000,book_slot_num=999,book_study=5,bagua_slot1_type=1,bagua_slot2_type=2,bagua_slot3_type=3,bagua_slot4_type=4,bagua_slot5_type=5,bagua_slot6_type=6,bagua_slot7_type=7,bagua_slot8_type=8,skin_slot1_type=1,skin_slot2_type=2,skin_slot3_type=3,skin_slot4_type=4,skin_slot5_type=5,skin_slot6_type=6,skin_slot7_type=7,action_slot_num=8,init_passive_skill=1130000,passive_skill={1130000,1130001},init_main_skill=1001000,main_skill={1001000,1001005},init_q_skill=1001000,q_skill={1001000,1001001,1001006},init_e_skill=1001000,e_skill={1001000,1001001,1001006},disable_match=0 }
+[1000000] = { id=1000000,lv=50,star=10,magic_slot_type=101,default_faqi=600000,book_slot_num=999,book_study=5,bagua_slot_num=8,skin_slot_num=7,action_slot_type={8,9},action_slot_num=8,init_passive_skill=1130000,passive_skill={1130000,1130001},init_main_skill=1001000,main_skill={1001000,1001001},init_q_skill=1001000,q_skill={1001000,1001001,1001002},init_e_skill=1001000,e_skill={1001000,1001001,1001002},disable_match=0 },
+[1000001] = { id=1000001,lv=50,star=10,magic_slot_type=101,default_faqi=600000,book_slot_num=999,book_study=5,bagua_slot_num=8,skin_slot_num=7,action_slot_type={8,9},action_slot_num=8,init_passive_skill=1130000,passive_skill={1130000,1130001},init_main_skill=1001000,main_skill={1001000,1001002},init_q_skill=1001000,q_skill={1001000,1001001,1001003},init_e_skill=1001000,e_skill={1001000,1001001,1001003},disable_match=0 },
+[1000002] = { id=1000002,lv=50,star=10,magic_slot_type=101,default_faqi=600000,book_slot_num=999,book_study=5,bagua_slot_num=8,skin_slot_num=7,action_slot_type={8,9},action_slot_num=8,init_passive_skill=1130000,passive_skill={1130000,1130001},init_main_skill=1001000,main_skill={1001000,1001003},init_q_skill=1001000,q_skill={1001000,1001001,1001004},init_e_skill=1001000,e_skill={1001000,1001001,1001004},disable_match=0 },
+[1000003] = { id=1000003,lv=50,star=10,magic_slot_type=101,default_faqi=600000,book_slot_num=999,book_study=5,bagua_slot_num=8,skin_slot_num=7,action_slot_type={8,9},action_slot_num=8,init_passive_skill=1130000,passive_skill={1130000,1130001},init_main_skill=1001000,main_skill={1001000,1001004},init_q_skill=1001000,q_skill={1001000,1001001,1001005},init_e_skill=1001000,e_skill={1001000,1001001,1001005},disable_match=0 },
+[1000004] = { id=1000004,lv=50,star=10,magic_slot_type=101,default_faqi=600000,book_slot_num=999,book_study=5,bagua_slot_num=8,skin_slot_num=7,action_slot_type={8,9},action_slot_num=8,init_passive_skill=1130000,passive_skill={1130000,1130001},init_main_skill=1001000,main_skill={1001000,1001005},init_q_skill=1001000,q_skill={1001000,1001001,1001006},init_e_skill=1001000,e_skill={1001000,1001001,1001006},disable_match=0 }
 }

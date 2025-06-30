@@ -315,6 +315,10 @@ local ErrorCode = {
     ItemMaxStar = 1611,
     --- 合成失败
     CompositeFail = 1612,
+    --- 镶嵌类型错误
+    InlayTypeInvalid = 1613,
+    --- 镶嵌目标类型不匹配
+    InlayTypeNotMatch = 1614,
 
     --角色相关错误码
     --- 角色不存在
@@ -329,6 +333,18 @@ local ErrorCode = {
     RoleExist = 1705,
     --- 角色添加失败
     RoleAddFail = 1706,
+    --- 表情类型不匹配
+    EmojiNotMatch = 1707,
+    --- 技能不存在
+    SkillNotExist = 1708,
+    --- 角色奖励已领取
+    RoleRewardAlreadyGet = 1709,
+    --- 等级经验不足
+    UpExpNotEnough = 1710,
+    --- 真经已学习
+    BookAlreadyStudy = 1711,
+    --- 前置真经未学习
+    BookPreNotStudy = 1712,
 }
 
 return ErrorCode

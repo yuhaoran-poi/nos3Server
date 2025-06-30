@@ -1345,6 +1345,64 @@ function Bag.GetBagdata(bags_name)
     return res
 end
 
+function Bag.InlayTabooWord(taboo_word_id, inlay_type, uniqid)
+    local err_code, item_data = Bag.MutOneItemData(BagDef.BagType.Cangku, uniqid)
+    if err_code ~= ErrorCode.None or not item_data then
+        return err_code
+    end
+
+    if inlay_type == 1 then
+        if not item_data.special_info
+            or not item_data.special_info.magic_item then
+            return ErrorCode.ItemNotExist
+        end
+    else
+        if not item_data.special_info
+            or not item_data.special_info.diagrams_item then
+            return ErrorCode.ItemNotExist
+        end
+    end
+
+    local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+    local item_cfg = GameCfg.Item[taboo_word_id]
+    if not uniqitem_cfg or not item_cfg then
+        return ErrorCode.ConfigError
+    end
+    if uniqitem_cfg.type4 ~= item_cfg.type4 then
+        return ErrorCode.InlayTypeNotMatch
+    end
+    if inlay_type ~= 1 and uniqitem_cfg.type5 ~= item_cfg.type5 then
+        return ErrorCode.InlayTypeNotMatch
+    end
+
+    -- 扣除道具消耗
+    local cost_items = {}
+    cost_items[taboo_word_id] = {
+        count = 1,
+        pos = 0,
+    }
+    local err_code = Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    if err_code ~= ErrorCode.None then
+        return ErrorCode.ItemNotEnough
+    end
+
+    local bag_change_log = {}
+    local err_code_del = Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, bag_change_log)
+    if err_code_del ~= ErrorCode.None then
+        Bag.RollBackWithChange(bag_change_log)
+        return ErrorCode.ItemNotEnough
+    end
+
+    -- 镶嵌讳字
+    if inlay_type == 1 then
+        item_data.special_info.magic_item.tabooword_id = taboo_word_id
+    else
+        item_data.special_info.diagrams_item.tabooword_id = taboo_word_id
+    end
+
+    return ErrorCode.None, bag_change_log
+end
+
 function Bag.PBBagGetDataReqCmd(req)
     if table.size(req.msg.bags_name) <= 0 then
         return context.S2C(context.net_id, CmdCode["PBBagGetDataRspCmd"],
@@ -1435,9 +1493,9 @@ function Bag.GetSpecialItemFromCommonItem(srcBagType, srcPos, item_id)
     end
 
     local del_items = {}
-    del_items[item_id] = { pos = srcPos, count = -1 }
+    del_items[item_id] = { count = -1, pos = srcPos}
     local add_items = {}
-    add_items[convert_config_id] = { pos = 0, count = 1 }
+    add_items[convert_config_id] = { count = 1, pos = 0 }
     -- 检查道具消耗
     local err_code = Bag.CheckItemsEnough(BagDef.BagType.Cangku, del_items, {})
     if err_code ~= ErrorCode.None then
@@ -1538,30 +1596,8 @@ function Bag.Light(op_itemdata)
     end
 
     -- 检查消耗品数量
-    local cost_items = {}
-    local cost_coins = {}
-    for config_id, item_count in pairs(cost_cfg) do
-        local small_type = scripts.ItemDefine.GetItemType(config_id)
-        if small_type == scripts.ItemDefine.EItemSmallType.Coin then
-            if not cost_coins[config_id] then
-                cost_coins[config_id] = {
-                    coin_id = 0,
-                    count = 0,
-                }
-            end
-
-            cost_coins[config_id].count = cost_coins[config_id].count - item_count
-        else
-            if not cost_items[config_id] then
-                cost_items[config_id] = {
-                    count = 0,
-                    pos = 0,
-                }
-            end
-
-            cost_items[config_id].count = cost_items[config_id].count - item_count
-        end
-    end
+    local cost_items, cost_coins = {}, {}
+    scripts.Item.GetItemsFromCfg(cost_cfg, 1, true, cost_items, cost_coins)
     local err_code_items = Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
     if err_code_items ~= ErrorCode.None then
         return err_code_items

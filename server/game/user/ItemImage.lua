@@ -258,21 +258,7 @@ function ItemImage.UpLvImage(config_id, add_exp)
             return ErrorCode.ItemUpLvCostNotExist
         end
 
-        for cost_id, cost_cnt in pairs(cost_cfg.cost) do
-            if scripts.ItemDefine.GetItemType(cost_id) == scripts.ItemDefine.EItemSmallType.Coin then
-                if cost_coins[cost_id] then
-                    cost_coins[cost_id] = cost_coins[cost_id] + cost_cnt * (count / cost_cfg.cnt)
-                else
-                    cost_coins[cost_id] = cost_cnt * (count / cost_cfg.cnt)
-                end
-            else
-                if cost_items[cost_id] then
-                    cost_items[cost_id] = cost_items[cost_id] + cost_cnt * (count / cost_cfg.cnt)
-                else
-                    cost_items[cost_id] = cost_cnt * (count / cost_cfg.cnt)
-                end
-            end
-        end
+        scripts.Item.GetItemsFromCfg(cost_cfg, (count / cost_cfg.cnt), true, cost_items, cost_coins)
     end
 
     -- 检查资源是否足够
@@ -310,6 +296,72 @@ function ItemImage.UpLvImage(config_id, add_exp)
     return ErrorCode.None, change_log
 end
 
+function ItemImage.CheckUseItemUpLv(config_id, exp_id, exp_cnt)
+    local image_data, item_type = ItemImage.GetImage(config_id)
+    if not image_data then
+        return ErrorCode.ItemNotExist
+    end
+
+    local function check_add_exp(up_exp_cfgs, cur_exp, after_up_exp)
+        for _, cfg in pairs(up_exp_cfgs) do
+            if image_data.exp < cfg.allexp and after_up_exp >= cfg.allexp then
+                if cfg.cost ~= exp_id then
+                    return ErrorCode.ConfigError
+                end
+            end
+
+            if after_up_exp < cfg.allexp then
+                return ErrorCode.None
+            end
+        end
+
+        return ErrorCode.ItemMaxExp
+    end
+
+    local after_up_exp = image_data.exp + exp_cnt
+    if item_type == scripts.ItemDefine.EItemSmallType.MagicItem then
+        local up_exp_cfgs = GameCfg.MagicItemUpLv
+        local err_code = check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
+        if err_code ~= ErrorCode.None then
+            return err_code
+        end
+    elseif item_type == scripts.ItemDefine.EItemSmallType.PlayItem
+        or item_type == scripts.ItemDefine.EItemSmallType.UnStackItem then
+        local up_exp_cfgs = GameCfg.GamePropUpLv
+        local err_code = check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
+        if err_code ~= ErrorCode.None then
+            return err_code
+        end
+    elseif item_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+        local up_exp_cfgs = GameCfg.BaGuaBrandUpLv
+        local err_code = check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
+        if err_code ~= ErrorCode.None then
+            return err_code
+        end
+    elseif item_type == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
+        local up_exp_cfgs = GameCfg.GhostEquipmentUpLv
+        local err_code = check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
+        if err_code ~= ErrorCode.None then
+            return err_code
+        end
+    end
+    
+    -- image_data.exp = after_up_exp
+
+    return ErrorCode.None
+end
+
+function ItemImage.UpExp(config_id, exp_cnt)
+    local image_data, item_type = ItemImage.GetImage(config_id)
+    if not image_data then
+        return ErrorCode.ItemNotExist
+    end
+
+    image_data.exp = image_data.exp + exp_cnt
+
+    return ErrorCode.None
+end
+
 function ItemImage.UpStarImage(config_id)
     local image_data, item_type = ItemImage.GetImage(config_id)
     if not image_data then
@@ -333,21 +385,7 @@ function ItemImage.UpStarImage(config_id)
     -- 计算消耗资源
     local cost_items = {}
     local cost_coins = {}
-    for cost_id, cost_cnt in pairs(cost_cfg.cost) do
-        if scripts.ItemDefine.GetItemType(cost_id) == scripts.ItemDefine.EItemSmallType.Coin then
-            if cost_coins[cost_id] then
-                cost_coins[cost_id] = cost_coins[cost_id] + cost_cnt
-            else
-                cost_coins[cost_id] = cost_cnt
-            end
-        else
-            if cost_items[cost_id] then
-                cost_items[cost_id] = cost_items[cost_id] + cost_cnt
-            else
-                cost_items[cost_id] = cost_cnt
-            end
-        end
-    end
+    scripts.Item.GetItemsFromCfg(cost_cfg, 1, true, cost_items, cost_coins)
 
     -- 检查资源是否足够
     local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})

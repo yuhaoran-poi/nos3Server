@@ -1,0 +1,47 @@
+---@class RoleLvAward_cfg
+---@field public id integer @唯一ID(必须为第一列且名称为id，类型为INT)
+---@field public role_id integer @角色ID
+---@field public lv integer @等级
+---@field public award table @奖励配置
+return {
+[1] = { id=1,role_id=1000000,lv=5,award={[1]=200} },
+[2] = { id=2,role_id=1000000,lv=10,award={[1]=201} },
+[3] = { id=3,role_id=1000000,lv=15,award={[1]=202} },
+[4] = { id=4,role_id=1000000,lv=20,award={[1]=203} },
+[5] = { id=5,role_id=1000000,lv=30,award={[1]=204} },
+[6] = { id=6,role_id=1000000,lv=50,award={[1]=205} },
+[7] = { id=7,role_id=1000000,lv=75,award={[1]=206} },
+[8] = { id=8,role_id=1000000,lv=100,award={[1]=207} },
+[9] = { id=9,role_id=1000001,lv=5,award={[1]=200} },
+[10] = { id=10,role_id=1000001,lv=10,award={[1]=201} },
+[11] = { id=11,role_id=1000001,lv=15,award={[1]=202} },
+[12] = { id=12,role_id=1000001,lv=20,award={[1]=203} },
+[13] = { id=13,role_id=1000001,lv=30,award={[1]=204} },
+[14] = { id=14,role_id=1000001,lv=50,award={[1]=205} },
+[15] = { id=15,role_id=1000001,lv=75,award={[1]=206} },
+[16] = { id=16,role_id=1000001,lv=100,award={[1]=207} },
+[17] = { id=17,role_id=1000002,lv=5,award={[1]=200} },
+[18] = { id=18,role_id=1000002,lv=10,award={[1]=201} },
+[19] = { id=19,role_id=1000002,lv=15,award={[1]=202} },
+[20] = { id=20,role_id=1000002,lv=20,award={[1]=203} },
+[21] = { id=21,role_id=1000002,lv=30,award={[1]=204} },
+[22] = { id=22,role_id=1000002,lv=50,award={[1]=205} },
+[23] = { id=23,role_id=1000002,lv=75,award={[1]=206} },
+[24] = { id=24,role_id=1000002,lv=100,award={[1]=207} },
+[25] = { id=25,role_id=1000003,lv=5,award={[1]=200} },
+[26] = { id=26,role_id=1000003,lv=10,award={[1]=201} },
+[27] = { id=27,role_id=1000003,lv=15,award={[1]=202} },
+[28] = { id=28,role_id=1000003,lv=20,award={[1]=203} },
+[29] = { id=29,role_id=1000003,lv=30,award={[1]=204} },
+[30] = { id=30,role_id=1000003,lv=50,award={[1]=205} },
+[31] = { id=31,role_id=1000003,lv=75,award={[1]=206} },
+[32] = { id=32,role_id=1000003,lv=100,award={[1]=207} },
+[33] = { id=33,role_id=1000004,lv=5,award={[1]=200} },
+[34] = { id=34,role_id=1000004,lv=10,award={[1]=201} },
+[35] = { id=35,role_id=1000004,lv=15,award={[1]=202} },
+[36] = { id=36,role_id=1000004,lv=20,award={[1]=203} },
+[37] = { id=37,role_id=1000004,lv=30,award={[1]=204} },
+[38] = { id=38,role_id=1000004,lv=50,award={[1]=205} },
+[39] = { id=39,role_id=1000004,lv=75,award={[1]=206} },
+[40] = { id=40,role_id=1000004,lv=100,award={[1]=207} }
+}

@@ -11,6 +11,14 @@ local RoleDef = {
         RoleID = { Start = 1000000, End = 1000999 },
         RoleSkill = { Start = 1001000, End = 1012999 },
     },
+    InlayType = 1000,
+}
+
+local defaultPBStudyBook = {
+    book_id = 0,
+    start_time = 0,
+    end_time = 0,
+    now_time = 0,
 }
 
 local defaultPBSimpleRoleData = {
@@ -27,6 +35,7 @@ local defaultPBRoleData = {
     digrams_cards = {},
     equip_books = {},
     study_books = {},
+    last_check_time = 0,
     skins = {},
     cur_main_skill_id = 0,
     main_skill = {},
@@ -35,13 +44,19 @@ local defaultPBRoleData = {
     cur_minor_skill2_id = 0,
     minor_skill2 = {},
     passive_skill = {},
-    emoji = {}
+    emoji = {},
+    up_lv_rewards = {},
 }
 
 local defaultPBUserRoleDatas = {
     battle_role_id = 0,
     role_list = {},
 }
+
+---@return PBStudyBook
+function RoleDef.newStudyBook()
+    return LuaExt.const(table.copy(defaultPBStudyBook))
+end
 
 ---@return PBSimpleRoleData
 function RoleDef.newSimpleRoleData()

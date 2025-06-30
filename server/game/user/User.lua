@@ -347,6 +347,9 @@ function User.Exit()
 
     User.Logout()
 
+    -- 退出房间
+    scripts.Room.ForceExitRoom()
+    
     -- 通知usermgr
     local res, err = clusterd.call(3999, "usermgr", "Usermgr.NotifyLogout", { uid = context.uid, nid = moon.env("NODE") })
     if err then
@@ -454,7 +457,7 @@ local function LightRoleEquipment(msg)
         for bagType, _ in pairs(change_log) do
             save_bags[bagType] = 1
         end
-        if table.size(save_bags) then
+        if table.size(save_bags) > 0 then
             -- 只存储了背包变更数据
             scripts.Bag.SaveAndLog(save_bags, change_log)
         end
@@ -491,7 +494,7 @@ local function LightRoleEquipment(msg)
         for bagType, _ in pairs(change_log) do
             save_bags[bagType] = 1
         end
-        if table.size(save_bags) then
+        if table.size(save_bags) > 0 then
             -- 只存储了背包变更数据
             scripts.Bag.SaveAndLog(save_bags, change_log)
         end
@@ -537,7 +540,7 @@ local function LightGhostEquipment(msg)
         for bagType, _ in pairs(change_log) do
             save_bags[bagType] = 1
         end
-        if table.size(save_bags) then
+        if table.size(save_bags) > 0 then
             -- 只存储了背包变更数据
             scripts.Bag.SaveAndLog(save_bags, change_log)
         end
@@ -610,7 +613,7 @@ local function LightBagItem(msg)
         save_bags[bagType] = 1
     end
 
-    if table.size(save_bags) then
+    if table.size(save_bags) > 0 then
         scripts.Bag.SaveAndLog(save_bags, change_log)
     end
 
@@ -728,7 +731,7 @@ function User.DsAddItems(simple_items)
                 count = item.item_count,
             }
         else
-            add_items[item.config_id] = { count = item.item_count }
+            add_items[item.config_id] = { count = item.item_count, pos = 0 }
         end
     end
 
@@ -805,8 +808,165 @@ function User.PBClientItemUpLvReqCmd(req)
             save_bags[bagType] = 1
         end
 
-        if table.size(save_bags) then
+        if table.size(save_bags) > 0 then
             scripts.Bag.SaveAndLog(save_bags, change_log)
+        end
+    end
+    if RoleDef.RoleDefine.RoleID.Start <= req.msg.config_id
+        and req.msg.config_id <= RoleDef.RoleDefine.RoleID.End then
+        local change_roles = {}
+        change_roles[req.msg.config_id] = "UpLv"
+        scripts.Role.SaveAndLog(change_roles)
+    elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.config_id
+        and req.msg.config_id <= GhostDef.GhostDefine.GhostID.End then
+        local change_ghosts = {
+            ghost = {},
+            image = {},
+        }
+        change_ghosts.image[req.msg.config_id] = "UpLv"
+        scripts.Ghost.SaveAndLog(change_ghosts)
+    else
+        -- 图鉴信息变更
+        local change_image_ids = {}
+        table.insert(change_image_ids, req.msg.config_id)
+        scripts.ItemImage.SaveAndLog(change_image_ids)
+    end
+end
+
+-- 客户端请求--使用道具升级
+function User.PBUseItemUpLvReqCmd(req)
+    -- 参数验证
+    if not req.msg.target_id or not req.msg.cost_id or req.msg.cost_num <= 0 then
+        return context.S2C(context.net_id, CmdCode.PBUseItemUpLvRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            target_id = req.msg.target_id or 0,
+            cost_id = req.msg.cost_id or 0,
+            cost_num = req.msg.cost_num or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    local cost_items = {}
+    cost_items[req.msg.cost_id] = {
+        count = 0,
+        pos = 0,
+    }
+    cost_items[req.msg.cost_id].count = cost_items[req.msg.cost_id].count - req.msg.cost_num
+
+    -- 检测道具是否足够
+    local bag_cost_code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    if bag_cost_code ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBUseItemUpLvRspCmd, {
+            code = bag_cost_code,
+            error = "道具不足",
+            uid = context.uid,
+            target_id = req.msg.target_id,
+            cost_id = req.msg.cost_id,
+            cost_num = req.msg.cost_num,
+        }, req.msg_context.stub_id)
+    end
+
+    local item_cfg = GameCfg.Item[req.msg.cost_id]
+    if not item_cfg or not item_cfg.use_award or table.size(item_cfg.use_award) ~= 1 then
+        return context.S2C(context.net_id, CmdCode.PBUseItemUpLvRspCmd, {
+            code = ErrorCode.ConfigError,
+            error = "道具配置错误",
+            uid = context.uid,
+            target_id = req.msg.target_id,
+            cost_id = req.msg.cost_id,
+            cost_num = req.msg.cost_num,
+        }, req.msg_context.stub_id)
+    end
+
+    local up_exp_id, up_exp_cnt = 0, 0
+    for id, cnt in pairs(item_cfg.use_award) do
+        up_exp_id = id
+        up_exp_cnt = cnt * req.msg.cost_num
+    end
+
+    -- 检查经验增加
+    local err_code = ErrorCode.None
+    if RoleDef.RoleDefine.RoleID.Start <= req.msg.target_id
+        and req.msg.target_id <= RoleDef.RoleDefine.RoleID.End then
+        err_code = scripts.Role.CheckUseItemUpLv(req.msg.target_id, up_exp_id, up_exp_cnt)
+    elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.target_id
+        and req.msg.target_id <= GhostDef.GhostDefine.GhostID.End then
+        err_code = scripts.Ghost.CheckUseItemUpLv(req.msg.target_id, up_exp_id, up_exp_cnt)
+    else
+        -- 图鉴升级
+        err_code = scripts.ItemImage.CheckUseItemUpLv(req.msg.target_id, up_exp_id, up_exp_cnt)
+    end
+    if err_code ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBUseItemUpLvRspCmd, {
+            code = err_code,
+            error = "图鉴不存在",
+            uid = context.uid,
+            target_id = req.msg.target_id,
+            cost_id = req.msg.cost_id,
+            cost_num = req.msg.cost_num,
+        }, req.msg_context.stub_id)
+    end
+
+    -- 扣除消耗
+    local bag_change_log = {}
+    local err_code_del = ErrorCode.None
+    if table.size(cost_items) > 0 then
+        err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, bag_change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode.PBUseItemUpLvRspCmd, {
+                code = err_code_del,
+                error = "道具不足",
+                uid = context.uid,
+                target_id = req.msg.target_id,
+                cost_id = req.msg.cost_id,
+                cost_num = req.msg.cost_num,
+            }, req.msg_context.stub_id)
+        end
+    end
+
+    -- 增加经验
+    if RoleDef.RoleDefine.RoleID.Start <= req.msg.target_id
+        and req.msg.target_id <= RoleDef.RoleDefine.RoleID.End then
+        err_code = scripts.Role.UpExp(req.msg.target_id, up_exp_cnt)
+    elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.target_id
+        and req.msg.target_id <= GhostDef.GhostDefine.GhostID.End then
+        err_code = scripts.Ghost.UpExp(req.msg.target_id, up_exp_cnt)
+    else
+        -- 图鉴升级
+        err_code = scripts.ItemImage.UpExp(req.msg.target_id, up_exp_cnt)
+    end
+    if err_code ~= ErrorCode.None then
+        scripts.Bag.RollBackWithChange(bag_change_log)
+        return context.S2C(context.net_id, CmdCode.PBUseItemUpLvRspCmd, {
+            code = err_code,
+            error = "增加经验失败",
+            uid = context.uid,
+            target_id = req.msg.target_id,
+            cost_id = req.msg.cost_id,
+            cost_num = req.msg.cost_num,
+        }, req.msg_context.stub_id)
+    end
+
+    context.S2C(context.net_id, CmdCode.PBUseItemUpLvRspCmd, {
+        code = err_code,
+        error = "success",
+        uid = context.uid,
+        target_id = req.msg.target_id,
+        cost_id = req.msg.cost_id,
+        cost_num = req.msg.cost_num,
+    }, req.msg_context.stub_id)
+
+    -- 存储背包变更
+    if bag_change_log then
+        local save_bags = {}
+        for bagType, _ in pairs(bag_change_log) do
+            save_bags[bagType] = 1
+        end
+
+        if table.size(save_bags) > 0 then
+            scripts.Bag.SaveAndLog(save_bags, bag_change_log)
         end
     end
     if RoleDef.RoleDefine.RoleID.Start <= req.msg.config_id
@@ -876,7 +1036,7 @@ function User.PBClientItemUpStarReqCmd(req)
             save_bags[bagType] = 1
         end
 
-        if table.size(save_bags) then
+        if table.size(save_bags) > 0 then
             scripts.Bag.SaveAndLog(save_bags, change_log)
         end
     end
@@ -1021,28 +1181,7 @@ function User.PBClientItemRepairReqCmd(req)
             end
             local cost_items = {}
             local cost_coins = {}
-            for config_id, item_count in pairs(common_cfg.items) do
-                local small_type = scripts.ItemDefine.GetItemType(config_id)
-                if small_type == scripts.ItemDefine.EItemSmallType.Coin then
-                    if not cost_coins[config_id] then
-                        cost_coins[config_id] = {
-                            coin_id = 0,
-                            count = 0,
-                        }
-                    end
-
-                    cost_coins[config_id].count = cost_coins[config_id].count - item_count * add_durability
-                else
-                    if not cost_items[config_id] then
-                        cost_items[config_id] = {
-                            count = 0,
-                            pos = 0,
-                        }
-                    end
-
-                    cost_items[config_id].count = cost_items[config_id].count - item_count * add_durability
-                end
-            end
+            scripts.Item.GetItemsFromCfg(common_cfg.items, add_durability, true, cost_items, cost_coins)
 
             -- 检测道具是否足够
             errcode = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
@@ -1089,7 +1228,7 @@ function User.PBClientItemRepairReqCmd(req)
                 save_bags[bagType] = 1
             end
 
-            if table.size(save_bags) then
+            if table.size(save_bags) > 0 then
                 scripts.Bag.SaveAndLog(save_bags, change_logs)
             end
 
@@ -1123,6 +1262,72 @@ function User.PBUseSkinGiftReqCmd(req)
     -- 读取皮肤礼包表
 end
 
+function User.Composite(composite_cfg)
+    local random_rate = math.random(1, 10000)
+    if random_rate > composite_cfg.rate then
+        return { code = ErrorCode.CompositeFail, error = "合成失败" }
+    end
+
+    local total_weight = 0
+    if composite_cfg.weight then
+        for id, weight in pairs(composite_cfg.weight) do
+            total_weight = total_weight + weight
+        end
+    end
+
+    local add_roles = {}
+    local add_items = {}
+    if total_weight > 0 then
+        local random_weight = math.random(1, total_weight)
+        for id, weight in pairs(composite_cfg.weight) do
+            random_weight = random_weight - weight
+            if random_weight <= 0 then
+                if composite_cfg.item_id[id] then
+                    if RoleDef.RoleDefine.RoleID.Start <= id
+                        and id <= RoleDef.RoleDefine.RoleID.End then
+                        table.insert(add_roles, id)
+                    else
+                        add_items[id] = composite_cfg.item_id[id]
+                    end
+                end
+
+                break
+            end
+        end
+    else
+        for id, cnt in pairs(composite_cfg.item_id) do
+            if RoleDef.RoleDefine.RoleID.Start <= id
+                and id <= RoleDef.RoleDefine.RoleID.End then
+                table.insert(add_roles, id)
+            else
+                if not add_items[id] then
+                    add_items[id] = {
+                        count = 0,
+                        pos = 0,
+                    }
+                end
+                add_items[id].count = add_items[id].count + cnt
+            end
+        end
+    end
+
+    -- 检测是否可以添加
+    for _, roleid in pairs(add_roles) do
+        local role_info = scripts.Role.GetRoleInfo(roleid)
+        if role_info then
+            return { code = ErrorCode.RoleExist, error = "角色已拥有" }
+        end
+    end
+    if table.size(add_items) > 0 then
+        local err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items)
+        if err_code ~= ErrorCode.None then
+            return { code = err_code, error = "背包空间不足" }
+        end
+    end
+
+    return { code = ErrorCode.None, error = "合成成功", add_roles = add_roles, add_items = add_items }
+end
+
 function User.PBSureCompositeReqCmd(req)
     -- 参数验证
     if not req.msg.uid or not req.msg.composite_id then
@@ -1147,38 +1352,9 @@ function User.PBSureCompositeReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
     end
 
-    if RoleDef.RoleDefine.RoleID.Start <= composite_cfg.item_id
-        and composite_cfg.item_id <= RoleDef.RoleDefine.RoleID.End then
-        local role_info = scripts.Role.GetRoleInfo(composite_cfg.item_id)
-        if role_info then
-            rsp_msg.code = ErrorCode.RoleExist
-            rsp_msg.error = "角色已拥有"
-            return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
-        end
-    end
-
     local cost_items = {}
     local cost_coins = {}
-    for config_id, item_count in pairs(composite_cfg.cost) do
-        local small_type = scripts.ItemDefine.GetItemType(config_id)
-        if small_type == scripts.ItemDefine.EItemSmallType.Coin then
-            if not cost_coins[config_id] then
-                cost_coins[config_id] = {
-                    coin_id = 0,
-                    count = 0,
-                }
-            end
-            cost_coins[config_id].count = cost_coins[config_id].count - item_count
-        else
-            if not cost_items[config_id] then
-                cost_items[config_id] = {
-                    count = 0,
-                    pos = 0,
-                }
-            end
-            cost_items[config_id].count = cost_items[config_id].count - item_count
-        end
-    end
+    scripts.Item.GetItemsFromCfg(composite_cfg.cost, 1, true, cost_items, cost_coins)
 
     -- 检测道具是否足够
     rsp_msg.code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
@@ -1192,27 +1368,43 @@ function User.PBSureCompositeReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
     end
 
-    local bag_change_log = {}
-    local change_roles = {}
-    -- 扣除道具消耗
-    rsp_msg.code = scripts.Bag.DelItems(req.msg.bag_name, cost_items, {}, bag_change_log)
-    if rsp_msg.code ~= ErrorCode.None then
-        scripts.Bag.RollBackWithChange(bag_change_log)
+    local composite_ret = User.Composite(composite_cfg)
+    if composite_ret.code ~= ErrorCode.None
+        and composite_ret.code ~= composite_ret.Errcode.CompositeFail then
+        rsp_msg.code = composite_ret.code
+        rsp_msg.error = composite_ret.error
         return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
     end
 
-    -- 随机概率
-    local random_num = math.random(1, 10000)
-    if random_num > composite_cfg.rate then
-        rsp_msg.code = ErrorCode.CompositeFail
-        rsp_msg.error = "合成失败"
-    else
-        rsp_msg.code = ErrorCode.None
-        rsp_msg.error = "合成成功"
+    local bag_change_log = {}
+    local change_roles = {}
+    -- 扣除道具消耗
+    if table.size(cost_items) > 0 then
+        rsp_msg.code = scripts.Bag.DelItems(req.msg.bag_name, cost_items, {}, bag_change_log)
+        if rsp_msg.code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    end
+    if table.size(cost_coins) > 0 then
+        rsp_msg.code = scripts.Bag.DealCoins(cost_coins, bag_change_log)
+        if rsp_msg.code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    end
 
-        if RoleDef.RoleDefine.RoleID.Start <= composite_cfg.item_id
-            and composite_cfg.item_id <= RoleDef.RoleDefine.RoleID.End then
-            local add_success = scripts.Role.AddRole(composite_cfg.item_id)
+    if composite_ret.code == ErrorCode.None then
+        if table.size(composite_ret.add_items) > 0 then
+            rsp_msg.code = scripts.Bag.AddItems(BagDef.BagType.Cangku, composite_ret.add_items, {}, bag_change_log)
+            if rsp_msg.code ~= ErrorCode.None then
+                scripts.Bag.RollBackWithChange(bag_change_log)
+                return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+            end
+        end
+
+        for _, roleid in pairs(composite_ret.add_roles) do
+            local add_success = scripts.Role.AddRole(roleid)
             if not add_success then
                 rsp_msg.code = ErrorCode.RoleAddFail
                 rsp_msg.error = "角色添加失败"
@@ -1222,15 +1414,6 @@ function User.PBSureCompositeReqCmd(req)
             end
 
             change_roles[req.msg.roleid] = "AddRole"
-        else
-            local add_items = {}
-            add_items[composite_cfg.item_id] = { count = 1 }
-
-            rsp_msg.code = scripts.Bag.AddItems(BagDef.BagType.Cangku, add_items, {}, bag_change_log)
-            if rsp_msg.code ~= ErrorCode.None then
-                scripts.Bag.RollBackWithChange(bag_change_log)
-                return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
-            end
         end
     end
     
@@ -1244,8 +1427,193 @@ function User.PBSureCompositeReqCmd(req)
     end
     scripts.Bag.SaveAndLog(save_bags, bag_change_log)
     
-    if table.size(change_roles) then
+    if table.size(change_roles) > 0 then
         scripts.Role.SaveAndLog(change_roles)
+    end
+end
+
+function User.PBRandomCompositeReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid or not req.msg.composite_id then
+        return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = req.msg.uid,
+            composite_id = req.msg.composite_id or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    local rsp_msg = {
+        code = ErrorCode.None,
+        error = "",
+        uid = context.uid,
+        gift_id = req.msg.gift_id or 0,
+    }
+    local composite_cfg = GameCfg.RandomComposite[req.msg.composite_id]
+    if not composite_cfg then
+        rsp_msg.code = ErrorCode.ConfigError
+        rsp_msg.error = "配置不存在"
+        return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
+
+    local cost_items = {}
+    local cost_coins = {}
+    scripts.Item.GetItemsFromCfg(composite_cfg.cost, 1, true, cost_items, cost_coins)
+
+    -- 检测道具是否足够
+    rsp_msg.code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    if rsp_msg.code ~= ErrorCode.None then
+        rsp_msg.error = "道具不足"
+        return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
+    rsp_msg.code = scripts.Bag.CheckCoinsEnough(cost_coins)
+    if rsp_msg.code ~= ErrorCode.None then
+        rsp_msg.error = "货币不足"
+        return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
+
+    local composite_ret = User.Composite(composite_cfg)
+    if composite_ret.code ~= ErrorCode.None
+        and composite_ret.code ~= composite_ret.Errcode.CompositeFail then
+        rsp_msg.code = composite_ret.code
+        rsp_msg.error = composite_ret.error
+        return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
+
+    local bag_change_log = {}
+    local change_roles = {}
+    -- 扣除道具消耗
+    if table.size(cost_items) > 0 then
+        rsp_msg.code = scripts.Bag.DelItems(req.msg.bag_name, cost_items, {}, bag_change_log)
+        if rsp_msg.code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    end
+    if table.size(cost_coins) > 0 then
+        rsp_msg.code = scripts.Bag.DealCoins(cost_coins, bag_change_log)
+        if rsp_msg.code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    end
+
+    if composite_ret.code == ErrorCode.None then
+        if table.size(composite_ret.add_items) > 0 then
+            rsp_msg.code = scripts.Bag.AddItems(BagDef.BagType.Cangku, composite_ret.add_items, {}, bag_change_log)
+            if rsp_msg.code ~= ErrorCode.None then
+                scripts.Bag.RollBackWithChange(bag_change_log)
+                return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+            end
+        end
+
+        for _, roleid in pairs(composite_ret.add_roles) do
+            local add_success = scripts.Role.AddRole(roleid)
+            if not add_success then
+                rsp_msg.code = ErrorCode.RoleAddFail
+                rsp_msg.error = "角色添加失败"
+
+                scripts.Bag.RollBackWithChange(bag_change_log)
+                return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+            end
+
+            change_roles[req.msg.roleid] = "AddRole"
+        end
+    end
+
+    -- 执行完成回复
+    context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+
+    -- 数据存储更新
+    local save_bags = {}
+    for bagType, _ in pairs(bag_change_log) do
+        save_bags[bagType] = 1
+    end
+    scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+
+    if table.size(change_roles) > 0 then
+        scripts.Role.SaveAndLog(change_roles)
+    end
+end
+
+function User.PBInlayTabooWordReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid
+        or not req.msg.inlay_type
+        or not req.msg.uniqid
+        or not req.msg.tabooword_id then
+        return context.S2C(context.net_id, CmdCode.PBInlayTabooWordRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = req.msg.uid,
+            roleid = req.msg.roleid or 0,
+            ghost_uniqid = req.msg.ghost_uniqid or 0,
+            inlay_type = req.msg.inlay_type or 0,
+            uniqid = req.msg.uniqid or 0,
+            tabooword_id = req.msg.tabooword_id or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    local rsp_msg = {
+        code = ErrorCode.None,
+        error = "",
+        uid = context.uid,
+        roleid = req.msg.roleid or 0,
+        ghost_uniqid = req.msg.ghost_uniqid or 0,
+        inlay_type = req.msg.inlay_type or 0,
+        uniqid = req.msg.uniqid or 0,
+        tabooword_id = req.msg.tabooword_id or 0,
+    }
+    local bag_change_log = nil
+    local change_roles = {}
+    local change_ghosts = {}
+    if req.msg.inlay_type == 1 then
+        -- 法器
+        if req.msg.roleid and req.msg.roleid > 0 then
+            rsp_msg.code, bag_change_log = scripts.Role.InlayTabooWord(req.msg.roleid, req.msg.tabooword_id,
+                req.msg.inlay_type, req.msg.uniqid)
+            change_roles[req.msg.roleid] = "InlayTabooWord"
+        else
+            rsp_msg.code, bag_change_log = scripts.Bag.InlayTabooWord(req.msg.tabooword_id, req.msg.inlay_type,
+                req.msg.uniqid)
+        end
+    elseif req.msg.inlay_type == 2 then
+        -- 八卦牌
+        if req.msg.roleid and req.msg.roleid > 0 then
+            rsp_msg.code, bag_change_log = scripts.Role.InlayTabooWord(req.msg.roleid, req.msg.tabooword_id,
+                req.msg.inlay_type, req.msg.uniqid)
+            change_roles[req.msg.roleid] = "InlayTabooWord"
+        elseif req.msg.ghost_uniqid and req.msg.ghost_uniqid > 0 then
+            rsp_msg.code, bag_change_log = scripts.Ghost.InlayTabooWord(req.msg.ghost_uniqid, req.msg.tabooword_id,
+                req.msg.inlay_type, req.msg.uniqid)
+            change_ghosts[req.msg.ghost_uniqid] = "InlayTabooWord"
+        else
+            rsp_msg.code, bag_change_log = scripts.Bag.InlayTabooWord(req.msg.tabooword_id, req.msg.inlay_type,
+                req.msg.uniqid)
+        end
+    else
+        rsp_msg.code = ErrorCode.InlayTypeInvalid
+        rsp_msg.error = "镶嵌类型错误"
+    end
+
+    if rsp_msg.code ~= ErrorCode.None or not bag_change_log then
+        return context.S2C(context.net_id, CmdCode.PBInlayTabooWordRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
+
+    context.S2C(context.net_id, CmdCode.PBInlayTabooWordRspCmd, rsp_msg, req.msg_context.stub_id)
+
+    -- 数据存储更新
+    local save_bags = {}
+    for bagType, _ in pairs(bag_change_log) do
+        save_bags[bagType] = 1
+    end
+    scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+
+    if table.size(change_roles) > 0 then
+        scripts.Role.SaveAndLog(change_roles)
+    end
+    if table.size(change_ghosts) > 0 then
+        scripts.Ghost.SaveAndLog(change_ghosts)
     end
 end
 

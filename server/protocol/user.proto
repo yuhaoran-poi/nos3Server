@@ -164,6 +164,25 @@ message PBClientItemUpLvRspCmd
 	int32 add_exp	= 5;
 }
 
+// 客户端请求--使用道具升级
+message PBUseItemUpLvReqCmd
+{
+	int64 uid		= 1;
+	int32 target_id = 2;
+	int32 cost_id	= 3;
+	int32 cost_num	= 4;
+}
+
+message PBUseItemUpLvRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 target_id = 4;
+	int32 cost_id	= 5;
+	int32 cost_num	= 6;
+}
+
 // 客户端请求--道具升星
 message PBClientItemUpStarReqCmd
 {
@@ -242,4 +261,42 @@ message PBSureCompositeRspCmd
     string error		= 2; // 错误信息
 	int64 uid			= 3;
 	int32 composite_id	= 4; // 合成id
+}
+
+// 客户端随机合成
+message PBRandomCompositeReqCmd
+{
+	int64 uid			= 1;
+	int32 composite_id	= 2; // 合成id
+}
+
+message PBRandomCompositeRspCmd
+{
+	int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+	int64 uid			= 3;
+	int32 composite_id	= 4; // 合成id
+}
+
+// 法器或者八卦牌镶嵌讳字
+message PBInlayTabooWordReqCmd
+{
+    int64 uid	= 1;
+	int32 roleid	= 2;	//角色id
+	int64 ghost_uniqid	= 3;	//鬼宠唯一id
+	int32 inlay_type	= 4;	//1-法器 2-八卦牌
+	int64 uniqid	= 5;	//道具id
+	int32 tabooword_id	= 6;	//讳字id
+}
+
+message PBInlayTabooWordRspCmd
+{
+    int32   code    = 1; // 服务器验证返回,0成功,其他失败
+    string  error   = 2; // 错误信息
+    int64   uid     = 3;
+	int32 roleid	= 4;	//角色id
+	int64 ghost_uniqid	= 5;	//鬼宠唯一id
+	int32 inlay_type	= 6;	//1-法器 2-八卦牌
+	int64 uniqid	= 7;	//道具id
+	int32 tabooword_id	= 8;	//讳字id
 }

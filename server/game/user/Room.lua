@@ -15,6 +15,16 @@ local scripts = context.scripts
 ---@class Room
 local Room = {}
 
+function Room.ForceExitRoom()
+    if not context.roomid or not context.uid then
+        return
+    end
+
+    clusterd.send(3999, "roommgr", "Roommgr.ExitRoom", { uid = context.uid, roomid = context.roomid})
+
+    context.roomid = nil
+end
+
 function Room.PBCreateRoomReqCmd(req)
     if context.roomid then
         return context.S2C(context.net_id, CmdCode["PBCreateRoomRspCmd"], {

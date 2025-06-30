@@ -251,21 +251,7 @@ function Ghost.UpLv(config_id, add_exp)
             return ErrorCode.ItemUpLvCostNotExist
         end
 
-        for cost_id, cost_cnt in pairs(cost_cfg.cost) do
-            if scripts.ItemDefine.GetItemType(cost_id) == scripts.ItemDefine.EItemSmallType.Coin then
-                if cost_coins[cost_id] then
-                    cost_coins[cost_id] = cost_coins[cost_id] + cost_cnt * (count / cost_cfg.cnt)
-                else
-                    cost_coins[cost_id] = cost_cnt * (count / cost_cfg.cnt)
-                end
-            else
-                if cost_items[cost_id] then
-                    cost_items[cost_id] = cost_items[cost_id] + cost_cnt * (count / cost_cfg.cnt)
-                else
-                    cost_items[cost_id] = cost_cnt * (count / cost_cfg.cnt)
-                end
-            end
-        end
+        scripts.Item.GetItemsFromCfg(cost_cfg, count / cost_cfg.cnt, true, cost_items, cost_coins)
     end
 
     -- 检查资源是否足够
@@ -303,6 +289,53 @@ function Ghost.UpLv(config_id, add_exp)
     return ErrorCode.None, change_log
 end
 
+function Ghost.CheckUseItemUpLv(config_id, exp_id, exp_cnt)
+    local ghosts = scripts.UserModel.GetGhosts()
+    if not ghosts or not ghosts.ghost_image_list or not ghosts.ghost_image_list[config_id] then
+        return ErrorCode.GhostNotExist
+    end
+
+    local ghost_image_info = ghosts.ghost_image_list[config_id]
+    local after_up_exp = ghost_image_info.exp + exp_cnt
+    local success = false
+    local up_exp_cfgs = GameCfg.GhostUpLv
+    if not up_exp_cfgs then
+        return ErrorCode.ConfigError
+    end
+
+    for _, cfg in pairs(up_exp_cfgs) do
+        if ghost_image_info.exp < cfg.allexp and after_up_exp >= cfg.allexp then
+            if cfg.cost ~= exp_id then
+                return ErrorCode.ConfigError
+            end
+        end
+
+        if after_up_exp < cfg.allexp then
+            success = true
+            break
+        end
+    end
+    if not success then
+        return ErrorCode.GhostMaxExp
+    end
+
+    -- ghost_image_info.exp = after_up_exp
+
+    return ErrorCode.None
+end
+
+function Ghost.UpExp(config_id, exp_cnt)
+    local ghosts = scripts.UserModel.GetGhosts()
+    if not ghosts or not ghosts.ghost_image_list or not ghosts.ghost_image_list[config_id] then
+        return ErrorCode.GhostNotExist
+    end
+
+    local ghost_image_info = ghosts.ghost_image_list[config_id]
+    ghost_image_info.exp = ghost_image_info.exp + exp_cnt
+
+    return ErrorCode.None
+end
+
 function Ghost.UpStar(config_id)
     local ghosts = scripts.UserModel.GetGhosts()
     if not ghosts or not ghosts.ghost_image_list or not ghosts.ghost_image_list[config_id] then
@@ -327,21 +360,7 @@ function Ghost.UpStar(config_id)
     -- 计算消耗资源
     local cost_items = {}
     local cost_coins = {}
-    for cost_id, cost_cnt in pairs(cost_cfg.cost) do
-        if scripts.ItemDefine.GetItemType(cost_id) == scripts.ItemDefine.EItemSmallType.Coin then
-            if cost_coins[cost_id] then
-                cost_coins[cost_id] = cost_coins[cost_id] + cost_cnt
-            else
-                cost_coins[cost_id] = cost_cnt
-            end
-        else
-            if cost_items[cost_id] then
-                cost_items[cost_id] = cost_items[cost_id] + cost_cnt
-            else
-                cost_items[cost_id] = cost_cnt
-            end
-        end
-    end
+    scripts.Item.GetItemsFromCfg(cost_cfg, 1, true, cost_items, cost_coins)
 
     -- 检查资源是否足够
     local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
@@ -375,6 +394,62 @@ function Ghost.UpStar(config_id)
     end
 
     return ErrorCode.None, change_log
+end
+
+function Ghost.InlayTabooWord(ghost_uniqid, taboo_word_id, inlay_type, uniqid)
+    local ghosts = scripts.UserModel.GetGhosts()
+    if not ghosts or not ghosts.ghost_list or not ghosts.ghost_list[ghost_uniqid] then
+        return ErrorCode.GhostNotExist
+    end
+
+    local ghost_info = ghosts.ghost_list[ghost_uniqid]
+    local item_data = nil
+    if ghost_info.digrams_cards then
+        for _, digrams_card in pairs(ghost_info.digrams_cards) do
+            if digrams_card
+                and digrams_card.common_info
+                and digrams_card.common_info.uniqid == uniqid then
+                item_data = digrams_card
+                break
+            end
+        end
+    end
+    if not item_data then
+        return ErrorCode.ItemNotExist
+    end
+
+    local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+    local item_cfg = GameCfg.Item[taboo_word_id]
+    if not uniqitem_cfg or not item_cfg then
+        return ErrorCode.ConfigError
+    end
+    if uniqitem_cfg.type4 ~= item_cfg.type4
+        or uniqitem_cfg.type5 ~= item_cfg.type5 then
+        return ErrorCode.InlayTypeNotMatch
+    end
+
+    -- 扣除道具消耗
+    local cost_items = {}
+    cost_items[taboo_word_id] = {
+        count = 1,
+        pos = 0,
+    }
+    local err_code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    if err_code ~= ErrorCode.None then
+        return ErrorCode.ItemNotEnough
+    end
+
+    local bag_change_log = {}
+    local err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, bag_change_log)
+    if err_code_del ~= ErrorCode.None then
+        scripts.Bag.RollBackWithChange(bag_change_log)
+        return ErrorCode.ItemNotEnough
+    end
+
+    -- 镶嵌讳字
+    item_data.special_info.diagrams_item.tabooword_id = taboo_word_id
+
+    return ErrorCode.None, bag_change_log
 end
 
 function Ghost.PBClientGetUsrGhostsInfoReqCmd(req)

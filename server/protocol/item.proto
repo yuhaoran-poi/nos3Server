@@ -51,9 +51,10 @@ message PBMagicItem
 {
 	int32		cur_durability = 1;	//当前耐久度
 	int32		strong_value = 2;	//耐久度上限
-	int32		light_cnt	= 3;
-	repeated PBTag	tags	= 4;	//随机词条id,最大10条
-	repeated PBTag	ability_tag	= 5;	//能力词条
+	int32		tabooword_id	= 3;	//讳字id
+	int32		light_cnt	= 4;	//开光次数
+	repeated PBTag	tags	= 5;	//随机词条id,最大10条
+	repeated PBTag	ability_tag	= 6;	//能力词条
 }
 
 // 八卦牌
@@ -61,9 +62,10 @@ message PBDiagramsCard
 {
 	int32		cur_durability = 1;	//当前耐久度
 	int32		strong_value = 2;	//耐久度上限
-	int32		light_cnt	= 3;
-	repeated PBTag	tags	= 4;	//随机词条id,最大10条
-	repeated PBTag	ability_tag	= 5;	//能力词条
+	int32		tabooword_id	= 3;	//讳字id
+	int32		light_cnt	= 4;	//开光次数
+	repeated PBTag	tags	= 5;	//随机词条id,最大10条
+	repeated PBTag	ability_tag	= 6;	//能力词条
 }
 
 // 镇山之宝

@@ -7,6 +7,15 @@ message PBPinchFaceData
     string setting_data = 1;
 }
 
+// 学习中的真经定义
+message PBStudyBook
+{
+    int32 book_id = 1;
+	int64 start_time = 2;
+    int64 end_time = 3;
+	int64 now_time = 4;
+}
+
 // 角色简略信息
 message PBSimpleRoleData
 {
@@ -23,17 +32,19 @@ message PBRoleData
 	int32 exp				= 3;	//经验值
 	PBItemData magic_item	= 4;	//法器
 	map<int32, PBItemData> digrams_cards	= 5;	//八卦牌
-	repeated int32 equip_books		= 6;	//已装备真经
-	repeated int32 study_books		= 7;	//学习中真经
-	map<int32, int32> skins	= 8;	//穿戴皮肤
-	int32 cur_main_skill_id			= 9;	//选定主技能id
-	map<int32, PBSkill> main_skill	= 10;	//可选主技能
-	int32 cur_minor_skill1_id			= 11;	//选定小技能1id
-	map<int32, PBSkill> minor_skill1	= 12;	//可选小技能1
-	int32 cur_minor_skill2_id			= 13;	//选定小技能2id
-	map<int32, PBSkill> minor_skill2	= 14;	//可选小技能2
-	PBSkill passive_skill				= 15;	//被动技能
-	repeated int32 emoji				= 16;	//表情槽
+	map<int32, int32> equip_books	= 6;	//已装备真经
+	map<int32, PBStudyBook> study_books	= 7;	//学习中真经
+	int64 last_check_time	= 8;	//上次检测时间
+	map<int32, int32> skins	= 9;	//穿戴皮肤
+	int32 cur_main_skill_id			= 10;	//选定主技能id
+	map<int32, PBSkill> main_skill	= 11;	//可选主技能
+	int32 cur_minor_skill1_id			= 12;	//选定小技能1id
+	map<int32, PBSkill> minor_skill1	= 13;	//可选小技能1
+	int32 cur_minor_skill2_id			= 14;	//选定小技能2id
+	map<int32, PBSkill> minor_skill2	= 15;	//可选小技能2
+	PBSkill passive_skill				= 16;	//被动技能
+	repeated int32 emoji				= 17;	//表情槽
+	map<int32, int32> up_lv_rewards		= 18;	//已领取的升级奖励
 }
 
 // 角色数据
@@ -129,6 +140,23 @@ message PBRoleWearSkinRspCmd
 	map<int32, int32> skins	= 5;// 穿戴皮肤
 }
 
+// 角色更换表情动作
+message PBRoleChangeEmojiReqCmd
+{
+	int64 uid		= 1;
+	int32 roleid	= 2; // 角色id
+	repeated int32 emoji	= 3;// 表情
+}
+
+message PBRoleChangeEmojiRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 roleid	= 4; // 角色id
+	repeated int32 emoji	= 5;// 表情
+}
+
 // 更换出战角色
 message PBChangeBattleRoleReqCmd
 {
@@ -142,4 +170,55 @@ message PBChangeBattleRoleRspCmd
     string error      = 2; // 错误信息
     int64 uid         = 3;
 	int32 roleid      = 4; // 角色id
+}
+
+// 客户端请求--角色技能升星
+message PBRoleSkillUpStarReqCmd
+{
+	int64 uid		= 1;
+	int32 roleid 	= 2;
+	int32 skill_id	= 3;
+}
+
+message PBRoleSkillUpStarRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 roleid 	= 4;
+	int32 skill_id	= 5;
+}
+
+// 客户端请求--角色领取升级奖励
+message PBRoleGetUpLvRewardReqCmd
+{
+	int64 uid		= 1;
+	int32 roleid 	= 2;
+	int32 reward_id	= 3;
+}
+
+message PBRoleGetUpLvRewardRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 roleid 	= 4;
+	int32 reward_id	= 5;
+}
+
+// 客户端请求--角色学习真经
+message PBRoleStudyBookReqCmd
+{
+	int64 uid		= 1;
+	int32 roleid 	= 2;
+	int32 book_id	= 3;
+}
+
+message PBRoleStudyBookRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 roleid 	= 4;
+	int32 book_id	= 5;
 }
