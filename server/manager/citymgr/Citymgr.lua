@@ -48,7 +48,7 @@ end
 function Citymgr.CheckWaitDSCitys()
     local now = moon.time()
     local scope <close> = lock_wait()
-    moon.debug(string.format("CheckWaitDSCitys time:%d", now))
+    -- moon.debug(string.format("CheckWaitDSCitys time:%d", now))
 
     local function allocate_cb(rsp_data)
         if not rsp_data or not rsp_data.error or rsp_data.error ~= "success" then

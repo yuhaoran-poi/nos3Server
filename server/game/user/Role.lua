@@ -171,6 +171,14 @@ function Role.AddRole(roleid)
         }
         role_info.minor_skill2[skillid] = skill_info
     end
+    role_info.cur_passive_skill_id = role_cfg.init_passive_skill
+    for _, skillid in pairs(role_cfg.passive_skill) do
+        local skill_info = {
+            config_id = skillid,
+            star_level = 0,
+        }
+        role_info.passive_skill[skillid] = skill_info
+    end
 
     roles.role_list[roleid] = role_info
 end
@@ -966,9 +974,12 @@ function Role.PBRoleSkillUpStarReqCmd(req)
         end
     end
     if skill_star < 0 then
-        if role_info.passive_skill.config_id == req.msg.skill_id then
-            skill_star = role_info.passive_skill.star
-            skill_name = "passive_skill"
+        for id, skill in pairs(role_info.passive_skill) do
+            if id == req.msg.skill_id then
+                skill_star = skill.star
+                skill_name = "passive_skill"
+                break
+            end
         end
     end
     if skill_star < 0 or skill_name == "none" then
@@ -1012,14 +1023,10 @@ function Role.PBRoleSkillUpStarReqCmd(req)
 
     -- 增加星星
     skill_star = skill_star + 1
-    if skill_name == "passive_skill" then
-        role_info[skill_name].star = skill_star
-    else
-        for id, skill in pairs(role_info[skill_name]) do
-            if id == req.msg.skill_id then
-                skill.star = skill_star
-                break
-            end
+    for id, skill in pairs(role_info[skill_name]) do
+        if id == req.msg.skill_id then
+            skill.star = skill_star
+            break
         end
     end
 
@@ -1246,6 +1253,273 @@ function Role.PBRoleStudyBookReqCmd(req)
 
     local change_roles = {}
     change_roles[req.msg.roleid] = "StudyBook"
+    scripts.Role.SaveAndLog(change_roles)
+end
+
+function Role.PBRoleSkillCompositeReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid or not req.msg.roleid or not req.msg.skill_id or not req.msg.composite_id then
+        return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = req.msg.uid,
+            roleid = req.msg.roleid or 0,
+            composite_id = req.msg.composite_id or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    local roles = scripts.UserModel.GetRoles()
+    if not roles then
+        return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd,
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = req.msg.uid }, req.msg_context.stub_id)
+    end
+
+    local role_info = roles.role_list[req.msg.roleid]
+    if not role_info then
+        return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd,
+            { code = ErrorCode.RoleNotExist, error = "角色不存在", uid = req.msg.uid }, req.msg_context.stub_id)
+    end
+
+    local rsp_msg = {
+        code = ErrorCode.None,
+        error = "",
+        uid = req.msg.uid,
+        roleid = req.msg.roleid or 0,
+        composite_id = req.msg.composite_id or 0,
+    }
+    local composite_cfg = GameCfg.HumanSkill[req.msg.composite_id]
+    local role_cfg = GameCfg.HumanRole[role_info.config_id]
+    if not composite_cfg or not role_cfg then
+        rsp_msg.code = ErrorCode.ConfigError
+        rsp_msg.error = "配置不存在"
+        return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
+
+    -- 检查是否已经激活和技能是否匹配
+    local _find = false
+    if composite_cfg.role_id ~= role_info.config_id then
+        rsp_msg.code = ErrorCode.RoleSkillNotMatch
+        rsp_msg.error = "技能角色不匹配"
+        return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
+    if composite_cfg.type == RoleDef.SkillType.MinorSkill_1 then
+        if role_info.minor_skill1[composite_cfg.id] then
+            rsp_msg.code = ErrorCode.RoleSkillAlreadyActive
+            rsp_msg.error = "技能已激活"
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+        for _, skill_id in pairs(role_cfg.q_skill) do
+            if skill_id == req.msg.skill_id then
+                _find = true
+            end
+        end
+        if not _find then
+            rsp_msg.code = ErrorCode.RoleSkillNotMatch
+            rsp_msg.error = "技能不匹配"
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    elseif composite_cfg.type == RoleDef.SkillType.MinorSkill_2 then
+        if role_info.minor_skill2[composite_cfg.id] then
+            rsp_msg.code = ErrorCode.RoleSkillAlreadyActive
+            rsp_msg.error = "技能已激活"
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+        for _, skill_id in pairs(role_cfg.e_skill) do
+            if skill_id == req.msg.skill_id then
+                _find = true
+            end
+        end
+        if not _find then
+            rsp_msg.code = ErrorCode.RoleSkillNotMatch
+            rsp_msg.error = "技能不匹配"
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    elseif composite_cfg.type == RoleDef.SkillType.PassiveSkill then
+        if role_info.passive_skill[composite_cfg.id] then
+            rsp_msg.code = ErrorCode.RoleSkillAlreadyActive
+            rsp_msg.error = "技能已激活"
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+        for _, skill_id in pairs(role_cfg.passive_skill) do
+            if skill_id == req.msg.skill_id then
+                _find = true
+            end
+        end
+        if not _find then
+            rsp_msg.code = ErrorCode.RoleSkillNotMatch
+            rsp_msg.error = "技能不匹配"
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    elseif composite_cfg.type == RoleDef.SkillType.MainSkill then
+        if role_info.main_skill[composite_cfg.id] then
+            rsp_msg.code = ErrorCode.RoleSkillAlreadyActive
+            rsp_msg.error = "技能已激活"
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+        for _, skill_id in pairs(role_cfg.main_skill) do
+            if skill_id == req.msg.skill_id then
+                _find = true
+            end
+        end
+        if not _find then
+            rsp_msg.code = ErrorCode.RoleSkillNotMatch
+            rsp_msg.error = "技能不匹配"
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    else
+        rsp_msg.code = ErrorCode.ConfigError
+        rsp_msg.error = "配置不存在"
+        return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
+
+    local cost_items = {}
+    local cost_coins = {}
+    scripts.Item.GetItemsFromCfg(composite_cfg.unlock_cost, 1, true, cost_items, cost_coins)
+
+    -- 检测道具是否足够
+    rsp_msg.code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    if rsp_msg.code ~= ErrorCode.None then
+        rsp_msg.error = "道具不足"
+        return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
+    rsp_msg.code = scripts.Bag.CheckCoinsEnough(cost_coins)
+    if rsp_msg.code ~= ErrorCode.None then
+        rsp_msg.error = "货币不足"
+        return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
+
+    local bag_change_log = {}
+    local change_roles = {}
+    -- 扣除道具消耗
+    if table.size(cost_items) > 0 then
+        rsp_msg.code = scripts.Bag.DelItems(req.msg.bag_name, cost_items, {}, bag_change_log)
+        if rsp_msg.code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    end
+    if table.size(cost_coins) > 0 then
+        rsp_msg.code = scripts.Bag.DealCoins(cost_coins, bag_change_log)
+        if rsp_msg.code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    end
+
+    if composite_cfg.type == RoleDef.SkillType.MinorSkill_1 then
+        local skill_info = {
+            config_id = req.msg.composite_id,
+            star_level = 0,
+        }
+        role_info.minor_skill1[req.msg.composite_id] = skill_info
+    elseif composite_cfg.type == RoleDef.SkillType.MinorSkill_2 then
+        local skill_info = {
+            config_id = req.msg.composite_id,
+            star_level = 0,
+        }
+        role_info.minor_skill2[req.msg.composite_id] = skill_info
+    elseif composite_cfg.type == RoleDef.SkillType.PassiveSkill then
+        local skill_info = {
+            config_id = req.msg.composite_id,
+            star_level = 0,
+        }
+        role_info.passive_skill[req.msg.composite_id] = skill_info
+    elseif composite_cfg.type == RoleDef.SkillType.MainSkill then
+        local skill_info = {
+            config_id = req.msg.composite_id,
+            star_level = 0,
+        }
+        role_info.main_skill[req.msg.composite_id] = skill_info
+    else
+        rsp_msg.code = ErrorCode.ConfigError
+        rsp_msg.error = "配置不存在"
+        scripts.Bag.RollBackWithChange(bag_change_log)
+        return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
+    change_roles[req.msg.roleid] = "CompositeSkill"
+
+    -- 执行完成回复
+    context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+
+    -- 数据存储更新
+    local save_bags = {}
+    for bagType, _ in pairs(bag_change_log) do
+        save_bags[bagType] = 1
+    end
+    scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+
+    if table.size(change_roles) > 0 then
+        scripts.Role.SaveAndLog(change_roles)
+    end
+end
+
+function Role.PBRoleSkillSwitchReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid or not req.msg.roleid or not req.msg.skill_id or not req.msg.composite_id then
+        return context.S2C(context.net_id, CmdCode.PBRoleSkillSwitchRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = req.msg.uid,
+            roleid = req.msg.roleid or 0,
+            skill_type = req.msg.skill_type or 0,
+            skill_id = req.msg.skill_id or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    local roles = scripts.UserModel.GetRoles()
+    if not roles then
+        return context.S2C(context.net_id, CmdCode.PBRoleSkillSwitchRspCmd,
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = req.msg.uid }, req.msg_context.stub_id)
+    end
+
+    local role_info = roles.role_list[req.msg.roleid]
+    if not role_info then
+        return context.S2C(context.net_id, CmdCode.PBRoleSkillSwitchRspCmd,
+            { code = ErrorCode.RoleNotExist, error = "角色不存在", uid = req.msg.uid }, req.msg_context.stub_id)
+    end
+
+    if req.msg.skill_type == RoleDef.SkillType.MinorSkill_1 then
+        if not role_info.minor_skill1[req.msg.skill_id] then
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillSwitchRspCmd,
+                { code = ErrorCode.RoleSkillNotExist, error = "角色技能不存在", uid = req.msg.uid }, req.msg_context.stub_id)
+        end
+        role_info.cur_minor_skill1_id = req.msg.skill_id
+    elseif req.msg.skill_type == RoleDef.SkillType.MinorSkill_2 then
+        if not role_info.minor_skill2[req.msg.skill_id] then
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillSwitchRspCmd,
+                { code = ErrorCode.RoleSkillNotExist, error = "角色技能不存在", uid = req.msg.uid }, req.msg_context.stub_id)
+        end
+        role_info.cur_minor_skill2_id = req.msg.skill_id
+    elseif req.msg.skill_type == RoleDef.SkillType.PassiveSkill then
+        if not role_info.passive_skill[req.msg.skill_id] then
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillSwitchRspCmd,
+                { code = ErrorCode.RoleSkillNotExist, error = "角色技能不存在", uid = req.msg.uid }, req.msg_context.stub_id)
+        end
+        role_info.cur_passive_skill_id = req.msg.skill_id
+    elseif req.msg.skill_type == RoleDef.SkillType.MainSkill then
+        if not role_info.main_skill[req.msg.skill_id] then
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillSwitchRspCmd,
+                { code = ErrorCode.RoleSkillNotExist, error = "角色技能不存在", uid = req.msg.uid }, req.msg_context.stub_id)
+        end
+        role_info.cur_main_skill_id = req.msg.skill_id
+    else
+        return context.S2C(context.net_id, CmdCode.PBRoleSkillSwitchRspCmd,
+            { code = ErrorCode.RoleSkillNotExist, error = "角色技能不存在", uid = req.msg.uid }, req.msg_context.stub_id)
+    end
+
+    -- 执行完成回复
+    context.S2C(context.net_id, CmdCode.PBRoleSkillSwitchRspCmd, {
+        code = ErrorCode.None,
+        error = "成功",
+        uid = req.msg.uid,
+        roleid = req.msg.roleid or 0,
+        skill_type = req.msg.skill_type or 0,
+        skill_id = req.msg.skill_id or 0,
+    }, req.msg_context.stub_id)
+
+    -- 数据存储更新
+    local change_roles = {}
+    change_roles[req.msg.roleid] = "SwitchSkill"
     scripts.Role.SaveAndLog(change_roles)
 end
 

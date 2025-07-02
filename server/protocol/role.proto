@@ -42,9 +42,10 @@ message PBRoleData
 	map<int32, PBSkill> minor_skill1	= 13;	//可选小技能1
 	int32 cur_minor_skill2_id			= 14;	//选定小技能2id
 	map<int32, PBSkill> minor_skill2	= 15;	//可选小技能2
-	PBSkill passive_skill				= 16;	//被动技能
-	repeated int32 emoji				= 17;	//表情槽
-	map<int32, int32> up_lv_rewards		= 18;	//已领取的升级奖励
+	int32 cur_passive_skill_id			= 16;	//选定被动技能id
+	map<int32, PBSkill> passive_skill	= 17;	//可选被动技能
+	repeated int32 emoji				= 18;	//表情槽
+	map<int32, int32> up_lv_rewards		= 19;	//已领取的升级奖励
 }
 
 // 角色数据
@@ -221,4 +222,40 @@ message PBRoleStudyBookRspCmd
 	int64 uid		= 3;
 	int32 roleid 	= 4;
 	int32 book_id	= 5;
+}
+
+// 角色技能合成
+message PBRoleSkillCompositeReqCmd
+{
+	int64 uid			= 1;
+	int32 roleid		= 2;
+	int32 composite_id	= 3; // 合成id
+}
+
+message PBRoleSkillCompositeRspCmd
+{
+	int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+	int64 uid			= 3;
+	int32 roleid		= 4;
+	int32 composite_id	= 5; // 合成id
+}
+
+// 角色技能切换
+message PBRoleSkillSwitchReqCmd
+{
+	int64 uid			= 1;
+	int32 roleid		= 2;
+	int32 skill_type	= 3; // 技能类型
+	int32 skill_id		= 4; // 技能id
+}
+
+message PBRoleSkillSwitchRspCmd
+{
+	int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+	int64 uid			= 3;
+	int32 roleid		= 4;
+	int32 skill_type	= 5; // 技能类型
+	int32 skill_id		= 6; // 技能id
 }

@@ -62,8 +62,10 @@ local function run(node_conf)
             file = "robot/robot.lua",
             unique = true,
             threadid = 1,
+            -- host = "118.24.31.127",
             host = "127.0.0.1",
             port = 12108,
+            -- dhost = "118.24.31.127",
             dhost = "127.0.0.1",
             dport = 11288,
         },
@@ -72,6 +74,7 @@ local function run(node_conf)
             file = "robot/robotmgr.lua",
             unique = true,
             threadid = 2,
+            -- host = "118.24.31.127",
             host = "127.0.0.1",
             port = 12108
         }

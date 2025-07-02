@@ -32,7 +32,7 @@ message PBRoomSearchInfo
 message PBRoomMemberInfo
 {
     int32 seat_idx      = 1;
-    int32 is_ready      = 2;
+    int32 is_ready      = 2;    // 0未准备 1已准备
     PBUserAttr mem_info   = 3;
 }
 
@@ -48,6 +48,7 @@ message PBRoomInfo
     string describe = 8;
     int32 map_id    = 9;
     int32 boss_id   = 10;
+    int64 master_id = 11;    // 房主id
 }
 
 message PBRoomApplyInfo
@@ -78,7 +79,7 @@ message PBRoomWholeInfo
 message PBCreateRoomReqCmd
 {
     int64 uid		= 1;
-    int32 isopen    = 2;
+    int32 isopen    = 2;    // 是否开放
 	int32 needpwd   = 3;
 	string pwd      = 4;
 	int32 chapter   = 5;

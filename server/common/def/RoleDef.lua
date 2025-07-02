@@ -11,6 +11,12 @@ local RoleDef = {
         RoleID = { Start = 1000000, End = 1000999 },
         RoleSkill = { Start = 1001000, End = 1012999 },
     },
+    SkillType = {
+        MinorSkill_1 = 1,
+        MinorSkill_2 = 2,
+        PassiveSkill = 3,
+        MainSkill = 4,
+    },
     InlayType = 1000,
 }
 
@@ -43,6 +49,7 @@ local defaultPBRoleData = {
     minor_skill1 = {},
     cur_minor_skill2_id = 0,
     minor_skill2 = {},
+    cur_passive_skill_id = 0,
     passive_skill = {},
     emoji = {},
     up_lv_rewards = {},

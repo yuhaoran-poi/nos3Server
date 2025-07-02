@@ -345,6 +345,12 @@ local ErrorCode = {
     BookAlreadyStudy = 1711,
     --- 前置真经未学习
     BookPreNotStudy = 1712,
+    --- 技能类型不匹配
+    RoleSkillNotMatch = 1713,
+    --- 技能已激活
+    RoleSkillAlreadyActive = 1714,
+    --- 技能不存在
+    RoleSkillNotExist = 1715,
 }
 
 return ErrorCode

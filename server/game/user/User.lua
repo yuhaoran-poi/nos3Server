@@ -349,7 +349,7 @@ function User.Exit()
 
     -- 退出房间
     scripts.Room.ForceExitRoom()
-    
+
     -- 通知usermgr
     local res, err = clusterd.call(3999, "usermgr", "Usermgr.NotifyLogout", { uid = context.uid, nid = moon.env("NODE") })
     if err then
@@ -1335,7 +1335,7 @@ function User.PBSureCompositeReqCmd(req)
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
             uid = context.uid,
-            gift_id = req.msg.gift_id or 0,
+            composite_id = req.msg.composite_id or 0,
         }, req.msg_context.stub_id)
     end
 
@@ -1343,7 +1343,7 @@ function User.PBSureCompositeReqCmd(req)
         code = ErrorCode.None,
         error = "",
         uid = context.uid,
-        gift_id = req.msg.gift_id or 0,
+        composite_id = req.msg.composite_id or 0,
     }
     local composite_cfg = GameCfg.Composite[req.msg.composite_id]
     if not composite_cfg then

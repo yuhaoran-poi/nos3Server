@@ -218,6 +218,7 @@ function Roommgr.CreateRoom(req)
     room.room_data.chapter = req.msg.chapter
     room.room_data.difficulty = req.msg.difficulty
     room.room_data.describe = req.msg.describe
+    room.room_data.master_id = req.msg.uid
     room.master_id = req.msg.uid
     room.master_name = req.self_info.nick_name
     table.insert(room.players, { is_ready = 1, mem_info = req.self_info })
@@ -550,6 +551,7 @@ function Roommgr.ExitRoom(req)
     if req.uid == room.master_id then
         -- 转移房主给下一个玩家或解散房间
         if #room.players > 0 then
+            room.room_data.master_id = room.players[1].mem_info.uid
             room.master_id = room.players[1].mem_info.uid
             room.master_name = room.players[1].mem_info.nick_name
         else

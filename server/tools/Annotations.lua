@@ -1274,7 +1274,8 @@
 ---@class PBMagicItem
 ---@field public cur_durability integer @当前耐久度
 ---@field public strong_value integer @耐久度上限
----@field public light_cnt integer
+---@field public tabooword_id integer @讳字id
+---@field public light_cnt integer @开光次数
 ---@field public tags PBTag[] @随机词条id,最大10条
 ---@field public ability_tag PBTag[] @能力词条
 
@@ -1282,7 +1283,8 @@
 ---@class PBDiagramsCard
 ---@field public cur_durability integer @当前耐久度
 ---@field public strong_value integer @耐久度上限
----@field public light_cnt integer
+---@field public tabooword_id integer @讳字id
+---@field public light_cnt integer @开光次数
 ---@field public tags PBTag[] @随机词条id,最大10条
 ---@field public ability_tag PBTag[] @能力词条
 
@@ -1581,6 +1583,13 @@
 ---@field public setting_data string
 
 
+---@class PBStudyBook
+---@field public book_id integer
+---@field public start_time integer
+---@field public end_time integer
+---@field public now_time integer
+
+
 ---@class PBSimpleRoleData
 ---@field public config_id integer @配置ID
 ---@field public skins table<integer, integer> @穿戴皮肤
@@ -1593,8 +1602,9 @@
 ---@field public exp integer @经验值
 ---@field public magic_item PBItemData @法器
 ---@field public digrams_cards table<integer, PBItemData> @八卦牌
----@field public equip_books integer[] @已装备真经
----@field public study_books integer[] @学习中真经
+---@field public equip_books table<integer, integer> @已装备真经
+---@field public study_books table<integer, PBStudyBook> @学习中真经
+---@field public last_check_time integer @上次检测时间
 ---@field public skins table<integer, integer> @穿戴皮肤
 ---@field public cur_main_skill_id integer @选定主技能id
 ---@field public main_skill table<integer, PBSkill> @可选主技能
@@ -1602,8 +1612,10 @@
 ---@field public minor_skill1 table<integer, PBSkill> @可选小技能1
 ---@field public cur_minor_skill2_id integer @选定小技能2id
 ---@field public minor_skill2 table<integer, PBSkill> @可选小技能2
----@field public passive_skill PBSkill @被动技能
+---@field public cur_passive_skill_id integer @选定被动技能id
+---@field public passive_skill table<integer, PBSkill> @可选被动技能
 ---@field public emoji integer[] @表情槽
+---@field public up_lv_rewards table<integer, integer> @已领取的升级奖励
 
 
 ---@class PBUserRoleDatas
@@ -1682,6 +1694,20 @@
 ---@field public skins table<integer, integer> @穿戴皮肤
 
 
+---@class PBRoleChangeEmojiReqCmd
+---@field public uid integer
+---@field public roleid integer @角色id
+---@field public emoji integer[] @表情
+
+
+---@class PBRoleChangeEmojiRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roleid integer @角色id
+---@field public emoji integer[] @表情
+
+
 ---@class PBChangeBattleRoleReqCmd
 ---@field public uid integer
 ---@field public roleid integer @角色id
@@ -1692,6 +1718,78 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public roleid integer @角色id
+
+
+---@class PBRoleSkillUpStarReqCmd
+---@field public uid integer
+---@field public roleid integer
+---@field public skill_id integer
+
+
+---@class PBRoleSkillUpStarRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roleid integer
+---@field public skill_id integer
+
+
+---@class PBRoleGetUpLvRewardReqCmd
+---@field public uid integer
+---@field public roleid integer
+---@field public reward_id integer
+
+
+---@class PBRoleGetUpLvRewardRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roleid integer
+---@field public reward_id integer
+
+
+---@class PBRoleStudyBookReqCmd
+---@field public uid integer
+---@field public roleid integer
+---@field public book_id integer
+
+
+---@class PBRoleStudyBookRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roleid integer
+---@field public book_id integer
+
+
+---@class PBRoleSkillCompositeReqCmd
+---@field public uid integer
+---@field public roleid integer
+---@field public composite_id integer @合成id
+
+
+---@class PBRoleSkillCompositeRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roleid integer
+---@field public composite_id integer @合成id
+
+
+---@class PBRoleSkillSwitchReqCmd
+---@field public uid integer
+---@field public roleid integer
+---@field public skill_type integer @技能类型
+---@field public skill_id integer @技能id
+
+
+---@class PBRoleSkillSwitchRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roleid integer
+---@field public skill_type integer @技能类型
+---@field public skill_id integer @技能id
 
 
 ---@class PBRoomSearchInfo
@@ -1708,7 +1806,7 @@
 
 ---@class PBRoomMemberInfo
 ---@field public seat_idx integer
----@field public is_ready integer
+---@field public is_ready integer @0未准备 1已准备
 ---@field public mem_info PBUserAttr
 
 
@@ -1723,6 +1821,7 @@
 ---@field public describe string
 ---@field public map_id integer
 ---@field public boss_id integer
+---@field public master_id integer @房主id
 
 
 ---@class PBRoomApplyInfo
@@ -1747,7 +1846,7 @@
 
 ---@class PBCreateRoomReqCmd
 ---@field public uid integer
----@field public isopen integer
+---@field public isopen integer @是否开放
 ---@field public needpwd integer
 ---@field public pwd string
 ---@field public chapter integer
@@ -2192,6 +2291,22 @@
 ---@field public add_exp integer
 
 
+---@class PBUseItemUpLvReqCmd
+---@field public uid integer
+---@field public target_id integer
+---@field public cost_id integer
+---@field public cost_num integer
+
+
+---@class PBUseItemUpLvRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public target_id integer
+---@field public cost_id integer
+---@field public cost_num integer
+
+
 ---@class PBClientItemUpStarReqCmd
 ---@field public uid integer
 ---@field public config_id integer
@@ -2253,6 +2368,38 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public composite_id integer @合成id
+
+
+---@class PBRandomCompositeReqCmd
+---@field public uid integer
+---@field public composite_id integer @合成id
+
+
+---@class PBRandomCompositeRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public composite_id integer @合成id
+
+
+---@class PBInlayTabooWordReqCmd
+---@field public uid integer
+---@field public roleid integer @角色id
+---@field public ghost_uniqid integer @鬼宠唯一id
+---@field public inlay_type integer @1-法器 2-八卦牌
+---@field public uniqid integer @道具id
+---@field public tabooword_id integer @讳字id
+
+
+---@class PBInlayTabooWordRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roleid integer @角色id
+---@field public ghost_uniqid integer @鬼宠唯一id
+---@field public inlay_type integer @1-法器 2-八卦牌
+---@field public uniqid integer @道具id
+---@field public tabooword_id integer @讳字id
 
 
 
@@ -2392,6 +2539,7 @@
 ---@field AllTagPool AllTagPool_cfg[]
 ---@field BaGuaBrand BaGuaBrand_cfg[]
 ---@field BaGuaBrandUpLv BaGuaBrandUpLv_cfg[]
+---@field Book Book_cfg[]
 ---@field CommonConfig CommonConfig_cfg[]
 ---@field Composite Composite_cfg[]
 ---@field EquipmentTagPool EquipmentTagPool_cfg[]
@@ -2401,6 +2549,7 @@
 ---@field GhostInfo GhostInfo_cfg[]
 ---@field GhostUpLv GhostUpLv_cfg[]
 ---@field HumanRole HumanRole_cfg[]
+---@field HumanSkill HumanSkill_cfg[]
 ---@field Init Init_cfg[]
 ---@field Item Item_cfg[]
 ---@field LightConvert LightConvert_cfg[]
@@ -2409,7 +2558,9 @@
 ---@field MagicItemUpLv MagicItemUpLv_cfg[]
 ---@field RandomComposite RandomComposite_cfg[]
 ---@field RankLevel RankLevel_cfg[]
+---@field RoleLvAward RoleLvAward_cfg[]
 ---@field RoleUpLv RoleUpLv_cfg[]
+---@field Skin Skin_cfg[]
 ---@field UniqueItem UniqueItem_cfg[]
 ---@field UpLvCostIDMapping UpLvCostIDMapping_cfg[]
 ---@field UpStar UpStar_cfg[]
