@@ -30,9 +30,7 @@ function Citymgr.Init()
     context.waitds_citys = {} -- 等待中主城列表
     context.addr_db_server = moon.queryservice("db_server")
 
-    for i = 1, 1 do
-        Citymgr.CreateCity()
-    end
+    Citymgr.CreateCity()
     -- 新增定时器轮询
     moon.async(function()
         while true do
@@ -100,6 +98,7 @@ function Citymgr.CheckWaitDSCitys()
                     moon.error(string.format("allocate_cb rsp_data:\n%s", json.pretty_encode(rsp_data)))
                     v.failcnt = v.failcnt + 1
                 else
+                    moon.info(string.format("allocate_cb rsp_data:\n%s", json.pretty_encode(rsp_data)))
                     v.ds_ip = ret.ds_ip
                     v.region = ret.region
                     v.serverssion = ret.serverssion
@@ -117,6 +116,7 @@ function Citymgr.CheckWaitDSCitys()
                     moon.error(string.format("query_cb rsp_data:\n%s", json.pretty_encode(rsp_data)))
                     v.failcnt = v.failcnt + 1
                 else
+                    moon.info(string.format("query_cb rsp_data:\n%s", json.pretty_encode(rsp_data)))
                     v.ds_address = ret
                     
                     v.status = 2
@@ -247,6 +247,7 @@ function Citymgr.CreateCity()
         fleet = context.conf.fleet,
         city = city_str,
     }
+    moon.info(string.format("CreateCity allocate_data =\n%s", json.pretty_encode(allocate_data)))
     Citymgr.AddWaitDSCitys(cityid, json.encode(allocate_data))
 end
 

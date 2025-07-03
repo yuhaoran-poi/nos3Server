@@ -315,6 +315,7 @@ function Roommgr.ModRoom(req)
     
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", {
         roomid = room.room_data.roomid,
+        sync_type = 1,
         sync_info = {
             room_data = room.room_data,
         },
@@ -369,6 +370,7 @@ function Roommgr.ApplyToRoom(req)
     table.insert(notify_uids, room.master_id)
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", {
         roomid = room.room_data.roomid,
+        sync_type = 6,
         sync_info = {
             apply_list = room.apply_list,
         },
@@ -434,14 +436,27 @@ function Roommgr.DealApply(req)
         for _, player in pairs(room.players) do
             table.insert(notify_uids, player.mem_info.uid)
         end
-        context.send_users(notify_uids, {}, "Room.OnMemberEnter", {
-            roomid = req.roomid,
-            member_data = {
-                seat_idx = #room.players,
-                is_ready = 0,
-                mem_info = apply_data.apply_info
+        -- context.send_users(notify_uids, {}, "Room.OnMemberEnter", {
+        --     roomid = req.roomid,
+        --     member_data = {
+        --         seat_idx = #room.players,
+        --         is_ready = 0,
+        --         mem_info = apply_data.apply_info
+        --     }
+        -- })
+        local sync_msg = {
+            roomid = room.room_data.roomid,
+            sync_type = 2,
+            sync_info = {
+                players = {},
             }
+        }
+        table.insert(sync_msg.sync_info.players, {
+            seat_idx = #room.players,
+            is_ready = 0,
+            mem_info = apply_data.apply_info,
         })
+        context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
     end
 
     local res = { code = ErrorCode.None, error = "操作成功", deal_uid = req.deal_uid, deal_op = req.deal_op }
@@ -491,14 +506,27 @@ function Roommgr.EnterRoom(req)
     for _, player in pairs(room.players) do
         table.insert(notify_uids, player.mem_info.uid)
     end
-    context.send_users(notify_uids, {}, "Room.OnMemberEnter", {
+    -- context.send_users(notify_uids, {}, "Room.OnMemberEnter", {
+    --     roomid = room.room_data.roomid,
+    --     member_data = {
+    --         seat_idx = #room.players,
+    --         is_ready = 0,
+    --         mem_info = req.mem_info
+    --     }
+    -- })
+    local sync_msg = {
         roomid = room.room_data.roomid,
-        member_data = {
-            seat_idx = #room.players,
-            is_ready = 0,
-            mem_info = req.mem_info
+        sync_type = 2,
+        sync_info = {
+            players = {},
         }
+    }
+    table.insert(sync_msg.sync_info.players, {
+        seat_idx = #room.players,
+        is_ready = 0,
+        mem_info = req.mem_info,
     })
+    context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
     return { code = ErrorCode.None, error = "操作成功", uid = req.msg.uid, roomid = req.msg.roomid }
 end
@@ -511,9 +539,11 @@ function Roommgr.ExitRoom(req)
 
     -- 验证玩家是否在房间内
     local member_index = nil
+    local seat_idx = 0
     for i, member in pairs(room.players) do
         if member.mem_info.uid == req.uid then
             member_index = i
+            seat_idx = member.seat_idx
             break
         end
     end
@@ -542,10 +572,25 @@ function Roommgr.ExitRoom(req)
     for _, player in pairs(room.players) do
         table.insert(notify_uids, player.mem_info.uid)
     end
-    context.send_users(notify_uids, {}, "Room.OnMemberExit", {
-        uid = req.uid,
-        roomid = req.roomid,
+    -- context.send_users(notify_uids, {}, "Room.OnMemberExit", {
+    --     uid = req.uid,
+    --     roomid = req.roomid,
+    -- })
+    local sync_msg = {
+        roomid = room.room_data.roomid,
+        sync_type = 3,
+        sync_info = {
+            players = {},
+        }
+    }
+    table.insert(sync_msg.sync_info.players, {
+        seat_idx = seat_idx,
+        is_ready = 0,
+        mem_info = {
+            uid = req.uid,
+        }
     })
+    context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
     -- 房主退出特殊处理
     if req.uid == room.master_id then
@@ -577,9 +622,11 @@ function Roommgr.KickMember(req)
 
     -- 查找被踢玩家
     local kick_index = nil
+    local seat_idx = 0
     for i, member in pairs(room.players) do
         if member.mem_info.uid == req.kick_uid then
             kick_index = i
+            seat_idx = member.seat_idx
             break
         end
     end
@@ -597,10 +644,25 @@ function Roommgr.KickMember(req)
     for _, player in pairs(room.players) do
         table.insert(notify_uids, player.mem_info.uid)
     end
-    context.send_users(notify_uids, {}, "Room.OnMemberKick", {
-        roomid = req.roomid,
-        kick_uid = req.kick_uid,
+    -- context.send_users(notify_uids, {}, "Room.OnMemberKick", {
+    --     roomid = req.roomid,
+    --     kick_uid = req.kick_uid,
+    -- })
+    local sync_msg = {
+        roomid = room.room_data.roomid,
+        sync_type = 4,
+        sync_info = {
+            players = {},
+        }
+    }
+    table.insert(sync_msg.sync_info.players, {
+        seat_idx = seat_idx,
+        is_ready = 0,
+        mem_info = {
+            uid = req.kick_uid,
+        }
     })
+    context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
     return { code = ErrorCode.None, error = "踢出成功", roomid = req.roomid, kick_uid = req.kick_uid }
 end
@@ -712,14 +774,27 @@ function Roommgr.DealInvite(req)
         for _, player in pairs(room.players) do
             table.insert(notify_uids, player.mem_info.uid)
         end
-        context.send_users(notify_uids, {}, "Room.OnMemberEnter", {
-            roomid = req.msg.roomid,
-            member_data = {
-                seat_idx = #room.players,
-                is_ready = 0,
-                mem_info = req.invite_info
+        -- context.send_users(notify_uids, {}, "Room.OnMemberEnter", {
+        --     roomid = req.msg.roomid,
+        --     member_data = {
+        --         seat_idx = #room.players,
+        --         is_ready = 0,
+        --         mem_info = req.invite_info
+        --     }
+        -- })
+        local sync_msg = {
+            roomid = room.room_data.roomid,
+            sync_type = 2,
+            sync_info = {
+                players = {},
             }
+        }
+        table.insert(sync_msg.sync_info.players, {
+            seat_idx = #room.players,
+            is_ready = 0,
+            mem_info = req.invite_info,
         })
+        context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
     else
         local notify_uids = {}
         table.insert(notify_uids, invite_data.mem_info)
@@ -759,11 +834,26 @@ function Roommgr.UpdateReadyStatus(req)
     for _, player in pairs(room.players) do
         table.insert(notify_uids, player.mem_info.uid)
     end
-    context.send_users(notify_uids, {}, "Room.OnReadyStatusUpdate", {
-        uid = req.uid,
-        roomid = req.roomid,
-        is_ready = req.ready_op,
+    -- context.send_users(notify_uids, {}, "Room.OnReadyStatusUpdate", {
+    --     uid = req.uid,
+    --     roomid = req.roomid,
+    --     is_ready = req.ready_op,
+    -- })
+    local sync_msg = {
+        roomid = room.room_data.roomid,
+        sync_type = 5,
+        sync_info = {
+            players = {},
+        }
+    }
+    table.insert(sync_msg.sync_info.players, {
+        seat_idx = room.players[member_index].seat_idx,
+        is_ready = room.players[member_index].is_ready,
+        mem_info = {
+            uid = req.uid
+        },
     })
+    context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
     return { code = ErrorCode.None, error = "更新准备状态", uid = req.uid, roomid = req.roomid, is_ready = req.is_ready }
 end

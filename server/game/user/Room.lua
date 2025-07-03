@@ -129,6 +129,28 @@ end
 function Room.OnRoomInfoSync(sync_msg)
     moon.error("OnRoomInfoSync")
     print_r(sync_msg)
+    if sync_msg.sync_type == 2 and sync_msg.sync_info and sync_msg.sync_info.players then
+        for _, mem_info in pairs(sync_msg.sync_info.players) do
+            if mem_info.uid == context.uid then
+                context.roomid = sync_msg.roomid
+                moon.info("OnMemberEnter roomid", context.roomid, sync_msg.roomid)
+            end
+        end
+    elseif sync_msg.sync_type == 3 and sync_msg.sync_info and sync_msg.sync_info.players then
+        for _, mem_info in pairs(sync_msg.sync_info.players) do
+            if mem_info.uid == context.uid then
+                context.roomid = nil
+                moon.info("OnMemberExit roomid", context.roomid, sync_msg.roomid)
+            end
+        end
+    elseif sync_msg.sync_type == 4 and sync_msg.sync_info and sync_msg.sync_info.players then
+        for _, mem_info in pairs(sync_msg.sync_info.players) do
+            if mem_info.uid == context.uid then
+                context.roomid = nil
+                moon.info("OnMemberKick roomid", context.roomid, sync_msg.roomid)
+            end
+        end
+    end
     context.S2C(context.net_id, CmdCode["PBRoomSyncCmd"], sync_msg, 0)
 end
 

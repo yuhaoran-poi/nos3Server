@@ -1901,6 +1901,7 @@
 
 ---@class PBRoomSyncCmd
 ---@field public roomid integer
+---@field public sync_type integer @1--修改房间信息 2--玩家加入 3--玩家退出 4--玩家被踢出 5--玩家改变准备状态 6--有玩家申请
 ---@field public sync_info PBRoomWholeInfo
 
 
