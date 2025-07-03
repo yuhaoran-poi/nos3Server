@@ -30,9 +30,9 @@ function Citymgr.Init()
     context.waitds_citys = {} -- 等待中主城列表
     context.addr_db_server = moon.queryservice("db_server")
 
-    -- for i = 1, 1 do
-    --     Citymgr.CreateCity()
-    -- end
+    for i = 1, 1 do
+        Citymgr.CreateCity()
+    end
     -- 新增定时器轮询
     moon.async(function()
         while true do
@@ -218,7 +218,7 @@ function Citymgr.CheckCityRun()
     end
 
     if #canEnterRoom <= 1 then
-        --Citymgr.CreateCity()
+        Citymgr.CreateCity()
     end
 end
 
@@ -264,17 +264,17 @@ function Citymgr.DestroyCity(cityid)
 end
 
 function Citymgr.ConnectCity(req)
-    return { code = ErrorCode.None, error = "连接主城成功" }
+    -- return { code = ErrorCode.None, error = "连接主城成功" }
 
     -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    -- if not context.citys[req.cityid] then
-    --     return { code = ErrorCode.CityNotFound, error = "主城不存在" }
-    -- end
+    if not context.citys[req.cityid] then
+        return { code = ErrorCode.CityNotFound, error = "主城不存在" }
+    end
 
-    -- local city = context.citys[req.cityid]
-    -- city.nid = req.nid
-    -- city.addr_dsnode = req.addr_dsnode
-    -- return { code = ErrorCode.None, error = "连接主城成功" }
+    local city = context.citys[req.cityid]
+    city.nid = req.nid
+    city.addr_dsnode = req.addr_dsnode
+    return { code = ErrorCode.None, error = "连接主城成功" }
 end
 
 function Citymgr.ApplyLoginToCity(uid)
@@ -317,20 +317,20 @@ function Citymgr.ApplyLoginToCity(uid)
         return { code = ErrorCode.CityAlreadyInCity, error = "已在其他主城", cityid = context.uid_cityid[uid] }
     end
 
-    -- local res = findFreeCity()
-    -- if not res then
-    --     return { code = ErrorCode.CityNotFound, error = "没有空闲主城" }
-    -- end
+    local res = findFreeCity()
+    if not res then
+        return { code = ErrorCode.CityNotFound, error = "没有空闲主城" }
+    end
 
-    -- return res
-    return {
-        code = ErrorCode.None,
-        error = "允许加入",
-        cityid = 1,
-        region = "",
-        ds_address = "localhost",
-        ds_ip = "localhost",
-    }
+    return res
+    -- return {
+    --     code = ErrorCode.None,
+    --     error = "允许加入",
+    --     cityid = 1,
+    --     region = "",
+    --     ds_address = "localhost",
+    --     ds_ip = "localhost",
+    -- }
 end
 
 function Citymgr.PlayerEnterCity(req)

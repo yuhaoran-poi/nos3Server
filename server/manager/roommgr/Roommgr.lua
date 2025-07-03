@@ -86,41 +86,41 @@ function Roommgr.CheckWaitDSRooms()
         if now - v.lasttime >= 10 then
             v.lasttime = now
             
-            -- if v.status == 0 then
-            --     local response = httpc.post(context.conf.allocate_url, v.allocate_data)
-            --     --
-            --     print_r(response)
-            --     local rsp_data = json.decode(response.body)
-            --     local success, ret = allocate_cb(rsp_data)
-            --     if not success or not ret then
-            --         v.failcnt = v.failcnt + 1
-            --     else
-            --         v.ds_ip = ret.ds_ip
-            --         v.region = ret.region
-            --         v.serverssion = ret.serverssion
+            if v.status == 0 then
+                local response = httpc.post(context.conf.allocate_url, v.allocate_data)
+                --
+                print_r(response)
+                local rsp_data = json.decode(response.body)
+                local success, ret = allocate_cb(rsp_data)
+                if not success or not ret then
+                    v.failcnt = v.failcnt + 1
+                else
+                    v.ds_ip = ret.ds_ip
+                    v.region = ret.region
+                    v.serverssion = ret.serverssion
 
-            --         v.status = 1
-            --         v.failcnt = 0
-            --     end
-            -- elseif v.status == 1 then
-            --     local get_url = context.conf.query_url .. "?name=" .. v.region
-            --     print_r(get_url)
-            --     local response = httpc.get(get_url)
-            --     --
-            --     print_r(response)
-            --     local rsp_data = json.decode(response.body)
-            --     local success, ret = query_cb(rsp_data)
-            --     if not success or not ret then
-            --         v.failcnt = v.failcnt + 1
-            --     else
-            --         v.ds_address = ret
+                    v.status = 1
+                    v.failcnt = 0
+                end
+            elseif v.status == 1 then
+                local get_url = context.conf.query_url .. "?name=" .. v.region
+                print_r(get_url)
+                local response = httpc.get(get_url)
+                --
+                print_r(response)
+                local rsp_data = json.decode(response.body)
+                local success, ret = query_cb(rsp_data)
+                if not success or not ret then
+                    v.failcnt = v.failcnt + 1
+                else
+                    v.ds_address = ret
                     
-            --         v.status = 2
-            --         v.failcnt = 0
-            --     end
-            -- else
-            --     v.failcnt = v.failcnt + 1
-            -- end
+                    v.status = 2
+                    v.failcnt = 0
+                end
+            else
+                v.failcnt = v.failcnt + 1
+            end
         end
     end
 
@@ -209,8 +209,8 @@ function Roommgr.CreateRoom(req)
     end
     --moon.info(string.format("Roommgr.CreateRoom self_info:\n%s", json.pretty_encode(req.self_info)))
     local room = RoomDef.newRoomWholeInfo()
-    --local roomid = generate_roomid()
-    local roomid = 10001
+    local roomid = generate_roomid()
+    -- local roomid = 10001
     room.room_data.roomid = roomid
     room.room_data.isopen = req.msg.isopen
     room.room_data.needpwd = req.msg.needpwd
@@ -222,7 +222,7 @@ function Roommgr.CreateRoom(req)
     room.master_id = req.msg.uid
     room.master_name = req.self_info.nick_name
     table.insert(room.players, { is_ready = 1, mem_info = req.self_info })
-    --moon.info(string.format("Roommgr.CreateRoom mem_info:\n%s", json.pretty_encode(room.players[1].mem_info)))
+    -- moon.info(string.format("Roommgr.CreateRoom mem_info:\n%s", json.pretty_encode(room.players[1].mem_info)))
     
     local room_tags = {
         isopen = room.room_data.isopen,
@@ -262,7 +262,7 @@ function Roommgr.SearchRooms(req)
         end
     end
 
-    return { code = ErrorCode.None, error = "搜索完成", search_data = result }
+    return { code = ErrorCode.None, error = "搜索完成", roomid = req.roomid, search_data = result }
 end
 
 function Roommgr.ModRoom(req)
@@ -455,7 +455,7 @@ function Roommgr.EnterRoom(req)
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
 
-    -- 检查是否已在房间
+    -- 检查是否已在房间 
     if context.uid_roomid[req.msg.uid] then
         return { code = ErrorCode.RoomAlreadyInRoom, error = "已在其他房间", roomid = context.uid_roomid[req.msg.uid] }
     end
@@ -917,18 +917,18 @@ function Roommgr.StartGame(req)
     redis_data.master_name = room.master_name
     Database.upsert_room(context.addr_db_server, req.roomid, room_tags, redis_data)
 
-    -----临时通知所有玩家进入DS------------
-    local notify_uids = {}
-    for _, player in pairs(room.players) do
-        table.insert(notify_uids, player.mem_info.uid)
-        moon.error("OnEnterDs ", player.mem_info.uid)
-    end
-    context.send_users(notify_uids, {}, "Room.OnEnterDs", {
-        roomid = req.roomid,
-        ds_address = "ds_address",
-        ds_ip = "192.168.2.38-7800",
-    })
-    -----临时通知所有玩家进入DS------------
+    -- -----临时通知所有玩家进入DS------------
+    -- local notify_uids = {}
+    -- for _, player in pairs(room.players) do
+    --     table.insert(notify_uids, player.mem_info.uid)
+    --     moon.error("OnEnterDs ", player.mem_info.uid)
+    -- end
+    -- context.send_users(notify_uids, {}, "Room.OnEnterDs", {
+    --     roomid = req.roomid,
+    --     ds_address = "ds_address",
+    --     ds_ip = "192.168.2.38-7800",
+    -- })
+    -- -----临时通知所有玩家进入DS------------
 
     return { code = ErrorCode.None, error = "游戏开始成功", roomid = req.roomid }
 end

@@ -82,6 +82,10 @@ function Room.PBSearchRoomReqCmd(req)
         local res = {
             code = ErrorCode.None,
             error = "搜索完成",
+            roomid = req.msg.roomid or 0,
+            chapter = req.msg.chapter or 0,
+            difficulty = req.msg.difficulty or 0,
+            start_idx = req.msg.start_idx or 0,
             search_data = {}
         }
         if result.total > 0 then

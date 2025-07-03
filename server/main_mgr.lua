@@ -111,7 +111,7 @@ local function run(node_conf)
             redis_nginx_port = 3379,
             redis_nginx_authkey = "acgameUI00",
             redis_nginx_title = "battle_report_17",
-            mgr_host_ip = "192.168.2.8",
+            mgr_host_ip = "118.24.31.127",
             mgr_host_port = 11288,
         },
         {
