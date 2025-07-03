@@ -131,7 +131,6 @@ function Citymgr.CheckWaitDSCitys()
     local allocated_citys = {}
     local fail_citys = {}
     for k, v in pairs(context.waitds_citys) do
-        
         if v.status == 2 then
             allocated_citys[k] = v
         elseif v.failcnt > 5 then
@@ -144,7 +143,7 @@ function Citymgr.CheckWaitDSCitys()
     for cityid, _ in pairs(fail_citys) do
         context.waitds_citys[cityid] = nil
     end
-
+    moon.error(string.format("allocated_citys:\n%s", json.pretty_encode(allocated_citys)))
     return allocated_citys
 end
 
