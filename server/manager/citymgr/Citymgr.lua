@@ -244,7 +244,7 @@ function Citymgr.CreateCity()
     local city_str = crypt.base64encode(pbdata)
     local allocate_data = {
         fleet = context.conf.fleet,
-        city = city_str,
+        room = city_str,
     }
     moon.info(string.format("CreateCity allocate_data =\n%s", json.pretty_encode(allocate_data)))
     Citymgr.AddWaitDSCitys(cityid, json.encode(allocate_data))
