@@ -24,6 +24,30 @@ local state = { ---内存中的状态
     ismatching = false
 }
 
+local simple_fields = {
+    ProtoEnum.UserAttrType.uid,
+    ProtoEnum.UserAttrType.nick_name,
+    ProtoEnum.UserAttrType.head_icon,
+    ProtoEnum.UserAttrType.sex,
+    ProtoEnum.UserAttrType.head_frame,
+    ProtoEnum.UserAttrType.account_exp,
+    ProtoEnum.UserAttrType.guild_id,
+    ProtoEnum.UserAttrType.guild_name,
+    ProtoEnum.UserAttrType.cur_show_role,
+    ProtoEnum.UserAttrType.title,
+    ProtoEnum.UserAttrType.player_flag,
+}
+
+local function hasSimpleAttr(user_attr)  
+    for _, simple_field in pairs(simple_fields) do
+        if user_attr[simple_field] then
+            return true
+        end
+    end
+
+    return false
+end
+
 ---@class User
 local User = {}
 function User.Load(req)
@@ -98,27 +122,32 @@ function User.Load(req)
             user_attr.title = init_cfg.title
         end
 
-        ---加载道具图鉴数据
-        local image_res = scripts.ItemImage.Start()
-        if image_res.code ~= ErrorCode.None then
-            return false
-        end
-        ---加载背包数据
-        scripts.Bag.Start()
-        ---加载角色数据
-        local role_res = scripts.Role.Start()
-        if role_res.code ~= ErrorCode.None then
-            return false
-        end
-        ---加载鬼宠数据
-        local ghost_res = scripts.Ghost.Start()
-        if ghost_res.code ~= ErrorCode.None then
-            return false
-        end
+        -- ---加载道具图鉴数据
+        -- local image_res = scripts.ItemImage.Start()
+        -- if image_res.code ~= ErrorCode.None then
+        --     return false
+        -- end
+        -- ---加载背包数据
+        -- scripts.Bag.Start()
+        -- ---加载角色数据
+        -- local role_res = scripts.Role.Start()
+        -- if role_res.code ~= ErrorCode.None then
+        --     return false
+        -- end
+        -- ---加载鬼宠数据
+        -- local ghost_res = scripts.Ghost.Start()
+        -- if ghost_res.code ~= ErrorCode.None then
+        --     return false
+        -- end
 
         -- 同步到redis
         local to_redis_data = scripts.UserModel.GetUserAttr()
         Database.RedisSetUserAttr(context.addr_db_redis, context.uid, to_redis_data)
+
+        local simple_attr = User.GetUserSimpleData()
+        local simple_to_redis = {}
+        simple_to_redis[context.uid] = simple_attr
+        Database.RedisSetSimpleUserAttr(context.addr_db_redis, simple_to_redis)
         --local user_attr_res = User.LoadUserAttr()
         --if user_attr_res.code ~= ErrorCode.None then
         --    return false
@@ -200,6 +229,18 @@ function User.SetUserAttr(user_attr, sync_client)
     end
     -- 同步到redis
     Database.RedisSetUserAttr(context.addr_db_redis, context.uid, t)
+    if hasSimpleAttr(t) then
+        local simple_attr = {}
+        for _, field in pairs(simple_attr) do
+            if db_user_attr[field] then
+                simple_attr[field] = db_user_attr[field]
+            end
+        end
+
+        local simple_to_redis = {}
+        simple_to_redis[context.uid] = simple_attr
+        Database.RedisSetSimpleUserAttr(context.addr_db_redis, simple_to_redis)
+    end
 
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 同步到客户端
@@ -211,7 +252,7 @@ function User.SetUserAttr(user_attr, sync_client)
     end
 end
 
-function User.GetUserAttr(fields)
+function User.GetOnlineUserAttr(fields)
     local db_user_attr = scripts.UserModel.GetUserAttr()
     local user_attr = {}
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
@@ -229,20 +270,7 @@ function User.GetUserAttr(fields)
 end
 
 function User.GetUserSimpleData()
-    local simple_fields = {
-        ProtoEnum.UserAttrType.uid,
-        ProtoEnum.UserAttrType.nick_name,
-        ProtoEnum.UserAttrType.head_icon,
-        ProtoEnum.UserAttrType.sex,
-        ProtoEnum.UserAttrType.head_frame,
-        ProtoEnum.UserAttrType.account_exp,
-        ProtoEnum.UserAttrType.guild_id,
-        ProtoEnum.UserAttrType.guild_name,
-        ProtoEnum.UserAttrType.cur_show_role,
-        ProtoEnum.UserAttrType.title,
-        ProtoEnum.UserAttrType.player_flag,
-    }
-    local simple_data = User.GetUserAttr(simple_fields)
+    local simple_data = User.GetOnlineUserAttr(simple_fields)
 
     return simple_data
 end
@@ -260,7 +288,7 @@ function User.GetUsrRoomBriefData()
         ProtoEnum.UserAttrType.player_flag,
         ProtoEnum.UserAttrType.cur_show_ghost,
     }
-    local room_member_data = User.GetUserAttr(room_member_fields)
+    local room_member_data = User.GetOnlineUserAttr(room_member_fields)
 
     return room_member_data
 end
@@ -280,7 +308,7 @@ function User.GetUserDetails()
         ProtoEnum.UserAttrType.player_flag,
         ProtoEnum.UserAttrType.cur_show_ghost,
     }
-    local details_data = User.GetUserAttr(details_fields)
+    local details_data = User.GetOnlineUserAttr(details_fields)
     local role_data = scripts.Role.GetRoleInfo(details_data.cur_show_role.config_id)
     local ghost_data = scripts.Ghost.GetGhostInfo(details_data.cur_show_ghost.config_id)
 
@@ -369,6 +397,11 @@ end
 
 function User.PBClientGetUsrSimInfoReqCmd(req)
     local simple_data = User.GetUserSimpleData()
+
+    -- local tmp_uids = {}
+    -- table.insert(tmp_uids, context.uid)
+    -- table.insert(tmp_uids, context.uid + 1)
+    -- local user_attr = Database.RedisGetSimpleUserAttr(context.addr_db_redis, tmp_uids)
     
     local ret = {
         code = ErrorCode.None,
@@ -382,7 +415,7 @@ function User.PBClientGetUsrSimInfoReqCmd(req)
 end
 
 function User.PBClientGetAllUserAttrReqCmd(req)
-    local total_attr = User.GetUserAttr()
+    local total_attr = User.GetOnlineUserAttr()
 
     local ret = {
         code = ErrorCode.None,

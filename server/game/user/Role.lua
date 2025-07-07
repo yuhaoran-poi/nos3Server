@@ -49,7 +49,7 @@ function Role.Start()
         Role.SaveRolesNow()
     end
 
-    return { code = ErrorCode.None }
+    -- return { code = ErrorCode.None }
 end
 
 function Role.SaveRolesNow()

@@ -39,7 +39,7 @@ function ItemImage.Start()
         ItemImage.SaveItemImagesNow()
     end
 
-    return { code = ErrorCode.None }
+    -- return { code = ErrorCode.None }
 end
 
 function ItemImage.SaveItemImagesNow()

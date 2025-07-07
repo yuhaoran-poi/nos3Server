@@ -238,6 +238,31 @@ function _M.RedisSetUserAttr(addr_db, uid, user_attr)
     redis_send(addr_db, "HMSET", "user_attr_" .. uid, table.unpack(tmp))
 end
 
+function _M.RedisGetSimpleUserAttr(addr_db, uids)
+    local res, err = redis_call(addr_db, "HMGET", "user_simple_attr", table.unpack(uids))
+    if err then
+        error("RedisGetSimpleUserAttr failed:" .. tostring(err))
+    end
+    local uids_attrs = {}
+    if res and #res > 0 then
+        moon.warn(string.format("RedisGetSimpleUserAttr res = %s", json.pretty_encode(res)))
+        for i = 1, #res, 2 do
+            uids_attrs[res[i]] = json.decode(res[i + 1] or "null")
+        end
+    end
+
+    return uids_attrs
+end
+
+function _M.RedisSetSimpleUserAttr(addr_db, simple_user_attrs)
+    local tmp = {}
+    for uid, simple_user_attr in pairs(simple_user_attrs) do
+        table.insert(tmp, uid)
+        table.insert(tmp, json.encode(simple_user_attr))
+    end
+    redis_send(addr_db, "HSET", "user_simple_attr", table.unpack(tmp))
+end
+
 -- 新增分布式会话管理（核心改造点）
 function _M.create_session(addr_db, uid)
     local session_id = moon.md5(tostring(uid)..moon.time()) -- 使用框架API生成全局唯一会话ID
@@ -416,7 +441,7 @@ function _M.search_rooms(addr_db, conditions, page, page_size)
         if #sets == 0 then return { total = 0, data = {} } end
 
         redis_send(addr_db, "SINTERSTORE", temp_key, table.unpack(sets))
-        redis_send(addr_db, "EXPIRE", temp_key, 600)
+        redis_send(addr_db, "EXPIRE", temp_key, 10)
     end
 
     -- 分页查询

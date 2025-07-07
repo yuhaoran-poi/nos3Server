@@ -315,7 +315,7 @@ function Roommgr.ModRoom(req)
     
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", {
         roomid = room.room_data.roomid,
-        sync_type = 1,
+        sync_type = RoomDef.SyncType.ModRoomData,
         sync_info = {
             room_data = room.room_data,
         },
@@ -370,7 +370,7 @@ function Roommgr.ApplyToRoom(req)
     table.insert(notify_uids, room.master_id)
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", {
         roomid = room.room_data.roomid,
-        sync_type = 6,
+        sync_type = RoomDef.SyncType.PlayerApply,
         sync_info = {
             apply_list = room.apply_list,
         },
@@ -446,7 +446,7 @@ function Roommgr.DealApply(req)
         -- })
         local sync_msg = {
             roomid = room.room_data.roomid,
-            sync_type = 2,
+            sync_type = RoomDef.SyncType.PlayerEnter,
             sync_info = {
                 players = {},
             }
@@ -516,7 +516,7 @@ function Roommgr.EnterRoom(req)
     -- })
     local sync_msg = {
         roomid = room.room_data.roomid,
-        sync_type = 2,
+        sync_type = RoomDef.SyncType.PlayerEnter,
         sync_info = {
             players = {},
         }
@@ -578,7 +578,7 @@ function Roommgr.ExitRoom(req)
     -- })
     local sync_msg = {
         roomid = room.room_data.roomid,
-        sync_type = 3,
+        sync_type = RoomDef.SyncType.PlayerExit,
         sync_info = {
             players = {},
         }
@@ -650,7 +650,7 @@ function Roommgr.KickMember(req)
     -- })
     local sync_msg = {
         roomid = room.room_data.roomid,
-        sync_type = 4,
+        sync_type = RoomDef.SyncType.PlayerKick,
         sync_info = {
             players = {},
         }
@@ -784,7 +784,7 @@ function Roommgr.DealInvite(req)
         -- })
         local sync_msg = {
             roomid = room.room_data.roomid,
-            sync_type = 2,
+            sync_type = RoomDef.SyncType.PlayerEnter,
             sync_info = {
                 players = {},
             }
@@ -841,7 +841,7 @@ function Roommgr.UpdateReadyStatus(req)
     -- })
     local sync_msg = {
         roomid = room.room_data.roomid,
-        sync_type = 5,
+        sync_type = RoomDef.SyncType.PlayerReady,
         sync_info = {
             players = {},
         }
@@ -1007,18 +1007,18 @@ function Roommgr.StartGame(req)
     redis_data.master_name = room.master_name
     Database.upsert_room(context.addr_db_server, req.roomid, room_tags, redis_data)
 
-    -- -----临时通知所有玩家进入DS------------
-    -- local notify_uids = {}
-    -- for _, player in pairs(room.players) do
-    --     table.insert(notify_uids, player.mem_info.uid)
-    --     moon.error("OnEnterDs ", player.mem_info.uid)
-    -- end
-    -- context.send_users(notify_uids, {}, "Room.OnEnterDs", {
-    --     roomid = req.roomid,
-    --     ds_address = "ds_address",
-    --     ds_ip = "192.168.2.38-7800",
-    -- })
-    -- -----临时通知所有玩家进入DS------------
+    -----临时通知所有玩家进入DS------------
+    local notify_uids = {}
+    for _, player in pairs(room.players) do
+        table.insert(notify_uids, player.mem_info.uid)
+        moon.error("OnEnterDs ", player.mem_info.uid)
+    end
+    context.send_users(notify_uids, {}, "Room.OnEnterDs", {
+        roomid = req.roomid,
+        ds_address = "ds_address",
+        ds_ip = "127.0.0.1-1001",
+    })
+    -----临时通知所有玩家进入DS------------
 
     return { code = ErrorCode.None, error = "游戏开始成功", roomid = req.roomid }
 end

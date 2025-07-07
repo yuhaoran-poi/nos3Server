@@ -7,6 +7,7 @@ local GameCfg = common.GameCfg
 local Database = common.Database
 local protocol = common.protocol
 local ErrorCode = common.ErrorCode
+local RoomDef = require("common.def.RoomDef")
 
 ---@type user_context
 local context = ...
@@ -128,24 +129,27 @@ end
 
 function Room.OnRoomInfoSync(sync_msg)
     moon.error("OnRoomInfoSync")
-    print_r(sync_msg)
-    if sync_msg.sync_type == 2 and sync_msg.sync_info and sync_msg.sync_info.players then
-        for _, mem_info in pairs(sync_msg.sync_info.players) do
-            if mem_info.uid == context.uid then
+    -- print_r(sync_msg)
+    if sync_msg.sync_type == RoomDef.SyncType.PlayerEnter
+     and sync_msg.sync_info and sync_msg.sync_info.players then
+        for _, player_info in pairs(sync_msg.sync_info.players) do
+            if player_info.mem_info and player_info.mem_info.uid == context.uid then
                 context.roomid = sync_msg.roomid
                 moon.info("OnMemberEnter roomid", context.roomid, sync_msg.roomid)
             end
         end
-    elseif sync_msg.sync_type == 3 and sync_msg.sync_info and sync_msg.sync_info.players then
-        for _, mem_info in pairs(sync_msg.sync_info.players) do
-            if mem_info.uid == context.uid then
+    elseif sync_msg.sync_type == RoomDef.SyncType.PlayerExit
+     and sync_msg.sync_info and sync_msg.sync_info.players then
+        for _, player_info in pairs(sync_msg.sync_info.players) do
+            if player_info.mem_info and player_info.mem_info.uid == context.uid then
                 context.roomid = nil
                 moon.info("OnMemberExit roomid", context.roomid, sync_msg.roomid)
             end
         end
-    elseif sync_msg.sync_type == 4 and sync_msg.sync_info and sync_msg.sync_info.players then
-        for _, mem_info in pairs(sync_msg.sync_info.players) do
-            if mem_info.uid == context.uid then
+    elseif sync_msg.sync_type == RoomDef.SyncType.PlayerKick
+     and sync_msg.sync_info and sync_msg.sync_info.players then
+        for _, player_info in pairs(sync_msg.sync_info.players) do
+            if player_info.mem_info and player_info.mem_info.uid == context.uid then
                 context.roomid = nil
                 moon.info("OnMemberKick roomid", context.roomid, sync_msg.roomid)
             end

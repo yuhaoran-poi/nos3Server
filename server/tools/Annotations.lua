@@ -310,17 +310,7 @@
 
 ---@class PBFriendData
 ---@field public uid integer
----@field public head_id integer @头像id
----@field public nick_name string @昵称
----@field public account_level integer @账号等级
----@field public online_state integer @在线状态
----@field public group_id integer @分组id
----@field public friend_time integer @结交时间
----@field public head_frame integer @头像框
----@field public title integer @称号
----@field public guild_id integer @公会id
----@field public guild_name string @公会名
----@field public name_remark string @备注名称
+---@field public notes string @备注
 
 
 ---@class PBApplyFriendData
@@ -332,6 +322,17 @@
 ---@field public title integer @称号
 ---@field public guild_id integer @公会id
 ---@field public guild_name string @公会名
+
+
+---@class PBFriendGroupData
+---@field public group_id integer @分组id
+---@field public group_name string @分组名称
+---@field public friends table<integer, PBFriendData> @分组内的好友
+
+
+---@class PBUserFriendDatas
+---@field public friend_groups table<integer, PBFriendGroupData> @好友分组
+---@field public apply_friends table<integer, PBApplyFriendData> @申请好友
 
 
 ---@class PBGetFriendInfoReqCmd
@@ -2442,6 +2443,7 @@
 ---@field Bag Bag
 ---@field ChatProxy ChatProxy
 ---@field City City
+---@field Friend Friend
 ---@field Ghost Ghost
 ---@field GuildProxy GuildProxy
 ---@field Hello Hello

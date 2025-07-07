@@ -30,7 +30,7 @@ function Citymgr.Init()
     context.waitds_citys = {} -- 等待中主城列表
     context.addr_db_server = moon.queryservice("db_server")
 
-    Citymgr.CreateCity()
+    -- Citymgr.CreateCity()
     -- 新增定时器轮询
     moon.async(function()
         while true do
@@ -216,9 +216,9 @@ function Citymgr.CheckCityRun()
         Citymgr.DestroyCity(cityid)
     end
 
-    if #canEnterRoom + table.size(context.waitds_citys) < 1 then
-        Citymgr.CreateCity()
-    end
+    -- if #canEnterRoom + table.size(context.waitds_citys) < 1 then
+    --     Citymgr.CreateCity()
+    -- end
 end
 
 -- 生成唯一房间ID（保留原逻辑）
@@ -264,17 +264,17 @@ function Citymgr.DestroyCity(cityid)
 end
 
 function Citymgr.ConnectCity(req)
-    -- return { code = ErrorCode.None, error = "连接主城成功" }
+    return { code = ErrorCode.None, error = "连接主城成功" }
 
     -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    if not context.citys[req.cityid] then
-        return { code = ErrorCode.CityNotFound, error = "主城不存在" }
-    end
+    -- if not context.citys[req.cityid] then
+    --     return { code = ErrorCode.CityNotFound, error = "主城不存在" }
+    -- end
 
-    local city = context.citys[req.cityid]
-    city.nid = req.nid
-    city.addr_dsnode = req.addr_dsnode
-    return { code = ErrorCode.None, error = "连接主城成功" }
+    -- local city = context.citys[req.cityid]
+    -- city.nid = req.nid
+    -- city.addr_dsnode = req.addr_dsnode
+    -- return { code = ErrorCode.None, error = "连接主城成功" }
 end
 
 function Citymgr.ApplyLoginToCity(uid)

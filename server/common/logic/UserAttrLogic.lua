@@ -7,7 +7,7 @@ local Database = common.Database
 local UserAttrLogic = {}
 
 function UserAttrLogic.GetOtherUserAttr(context, quest_uid, fields)
-    local res, err = context.call_user(quest_uid, "User.GetUserAttr", fields)
+    local res, err = context.call_user(quest_uid, "User.GetOnlineUserAttr", fields)
     if not res then
         moon.error("GetOtherUserAttr failed:", err)
         return nil
@@ -55,6 +55,15 @@ function UserAttrLogic.GetOtherUserDetails(context, quest_uid)
     end
 
     return res
+end
+
+function UserAttrLogic.QueryOtherUsersSimpleAttr(context, quest_uids)
+    local users_attr = Database.RedisGetSimpleUserAttr(context.addr_db_redis, quest_uids)
+    if not users_attr or table.size(users_attr) <= 0 then
+        return nil
+    else
+        return users_attr
+    end
 end
 
 return UserAttrLogic
