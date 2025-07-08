@@ -327,7 +327,7 @@
 ---@class PBFriendGroupData
 ---@field public group_id integer @分组id
 ---@field public group_name string @分组名称
----@field public friends table<integer, PBFriendData> @分组内的好友
+---@field public group_friends table<integer, PBFriendData> @分组内的好友
 
 
 ---@class PBUserFriendDatas
@@ -343,19 +343,21 @@
 ---@field public code integer @服务器返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public uid integer
----@field public friend_datas PBFriendData[] @好友数据
----@field public apply_datas PBApplyFriendData[] @申请数据
+---@field public friend_datas PBUserFriendDatas
+---@field public friends_simple_attr table<integer, PBUserAttr> @申请好友
 
 
 ---@class PBApplyFriendReqCmd
 ---@field public uid integer
 ---@field public apply_data PBApplyFriendData @申请数据
+---@field public target_uid integer @目标uid
 
 
 ---@class PBApplyFriendRspCmd
 ---@field public code integer @服务器返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public uid integer
+---@field public target_uid integer @目标uid
 
 
 ---@class PBSimpleGhostData
@@ -2204,6 +2206,7 @@
 ---@field public sum_online_time integer @累计在线时长 单位秒
 ---@field public pa_flag integer @是否禁言等操作
 ---@field public cur_show_ghost PBSimpleGhostData
+---@field public is_online integer @是否在线
 
 
 ---@class PBClientGetUsrSimInfoReqCmd
@@ -2507,6 +2510,10 @@
 ---@field Citymgr Citymgr
 
 
+---@class friendmgr_scripts
+---@field Friendmgr Friendmgr
+
+
 ---@class guildmgr_scripts
 ---@field GuildMgr GuildMgr
 
@@ -2546,6 +2553,7 @@
 ---@field CommonConfig CommonConfig_cfg[]
 ---@field Composite Composite_cfg[]
 ---@field EquipmentTagPool EquipmentTagPool_cfg[]
+---@field FriendConfig FriendConfig_cfg[]
 ---@field GameChapter GameChapter_cfg[]
 ---@field GamePropUpLv GamePropUpLv_cfg[]
 ---@field GhostEquipmentUpLv GhostEquipmentUpLv_cfg[]

@@ -47,10 +47,10 @@ function UserAttrLogic.QueryOtherUserAttr(context, quest_uid, fields)
     return res
 end
 
-function UserAttrLogic.GetOtherUserDetails(context, quest_uid)
+function UserAttrLogic.GetOtherOnlineUserDetails(context, quest_uid)
     local res, err = context.call_user(quest_uid, "User.GetUserDetails")
     if err then
-        moon.error("GetOtherUserDetails failed:", err)
+        moon.error("GetOtherOnlineUserDetails failed:", err)
         return nil
     end
 

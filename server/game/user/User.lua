@@ -36,6 +36,7 @@ local simple_fields = {
     ProtoEnum.UserAttrType.cur_show_role,
     ProtoEnum.UserAttrType.title,
     ProtoEnum.UserAttrType.player_flag,
+    ProtoEnum.UserAttrType.is_online,
 }
 
 local function hasSimpleAttr(user_attr)  
@@ -94,8 +95,9 @@ function User.Load(req)
             data.user_attr.plateform_id = data.authkey
             data.user_attr.nick_name = data.name or data.authkey
             data.user_attr.account_create_time = moon.time()
-            data.user_attr.online_time = moon.time()
         end
+        data.user_attr.online_time = moon.time()
+        data.user_attr.is_online = 1
 
         scripts.UserModel.Create(data)
         context.uid = req.uid
@@ -373,10 +375,15 @@ function User.Exit()
         moon.error("user exit save db error", err)
     end
 
-    User.Logout()
+    -- 同步离线状态到redis
+    local update_user_attr = {}
+    update_user_attr[ProtoEnum.UserAttrType.is_online] = 0
+    User.SetUserAttr(update_user_attr, false)
 
     -- 退出房间
     scripts.Room.ForceExitRoom()
+
+    User.Logout()
 
     -- 通知usermgr
     local res, err = clusterd.call(3999, "usermgr", "Usermgr.NotifyLogout", { uid = context.uid, nid = moon.env("NODE") })
@@ -1152,7 +1159,7 @@ function User.PBGetOtherDetailReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local user_attr_res = UserAttrLogic.GetOtherUserDetails(context, req.msg.quest_uid)
+    local user_attr_res = UserAttrLogic.GetOtherOnlineUserDetails(context, req.msg.quest_uid)
     if user_attr_res then
         return context.S2C(context.net_id, CmdCode.PBGetOtherDetailReqCmd, {
             code = ErrorCode.None,

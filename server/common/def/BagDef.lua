@@ -26,6 +26,7 @@ local defaultPBBags = {
     [BagDef.BagType.Cangku] = { bag_item_type = 1, capacity = BagDef.init_cangku_capacity, items = {} },
     [BagDef.BagType.Consume] = { bag_item_type = 2, capacity = BagDef.init_consume_capacity, items = {} },
     [BagDef.BagType.Booty] = { bag_item_type = 3, capacity = BagDef.init_booty_capacity, items = {} },
+    
 }
 
 local defaultPBUserCoins = {

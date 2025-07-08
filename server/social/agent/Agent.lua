@@ -79,6 +79,7 @@ function Agent.CreateGuild(guild_id, guild_name, creator_uid)
     end
     local res, err = moon.call("lua", addr_guild, "Guild.Create", guild_id, guild_name, creator_uid)
     if not res then
+        moon.error("create guild failed: ", err)
         return { code = ErrorCode.CreateGuildDataErr, error = err }
     end
     if res.code ~= ErrorCode.None then

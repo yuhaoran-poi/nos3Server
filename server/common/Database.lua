@@ -856,4 +856,33 @@ function _M.ItemChangeLog(addr, uid, item_id, change_num, before_num, after_num,
     moon.send("lua", addr, cmd)
 end
 
+function _M.loadfriends(addr, uid)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.friends WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBUserFriendDatas", pbdata)
+        return tmp_data
+    end
+    print("loadfriends failed", uid, err)
+    return nil
+end
+
+function _M.savefriends(addr, uid, data)
+    assert(data)
+
+    local data_str = jencode(data)
+    local _, pbdata = protocol.encodewithname("PBUserRoleDatas", data)
+    local pbvalue = crypt.base64encode(pbdata)
+    local cmd = string.format([[
+        INSERT INTO mgame.roles (uid, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
+
+    return moon.send("lua", addr, cmd)
+end
+
 return _M

@@ -305,7 +305,7 @@ local function _internal(context)
         local res, err = cluster.call(3999, 'usermgr', "Usermgr.getAddrUserByUid", uid)
         if not res then
             print(err)
-            return
+            return res, err
         end
         local node, addr_user = res.nid, res.addr_user
         if not context.NODE then

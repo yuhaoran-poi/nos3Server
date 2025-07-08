@@ -1,7 +1,4 @@
 syntax = "proto3";
-//import "bag.proto";
-//import "role.proto";
-//import "ghost.proto";
 import "user.proto";
 
 //message PBRoomApplyData
