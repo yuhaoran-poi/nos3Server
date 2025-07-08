@@ -1007,18 +1007,18 @@ function Roommgr.StartGame(req)
     redis_data.master_name = room.master_name
     Database.upsert_room(context.addr_db_server, req.roomid, room_tags, redis_data)
 
-    -----临时通知所有玩家进入DS------------
-    local notify_uids = {}
-    for _, player in pairs(room.players) do
-        table.insert(notify_uids, player.mem_info.uid)
-        moon.error("OnEnterDs ", player.mem_info.uid)
-    end
-    context.send_users(notify_uids, {}, "Room.OnEnterDs", {
-        roomid = req.roomid,
-        ds_address = "ds_address",
-        ds_ip = "127.0.0.1-1001",
-    })
-    -----临时通知所有玩家进入DS------------
+    -- -----临时通知所有玩家进入DS------------
+    -- local notify_uids = {}
+    -- for _, player in pairs(room.players) do
+    --     table.insert(notify_uids, player.mem_info.uid)
+    --     moon.error("OnEnterDs ", player.mem_info.uid)
+    -- end
+    -- context.send_users(notify_uids, {}, "Room.OnEnterDs", {
+    --     roomid = req.roomid,
+    --     ds_address = "192.168.2.31-9999",
+    --     ds_ip = "192.168.2.31",
+    -- })
+    -- -----临时通知所有玩家进入DS------------
 
     return { code = ErrorCode.None, error = "游戏开始成功", roomid = req.roomid }
 end
