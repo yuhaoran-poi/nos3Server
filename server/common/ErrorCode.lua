@@ -194,6 +194,8 @@ local ErrorCode = {
     UserAlreadyLogin = 1204,
     --- 用户不在线
     UserOffline = 1205,
+    --- 用户不存在
+    UserNotExist = 1206,
 
     --聊天相关错误码
     --- 聊天频道已经存在
@@ -351,6 +353,18 @@ local ErrorCode = {
     RoleSkillAlreadyActive = 1714,
     --- 技能不存在
     RoleSkillNotExist = 1715,
+
+    --角色相关错误码
+    --- 好友申请错误码
+    FriendApplyErr = 1800,
+    --- 好友达到上限
+    FriendLimit = 1801,
+    --- 好友申请达到上限
+    FriendApplyLimit = 1802,
+    --- 已在好友申请列表
+    FriendInApplyList = 1803,
+    --- 已在黑名单
+    FriendInBlackList = 1804,
 }
 
 return ErrorCode

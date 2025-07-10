@@ -31,16 +31,8 @@ function Friendmgr.Start()
     return true
 end
 
-function Friendmgr.ApplyFriend(apply_uid, apply_data, target_uid)
-    local apply = {
-        uid = apply_uid,
-        data = apply_data,
-    }
-    local res, err = context.call_user(target_uid, "Friend.ApplyFriend", apply)
-    if err or not res then
-        moon.error("Friend.ApplyFriend err:%s", err)
-        local friend_info = Database.RedisGetFriendInfo(context.addr_db_redis, target_uid)
-    end
+function Friendmgr.AddOfflineApply(msg)
+    Database.RedisAddFriendApply(context.addr_db_redis, msg.target_uid, msg.uid, msg.apply_data)
 end
 
 function Friendmgr.Shutdown()

@@ -542,6 +542,7 @@ return function(context, sname)
             local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
             local ok, cmd, data = pcall(protocol.decode, buf)
             if not ok then
+                local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 moon.error("protobuffer decode client message failed", cmd)
                 moon.send("lua", context.dgate, "DGate.Kick", dsid)
                 return

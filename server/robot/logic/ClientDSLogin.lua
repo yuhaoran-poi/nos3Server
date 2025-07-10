@@ -15,7 +15,7 @@ function Client:dslogin()
     local login_msg = {
         login_data = {
             authkey = self.username .. 1,
-            auth_ticket = "qwerttyyuy",
+            auth_ticket = "TicketCityDS",
             ds_type = 1,
             ds_id = 1,
         },

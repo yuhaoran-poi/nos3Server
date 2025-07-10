@@ -331,14 +331,6 @@ function Citymgr.ApplyLoginToCity(uid)
     end
 
     return res
-    -- return {
-    --     code = ErrorCode.None,
-    --     error = "允许加入",
-    --     cityid = 1,
-    --     region = "",
-    --     ds_address = "localhost",
-    --     ds_ip = "localhost",
-    -- }
 end
 
 function Citymgr.PlayerEnterCity(req)

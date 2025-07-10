@@ -1147,11 +1147,11 @@ end
 --     end
 -- end
 
-function User.PBGetOtherDetailReqCmd(req)
+function User.PBGetOtherSimpleReqCmd(req)
     if context.uid ~= req.msg.uid
         or req.msg.quest_uid == 0
         or req.msg.uid == req.msg.quest_uid then
-        return context.S2C(context.net_id, CmdCode.PBGetOtherDetailReqCmd, {
+        return context.S2C(context.net_id, CmdCode.PBGetOtherSimpleRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
             uid = context.uid,
@@ -1159,14 +1159,49 @@ function User.PBGetOtherDetailReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local user_attr_res = UserAttrLogic.GetOtherOnlineUserDetails(context, req.msg.quest_uid)
-    if user_attr_res then
-        return context.S2C(context.net_id, CmdCode.PBGetOtherDetailReqCmd, {
+    local quest_uids = {}
+    table.insert(quest_uids, req.msg.quest_uid)
+    local users_attr = UserAttrLogic.QueryOtherUsersSimpleAttr(context, quest_uids)
+    if not users_attr or table.size(users_attr) ~= 1 then
+        return context.S2C(context.net_id, CmdCode.PBGetOtherSimpleRspCmd, {
+            code = ErrorCode.UserNotExist,
+            error = "用户不存在",
+            uid = context.uid,
+            quest_uid = req.msg.quest_uid or 0,
+        }, req.msg_context.stub_id)
+    else
+        return context.S2C(context.net_id, CmdCode.PBGetOtherSimpleRspCmd, {
             code = ErrorCode.None,
             error = "",
             uid = context.uid,
             quest_uid = req.msg.quest_uid,
-            user_attr = user_attr_res,
+            info = users_attr[req.msg.quest_uid],
+        })
+    end
+end
+
+function User.PBGetOtherDetailReqCmd(req)
+    if context.uid ~= req.msg.uid
+        or req.msg.quest_uid == 0
+        or req.msg.uid == req.msg.quest_uid then
+        return context.S2C(context.net_id, CmdCode.PBGetOtherDetailRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            quest_uid = req.msg.quest_uid or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    local res = UserAttrLogic.GetOtherOnlineUserDetails(context, req.msg.quest_uid)
+    if res then
+        return context.S2C(context.net_id, CmdCode.PBGetOtherDetailRspCmd, {
+            code = ErrorCode.None,
+            error = "",
+            uid = context.uid,
+            quest_uid = req.msg.quest_uid,
+            info = res.user_attr,
+            role_data = res.role_data,
+            ghost_data = res.ghost_data,
         })
     else
         return context.S2C(context.net_id, CmdCode.PBGetOtherDetailReqCmd, {

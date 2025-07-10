@@ -1,6 +1,7 @@
 local moon = require "moon"
 local common = require "common"
 local uuid = require "uuid"
+local json = require "json"
 local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
@@ -69,7 +70,8 @@ end
 
 function Role.CheckRoleStudyBook(role_info)
     local now_time = moon.time()
-    if now_time - role_info < 10 then
+    moon.warn(string.format("CheckRoleStudyBook role_info = %s", json.pretty_encode(role_info)))
+    if now_time - role_info.last_check_time < 10 then
         return
     end
 

@@ -333,6 +333,7 @@
 ---@class PBUserFriendDatas
 ---@field public friend_groups table<integer, PBFriendGroupData> @好友分组
 ---@field public apply_friends table<integer, PBApplyFriendData> @申请好友
+---@field public black_list table<integer, PBFriendData> @黑名单
 
 
 ---@class PBGetFriendInfoReqCmd
@@ -344,7 +345,12 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public friend_datas PBUserFriendDatas
----@field public friends_simple_attr table<integer, PBUserAttr> @申请好友
+---@field public friends_simple_attr table<integer, PBUserAttr> @好友简略信息
+
+
+---@class PBFriendSyncCmd
+---@field public friend_datas PBUserFriendDatas
+---@field public friends_simple_attr table<integer, PBUserAttr> @变更好友简略信息
 
 
 ---@class PBApplyFriendReqCmd
@@ -358,6 +364,23 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public target_uid integer @目标uid
+
+
+---@class PBFriendDealApplyReqCmd
+---@field public uid integer
+---@field public quest_uid integer @申请好友uid
+---@field public deal_type integer @处理类型 1同意 2拒绝
+
+
+---@class PBFriendDealApplyRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public quest_uid integer @申请好友uid
+
+
+---@class PBFriendOtherRefuseSyncCmd
+---@field public refuse_uid integer @申请好友uid
 
 
 ---@class PBSimpleGhostData
@@ -2338,6 +2361,19 @@
 ---@field public pos integer @装备所在的格子号
 
 
+---@class PBGetOtherSimpleReqCmd
+---@field public uid integer
+---@field public quest_uid integer
+
+
+---@class PBGetOtherSimpleRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer @自己的uid
+---@field public quest_uid integer @他人uid
+---@field public info PBUserAttr @简略信息
+
+
 ---@class PBGetOtherDetailReqCmd
 ---@field public uid integer
 ---@field public quest_uid integer
@@ -2348,7 +2384,9 @@
 ---@field public error string @错误信息
 ---@field public uid integer @自己的uid
 ---@field public quest_uid integer @他人uid
----@field public info PBUserAttr @简略信息
+---@field public info PBUserAttr @账号信息
+---@field public role_data PBRoleData @角色数据
+---@field public ghost_data PBGhostData @鬼宠数据
 
 
 ---@class PBUseSkinGiftReqCmd

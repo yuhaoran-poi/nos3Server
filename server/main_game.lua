@@ -89,7 +89,7 @@ local function run(node_conf)
             name = "auth",
             file = "game/service_auth.lua",
             threadid = 2,
-            ds_ticket = "qwerttyyuy"
+            ds_ticket = "TicketCityDS"
         },
         {
             unique = true,

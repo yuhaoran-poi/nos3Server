@@ -28,7 +28,7 @@ function DsNode.Load(req)
                 addr_dsnode = req.addr_dsnode,
             })
             if err or res.code ~= ErrorCode.None then
-                return false, err
+                return res
             end
         end
 
@@ -46,21 +46,22 @@ function DsNode.Load(req)
         context.batch_invoke("Init", isnew)
         ---初始化互相引用的数据
         context.batch_invoke("Start")
-        return data
+        return { code = ErrorCode.None, error = "", data = data }
     end
 
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local ok, res = xpcall(fn, debug.traceback, req)
     if not ok then
         return ok, res
     end
 
-    if not res then
+    if not res or res.code ~= ErrorCode.None then
         local errmsg = string.format("ds init failed, can not find ds %d", req.dsid)
         moon.error(errmsg)
         return false, errmsg
     end
 
-    context.net_id = res.net_id
+    context.net_id = res.data.net_id
     return true
 end
 

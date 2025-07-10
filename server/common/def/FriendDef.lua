@@ -1,6 +1,9 @@
 local LuaExt = require "common.LuaExt"
 
-local FriendDef = {}
+local FriendDef = {
+    DefaultGroupId = 1,
+    DefaultGroupName = "我的好友",
+}
 
 local defaultPBFriendData = {
     uid = 0,
@@ -26,7 +29,8 @@ local defaultPBFriendGroupData = {
 
 local defaultPBUserFriendDatas = {
     friend_groups = {},    --好友分组
-    apply_friends = {},    --申请好友
+    apply_friends = {}, --申请好友
+    black_list = {}, --黑名单
 }
 
 ---@return PBFriendData

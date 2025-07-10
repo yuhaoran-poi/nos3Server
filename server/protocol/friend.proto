@@ -28,8 +28,9 @@ message PBFriendGroupData
 
 message PBUserFriendDatas
 {
-    map<int32, PBFriendGroupData> friend_groups    = 1; //好友分组
-    map<int64, PBApplyFriendData> apply_friends    = 2; //申请好友
+    map<int32, PBFriendGroupData> friend_groups     = 1; //好友分组
+    map<int64, PBApplyFriendData> apply_friends     = 2; //申请好友
+    map<int64, PBFriendData> black_list             = 3; //黑名单
 }
 
 // 客户端请求好友数据
@@ -47,7 +48,13 @@ message PBGetFriendInfoRspCmd
     // 协议数据
     int64 uid = 3;
     PBUserFriendDatas friend_datas  = 4;
-    map<int64, PBUserAttr> friends_simple_attr  = 5; //申请好友
+    map<int64, PBUserAttr> friends_simple_attr  = 5; //好友简略信息
+}
+
+message PBFriendSyncCmd
+{
+    PBUserFriendDatas friend_datas  = 1;
+    map<int64, PBUserAttr> friends_simple_attr  = 2; //变更好友简略信息
 }
 
 // 客户端申请好友
@@ -69,5 +76,28 @@ message PBApplyFriendRspCmd
     int64 target_uid = 4;    //目标uid
 }
 
+// 处理好友申请
+message PBFriendDealApplyReqCmd
+{
+    // 协议数据
+    int64 uid           = 1;
+    int64 quest_uid     = 2;    //申请好友uid
+    int32 deal_type     = 3;    //处理类型 1同意 2拒绝
+}
 
+// 处理好友申请 返回信息
+message PBFriendDealApplyRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid = 3;
+    int64 quest_uid = 4;    //申请好友uid
+}
+
+// 别人拒绝好友申请
+message PBFriendOtherRefuseSyncCmd
+{
+    int64 refuse_uid = 2;    //申请好友uid
+}
 

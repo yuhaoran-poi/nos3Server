@@ -17,34 +17,29 @@ function UserAttrLogic.GetOtherUserAttr(context, quest_uid, fields)
 end
 
 function UserAttrLogic.QueryOtherUserAttr(context, quest_uid, fields)
-    local res = UserAttrLogic.GetOtherUserAttr(context, quest_uid, fields)
-    if not res or table.size(res) <= 0 then
-        --内存中不存在则查询数据库
-        local user_attr = Database.RedisGetUserAttr(context.addr_db_redis, quest_uid, fields)
-        if not user_attr or table.size(user_attr) <= 0 then
-            local db_data = Database.loaduser_attr(context.addr_db_user, quest_uid)
-            if not db_data then
-                return nil
-            else
-                local res_attr = {}
-                if type(fields) == "table" then
-                    for _, field in pairs(fields) do
-                        if db_data[field] then
-                            res_attr[field] = db_data[field]
-                        end
-                    end
-                else
-                    res_attr = db_data
-                end
-
-                return res_attr
-            end
+    --内存中不存在则查询数据库
+    local user_attr = Database.RedisGetUserAttr(context.addr_db_redis, quest_uid, fields)
+    if not user_attr or table.size(user_attr) <= 0 then
+        local db_data = Database.loaduser_attr(context.addr_db_user, quest_uid)
+        if not db_data then
+            return nil
         else
-            return user_attr
-        end
-    end
+            local res_attr = {}
+            if type(fields) == "table" then
+                for _, field in pairs(fields) do
+                    if db_data[field] then
+                        res_attr[field] = db_data[field]
+                    end
+                end
+            else
+                res_attr = db_data
+            end
 
-    return res
+            return res_attr
+        end
+    else
+        return user_attr
+    end
 end
 
 function UserAttrLogic.GetOtherOnlineUserDetails(context, quest_uid)

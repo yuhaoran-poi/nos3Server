@@ -877,12 +877,42 @@ function _M.savefriends(addr, uid, data)
     local _, pbdata = protocol.encodewithname("PBUserRoleDatas", data)
     local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
-        INSERT INTO mgame.roles (uid, value, json)
+        INSERT INTO mgame.friends (uid, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
     ]], uid, pbvalue, data_str, pbvalue, data_str)
 
     return moon.send("lua", addr, cmd)
+end
+
+-- 好友离线数据前缀常量
+local FRIEND_PREFIX = "friend:"
+
+function _M.RedisAddFriendApply(addr_db_redis, uid, apply_uid, apply_data)
+    -- 获取旧值
+    local apply_values = {}
+    local old_json, err = redis_call(addr_db_redis, "MGET", FRIEND_PREFIX .. uid)
+    if old_json and next(old_json) ~= nil then
+        apply_values = json.decode(old_json[1])
+    end
+    apply_values[apply_uid] = apply_data
+
+    -- 存储新数据
+    redis_send(addr_db_redis, "MSET", FRIEND_PREFIX .. uid, json.encode(apply_values))
+end
+
+function _M.RedisGetFriendApply(addr_db_redis, uid)
+    local apply_values = {}
+    local old_json, err = redis_call(addr_db_redis, "MGET", FRIEND_PREFIX .. uid)
+    if old_json and next(old_json) ~= nil then
+        apply_values = json.decode(old_json[1])
+    end
+    return apply_values
+end
+
+function _M.RedisDelFriendApply(addr_db_redis, uid)
+    -- 删除主数据
+    redis_send(addr_db_redis, "DEL", FRIEND_PREFIX .. uid)
 end
 
 return _M
