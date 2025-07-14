@@ -7,11 +7,20 @@ message PBPinchFaceData
     string setting_data = 1;
 }
 
+// 学习中的真经定义
+message PBStudyBook
+{
+    int32 book_id = 1;
+	int64 start_time = 2;
+    int64 end_time = 3;
+	int64 now_time = 4;
+}
+
 // 角色简略信息
 message PBSimpleRoleData
 {
     int32 config_id					= 1;// 配置ID
-    map<int32, PBItemData> skins	= 2;// 穿戴皮肤
+    map<int32, int32> skins	= 2;// 穿戴皮肤
 	int32 magic_item_id				= 3;// 携带法器id
 }
 
@@ -23,17 +32,20 @@ message PBRoleData
 	int32 exp				= 3;	//经验值
 	PBItemData magic_item	= 4;	//法器
 	map<int32, PBItemData> digrams_cards	= 5;	//八卦牌
-	repeated int32 equip_books		= 6;	//已装备真经
-	repeated int32 study_books		= 7;	//学习中真经
-	map<int32, PBItemData> skins	= 8;	//穿戴皮肤
-	int32 cur_main_skill_id			= 9;	//选定主技能id
-	map<int32, PBSkill> main_skill	= 10;	//可选主技能
-	int32 cur_minor_skill1_id			= 11;	//选定小技能1id
-	map<int32, PBSkill> minor_skill1	= 12;	//可选小技能1
-	int32 cur_minor_skill2_id			= 13;	//选定小技能2id
-	map<int32, PBSkill> minor_skill2	= 14;	//可选小技能2
-	PBSkill passive_skill				= 15;	//被动技能
-	repeated int32 emoji				= 16;	//表情槽
+	map<int32, int32> equip_books	= 6;	//已装备真经
+	map<int32, PBStudyBook> study_books	= 7;	//学习中真经
+	int64 last_check_time	= 8;	//上次检测时间
+	map<int32, int32> skins	= 9;	//穿戴皮肤
+	int32 cur_main_skill_id			= 10;	//选定主技能id
+	map<int32, PBSkill> main_skill	= 11;	//可选主技能
+	int32 cur_minor_skill1_id			= 12;	//选定小技能1id
+	map<int32, PBSkill> minor_skill1	= 13;	//可选小技能1
+	int32 cur_minor_skill2_id			= 14;	//选定小技能2id
+	map<int32, PBSkill> minor_skill2	= 15;	//可选小技能2
+	int32 cur_passive_skill_id			= 16;	//选定被动技能id
+	map<int32, PBSkill> passive_skill	= 17;	//可选被动技能
+	repeated int32 emoji				= 18;	//表情槽
+	map<int32, int32> up_lv_rewards		= 19;	//已领取的升级奖励
 }
 
 // 角色数据
@@ -65,20 +77,185 @@ message PBRoleInfoSyncCmd
 }
 
 // 角色装备法器或者八卦牌
-message PBRoleWearEquipsReqCmd
+message PBRoleWearEquipReqCmd
 {
-	// 协议数据
     int64 uid		= 1;
-	int32 roleid	= 2;
-	int32 equip_config_id	= 3;
-	int64 equip_uniqid		= 4;
+	int32 roleid	= 2; // 角色id
+	string bag_name	= 3; // 背包名
+	int32 pos		= 4; // 准备穿戴的装备在背包中的格子号
+	int32 equip_config_id = 5; // 准备穿戴的装备配置id
+	int64 equip_uniqid	= 6; // 准备穿戴的装备唯一id
+	int32 equip_idx	= 7; // 装备的位置
 }
 
-message PBRoleWearEquipsRspCmd
+message PBRoleWearEquipRspCmd
 {
-	// 协议数据
     int32 code		= 1; // 服务器验证返回,0成功,其他失败
     string error	= 2; // 错误信息
-    int64 uid		= 3; // 用户ID
-    int32 roleid	= 4; // 角色id
+    int64 uid		= 3;
+    int32 roleid	= 4;
+	string bag_name	= 5;
+	int32 pos		= 6;
+	int32 equip_config_id	= 7;
+	int64 equip_uniqid		= 8;
+	int32 equip_idx	= 9;
+}
+
+// 角色卸下法器或者八卦牌
+message PBRoleTakeOffEquipReqCmd
+{
+	int64 uid		= 1;
+	int32 roleid	= 2; // 角色id
+	string bag_name	= 3; // 背包名
+	int32 takeoff_config_id	= 4; // 准备卸下的装备配置id
+	int64 takeoff_uniqid	= 5; // 准备卸下的装备唯一id
+	int32 takeoff_idx		= 6; // 卸下的位置
+}
+
+message PBRoleTakeOffEquipRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 roleid	= 4; // 角色id
+	string bag_name	= 5; // 背包名
+	int32 takeoff_config_id	= 6; // 准备卸下的装备配置id
+	int64 takeoff_uniqid	= 7; // 准备卸下的装备唯一id
+	int32 takeoff_idx		= 8; // 卸下的位置
+}
+
+// 角色更换皮肤
+message PBRoleWearSkinReqCmd
+{
+	int64 uid		= 1;
+	int32 roleid	= 2; // 角色id
+	map<int32, int32> skins	= 3;// 穿戴皮肤
+}
+
+message PBRoleWearSkinRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 roleid	= 4; // 角色id
+	map<int32, int32> skins	= 5;// 穿戴皮肤
+}
+
+// 角色更换表情动作
+message PBRoleChangeEmojiReqCmd
+{
+	int64 uid		= 1;
+	int32 roleid	= 2; // 角色id
+	repeated int32 emoji	= 3;// 表情
+}
+
+message PBRoleChangeEmojiRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 roleid	= 4; // 角色id
+	repeated int32 emoji	= 5;// 表情
+}
+
+// 更换出战角色
+message PBChangeBattleRoleReqCmd
+{
+    int64 uid		= 1;
+    int32 roleid	= 2; // 角色id
+}
+
+message PBChangeBattleRoleRspCmd
+{
+    int32 code        = 1; // 服务器验证返回,0成功,其他失败
+    string error      = 2; // 错误信息
+    int64 uid         = 3;
+	int32 roleid      = 4; // 角色id
+}
+
+// 客户端请求--角色技能升星
+message PBRoleSkillUpStarReqCmd
+{
+	int64 uid		= 1;
+	int32 roleid 	= 2;
+	int32 skill_id	= 3;
+}
+
+message PBRoleSkillUpStarRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 roleid 	= 4;
+	int32 skill_id	= 5;
+}
+
+// 客户端请求--角色领取升级奖励
+message PBRoleGetUpLvRewardReqCmd
+{
+	int64 uid		= 1;
+	int32 roleid 	= 2;
+	int32 reward_id	= 3;
+}
+
+message PBRoleGetUpLvRewardRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 roleid 	= 4;
+	int32 reward_id	= 5;
+}
+
+// 客户端请求--角色学习真经
+message PBRoleStudyBookReqCmd
+{
+	int64 uid		= 1;
+	int32 roleid 	= 2;
+	int32 book_id	= 3;
+}
+
+message PBRoleStudyBookRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 roleid 	= 4;
+	int32 book_id	= 5;
+}
+
+// 角色技能合成
+message PBRoleSkillCompositeReqCmd
+{
+	int64 uid			= 1;
+	int32 roleid		= 2;
+	int32 composite_id	= 3; // 合成id
+}
+
+message PBRoleSkillCompositeRspCmd
+{
+	int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+	int64 uid			= 3;
+	int32 roleid		= 4;
+	int32 composite_id	= 5; // 合成id
+}
+
+// 角色技能切换
+message PBRoleSkillSwitchReqCmd
+{
+	int64 uid			= 1;
+	int32 roleid		= 2;
+	int32 skill_type	= 3; // 技能类型
+	int32 skill_id		= 4; // 技能id
+}
+
+message PBRoleSkillSwitchRspCmd
+{
+	int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+	int64 uid			= 3;
+	int32 roleid		= 4;
+	int32 skill_type	= 5; // 技能类型
+	int32 skill_id		= 6; // 技能id
 }

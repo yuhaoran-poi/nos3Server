@@ -1,19 +1,10 @@
 syntax = "proto3";
+import "user.proto";
 
 message PBFriendData
 {
     int64 uid			= 1;
-    int32 head_id		= 2;    //头像id
-    string nick_name	= 3;    //昵称
-    int32 account_level	= 4;    //账号等级
-    int32 online_state	= 5;    //在线状态
-	int32 group_id		= 6;    //分组id
-	int64 friend_time	= 7;    //结交时间
-	int32 head_frame	= 8;    //头像框
-	int32 title			= 9;    //称号
-    int32 guild_id		= 10;   //公会id
-	string guild_name	= 11;   //公会名
-	string name_remark	= 12;   //备注名称
+    string notes		= 2;    //备注
 }
 
 message PBApplyFriendData
@@ -26,6 +17,20 @@ message PBApplyFriendData
 	int32 title			= 6;    //称号
     int32 guild_id		= 7;    //公会id
 	string guild_name	= 8;    //公会名
+}
+
+message PBFriendGroupData
+{
+    int32 group_id      = 1;    //分组id
+    string group_name   = 2;    //分组名称
+    map<int64, PBFriendData> group_friends    = 3; //分组内的好友
+}
+
+message PBUserFriendDatas
+{
+    map<int32, PBFriendGroupData> friend_groups     = 1; //好友分组
+    map<int64, PBApplyFriendData> apply_friends     = 2; //申请好友
+    map<int64, PBFriendData> black_list             = 3; //黑名单
 }
 
 // 客户端请求好友数据
@@ -42,8 +47,14 @@ message PBGetFriendInfoRspCmd
     string error = 2; // 错误信息
     // 协议数据
     int64 uid = 3;
-    repeated PBFriendData friend_datas		= 4; //好友数据
-	repeated PBApplyFriendData apply_datas	= 5; //申请数据
+    PBUserFriendDatas friend_datas  = 4;
+    map<int64, PBUserAttr> friends_simple_attr  = 5; //好友简略信息
+}
+
+message PBFriendSyncCmd
+{
+    PBUserFriendDatas friend_datas  = 1;
+    map<int64, PBUserAttr> friends_simple_attr  = 2; //变更好友简略信息
 }
 
 // 客户端申请好友
@@ -52,6 +63,7 @@ message PBApplyFriendReqCmd
     // 协议数据
     int64 uid          = 1;
     PBApplyFriendData apply_data    = 2;    //申请数据
+    int64 target_uid   = 3;    //目标uid
 }
 
 // 客户端申请好友 返回信息
@@ -61,7 +73,31 @@ message PBApplyFriendRspCmd
     string error = 2; // 错误信息
     // 协议数据
     int64 uid = 3;
+    int64 target_uid = 4;    //目标uid
 }
 
+// 处理好友申请
+message PBFriendDealApplyReqCmd
+{
+    // 协议数据
+    int64 uid           = 1;
+    int64 quest_uid     = 2;    //申请好友uid
+    int32 deal_type     = 3;    //处理类型 1同意 2拒绝
+}
 
+// 处理好友申请 返回信息
+message PBFriendDealApplyRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid = 3;
+    int64 quest_uid = 4;    //申请好友uid
+}
+
+// 别人拒绝好友申请
+message PBFriendOtherRefuseSyncCmd
+{
+    int64 refuse_uid = 2;    //申请好友uid
+}
 

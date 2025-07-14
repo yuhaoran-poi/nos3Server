@@ -68,6 +68,7 @@ local defaultPBUserAttr = {
     sum_online_time = 0,                                                 --累计在线时长 单位秒
     pa_flag = 0,                                                         --是否禁言等操作
     cur_show_ghost = LuaExt.const(table.copy(defaultPBSimpleGhostData)), --当前展示的鬼宠
+    is_online = 0,                                                       --是否在线
 }
 
 ---@return PBUserAttr

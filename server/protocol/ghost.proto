@@ -73,3 +73,74 @@ message PBClientGetUsrGhostsInfoRspCmd
     int64 uid         = 3; // 用户ID
     PBUserGhostDatas ghosts_info	= 4;	// 所有鬼宠数据
 }
+
+// 鬼宠数据变更同步
+message PBGhostInfoSyncCmd
+{
+	PBUserGhostDatas ghosts_info	= 1;	// 变更的鬼宠数据
+}
+
+// 鬼宠装备八卦牌
+message PBGhostWearEquipReqCmd
+{
+    int64 uid		= 1;
+	int64 ghost_uniqid	= 2; // 鬼宠唯一id
+	string bag_name	= 3; // 背包名
+	int32 pos		= 4; // 准备穿戴的装备在背包中的格子号
+	int32 equip_config_id = 5; // 准备穿戴的装备配置id
+	int64 equip_uniqid	= 6; // 准备穿戴的装备唯一id
+	int32 equip_idx	= 7; // 装备的位置
+}
+
+message PBGhostWearEquipRspCmd
+{
+    int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+    int64 uid		= 3;
+    int64 ghost_uniqid	= 4;
+	string bag_name	= 5;
+	int32 pos		= 6;
+	int32 equip_config_id	= 7;
+	int64 equip_uniqid		= 8;
+	int32 equip_idx	= 9;
+}
+
+// 鬼宠卸下八卦牌
+message PBGhostTakeOffEquipReqCmd
+{
+	int64 uid		= 1;
+	int64 ghost_uniqid	= 2; // 宠唯一id
+	string bag_name	= 3; // 背包名
+	int32 takeoff_config_id	= 4; // 准备卸下的装备配置id
+	int64 takeoff_uniqid	= 5; // 准备卸下的装备唯一id
+	int32 takeoff_idx		= 6; // 卸下的位置
+}
+
+message PBGhostTakeOffEquipRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int64 ghost_uniqid	= 4; // 角色id
+	string bag_name	= 5; // 背包名
+	int32 takeoff_config_id	= 6; // 准备卸下的装备配置id
+	int64 takeoff_uniqid	= 7; // 准备卸下的装备唯一id
+	int32 takeoff_idx		= 8; // 卸下的位置
+}
+
+// 鬼宠更换皮肤
+message PBGhostWearSkinReqCmd
+{
+	int64 uid		= 1;
+	int32 ghost_config_id	= 2; // 鬼宠id
+	int32 skin	= 3;// 穿戴皮肤
+}
+
+message PBGhostWearSkinRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 ghost_config_id	= 4; // 鬼宠id
+	int32 skin	= 5;// 穿戴皮肤
+}

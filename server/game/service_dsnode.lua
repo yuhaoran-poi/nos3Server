@@ -26,7 +26,9 @@ local PTYPE_D2S = GameDef.PTYPE_D2S
 ---@field scripts dsnode_scripts
 local context = {
     dsid = 0,
+    ds_type = 0,
     net_id = 0,
+---@diagnostic disable-next-line: missing-fields
     scripts = {},
     ---other service address
     --addr_room = 0
@@ -130,6 +132,11 @@ if moon.queryservice("db_game") > 0 then
 end
 context.addr_center = moon.queryservice("center")
 context.addr_auth = moon.queryservice("auth")
+
+context.addr_db_redis = moon.queryservice("db_user")
+if moon.queryservice("db_game") > 0 then
+    context.addr_db_user = moon.queryservice("db_game")
+end
 
 --context.S2D = function(cmd_code, mtable)
 --    moon.raw_send('S2D', context.addr_dgate, protocol.encode(context.net_id, cmd_code, mtable))

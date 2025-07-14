@@ -30,9 +30,7 @@ function Citymgr.Init()
     context.waitds_citys = {} -- 等待中主城列表
     context.addr_db_server = moon.queryservice("db_server")
 
-    -- for i = 1, 1 do
-    --     Citymgr.CreateCity()
-    -- end
+    Citymgr.CreateCity()
     -- 新增定时器轮询
     moon.async(function()
         while true do
@@ -48,7 +46,7 @@ end
 function Citymgr.CheckWaitDSCitys()
     local now = moon.time()
     local scope <close> = lock_wait()
-    moon.debug(string.format("CheckWaitDSCitys time:%d", now))
+    -- moon.debug(string.format("CheckWaitDSCitys time:%d", now))
 
     local function allocate_cb(rsp_data)
         if not rsp_data or not rsp_data.error or rsp_data.error ~= "success" then
@@ -100,6 +98,7 @@ function Citymgr.CheckWaitDSCitys()
                     moon.error(string.format("allocate_cb rsp_data:\n%s", json.pretty_encode(rsp_data)))
                     v.failcnt = v.failcnt + 1
                 else
+                    moon.info(string.format("allocate_cb rsp_data:\n%s", json.pretty_encode(rsp_data)))
                     v.ds_ip = ret.ds_ip
                     v.region = ret.region
                     v.serverssion = ret.serverssion
@@ -117,6 +116,7 @@ function Citymgr.CheckWaitDSCitys()
                     moon.error(string.format("query_cb rsp_data:\n%s", json.pretty_encode(rsp_data)))
                     v.failcnt = v.failcnt + 1
                 else
+                    moon.info(string.format("query_cb rsp_data:\n%s", json.pretty_encode(rsp_data)))
                     v.ds_address = ret
                     
                     v.status = 2
@@ -131,7 +131,6 @@ function Citymgr.CheckWaitDSCitys()
     local allocated_citys = {}
     local fail_citys = {}
     for k, v in pairs(context.waitds_citys) do
-        
         if v.status == 2 then
             allocated_citys[k] = v
         elseif v.failcnt > 5 then
@@ -144,7 +143,7 @@ function Citymgr.CheckWaitDSCitys()
     for cityid, _ in pairs(fail_citys) do
         context.waitds_citys[cityid] = nil
     end
-
+    moon.error(string.format("allocated_citys:\n%s", json.pretty_encode(allocated_citys)))
     return allocated_citys
 end
 
@@ -217,8 +216,8 @@ function Citymgr.CheckCityRun()
         Citymgr.DestroyCity(cityid)
     end
 
-    if #canEnterRoom <= 1 then
-        --Citymgr.CreateCity()
+    if #canEnterRoom + table.size(context.waitds_citys) < 1 then
+        Citymgr.CreateCity()
     end
 end
 
@@ -245,8 +244,9 @@ function Citymgr.CreateCity()
     local city_str = crypt.base64encode(pbdata)
     local allocate_data = {
         fleet = context.conf.fleet,
-        city = city_str,
+        room = city_str,
     }
+    moon.info(string.format("CreateCity allocate_data =\n%s", json.pretty_encode(allocate_data)))
     Citymgr.AddWaitDSCitys(cityid, json.encode(allocate_data))
 end
 
@@ -264,17 +264,17 @@ function Citymgr.DestroyCity(cityid)
 end
 
 function Citymgr.ConnectCity(req)
-    return { code = ErrorCode.None, error = "连接主城成功" }
-
-    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    -- if not context.citys[req.cityid] then
-    --     return { code = ErrorCode.CityNotFound, error = "主城不存在" }
-    -- end
-
-    -- local city = context.citys[req.cityid]
-    -- city.nid = req.nid
-    -- city.addr_dsnode = req.addr_dsnode
     -- return { code = ErrorCode.None, error = "连接主城成功" }
+
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if not context.citys[req.cityid] then
+        return { code = ErrorCode.CityNotFound, error = "主城不存在" }
+    end
+
+    local city = context.citys[req.cityid]
+    city.nid = req.nid
+    city.addr_dsnode = req.addr_dsnode
+    return { code = ErrorCode.None, error = "连接主城成功" }
 end
 
 function Citymgr.ApplyLoginToCity(uid)
@@ -317,20 +317,20 @@ function Citymgr.ApplyLoginToCity(uid)
         return { code = ErrorCode.CityAlreadyInCity, error = "已在其他主城", cityid = context.uid_cityid[uid] }
     end
 
-    -- local res = findFreeCity()
-    -- if not res then
-    --     return { code = ErrorCode.CityNotFound, error = "没有空闲主城" }
-    -- end
+    local res = findFreeCity()
+    -- local res = {
+    --     code = ErrorCode.None,
+    --     error = "允许加入",
+    --     cityid = 1,
+    --     region = "default",
+    --     ds_address = "192.168.2.31-8888",
+    --     ds_ip = "192.168.2.31",
+    -- }
+    if not res then
+        return { code = ErrorCode.CityNotFound, error = "没有空闲主城" }
+    end
 
-    -- return res
-    return {
-        code = ErrorCode.None,
-        error = "允许加入",
-        cityid = 1,
-        region = "",
-        ds_address = "localhost",
-        ds_ip = "localhost",
-    }
+    return res
 end
 
 function Citymgr.PlayerEnterCity(req)

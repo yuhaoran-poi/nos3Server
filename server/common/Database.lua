@@ -3,6 +3,7 @@ local json = require("json")
 local redisd = require("redisd")
 local uuid = require("uuid")
 local protocol = require("common.protocol_pb")
+local crypt = require("crypt")
  
  
 
@@ -237,6 +238,31 @@ function _M.RedisSetUserAttr(addr_db, uid, user_attr)
     redis_send(addr_db, "HMSET", "user_attr_" .. uid, table.unpack(tmp))
 end
 
+function _M.RedisGetSimpleUserAttr(addr_db, uids)
+    local res, err = redis_call(addr_db, "HMGET", "user_simple_attr", table.unpack(uids))
+    if err then
+        error("RedisGetSimpleUserAttr failed:" .. tostring(err))
+    end
+    local uids_attrs = {}
+    if res and #res > 0 then
+        moon.warn(string.format("RedisGetSimpleUserAttr res = %s", json.pretty_encode(res)))
+        for i = 1, #res, 2 do
+            uids_attrs[res[i]] = json.decode(res[i + 1] or "null")
+        end
+    end
+
+    return uids_attrs
+end
+
+function _M.RedisSetSimpleUserAttr(addr_db, simple_user_attrs)
+    local tmp = {}
+    for uid, simple_user_attr in pairs(simple_user_attrs) do
+        table.insert(tmp, uid)
+        table.insert(tmp, json.encode(simple_user_attr))
+    end
+    redis_send(addr_db, "HSET", "user_simple_attr", table.unpack(tmp))
+end
+
 -- 新增分布式会话管理（核心改造点）
 function _M.create_session(addr_db, uid)
     local session_id = moon.md5(tostring(uid)..moon.time()) -- 使用框架API生成全局唯一会话ID
@@ -328,7 +354,8 @@ function _M.loaduser_attr(addr, uid)
 
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local _, tmp_data = protocol.decodewithname("PBUserAttr", res[1].value)
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBUserAttr", pbdata)
         return tmp_data
     end
 
@@ -339,13 +366,14 @@ function _M.saveuser_attr(addr, uid, data)
     assert(data)
 
     local pbname, pb_data = protocol.encodewithname("PBUserAttr", data)
+    local pbvalue = crypt.base64encode(pb_data)
     local data_str = jencode(data)
 
     local cmd = string.format([[
         INSERT INTO mgame.user_attr (uid, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], uid, pb_data, data_str, pb_data, data_str)
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
     return moon.call("lua", addr, cmd)
 end
 
@@ -413,7 +441,7 @@ function _M.search_rooms(addr_db, conditions, page, page_size)
         if #sets == 0 then return { total = 0, data = {} } end
 
         redis_send(addr_db, "SINTERSTORE", temp_key, table.unpack(sets))
-        redis_send(addr_db, "EXPIRE", temp_key, 600)
+        redis_send(addr_db, "EXPIRE", temp_key, 10)
     end
 
     -- 分页查询
@@ -515,7 +543,8 @@ function _M.load_guildinfo(addr, guild_id)
     ]], guild_id)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local _, tmp_data = protocol.decodewithname("PBGuildInfoDB", res[1].value)
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBGuildInfoDB", pbdata)
         return tmp_data
     end
     print("load_guildinfo failed", guild_id, err)
@@ -527,7 +556,8 @@ function _M.load_guildshop(addr, guild_id)
     ]], guild_id)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local _, tmp_data = protocol.decodewithname("PBGuildShopDB", res[1].value)
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBGuildShopDB", pbdata)
         return tmp_data
     end
     print("load_guildshop failed", guild_id, err)
@@ -539,7 +569,8 @@ function _M.load_guildbag(addr, guild_id)
     ]],guild_id)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local _, tmp_data = protocol.decodewithname("PBGuildBagDB", res[1].value)
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBGuildBagDB", pbdata)
         return tmp_data
     end
     print("load_guildbag failed", guild_id, err)
@@ -551,7 +582,8 @@ function _M.load_guildrecord(addr, guild_id)
     ]], guild_id)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local _, tmp_data = protocol.decodewithname("PBGuildRecordDB", res[1].value)
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBGuildRecordDB", pbdata)
         return tmp_data
     end
     print("load_guildrecord failed", guild_id, err)
@@ -562,11 +594,12 @@ function _M.save_guildinfo(addr, guild_id, data)
 
     local data_str = jencode(data)
     local _, pbdata = protocol.encodewithname("PBGuildInfoDB", data)
+    local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.c_guild (guildId, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], guild_id, pbdata, data_str, pbdata, data_str)
+    ]], guild_id, pbvalue, data_str, pbvalue, data_str)
     return moon.call("lua", addr, cmd)
 end
 function _M.save_guildshop(addr, guild_id, data)
@@ -574,11 +607,12 @@ function _M.save_guildshop(addr, guild_id, data)
 
     local data_str = jencode(data)
     local _, pbdata = protocol.encodewithname("PBGuildShopDB", data)
+    local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.c_guild_shop (guildId, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], guild_id, pbdata, data_str, pbdata, data_str)
+    ]], guild_id, pbvalue, data_str, pbvalue, data_str)
     return moon.call("lua", addr, cmd)
 end
 
@@ -587,11 +621,12 @@ function _M.save_guildbag(addr, guild_id, data)
 
     local data_str = jencode(data)
     local _, pbdata = protocol.encodewithname("PBGuildBagDB", data)
+    local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.c_guild_bag (guildId, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], guild_id, pbdata, data_str, pbdata, data_str)
+    ]], guild_id, pbvalue, data_str, pbvalue, data_str)
     return moon.call("lua", addr, cmd)
 end
 
@@ -600,11 +635,12 @@ function _M.save_guildrecord(addr, guild_id, data)
 
     local data_str = jencode(data)
     local _, pbdata = protocol.encodewithname("PBGuildRecordDB", data)
+    local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.c_guild_record (guildId, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], guild_id, pbdata, data_str, pbdata, data_str)
+    ]], guild_id, pbvalue, data_str, pbvalue, data_str)
     return moon.call("lua", addr, cmd)
 end
 
@@ -636,14 +672,16 @@ function _M.saveuserbags(addr, uid, bags_data)
         local data_str = jencode(bagData)
         local _, pbdata = protocol.encodewithname("PBBag", bagData)
         if data_str and pbdata then
+            local pbvalue = crypt.base64encode(pbdata)
             had_param = true
 
             str_param1 = str_param1 .. ", " .. bagTypeName .. ", " .. bagTypeName.. "_json"
-            str_param2 = str_param2 .. ", '" .. pbdata .. "', '" .. data_str .. "'"
+            str_param2 = str_param2 .. ", '" .. pbvalue .. "', '" .. data_str .. "'"
             if str_param3 ~= "" then
                 str_param3 = str_param3.. ", "
             end
-            str_param3 = str_param3 .. " " .. bagTypeName .. "='" .. pbdata .. "', " .. bagTypeName .. "_json='" .. data_str .. "'"
+            str_param3 = str_param3 ..
+            " " .. bagTypeName .. "='" .. pbvalue .. "', " .. bagTypeName .. "_json='" .. data_str .. "'"
         end
     end
     if not had_param then
@@ -678,7 +716,8 @@ function _M.loaduserbags(addr, uid, bags_id)
         local bag_res = {}
         for bagTypeName, _ in pairs(bags_id) do
             if sql_res[1][bagTypeName] then
-                local _, tmp_data = protocol.decodewithname("PBBag", sql_res[1][bagTypeName])
+                local pbdata = crypt.base64decode(sql_res[1][bagTypeName])
+                local _, tmp_data = protocol.decodewithname("PBBag", pbdata)
                 if tmp_data then
                     bag_res[bagTypeName] = tmp_data
                 end
@@ -697,7 +736,8 @@ function _M.loaduserroles(addr, uid)
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local _, tmp_data = protocol.decodewithname("PBUserRoleDatas", res[1].value)
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBUserRoleDatas", pbdata)
         return tmp_data
     end
     print("loaduserroles failed", uid, err)
@@ -709,11 +749,12 @@ function _M.saveuserroles(addr, uid, data)
 
     local data_str = jencode(data)
     local _, pbdata = protocol.encodewithname("PBUserRoleDatas", data)
+    local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.roles (uid, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], uid, pbdata, data_str, pbdata, data_str)
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
 
     return moon.send("lua", addr, cmd)
 end
@@ -724,7 +765,8 @@ function _M.loaduserghosts(addr, uid)
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local _, tmp_data = protocol.decodewithname("PBUserGhostDatas", res[1].value)
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBUserGhostDatas", pbdata)
         return tmp_data
     end
     print("loaduserghosts failed", uid, err)
@@ -736,11 +778,12 @@ function _M.saveuserghosts(addr, uid, data)
 
     local data_str = jencode(data)
     local _, pbdata = protocol.encodewithname("PBUserGhostDatas", data)
+    local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.ghosts (uid, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], uid, pbdata, data_str, pbdata, data_str)
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
 
     return moon.send("lua", addr, cmd)
 end
@@ -751,7 +794,8 @@ function _M.loaduseritemimage(addr, uid)
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local _, tmp_data = protocol.decodewithname("PBUserImage", res[1].value)
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBUserImage", pbdata)
         return tmp_data
     end
     print("loaduseritemimage failed", uid, err)
@@ -763,11 +807,12 @@ function _M.saveuseritemimage(addr, uid, data)
 
     local data_str = jencode(data)
     local _, pbdata = protocol.encodewithname("PBUserImage", data)
+    local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.itemimages (uid, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], uid, pbdata, data_str, pbdata, data_str)
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
 
     return moon.send("lua", addr, cmd)
 end
@@ -778,7 +823,8 @@ function _M.loadusercoins(addr, uid)
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local _, tmp_data = protocol.decodewithname("PBUserCoins", res[1].value)
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBUserCoins", pbdata)
         return tmp_data
     end
     print("loadusercoins failed", uid, err)
@@ -791,11 +837,12 @@ function _M.saveusercoins(addr, uid, data)
 
     local data_str = jencode(data)
     local _, pbdata = protocol.encodewithname("PBUserCoins", data)
+    local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.coins (uid, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], uid, pbdata, data_str, pbdata, data_str)
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
 
     return moon.send("lua", addr, cmd)
 end
@@ -807,6 +854,65 @@ function _M.ItemChangeLog(addr, uid, item_id, change_num, before_num, after_num,
         VALUES (%d, %d, %d, %d, %d, %d, '%s');
     ]], uid, item_id, change_num, before_num, after_num, reason, reason_detail)
     moon.send("lua", addr, cmd)
+end
+
+function _M.loadfriends(addr, uid)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.friends WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBUserFriendDatas", pbdata)
+        return tmp_data
+    end
+    print("loadfriends failed", uid, err)
+    return nil
+end
+
+function _M.savefriends(addr, uid, data)
+    assert(data)
+
+    local data_str = jencode(data)
+    local _, pbdata = protocol.encodewithname("PBUserRoleDatas", data)
+    local pbvalue = crypt.base64encode(pbdata)
+    local cmd = string.format([[
+        INSERT INTO mgame.friends (uid, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
+
+    return moon.send("lua", addr, cmd)
+end
+
+-- 好友离线数据前缀常量
+local FRIEND_PREFIX = "friend:"
+
+function _M.RedisAddFriendApply(addr_db_redis, uid, apply_uid, apply_data)
+    -- 获取旧值
+    local apply_values = {}
+    local old_json, err = redis_call(addr_db_redis, "MGET", FRIEND_PREFIX .. uid)
+    if old_json and next(old_json) ~= nil then
+        apply_values = json.decode(old_json[1])
+    end
+    apply_values[apply_uid] = apply_data
+
+    -- 存储新数据
+    redis_send(addr_db_redis, "MSET", FRIEND_PREFIX .. uid, json.encode(apply_values))
+end
+
+function _M.RedisGetFriendApply(addr_db_redis, uid)
+    local apply_values = {}
+    local old_json, err = redis_call(addr_db_redis, "MGET", FRIEND_PREFIX .. uid)
+    if old_json and next(old_json) ~= nil then
+        apply_values = json.decode(old_json[1])
+    end
+    return apply_values
+end
+
+function _M.RedisDelFriendApply(addr_db_redis, uid)
+    -- 删除主数据
+    redis_send(addr_db_redis, "DEL", FRIEND_PREFIX .. uid)
 end
 
 return _M

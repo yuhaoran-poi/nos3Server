@@ -19,7 +19,7 @@ local context ={
 }
 
 setup(context)
-context.addr_db_redis = moon.queryservice("db_user")
+context.addr_db_redis = moon.queryservice("db_mgr")
 if moon.queryservice("db_game") > 0 then
     context.addr_db_game = moon.queryservice("db_game")
 end

@@ -12,6 +12,7 @@ local ItemDef = require("common.def.ItemDef")
 ---@type user_context
 local context = ...
 local scripts = context.scripts
+local AbilityTagIdMin = 1000000
 
 -- local ItemType = {
 --     ALL = 1,
@@ -48,7 +49,26 @@ function Bag.Start()
         bagdata[BagDef.BagType.Consume].bag_item_type = scripts.ItemDefine.ItemBagType.CONSUME
         bagdata[BagDef.BagType.Booty].bag_item_type = scripts.ItemDefine.ItemBagType.ALL
 
+        local init_cfg = GameCfg.Init[1]
+        if not init_cfg then
+            return { code = ErrorCode.ConfigError, error = "no init_cfg" }
+        end
         scripts.UserModel.SetBagData(bagdata)
+
+        local init_items = {}
+        local change_log = {}
+        for k, v in pairs(init_cfg.item) do
+            local bigType = scripts.ItemDefine.GetItemPosType(k)
+            if bigType == scripts.ItemDefine.EItemBigType.StackItem
+                or bigType == scripts.ItemDefine.EItemBigType.UnStackItem
+                or bigType == scripts.ItemDefine.EItemBigType.UniqueItem then
+                init_items[k] = { count = v }
+            end
+        end
+        if table.size(init_items) > 0 then
+            scripts.Bag.AddItems(BagDef.BagType.Cangku, init_items, {}, change_log)
+        end
+
         Bag.SaveBagsNow(bagTypes)
     end
 
@@ -61,7 +81,27 @@ function Bag.Start()
     if not coinsdata then
         coinsdata = BagDef.newPBUserCoins()
 
+        local init_cfg = GameCfg.Init[1]
+        if not init_cfg then
+            return { code = ErrorCode.ConfigError, error = "no init_cfg" }
+        end
         scripts.UserModel.SetCoinsData(coinsdata)
+
+        local init_coins = {}
+        local change_log = {}
+        for k, v in pairs(init_cfg.item) do
+            local bigType = scripts.ItemDefine.GetItemPosType(k)
+            if bigType == scripts.ItemDefine.EItemBigType.Coin then
+                init_coins[k] = {
+                    coin_id = k,
+                    count = v,
+                }
+            end
+        end
+        if table.size(init_coins) > 0 then
+            scripts.Bag.DealCoins(init_coins, change_log)
+        end
+
         Bag.SaveCoinsNow()
     end
 
@@ -278,22 +318,18 @@ function Bag.SaveAndLog(bagTypes, change_logs)
                     Bag.dataMap[loginfo.new_config_id][bagType].allCount = Bag.dataMap
                         [loginfo.new_config_id][bagType].allCount + loginfo.new_count
 
-                    if loginfo.old_config_id ~= loginfo.new_config_id
-                        or loginfo.old_uniqid ~= loginfo.new_uniqid then
-                        if Bag.dataMap[loginfo.old_config_id]
-                            and Bag.dataMap[loginfo.old_config_id][bagType] then
-                            if loginfo.old_uniqid ~= 0 then
-                                Bag.dataMap[loginfo.old_config_id][bagType].uniqid_pos[loginfo.old_uniqid] = nil
-                            else
-                                Bag.dataMap[loginfo.old_config_id][bagType].pos_count[pos] = nil
-                            end
-                        end
-
-                        if loginfo.new_uniqid ~= 0 then
-                            Bag.dataMap[loginfo.new_config_id][bagType].uniqid_pos[loginfo.new_uniqid] = pos
+                    if Bag.dataMap[loginfo.old_config_id]
+                        and Bag.dataMap[loginfo.old_config_id][bagType] then
+                        if loginfo.old_uniqid ~= 0 then
+                            Bag.dataMap[loginfo.old_config_id][bagType].uniqid_pos[loginfo.old_uniqid] = nil
                         else
-                            Bag.dataMap[loginfo.new_config_id][bagType].pos_count[pos] = loginfo.log_type
+                            Bag.dataMap[loginfo.old_config_id][bagType].pos_count[pos] = nil
                         end
+                    end
+                    if loginfo.new_uniqid ~= 0 then
+                        Bag.dataMap[loginfo.new_config_id][bagType].uniqid_pos[loginfo.new_uniqid] = pos
+                    else
+                        Bag.dataMap[loginfo.new_config_id][bagType].pos_count[pos] = loginfo.new_count
                     end
 
                     -- 去掉已经为0的道具格子
@@ -541,6 +577,25 @@ function Bag.AddUniqItem(bagType, baginfo, itemId, uniqid, itype, logs)
     return ErrorCode.BagFull
 end
 
+function Bag.AddUniqItemData(bagType, baginfo, item_data, logs)
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if not item_data or not item_data.common_info then
+        return ErrorCode.ItemNotExist
+    end
+
+    -- 处理物品记录
+    for pos = 1, baginfo.capacity do
+        if not baginfo.items[pos] then
+            baginfo.items[pos] = table.copy(item_data)
+            Bag.AddLog(logs, pos, BagDef.LogType.ChangeNum, 0, 0, 0)
+
+            return ErrorCode.None, pos
+        end
+    end
+
+    return ErrorCode.BagFull
+end
+
 function Bag.DelUniqItem(bagType, baginfo, itemId, uniqid, pos, logs)
     -- 参数校验
     if not baginfo.items[pos] then
@@ -548,7 +603,7 @@ function Bag.DelUniqItem(bagType, baginfo, itemId, uniqid, pos, logs)
     end
     if baginfo.items[pos].common_info.config_id ~= itemId
         or baginfo.items[pos].common_info.uniqid ~= uniqid
-        or baginfo.items[pos].common_info.item_count == 1 then
+        or baginfo.items[pos].common_info.item_count ~= 1 then
         return ErrorCode.ItemNotExist
     end
 
@@ -577,6 +632,7 @@ function Bag.AddMagicItem(bagType, baginfo, itemId, count, change_log)
         itemdata.special_info.magic_item.strong_value = 0
         itemdata.special_info.magic_item.light_cnt = 0
         itemdata.special_info.magic_item.tags = {}
+        itemdata.special_info.magic_item.ability_tag = {}
     end
 
     --添加法器图鉴
@@ -602,6 +658,7 @@ function Bag.AddDiagramsCard(bagType, baginfo, itemId, count, change_log)
         itemdata.special_info.diagrams_item.strong_value = 0
         itemdata.special_info.diagrams_item.light_cnt = 0
         itemdata.special_info.diagrams_item.tags = {}
+        itemdata.special_info.diagrams_item.ability_tag = {}
     end
 
     --添加八卦牌图鉴
@@ -835,7 +892,7 @@ function Bag.DelItems(bagType, del_items, del_unique_items, change_log)
     return ErrorCode.None
 end
 
-function Bag.AddItems(bagType, add_items, change_log)
+function Bag.AddItems(bagType, add_items, add_item_datas, change_log)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
@@ -890,6 +947,13 @@ function Bag.AddItems(bagType, add_items, change_log)
         end
     end
 
+    for uniqid, item_data in pairs(add_item_datas) do
+        err_code = Bag.AddUniqItemData(bagType, baginfo, item_data, change_log[bagType])
+        if err_code ~= ErrorCode.None then
+            return err_code
+        end
+    end
+
     -- 判断图鉴是否需要更新
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local change_image_ids = {}
@@ -909,7 +973,7 @@ function Bag.AddItems(bagType, add_items, change_log)
     end
     -- 发送图鉴更新消息
     if table.size(change_image_ids) > 0 then
-        scripts.ItemImage.UpdateAndSave(change_image_ids)
+        scripts.ItemImage.SaveAndLog(change_image_ids)
     end
 
     return ErrorCode.None
@@ -1207,7 +1271,24 @@ function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos, change_log)
     return ErrorCode.None
 end
 
+---@return integer, PBItemData ? nil
 function Bag.GetOneItemData(bagType, pos)
+    -- 获取数据副本
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata then
+        return ErrorCode.BagNotExist
+    end
+
+    local baginfo = bagdata[bagType]
+    if not baginfo or not baginfo.items[pos] then
+        return ErrorCode.ItemNotExist
+    end
+
+    return ErrorCode.None, table.copy(baginfo.items[pos])
+end
+
+---@return integer, PBItemData ? nil
+function Bag.MutOneItemData(bagType, pos)
     -- 获取数据副本
     local bagdata = scripts.UserModel.GetBagData()
     if not bagdata then
@@ -1222,21 +1303,104 @@ function Bag.GetOneItemData(bagType, pos)
     return ErrorCode.None, baginfo.items[pos]
 end
 
-function Bag.SetOneItemData(bagType, pos, itemdata)
-    -- 获取数据副本
+-- function Bag.SetOneItemData(bagType, pos, itemdata)
+--     -- 获取数据副本
+--     local bagdata = scripts.UserModel.GetBagData()
+--     if not bagdata then
+--         return ErrorCode.BagNotExist
+--     end
+
+--     local baginfo = bagdata[bagType]
+--     if not baginfo then
+--         return ErrorCode.BagNotExist
+--     end
+
+--     baginfo.items[pos] = table.copy(itemdata)
+
+--     return ErrorCode.None, baginfo.items[pos]
+-- end
+
+function Bag.GetBagdata(bags_name)
     local bagdata = scripts.UserModel.GetBagData()
     if not bagdata then
-        return ErrorCode.BagNotExist
+        return { errcode = ErrorCode.BagNotExist }
     end
 
-    local baginfo = bagdata[bagType]
-    if not baginfo then
-        return ErrorCode.BagNotExist
+    local res = {
+        errcode = ErrorCode.None,
+        bag_datas = {}
+    }
+    for _, bag_name in pairs(bags_name) do
+        if bag_name ~= BagDef.BagType.Cangku
+            and bag_name ~= BagDef.BagType.Consume
+            and bag_name ~= BagDef.BagType.Booty then
+            return { errcode = ErrorCode.BagNotExist }
+        end
+
+        if bagdata[bag_name] then
+            res.bag_datas[bag_name] = bagdata[bag_name]
+        end
     end
 
-    baginfo.items[pos] = table.copy(itemdata)
+    return res
+end
 
-    return ErrorCode.None, baginfo.items[pos]
+function Bag.InlayTabooWord(taboo_word_id, inlay_type, uniqid)
+    local err_code, item_data = Bag.MutOneItemData(BagDef.BagType.Cangku, uniqid)
+    if err_code ~= ErrorCode.None or not item_data then
+        return err_code
+    end
+
+    if inlay_type == 1 then
+        if not item_data.special_info
+            or not item_data.special_info.magic_item then
+            return ErrorCode.ItemNotExist
+        end
+    else
+        if not item_data.special_info
+            or not item_data.special_info.diagrams_item then
+            return ErrorCode.ItemNotExist
+        end
+    end
+
+    local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+    local item_cfg = GameCfg.Item[taboo_word_id]
+    if not uniqitem_cfg or not item_cfg then
+        return ErrorCode.ConfigError
+    end
+    if uniqitem_cfg.type4 ~= item_cfg.type4 then
+        return ErrorCode.InlayTypeNotMatch
+    end
+    if inlay_type ~= 1 and uniqitem_cfg.type5 ~= item_cfg.type5 then
+        return ErrorCode.InlayTypeNotMatch
+    end
+
+    -- 扣除道具消耗
+    local cost_items = {}
+    cost_items[taboo_word_id] = {
+        count = 1,
+        pos = 0,
+    }
+    local err_code = Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    if err_code ~= ErrorCode.None then
+        return ErrorCode.ItemNotEnough
+    end
+
+    local bag_change_log = {}
+    local err_code_del = Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, bag_change_log)
+    if err_code_del ~= ErrorCode.None then
+        Bag.RollBackWithChange(bag_change_log)
+        return ErrorCode.ItemNotEnough
+    end
+
+    -- 镶嵌讳字
+    if inlay_type == 1 then
+        item_data.special_info.magic_item.tabooword_id = taboo_word_id
+    else
+        item_data.special_info.diagrams_item.tabooword_id = taboo_word_id
+    end
+
+    return ErrorCode.None, bag_change_log
 end
 
 function Bag.PBBagGetDataReqCmd(req)
@@ -1245,26 +1409,20 @@ function Bag.PBBagGetDataReqCmd(req)
             { code = ErrorCode.ParamInvalid, error = "参数错误", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    local bagdata = scripts.UserModel.GetBagData()
-    if not bagdata then
-        return context.S2C(context.net_id, CmdCode["PBBagGetDataRspCmd"],
-            { code = ErrorCode.BagNotExist, error = "背包未加载", uid = context.uid }, req.msg_context.stub_id)
-    end
-
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local res = {
         code = ErrorCode.None,
         error = "",
         uid = context.uid,
         bag_datas = {},
     }
-    for _, bag_name in pairs(req.msg.bags_name) do
-        if bagdata[bag_name] then
-            res.bag_datas[bag_name] = bagdata[bag_name]
-        end
+    local ret = Bag.GetBagdata(req.msg.bags_name)
+    if ret.errcode ~= ErrorCode.None or table.size(ret.bag_datas) <= 0 then
+        res.code = ret.errcode
+        return context.S2C(context.net_id, CmdCode["PBBagGetDataRspCmd"], res, req.msg_context.stub_id)
+    else
+        res.bag_datas = ret.bag_datas
+        return context.S2C(context.net_id, CmdCode["PBBagGetDataRspCmd"], res, req.msg_context.stub_id)
     end
-    
-    return context.S2C(context.net_id, CmdCode["PBBagGetDataRspCmd"], res, req.msg_context.stub_id)
 end
 
 function Bag.PBBagGetCoinsReqCmd(req)
@@ -1335,9 +1493,9 @@ function Bag.GetSpecialItemFromCommonItem(srcBagType, srcPos, item_id)
     end
 
     local del_items = {}
-    del_items[item_id] = { pos = srcPos, count = -1 }
+    del_items[item_id] = { count = -1, pos = srcPos}
     local add_items = {}
-    add_items[convert_config_id] = { pos = 0, count = 1 }
+    add_items[convert_config_id] = { count = 1, pos = 0 }
     -- 检查道具消耗
     local err_code = Bag.CheckItemsEnough(BagDef.BagType.Cangku, del_items, {})
     if err_code ~= ErrorCode.None then
@@ -1358,7 +1516,7 @@ function Bag.GetSpecialItemFromCommonItem(srcBagType, srcPos, item_id)
         return err_code
     end
     -- 添加道具
-    err_code = Bag.AddItems(BagDef.BagType.Cangku, add_items, change_log)
+    err_code = Bag.AddItems(BagDef.BagType.Cangku, add_items, {}, change_log)
     if err_code ~= ErrorCode.None then
         Bag.RollBackWithChange(change_log)
         return err_code
@@ -1380,10 +1538,12 @@ function Bag.Light(op_itemdata)
     -- 获取当前开光次数和词条
     local cur_light_cnt = 0
     local cur_tags = {}
+    local cur_ability_tag = {}
     if op_itemdata.itype == scripts.ItemDefine.EItemSmallType.MagicItem then
         if op_itemdata.special_info and op_itemdata.special_info.magic_item then
             cur_light_cnt = op_itemdata.special_info.magic_item.light_cnt
             cur_tags = op_itemdata.special_info.magic_item.tags
+            cur_ability_tag = op_itemdata.special_info.magic_item.ability_tag
         else
             return ErrorCode.ItemNotExist
         end
@@ -1392,6 +1552,7 @@ function Bag.Light(op_itemdata)
         if op_itemdata.special_info and op_itemdata.special_info.diagrams_item then
             cur_light_cnt = op_itemdata.special_info.diagrams_item.light_cnt
             cur_tags = op_itemdata.special_info.diagrams_item.tags
+            cur_ability_tag = op_itemdata.special_info.diagrams_item.ability_tag
         else
             return ErrorCode.ItemNotExist
         end
@@ -1435,30 +1596,8 @@ function Bag.Light(op_itemdata)
     end
 
     -- 检查消耗品数量
-    local cost_items = {}
-    local cost_coins = {}
-    for config_id, item_count in pairs(cost_cfg) do
-        local small_type = scripts.ItemDefine.GetItemType(config_id)
-        if small_type == scripts.ItemDefine.EItemSmallType.Coin then
-            if not cost_coins[config_id] then
-                cost_coins[config_id] = {
-                    coin_id = 0,
-                    count = 0,
-                }
-            end
-
-            cost_coins[config_id].count = cost_coins[config_id].count - item_count
-        else
-            if not cost_items[config_id] then
-                cost_items[config_id] = {
-                    count = 0,
-                    pos = 0,
-                }
-            end
-
-            cost_items[config_id].count = cost_items[config_id].count - item_count
-        end
-    end
+    local cost_items, cost_coins = {}, {}
+    scripts.Item.GetItemsFromCfg(cost_cfg, 1, true, cost_items, cost_coins)
     local err_code_items = Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
     if err_code_items ~= ErrorCode.None then
         return err_code_items
@@ -1468,7 +1607,7 @@ function Bag.Light(op_itemdata)
         return err_code_coins
     end
 
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 随机出词条池子
     local id_weight = {}
     for pool_id, pool_weight in pairs(uniqitem_cfg.lightpooltype) do
@@ -1500,12 +1639,34 @@ function Bag.Light(op_itemdata)
             end
         end
     end
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if table.size(cur_ability_tag) == 0 then
+        for pool_id, pool_weight in pairs(uniqitem_cfg.lightpooltype2) do
+            local pool_cfg = GameCfg.AllTagPool[pool_id]
+            if not pool_cfg then
+                return ErrorCode.TagPoolNotExist
+            end
+
+            for tag_id, tag_weight in pairs(pool_cfg.all_tag) do
+                local tag_cfg = GameCfg.AllTag[tag_id]
+                if not tag_cfg then
+                    return ErrorCode.TagNotExist
+                end
+
+                if not id_weight[tag_id] then
+                    id_weight[tag_id] = tag_weight * pool_weight
+                else
+                    id_weight[tag_id] = id_weight[tag_id] + (tag_weight * pool_weight)
+                end
+            end
+        end
+    end
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if table.size(id_weight) <= 0 then
         return ErrorCode.TagNotExist
     end
 
     moon.debug(string.format("cur_tags:\n%s", json.pretty_encode(cur_tags)))
+    moon.debug(string.format("cur_ability_tag:\n%s", json.pretty_encode(cur_ability_tag)))
     moon.debug(string.format("id_weight:\n%s", json.pretty_encode(id_weight)))
     -- 随机词条
     local new_tag_id = scripts.Item.RangeTags(id_weight)
@@ -1547,11 +1708,19 @@ function Bag.Light(op_itemdata)
     moon.debug(string.format("new_tag:\n%s", json.pretty_encode(new_tag)))
     if op_itemdata.itype == scripts.ItemDefine.EItemSmallType.MagicItem then
         op_itemdata.special_info.magic_item.light_cnt = cur_light_cnt + 1
-        table.insert(op_itemdata.special_info.magic_item.tags, new_tag)
+        if new_tag_id >= AbilityTagIdMin then
+            table.insert(op_itemdata.special_info.magic_item.ability_tag, new_tag)
+        else
+            table.insert(op_itemdata.special_info.magic_item.tags, new_tag)
+        end
     elseif op_itemdata.itype == scripts.ItemDefine.EItemSmallType.HumanDiagrams
         or op_itemdata.itype == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
         op_itemdata.special_info.diagrams_item.light_cnt = cur_light_cnt + 1
-        table.insert(op_itemdata.special_info.diagrams_item.tags, new_tag)
+        if new_tag_id >= AbilityTagIdMin then
+            table.insert(op_itemdata.special_info.diagrams_item.ability_tag, new_tag)
+        else
+            table.insert(op_itemdata.special_info.diagrams_item.tags, new_tag)
+        end
     else
         Bag.RollBackWithChange(change_log)
         return ErrorCode.ItemNotExist

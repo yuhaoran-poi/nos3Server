@@ -1,6 +1,11 @@
 local LuaExt = require "common.LuaExt"
 
-local GhostDef = {}
+local GhostDef = {
+    GhostDefine = {
+        GhostID = { Start = 1017000, End = 1017999 },
+        GhostSkin = { Start = 1070000, End = 1119999 },
+    },
+}
 
 local defaultPBSimpleGhostData = {
     config_id = 0,

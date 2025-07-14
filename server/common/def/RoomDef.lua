@@ -1,5 +1,15 @@
 local LuaExt = require "common.LuaExt"
-local RoomDef = {}
+
+local RoomDef = {
+    SyncType = {
+        ModRoomData = 1,    -- 修改房间信息
+        PlayerEnter = 2,    -- 玩家加入
+        PlayerExit = 3,     -- 玩家退出
+        PlayerKick = 4,     -- 玩家被踢出
+        PlayerReady = 5,    -- 玩家改变准备状态
+        PlayerApply = 6,    -- 有玩家申请加入
+    }
+}
 
 local defaultPBRoomSearchInfo = {
     roomid = 0,
@@ -21,7 +31,10 @@ local defaultPBRoomInfo = {
     chapter = 0,
     difficulty = 0,
     state = 0,
-    describe = ""
+    describe = "",
+    map_id = 0,
+    boss_id = 0,
+    master_id = 0,
 }
 
 local defaultPBRoomWholeInfo = {
@@ -30,6 +43,7 @@ local defaultPBRoomWholeInfo = {
     master_name = "",
     players = {},
     apply_list = {},
+    invite_list = {},
 }
 
 ---@return PBRoomSearchInfo

@@ -174,4 +174,16 @@ function UserModel.SetCoinsData(coininfos)
     end
 end
 
+---@return PBUserFriendDatas ? nil
+function UserModel.GetFriends()
+    if DBData and DBData.friends then
+        return DBData.friends
+    end
+    return nil
+end
+
+function UserModel.SetFriends(friendinfos)
+    DBData.friends = friendinfos
+end
+
 return UserModel

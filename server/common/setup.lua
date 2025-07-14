@@ -136,13 +136,18 @@ end
 
 -- 转发发往客户端的消息(只能向客户端转发)
 local function forwardD2C(context, GnId, MessagePack)
+    --moon.warn("GnId = ", GnId)
     if GnId == 0 then
         return
     end
     if not context.NODE then
         context.NODE = math.tointeger(moon.env("NODE"))
     end
+    --moon.warn("context.NODE = ", context.NODE)
     local node, flag, index = extract_gn(GnId)
+    --moon.warn("node = ", node)
+    --moon.warn("flag = ", flag)
+    --moon.warn("index = ", index)
     if context.NODE == node then
         -- 本节点转发
         if flag == 0 then
@@ -177,6 +182,7 @@ local function _internal(context)
                 local addr = moon.queryservice(string.sub(key, 6))
                 if addr == 0 then
                     error("Can not found service: " .. tostring(key))
+                    print(debug.traceback("Error stack trace:", 2))
                 end
                 t[key] = addr
                 return addr
@@ -281,7 +287,7 @@ local function _internal(context)
                 if context.NODE == node then
                     moon.send("lua", addr_user, cmd, ...)
                 else
-                    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+                    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                     cluster.send(node, addr_user, cmd, ...)
                 end
             else
@@ -299,7 +305,7 @@ local function _internal(context)
         local res, err = cluster.call(3999, 'usermgr', "Usermgr.getAddrUserByUid", uid)
         if not res then
             print(err)
-            return
+            return res, err
         end
         local node, addr_user = res.nid, res.addr_user
         if not context.NODE then
@@ -536,6 +542,7 @@ return function(context, sname)
             local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
             local ok, cmd, data = pcall(protocol.decode, buf)
             if not ok then
+                local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 moon.error("protobuffer decode client message failed", cmd)
                 moon.send("lua", context.dgate, "DGate.Kick", dsid)
                 return

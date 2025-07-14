@@ -108,6 +108,8 @@ local ErrorCode = {
     RoomNotOpen = 911,
     ---房间密码错误
     RoomPwdError = 912,
+    ---房间邀请不存在
+    RoomInviteNotFound = 913,
 
     ---公会相关错误码
     ---已在公会中
@@ -192,6 +194,8 @@ local ErrorCode = {
     UserAlreadyLogin = 1204,
     --- 用户不在线
     UserOffline = 1205,
+    --- 用户不存在
+    UserNotExist = 1206,
 
     --聊天相关错误码
     --- 聊天频道已经存在
@@ -301,12 +305,66 @@ local ErrorCode = {
     LightMagicItemFail = 1605,
     --- 开光八卦牌失败
     LightDigramsCardFail = 1606,
+    --- 坚固值不足
+    StrongNotEnough = 1607,
+    --- 耐久度上限
+    DurabilityMax = 1608,
+    --- 道具经验上限
+    ItemMaxExp = 1609,
+    --- 道具升级消耗不足
+    ItemUpLvCostNotExist = 1610,
+    --- 道具星级上限
+    ItemMaxStar = 1611,
+    --- 合成失败
+    CompositeFail = 1612,
+    --- 镶嵌类型错误
+    InlayTypeInvalid = 1613,
+    --- 镶嵌目标类型不匹配
+    InlayTypeNotMatch = 1614,
 
     --角色相关错误码
     --- 角色不存在
     RoleNotExist = 1701,
     --- 鬼宠不存在
     GhostNotExist = 1702,
+    --- 角色经验上限
+    RoleMaxExp = 1703,
+    --- 鬼宠经验上限
+    GhostMaxExp = 1704,
+    --- 角色已存在
+    RoleExist = 1705,
+    --- 角色添加失败
+    RoleAddFail = 1706,
+    --- 表情类型不匹配
+    EmojiNotMatch = 1707,
+    --- 技能不存在
+    SkillNotExist = 1708,
+    --- 角色奖励已领取
+    RoleRewardAlreadyGet = 1709,
+    --- 等级经验不足
+    UpExpNotEnough = 1710,
+    --- 真经已学习
+    BookAlreadyStudy = 1711,
+    --- 前置真经未学习
+    BookPreNotStudy = 1712,
+    --- 技能类型不匹配
+    RoleSkillNotMatch = 1713,
+    --- 技能已激活
+    RoleSkillAlreadyActive = 1714,
+    --- 技能不存在
+    RoleSkillNotExist = 1715,
+
+    --角色相关错误码
+    --- 好友申请错误码
+    FriendApplyErr = 1800,
+    --- 好友达到上限
+    FriendLimit = 1801,
+    --- 好友申请达到上限
+    FriendApplyLimit = 1802,
+    --- 已在好友申请列表
+    FriendInApplyList = 1803,
+    --- 已在黑名单
+    FriendInBlackList = 1804,
 }
 
 return ErrorCode

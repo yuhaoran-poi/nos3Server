@@ -7,6 +7,7 @@ local GameCfg = common.GameCfg
 local Database = common.Database
 local protocol = common.protocol
 local ErrorCode = common.ErrorCode
+local RoomDef = require("common.def.RoomDef")
 
 ---@type user_context
 local context = ...
@@ -14,6 +15,16 @@ local scripts = context.scripts
 
 ---@class Room
 local Room = {}
+
+function Room.ForceExitRoom()
+    if not context.roomid or not context.uid then
+        return
+    end
+
+    clusterd.send(3999, "roommgr", "Roommgr.ExitRoom", { uid = context.uid, roomid = context.roomid})
+
+    context.roomid = nil
+end
 
 function Room.PBCreateRoomReqCmd(req)
     if context.roomid then
@@ -72,6 +83,10 @@ function Room.PBSearchRoomReqCmd(req)
         local res = {
             code = ErrorCode.None,
             error = "搜索完成",
+            roomid = req.msg.roomid or 0,
+            chapter = req.msg.chapter or 0,
+            difficulty = req.msg.difficulty or 0,
+            start_idx = req.msg.start_idx or 0,
             search_data = {}
         }
         if result.total > 0 then
@@ -114,7 +129,32 @@ end
 
 function Room.OnRoomInfoSync(sync_msg)
     moon.error("OnRoomInfoSync")
-    print_r(sync_msg)
+    -- print_r(sync_msg)
+    if sync_msg.sync_type == RoomDef.SyncType.PlayerEnter
+     and sync_msg.sync_info and sync_msg.sync_info.players then
+        for _, player_info in pairs(sync_msg.sync_info.players) do
+            if player_info.mem_info and player_info.mem_info.uid == context.uid then
+                context.roomid = sync_msg.roomid
+                moon.info("OnMemberEnter roomid", context.roomid, sync_msg.roomid)
+            end
+        end
+    elseif sync_msg.sync_type == RoomDef.SyncType.PlayerExit
+     and sync_msg.sync_info and sync_msg.sync_info.players then
+        for _, player_info in pairs(sync_msg.sync_info.players) do
+            if player_info.mem_info and player_info.mem_info.uid == context.uid then
+                context.roomid = nil
+                moon.info("OnMemberExit roomid", context.roomid, sync_msg.roomid)
+            end
+        end
+    elseif sync_msg.sync_type == RoomDef.SyncType.PlayerKick
+     and sync_msg.sync_info and sync_msg.sync_info.players then
+        for _, player_info in pairs(sync_msg.sync_info.players) do
+            if player_info.mem_info and player_info.mem_info.uid == context.uid then
+                context.roomid = nil
+                moon.info("OnMemberKick roomid", context.roomid, sync_msg.roomid)
+            end
+        end
+    end
     context.S2C(context.net_id, CmdCode["PBRoomSyncCmd"], sync_msg, 0)
 end
 
@@ -216,6 +256,7 @@ end
 
 function Room.OnMemberEnter(res)
     moon.info("OnMemberEnter uid", context.uid, res.member_data.mem_info.uid)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if res.member_data.mem_info.uid == context.uid then
         context.roomid = res.roomid
         moon.info("OnMemberEnter roomid", context.roomid, res.roomid)
@@ -296,6 +337,63 @@ function Room.OnMemberKick(res)
     context.S2C(context.net_id, CmdCode["PBKickRoomSyncCmd"], res, 0)
 end
 
+function Room.PBInviteRoomReqCmd(req)
+    if not context.roomid or context.roomid ~= req.msg.roomid then
+        return context.S2C(context.net_id, CmdCode["PBInviteRoomRspCmd"], {
+            code = ErrorCode.RoomNotFound,
+            error = "不在目标房间内",
+        }, req.msg_context.stub_id)
+    end
+
+    local res, err = clusterd.call(3999, "roommgr", "Roommgr.InviteMember", req.msg)
+    if err then
+        moon.err("Roommgr.InviteMember err:\n%s", json.pretty_encode(err))
+        return context.S2C(context.net_id, CmdCode["PBInviteRoomRspCmd"], {
+            code = ErrorCode.ServerInternalError,
+            error = "system error",
+        }, req.msg_context.stub_id)
+    end
+    -- 检查req.msg传递
+    return context.S2C(context.net_id, CmdCode["PBInviteRoomRspCmd"], res, req.msg_context.stub_id)
+end
+
+function Room.OnInviteRoomSync(res)
+    context.S2C(context.net_id, CmdCode["PBInviteRoomSyncCmd"], res, 0)
+end
+
+function Room.PBDealInviteRoomReqCmd(req)
+    if context.roomid then
+        return context.S2C(context.net_id, CmdCode["PBDealInviteRoomRspCmd"], {
+            code = ErrorCode.RoomNotFound,
+            error = "你已在房间中",
+        }, req.msg_context.stub_id)
+    end
+
+    local brief_data = scripts.User.GetUsrRoomBriefData()
+    if not brief_data or table.size(brief_data) <= 0 then
+        return context.S2C(context.net_id, CmdCode["PBDealInviteRoomRspCmd"], {
+            code = ErrorCode.ServerInternalError,
+            error = "用户不存在",
+        }, req.msg_context.stub_id)
+    end
+    local res, err = clusterd.call(3999, "roommgr", "Roommgr.DealInvite", {
+        msg = req.msg,
+        invite_info = brief_data,
+    })
+    if err then
+        return context.S2C(context.net_id, CmdCode["PBDealInviteRoomRspCmd"], {
+            code = ErrorCode.ServerInternalError,
+            error = "system error",
+        }, req.msg_context.stub_id)
+    end
+
+    return context.S2C(context.net_id, CmdCode["PBDealInviteRoomRspCmd"], res, req.msg_context.stub_id)
+end
+
+function Room.OnDealInviteRoomSync(res)
+    context.S2C(context.net_id, CmdCode["PBDealInviteRoomSyncCmd"], res, 0)
+end
+
 function Room.PBReadyRoomReqCmd(req)
     if not context.roomid or context.roomid ~= req.msg.roomid then
         return context.S2C(CmdCode.PBReadyRoomRspCmd, {
@@ -338,9 +436,9 @@ function Room.PBGetRoomInfoReqCmd(req)
     end
     if res.member_datas and res.member_datas[1] and res.member_datas[1].mem_info then
         if res.member_datas[1].mem_info.guild_id then
-            moon.error(string.format("Roommgr.GetRoomInfo guild_id:%d", res.member_datas[1].mem_info.guild_id))
+            moon.warn(string.format("Roommgr.GetRoomInfo guild_id:%d", res.member_datas[1].mem_info.guild_id))
         else
-            moon.error(string.format("Roommgr.GetRoomInfo not guild_id"))
+            moon.warn(string.format("Roommgr.GetRoomInfo not guild_id"))
         end
     end
     --print_r(res)

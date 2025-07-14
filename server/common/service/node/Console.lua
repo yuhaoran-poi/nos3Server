@@ -4,7 +4,7 @@ local fs = require("fs")
 local datetime = require("moon.datetime")
 local sharetable = require("sharetable")
 local clusterd = require("cluster")
-local ChatLogic = require("common.Logic.ChatLogic") --聊天逻辑
+local ChatLogic = require("common.logic.ChatLogic") --聊天逻辑
 
 ---@type node_context
 local context = ...

@@ -40,11 +40,30 @@ function Gate.Kick(uid, fd, ignore_socket_event)
         local c = context.uid_map[uid]
         if c then
             socket.close(c.fd)
+
+            -- -- 发送消息通知所在的ds
+            -- local DisconnectGateCmd = {
+            --     srcGnId = c.net_id
+            -- }
+            -- if c.ds_net_id then
+            --     context.S2D(c.ds_net_id, CmdCode["dsgatepb.DisconnectGateCmd"], DisconnectGateCmd, 0)
+            -- end
+            -- if c.fd then
+            --     context.fd_map[c.fd] = nil
+            -- end
+            -- if c.uid then
+            --     context.uid_map[c.uid] = nil -- body
+            -- end
+            -- if c.net_id then
+            --     context.net_id_map[c.net_id] = nil
+            -- end
         end
+
         if ignore_socket_event then
             context.fd_map[c.fd] = nil
             context.uid_map[uid] = nil
             context.net_id_map[c.net_id] = nil
+            moon.error(string.format("Gate.Kick net_id = %d", c.net_id))
         end
     end
 
@@ -75,8 +94,9 @@ function Gate.BindUser(req)
     context.fd_map[req.fd] = c
     context.uid_map[req.uid] = c
     context.net_id_map[req.net_id] = c
+    -- moon.warn(string.format("Gate.BindUser net_id = %d, c.net_id = %d", req.net_id, c.net_id))
     context.auth_watch[req.fd] = nil
-    print(string.format("BindUser fd:%d uid:%d net_id:%d serviceid:%08X", req.fd, req.uid,req.net_id, req.addr_user))
+    moon.info(string.format("BindUser fd:%d uid:%d net_id:%d serviceid:%08X", req.fd, req.uid, req.net_id, req.addr_user))
     return true
 end
 
@@ -87,7 +107,7 @@ function Gate.BindGnId(req)
     }
     context.fd_map[req.fd] = c
     context.net_id_map[req.net_id] = c
-    print(string.format("BindGnId fd:%d net_id:%d ", req.fd, req.net_id))
+    moon.warn(string.format("BindGnId fd:%d net_id:%d ", req.fd, req.net_id))
     return true
 end
 function Gate.ForwardD2C(GnId, MessagePack)

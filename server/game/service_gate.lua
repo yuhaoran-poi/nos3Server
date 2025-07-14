@@ -53,13 +53,13 @@ socket.on("message", function(fd, msg)
             --先校验协议版本号
             if subname == "PBClientLoginReqCmd" then
                 moon.debug(string.format("PBClientLoginReqCmd recv Message:\n%s", json.pretty_encode(submsg)))
-               reqmsg.msg = submsg
-               reqmsg.sign = context.auth_watch[fd]
-               reqmsg.fd = fd
-               reqmsg.addr = socket.getaddress(fd)
-               reqmsg.pull = false
-               reqmsg.isDS = false
-               moon.send("lua", context.addr_auth, subname, reqmsg)
+                reqmsg.msg = submsg
+                reqmsg.sign = context.auth_watch[fd]
+                reqmsg.fd = fd
+                reqmsg.addr = socket.getaddress(fd)
+                reqmsg.pull = false
+                reqmsg.isDS = false
+                moon.send("lua", context.addr_auth, subname, reqmsg)
             else
                 print("client: message", fd, subname, submsg)
             end
@@ -80,6 +80,7 @@ socket.on("message", function(fd, msg)
 end)
 
 socket.on("close", function(fd, msg)
+    moon.warn("client: close", fd, msg)
     local data = moon.decode(msg, "Z")
     context.auth_watch[fd] = nil
     local c = context.fd_map[fd]
@@ -153,6 +154,8 @@ moon.raw_dispatch("D2C",function(msg)
         local c = context.net_id_map[net_id]
         if not c then
             -- 客户端没有找到,如果是ServerForward可以通知服务器删除客户端
+            -- moon.error(string.format("D2C net_id = %d not found", net_id))
+            -- moon.error(string.format("context.net_id_map = %s", json.pretty_encode(context.net_id_map)))
             return
         end
 

@@ -2,6 +2,7 @@
 local moon = require("moon")
 local mysql = require("moon.db.mysql")
 local buffer = require("buffer")
+local json = require "json"
 
 local conf = ...
 
@@ -20,6 +21,22 @@ if conf.name then
         end
     end)
    
+    -- 新增定时器轮询
+    moon.async(function()
+        while true do
+            moon.sleep(30000) -- 每30秒检查一次
+
+            if list.size(dbs) > 0 then
+                local db = list.pop(dbs)
+                local ret = db:ping()
+                if not ret or ret.server_status ~= 2 then
+                    moon.err(string.format("mysql ping err ret:\n%s", json.pretty_encode(ret)))
+                else
+                    list.push(dbs, db)
+                end
+            end
+        end
+    end)
 
     moon.dispatch("lua", function(sender, sessionid, sql)
         -- 如果dbs为空，说明连接池已经满了，等待连接池有空闲连接

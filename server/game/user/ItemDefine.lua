@@ -35,6 +35,8 @@ local ItemDefine = {
     Antique = { start = 625000, End = 629999 },
     HumanDiagrams = { start = 630000, End = 639999 },
     GhostDiagrams = { start = 640000, End = 649999 },
+    RoleSkin = { start = 1020000, End = 1069999 },
+    GhostSkin = { start = 1070000, End = 1119999 },
 
     EItemSmallType = {
         Coin = 1,
@@ -58,6 +60,8 @@ local ItemDefine = {
         Antique = 19,
         HumanDiagrams = 20,
         GhostDiagrams = 21,
+        RoleSkin = 22,
+        GhostSkin = 23,
         Other = 255,
     },
 
@@ -66,6 +70,7 @@ local ItemDefine = {
         StackItem = 2,
         UnStackItem = 3,
         UniqueItem = 4,
+        Skin = 5,
         Other = 255,
     },
 
@@ -118,6 +123,10 @@ function ItemDefine.GetItemType(nConfigId)
         return ItemDefine.EItemSmallType.HumanDiagrams
     elseif nConfigId >= ItemDefine.GhostDiagrams.start and nConfigId <= ItemDefine.GhostDiagrams.End then
         return ItemDefine.EItemSmallType.GhostDiagrams
+    elseif nConfigId >= ItemDefine.RoleSkin.start and nConfigId <= ItemDefine.RoleSkin.End then
+        return ItemDefine.EItemSmallType.RoleSkin
+    elseif nConfigId >= ItemDefine.GhostSkin.start and nConfigId <= ItemDefine.GhostSkin.End then
+        return ItemDefine.EItemSmallType.GhostSkin
     else
         moon.error("GetItemType - unknown config_id:", nConfigId)
         return ItemDefine.EItemSmallType.Other
@@ -136,6 +145,9 @@ function ItemDefine.GetItemPosType(nConfigId)
     elseif nItemType >= ItemDefine.EItemSmallType.MagicItem
         and nItemType <= ItemDefine.EItemSmallType.GhostDiagrams then
         return ItemDefine.EItemBigType.UniqueItem
+    elseif nItemType >= ItemDefine.EItemSmallType.RoleSkin
+        and nItemType <= ItemDefine.EItemSmallType.GhostSkin then
+        return ItemDefine.EItemBigType.Skin
     else
         moon.error("GetItemPosType - unknown config_id:", nConfigId)
         return ItemDefine.EItemBigType.Other

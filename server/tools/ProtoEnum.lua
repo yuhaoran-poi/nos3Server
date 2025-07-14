@@ -90,6 +90,7 @@ local UserAttrType = {
     sum_online_time = "sum_online_time", -- 累计在线时长 单位秒
     pa_flag = "pa_flag", -- 是否禁言等操作
     cur_show_ghost = "cur_show_ghost",
+    is_online = "is_online", -- 是否在线
 }
 
 

@@ -19,15 +19,19 @@ local defaultPBDurabItem = {
 local defaultPBMagicItem = {
     cur_durability = 0,
     strong_value = 0,
+    tabooword_id = 0,
     light_cnt = 0,
     tags = {},
+    ability_tag = {},
 }
 
 local defaultPBDiagramsCard = {
     cur_durability = 0,
     strong_value = 0,
+    tabooword_id = 0,
     light_cnt = 0,
     tags = {},
+    ability_tag = {},
 }
 
 -- 道具数据
@@ -43,11 +47,16 @@ local defaultPBImage = {
     exp = 0,
 }
 
+local defaultPBSkinImage = {
+    config_id = 0,
+}
+
 local defaultPBUserImage = {
     item_image = {},
     magic_item_image = {},
     human_diagrams_image = {},
     ghost_diagrams_image = {},
+    skin_image = {},
 }
 
 --- @return PBItemCommon
@@ -78,6 +87,11 @@ end
 --- @return PBImage
 function ItemDef.newImage()
     return LuaExt.const(table.copy(defaultPBImage))
+end
+
+--- @return PBSkinImage
+function ItemDef.newSkinImage()
+    return LuaExt.const(table.copy(defaultPBSkinImage))
 end
 
 --- @return PBUserImage

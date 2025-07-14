@@ -44,7 +44,6 @@ message PBDurabItem
 {
 	int32	cur_durability	= 1;	//当前耐久度
 	int32	strong_value	= 2;	//坚固值
-	int32	max_durability	= 3;	//最大耐久度
 }
 
 // 法器
@@ -52,9 +51,10 @@ message PBMagicItem
 {
 	int32		cur_durability = 1;	//当前耐久度
 	int32		strong_value = 2;	//耐久度上限
-	int32		light_cnt	= 3;
-	repeated PBTag	tags	= 4;	//随机词条id,最大10条
-	int32	max_durability	= 5;	//最大耐久度
+	int32		tabooword_id	= 3;	//讳字id
+	int32		light_cnt	= 4;	//开光次数
+	repeated PBTag	tags	= 5;	//随机词条id,最大10条
+	repeated PBTag	ability_tag	= 6;	//能力词条
 }
 
 // 八卦牌
@@ -62,8 +62,10 @@ message PBDiagramsCard
 {
 	int32		cur_durability = 1;	//当前耐久度
 	int32		strong_value = 2;	//耐久度上限
-	int32		light_cnt	= 3;
-	repeated PBTag	tags	= 4;	//随机词条id,最大10条
+	int32		tabooword_id	= 3;	//讳字id
+	int32		light_cnt	= 4;	//开光次数
+	repeated PBTag	tags	= 5;	//随机词条id,最大10条
+	repeated PBTag	ability_tag	= 6;	//能力词条
 }
 
 // 镇山之宝
@@ -162,12 +164,33 @@ message PBImage
 	int32 exp			= 3;	//经验值
 }
 
+// 皮肤动作表情图鉴
+message PBSkinImage
+{
+	int32 config_id		= 1;	//配置ID
+}
+
 message PBUserImage
 {
 	map<int32, PBImage> item_image				= 1;	//道具图鉴
 	map<int32, PBImage> magic_item_image		= 2;	//法器图鉴
 	map<int32, PBImage> human_diagrams_image	= 3;	//角色八卦牌图鉴
 	map<int32, PBImage> ghost_diagrams_image	= 4;	//鬼宠八卦牌图鉴
+	map<int32, PBSkinImage> skin_image			= 5;	//皮肤动作表情图鉴
+}
+
+// 客户端获取图鉴数据
+message PBImageGetDataReqCmd
+{
+    int64 uid		= 1;
+}
+
+message PBImageGetDataRspCmd
+{
+    int32   code    = 1; // 服务器验证返回,0成功,其他失败
+    string  error   = 2; // 错误信息
+    int64   uid     = 3;
+    PBUserImage image_data	= 4;
 }
 
 message PBImageUpdateSyncCmd

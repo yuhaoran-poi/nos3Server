@@ -5,6 +5,7 @@ local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local clusterd = require("cluster")
 local json = require "json"
+local UserAttrLogic = require("common.logic.UserAttrLogic")
 
 ---@type user_context
 local context = ...
@@ -27,7 +28,7 @@ function DsNode.Load(req)
                 addr_dsnode = req.addr_dsnode,
             })
             if err or res.code ~= ErrorCode.None then
-                return false, err
+                return res
             end
         end
 
@@ -38,27 +39,29 @@ function DsNode.Load(req)
                 name = req.dsid,
         }
 
+        context.ds_type = req.msg.login_data.ds_type
         context.dsid = req.dsid
         --scripts.UserModel.Create(data)
         ---初始化自己数据
         context.batch_invoke("Init", isnew)
         ---初始化互相引用的数据
         context.batch_invoke("Start")
-        return data
+        return { code = ErrorCode.None, error = "", data = data }
     end
 
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local ok, res = xpcall(fn, debug.traceback, req)
     if not ok then
         return ok, res
     end
 
-    if not res then
+    if not res or res.code ~= ErrorCode.None then
         local errmsg = string.format("ds init failed, can not find ds %d", req.dsid)
         moon.error(errmsg)
         return false, errmsg
     end
 
-    context.net_id = res.net_id
+    context.net_id = res.data.net_id
     return true
 end
 
@@ -193,6 +196,179 @@ function DsNode.PBAddItemsCityPlayerReqCmd(req)
     end
 
     context.S2D(context.net_id, CmdCode["PBAddItemsCityPlayerRspCmd"], { code = res }, req.msg_context.stub_id)
+end
+
+function DsNode.PBGetDsUserAttrReqCmd(req)
+    if not req.msg.dsid or not req.msg.quest_uid then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "no cityid"
+        }
+        context.S2D(context.net_id, CmdCode["PBGetDsUserAttrRspCmd"], ret, req.msg_context.stub_id)
+
+        return
+    end
+
+    local ret = {
+        code = ErrorCode.None,
+        error = "",
+        dsid = req.msg.dsid,
+        quest_uid = req.msg.quest_uid,
+    }
+    local ret_attr = UserAttrLogic.GetOtherUserAttr(context, req.msg.quest_uid)
+    if not ret_attr then
+        ret.code = ErrorCode.UserOffline
+        context.S2D(context.net_id, CmdCode["PBGetDsUserAttrRspCmd"], ret, req.msg_context.stub_id)
+    else
+        ret.info = ret_attr
+        context.S2D(context.net_id, CmdCode["PBGetDsUserAttrRspCmd"], ret, req.msg_context.stub_id)
+    end
+end
+
+function DsNode.PBGetDsUserBagsReqCmd(req)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if not req.msg.dsid or not req.msg.quest_uid then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "no cityid"
+        }
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserBagsRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    local res, err = context.call_user(req.msg.quest_uid, "Bag.GetBagdata", req.msg.bags_name)
+    if not res then
+        moon.error("GetDsUserBags failed:", err)
+        local ret = {
+            code = ErrorCode.UserOffline,
+            error = "no user"
+        }
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserBagsRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    local ret = {
+        code = res.errcode,
+        error = "",
+        dsid = context.dsid,
+        quest_uid = req.msg.quest_uid,
+    }
+    if res.bag_datas and table.size(res.bag_datas) >= 0 then
+        ret.bag_datas = res.bag_datas
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserBagsRspCmd"], ret, req.msg_context.stub_id)
+    else
+        ret.code = res.errcode
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserBagsRspCmd"], ret, req.msg_context.stub_id)
+    end
+end
+
+function DsNode.PBGetDsUserRolesReqCmd(req)
+    if not req.msg.dsid
+        or not req.msg.quest_uid
+        or not req.msg.roleids
+        or table.size(req.msg.roleids) <= 0 then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "no cityid"
+        }
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserRolesRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    local res, err = context.call_user(req.msg.quest_uid, "Role.GetRolesInfo", req.msg.roleids)
+    if not res then
+        moon.error("GetDsUserRoles failed:", err)
+        local ret = {
+            code = ErrorCode.UserOffline,
+            error = "no user"
+        }
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserRolesRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    local ret = {
+        code = res.errcode,
+        error = "",
+        dsid = context.dsid,
+        quest_uid = req.msg.quest_uid,
+    }
+    if res.roles_info and table.size(res.roles_info) >= 0 then
+        ret.role_datas = res.roles_info
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserRolesRspCmd"], ret, req.msg_context.stub_id)
+    else
+        ret.code = res.errcode
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserRolesRspCmd"], ret, req.msg_context.stub_id)
+    end
+end
+
+function DsNode.PBGetDsCreateDataReqCmd(req)
+    if not req.msg.roomid then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "no roomid"
+        }
+        context.S2D(context.net_id, CmdCode["PBGetDsCreateDataRspCmd"], ret, req.msg_context.stub_id)
+
+        return
+    end
+
+    local res, err = clusterd.call(3999, "roommgr", "Roommgr.GetRoomCreateData", {
+        roomid = req.msg.roomid,
+    })
+    if res then
+        moon.warn(string.format("res = %s", json.pretty_encode(res)))
+    end
+    if err then
+        moon.warn(string.format("err = %s", json.pretty_encode(err)))
+    end
+    if res.code == ErrorCode.None then
+        local ret = {
+            code = res.code,
+            error = res.error,
+            roomid = req.msg.roomid,
+            room_str = res.room_str,
+        }
+        context.S2D(context.net_id, CmdCode["PBGetDsCreateDataRspCmd"], ret, req.msg_context.stub_id)
+    else
+        local ret = {
+            code = res.code,
+            error = res.error,
+            roomid = req.msg.roomid,
+        }
+        context.S2D(context.net_id, CmdCode["PBGetDsCreateDataRspCmd"], ret, req.msg_context.stub_id)
+    end
+end
+
+function DsNode.PBGetDsUserImageReqCmd(req)
+    if not req.msg.dsid or not req.msg.quest_uid then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "no cityid"
+        }
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserImageRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    local res, err = context.call_user(req.msg.quest_uid, "ItemImage.GetImagesInfo")
+    if not res then
+        moon.error("GetDsUserRoles failed:", err)
+        local ret = {
+            code = ErrorCode.UserOffline,
+            error = "no user"
+        }
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserImageRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    --moon.warn(string.format("GetImagesInfo res = %s", json.pretty_encode(res)))
+
+    local ret = {
+        code = res.errcode,
+        error = "",
+        dsid = context.dsid,
+        quest_uid = req.msg.quest_uid,
+    }
+    if res.errcode == ErrorCode.None and res.image_data then
+        ret.image_data = res.image_data
+        --moon.warn(string.format("GetImagesInfo ret = %s", json.pretty_encode(ret)))
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserImageRspCmd"], ret, req.msg_context.stub_id)
+    else
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserImageRspCmd"], ret, req.msg_context.stub_id)
+    end
 end
 
 return DsNode

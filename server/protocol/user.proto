@@ -51,6 +51,7 @@ message PBUserAttr
 	int64 sum_online_time = 19;	//累计在线时长 单位秒
 	int32 pa_flag  = 20;		// 是否禁言等操作
 	PBSimpleGhostData cur_show_ghost	= 21;
+	int32 is_online = 22;	//是否在线
 }
 
 // 客户端请求简略数据
@@ -62,6 +63,22 @@ message PBClientGetUsrSimInfoReqCmd
 
 // 客户端请求简略数据 返回信息
 message PBClientGetUsrSimInfoRspCmd
+{
+    int32 code        = 1; // 服务器验证返回,0成功,其他失败
+    string error      = 2; // 错误信息
+    int64 uid         = 3; // 用户ID
+    PBUserAttr info = 4;	// 简略信息
+}
+
+// 客户端请求账号属性全数据
+message PBClientGetAllUserAttrReqCmd
+{
+    // 协议数据
+    int64 uid             = 1;
+}
+
+// 客户端请求账号属性全数据 返回信息
+message PBClientGetAllUserAttrRspCmd
 {
     int32 code        = 1; // 服务器验证返回,0成功,其他失败
     string error      = 2; // 错误信息
@@ -131,7 +148,7 @@ message PBClientLightRspCmd
 	int64 uniqid	= 9;
 }
 
-// 客户端请求--道具升级
+// 客户端请求--道具、角色、鬼宠升级
 message PBClientItemUpLvReqCmd
 {
 	int64 uid		= 1;
@@ -148,11 +165,46 @@ message PBClientItemUpLvRspCmd
 	int32 add_exp	= 5;
 }
 
+// 客户端请求--使用道具升级
+message PBUseItemUpLvReqCmd
+{
+	int64 uid		= 1;
+	int32 target_id = 2;
+	int32 cost_id	= 3;
+	int32 cost_num	= 4;
+}
+
+message PBUseItemUpLvRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 target_id = 4;
+	int32 cost_id	= 5;
+	int32 cost_num	= 6;
+}
+
+// 客户端请求--道具升星
+message PBClientItemUpStarReqCmd
+{
+	int64 uid		= 1;
+	int32 config_id = 2;
+}
+
+message PBClientItemUpStarRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 config_id = 4;
+}
+
 // 客户端请求--道具维修
 message PBClientItemRepairReqCmd
 {
 	int64 uid			= 1;
-	int64 repair_uniqid	= 2;
+	int64 repair_uniqid	= 2;	// 要修复的装备唯一id
+	int32 pos			= 3;	// 装备所在的格子号
 }
 
 message PBClientItemRepairRspCmd
@@ -161,6 +213,25 @@ message PBClientItemRepairRspCmd
     string error	= 2; // 错误信息
 	int64 uid			= 3;
 	int64 repair_uniqid	= 4;
+	int32 pos			= 5;	// 装备所在的格子号
+}
+
+// 客户端请求他人简略信息
+message PBGetOtherSimpleReqCmd
+{
+    // 协议数据
+    int64 uid		= 1;
+	int64 quest_uid	= 2;
+}
+
+// 客户端请求他人简略信息 返回信息
+message PBGetOtherSimpleRspCmd
+{
+    int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+    int64 uid			= 3; // 自己的uid
+	int64 quest_uid		= 4; // 他人uid
+    PBUserAttr info		= 5; // 简略信息
 }
 
 // 客户端请求他人详细信息
@@ -178,5 +249,75 @@ message PBGetOtherDetailRspCmd
     string error		= 2; // 错误信息
     int64 uid			= 3; // 自己的uid
 	int64 quest_uid		= 4; // 他人uid
-    PBUserAttr info		= 5; // 简略信息
+    PBUserAttr info		= 5; // 账号信息
+	PBRoleData role_data	= 6; // 角色数据
+	PBGhostData ghost_data	= 7; // 鬼宠数据
+}
+
+// 客户端使用皮肤礼包
+message PBUseSkinGiftReqCmd
+{
+    int64 uid			= 1; // 自己的uid
+    int32 gift_id		= 3; // 礼包id
+}
+
+message PBUseSkinGiftRspCmd
+{
+    int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+    int64 uid			= 3; // 自己的uid
+    int32 gift_id		= 4; // 礼包id
+}
+
+// 客户端固定合成
+message PBSureCompositeReqCmd
+{
+	int64 uid			= 1;
+	int32 composite_id	= 2; // 合成id
+}
+
+message PBSureCompositeRspCmd
+{
+	int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+	int64 uid			= 3;
+	int32 composite_id	= 4; // 合成id
+}
+
+// 客户端随机合成
+message PBRandomCompositeReqCmd
+{
+	int64 uid			= 1;
+	int32 composite_id	= 2; // 合成id
+}
+
+message PBRandomCompositeRspCmd
+{
+	int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+	int64 uid			= 3;
+	int32 composite_id	= 4; // 合成id
+}
+
+// 法器或者八卦牌镶嵌讳字
+message PBInlayTabooWordReqCmd
+{
+    int64 uid	= 1;
+	int32 roleid	= 2;	//角色id
+	int64 ghost_uniqid	= 3;	//鬼宠唯一id
+	int32 inlay_type	= 4;	//1-法器 2-八卦牌
+	int64 uniqid	= 5;	//道具id
+	int32 tabooword_id	= 6;	//讳字id
+}
+
+message PBInlayTabooWordRspCmd
+{
+    int32   code    = 1; // 服务器验证返回,0成功,其他失败
+    string  error   = 2; // 错误信息
+    int64   uid     = 3;
+	int32 roleid	= 4;	//角色id
+	int64 ghost_uniqid	= 5;	//鬼宠唯一id
+	int32 inlay_type	= 6;	//1-法器 2-八卦牌
+	int64 uniqid	= 7;	//道具id
+	int32 tabooword_id	= 8;	//讳字id
 }
