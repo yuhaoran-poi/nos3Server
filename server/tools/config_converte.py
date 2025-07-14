@@ -278,7 +278,11 @@ public:
     ~{{ manager_class }}() { Clear(); }
 
     bool Load(const FString& ConfigPath);
-    void Clear();
+    void Clear(){
+       ConfigMap.Empty();
+       for(auto* Config : Configs) delete Config;
+       Configs.Empty();
+    }
 
     const F{{ struct_name }}* GetConfig(int32 ID) const;
     const TArray<F{{ struct_name }}*>& GetAllConfigs() const { return Configs; }
@@ -341,7 +345,7 @@ bool {{ manager_class }}::Load(const FString& ConfigPath)
       
         Configs.Add(Item);
         // 自动映射主键字段（假设第一个字段是ID）
-        if(i == 0 && Configs.Num() > 0) {
+        if(Configs.Num() > 0) {
             ConfigMap.Add(Item->{{ fields[0].name }}, Item);
         }
     }
@@ -425,12 +429,7 @@ void {{ manager_class }}::ParseConfig(FArchive& Ar, F{{ struct_name }}& Config)
     {% endfor %}
 }
 
-void {{ manager_class }}::Clear()
-{
-    ConfigMap.Empty();
-    for(auto* Config : Configs) delete Config;
-    Configs.Empty();
-}
+ 
 
 const F{{ struct_name }}* {{ manager_class }}::GetConfig(int32 ID) const
 {
