@@ -30,7 +30,7 @@ function Citymgr.Init()
     context.waitds_citys = {} -- 等待中主城列表
     context.addr_db_server = moon.queryservice("db_server")
 
-    -- Citymgr.CreateCity()
+    Citymgr.CreateCity()
     -- 新增定时器轮询
     moon.async(function()
         while true do
@@ -216,9 +216,9 @@ function Citymgr.CheckCityRun()
         Citymgr.DestroyCity(cityid)
     end
 
-    -- if #canEnterRoom + table.size(context.waitds_citys) < 1 then
-    --     Citymgr.CreateCity()
-    -- end
+    if #canEnterRoom + table.size(context.waitds_citys) < 1 then
+        Citymgr.CreateCity()
+    end
 end
 
 -- 生成唯一房间ID（保留原逻辑）
@@ -264,17 +264,17 @@ function Citymgr.DestroyCity(cityid)
 end
 
 function Citymgr.ConnectCity(req)
-    return { code = ErrorCode.None, error = "连接主城成功" }
-
-    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    -- if not context.citys[req.cityid] then
-    --     return { code = ErrorCode.CityNotFound, error = "主城不存在" }
-    -- end
-
-    -- local city = context.citys[req.cityid]
-    -- city.nid = req.nid
-    -- city.addr_dsnode = req.addr_dsnode
     -- return { code = ErrorCode.None, error = "连接主城成功" }
+
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if not context.citys[req.cityid] then
+        return { code = ErrorCode.CityNotFound, error = "主城不存在" }
+    end
+
+    local city = context.citys[req.cityid]
+    city.nid = req.nid
+    city.addr_dsnode = req.addr_dsnode
+    return { code = ErrorCode.None, error = "连接主城成功" }
 end
 
 function Citymgr.ApplyLoginToCity(uid)
@@ -317,15 +317,15 @@ function Citymgr.ApplyLoginToCity(uid)
         return { code = ErrorCode.CityAlreadyInCity, error = "已在其他主城", cityid = context.uid_cityid[uid] }
     end
 
-    -- local res = findFreeCity()
-    local res = {
-        code = ErrorCode.None,
-        error = "允许加入",
-        cityid = 1,
-        region = "default",
-        ds_address = "192.168.2.31-8888",
-        ds_ip = "192.168.2.31",
-    }
+    local res = findFreeCity()
+    -- local res = {
+    --     code = ErrorCode.None,
+    --     error = "允许加入",
+    --     cityid = 1,
+    --     region = "default",
+    --     ds_address = "192.168.2.31-8888",
+    --     ds_ip = "192.168.2.31",
+    -- }
     if not res then
         return { code = ErrorCode.CityNotFound, error = "没有空闲主城" }
     end
