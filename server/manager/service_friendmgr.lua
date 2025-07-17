@@ -12,6 +12,8 @@ local conf = ...
 ---@class friendmgr_context:base_context
 local context = {
     conf = conf,
+---@diagnostic disable-next-line: missing-fields
+    user_relations = {},
 }
 --
 

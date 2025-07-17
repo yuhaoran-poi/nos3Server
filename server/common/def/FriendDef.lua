@@ -3,6 +3,12 @@ local LuaExt = require "common.LuaExt"
 local FriendDef = {
     DefaultGroupId = 1,
     DefaultGroupName = "我的好友",
+    FriendRelationValue = {
+        FriendStart = 1,
+        FriendEnd = 100,
+        Apply = 101,
+        Black = 102,
+    }
 }
 
 local defaultPBFriendData = {
@@ -12,7 +18,7 @@ local defaultPBFriendData = {
 
 local defaultPBApplyFriendData = {
     uid = 0,
-    head_id = 0,
+    head_icon = 0,
     nick_name = "",
     account_level = 0,
     head_frame = 0,

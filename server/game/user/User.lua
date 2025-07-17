@@ -1009,23 +1009,23 @@ function User.PBUseItemUpLvReqCmd(req)
             scripts.Bag.SaveAndLog(save_bags, bag_change_log)
         end
     end
-    if RoleDef.RoleDefine.RoleID.Start <= req.msg.config_id
-        and req.msg.config_id <= RoleDef.RoleDefine.RoleID.End then
+    if RoleDef.RoleDefine.RoleID.Start <= req.msg.target_id
+        and req.msg.target_id <= RoleDef.RoleDefine.RoleID.End then
         local change_roles = {}
-        change_roles[req.msg.config_id] = "UpLv"
+        change_roles[req.msg.target_id] = "UpLv"
         scripts.Role.SaveAndLog(change_roles)
-    elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.config_id
-        and req.msg.config_id <= GhostDef.GhostDefine.GhostID.End then
+    elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.target_id
+        and req.msg.target_id <= GhostDef.GhostDefine.GhostID.End then
         local change_ghosts = {
             ghost = {},
             image = {},
         }
-        change_ghosts.image[req.msg.config_id] = "UpLv"
+        change_ghosts.image[req.msg.target_id] = "UpLv"
         scripts.Ghost.SaveAndLog(change_ghosts)
     else
         -- 图鉴信息变更
         local change_image_ids = {}
-        table.insert(change_image_ids, req.msg.config_id)
+        table.insert(change_image_ids, req.msg.target_id)
         scripts.ItemImage.SaveAndLog(change_image_ids)
     end
 end

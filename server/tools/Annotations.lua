@@ -315,7 +315,7 @@
 
 ---@class PBApplyFriendData
 ---@field public uid integer
----@field public head_id integer @头像id
+---@field public head_icon integer @头像id
 ---@field public nick_name string @昵称
 ---@field public account_level integer @账号等级
 ---@field public head_frame integer @头像框
@@ -355,7 +355,6 @@
 
 ---@class PBApplyFriendReqCmd
 ---@field public uid integer
----@field public apply_data PBApplyFriendData @申请数据
 ---@field public target_uid integer @目标uid
 
 
@@ -381,6 +380,96 @@
 
 ---@class PBFriendOtherRefuseSyncCmd
 ---@field public refuse_uid integer @申请好友uid
+
+
+---@class PBFriendDelReqCmd
+---@field public uid integer
+---@field public del_uid integer @删除好友uid
+
+
+---@class PBFriendDelRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public del_uid integer @删除好友uid
+
+
+---@class PBFriendAddBlackReqCmd
+---@field public uid integer
+---@field public black_uid integer @黑名单uid
+
+
+---@class PBFriendAddBlackRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public black_uid integer @黑名单uid
+
+
+---@class PBFriendDelBlackReqCmd
+---@field public uid integer
+---@field public black_uid integer @黑名单uid
+
+
+---@class PBFriendDelBlackRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public black_uid integer @黑名单uid
+
+
+---@class PBFriendSetNotesReqCmd
+---@field public uid integer
+---@field public target_uid integer @目标uid
+---@field public notes string @备注名
+
+
+---@class PBFriendSetNotesRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public target_uid integer @目标uid
+
+
+---@class PBFriendCreateGroupReqCmd
+---@field public uid integer
+---@field public group_name string @分组名称
+
+
+---@class PBFriendCreateGroupRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public group_id integer
+---@field public group_name string
+
+
+---@class PBFriendDeleteGroupReqCmd
+---@field public uid integer
+---@field public group_id integer @分组id
+
+
+---@class PBFriendDeleteGroupRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public group_id integer
+
+
+---@class PBFriendMoveReqCmd
+---@field public uid integer
+---@field public target_uid integer @目标uid
+---@field public old_group_id integer @旧分组id
+---@field public new_group_id integer @新分组id
+
+
+---@class PBFriendMoveRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public target_uid integer @目标uid
+---@field public old_group_id integer @旧分组id
+---@field public new_group_id integer @新分组id
 
 
 ---@class PBSimpleGhostData

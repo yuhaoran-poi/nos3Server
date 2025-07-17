@@ -153,32 +153,44 @@ function Role.AddRole(roleid)
     for _, skillid in pairs(role_cfg.main_skill) do
         local skill_info = {
             config_id = skillid,
-            star_level = 0,
+            star_level = -1,
         }
+        if skillid == role_info.cur_main_skill_id then
+            skill_info.star_level = 0
+        end
         role_info.main_skill[skillid] = skill_info
     end
     role_info.cur_minor_skill1_id = role_cfg.init_q_skill
     for _, skillid in pairs(role_cfg.q_skill) do
         local skill_info = {
             config_id = skillid,
-            star_level = 0,
+            star_level = -1,
         }
+        if skillid == role_info.cur_minor_skill1_id then
+            skill_info.star_level = 0
+        end
         role_info.minor_skill1[skillid] = skill_info
     end
     role_info.cur_minor_skill2_id = role_cfg.init_e_skill
     for _, skillid in pairs(role_cfg.e_skill) do
         local skill_info = {
             config_id = skillid,
-            star_level = 0,
+            star_level = -1,
         }
+        if skillid == role_info.cur_minor_skill2_id then
+            skill_info.star_level = 0
+        end
         role_info.minor_skill2[skillid] = skill_info
     end
     role_info.cur_passive_skill_id = role_cfg.init_passive_skill
     for _, skillid in pairs(role_cfg.passive_skill) do
         local skill_info = {
             config_id = skillid,
-            star_level = 0,
+            star_level = -1,
         }
+        if skillid == role_info.cur_passive_skill_id then
+            skill_info.star_level = 0
+        end
         role_info.passive_skill[skillid] = skill_info
     end
 

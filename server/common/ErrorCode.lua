@@ -365,6 +365,14 @@ local ErrorCode = {
     FriendInApplyList = 1803,
     --- 已在黑名单
     FriendInBlackList = 1804,
+    --- 好友不存在
+    FriendNotExist = 1805,
+    --- 好友添加失败
+    FriendAddErr = 1806,
+    --- 好友已在好友列表
+    FriendInFriendList = 1807,
+    --- 好友申请不存在
+    FriendApplyNotExist = 1808,
 }
 
 return ErrorCode

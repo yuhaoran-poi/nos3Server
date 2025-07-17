@@ -10,7 +10,7 @@ message PBFriendData
 message PBApplyFriendData
 {
     int64 uid			= 1;
-    int32 head_id		= 2;    //头像id
+    int32 head_icon     = 2;    //头像id
     string nick_name	= 3;    //昵称
     int32 account_level	= 4;    //账号等级
 	int32 head_frame	= 5;    //头像框
@@ -62,8 +62,7 @@ message PBApplyFriendReqCmd
 {
     // 协议数据
     int64 uid          = 1;
-    PBApplyFriendData apply_data    = 2;    //申请数据
-    int64 target_uid   = 3;    //目标uid
+    int64 target_uid   = 2;    //目标uid
 }
 
 // 客户端申请好友 返回信息
@@ -101,3 +100,132 @@ message PBFriendOtherRefuseSyncCmd
     int64 refuse_uid = 2;    //申请好友uid
 }
 
+// 删除好友
+message PBFriendDelReqCmd
+{
+    // 协议数据
+    int64 uid           = 1;
+    int64 del_uid     = 2;    //删除好友uid
+}
+
+// 删除好友 返回信息
+message PBFriendDelRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid = 3;
+    int64 del_uid = 4;    //删除好友uid
+}
+
+// 拉入黑名单
+message PBFriendAddBlackReqCmd
+{
+    // 协议数据
+    int64 uid           = 1;
+    int64 black_uid     = 2;    //黑名单uid
+}
+
+// 拉入黑名单 返回信息
+message PBFriendAddBlackRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid = 3;
+    int64 black_uid = 4;    //黑名单uid
+}
+
+// 移出黑名单
+message PBFriendDelBlackReqCmd
+{
+    // 协议数据
+    int64 uid           = 1;
+    int64 black_uid     = 2;    //黑名单uid
+}
+
+// 移出黑名单 返回信息
+message PBFriendDelBlackRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid = 3;
+    int64 black_uid = 4;    //黑名单uid
+}
+
+// 修改备注名
+message PBFriendSetNotesReqCmd
+{
+    // 协议数据
+    int64 uid           = 1;
+    int64 target_uid    = 2;    //目标uid
+    string notes        = 3;    //备注名
+}
+
+// 修改备注名 返回信息
+message PBFriendSetNotesRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid = 3;
+    int64 target_uid = 4;    //目标uid
+}
+
+// 创建分组
+message PBFriendCreateGroupReqCmd
+{
+    // 协议数据
+    int64 uid           = 1;
+    string group_name   = 2;    //分组名称
+}
+
+// 创建分组 返回信息
+message PBFriendCreateGroupRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid = 3;
+    int32 group_id = 4;
+    string group_name = 5;
+}
+
+// 删除分组
+message PBFriendDeleteGroupReqCmd
+{
+    // 协议数据
+    int64 uid           = 1;
+    int32 group_id      = 2;    //分组id
+}
+
+// 删除分组 返回信息
+message PBFriendDeleteGroupRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid = 3;
+    int32 group_id = 4;
+}
+
+// 移动好友到其他分组
+message PBFriendMoveReqCmd
+{
+    int64 uid           = 1;
+    int64 target_uid    = 2;    //目标uid
+    int32 old_group_id  = 3;    //旧分组id
+    int32 new_group_id  = 4;    //新分组id
+}
+
+message PBFriendMoveRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid = 3;
+    int64 target_uid = 4;    //目标uid
+    int32 old_group_id = 5;    //旧分组id
+    int32 new_group_id = 6;    //新分组id
+}
