@@ -539,10 +539,10 @@ return function(context, sname)
             local buf = moon.decode(msg, "B")
             --see: user service's forward
             local dsid = unpack_one(buf, true)
-            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+            --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
             local ok, cmd, data = pcall(protocol.decode, buf)
             if not ok then
-                local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+                --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 moon.error("protobuffer decode client message failed", cmd)
                 moon.send("lua", context.dgate, "DGate.Kick", dsid)
                 return

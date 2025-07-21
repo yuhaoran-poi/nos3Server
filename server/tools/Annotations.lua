@@ -353,6 +353,11 @@
 ---@field public friends_simple_attr table<integer, PBUserAttr> @变更好友简略信息
 
 
+---@class PBFriendOnlineSyncCmd
+---@field public change_uid integer
+---@field public is_online integer
+
+
 ---@class PBApplyFriendReqCmd
 ---@field public uid integer
 ---@field public target_uid integer @目标uid
@@ -2691,7 +2696,7 @@
 ---@field Init Init_cfg[]
 ---@field Item Item_cfg[]
 ---@field LightConvert LightConvert_cfg[]
----@field LightCost LightCost_cfg[]
+---@field LightInfo LightInfo_cfg[]
 ---@field MagicItem MagicItem_cfg[]
 ---@field MagicItemUpLv MagicItemUpLv_cfg[]
 ---@field RandomComposite RandomComposite_cfg[]

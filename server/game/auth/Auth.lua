@@ -39,7 +39,7 @@ local function doDSAuth(req)
 
         local ok, err = moon.call("lua", addr_dsnode, "DsNode.Load", req)
         if not ok then
-            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+            --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
             moon.send("lua", context.addr_dgate, "DGate.Kick", 0, req.fd)
             moon.kill(addr_dsnode)
             context.net_id_map[req.net_id] = nil
@@ -50,9 +50,9 @@ local function doDSAuth(req)
     end
 
     local dsid, err = moon.call("lua", addr_dsnode, "DsNode.Login", req)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if not dsid then
-        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         print(dsid, err)
         moon.send("lua", context.addr_dgate, "DGate.Kick", 0, req.fd)
         moon.kill(addr_dsnode)
@@ -409,7 +409,7 @@ Auth.PBClientLoginReqCmd = function (req)
 end
  
 Auth.PBDSLoginReqCmd = function(req)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local function processLogin()
         -- DS连接验证
         if req.msg.login_data.authkey == ""
@@ -454,7 +454,7 @@ Auth.PBDSLoginReqCmd = function(req)
     context.S2D(req.net_id, CmdCode["PBDSLoginRspCmd"], ret, req.msg_context.stub_id)
 
     if res.code ~= 0 then
-        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         moon.send("lua", context.addr_dgate, "DGate.Kick", 0, req.fd) -- body
     end
 end

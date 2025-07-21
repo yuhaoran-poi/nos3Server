@@ -26,7 +26,7 @@ function City.PBApplyLoginCityReqCmd(req)
     local res, err = clusterd.call(3999, "citymgr", "Citymgr.ApplyLoginToCity", {
         msg = req.msg,
     })
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if err then
         return context.S2C(context.net_id, CmdCode["PBApplyLoginCityRspCmd"], {
             code = ErrorCode.ServerInternalError,

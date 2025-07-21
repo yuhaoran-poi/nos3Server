@@ -229,7 +229,7 @@ function Room.PBEnterRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    ----local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local brief_data = scripts.User.GetUsrRoomBriefData()
     if not brief_data or table.size(brief_data) <= 0 then
         return context.S2C(context.net_id, CmdCode["PBEnterRoomRspCmd"], {
@@ -256,7 +256,7 @@ end
 
 function Room.OnMemberEnter(res)
     moon.info("OnMemberEnter uid", context.uid, res.member_data.mem_info.uid)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if res.member_data.mem_info.uid == context.uid then
         context.roomid = res.roomid
         moon.info("OnMemberEnter roomid", context.roomid, res.roomid)
@@ -291,7 +291,7 @@ function Room.PBExitRoomReqCmd(req)
 end
 
 function Room.OnMemberExit(res)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if res.uid == context.uid then
         context.roomid = nil -- body
     end

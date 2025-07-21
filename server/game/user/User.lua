@@ -211,7 +211,7 @@ function User.QueryUserAttr(fields)
         else
             res_attr = DB.user_attr
         end
-        return { code = ErrorCode.None, error = "success", user_attr = DB.user_attr }
+        return { code = ErrorCode.None, error = "success", user_attr = res_attr }
     end
 end
 
@@ -244,7 +244,7 @@ function User.SetUserAttr(user_attr, sync_client)
         Database.RedisSetSimpleUserAttr(context.addr_db_redis, simple_to_redis)
     end
 
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    ----local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 同步到客户端
     if sync_client then
         local msg_data = {
@@ -257,7 +257,7 @@ end
 function User.GetOnlineUserAttr(fields)
     local db_user_attr = scripts.UserModel.GetUserAttr()
     local user_attr = {}
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if type(fields) == "table" then
         for _, field in pairs(fields) do
             if db_user_attr[field] then
@@ -775,7 +775,7 @@ function User.DsAddItems(simple_items)
         end
     end
 
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if table.size(add_items) + table.size(add_coins) <= 0 then
         err_code = ErrorCode.ItemNotExist
     end
@@ -792,7 +792,7 @@ function User.DsAddItems(simple_items)
         for bagType, _ in pairs(change_log) do
             save_bags[bagType] = 1
         end
-        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         scripts.Bag.SaveAndLog(save_bags, change_log)
     end
     return err_code

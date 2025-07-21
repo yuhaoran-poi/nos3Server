@@ -57,6 +57,12 @@ message PBFriendSyncCmd
     map<int64, PBUserAttr> friends_simple_attr  = 2; //变更好友简略信息
 }
 
+message PBFriendOnlineSyncCmd
+{
+    int64 change_uid = 1;
+    int32 is_online = 2;
+}
+
 // 客户端申请好友
 message PBApplyFriendReqCmd
 {

@@ -153,6 +153,13 @@ local function run(node_conf)
             redis_nginx_authkey = "acgameUI00",
             redis_nginx_title = "battle_report_17",
         },
+        {
+            unique = true,
+            name = "friendmgr",
+            file = "manager/service_friendmgr.lua",
+            threadid = 10,
+            websocket = false,
+        },
     }
 
     local function Start()
@@ -163,12 +170,14 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("teammgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("roommgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("citymgr"), "Init"))
+        assert(moon.call("lua", moon.queryservice("friendmgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("nodemgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("usermgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("teammgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("roommgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("citymgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("guildmgr"), "Start"))
+        assert(moon.call("lua", moon.queryservice("friendmgr"), "Start"))
         local data = db.loadserverdata(moon.queryservice("db_server"))
         if not data then
             data = { boot_times = 0 }

@@ -24,7 +24,6 @@ end
 function Role.Start()
     --加载全部角色数据
     local roleinfos = Role.LoadRoles()
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if roleinfos then
         scripts.UserModel.SetRoles(roleinfos)
     end
@@ -689,7 +688,8 @@ function Role.PBRoleWearEquipReqCmd(req)
     end
     if item_small_type == scripts.ItemDefine.EItemSmallType.MagicItem then
         -- 检测法器类型是否正确
-        local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.uniqid]
+        --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
         if not uniqitem_cfg or uniqitem_cfg.type4 ~= role_cfg.magic_slot_type then
             return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
                 { code = ErrorCode.ConfigError, error = "法器类型错误", uid = context.uid }, req.msg_context.stub_id)
@@ -730,7 +730,7 @@ function Role.PBRoleWearEquipReqCmd(req)
     for bagType, _ in pairs(bag_change_log) do
         save_bags[bagType] = 1
     end
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     scripts.Bag.SaveAndLog(save_bags, bag_change_log)
 
     local change_roles = {}

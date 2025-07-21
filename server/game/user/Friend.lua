@@ -34,6 +34,7 @@ end
 
 function Friend.Start()
     --加载好友数据
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local friends_data = Friend.LoadFriends()
     if friends_data then
         scripts.UserModel.SetFriends(friends_data)
@@ -47,10 +48,10 @@ function Friend.Start()
         friend_group.group_name = FriendDef.DefaultGroupName
         friends.friend_groups[friend_group.group_id] = friend_group
         scripts.UserModel.SetFriends(friends)
-
-        Friend.DealRelations()
-        Friend.SaveFriendsNow()
     end
+
+    Friend.DealRelations()
+    Friend.SaveFriendsNow()
 end
 
 function Friend.Online()
@@ -71,13 +72,23 @@ function Friend.Offline()
     clusterd.send(3999, "friendmgr", "Friendmgr.FriendOffline", context.uid)
 end
 
+function Friend.OtherOnline(uid)
+    context.S2C(context.net_id, CmdCode["PBFriendOnlineSyncCmd"], {change_uid = uid, is_online = 1}, 0)
+end
+
+function Friend.OtherOffline(uid)
+    context.S2C(context.net_id, CmdCode["PBFriendOnlineSyncCmd"], {change_uid = uid, is_online = 0}, 0)
+end
+
 function Friend.DealRelations()
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local friends = scripts.UserModel.GetFriends()
     if not friends then
         return
     end
 
     local relations, err = clusterd.call(3999, "friendmgr", "Friendmgr.GetRelations", context.uid)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if err then
         moon.error("Friend.DealOfflineMsg Friendmgr.GetRelations err:%s", err)
     end
@@ -191,7 +202,7 @@ function Friend.SaveFriendsNow()
 end
 
 function Friend.LoadFriends()
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local friends_data = Database.loadfriends(context.addr_db_user, context.uid)
     return friends_data
 end
@@ -277,7 +288,7 @@ function Friend.AgreeApply(friends, apply_uid)
     -- 删除好友申请
     Friend.DelFriendApply(friends, apply_uid)
 
-    if friends.black_list(apply_uid) then
+    if friends.black_list[apply_uid] then
         return ErrorCode.FriendInBlackList
     end
 
@@ -307,6 +318,13 @@ function Friend.AgreeApply(friends, apply_uid)
         return ErrorCode.FriendAddErr
     end
     if res ~= ErrorCode.None then
+        -- 同意添加失败则拒绝申请
+        local refuse_data = {
+            from_uid = context.uid,
+            apply_uid = apply_uid,
+        }
+        clusterd.send(3999, "friendmgr", "Friendmgr.RefuseApply", refuse_data)
+
         return res
     end
 
@@ -389,7 +407,7 @@ function Friend.AddBlack(friends, black_uid)
         return ErrorCode.FriendLimit
     end
 
-    if friends.black_list(black_uid) then
+    if friends.black_list[black_uid] then
         return ErrorCode.FriendInBlackList
     end
 
@@ -422,6 +440,9 @@ function Friend.AddBlack(friends, black_uid)
 end
 
 function Friend.DelBlack(friends, black_uid)
+    if not friends.black_list[black_uid] then
+        return ErrorCode.FriendNotInBlackList
+    end
     friends.black_list[black_uid] = nil
 
     local black_data = {
@@ -429,6 +450,8 @@ function Friend.DelBlack(friends, black_uid)
         black_uid = black_uid,
     }
     clusterd.send(3999, "friendmgr", "Friendmgr.DelBlack", black_data)
+
+    return ErrorCode.None
 end
 
 function Friend.SetNotes(friends, target_uid, notes)
@@ -494,7 +517,7 @@ function Friend.PBApplyFriendReqCmd(req)
             { code = ErrorCode.ConfigError, error = "no friend_cfg" }, req.msg_context.stub_id)
     end
 
-    if friends.black_list(req.msg.uid) then
+    if friends.black_list[req.msg.target_uid] then
         return context.S2C(context.net_id, CmdCode["PBApplyFriendRspCmd"],
             { code = ErrorCode.FriendInBlackList, error = "好友已在黑名单" }, req.msg_context.stub_id)
     end
@@ -512,16 +535,18 @@ function Friend.PBApplyFriendReqCmd(req)
             { code = ErrorCode.FriendLimit, error = "好友数量已达上限" }, req.msg_context.stub_id)
     end
 
-    local user_attr = UserAttrLogic.QueryOtherUserAttr(context, context.uid, apply_fields)
-    if not user_attr or not user_attr.uid then
+    local query_res = scripts.User.QueryUserAttr(apply_fields)
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if query_res.code ~= ErrorCode.None then
         return context.S2C(context.net_id, CmdCode["PBApplyFriendRspCmd"],
-            { code = ErrorCode.ServerInternalError, error = "数据加载出错" }, req.msg_context.stub_id)
+            { code = query_res.code, error = query_res.error }, req.msg_context.stub_id)
     end
 
     local res, err = clusterd.call(3999, "friendmgr", "Friendmgr.AddApply", {
         target_uid = req.msg.target_uid,
-        apply_data = user_attr,
+        apply_data = query_res.user_attr,
     })
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if err or not res then
         return context.S2C(context.net_id, CmdCode["PBApplyFriendRspCmd"],
             { code = ErrorCode.FriendApplyErr, error = "申请好友错误" }, req.msg_context.stub_id)
@@ -758,6 +783,13 @@ function Friend.PBFriendCreateGroupReqCmd(req)
     if table.size(friends.friend_groups) >= friend_cfg.Group_limit then
         return context.S2C(context.net_id, CmdCode["PBFriendCreateGroupRspCmd"],
             { code = ErrorCode.ParamInvalid, error = "超出最大分组数量", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    for group_id, group_name in pairs(friends.friend_groups) do
+        if group_name == req.msg.group_name then
+            return context.S2C(context.net_id, CmdCode["PBFriendCreateGroupRspCmd"],
+                { code = ErrorCode.ParamInvalid, error = "分组名称重复", uid = context.uid }, req.msg_context.stub_id)
+        end
     end
 
     local new_group_id = 0

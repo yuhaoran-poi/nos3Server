@@ -373,6 +373,8 @@ local ErrorCode = {
     FriendInFriendList = 1807,
     --- 好友申请不存在
     FriendApplyNotExist = 1808,
+    --- 好友不在黑名单
+    FriendNotInBlackList = 1809,
 }
 
 return ErrorCode

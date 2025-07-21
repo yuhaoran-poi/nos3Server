@@ -1432,7 +1432,7 @@ function Bag.PBBagGetCoinsReqCmd(req)
             { code = ErrorCode.BagNotExist, error = "货币未加载", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local res = {
         code = ErrorCode.None,
         error = "",
@@ -1561,33 +1561,33 @@ function Bag.Light(op_itemdata)
     end
 
     -- 检查是否达到开光次数及对应消耗配置
-    local quality = uniqitem_cfg.type2
-    local light_cfg = GameCfg.LightCost[quality]
-    if cur_light_cnt >= light_cfg.num then
+    -- local quality = uniqitem_cfg.type2
+    local light_cfg = GameCfg.LightInfo[op_itemdata.common_info.config_id]
+    if cur_light_cnt >= light_cfg.tagnum then
         return ErrorCode.LightMax
     end
 
     local cost_cfg = nil
     if cur_light_cnt == 0 then
-        cost_cfg = light_cfg.cost1
+        cost_cfg = light_cfg.tagcost1
     elseif cur_light_cnt == 1 then
-        cost_cfg = light_cfg.cost2
+        cost_cfg = light_cfg.tagcost2
     elseif cur_light_cnt == 2 then
-        cost_cfg = light_cfg.cost3
+        cost_cfg = light_cfg.tagcost3
     elseif cur_light_cnt == 3 then
-        cost_cfg = light_cfg.cost4
+        cost_cfg = light_cfg.tagcost4
     elseif cur_light_cnt == 4 then
-        cost_cfg = light_cfg.cost5
+        cost_cfg = light_cfg.tagcost5
     elseif cur_light_cnt == 5 then
-        cost_cfg = light_cfg.cost6
+        cost_cfg = light_cfg.tagcost6
     elseif cur_light_cnt == 6 then
-        cost_cfg = light_cfg.cost7
+        cost_cfg = light_cfg.tagcost7
     elseif cur_light_cnt == 7 then
-        cost_cfg = light_cfg.cost8
+        cost_cfg = light_cfg.tagcost8
     elseif cur_light_cnt == 8 then
-        cost_cfg = light_cfg.cost9
+        cost_cfg = light_cfg.tagcost9
     elseif cur_light_cnt == 9 then
-        cost_cfg = light_cfg.cost10
+        cost_cfg = light_cfg.tagcost10
     else
         return ErrorCode.LightMax
     end
@@ -1609,8 +1609,9 @@ function Bag.Light(op_itemdata)
 
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 随机出词条池子
+    local light_cfg
     local id_weight = {}
-    for pool_id, pool_weight in pairs(uniqitem_cfg.lightpooltype) do
+    for pool_id, pool_weight in pairs(light_cfg.lightpooltype) do
         local pool_cfg = GameCfg.AllTagPool[pool_id]
         if not pool_cfg then
             return ErrorCode.TagPoolNotExist
@@ -1640,7 +1641,7 @@ function Bag.Light(op_itemdata)
         end
     end
     if table.size(cur_ability_tag) == 0 then
-        for pool_id, pool_weight in pairs(uniqitem_cfg.lightpooltype2) do
+        for pool_id, pool_weight in pairs(light_cfg.lightpooltype2) do
             local pool_cfg = GameCfg.AllTagPool[pool_id]
             if not pool_cfg then
                 return ErrorCode.TagPoolNotExist

@@ -30,7 +30,7 @@ function Ghost.Start()
     local ghosts = scripts.UserModel.GetGhosts()
     if not ghosts then
         ghosts = GhostDef.newUserGhostDatas()
-        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         local init_cfg = GameCfg.Init[1]
         if not init_cfg then
             return { code = ErrorCode.ConfigError, error = "no init_cfg" }
@@ -567,7 +567,7 @@ function Ghost.PBGhostWearEquipReqCmd(req)
     for bagType, _ in pairs(bag_change_log) do
         save_bags[bagType] = 1
     end
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     scripts.Bag.SaveAndLog(save_bags, bag_change_log)
 
     local change_ghosts = {

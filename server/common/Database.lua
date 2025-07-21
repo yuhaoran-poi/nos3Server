@@ -206,17 +206,18 @@ function _M.RedisGetUserAttr(addr_db, uid, fields)
     local user_attr = {}
     if fields and type(fields) == "table" and table.size(fields) > 0 then
         local res, err = redis_call(addr_db, "HMGET", "user_attr_" .. uid, table.unpack(fields))
-        if res == false then
+        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        if err then
             error("RedisGetUserAttr failed:" .. tostring(err))
         end
         if res and #res > 0 then
-            for i = 1, #res, 2 do
-                user_attr[res[i]] = json.decode(res[i + 1] or "null")
+            for i = 1, #res do
+                user_attr[fields[i]] = json.decode(res[i] or "null")
             end
         end
     else
         local res, err = redis_call(addr_db, "HGETALL", "user_attr_" .. uid)
-        if res == false then
+        if err then
             error("RedisGetUserAttr failed:" .. tostring(err))
         end
         if res and #res > 0 then
@@ -246,8 +247,8 @@ function _M.RedisGetSimpleUserAttr(addr_db, uids)
     local uids_attrs = {}
     if res and #res > 0 then
         moon.warn(string.format("RedisGetSimpleUserAttr res = %s", json.pretty_encode(res)))
-        for i = 1, #res, 2 do
-            uids_attrs[res[i]] = json.decode(res[i + 1] or "null")
+        for i = 1, #res do
+            uids_attrs[uids[i]] = json.decode(res[i] or "null")
         end
     end
 
@@ -874,7 +875,7 @@ function _M.savefriends(addr, uid, data)
     assert(data)
 
     local data_str = jencode(data)
-    local _, pbdata = protocol.encodewithname("PBUserRoleDatas", data)
+    local _, pbdata = protocol.encodewithname("PBUserFriendDatas", data)
     local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.friends (uid, value, json)
@@ -887,9 +888,6 @@ end
 
 -- 好友离线数据前缀常量
 local FRIEND_RELATION = "friend_relation"
-local FRIEND_APPLY_PREFIX = "friend_apply:"
-local FRIEND_ADD_PREFIX = "friend_add:"
-local FRIEND_DEL_PREFIX = "friend_del:"
 
 function _M.RedisGetFriendRelation(addr_db_redis, uids)
     local res, err = redis_call(addr_db_redis, "HMGET", FRIEND_RELATION, table.unpack(uids))
@@ -900,8 +898,8 @@ function _M.RedisGetFriendRelation(addr_db_redis, uids)
     local user_relations = {}
     if res and #res > 0 then
         moon.warn(string.format("RedisGetFriendRelation res = %s", json.pretty_encode(res)))
-        for i = 1, #res, 2 do
-            user_relations[res[i]] = json.decode(res[i + 1] or "null")
+        for i = 1, #res do
+            user_relations[uids[i]] = json.decode(res[i] or "null")
         end
     end
 
@@ -915,87 +913,6 @@ function _M.RedisSetFriendRelation(addr_db_redis, user_relations)
         table.insert(tmp, json.encode(relations))
     end
     redis_send(addr_db_redis, "HSET", FRIEND_RELATION, table.unpack(tmp))
-end
-
-function _M.RedisAddFriendApply(addr_db_redis, uid, apply_uid, apply_data)
-    -- 获取旧值
-    local apply_values = {}
-    local old_json, err = redis_call(addr_db_redis, "MGET", FRIEND_APPLY_PREFIX .. uid)
-    if old_json and next(old_json) ~= nil then
-        apply_values = json.decode(old_json[1])
-    end
-    apply_values[apply_uid] = apply_data
-
-    -- 存储新数据
-    redis_send(addr_db_redis, "MSET", FRIEND_APPLY_PREFIX .. uid, json.encode(apply_values))
-end
-
-function _M.RedisGetFriendApply(addr_db_redis, uid)
-    local apply_values = {}
-    local old_json, err = redis_call(addr_db_redis, "MGET", FRIEND_APPLY_PREFIX .. uid)
-    if old_json and next(old_json) ~= nil then
-        apply_values = json.decode(old_json[1])
-    end
-    return apply_values
-end
-
-function _M.RedisDelFriendApply(addr_db_redis, uid)
-    -- 删除主数据
-    redis_send(addr_db_redis, "DEL", FRIEND_APPLY_PREFIX .. uid)
-end
-
-function _M.RedisAddFriend(addr_db_redis, uid, friend_uid)
-    -- 获取旧值
-    local add_values = {}
-    local old_json, err = redis_call(addr_db_redis, "MGET", FRIEND_ADD_PREFIX .. uid)
-    if old_json and next(old_json) ~= nil then
-        add_values = json.decode(old_json[1])
-    end
-    add_values[friend_uid] = 1
-
-    -- 存储新数据
-    redis_send(addr_db_redis, "MSET", FRIEND_ADD_PREFIX .. uid, json.encode(add_values))
-end
-
-function _M.RedisGetAddFriend(addr_db_redis, uid)
-    local add_values = {}
-    local old_json, err = redis_call(addr_db_redis, "MGET", FRIEND_ADD_PREFIX .. uid)
-    if old_json and next(old_json) ~= nil then
-        add_values = json.decode(old_json[1])
-    end
-    return add_values
-end
-
-function _M.RedisDelAddFriend(addr_db_redis, uid)
-    -- 删除主数据
-    redis_send(addr_db_redis, "DEL", FRIEND_ADD_PREFIX .. uid)
-end
-
-function _M.RedisDelFriend(addr_db_redis, uid, friend_uid)
-    -- 获取旧值
-    local del_values = {}
-    local old_json, err = redis_call(addr_db_redis, "MGET", FRIEND_DEL_PREFIX .. uid)
-    if old_json and next(old_json) ~= nil then
-        del_values = json.decode(old_json[1])
-    end
-    del_values[friend_uid] = 1
-
-    -- 存储新数据
-    redis_send(addr_db_redis, "MSET", FRIEND_DEL_PREFIX .. uid, json.encode(del_values))
-end
-
-function _M.RedisGetDelFriend(addr_db_redis, uid)
-    local del_values = {}
-    local old_json, err = redis_call(addr_db_redis, "MGET", FRIEND_DEL_PREFIX .. uid)
-    if old_json and next(old_json) ~= nil then
-        del_values = json.decode(old_json[1])
-    end
-    return del_values
-end
-
-function _M.RedisDelDelFriend(addr_db_redis, uid)
-    -- 删除主数据
-    redis_send(addr_db_redis, "DEL", FRIEND_DEL_PREFIX .. uid)
 end
 
 return _M

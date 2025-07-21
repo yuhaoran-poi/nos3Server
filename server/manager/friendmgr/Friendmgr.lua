@@ -26,7 +26,7 @@ local maxplayers = 10
 local Friendmgr = {}
 
 function Friendmgr.Init()
-
+    return 123
 end
 
 function Friendmgr.Start()
@@ -201,7 +201,7 @@ function Friendmgr.AgreeApply(data)
     local query_field = {
         ProtoEnum.UserAttrType.is_online,
     }
-    local user_attr = UserAttrLogic.QueryOtherUserAttr(context, data.target_uid, query_field)
+    local user_attr = UserAttrLogic.QueryOtherUserAttr(context, data.apply_uid, query_field)
     if not user_attr or not user_attr[ProtoEnum.UserAttrType.is_online] then
         return ErrorCode.UserNotExist
     end
@@ -225,6 +225,7 @@ function Friendmgr.AgreeApply(data)
 end
 
 function Friendmgr.RefuseApply(data)
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local relations_from = Friendmgr.GetRelations(data.from_uid)
     if not relations_from then
         relations_from = {}
@@ -238,7 +239,7 @@ function Friendmgr.RefuseApply(data)
     local query_field = {
         ProtoEnum.UserAttrType.is_online,
     }
-    local user_attr = UserAttrLogic.QueryOtherUserAttr(context, data.target_uid, query_field)
+    local user_attr = UserAttrLogic.QueryOtherUserAttr(context, data.apply_uid, query_field)
     if user_attr and user_attr[ProtoEnum.UserAttrType.is_online] == 1 then
         context.send_user(data.apply_uid, "Friend.OtherRefuseFriend", data.from_uid)
     end
@@ -251,6 +252,7 @@ function Friendmgr.RefuseApply(data)
 end
 
 function Friendmgr.DelFriend(data)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local relations_from = Friendmgr.GetRelations(data.from_uid)
     if not relations_from then
         relations_from = {}
@@ -272,9 +274,9 @@ function Friendmgr.DelFriend(data)
         local query_field = {
             ProtoEnum.UserAttrType.is_online,
         }
-        local user_attr = UserAttrLogic.QueryOtherUserAttr(context, data.target_uid, query_field)
+        local user_attr = UserAttrLogic.QueryOtherUserAttr(context, data.del_uid, query_field)
         if user_attr and user_attr[ProtoEnum.UserAttrType.is_online] == 1 then
-            context.send_user(data.apply_uid, "Friend.OtherDelFriend", data.from_uid)
+            context.send_user(data.del_uid, "Friend.OtherDelFriend", data.from_uid)
         end
     end
 
