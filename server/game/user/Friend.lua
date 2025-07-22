@@ -34,7 +34,7 @@ end
 
 function Friend.Start()
     --加载好友数据
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local friends_data = Friend.LoadFriends()
     if friends_data then
         scripts.UserModel.SetFriends(friends_data)
@@ -81,14 +81,14 @@ function Friend.OtherOffline(uid)
 end
 
 function Friend.DealRelations()
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local friends = scripts.UserModel.GetFriends()
     if not friends then
         return
     end
 
     local relations, err = clusterd.call(3999, "friendmgr", "Friendmgr.GetRelations", context.uid)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if err then
         moon.error("Friend.DealOfflineMsg Friendmgr.GetRelations err:%s", err)
     end

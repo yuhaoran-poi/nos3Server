@@ -152,10 +152,10 @@ function Role.AddRole(roleid)
     for _, skillid in pairs(role_cfg.main_skill) do
         local skill_info = {
             config_id = skillid,
-            star_level = -1,
+            star = -1,
         }
         if skillid == role_info.cur_main_skill_id then
-            skill_info.star_level = 0
+            skill_info.star = 0
         end
         role_info.main_skill[skillid] = skill_info
     end
@@ -163,10 +163,10 @@ function Role.AddRole(roleid)
     for _, skillid in pairs(role_cfg.q_skill) do
         local skill_info = {
             config_id = skillid,
-            star_level = -1,
+            star = -1,
         }
         if skillid == role_info.cur_minor_skill1_id then
-            skill_info.star_level = 0
+            skill_info.star = 0
         end
         role_info.minor_skill1[skillid] = skill_info
     end
@@ -174,10 +174,10 @@ function Role.AddRole(roleid)
     for _, skillid in pairs(role_cfg.e_skill) do
         local skill_info = {
             config_id = skillid,
-            star_level = -1,
+            star = -1,
         }
         if skillid == role_info.cur_minor_skill2_id then
-            skill_info.star_level = 0
+            skill_info.star = 0
         end
         role_info.minor_skill2[skillid] = skill_info
     end
@@ -185,10 +185,10 @@ function Role.AddRole(roleid)
     for _, skillid in pairs(role_cfg.passive_skill) do
         local skill_info = {
             config_id = skillid,
-            star_level = -1,
+            star = -1,
         }
         if skillid == role_info.cur_passive_skill_id then
-            skill_info.star_level = 0
+            skill_info.star = 0
         end
         role_info.passive_skill[skillid] = skill_info
     end
@@ -412,7 +412,7 @@ function Role.InlayTabooWord(roleid, taboo_word_id, inlay_type, uniqid)
     -- 扣除道具消耗
     local cost_items = {}
     cost_items[taboo_word_id] = {
-        count = 1,
+        count = -1,
         pos = 0,
     }
     local err_code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
@@ -1224,7 +1224,7 @@ function Role.PBRoleStudyBookReqCmd(req)
     -- 检查是否有真经
     local cost_items = {}
     cost_items[req.msg.book_id] = {
-        count = 1,
+        count = -1,
         pos = 0,
     }
     local err_code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
@@ -1317,7 +1317,8 @@ function Role.PBRoleSkillCompositeReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
     end
     if composite_cfg.type == RoleDef.SkillType.MinorSkill_1 then
-        if role_info.minor_skill1[composite_cfg.id] then
+        if role_info.minor_skill1[composite_cfg.id]
+            and role_info.minor_skill1[composite_cfg.id].star >= 0 then
             rsp_msg.code = ErrorCode.RoleSkillAlreadyActive
             rsp_msg.error = "技能已激活"
             return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
@@ -1333,7 +1334,8 @@ function Role.PBRoleSkillCompositeReqCmd(req)
             return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
         end
     elseif composite_cfg.type == RoleDef.SkillType.MinorSkill_2 then
-        if role_info.minor_skill2[composite_cfg.id] then
+        if role_info.minor_skill2[composite_cfg.id]
+            and role_info.minor_skill2[composite_cfg.id].star >= 0 then
             rsp_msg.code = ErrorCode.RoleSkillAlreadyActive
             rsp_msg.error = "技能已激活"
             return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
@@ -1349,7 +1351,8 @@ function Role.PBRoleSkillCompositeReqCmd(req)
             return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
         end
     elseif composite_cfg.type == RoleDef.SkillType.PassiveSkill then
-        if role_info.passive_skill[composite_cfg.id] then
+        if role_info.passive_skill[composite_cfg.id]
+            and role_info.passive_skill[composite_cfg.id].star >= 0 then
             rsp_msg.code = ErrorCode.RoleSkillAlreadyActive
             rsp_msg.error = "技能已激活"
             return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
@@ -1365,7 +1368,8 @@ function Role.PBRoleSkillCompositeReqCmd(req)
             return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
         end
     elseif composite_cfg.type == RoleDef.SkillType.MainSkill then
-        if role_info.main_skill[composite_cfg.id] then
+        if role_info.main_skill[composite_cfg.id]
+            and role_info.main_skill[composite_cfg.id].star >= 0 then
             rsp_msg.code = ErrorCode.RoleSkillAlreadyActive
             rsp_msg.error = "技能已激活"
             return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
@@ -1423,25 +1427,25 @@ function Role.PBRoleSkillCompositeReqCmd(req)
     if composite_cfg.type == RoleDef.SkillType.MinorSkill_1 then
         local skill_info = {
             config_id = req.msg.composite_id,
-            star_level = 0,
+            star = 0,
         }
         role_info.minor_skill1[req.msg.composite_id] = skill_info
     elseif composite_cfg.type == RoleDef.SkillType.MinorSkill_2 then
         local skill_info = {
             config_id = req.msg.composite_id,
-            star_level = 0,
+            star = 0,
         }
         role_info.minor_skill2[req.msg.composite_id] = skill_info
     elseif composite_cfg.type == RoleDef.SkillType.PassiveSkill then
         local skill_info = {
             config_id = req.msg.composite_id,
-            star_level = 0,
+            star = 0,
         }
         role_info.passive_skill[req.msg.composite_id] = skill_info
     elseif composite_cfg.type == RoleDef.SkillType.MainSkill then
         local skill_info = {
             config_id = req.msg.composite_id,
-            star_level = 0,
+            star = 0,
         }
         role_info.main_skill[req.msg.composite_id] = skill_info
     else
@@ -1493,25 +1497,29 @@ function Role.PBRoleSkillSwitchReqCmd(req)
     end
 
     if req.msg.skill_type == RoleDef.SkillType.MinorSkill_1 then
-        if not role_info.minor_skill1[req.msg.skill_id] then
+        if not role_info.minor_skill1[req.msg.skill_id]
+            or role_info.minor_skill1[req.msg.skill_id].star < 0 then
             return context.S2C(context.net_id, CmdCode.PBRoleSkillSwitchRspCmd,
                 { code = ErrorCode.RoleSkillNotExist, error = "角色技能不存在", uid = req.msg.uid }, req.msg_context.stub_id)
         end
         role_info.cur_minor_skill1_id = req.msg.skill_id
     elseif req.msg.skill_type == RoleDef.SkillType.MinorSkill_2 then
-        if not role_info.minor_skill2[req.msg.skill_id] then
+        if not role_info.minor_skill2[req.msg.skill_id]
+            or role_info.minor_skill2[req.msg.skill_id].star < 0 then
             return context.S2C(context.net_id, CmdCode.PBRoleSkillSwitchRspCmd,
                 { code = ErrorCode.RoleSkillNotExist, error = "角色技能不存在", uid = req.msg.uid }, req.msg_context.stub_id)
         end
         role_info.cur_minor_skill2_id = req.msg.skill_id
     elseif req.msg.skill_type == RoleDef.SkillType.PassiveSkill then
-        if not role_info.passive_skill[req.msg.skill_id] then
+        if not role_info.passive_skill[req.msg.skill_id]
+            or role_info.passive_skill[req.msg.skill_id].star < 0 then
             return context.S2C(context.net_id, CmdCode.PBRoleSkillSwitchRspCmd,
                 { code = ErrorCode.RoleSkillNotExist, error = "角色技能不存在", uid = req.msg.uid }, req.msg_context.stub_id)
         end
         role_info.cur_passive_skill_id = req.msg.skill_id
     elseif req.msg.skill_type == RoleDef.SkillType.MainSkill then
-        if not role_info.main_skill[req.msg.skill_id] then
+        if not role_info.main_skill[req.msg.skill_id]
+            or role_info.main_skill[req.msg.skill_id].star < 0 then
             return context.S2C(context.net_id, CmdCode.PBRoleSkillSwitchRspCmd,
                 { code = ErrorCode.RoleSkillNotExist, error = "角色技能不存在", uid = req.msg.uid }, req.msg_context.stub_id)
         end

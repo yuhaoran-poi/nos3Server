@@ -33,6 +33,10 @@ local ErrorCode = {
     CoinNotExist = 306,
     --- 货币不足
     CoinNotEnough = 307,
+    --- 禁止分解
+    ForbidDecompose = 308,
+    --- 分解失败
+    DecomposeFailed = 309,
 
     ---宝物相关错误码
     ---没有拥有该宝物

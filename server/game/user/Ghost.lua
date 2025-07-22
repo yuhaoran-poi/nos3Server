@@ -431,7 +431,7 @@ function Ghost.InlayTabooWord(ghost_uniqid, taboo_word_id, inlay_type, uniqid)
     -- 扣除道具消耗
     local cost_items = {}
     cost_items[taboo_word_id] = {
-        count = 1,
+        count = -1,
         pos = 0,
     }
     local err_code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})

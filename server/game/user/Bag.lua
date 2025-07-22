@@ -780,6 +780,43 @@ function Bag.CheckItemsEnough(bagType, del_items, del_unique_items)
     return ErrorCode.None
 end
 
+function Bag.CheckItemsEnoughPos(bagType, del_items)
+    -- 参数校验
+    if bagType ~= BagDef.BagType.Cangku
+        and bagType ~= BagDef.BagType.Consume
+        and bagType ~= BagDef.BagType.Booty then
+        return ErrorCode.BagNotExist
+    end
+
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata or not bagdata[bagType] then
+        return ErrorCode.BagNotExist
+    end
+    local baginfo = bagdata[bagType]
+
+    for pos, item in pairs(del_items) do
+        if item.item_count >= 0 then
+            return ErrorCode.ParamInvalid
+        end
+
+        if del_items.uniqid == 0 then
+            if not baginfo.items[pos]
+                or baginfo.items[pos].common_info.config_id ~= item.config_id
+                or baginfo.items[pos].common_info.item_count + item.item_count < 0 then
+                return ErrorCode.ItemNotEnough
+            end
+        else
+            if not baginfo.items[pos]
+                or baginfo.items[pos].common_info.uniqid ~= item.uniqid
+                or baginfo.items[pos].common_info.item_count + item.item_count < 0 then
+                return ErrorCode.ItemNotEnough
+            end
+        end
+    end
+
+    return ErrorCode.None
+end
+
 function Bag.CheckCoinsEnough(coins)
     local coinsdata = scripts.UserModel.GetCoinsData()
     if not coinsdata then
@@ -884,6 +921,44 @@ function Bag.DelItems(bagType, del_items, del_unique_items, change_log)
         end
 
         err_code = Bag.DelItem(bagType, baginfo, itemid, item.count, item.pos, change_log[bagType])
+        if err_code ~= ErrorCode.None then
+            return err_code
+        end
+    end
+
+    return ErrorCode.None
+end
+
+function Bag.DelItemsPos(bagType, del_items, change_log)
+    -- 参数校验
+    if bagType ~= BagDef.BagType.Cangku
+        and bagType ~= BagDef.BagType.Consume
+        and bagType ~= BagDef.BagType.Booty then
+        return ErrorCode.BagNotExist
+    end
+
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata or not bagdata[bagType] then
+        return ErrorCode.BagNotExist
+    end
+    local baginfo = bagdata[bagType]
+
+    local err_code = ErrorCode.None
+    if not change_log[bagType] then
+        change_log[bagType] = {}
+    end
+
+    -- 执行物品删除
+    for pos, item in pairs(del_items) do
+        if item.item_count >= 0 then
+            return ErrorCode.ParamInvalid
+        end
+
+        if item.uniqid == 0 then
+            err_code = Bag.DelItem(bagType, baginfo, item.config_id, item.item_count, pos, change_log[bagType])
+        else
+            err_code = Bag.DelUniqItem(bagType, baginfo, item.config_id, item.uniqid, pos, change_log[bagType])
+        end
         if err_code ~= ErrorCode.None then
             return err_code
         end
@@ -1378,7 +1453,7 @@ function Bag.InlayTabooWord(taboo_word_id, inlay_type, uniqid)
     -- 扣除道具消耗
     local cost_items = {}
     cost_items[taboo_word_id] = {
-        count = 1,
+        count = -1,
         pos = 0,
     }
     local err_code = Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
@@ -1728,6 +1803,125 @@ function Bag.Light(op_itemdata)
     end
 
     return ErrorCode.None, change_log
+end
+
+function Bag.PBDecomposeReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid
+        or not req.msg.decompose_items
+        or table.size(req.msg.decompose_items) <= 0 then
+        return context.S2C(context.net_id, CmdCode.PBDecomposeRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = req.msg.uid,
+            decompose_items = req.msg.decompose_items or {},
+        }, req.msg_context.stub_id)
+    end
+
+    local function decompose_func()
+        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        local cost_items = {}
+        local add_items, add_coins = {}, {}
+        for _, value in pairs(req.msg.decompose_items) do
+            -- 获取分解配置
+            local decompose_cfg = {}
+            if value.uniqid == 0 then
+                local cfg = GameCfg.Item[value.config_id]
+                if not cfg or table.size(cfg.decompose) <= 0 then
+                    return ErrorCode.ForbidDecompose
+                end
+                decompose_cfg = cfg.decompose
+            else
+                local cfg = GameCfg.UniqueItem[value.config_id]
+                if not cfg or table.size(cfg.decompose) <= 0 then
+                    return ErrorCode.ForbidDecompose
+                end
+                decompose_cfg = cfg.decompose
+            end
+
+            -- 分解后获得的道具
+            local decompose_items, decompose_coins = {}, {}
+            scripts.Item.GetItemsFromCfg(decompose_cfg, value.item_count, false, decompose_items, decompose_coins)
+            for id, item in pairs(decompose_items) do
+                if not add_items[id] then
+                    add_items[id] = item
+                else
+                    add_items[id].count = add_items[id].count + item.count
+                end
+            end
+            for id, coin in pairs(decompose_coins) do
+                if not add_coins[id] then
+                    add_coins[id] = coin
+                else
+                    add_coins[id].count = add_coins[id].count + coin.count
+                end
+            end
+
+            -- 消耗的道具
+            cost_items[value.pos] = {
+                config_id = value.config_id,
+                uniqid = value.uniqid,
+                item_count = -value.item_count,
+            }
+        end
+
+        if table.size(cost_items) <= 0 then
+            return ErrorCode.DecomposeFailed
+        end
+
+        local err_code = Bag.CheckItemsEnoughPos(BagDef.BagType.Cangku, cost_items)
+        if err_code ~= ErrorCode.None then
+            return err_code
+        end
+
+        local change_log = {}
+        err_code = Bag.DelItemsPos(BagDef.BagType.Cangku, cost_items, change_log)
+        if err_code ~= ErrorCode.None then
+            Bag.RollBackWithChange(change_log)
+            return err_code
+        end
+
+        if table.size(add_items) > 0 then
+            err_code = Bag.AddItems(BagDef.BagType.Cangku, add_items, {}, change_log)
+            if err_code ~= ErrorCode.None then
+                Bag.RollBackWithChange(change_log)
+                return err_code
+            end
+        end
+
+        if table.size(add_coins) > 0 then
+            err_code = Bag.DealCoins(add_coins, change_log)
+            if err_code ~= ErrorCode.None then
+                Bag.RollBackWithChange(change_log)
+                return err_code
+            end
+        end
+
+        return ErrorCode.None, change_log
+    end
+
+    local err_code, change_log = decompose_func()
+    if err_code ~= ErrorCode.None or not change_log then
+        return context.S2C(context.net_id, CmdCode.PBDecomposeRspCmd, {
+            code = err_code,
+            error = "分解失败",
+            uid = req.msg.uid,
+            decompose_items = req.msg.decompose_items or {},
+        }, req.msg_context.stub_id)
+    end
+
+    -- 数据存储更新
+    local save_bags = {}
+    for bagType, _ in pairs(change_log) do
+        save_bags[bagType] = 1
+    end
+    scripts.Bag.SaveAndLog(save_bags, change_log)
+
+    return context.S2C(context.net_id, CmdCode.PBDecomposeRspCmd, {
+        code = ErrorCode.None,
+        uid = req.msg.uid,
+        decompose_items = req.msg.decompose_items or {},
+    }, req.msg_context.stub_id)
 end
 
 return Bag

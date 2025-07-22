@@ -118,6 +118,25 @@
 ---@field public uid integer
 
 
+---@class PBDecomposeItem
+---@field public config_id integer
+---@field public uniqid integer
+---@field public item_count integer
+---@field public pos integer
+
+
+---@class PBDecomposeReqCmd
+---@field public uid integer
+---@field public decompose_items PBDecomposeItem[]
+
+
+---@class PBDecomposeRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public decompose_items PBDecomposeItem[]
+
+
 ---@class PBChatMsgInfo
 ---@field public channel_type integer @频道类型
 ---@field public uid integer @发送者uid
