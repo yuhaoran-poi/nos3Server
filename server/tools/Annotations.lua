@@ -1530,34 +1530,91 @@
 ---@field public update_images PBUserImage
 
 
----@class PBMailItem
----@field public item_id integer @道具ID为配置文件中的ID 使用分段来区分道具类型 [货币/普通道具/皮肤]
----@field public item_count integer
+---@class PBMailSimpleData
+---@field public mail_id integer @邮件id
+---@field public mail_type integer @邮件类型
+---@field public beg_ts integer @开始时间
+---@field public end_ts integer @结束时间
+---@field public mail_title_id integer @邮件标题id
+---@field public mail_title string @邮件标题
+---@field public is_read integer @是否已读
+---@field public is_have_items integer @是否有附件
 
 
 ---@class PBMailData
----@field public mail_id integer
----@field public mail_type integer
----@field public beg_ts integer
----@field public end_ts integer
----@field public mail_title string
----@field public mail_content string
----@field public is_read integer
----@field public is_get integer
----@field public is_del integer
----@field public items PBMailItem[]
+---@field public simple_data PBMailSimpleData
+---@field public mail_icon_id integer @邮件图标
+---@field public mail_content_id integer @邮件内容id
+---@field public mail_content string @邮件内容
+---@field public sign string @签名
+---@field public is_get integer @是否已领取
+---@field public items PBItemData[] @附件
 
 
----@class PBGetMailItemReqCmd
+---@class PBUserMailBox
+---@field public last_mail_ts integer
+---@field public mails table<integer, PBMailData>
+
+
+---@class PBGetAllMailReqCmd
 ---@field public uid integer
----@field public mail_id integer
 
 
----@class PBGetMailItemRspCmd
+---@class PBGetAllMailRspCmd
 ---@field public code integer @服务器返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public uid integer
+---@field public mail_simple_list PBMailSimpleData[]
+
+
+---@class PBGetMailDetailReqCmd
+---@field public uid integer
+---@field public mail_ids integer[]
+
+
+---@class PBGetMailDetailRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public mail_ids integer[]
+---@field public mail_list PBMailData[]
+
+
+---@class PBReadMailReqCmd
+---@field public uid integer
+---@field public mail_id integer
+
+
+---@class PBReadMailRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public mail_id integer
 ---@field public mail_data PBMailData
+
+
+---@class PBGetRewardReqCmd
+---@field public uid integer
+---@field public mail_ids integer[]
+
+
+---@class PBGetRewardRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public mail_ids integer[]
+
+
+---@class PBDelMailReqCmd
+---@field public uid integer
+---@field public mail_ids integer[]
+
+
+---@class PBDelMailRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public mail_ids integer[]
 
 
 ---@class PBUserSelectionOpt
@@ -2604,6 +2661,7 @@
 ---@field Item Item
 ---@field ItemDefine ItemDefine
 ---@field ItemImage ItemImage
+---@field Mail Mail
 ---@field MatchProxy MatchProxy
 ---@field Role Role
 ---@field Room Room
@@ -2671,6 +2729,10 @@
 
 ---@class guildnamemgr_scripts
 ---@field GuildNameMgr GuildNameMgr
+
+
+---@class mailmgr_scripts
+---@field Mailmgr Mailmgr
 
 
 ---@class nodemgr_scripts

@@ -1,45 +1,107 @@
 syntax = "proto3";
+import "item.proto";
 
-// 邮件中存放的道具
-message PBMailItem
+message PBMailSimpleData
 {
-    int32 item_id      = 1;// 道具ID为配置文件中的ID 使用分段来区分道具类型 [货币/普通道具/皮肤]
-    int32 item_count   = 2;
+    int64 mail_id		= 1;    // 邮件id
+    int32 mail_type		= 2;    // 邮件类型
+    int64 beg_ts		= 3;    // 开始时间
+	int64 end_ts		= 4;    // 结束时间
+    int32 mail_title_id	= 5;    // 邮件标题id
+    string mail_title	= 6;    // 邮件标题
+    int32 is_read		= 7;   // 是否已读
+    int32 is_have_items = 8;   // 是否有附件
 }
 
 message PBMailData
 {
-    int64 mail_id		= 1;
-	int32 mail_type		= 2;
-	int64 beg_ts		= 3;
-	int64 end_ts		= 4;
-    string mail_title	= 5;
-    string mail_content	= 6;
-    int32 is_read		= 7;
-	int32 is_get		= 8;
-	int32 is_del		= 9;
-	repeated PBMailItem items	= 10;
+    PBMailSimpleData simple_data = 1;
+    int32 mail_icon_id      = 2;    // 邮件图标
+    int32 mail_content_id   = 3;    // 邮件内容id
+    string mail_content     = 4;    // 邮件内容
+    string sign = 5;    // 签名
+	int32 is_get = 6;   // 是否已领取
+	repeated PBItemData items   = 7;   // 附件
 }
 
-// 客户端请求领取邮件附件
-message PBGetMailItemReqCmd
+message PBUserMailBox
 {
-    // 协议数据
-    int64 uid		= 1;
-	int64 mail_id	= 2;
+    int64 last_mail_ts = 1;
+    map<int64, PBMailData> mails = 2;
 }
 
-// 客户端请求领取邮件附件 返回信息
-message PBGetMailItemRspCmd
+// 客户端请求获取所有邮件列表
+message PBGetAllMailReqCmd
+{
+    int64 uid = 1;
+}
+
+message PBGetAllMailRspCmd
 {
     int32 code = 1; // 服务器返回,0成功,其他失败
     string error = 2; // 错误信息
-    // 协议数据
     int64 uid = 3;
-	PBMailData mail_data = 4;
+    repeated PBMailSimpleData mail_simple_list = 4;
 }
 
+// 客户端请求获取邮件详情
+message PBGetMailDetailReqCmd
+{
+    int64 uid = 1;
+    repeated int64 mail_ids = 2;
+}
 
+message PBGetMailDetailRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    int64 uid = 3;
+    repeated int64 mail_ids = 4;
+    repeated PBMailData mail_list = 5;
+}
 
+// 客户端读取邮件详情
+message PBReadMailReqCmd
+{
+    int64 uid = 1;
+    int64 mail_id = 2;
+}
 
+message PBReadMailRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    int64 uid = 3;
+    int64 mail_id = 4;
+    PBMailData mail_data = 5;
+}
 
+// 客户端领取邮件附件
+message PBGetRewardReqCmd
+{
+    int64 uid = 1;
+    repeated int64 mail_ids = 2;
+}
+
+message PBGetRewardRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    int64 uid = 3;
+    repeated int64 mail_ids = 4;
+}
+
+// 客户端删除邮件
+message PBDelMailReqCmd
+{
+    int64 uid = 1;
+    repeated int64 mail_ids = 2;
+}
+
+message PBDelMailRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    int64 uid = 3;
+    repeated int64 mail_ids = 4;
+}
