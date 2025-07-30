@@ -1549,11 +1549,12 @@
 ---@field public sign string @签名
 ---@field public is_get integer @是否已领取
 ---@field public items PBItemData[] @附件
+---@field public coins table<integer, PBCoin> @附件
 
 
 ---@class PBUserMailBox
 ---@field public last_mail_ts integer
----@field public mails table<integer, PBMailData>
+---@field public mails_info table<integer, PBMailData>
 
 
 ---@class PBGetAllMailReqCmd
@@ -2774,6 +2775,7 @@
 ---@field GhostUpLv GhostUpLv_cfg[]
 ---@field HumanRole HumanRole_cfg[]
 ---@field HumanSkill HumanSkill_cfg[]
+---@field ImmediatelyEmailTemplateConfig ImmediatelyEmailTemplateConfig_cfg[]
 ---@field Init Init_cfg[]
 ---@field Item Item_cfg[]
 ---@field LightConvert LightConvert_cfg[]
@@ -2785,6 +2787,7 @@
 ---@field RoleLvAward RoleLvAward_cfg[]
 ---@field RoleUpLv RoleUpLv_cfg[]
 ---@field Skin Skin_cfg[]
+---@field TriggerEmailTemplateConfig TriggerEmailTemplateConfig_cfg[]
 ---@field UniqueItem UniqueItem_cfg[]
 ---@field UpLvCostIDMapping UpLvCostIDMapping_cfg[]
 ---@field UpStar UpStar_cfg[]

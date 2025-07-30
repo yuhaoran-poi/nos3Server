@@ -22,12 +22,13 @@ message PBMailData
     string sign = 5;    // 签名
 	int32 is_get = 6;   // 是否已领取
 	repeated PBItemData items   = 7;   // 附件
+    map<int32, PBCoin> coins = 8;   // 附件
 }
 
 message PBUserMailBox
 {
     int64 last_mail_ts = 1;
-    map<int64, PBMailData> mails = 2;
+    map<int64, PBMailData> mails_info = 2;
 }
 
 // 客户端请求获取所有邮件列表
