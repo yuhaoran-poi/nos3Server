@@ -52,7 +52,7 @@ message PBRoleData
 message PBUserRoleDatas
 {
 	int32 battle_role_id			= 1;
-	map<int32, PBRoleData> role_list	= 2;
+	map<int32, PBRoleData> role_list	= 2;	//	有key则覆盖
 }
 
 // 客户端请求所有角色数据

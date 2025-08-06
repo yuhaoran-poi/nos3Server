@@ -5,6 +5,7 @@ local seri = require("seri")
 local datetime = require("moon.datetime")
 local common = require("common")
 local cluster = require("cluster")
+local json = require("json")
 local GameDef = common.GameDef
 local protocol = common.protocol
 local CmdCode = common.CmdCode
@@ -315,6 +316,33 @@ local function _internal(context)
             return moon.call("lua", addr_user, cmd, ...)
         else
             return cluster.call(node, addr_user, cmd, ...)
+        end
+    end
+
+    base_context.broadcast_gate = function(cmd, ...)
+        if not context.NODE then
+            context.NODE = math.tointeger(moon.env("NODE"))
+        end
+        local res, err = cluster.call(3999, 'nodemgr', "Nodemgr.getAllGates")
+        if err then
+            moon.error(string.format("broadcast_gate getAllGates err = %s", json.pretty_encode(err)))
+            return false, "getAllGates failed"
+        end
+        if not res then
+            moon.error("broadcast_gate getAllGates failed")
+            return false, "getAllGates failed"
+        end
+        for _, info in ipairs(res) do
+            local node, addr_gate = info.nid, info.addr_gate
+            if node ~= 0 or addr_gate ~= 0 then
+                if context.NODE == node then
+                    moon.send("lua", addr_gate, cmd, ...)
+                else
+                    cluster.send(node, addr_gate, cmd, ...)
+                end
+            else
+                moon.warn("send_gate failed, node = ", node, " addr_gate = ", addr_gate)
+            end
         end
     end
 

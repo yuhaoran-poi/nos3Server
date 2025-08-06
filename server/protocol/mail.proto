@@ -4,13 +4,15 @@ import "item.proto";
 message PBMailSimpleData
 {
     int64 mail_id		= 1;    // 邮件id
-    int32 mail_type		= 2;    // 邮件类型
-    int64 beg_ts		= 3;    // 开始时间
-	int64 end_ts		= 4;    // 结束时间
-    int32 mail_title_id	= 5;    // 邮件标题id
-    string mail_title	= 6;    // 邮件标题
-    int32 is_read		= 7;   // 是否已读
-    int32 is_have_items = 8;   // 是否有附件
+    int32 mail_config_id	= 2;    // 邮件配置id
+    int32 mail_type		= 3;    // 邮件类型
+    int64 beg_ts		= 4;    // 开始时间
+	int64 end_ts		= 5;    // 结束时间
+    int32 mail_title_id	= 6;    // 邮件标题id
+    string mail_title	= 7;    // 邮件标题
+    int32 is_read		= 8;   // 是否已读
+    int32 is_have_items = 9;   // 是否有附件
+    int32 is_get = 10;   // 是否已领取
 }
 
 message PBMailData
@@ -20,15 +22,23 @@ message PBMailData
     int32 mail_content_id   = 3;    // 邮件内容id
     string mail_content     = 4;    // 邮件内容
     string sign = 5;    // 签名
-	int32 is_get = 6;   // 是否已领取
-	repeated PBItemData items   = 7;   // 附件
-    map<int32, PBCoin> coins = 8;   // 附件
+	repeated PBItemData items   = 6;   // 附件
+    map<int32, PBCoin> coins = 7;   // 附件
 }
 
 message PBUserMailBox
 {
-    int64 last_mail_ts = 1;
-    map<int64, PBMailData> mails_info = 2;
+    int64 last_system_mail_id = 1;
+    int64 last_trigger_mail_id = 2;
+    int64 last_immediate_mail_id = 3;
+    map<int64, PBMailData> mails_info = 4;
+}
+
+message PBMailSyncCmd
+{
+    repeated int64 add_mail_ids = 1;
+    repeated int64 del_mail_ids = 2;
+    repeated int64 update_mail_ids = 3;
 }
 
 // 客户端请求获取所有邮件列表

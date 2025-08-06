@@ -23,14 +23,14 @@ message PBFriendGroupData
 {
     int32 group_id      = 1;    //分组id
     string group_name   = 2;    //分组名称
-    map<int64, PBFriendData> group_friends    = 3; //分组内的好友
+    map<int64, PBFriendData> group_friends    = 3; //分组内的好友   有key则执行覆盖
 }
 
 message PBUserFriendDatas
 {
-    map<int32, PBFriendGroupData> friend_groups     = 1; //好友分组
-    map<int64, PBApplyFriendData> apply_friends     = 2; //申请好友
-    map<int64, PBFriendData> black_list             = 3; //黑名单
+    map<int32, PBFriendGroupData> friend_groups     = 1; //好友分组 有key则执行PBFriendGroupData更新
+    map<int64, PBApplyFriendData> apply_friends     = 2; //申请好友 有key则执行覆盖
+    map<int64, PBFriendData> black_list             = 3; //黑名单   有key则执行覆盖
 }
 
 // 客户端请求好友数据
@@ -54,7 +54,7 @@ message PBGetFriendInfoRspCmd
 message PBFriendSyncCmd
 {
     PBUserFriendDatas friend_datas  = 1;
-    map<int64, PBUserAttr> friends_simple_attr  = 2; //变更好友简略信息
+    map<int64, PBUserAttr> friends_simple_attr  = 2; //变更好友简略信息 有key则执行PBUserAttr更新
 }
 
 message PBFriendOnlineSyncCmd

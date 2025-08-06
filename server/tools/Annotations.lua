@@ -67,7 +67,7 @@
 ---@class PBBag
 ---@field public bag_item_type integer
 ---@field public capacity integer
----@field public items table<integer, PBItemData>
+---@field public items table<integer, PBItemData> @有key则覆盖
 
 
 ---@class PBBags
@@ -98,8 +98,8 @@
 
 
 ---@class PBBagUpdateSyncCmd
----@field public update_items table<string, PBBag>
----@field public update_coins table<integer, PBCoin>
+---@field public update_items table<string, PBBag> @有key则执行PBBag同步
+---@field public update_coins table<integer, PBCoin> @有key则执行PBCoin同步
 
 
 ---@class PBBagOperateItemReqCmd
@@ -346,13 +346,13 @@
 ---@class PBFriendGroupData
 ---@field public group_id integer @分组id
 ---@field public group_name string @分组名称
----@field public group_friends table<integer, PBFriendData> @分组内的好友
+---@field public group_friends table<integer, PBFriendData> @分组内的好友   有key则执行覆盖
 
 
 ---@class PBUserFriendDatas
----@field public friend_groups table<integer, PBFriendGroupData> @好友分组
----@field public apply_friends table<integer, PBApplyFriendData> @申请好友
----@field public black_list table<integer, PBFriendData> @黑名单
+---@field public friend_groups table<integer, PBFriendGroupData> @好友分组 有key则执行PBFriendGroupData更新
+---@field public apply_friends table<integer, PBApplyFriendData> @申请好友 有key则执行覆盖
+---@field public black_list table<integer, PBFriendData> @黑名单   有key则执行覆盖
 
 
 ---@class PBGetFriendInfoReqCmd
@@ -369,7 +369,7 @@
 
 ---@class PBFriendSyncCmd
 ---@field public friend_datas PBUserFriendDatas
----@field public friends_simple_attr table<integer, PBUserAttr> @变更好友简略信息
+---@field public friends_simple_attr table<integer, PBUserAttr> @变更好友简略信息 有key则执行PBUserAttr更新
 
 
 ---@class PBFriendOnlineSyncCmd
@@ -524,8 +524,8 @@
 ---@class PBUserGhostDatas
 ---@field public battle_ghost_id integer @出战的鬼宠配置id
 ---@field public battle_ghost_uniqid integer @出战的鬼宠唯一id
----@field public ghost_list table<integer, PBGhostData>
----@field public ghost_image_list table<integer, PBGhostImage>
+---@field public ghost_list table<integer, PBGhostData> @有key则覆盖
+---@field public ghost_image_list table<integer, PBGhostImage> @有key则覆盖
 
 
 ---@class PBGourd
@@ -1508,11 +1508,11 @@
 
 
 ---@class PBUserImage
----@field public item_image table<integer, PBImage> @道具图鉴
----@field public magic_item_image table<integer, PBImage> @法器图鉴
----@field public human_diagrams_image table<integer, PBImage> @角色八卦牌图鉴
----@field public ghost_diagrams_image table<integer, PBImage> @鬼宠八卦牌图鉴
----@field public skin_image table<integer, PBSkinImage> @皮肤动作表情图鉴
+---@field public item_image table<integer, PBImage> @道具图鉴	有key则执行覆盖
+---@field public magic_item_image table<integer, PBImage> @法器图鉴	有key则执行覆盖
+---@field public human_diagrams_image table<integer, PBImage> @角色八卦牌图鉴	有key则执行覆盖
+---@field public ghost_diagrams_image table<integer, PBImage> @鬼宠八卦牌图鉴	有key则执行覆盖
+---@field public skin_image table<integer, PBSkinImage> @皮肤动作表情图鉴	有key则执行覆盖
 
 
 ---@class PBImageGetDataReqCmd
@@ -1532,6 +1532,7 @@
 
 ---@class PBMailSimpleData
 ---@field public mail_id integer @邮件id
+---@field public mail_config_id integer @邮件配置id
 ---@field public mail_type integer @邮件类型
 ---@field public beg_ts integer @开始时间
 ---@field public end_ts integer @结束时间
@@ -1539,6 +1540,7 @@
 ---@field public mail_title string @邮件标题
 ---@field public is_read integer @是否已读
 ---@field public is_have_items integer @是否有附件
+---@field public is_get integer @是否已领取
 
 
 ---@class PBMailData
@@ -1547,14 +1549,21 @@
 ---@field public mail_content_id integer @邮件内容id
 ---@field public mail_content string @邮件内容
 ---@field public sign string @签名
----@field public is_get integer @是否已领取
 ---@field public items PBItemData[] @附件
 ---@field public coins table<integer, PBCoin> @附件
 
 
 ---@class PBUserMailBox
----@field public last_mail_ts integer
+---@field public last_system_mail_id integer
+---@field public last_trigger_mail_id integer
+---@field public last_immediate_mail_id integer
 ---@field public mails_info table<integer, PBMailData>
+
+
+---@class PBMailSyncCmd
+---@field public add_mail_ids integer[]
+---@field public del_mail_ids integer[]
+---@field public update_mail_ids integer[]
 
 
 ---@class PBGetAllMailReqCmd
@@ -1817,7 +1826,7 @@
 
 ---@class PBUserRoleDatas
 ---@field public battle_role_id integer
----@field public role_list table<integer, PBRoleData>
+---@field public role_list table<integer, PBRoleData> @有key则覆盖
 
 
 ---@class PBClientGetUsrRolesInfoReqCmd
@@ -2391,15 +2400,15 @@
 ---@field public account_exp integer
 ---@field public guild_id integer
 ---@field public guild_name string
----@field public rank_level PBRankLevel
----@field public cur_show_role PBSimpleRoleData
----@field public pinch_face_data PBPinchFaceData @捏脸数据
+---@field public rank_level PBRankLevel @覆盖更新
+---@field public cur_show_role PBSimpleRoleData @覆盖更新
+---@field public pinch_face_data PBPinchFaceData @捏脸数据	覆盖更新
 ---@field public title integer @当前佩戴的称号
 ---@field public player_flag integer @玩家标签
 ---@field public online_time integer @最后一次在线时间
 ---@field public sum_online_time integer @累计在线时长 单位秒
 ---@field public pa_flag integer @是否禁言等操作
----@field public cur_show_ghost PBSimpleGhostData
+---@field public cur_show_ghost PBSimpleGhostData @覆盖更新
 ---@field public is_online integer @是否在线
 
 
@@ -2660,7 +2669,6 @@
 ---@field GuildProxy GuildProxy
 ---@field Hello Hello
 ---@field Item Item
----@field ItemDefine ItemDefine
 ---@field ItemImage ItemImage
 ---@field Mail Mail
 ---@field MatchProxy MatchProxy

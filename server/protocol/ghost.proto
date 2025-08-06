@@ -37,8 +37,8 @@ message PBUserGhostDatas
 {
 	int32 battle_ghost_id			= 1;	//出战的鬼宠配置id
 	int64 battle_ghost_uniqid		= 2;	//出战的鬼宠唯一id
-	map<int64, PBGhostData> ghost_list	= 3;
-	map<int32, PBGhostImage> ghost_image_list	= 4;
+	map<int64, PBGhostData> ghost_list	= 3;	//	有key则覆盖
+	map<int32, PBGhostImage> ghost_image_list	= 4;	//	有key则覆盖
 }
 
 // 鬼宠葫芦

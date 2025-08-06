@@ -112,10 +112,10 @@ namespace CommonNetCmd
 	    {
 		    FString ClassName = Msg->GetName();
 	    	ClassName = UProtobufMessage::GetClassNameWithoutSuffix(ClassName);
-	    	const ANSICHAR* AnsiStr = TCHAR_TO_UTF8(*ClassName);
-	    	const std::string Str(AnsiStr);
+	    	const FUtf8String SourceNameUtf8 = StringCast<UTF8CHAR>(*ClassName).Get();
+	    	const std::string Str =  reinterpret_cast<const char*>(*SourceNameUtf8);
 	    	return GetCmdCodeByName(Str); 
-	    	
+	    	 
 	    }
 	    return CmdCode::None;
     }

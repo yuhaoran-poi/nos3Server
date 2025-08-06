@@ -5,7 +5,7 @@ message PBBag
 {
 	int32 bag_item_type	= 1;
 	int32 capacity		= 2;
-	map<int32, PBItemData>	items	= 3;
+	map<int32, PBItemData>	items	= 3;    // 有key则覆盖
 }
 
 message PBBags
@@ -43,8 +43,8 @@ message PBBagGetCoinsRspCmd
 
 message PBBagUpdateSyncCmd
 {
-    map<string, PBBag> update_items = 1;
-    map<int32, PBCoin> update_coins = 2;
+    map<string, PBBag> update_items = 1;    // 有key则执行PBBag同步
+    map<int32, PBCoin> update_coins = 2;    // 有key则执行PBCoin同步
 }
 
 // 客户端请求堆叠,拆分,移动道具

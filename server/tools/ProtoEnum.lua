@@ -81,15 +81,15 @@ local UserAttrType = {
     account_exp = "account_exp",
     guild_id = "guild_id",
     guild_name = "guild_name",
-    rank_level = "rank_level",
-    cur_show_role = "cur_show_role",
-    pinch_face_data = "pinch_face_data", -- 捏脸数据
+    rank_level = "rank_level", -- 覆盖更新
+    cur_show_role = "cur_show_role", -- 覆盖更新
+    pinch_face_data = "pinch_face_data", -- 捏脸数据	覆盖更新
     title = "title", -- 当前佩戴的称号
     player_flag = "player_flag", -- 玩家标签
     online_time = "online_time", -- 最后一次在线时间
     sum_online_time = "sum_online_time", -- 累计在线时长 单位秒
     pa_flag = "pa_flag", -- 是否禁言等操作
-    cur_show_ghost = "cur_show_ghost",
+    cur_show_ghost = "cur_show_ghost", -- 覆盖更新
     is_online = "is_online", -- 是否在线
 }
 
