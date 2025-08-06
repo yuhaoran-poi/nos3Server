@@ -8,6 +8,7 @@ local Database = common.Database
 local GhostDef = require("common.def.GhostDef")
 local BagDef = require("common.def.BagDef")
 local ProtoEnum = require("tools.ProtoEnum")
+local ItemDefine = require("common.logic.ItemDefine")
 
 ---@type user_context
 local context = ...
@@ -470,8 +471,8 @@ function Ghost.PBClientGetUsrGhostsInfoReqCmd(req)
 end
 
 function Ghost.GetGhostEquipment(ghost_info, config_id, equip_idx)
-    local item_small_type = scripts.ItemDefine.GetItemType(config_id)
-    if item_small_type == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
+    local item_small_type = ItemDefine.GetItemType(config_id)
+    if item_small_type == ItemDefine.EItemSmallType.GhostDiagrams then
         -- 检测现在是否携带有相应位置八卦牌
         if ghost_info.digrams_cards
             and ghost_info.digrams_cards[equip_idx]
@@ -484,8 +485,8 @@ function Ghost.GetGhostEquipment(ghost_info, config_id, equip_idx)
 end
 
 function Ghost.ChangeEquipment(ghost_info, config_id, equip_idx, equip_item_data)
-    local item_small_type = scripts.ItemDefine.GetItemType(config_id)
-    if item_small_type == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
+    local item_small_type = ItemDefine.GetItemType(config_id)
+    if item_small_type == ItemDefine.EItemSmallType.GhostDiagrams then
         if equip_item_data then
             ghost_info.digrams_cards[equip_idx] = equip_item_data
         else
@@ -530,7 +531,7 @@ function Ghost.PBGhostWearEquipReqCmd(req)
 
     local item_small_type, takeoff_item_data = Ghost.GetGhostEquipment(ghost_info, item_data.common_info.config_id,
         req.msg.equip_idx)
-    if item_small_type ~= item_small_type == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
+    if item_small_type ~= item_small_type == ItemDefine.EItemSmallType.GhostDiagrams then
         return context.S2C(context.net_id, CmdCode["PBGhostWearEquipRspCmd"],
             { code = ErrorCode.ItemNotExist, error = "装备不存在", uid = context.uid }, req.msg_context.stub_id)
     end
@@ -541,7 +542,8 @@ function Ghost.PBGhostWearEquipReqCmd(req)
             { code = ErrorCode.ConfigError, error = "八卦牌配置不存在", uid = context.uid }, req.msg_context.stub_id)
     end
     if takeoff_item_data then
-        takeoff_items[takeoff_item_data.common_info.uniqid] = takeoff_item_data
+        --takeoff_items[takeoff_item_data.common_info.uniqid] = takeoff_item_data
+        table.insert(takeoff_items, takeoff_item_data)
     end
 
     -- 扣除道具消耗
@@ -609,7 +611,7 @@ function Ghost.PBGhostTakeOffEquipReqCmd(req)
     local takeoff_items = {}
     local item_small_type, takeoff_item_data = Ghost.GetGhostEquipment(ghost_info, req.msg.takeoff_config_id,
         req.msg.takeoff_idx)
-    if item_small_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+    if item_small_type == ItemDefine.EItemSmallType.HumanDiagrams then
         -- 检测八卦牌位置是否正确
         local uniqitem_cfg = GameCfg.UniqueItem[req.msg.takeoff_config_id]
         if not uniqitem_cfg or uniqitem_cfg.type5 ~= req.msg.takeoff_idx then
@@ -618,7 +620,8 @@ function Ghost.PBGhostTakeOffEquipReqCmd(req)
         end
     end
     if takeoff_item_data then
-        takeoff_items[takeoff_item_data.common_info.uniqid] = takeoff_item_data
+        --takeoff_items[takeoff_item_data.common_info.uniqid] = takeoff_item_data
+        table.insert(takeoff_items, takeoff_item_data)
     end
 
     -- 判断卸下的装备是否一致

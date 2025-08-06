@@ -14,6 +14,7 @@ local BagDef = require("common.def.BagDef")
 local ProtoEnum = require("tools.ProtoEnum")
 local UserAttrLogic = require("common.logic.UserAttrLogic")
 local CommonCfgDef = require("common.def.CommonCfgDef")
+local ItemDefine = require("common.logic.ItemDefine")
 
 ---@type user_context
 local context = ...
@@ -764,14 +765,14 @@ function User.DsAddItems(simple_items)
     local change_log = {}
     local err_code = ErrorCode.None
     for _, item in pairs(simple_items) do
-        local smallType = scripts.ItemDefine.GetItemType(item.config_id)
-        if smallType == scripts.ItemDefine.EItemSmallType.Coin then
+        local smallType = ItemDefine.GetItemType(item.config_id)
+        if smallType == ItemDefine.EItemSmallType.Coin then
             add_coins[item.config_id] = {
                 coin_id = item.config_id,
-                count = item.item_count,
+                coin_count = item.item_count,
             }
         else
-            add_items[item.config_id] = { count = item.item_count, pos = 0 }
+            add_items[item.config_id] = {id = item.config_id, count = item.item_count, pos = 0 }
         end
     end
 
@@ -780,11 +781,19 @@ function User.DsAddItems(simple_items)
         err_code = ErrorCode.ItemNotExist
     end
 
-    if table.size(add_items) > 0 then
-        err_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, add_items, {}, change_log)
+    -- 根据道具表生成item_data
+    local add_list = {}
+    scripts.Item.GetItemListFromItemsCoins(add_items, add_coins, add_list)
+    local ok, stack_items, unstack_items, deal_coins = ItemDefine.GetItemDataFromIdCount(add_list)
+    if not ok then
+        return ErrorCode.ConfigError
     end
-    if table.size(add_coins) > 0 then
-        err_code = scripts.Bag.DealCoins(add_coins, change_log)
+
+    if table.size(stack_items) + table.size(unstack_items) > 0 then
+        err_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, change_log)
+    end
+    if table.size(deal_coins) > 0 then
+        err_code = scripts.Bag.DealCoins(deal_coins, change_log)
     end
 
     if err_code == ErrorCode.None then
@@ -1232,8 +1241,8 @@ function User.PBClientItemRepairReqCmd(req)
             return errcode
         end
         local old_item_data = table.copy(item_data)
-        local smallType = scripts.ItemDefine.GetItemType(item_data.common_info.config_id)
-        if smallType == scripts.ItemDefine.EItemSmallType.MagicItem then
+        local smallType = ItemDefine.GetItemType(item_data.common_info.config_id)
+        if smallType == ItemDefine.EItemSmallType.MagicItem then
             if item_data.special_info.magic_item.strong_value <= 0 then
                 return ErrorCode.StrongNotEnough
             end
@@ -1362,7 +1371,12 @@ function User.Composite(composite_cfg)
                         and id <= RoleDef.RoleDefine.RoleID.End then
                         table.insert(add_roles, id)
                     else
-                        add_items[id] = composite_cfg.item_id[id]
+                        -- add_items[id] = composite_cfg.item_id[id]
+                        add_items[id] = {
+                            id = id,
+                            count = composite_cfg.item_id[id],
+                            pos = 0,
+                        }
                     end
                 end
 
@@ -1377,6 +1391,7 @@ function User.Composite(composite_cfg)
             else
                 if not add_items[id] then
                     add_items[id] = {
+                        id = id,
                         count = 0,
                         pos = 0,
                     }
@@ -1394,7 +1409,7 @@ function User.Composite(composite_cfg)
         end
     end
     if table.size(add_items) > 0 then
-        local err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items)
+        local err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items, {})
         if err_code ~= ErrorCode.None then
             return { code = err_code, error = "背包空间不足" }
         end
@@ -1451,6 +1466,16 @@ function User.PBSureCompositeReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
     end
 
+    local ok, stack_items, unstack_items, coins = false, nil, nil, nil
+    if table.size(composite_ret.add_items) > 0 then
+        ok, stack_items, unstack_items, coins = ItemDefine.GetItemDataFromIdCount(composite_ret.add_items)
+        if not ok then
+            rsp_msg.code = ErrorCode.ConfigError
+            rsp_msg.error = "配置错误"
+            return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    end
+
     local bag_change_log = {}
     local change_roles = {}
     -- 扣除道具消耗
@@ -1470,8 +1495,9 @@ function User.PBSureCompositeReqCmd(req)
     end
 
     if composite_ret.code == ErrorCode.None then
-        if table.size(composite_ret.add_items) > 0 then
-            rsp_msg.code = scripts.Bag.AddItems(BagDef.BagType.Cangku, composite_ret.add_items, {}, bag_change_log)
+        if stack_items and unstack_items
+         and table.size(stack_items) + table.size(unstack_items) > 0 then
+            rsp_msg.code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
             if rsp_msg.code ~= ErrorCode.None then
                 scripts.Bag.RollBackWithChange(bag_change_log)
                 return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
@@ -1555,6 +1581,16 @@ function User.PBRandomCompositeReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
     end
 
+    local ok, stack_items, unstack_items, coins = false, nil, nil, nil
+    if table.size(composite_ret.add_items) > 0 then
+        ok, stack_items, unstack_items, coins = ItemDefine.GetItemDataFromIdCount(composite_ret.add_items)
+        if not ok then
+            rsp_msg.code = ErrorCode.ConfigError
+            rsp_msg.error = "配置错误"
+            return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    end
+
     local bag_change_log = {}
     local change_roles = {}
     -- 扣除道具消耗
@@ -1574,8 +1610,9 @@ function User.PBRandomCompositeReqCmd(req)
     end
 
     if composite_ret.code == ErrorCode.None then
-        if table.size(composite_ret.add_items) > 0 then
-            rsp_msg.code = scripts.Bag.AddItems(BagDef.BagType.Cangku, composite_ret.add_items, {}, bag_change_log)
+        if stack_items and unstack_items
+            and table.size(stack_items) + table.size(unstack_items) > 0 then
+            rsp_msg.code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
             if rsp_msg.code ~= ErrorCode.None then
                 scripts.Bag.RollBackWithChange(bag_change_log)
                 return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)

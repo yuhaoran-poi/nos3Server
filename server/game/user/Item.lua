@@ -3,6 +3,7 @@ local common = require "common"
 local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
+local ItemDefine = require("common.logic.ItemDefine")
 
 ---@type user_context
 local context = ...
@@ -40,28 +41,29 @@ function Item.RangeTags(tag_pool)
     return 0
 end
 
--- 从配置中获取物品
+-- 从配置中获取道具或者货币map
 function Item.GetItemsFromCfg(item_cfg, num, negative, items, coins)
     if not item_cfg then
         return
     end
 
     for id, cnt in pairs(item_cfg) do
-        if scripts.ItemDefine.GetItemType(id) == scripts.ItemDefine.EItemSmallType.Coin then
+        if ItemDefine.GetItemType(id) == ItemDefine.EItemSmallType.Coin then
             if not coins[id] then
                 coins[id] = {
                     coin_id = id,
-                    count = 0,
+                    coin_count = 0,
                 }
             end
             if negative then
-                coins[id].count = coins[id].count - cnt * num
+                coins[id].coin_count = coins[id].coin_count - cnt * num
             else
-                coins[id].count = coins[id].count + cnt * num
+                coins[id].coin_count = coins[id].coin_count + cnt * num
             end
         else
             if not items[id] then
                 items[id] = {
+                    id = id,
                     count = 0,
                     pos = 0,
                 }
@@ -72,6 +74,20 @@ function Item.GetItemsFromCfg(item_cfg, num, negative, items, coins)
                 items[id].count = items[id].count + cnt * num
             end
         end
+    end
+end
+
+-- 把道具和货币map转换为添加列表
+function Item.GetItemListFromItemsCoins(items, coins, add_list)
+    if not items and not coins then
+        return
+    end
+
+    for id, item in pairs(items) do
+        table.insert(add_list, item)
+    end
+    for id, coin in pairs(coins) do
+        table.insert(add_list, { id = coin.coin_id, count = coin.coin_count })
     end
 end
 

@@ -126,4 +126,26 @@ function Gate.BroadcastSysChat(channel_msgs)
     return true
 end
 
+function Gate.SendSystemMail(mail_info)
+    moon.info("SendSystemMail mail_info = ", mail_info.simple_data.mail_id)
+
+    for _, c in pairs(context.uid_map) do
+        if c and c.addr_user then
+            moon.send("lua", c.addr_user, "Mail.RecvSystemMail", mail_info)
+        end
+    end
+    return true
+end
+
+function Gate.InvalidSystemMail(mail_id)
+    moon.info("InvalidSystemMail mail_id = ", mail_id)
+
+    for _, c in pairs(context.uid_map) do
+        if c and c.addr_user then
+            moon.send("lua", c.addr_user, "Mail.InvalidSystemMail", mail_id)
+        end
+    end
+    return true
+end
+
 return Gate

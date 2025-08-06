@@ -1,6 +1,11 @@
 local LuaExt = require "common.LuaExt"
 local ItemDef = {}
 
+local defaultPBCoin = {
+    coin_id = 0,
+    coin_count = 0,
+}
+
 -- 通用道具数据
 local defaultPBItemCommonData = {
     config_id = 0,
@@ -58,6 +63,11 @@ local defaultPBUserImage = {
     ghost_diagrams_image = {},
     skin_image = {},
 }
+
+--- @return PBCoin
+function ItemDef.newCoin()
+    return LuaExt.const(table.copy(defaultPBCoin))
+end
 
 --- @return PBItemCommon
 function ItemDef.newItemCommonData()

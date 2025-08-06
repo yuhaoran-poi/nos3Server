@@ -44,6 +44,7 @@ function Nodemgr.BindNode(msg)
     local n = {
         nid = msg.nid,
         node_type = msg.node_type,
+        addr_gate = msg.addr_gate,
     }
 
     context.node_map[msg.nid] = n
@@ -67,5 +68,20 @@ end
 --     print(string.format("BindGnId fd:%d net_id:%d ", req.fd, req.net_id))
 --     return true
 -- end
+
+function Nodemgr.getAllGates()
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    local all_gates = {}
+    for nid, node in pairs(context.node_map) do
+        if node.node_type == "game" then
+            table.insert(all_gates, {
+                nid = nid,
+                addr_gate = node.addr_gate,
+            })
+        end
+    end
+    
+    return all_gates
+end
 
 return Nodemgr

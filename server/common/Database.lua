@@ -915,33 +915,162 @@ function _M.RedisSetFriendRelation(addr_db_redis, user_relations)
     redis_send(addr_db_redis, "HSET", FRIEND_RELATION, table.unpack(tmp))
 end
 
--- function _M.loadmails(addr, uid)
---     local cmd = string.format([[
---         SELECT value, json FROM mgame.mails WHERE uid = %d;
---     ]], uid)
---     local res, err = moon.call("lua", addr, cmd)
---     if res and #res > 0 then
---         local pbdata = crypt.base64decode(res[1].value)
---         local _, tmp_data = protocol.decodewithname("PBUserMailDatas", pbdata)
---         return tmp_data
---     end
---     print("loadfriends failed", uid, err)
---     return nil
--- end
+function _M.loadmails(addr, uid)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.mails WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBUserMailBox", pbdata)
+        return tmp_data
+    end
+    print("loadmails failed", uid, err)
+    return nil
+end
 
--- function _M.savefriends(addr, uid, data)
---     assert(data)
+function _M.savemails(addr, uid, data)
+    assert(data)
 
---     local data_str = jencode(data)
---     local _, pbdata = protocol.encodewithname("PBUserFriendDatas", data)
---     local pbvalue = crypt.base64encode(pbdata)
---     local cmd = string.format([[
---         INSERT INTO mgame.friends (uid, value, json)
---         VALUES (%d, '%s', '%s')
---         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
---     ]], uid, pbvalue, data_str, pbvalue, data_str)
+    local data_str = jencode(data)
+    local _, pbdata = protocol.encodewithname("PBUserMailBox", data)
+    local pbvalue = crypt.base64encode(pbdata)
+    local cmd = string.format([[
+        INSERT INTO mgame.mails (uid, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
 
---     return moon.send("lua", addr, cmd)
--- end
+    return moon.send("lua", addr, cmd)
+end
+
+function _M.select_mailids(addr, uid, last_system_mail_id, now_ts)
+    local cmd = string.format([[
+        SELECT mail_id FROM mgame.system_mail WHERE mail_id > %lld AND end_ts <= %lld AND valid = 1 AND (all_user = 1 OR JSON_CONTAINS(recv_uids, %lld));
+    ]], last_system_mail_id, now_ts, uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("select_mailids err = %s", json.pretty_encode(err)))
+        return nil
+    else
+        if res then
+            local mail_ids = {}
+            for _, row in ipairs(res) do
+                mail_ids[row.mail_id] = 1
+            end
+            return mail_ids
+        end
+    end
+    print("select_mailids failed", uid, err)
+    return nil
+end
+
+function _M.select_expire_mailids(addr, uid, now_ts)
+    local cmd = string.format([[
+        SELECT mail_id FROM mgame.system_mail WHERE end_ts <= %lld AND valid = 0 AND (all_user = 1 OR JSON_CONTAINS(recv_uids, %lld));
+    ]], now_ts, uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("select_expire_mailids err = %s", json.pretty_encode(err)))
+        return nil
+    else
+        if res then
+            local mail_ids = {}
+            for _, row in ipairs(res) do
+                mail_ids[row.mail_id] = 1
+            end
+            return mail_ids
+        end
+    end
+    print("select_expire_mailids failed", uid, err)
+    return nil
+end
+
+function _M.add_system_mail(addr, mail_info, all_user, recv_uids)
+    local items_str = jencode(mail_info.items)
+    local coins_str = jencode(mail_info.coins)
+    local uids_str = json.encode(recv_uids)
+    local cmd = string.format([[
+        INSERT INTO mgame.system_mail (mail_type, beg_ts, end_ts, mail_title_id, mail_title, mail_icon_id, mail_content_id, mail_content, sign, items_data, items_json, coins_data, coins_json, all_user, recv_uids, valid)
+        VALUES (%d, %d, %d, %d, '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', %d);
+    ]], mail_info.simple_data.mail_type, mail_info.simple_data.beg_ts, mail_info.simple_data.end_ts,
+    mail_info.simple_data.mail_title_id, mail_info.simple_data.mail_title, mail_info.mail_icon_id,
+        mail_info.mail_content_id, mail_info.mail_content, mail_info.sign, mail_info.items, mail_info.items_json,
+        mail_info.items, items_str, mail_info.coins, coins_str, all_user, uids_str, 1)
+
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("add_system_mail err = %s", json.pretty_encode(err)))
+        return 0
+    else
+        if res then
+            moon.debug(string.format("add_system_mail res = %s", json.pretty_encode(res)))
+            return res
+        end
+    end
+
+    return 0
+end
+
+function _M.invalid_system_mail(addr, mail_id)
+    local cmd = string.format([[
+        UPDATE mgame.system_mail SET valid = 0 WHERE mail_id = %d;
+    ]], mail_id)
+
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("add_system_mail err = %s", json.pretty_encode(err)))
+        return 0
+    else
+        if res then
+            moon.debug(string.format("add_system_mail res = %s", json.pretty_encode(res)))
+            return res
+        end
+    end
+
+    return 0
+end
+
+function _M.get_last_system_mail_id(addr)
+    local cmd = string.format([[
+        SELECT mail_id FROM mgame.system_mail ORDER BY mail_id DESC LIMIT 1;
+    ]])
+    local res, err = moon.call("lua", addr, cmd)
+    if res and res[1] then
+        return tonumber(res[1].mail_id) or 0
+    end
+    return 0
+end
+
+-- 好友离线数据前缀常量
+local SYSTEM_MAIL_INFO = "system_mail_info"
+
+function _M.RedisGetSystemMailsInfo(addr_db_redis, mail_ids)
+    local res, err = redis_call(addr_db_redis, "HMGET", SYSTEM_MAIL_INFO, table.unpack(mail_ids))
+    if err then
+        error("RedisGetSystemMailsInfo failed:" .. tostring(err))
+        return {}
+    end
+    local mails_info = {}
+    if res and #res > 0 then
+        moon.warn(string.format("RedisGetSystemMailsInfo res = %s", json.pretty_encode(res)))
+        for i = 1, #res do
+            mails_info[mail_ids[i]] = json.decode(res[i] or "null")
+        end
+    end
+
+    return mails_info
+end
+
+function _M.RedisSetSystemMailsInfo(addr_db_redis, mail_info)
+    local tmp = {}
+    table.insert(tmp, mail_info.simple_data.mail_id)
+    table.insert(tmp, json.encode(mail_info))
+    redis_send(addr_db_redis, "HSET", SYSTEM_MAIL_INFO, table.unpack(tmp))
+end
+
+function _M.RedisDelSystemMailsInfo(addr_db_redis, mail_id)
+    redis_send(addr_db_redis, "HDEL", SYSTEM_MAIL_INFO, mail_id)
+end
 
 return _M

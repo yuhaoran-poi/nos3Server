@@ -5,6 +5,7 @@ local datetime = require("moon.datetime")
 local sharetable = require("sharetable")
 local clusterd = require("cluster")
 local ChatLogic = require("common.logic.ChatLogic") --聊天逻辑
+local MailLogic = require("common.logic.MailLogic")
 
 ---@type node_context
 local context = ...
@@ -333,15 +334,24 @@ function Console.addscore(uid, count)
 end
 
 function Console.addmail(uid, mail_key)
-	local ok, err = moon.call("lua", context.addr_mail, "Mail.AddMail", uid, {
-		mail_key = mail_key,
-		flag = 0,
-		rewards = {
-			{id = 10001, count = 1},
-			{id = 10002, count = 2},
-		},
-	})
-	return ResponseV2(ok, err)
+    local ok, err = moon.call("lua", context.addr_mail, "Mail.AddMail", uid, {
+        mail_key = mail_key,
+        flag = 0,
+        rewards = {
+            { id = 10001, count = 1 },
+            { id = 10002, count = 2 },
+        },
+    })
+    return ResponseV2(ok, err)
+end
+
+function Console.send_system_mail(send_info_str)
+	local ok, err = MailLogic.DealSystemMail(send_info_str)
+	if ok then
+        return Response(0, "OK")
+    else
+		return Response(444, err, send_info_str)
+	end
 end
 
 return Console

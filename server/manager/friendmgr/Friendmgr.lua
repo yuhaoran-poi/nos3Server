@@ -70,7 +70,7 @@ function Friendmgr.FriendOnline(uid)
             table.insert(notify_uids, friend_uid)
         end
     end
-    context.send_users(notify_uids, "Friend.OtherOnline", uid)
+    context.send_users(notify_uids, {}, "Friend.OtherOnline", uid)
 end
 
 function Friendmgr.FriendOffline(uid)
@@ -88,7 +88,7 @@ function Friendmgr.FriendOffline(uid)
             table.insert(notify_uids, friend_uid)
         end
     end
-    context.send_users(notify_uids, "Friend.OtherOffline", uid)
+    context.send_users(notify_uids, {}, "Friend.OtherOffline", uid)
 end
 
 function Friendmgr.GetRelations(uid)

@@ -186,4 +186,16 @@ function UserModel.SetFriends(friendinfos)
     DBData.friends = friendinfos
 end
 
+---@return PBUserMailBox ? nil
+function UserModel.GetMails()
+    if DBData and DBData.mails then
+        return DBData.mails
+    end
+    return nil
+end
+
+function UserModel.SetMails(mailinfos)
+    DBData.mails = mailinfos
+end
+
 return UserModel

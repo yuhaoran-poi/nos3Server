@@ -21,7 +21,9 @@ local listenfd
 local maxplayers = 10
 
 ---@class Roommgr
-local Roommgr = {}
+local Roommgr = {
+    notify_uids = {}
+}
 
 function Roommgr.Init()
     context.rooms = {}          -- 全量房间数据存储
@@ -989,7 +991,7 @@ function Roommgr.StartGame(req)
         fleet = context.conf.fleet,
         room = room_str,
     }
-    Roommgr.AddWaitDSRooms(room.room_data.roomid, json.encode(allocate_data))
+    -- Roommgr.AddWaitDSRooms(room.room_data.roomid, json.encode(allocate_data))
 
     -- 更新房间状态
     room.room_data.state = 1  -- 游戏中状态
@@ -1007,7 +1009,20 @@ function Roommgr.StartGame(req)
     redis_data.master_name = room.master_name
     Database.upsert_room(context.addr_db_server, req.roomid, room_tags, redis_data)
 
-    -- -----临时通知所有玩家进入DS------------
+    -----临时通知所有玩家进入DS------------
+    Roommgr.notify_uids = {}
+    for _, player in pairs(room.players) do
+        table.insert(Roommgr.notify_uids, player.mem_info.uid)
+        moon.error("OnEnterDs ", player.mem_info.uid)
+    end
+    moon.async(function()
+        moon.sleep(20000) -- 20秒后发送
+        context.send_users(Roommgr.notify_uids, {}, "Room.OnEnterDs", {
+            roomid = req.roomid,
+            ds_address = "192.168.2.31-9999",
+            ds_ip = "192.168.2.31",
+        })
+    end)
     -- local notify_uids = {}
     -- for _, player in pairs(room.players) do
     --     table.insert(notify_uids, player.mem_info.uid)
@@ -1018,7 +1033,7 @@ function Roommgr.StartGame(req)
     --     ds_address = "192.168.2.31-9999",
     --     ds_ip = "192.168.2.31",
     -- })
-    -- -----临时通知所有玩家进入DS------------
+    -----临时通知所有玩家进入DS------------
 
     return { code = ErrorCode.None, error = "游戏开始成功", roomid = req.roomid }
 end

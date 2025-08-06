@@ -12,10 +12,10 @@ local RoleDef = {
         RoleSkill = { Start = 1001000, End = 1012999 },
     },
     SkillType = {
-        MinorSkill_1 = 1,
-        MinorSkill_2 = 2,
-        PassiveSkill = 3,
-        MainSkill = 4,
+        MinorSkill_1 = 1, -- 小技能1
+        MinorSkill_2 = 2, -- 小技能2
+        PassiveSkill = 3, -- 被动技能
+        MainSkill = 4, -- 主技能
     },
     InlayType = 1000,
 }

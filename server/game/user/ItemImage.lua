@@ -7,6 +7,7 @@ local CmdCode = common.CmdCode
 local Database = common.Database
 local BagDef = require("common.def.BagDef")
 local ItemDef = require("common.def.ItemDef")
+local ItemDefine = require("common.logic.ItemDefine")
 
 ---@type user_context
 local context = ...
@@ -67,30 +68,30 @@ function ItemImage.SaveAndLog(config_ids)
         update_images = {},
     }
     for _, config_id in pairs(config_ids) do
-        local item_type = scripts.ItemDefine.GetItemType(config_id)
-        if item_type == scripts.ItemDefine.EItemSmallType.MagicItem then
+        local item_type = ItemDefine.GetItemType(config_id)
+        if item_type == ItemDefine.EItemSmallType.MagicItem then
             if itemImages.magic_item_image[config_id] then
                 if not update_msg.update_images.magic_item_image then
                     update_msg.update_images.magic_item_image = {}
                 end
                 update_msg.update_images.magic_item_image[config_id] = itemImages.magic_item_image[config_id]
             end
-        elseif item_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+        elseif item_type == ItemDefine.EItemSmallType.HumanDiagrams then
             if itemImages.human_diagrams_image[config_id] then
                 if not update_msg.update_images.human_diagrams_image then
                     update_msg.update_images.human_diagrams_image = {}
                 end
                 update_msg.update_images.human_diagrams_image[config_id] = itemImages.human_diagrams_image[config_id]
             end
-        elseif item_type == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
+        elseif item_type == ItemDefine.EItemSmallType.GhostDiagrams then
             if itemImages.ghost_diagrams_image[config_id] then
                 if not update_msg.update_images.ghost_diagrams_image then
                     update_msg.update_images.ghost_diagrams_image = {}
                 end
                 update_msg.update_images.ghost_diagrams_image[config_id] = itemImages.ghost_diagrams_image[config_id]
             end
-        elseif item_type == scripts.ItemDefine.EItemSmallType.RoleSkin
-            or item_type == scripts.ItemDefine.EItemSmallType.GhostSkin then
+        elseif item_type == ItemDefine.EItemSmallType.RoleSkin
+            or item_type == ItemDefine.EItemSmallType.GhostSkin then
             if not update_msg.update_images.skin_image then
                 update_msg.update_images.skin_image = {}
             end
@@ -110,32 +111,27 @@ function ItemImage.SaveAndLog(config_ids)
     ItemImage.SaveItemImagesNow()
 end
 
-function ItemImage.AddMagicItemImage(config_id, change_image_ids)
+-- map<int32, PBImage> item_image				= 1;	//道具图鉴	有key则执行覆盖
+-- map<int32, PBImage> magic_item_image		= 2;	//法器图鉴	有key则执行覆盖
+-- map<int32, PBImage> human_diagrams_image	= 3;	//角色八卦牌图鉴	有key则执行覆盖
+-- map<int32, PBImage> ghost_diagrams_image	= 4;	//鬼宠八卦牌图鉴	有key则执行覆盖
+-- map<int32, PBSkinImage> skin_image			= 5;	//皮肤动作表情图鉴	有key则执行覆盖
+function ItemImage.AddItemImage(config_id, change_image_ids)
     local itemImages = scripts.UserModel.GetItemImages()
     if not itemImages then
         return false
     end
 
-    if not itemImages.magic_item_image[config_id] then
-        local itemImage_info = ItemDef.newImage()
-        itemImage_info.config_id = config_id
-        itemImages.magic_item_image[config_id] = itemImage_info
+    local item_type = ItemDefine.GetItemType(config_id)
+    if item_type == ItemDefine.EItemSmallType.MagicItem then
+        if not itemImages.magic_item_image[config_id] then
+            local itemImage_info = ItemDef.newImage()
+            itemImage_info.config_id = config_id
+            itemImages.magic_item_image[config_id] = itemImage_info
 
-        table.insert(change_image_ids, config_id)
-    end
-
-    return true
-end
-
-function ItemImage.AddDiagramsCardImage(config_id, change_image_ids)
-    local itemImages = scripts.UserModel.GetItemImages()
-    if not itemImages then
-        return false
-    end
-
-    local item_type = scripts.ItemDefine.GetItemType(config_id)
-
-    if item_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+            table.insert(change_image_ids, config_id)
+        end
+    elseif item_type == ItemDefine.EItemSmallType.HumanDiagrams then
         if not itemImages.human_diagrams_image[config_id] then
             local itemImage_info = ItemDef.newImage()
             itemImage_info.config_id = config_id
@@ -143,7 +139,7 @@ function ItemImage.AddDiagramsCardImage(config_id, change_image_ids)
 
             table.insert(change_image_ids, config_id)
         end
-    elseif item_type == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
+    elseif item_type == ItemDefine.EItemSmallType.GhostDiagrams then
         if not itemImages.ghost_diagrams_image[config_id] then
             local itemImage_info = ItemDef.newImage()
             itemImage_info.config_id = config_id
@@ -151,8 +147,8 @@ function ItemImage.AddDiagramsCardImage(config_id, change_image_ids)
 
             table.insert(change_image_ids, config_id)
         end
-    elseif item_type == scripts.ItemDefine.EItemSmallType.RoleSkin
-        or item_type == scripts.ItemDefine.EItemSmallType.GhostSkin then
+    elseif item_type == ItemDefine.EItemSmallType.RoleSkin
+        or item_type == ItemDefine.EItemSmallType.GhostSkin then
         if not itemImages.skin_image[config_id] then
             local itemImage_info = ItemDef.newSkinImage()
             itemImage_info.config_id = config_id
@@ -160,8 +156,15 @@ function ItemImage.AddDiagramsCardImage(config_id, change_image_ids)
 
             table.insert(change_image_ids, config_id)
         end
-    else
-        return false
+    elseif item_type == ItemDefine.EItemSmallType.PlayItem
+        or item_type == ItemDefine.EItemSmallType.DurabItem then
+        if not itemImages.item_image[config_id] then
+            local itemImage_info = ItemDef.newImage()
+            itemImage_info.config_id = config_id
+            itemImages.item_image[config_id] = itemImage_info
+
+            table.insert(change_image_ids, config_id)
+        end
     end
 
     return true
@@ -173,15 +176,15 @@ function ItemImage.GetImage(config_id)
         return false
     end
 
-    local item_type = scripts.ItemDefine.GetItemType(config_id)
-    if item_type == scripts.ItemDefine.EItemSmallType.MagicItem then
+    local item_type = ItemDefine.GetItemType(config_id)
+    if item_type == ItemDefine.EItemSmallType.MagicItem then
         return itemImages.magic_item_image[config_id], item_type
-    elseif item_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+    elseif item_type == ItemDefine.EItemSmallType.HumanDiagrams then
         return itemImages.human_diagrams_image[config_id], item_type
-    elseif item_type == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
+    elseif item_type == ItemDefine.EItemSmallType.GhostDiagrams then
         return itemImages.ghost_diagrams_image[config_id], item_type
-    elseif item_type == scripts.ItemDefine.EItemSmallType.RoleSkin
-        or item_type == scripts.ItemDefine.EItemSmallType.GhostSkin then
+    elseif item_type == ItemDefine.EItemSmallType.RoleSkin
+        or item_type == ItemDefine.EItemSmallType.GhostSkin then
         return itemImages.skin_image[config_id], item_type
     else
         return itemImages.item_image[config_id], item_type
@@ -222,23 +225,23 @@ function ItemImage.UpLvImage(config_id, add_exp)
     -- 检索加经验配置
     local exps = {}
     local remain_exp = add_exp
-    if item_type == scripts.ItemDefine.EItemSmallType.MagicItem then
+    if item_type == ItemDefine.EItemSmallType.MagicItem then
         local up_exp_cfgs = GameCfg.MagicItemUpLv
         if up_exp_cfgs then
             remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp)
         end
-    elseif item_type == scripts.ItemDefine.EItemSmallType.PlayItem
-        or item_type == scripts.ItemDefine.EItemSmallType.UnStackItem then
+    elseif item_type == ItemDefine.EItemSmallType.PlayItem
+        or item_type == ItemDefine.EItemSmallType.UnStackItem then
         local up_exp_cfgs = GameCfg.GamePropUpLv
         if up_exp_cfgs then
             remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp)
         end
-    elseif item_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+    elseif item_type == ItemDefine.EItemSmallType.HumanDiagrams then
         local up_exp_cfgs = GameCfg.BaGuaBrandUpLv
         if up_exp_cfgs then
             remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp)
         end
-    elseif item_type == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
+    elseif item_type == ItemDefine.EItemSmallType.GhostDiagrams then
         local up_exp_cfgs = GameCfg.GhostEquipmentUpLv
         if up_exp_cfgs then
             remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp)
@@ -319,26 +322,26 @@ function ItemImage.CheckUseItemUpLv(config_id, exp_id, exp_cnt)
     end
 
     local after_up_exp = image_data.exp + exp_cnt
-    if item_type == scripts.ItemDefine.EItemSmallType.MagicItem then
+    if item_type == ItemDefine.EItemSmallType.MagicItem then
         local up_exp_cfgs = GameCfg.MagicItemUpLv
         local err_code = check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
         if err_code ~= ErrorCode.None then
             return err_code
         end
-    elseif item_type == scripts.ItemDefine.EItemSmallType.PlayItem
-        or item_type == scripts.ItemDefine.EItemSmallType.UnStackItem then
+    elseif item_type == ItemDefine.EItemSmallType.PlayItem
+        or item_type == ItemDefine.EItemSmallType.UnStackItem then
         local up_exp_cfgs = GameCfg.GamePropUpLv
         local err_code = check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
         if err_code ~= ErrorCode.None then
             return err_code
         end
-    elseif item_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+    elseif item_type == ItemDefine.EItemSmallType.HumanDiagrams then
         local up_exp_cfgs = GameCfg.BaGuaBrandUpLv
         local err_code = check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
         if err_code ~= ErrorCode.None then
             return err_code
         end
-    elseif item_type == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
+    elseif item_type == ItemDefine.EItemSmallType.GhostDiagrams then
         local up_exp_cfgs = GameCfg.GhostEquipmentUpLv
         local err_code = check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
         if err_code ~= ErrorCode.None then

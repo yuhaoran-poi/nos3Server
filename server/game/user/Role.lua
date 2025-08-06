@@ -9,6 +9,7 @@ local Database = common.Database
 local RoleDef = require("common.def.RoleDef")
 local BagDef = require("common.def.BagDef")
 local ProtoEnum = require("tools.ProtoEnum")
+local ItemDefine = require("common.logic.ItemDefine")
 
 ---@type user_context
 local context = ...
@@ -316,13 +317,13 @@ function Role.PBClientGetUsrRolesInfoReqCmd(req)
 end
 
 function Role.GetRoleEquipment(role_info, config_id, equip_idx)
-    local item_small_type = scripts.ItemDefine.GetItemType(config_id)
-    if item_small_type == scripts.ItemDefine.EItemSmallType.MagicItem then
+    local item_small_type = ItemDefine.GetItemType(config_id)
+    if item_small_type == ItemDefine.EItemSmallType.MagicItem then
         -- 检测现在是否携带有法器
         if role_info.magic_item and role_info.magic_item.common_info then
             return item_small_type, role_info.magic_item
         end
-    elseif item_small_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+    elseif item_small_type == ItemDefine.EItemSmallType.HumanDiagrams then
         -- 检测现在是否携带有相应位置八卦牌
         if role_info.digrams_cards
             and role_info.digrams_cards[equip_idx]
@@ -335,8 +336,8 @@ function Role.GetRoleEquipment(role_info, config_id, equip_idx)
 end
 
 function Role.ChangeEquipment(battle_role_id, role_info, config_id, equip_idx, equip_item_data)
-    local item_small_type = scripts.ItemDefine.GetItemType(config_id)
-    if item_small_type == scripts.ItemDefine.EItemSmallType.MagicItem then
+    local item_small_type = ItemDefine.GetItemType(config_id)
+    if item_small_type == ItemDefine.EItemSmallType.MagicItem then
         if equip_item_data then
             role_info.magic_item = equip_item_data
         else
@@ -358,7 +359,7 @@ function Role.ChangeEquipment(battle_role_id, role_info, config_id, equip_idx, e
             update_user_attr[ProtoEnum.UserAttrType.cur_show_role] = show_role
             scripts.User.SetUserAttr(update_user_attr, true)
         end
-    elseif item_small_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+    elseif item_small_type == ItemDefine.EItemSmallType.HumanDiagrams then
         if equip_item_data then
             role_info.digrams_cards[equip_idx] = equip_item_data
         else
@@ -681,12 +682,12 @@ function Role.PBRoleWearEquipReqCmd(req)
 
     local item_small_type, takeoff_item_data = Role.GetRoleEquipment(role_info, item_data.common_info.config_id,
         req.msg.equip_idx)
-    if item_small_type ~= scripts.ItemDefine.EItemSmallType.MagicItem
-        and item_small_type ~= item_small_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+    if item_small_type ~= ItemDefine.EItemSmallType.MagicItem
+        and item_small_type ~= item_small_type == ItemDefine.EItemSmallType.HumanDiagrams then
         return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
             { code = ErrorCode.ItemNotExist, error = "装备不存在", uid = context.uid }, req.msg_context.stub_id)
     end
-    if item_small_type == scripts.ItemDefine.EItemSmallType.MagicItem then
+    if item_small_type == ItemDefine.EItemSmallType.MagicItem then
         -- 检测法器类型是否正确
         --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
@@ -695,7 +696,7 @@ function Role.PBRoleWearEquipReqCmd(req)
                 { code = ErrorCode.ConfigError, error = "法器类型错误", uid = context.uid }, req.msg_context.stub_id)
         end
     end
-    if item_small_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+    if item_small_type == ItemDefine.EItemSmallType.HumanDiagrams then
         -- 检测八卦牌位置是否正确
         local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
         if not uniqitem_cfg or uniqitem_cfg.type5 ~= req.msg.equip_idx then
@@ -704,7 +705,8 @@ function Role.PBRoleWearEquipReqCmd(req)
         end
     end
     if takeoff_item_data then
-        takeoff_items[takeoff_item_data.common_info.uniqid] = takeoff_item_data
+        --takeoff_items[takeoff_item_data.common_info.uniqid] = takeoff_item_data
+        table.insert(takeoff_items, takeoff_item_data)
     end
 
     -- 扣除道具消耗
@@ -769,12 +771,12 @@ function Role.PBRoleTakeOffEquipReqCmd(req)
     local takeoff_items = {}
     local item_small_type, takeoff_item_data = Role.GetRoleEquipment(role_info, req.msg.takeoff_config_id,
         req.msg.takeoff_idx)
-    if item_small_type ~= scripts.ItemDefine.EItemSmallType.MagicItem
-        and item_small_type ~= item_small_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+    if item_small_type ~= ItemDefine.EItemSmallType.MagicItem
+        and item_small_type ~= item_small_type == ItemDefine.EItemSmallType.HumanDiagrams then
         return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"],
             { code = ErrorCode.ItemNotExist, error = "装备不存在", uid = context.uid }, req.msg_context.stub_id)
     end
-    if item_small_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams then
+    if item_small_type == ItemDefine.EItemSmallType.HumanDiagrams then
         -- 检测八卦牌位置是否正确
         local uniqitem_cfg = GameCfg.UniqueItem[req.msg.takeoff_config_id]
         if not uniqitem_cfg or uniqitem_cfg.type5 ~= req.msg.takeoff_idx then
@@ -783,7 +785,8 @@ function Role.PBRoleTakeOffEquipReqCmd(req)
         end
     end
     if takeoff_item_data then
-        takeoff_items[takeoff_item_data.common_info.uniqid] = takeoff_item_data
+        --takeoff_items[takeoff_item_data.common_info.uniqid] = takeoff_item_data
+        table.insert(takeoff_items, takeoff_item_data)
     end
 
     -- 判断卸下的装备是否一致
@@ -1115,29 +1118,38 @@ function Role.PBRoleGetUpLvRewardReqCmd(req)
             { code = ErrorCode.UpExpNotEnough, error = "等级不足", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    -- 计算消耗资源
-    local items, coins = scripts.Item.GetItemsFromCfg(reward_cfg.award, 1)
-    if items and table.size(items) > 0 then
-        local err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, items)
+    -- 计算获得资源
+    local add_items, add_coins = {}, {}
+    scripts.Item.GetItemsFromCfg(reward_cfg.award, 1, false, add_items, add_coins)
+    if table.size(add_items) > 0 then
+        local err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items, {})
         if err_code ~= ErrorCode.None then
             return context.S2C(context.net_id, CmdCode["PBRoleGetUpLvRewardRspCmd"],
                 { code = err_code, error = "背包空间不足" }, req.msg_context.stub_id)
         end
     end
 
+    -- 根据道具表生成item_data
+    local add_list = {}
+    scripts.Item.GetItemListFromItemsCoins(add_items, add_coins, add_list)
+    local ok, stack_items, unstack_items, deal_coins = ItemDefine.GetItemDataFromIdCount(add_list)
+    if not ok then
+        return ErrorCode.ConfigError
+    end
+
     -- 领取奖励
     local bag_change_log = {}
     local err_code_add = ErrorCode.None
-    if items and table.size(items) > 0 then
-        err_code_add = scripts.Bag.AddItems(BagDef.BagType.Cangku, items, {}, bag_change_log)
+    if table.size(stack_items) + table.size(unstack_items) > 0 then
+        err_code_add = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
         if err_code_add ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(bag_change_log)
             return context.S2C(context.net_id, CmdCode["PBRoleGetUpLvRewardRspCmd"],
                 { code = err_code_add, error = "添加道具失败" }, req.msg_context.stub_id)
         end
     end
-    if coins and table.size(coins) > 0 then
-        err_code_add = scripts.Bag.DealCoins(coins, bag_change_log)
+    if table.size(deal_coins) > 0 then
+        err_code_add = scripts.Bag.DealCoins(deal_coins, bag_change_log)
         if err_code_add ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(bag_change_log)
             return context.S2C(context.net_id, CmdCode["PBRoleGetUpLvRewardRspCmd"],
@@ -1172,8 +1184,9 @@ function Role.PBRoleGetUpLvRewardReqCmd(req)
 end
 
 function Role.PBRoleStudyBookReqCmd(req)
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 参数验证
-    if not req.msg.uid or not req.msg.composite_id then
+    if not req.msg.uid or not req.msg.roleid or not req.msg.book_id then
         return context.S2C(context.net_id, CmdCode.PBRoleStudyBookRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",

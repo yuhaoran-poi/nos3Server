@@ -8,6 +8,7 @@ local CmdCode = common.CmdCode
 local Database = common.Database
 local BagDef = require("common.def.BagDef")
 local ItemDef = require("common.def.ItemDef")
+local ItemDefine = require("common.logic.ItemDefine")
 
 ---@type user_context
 local context = ...
@@ -45,9 +46,9 @@ function Bag.Start()
     local bagdata = scripts.UserModel.GetBagData()
     if not bagdata then
         bagdata = BagDef.newBags()
-        bagdata[BagDef.BagType.Cangku].bag_item_type = scripts.ItemDefine.ItemBagType.ALL
-        bagdata[BagDef.BagType.Consume].bag_item_type = scripts.ItemDefine.ItemBagType.CONSUME
-        bagdata[BagDef.BagType.Booty].bag_item_type = scripts.ItemDefine.ItemBagType.ALL
+        bagdata[BagDef.BagType.Cangku].bag_item_type = ItemDefine.ItemBagType.ALL
+        bagdata[BagDef.BagType.Consume].bag_item_type = ItemDefine.ItemBagType.CONSUME
+        bagdata[BagDef.BagType.Booty].bag_item_type = ItemDefine.ItemBagType.ALL
 
         local init_cfg = GameCfg.Init[1]
         if not init_cfg then
@@ -58,15 +59,27 @@ function Bag.Start()
         local init_items = {}
         local change_log = {}
         for k, v in pairs(init_cfg.item) do
-            local bigType = scripts.ItemDefine.GetItemPosType(k)
-            if bigType == scripts.ItemDefine.EItemBigType.StackItem
-                or bigType == scripts.ItemDefine.EItemBigType.UnStackItem
-                or bigType == scripts.ItemDefine.EItemBigType.UniqueItem then
-                init_items[k] = { count = v }
+            local bigType = ItemDefine.GetItemPosType(k)
+            if bigType == ItemDefine.EItemBigType.StackItem
+                or bigType == ItemDefine.EItemBigType.UnStackItem
+                or bigType == ItemDefine.EItemBigType.UniqueItem then
+                local init_item_info = {
+                    id = k,
+                    count = v,
+                }
+                table.insert(init_items, init_item_info)
             end
         end
         if table.size(init_items) > 0 then
-            scripts.Bag.AddItems(BagDef.BagType.Cangku, init_items, {}, change_log)
+            local ok, stack_items, unstack_items, coins = ItemDefine.GetItemDataFromIdCount(init_items)
+            if ok then
+                if table.size(stack_items) + table.size(unstack_items) > 0 then
+                    scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, change_log)
+                end
+                -- if table.size(coins) > 0 then
+                --     scripts.Bag.DealCoins(coins, change_log)
+                -- end
+            end
         end
 
         Bag.SaveBagsNow(bagTypes)
@@ -90,16 +103,27 @@ function Bag.Start()
         local init_coins = {}
         local change_log = {}
         for k, v in pairs(init_cfg.item) do
-            local bigType = scripts.ItemDefine.GetItemPosType(k)
-            if bigType == scripts.ItemDefine.EItemBigType.Coin then
+            local bigType = ItemDefine.GetItemPosType(k)
+            if bigType == ItemDefine.EItemBigType.Coin then
+                -- init_coins[k] = ItemDef.newCoin()
+                -- init_coins[k].coin_id = k
+                -- init_coins[k].coin_count = v
                 init_coins[k] = {
-                    coin_id = k,
+                    id = k,
                     count = v,
                 }
             end
         end
         if table.size(init_coins) > 0 then
-            scripts.Bag.DealCoins(init_coins, change_log)
+            local ok, stack_items, unstack_items, coins = ItemDefine.GetItemDataFromIdCount(init_coins)
+            if ok then
+                -- if table.size(stack_items) + table.size(unstack_items) > 0 then
+                --     scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, change_log)
+                -- end
+                if table.size(coins) > 0 then
+                    scripts.Bag.DealCoins(coins, change_log)
+                end
+            end
         end
 
         Bag.SaveCoinsNow()
@@ -421,30 +445,35 @@ function Bag.AddLog(logs, pos, log_type, old_itemid, old_uniqid, old_count, old_
 end
 
 -- 添加物品（支持自动堆叠）
-function Bag.AddItem(bagType, baginfo, itemId, count, logs)
-    local item_cfg = GameCfg.Item[itemId]
+---@param bagType string
+---@param baginfo PBBag
+---@param item_data PBItemData
+---@param logs table<number, {}>
+function Bag.AddItem(bagType, baginfo, item_data, logs)
+    local item_cfg = GameCfg.Item[item_data.common_info.config_id]
     if not item_cfg then
         return ErrorCode.ItemNotExist
     end
 
     -- 类型检查
-    local item_type = scripts.ItemDefine.GetItemBagType(itemId)
-    if baginfo.bag_item_type ~= scripts.ItemDefine.ItemBagType.ALL
+    local item_type = ItemDefine.GetItemBagType(item_data.common_info.config_id)
+    if baginfo.bag_item_type ~= ItemDefine.ItemBagType.ALL
         and baginfo.bag_item_type ~= item_type then
         return ErrorCode.BagTypeMismatch
     end
 
     -- 处理物品增减
-    local remaining = count
+    local remaining = item_data.common_info.item_count
 
     -- 先尝试堆叠
     for pos, itemdata in pairs(baginfo.items) do
-        if itemdata.common_info.config_id == itemId
+        if itemdata.common_info.config_id == item_data.common_info.config_id
             and itemdata.common_info.uniqid == 0
             and itemdata.common_info.item_count < item_cfg.stack_count then
             local canAdd = math.min(item_cfg.stack_count - itemdata.common_info.item_count, remaining)
 
-            Bag.AddLog(logs, pos, BagDef.LogType.ChangeNum, itemId, 0, itemdata.common_info.item_count)
+            Bag.AddLog(logs, pos, BagDef.LogType.ChangeNum, item_data.common_info.config_id, 0,
+            itemdata.common_info.item_count)
             itemdata.common_info.item_count = itemdata.common_info.item_count + canAdd
             
             remaining = remaining - canAdd
@@ -471,12 +500,15 @@ function Bag.AddItem(bagType, baginfo, itemId, count, logs)
         for _, pos in pairs(emptyPos) do
             local canAdd = math.min(item_cfg.stack_count, remaining)
 
-            local new_item = ItemDef.newItemData()
-            new_item.itype = item_type
-            new_item.common_info.config_id = item_cfg.id
+            local new_item = table.copy(item_data)
+            if not new_item or not new_item.common_info then
+                new_item = ItemDef.newItemData()
+                new_item.itype = item_type
+                new_item.common_info.config_id = item_cfg.id
+                new_item.common_info.item_type = item_cfg.type1
+                new_item.common_info.trade_cnt = -1
+            end
             new_item.common_info.item_count = canAdd
-            new_item.common_info.item_type = item_cfg.type1
-            new_item.common_info.trade_cnt = -1
 
             Bag.AddLog(logs, pos, BagDef.LogType.ChangeNum, 0, 0, 0)
             baginfo.items[pos] = new_item
@@ -542,16 +574,16 @@ function Bag.DelItem(bagType, baginfo, itemId, count, pos, logs)
     return ErrorCode.None
 end
 
-function Bag.AddUniqItem(bagType, baginfo, itemId, uniqid, itype, logs)
+function Bag.AddUniqItem(bagType, baginfo, item_data, itype, logs)
     -- 参数校验
-    local item_cfg = GameCfg.UniqueItem[itemId]
+    local item_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
     if not item_cfg then
         return ErrorCode.ItemNotExist
     end
 
     -- 类型检查
-    local item_type = scripts.ItemDefine.GetItemBagType(itemId)
-    if baginfo.bag_item_type ~= scripts.ItemDefine.ItemBagType.ALL
+    local item_type = ItemDefine.GetItemBagType(item_data.common_info.config_id)
+    if baginfo.bag_item_type ~= ItemDefine.ItemBagType.ALL
         and baginfo.bag_item_type ~= item_type then
         return ErrorCode.BagTypeMismatch
     end
@@ -559,13 +591,19 @@ function Bag.AddUniqItem(bagType, baginfo, itemId, uniqid, itype, logs)
     -- 处理物品记录
     for pos = 1, baginfo.capacity do
         if not baginfo.items[pos] then
-            local new_item = ItemDef.newItemData()
-            new_item.itype = itype
-            new_item.common_info.config_id = item_cfg.id
-            new_item.common_info.uniqid = uniqid
-            new_item.common_info.item_count = 1
-            new_item.common_info.item_type = item_cfg.type1
-            new_item.common_info.trade_cnt = -1
+            --local new_item = ItemDef.newItemData()
+            local new_item = table.copy(item_data)
+            if not new_item or not new_item.common_info then
+                new_item = ItemDef.newItemData()
+                new_item.itype = itype
+                new_item.common_info.config_id = item_cfg.id
+                new_item.common_info.item_count = 1
+                new_item.common_info.item_type = item_cfg.type1
+                new_item.common_info.trade_cnt = -1
+            end
+            if new_item.common_info.uniqid == 0 then
+                new_item.common_info.uniqid = uuid.next()
+            end
 
             baginfo.items[pos] = new_item
             Bag.AddLog(logs, pos, BagDef.LogType.ChangeNum, 0, 0, 0)
@@ -614,17 +652,64 @@ function Bag.DelUniqItem(bagType, baginfo, itemId, uniqid, pos, logs)
     return ErrorCode.None
 end
 
-function Bag.AddMagicItem(bagType, baginfo, itemId, count, change_log)
-    for i = 1, count do
-        local uniqid = uuid.next()
-        local errorCode, add_pos = Bag.AddUniqItem(bagType, baginfo, itemId, uniqid,
-        scripts.ItemDefine.EItemSmallType.MagicItem,
-            change_log)
-        if errorCode ~= ErrorCode.None or not add_pos then
-            return errorCode
-        end
+function Bag.AddDurabItem(bagType, baginfo, item_data, change_log)
+    local item_cfg = GameCfg.Item[item_data.common_info.config_id]
+    if not item_cfg then
+        return ErrorCode.ItemNotExist
+    end
+    -- 类型检查
+    local item_type = ItemDefine.GetItemBagType(item_data.common_info.config_id)
+    if baginfo.bag_item_type ~= ItemDefine.ItemBagType.ALL
+        and baginfo.bag_item_type ~= item_type then
+        return ErrorCode.BagTypeMismatch
+    end
 
-        local itemdata = baginfo.items[add_pos]
+    -- 处理物品记录
+    local add_pos = 0
+    local itype = ItemDefine.GetItemType(item_data.common_info.config_id)
+    for pos = 1, baginfo.capacity do
+        if not baginfo.items[pos] then
+            --local new_item = ItemDef.newItemData()
+            local new_item = table.copy(item_data)
+            if not new_item
+                or not new_item.common_info
+                or not new_item.special_info
+                or not new_item.special_info.durab_item then
+                new_item = ItemDef.newItemData()
+                new_item.itype = itype
+                new_item.common_info.config_id = item_cfg.id
+                new_item.common_info.item_count = 1
+                new_item.common_info.item_type = item_cfg.type1
+                new_item.common_info.trade_cnt = -1
+                new_item.special_info.durab_item = ItemDef.newDurabItem()
+                new_item.special_info.durab_item.cur_durability = 0
+                new_item.special_info.durab_item.strong_value = 0
+            end
+            if new_item.common_info.uniqid == 0 then
+                new_item.common_info.uniqid = uuid.next()
+            end
+
+            baginfo.items[pos] = new_item
+            Bag.AddLog(change_log, pos, BagDef.LogType.ChangeNum, 0, 0, 0)
+            add_pos = pos
+        end
+    end
+    if add_pos == 0 then
+        return ErrorCode.BagFull
+    end
+
+    return ErrorCode.None
+end
+
+function Bag.AddMagicItem(bagType, baginfo, item_data, change_log)
+    local errorCode, add_pos = Bag.AddUniqItem(bagType, baginfo, item_data, ItemDefine.EItemSmallType.MagicItem,
+    change_log)
+    if errorCode ~= ErrorCode.None or not add_pos then
+        return errorCode
+    end
+
+    local itemdata = baginfo.items[add_pos]
+    if not itemdata.special_info or not itemdata.special_info.magic_item then
         itemdata.special_info = {
             magic_item = ItemDef.newMagicItem(),
         }
@@ -635,22 +720,18 @@ function Bag.AddMagicItem(bagType, baginfo, itemId, count, change_log)
         itemdata.special_info.magic_item.ability_tag = {}
     end
 
-    --添加法器图鉴
-    --scripts.ItemImage.AddMagicItemImage(itemId)
-
     return ErrorCode.None
 end
 
-function Bag.AddDiagramsCard(bagType, baginfo, itemId, count, change_log)
-    local itype = scripts.ItemDefine.GetItemType(itemId)
-    for i = 1, count do
-        local uniqid = uuid.next()
-        local errorCode, add_pos = Bag.AddUniqItem(bagType, baginfo, itemId, uniqid, itype, change_log)
-        if errorCode ~= ErrorCode.None or not add_pos then
-            return errorCode
-        end
+function Bag.AddDiagramsCard(bagType, baginfo, item_data, change_log)
+    local itype = ItemDefine.GetItemType(item_data.common_info.config_id)
+    local errorCode, add_pos = Bag.AddUniqItem(bagType, baginfo, item_data, itype, change_log)
+    if errorCode ~= ErrorCode.None or not add_pos then
+        return errorCode
+    end
 
-        local itemdata = baginfo.items[add_pos]
+    local itemdata = baginfo.items[add_pos]
+    if not itemdata.special_info or not itemdata.special_info.diagrams_item then
         itemdata.special_info = {
             diagrams_item = ItemDef.newDiagramsCard(),
         }
@@ -660,9 +741,6 @@ function Bag.AddDiagramsCard(bagType, baginfo, itemId, count, change_log)
         itemdata.special_info.diagrams_item.tags = {}
         itemdata.special_info.diagrams_item.ability_tag = {}
     end
-
-    --添加八卦牌图鉴
-    --scripts.ItemImage.AddDiagramsCardImage(itemId)
 
     return ErrorCode.None
 end
@@ -825,8 +903,8 @@ function Bag.CheckCoinsEnough(coins)
     
     --检测扣除的道具是否足够
     for coinid, coin in pairs(coins) do
-        if coin.count < 0 then
-            if not coinsdata.coins[coinid] or coinsdata.coins[coinid].coin_count + coin.count < 0 then
+        if coin.coin_count < 0 then
+            if not coinsdata.coins[coinid] or coinsdata.coins[coinid].coin_count + coin.coin_count < 0 then
                 return ErrorCode.CoinNotEnough
             end
         end
@@ -835,7 +913,7 @@ function Bag.CheckCoinsEnough(coins)
     return ErrorCode.None
 end
 
-function Bag.CheckEmptyEnough(bagType, add_items)
+function Bag.CheckEmptyEnough(bagType, add_items, add_item_datas)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
@@ -849,6 +927,12 @@ function Bag.CheckEmptyEnough(bagType, add_items)
     end
     --local baginfo = bagdata[bagType]
     local empty_pos_num = Bag.GetEmptyPosNum(bagType)
+    if add_item_datas then
+        empty_pos_num = empty_pos_num - table.size(add_item_datas)
+    end
+    if empty_pos_num < 0 then
+        return ErrorCode.BagFull
+    end
 
     -- 计算背包空间是否足够
     for itemid, item in pairs(add_items) do
@@ -861,8 +945,8 @@ function Bag.CheckEmptyEnough(bagType, add_items)
             return ErrorCode.ConfigError
         end
 
-        local item_big_type = scripts.ItemDefine.GetItemPosType(itemid)
-        if item_big_type == scripts.ItemDefine.EItemBigType.StackItem and item_cfg then
+        local item_big_type = ItemDefine.GetItemPosType(itemid)
+        if item_big_type == ItemDefine.EItemBigType.StackItem and item_cfg then
             local remaining = item.count
             local now_cnt = Bag.GetItemCount(itemid, bagType)
             local now_pos_num = Bag.GetItemPosNum(itemid, bagType)
@@ -873,8 +957,8 @@ function Bag.CheckEmptyEnough(bagType, add_items)
                     return ErrorCode.BagFull
                 end
             end
-        elseif (item_big_type == scripts.ItemDefine.EItemBigType.UnStackItem and uniqitem_cfg)
-            or (item_big_type == scripts.ItemDefine.EItemBigType.UniqueItem and uniqitem_cfg) then
+        elseif (item_big_type == ItemDefine.EItemBigType.UnStackItem and item_cfg)
+            or (item_big_type == ItemDefine.EItemBigType.UniqueItem and uniqitem_cfg) then
             empty_pos_num = empty_pos_num - item.count
             if empty_pos_num < 0 then
                 return ErrorCode.BagFull
@@ -967,7 +1051,7 @@ function Bag.DelItemsPos(bagType, del_items, change_log)
     return ErrorCode.None
 end
 
-function Bag.AddItems(bagType, add_items, add_item_datas, change_log)
+function Bag.AddItems(bagType, stack_item_datas, unstack_item_datas, change_log)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
@@ -986,44 +1070,29 @@ function Bag.AddItems(bagType, add_items, add_item_datas, change_log)
         change_log[bagType] = {}
     end
     -- 执行物品添加
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    for itemid, item in pairs(add_items) do
-        if item.count < 0 then
+    for item_id, item_data in pairs(stack_item_datas) do
+        if item_data.common_info.item_count < 0 then
             return ErrorCode.ParamInvalid
         end
-
-        local item_big_type = scripts.ItemDefine.GetItemPosType(itemid)
-        local item_small_type = scripts.ItemDefine.GetItemType(itemid)
-        if item_big_type == scripts.ItemDefine.EItemBigType.StackItem then
-            err_code = Bag.AddItem(bagType, baginfo, itemid, item.count, change_log[bagType])
-            if err_code ~= ErrorCode.None then
-                return err_code
-            end
-        elseif item_big_type == scripts.ItemDefine.EItemBigType.UnStackItem
-            or item_big_type == scripts.ItemDefine.EItemBigType.UniqueItem then
-            if item_small_type == scripts.ItemDefine.EItemSmallType.DurabItem then
-                -- 执行不可堆叠道具添加
-            elseif item_small_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams
-                or item_small_type == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
-                err_code = Bag.AddDiagramsCard(bagType, baginfo, itemid, item.count, change_log[bagType])
-                if err_code ~= ErrorCode.None then
-                    return err_code
-                end
-            elseif item_small_type == scripts.ItemDefine.EItemSmallType.MagicItem then
-                err_code = Bag.AddMagicItem(bagType, baginfo, itemid, item.count, change_log[bagType])
-                if err_code ~= ErrorCode.None then
-                    return err_code
-                end
-            else
-                return ErrorCode.ItemNotExist
-            end
-        else
-            return ErrorCode.ItemNotExist
+        err_code = Bag.AddItem(bagType, baginfo, item_data, change_log[bagType])
+        if err_code ~= ErrorCode.None then
+            return err_code
         end
     end
+    for _, item_data in pairs(unstack_item_datas) do
+        local item_small_type = ItemDefine.GetItemType(item_data.common_info.config_id)
 
-    for uniqid, item_data in pairs(add_item_datas) do
-        err_code = Bag.AddUniqItemData(bagType, baginfo, item_data, change_log[bagType])
+        if item_small_type == ItemDefine.EItemSmallType.HumanDiagrams
+            or item_small_type == ItemDefine.EItemSmallType.GhostDiagrams then
+            err_code = Bag.AddDiagramsCard(bagType, baginfo, item_data, change_log[bagType])
+        elseif item_small_type == ItemDefine.EItemSmallType.MagicItem then
+            err_code = Bag.AddMagicItem(bagType, baginfo, item_data, change_log[bagType])
+        elseif item_small_type == ItemDefine.EItemSmallType.DurabItem then
+            err_code = Bag.AddDurabItem(bagType, baginfo, item_data, change_log[bagType])
+        else
+            err_code = ErrorCode.ItemNotExist
+        end
+
         if err_code ~= ErrorCode.None then
             return err_code
         end
@@ -1037,13 +1106,7 @@ function Bag.AddItems(bagType, add_items, add_item_datas, change_log)
             and log.old_config_id == 0
             and log.old_count == 0
             and baginfo.items[pos] then
-            local item_small_type = scripts.ItemDefine.GetItemType(baginfo.items[pos].common_info.config_id)
-            if item_small_type == scripts.ItemDefine.EItemSmallType.HumanDiagrams
-                or item_small_type == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
-                scripts.ItemImage.AddDiagramsCardImage(baginfo.items[pos].common_info.config_id, change_image_ids)
-            elseif item_small_type == scripts.ItemDefine.EItemSmallType.MagicItem then
-                scripts.ItemImage.AddMagicItemImage(baginfo.items[pos].common_info.config_id, change_image_ids)
-            end
+            scripts.ItemImage.AddItemImage(baginfo.items[pos].common_info.config_id, change_image_ids)
         end
     end
     -- 发送图鉴更新消息
@@ -1061,16 +1124,14 @@ function Bag.DealCoins(coins, change_log)
     end
     
     for coinid, coin in pairs(coins) do
-        if coin.count < 0 and not coinsdata.coins[coinid] then
+        if coin.coin_count < 0 and not coinsdata.coins[coinid] then
             Bag.RollBackWithChange(change_log)
             return ErrorCode.CoinNotExist
         end
 
         if not coinsdata.coins[coinid] then
-            coinsdata.coins[coinid] = {
-                coin_id = coinid,
-                coin_count = 0,
-            }
+            coinsdata.coins[coinid] = ItemDef.newCoin()
+            coinsdata.coins[coinid].coin_id = coinid
         end
 
         if not change_log[BagDef.BagType.Coins] then
@@ -1078,7 +1139,7 @@ function Bag.DealCoins(coins, change_log)
         end
         Bag.AddLog(change_log[BagDef.BagType.Coins], coinid, BagDef.LogType.ChangeNum, coinid, 0, coinsdata.coins[coinid].coin_count)
 
-        coinsdata.coins[coinid].coin_count = coinsdata.coins[coinid].coin_count + coin.count
+        coinsdata.coins[coinid].coin_count = coinsdata.coins[coinid].coin_count + coin.coin_count
     end
 
     return ErrorCode.None
@@ -1228,8 +1289,8 @@ function Bag.SplitItem(srcBagType, srcPos, destBagType, destPos, splitCount, cha
     end
 
     -- 跨背包类型校验
-    local itemType = scripts.ItemDefine.GetItemBagType(srcItem.common_info.config_id)
-    if destBag.bag_item_type ~= scripts.ItemDefine.ItemBagType.ALL
+    local itemType = ItemDefine.GetItemBagType(srcItem.common_info.config_id)
+    if destBag.bag_item_type ~= ItemDefine.ItemBagType.ALL
         and destBag.bag_item_type ~= itemType then
         return ErrorCode.BagTypeMismatch
     end
@@ -1292,8 +1353,8 @@ function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos, change_log)
     end
 
     -- 目标背包类型校验
-    local itemType = scripts.ItemDefine.GetItemBagType(srcItem.common_info.config_id)
-    if destBag.bag_item_type ~= scripts.ItemDefine.ItemBagType.ALL
+    local itemType = ItemDefine.GetItemBagType(srcItem.common_info.config_id)
+    if destBag.bag_item_type ~= ItemDefine.ItemBagType.ALL
         and destBag.bag_item_type ~= itemType then
         return ErrorCode.BagTypeMismatch
     end
@@ -1306,8 +1367,8 @@ function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos, change_log)
             return ErrorCode.ItemNotExist
         end
         -- 检查是否可以交换
-        local destItemType = scripts.ItemDefine.GetItemBagType(destItem.common_info.config_id)
-        if srcBag.bag_item_type ~= scripts.ItemDefine.ItemBagType.ALL
+        local destItemType = ItemDefine.GetItemBagType(destItem.common_info.config_id)
+        if srcBag.bag_item_type ~= ItemDefine.ItemBagType.ALL
             and srcBag.bag_item_type ~= destItemType then
             return ErrorCode.BagTypeMismatch
         end
@@ -1559,8 +1620,8 @@ function Bag.GetSpecialItemFromCommonItem(srcBagType, srcPos, item_id)
     if not convert_config_id then
         return ErrorCode.ConfigError
     end
-    local item_type = scripts.ItemDefine.GetItemType(convert_config_id)
-    local small_types = scripts.ItemDefine.EItemSmallType
+    local item_type = ItemDefine.GetItemType(convert_config_id)
+    local small_types = ItemDefine.EItemSmallType
     if item_type ~= small_types.MagicItem
         and item_type ~= small_types.HumanDiagrams
         and item_type ~= small_types.GhostDiagrams then
@@ -1570,16 +1631,21 @@ function Bag.GetSpecialItemFromCommonItem(srcBagType, srcPos, item_id)
     local del_items = {}
     del_items[item_id] = { count = -1, pos = srcPos}
     local add_items = {}
-    add_items[convert_config_id] = { count = 1, pos = 0 }
+    add_items[convert_config_id] = { id = convert_config_id, count = 1 }
     -- 检查道具消耗
     local err_code = Bag.CheckItemsEnough(BagDef.BagType.Cangku, del_items, {})
     if err_code ~= ErrorCode.None then
         return err_code
     end
     -- 检查背包容量
-    err_code = Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items)
+    err_code = Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items, {})
     if err_code ~= ErrorCode.None then
         return err_code
+    end
+    -- 根据道具表生成item_data
+    local ok, stack_items, unstack_items, coins = ItemDefine.GetItemDataFromIdCount(add_items)
+    if not ok or table.size(stack_items) + table.size(unstack_items) <= 0 then
+        return ErrorCode.ItemNotExist
     end
 
     local change_log = {}
@@ -1591,7 +1657,7 @@ function Bag.GetSpecialItemFromCommonItem(srcBagType, srcPos, item_id)
         return err_code
     end
     -- 添加道具
-    err_code = Bag.AddItems(BagDef.BagType.Cangku, add_items, {}, change_log)
+    err_code = Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, change_log)
     if err_code ~= ErrorCode.None then
         Bag.RollBackWithChange(change_log)
         return err_code
@@ -1614,7 +1680,7 @@ function Bag.Light(op_itemdata)
     local cur_light_cnt = 0
     local cur_tags = {}
     local cur_ability_tag = {}
-    if op_itemdata.itype == scripts.ItemDefine.EItemSmallType.MagicItem then
+    if op_itemdata.itype == ItemDefine.EItemSmallType.MagicItem then
         if op_itemdata.special_info and op_itemdata.special_info.magic_item then
             cur_light_cnt = op_itemdata.special_info.magic_item.light_cnt
             cur_tags = op_itemdata.special_info.magic_item.tags
@@ -1622,8 +1688,8 @@ function Bag.Light(op_itemdata)
         else
             return ErrorCode.ItemNotExist
         end
-    elseif op_itemdata.itype == scripts.ItemDefine.EItemSmallType.HumanDiagrams
-        or op_itemdata.itype == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
+    elseif op_itemdata.itype == ItemDefine.EItemSmallType.HumanDiagrams
+        or op_itemdata.itype == ItemDefine.EItemSmallType.GhostDiagrams then
         if op_itemdata.special_info and op_itemdata.special_info.diagrams_item then
             cur_light_cnt = op_itemdata.special_info.diagrams_item.light_cnt
             cur_tags = op_itemdata.special_info.diagrams_item.tags
@@ -1782,15 +1848,15 @@ function Bag.Light(op_itemdata)
         val = new_tag_value,
     }
     moon.debug(string.format("new_tag:\n%s", json.pretty_encode(new_tag)))
-    if op_itemdata.itype == scripts.ItemDefine.EItemSmallType.MagicItem then
+    if op_itemdata.itype == ItemDefine.EItemSmallType.MagicItem then
         op_itemdata.special_info.magic_item.light_cnt = cur_light_cnt + 1
         if new_tag_id >= AbilityTagIdMin then
             table.insert(op_itemdata.special_info.magic_item.ability_tag, new_tag)
         else
             table.insert(op_itemdata.special_info.magic_item.tags, new_tag)
         end
-    elseif op_itemdata.itype == scripts.ItemDefine.EItemSmallType.HumanDiagrams
-        or op_itemdata.itype == scripts.ItemDefine.EItemSmallType.GhostDiagrams then
+    elseif op_itemdata.itype == ItemDefine.EItemSmallType.HumanDiagrams
+        or op_itemdata.itype == ItemDefine.EItemSmallType.GhostDiagrams then
         op_itemdata.special_info.diagrams_item.light_cnt = cur_light_cnt + 1
         if new_tag_id >= AbilityTagIdMin then
             table.insert(op_itemdata.special_info.diagrams_item.ability_tag, new_tag)
@@ -1821,6 +1887,7 @@ function Bag.PBDecomposeReqCmd(req)
     local function decompose_func()
         local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         local cost_items = {}
+        local add_list = {}
         local add_items, add_coins = {}, {}
         for _, value in pairs(req.msg.decompose_items) do
             -- 获取分解配置
@@ -1839,23 +1906,8 @@ function Bag.PBDecomposeReqCmd(req)
                 decompose_cfg = cfg.decompose
             end
 
-            -- 分解后获得的道具
-            local decompose_items, decompose_coins = {}, {}
-            scripts.Item.GetItemsFromCfg(decompose_cfg, value.item_count, false, decompose_items, decompose_coins)
-            for id, item in pairs(decompose_items) do
-                if not add_items[id] then
-                    add_items[id] = item
-                else
-                    add_items[id].count = add_items[id].count + item.count
-                end
-            end
-            for id, coin in pairs(decompose_coins) do
-                if not add_coins[id] then
-                    add_coins[id] = coin
-                else
-                    add_coins[id].count = add_coins[id].count + coin.count
-                end
-            end
+            -- 分解后获得的道具列表
+            scripts.Item.GetItemsFromCfg(decompose_cfg, value.item_count, false, add_items, add_coins)
 
             -- 消耗的道具
             cost_items[value.pos] = {
@@ -1867,6 +1919,13 @@ function Bag.PBDecomposeReqCmd(req)
 
         if table.size(cost_items) <= 0 then
             return ErrorCode.DecomposeFailed
+        end
+
+        -- 根据道具表生成item_data
+        scripts.Item.GetItemListFromItemsCoins(add_items, add_coins, add_list)
+        local ok, stack_items, unstack_items, deal_coins = ItemDefine.GetItemDataFromIdCount(add_list)
+        if not ok then
+            return ErrorCode.ConfigError
         end
 
         local err_code = Bag.CheckItemsEnoughPos(BagDef.BagType.Cangku, cost_items)
@@ -1881,16 +1940,16 @@ function Bag.PBDecomposeReqCmd(req)
             return err_code
         end
 
-        if table.size(add_items) > 0 then
-            err_code = Bag.AddItems(BagDef.BagType.Cangku, add_items, {}, change_log)
+        if table.size(stack_items) + table.size(unstack_items) > 0 then
+            err_code = Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, change_log)
             if err_code ~= ErrorCode.None then
                 Bag.RollBackWithChange(change_log)
                 return err_code
             end
         end
 
-        if table.size(add_coins) > 0 then
-            err_code = Bag.DealCoins(add_coins, change_log)
+        if table.size(deal_coins) > 0 then
+            err_code = Bag.DealCoins(deal_coins, change_log)
             if err_code ~= ErrorCode.None then
                 Bag.RollBackWithChange(change_log)
                 return err_code

@@ -379,6 +379,18 @@ local ErrorCode = {
     FriendApplyNotExist = 1808,
     --- 好友不在黑名单
     FriendNotInBlackList = 1809,
+
+    --邮件相关错误码
+    --- 邮件不存在
+    MailNotExist = 1901,
+    --- 邮件配置错误
+    MailConfigError = 1902,
+    --- 邮件类型错误
+    MailTypeError = 1903,
+    --- 邮件已领取
+    MailHasGet = 1904,
+    --- 邮件没有奖励
+    MailNoReward = 1905,
 }
 
 return ErrorCode
