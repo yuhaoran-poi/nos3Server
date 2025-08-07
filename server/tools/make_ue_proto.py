@@ -234,9 +234,9 @@ def generate_struct(message, content, message_types, prefix="F"):
             default_value = DEFAULT_VALUE_MAP.get(field_type.split('<')[0], "")  # 处理模板类型
 
          # 生成字段定义（添加默认值）
-        field_def = f'\tUPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Protobuf|Property",Transient)\n\t{field_type} {field_name} = {default_value};'
+        field_def = f'\tUPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Protobuf|Property")\n\t{field_type} {field_name} = {default_value};'
         # Has属性默认false
-        has_field_def = f'\tUPROPERTY(EditAnywhere, BlueprintReadWrite,Category="HasProperty")\n\tbool bHas{field_name} = false;'
+        has_field_def = f'\tUPROPERTY(EditAnywhere, BlueprintReadWrite,Category="HasProperty",Transient)\n\tbool bHas{field_name} = false;'
         if field_comment:
             # 使用列表推导式为每一行添加制表符
             indented_comment = "\n".join([f"\t{line}" for line in field_comment.splitlines()])

@@ -252,7 +252,7 @@ function Ghost.UpLv(config_id, add_exp)
             return ErrorCode.ItemUpLvCostNotExist
         end
 
-        scripts.Item.GetItemsFromCfg(cost_cfg, count / cost_cfg.cnt, true, cost_items, cost_coins)
+        ItemDefine.GetItemsFromCfg(cost_cfg, count / cost_cfg.cnt, true, cost_items, cost_coins)
     end
 
     -- 检查资源是否足够
@@ -361,7 +361,7 @@ function Ghost.UpStar(config_id)
     -- 计算消耗资源
     local cost_items = {}
     local cost_coins = {}
-    scripts.Item.GetItemsFromCfg(cost_cfg, 1, true, cost_items, cost_coins)
+    ItemDefine.GetItemsFromCfg(cost_cfg, 1, true, cost_items, cost_coins)
 
     -- 检查资源是否足够
     local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
@@ -432,6 +432,7 @@ function Ghost.InlayTabooWord(ghost_uniqid, taboo_word_id, inlay_type, uniqid)
     -- 扣除道具消耗
     local cost_items = {}
     cost_items[taboo_word_id] = {
+        id = taboo_word_id,
         count = -1,
         pos = 0,
     }

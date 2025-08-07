@@ -34,9 +34,9 @@ function Mailmgr.Start()
 end
 
 function Mailmgr.GetSystemMailIds(req_data)
-    local add_mailids = Database.select_mailids(context.addr_db_redis, req_data.uid, req_data.last_system_mail_id,
+    local add_mailids = Database.select_mailids(context.addr_db_game, req_data.uid, req_data.last_system_mail_id,
     req_data.now_ts)
-    local del_mailids = Database.select_expire_mailids(context.addr_db_redis, req_data.uid, req_data.now_ts)
+    local del_mailids = Database.select_expire_mailids(context.addr_db_game, req_data.uid, req_data.now_ts)
     local res = {
         add_mailids = add_mailids,
         del_mailids = del_mailids,
@@ -53,7 +53,7 @@ function Mailmgr.DelSystemMailDetail(mail_id)
 end
 
 function Mailmgr.AddSystemMail(mail_info, all_user, recv_uids)
-    local ret_id = Database.add_system_mail(context.addr_db_redis, mail_info, all_user, recv_uids)
+    local ret_id = Database.add_system_mail(context.addr_db_game, mail_info, all_user, recv_uids)
     if ret_id <= 0 then
         return "failed"
     end
@@ -68,7 +68,7 @@ function Mailmgr.AddSystemMail(mail_info, all_user, recv_uids)
 end
 
 function Mailmgr.InvalidSystemMail(mail_id)
-    local ret = Database.invalid_system_mail(context.addr_db_redis, mail_id)
+    local ret = Database.invalid_system_mail(context.addr_db_game, mail_id)
     if ret <= 0 then
         return "failed"
     end

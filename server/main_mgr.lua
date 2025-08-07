@@ -160,6 +160,13 @@ local function run(node_conf)
             threadid = 10,
             websocket = false,
         },
+        {
+            unique = true,
+            name = "mailmgr",
+            file = "manager/service_mailmgr.lua",
+            threadid = 11,
+            websocket = false,
+        },
     }
 
     local function Start()
@@ -171,6 +178,7 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("roommgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("citymgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("friendmgr"), "Init"))
+        assert(moon.call("lua", moon.queryservice("mailmgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("nodemgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("usermgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("teammgr"), "Start"))
@@ -178,6 +186,7 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("citymgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("guildmgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("friendmgr"), "Start"))
+        assert(moon.call("lua", moon.queryservice("mailmgr"), "Start"))
         local data = db.loadserverdata(moon.queryservice("db_server"))
         if not data then
             data = { boot_times = 0 }

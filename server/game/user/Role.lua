@@ -413,6 +413,7 @@ function Role.InlayTabooWord(roleid, taboo_word_id, inlay_type, uniqid)
     -- 扣除道具消耗
     local cost_items = {}
     cost_items[taboo_word_id] = {
+        id = taboo_word_id,
         count = -1,
         pos = 0,
     }
@@ -496,7 +497,7 @@ function Role.UpLv(roleid, add_exp)
             return ErrorCode.ItemUpLvCostNotExist
         end
 
-        scripts.Item.GetItemsFromCfg(cost_cfg, (count / cost_cfg.cnt), true, cost_items, cost_coins)
+        ItemDefine.GetItemsFromCfg(cost_cfg, (count / cost_cfg.cnt), true, cost_items, cost_coins)
     end
 
     -- 检查资源是否足够
@@ -604,7 +605,7 @@ function Role.UpStar(roleid)
     -- 计算消耗资源
     local cost_items = {}
     local cost_coins = {}
-    scripts.Item.GetItemsFromCfg(cost_cfg, 1, true, cost_items, cost_coins)
+    ItemDefine.GetItemsFromCfg(cost_cfg, 1, true, cost_items, cost_coins)
 
     -- 检查资源是否足够
     local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
@@ -766,6 +767,7 @@ function Role.PBRoleTakeOffEquipReqCmd(req)
             { code = ErrorCode.RoleNotExist, error = "角色不存在", uid = context.uid }, req.msg_context.stub_id)
     end
 
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local bag_change_log = {}
     local err_code = ErrorCode.None
     local takeoff_items = {}
@@ -1024,7 +1026,7 @@ function Role.PBRoleSkillUpStarReqCmd(req)
     -- 计算消耗资源
     local cost_items = {}
     local cost_coins = {}
-    scripts.Item.GetItemsFromCfg(cost_cfg, 1, true, cost_items, cost_coins)
+    ItemDefine.GetItemsFromCfg(cost_cfg, 1, true, cost_items, cost_coins)
 
     -- 检查资源是否足够
     local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
@@ -1120,9 +1122,9 @@ function Role.PBRoleGetUpLvRewardReqCmd(req)
 
     -- 计算获得资源
     local add_items, add_coins = {}, {}
-    scripts.Item.GetItemsFromCfg(reward_cfg.award, 1, false, add_items, add_coins)
+    ItemDefine.GetItemsFromCfg(reward_cfg.award, 1, false, add_items, add_coins)
     if table.size(add_items) > 0 then
-        local err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items, {})
+        local err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items)
         if err_code ~= ErrorCode.None then
             return context.S2C(context.net_id, CmdCode["PBRoleGetUpLvRewardRspCmd"],
                 { code = err_code, error = "背包空间不足" }, req.msg_context.stub_id)
@@ -1131,7 +1133,10 @@ function Role.PBRoleGetUpLvRewardReqCmd(req)
 
     -- 根据道具表生成item_data
     local add_list = {}
-    scripts.Item.GetItemListFromItemsCoins(add_items, add_coins, add_list)
+    ItemDefine.GetItemListFromItemsCoins(add_items, add_coins, add_list)
+    if table.size(add_list) <= 0 then
+        return ErrorCode.ConfigError
+    end
     local ok, stack_items, unstack_items, deal_coins = ItemDefine.GetItemDataFromIdCount(add_list)
     if not ok then
         return ErrorCode.ConfigError
@@ -1237,6 +1242,7 @@ function Role.PBRoleStudyBookReqCmd(req)
     -- 检查是否有真经
     local cost_items = {}
     cost_items[req.msg.book_id] = {
+        id = req.msg.book_id,
         count = -1,
         pos = 0,
     }
@@ -1405,7 +1411,7 @@ function Role.PBRoleSkillCompositeReqCmd(req)
 
     local cost_items = {}
     local cost_coins = {}
-    scripts.Item.GetItemsFromCfg(composite_cfg.unlock_cost, 1, true, cost_items, cost_coins)
+    ItemDefine.GetItemsFromCfg(composite_cfg.unlock_cost, 1, true, cost_items, cost_coins)
 
     -- 检测道具是否足够
     rsp_msg.code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})

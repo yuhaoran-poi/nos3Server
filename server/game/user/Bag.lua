@@ -59,26 +59,18 @@ function Bag.Start()
         local init_items = {}
         local change_log = {}
         for k, v in pairs(init_cfg.item) do
-            local bigType = ItemDefine.GetItemPosType(k)
-            if bigType == ItemDefine.EItemBigType.StackItem
-                or bigType == ItemDefine.EItemBigType.UnStackItem
-                or bigType == ItemDefine.EItemBigType.UniqueItem then
-                local init_item_info = {
-                    id = k,
-                    count = v,
-                }
-                table.insert(init_items, init_item_info)
-            end
+            local init_item_info = {
+                id = k,
+                count = v,
+            }
+            table.insert(init_items, init_item_info)
         end
         if table.size(init_items) > 0 then
-            local ok, stack_items, unstack_items, coins = ItemDefine.GetItemDataFromIdCount(init_items)
+            local ok, stack_items, unstack_items, deal_coins = ItemDefine.GetItemDataFromIdCount(init_items)
             if ok then
                 if table.size(stack_items) + table.size(unstack_items) > 0 then
                     scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, change_log)
                 end
-                -- if table.size(coins) > 0 then
-                --     scripts.Bag.DealCoins(coins, change_log)
-                -- end
             end
         end
 
@@ -103,25 +95,16 @@ function Bag.Start()
         local init_coins = {}
         local change_log = {}
         for k, v in pairs(init_cfg.item) do
-            local bigType = ItemDefine.GetItemPosType(k)
-            if bigType == ItemDefine.EItemBigType.Coin then
-                -- init_coins[k] = ItemDef.newCoin()
-                -- init_coins[k].coin_id = k
-                -- init_coins[k].coin_count = v
-                init_coins[k] = {
-                    id = k,
-                    count = v,
-                }
-            end
+            init_coins[k] = {
+                id = k,
+                count = v,
+            }
         end
         if table.size(init_coins) > 0 then
-            local ok, stack_items, unstack_items, coins = ItemDefine.GetItemDataFromIdCount(init_coins)
+            local ok, stack_items, unstack_items, deal_coins = ItemDefine.GetItemDataFromIdCount(init_coins)
             if ok then
-                -- if table.size(stack_items) + table.size(unstack_items) > 0 then
-                --     scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, change_log)
-                -- end
-                if table.size(coins) > 0 then
-                    scripts.Bag.DealCoins(coins, change_log)
+                if table.size(deal_coins) > 0 then
+                    scripts.Bag.DealCoins(deal_coins, change_log)
                 end
             end
         end
@@ -615,24 +598,24 @@ function Bag.AddUniqItem(bagType, baginfo, item_data, itype, logs)
     return ErrorCode.BagFull
 end
 
-function Bag.AddUniqItemData(bagType, baginfo, item_data, logs)
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    if not item_data or not item_data.common_info then
-        return ErrorCode.ItemNotExist
-    end
+-- function Bag.AddUniqItemData(bagType, baginfo, item_data, logs)
+--     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+--     if not item_data or not item_data.common_info then
+--         return ErrorCode.ItemNotExist
+--     end
 
-    -- 处理物品记录
-    for pos = 1, baginfo.capacity do
-        if not baginfo.items[pos] then
-            baginfo.items[pos] = table.copy(item_data)
-            Bag.AddLog(logs, pos, BagDef.LogType.ChangeNum, 0, 0, 0)
+--     -- 处理物品记录
+--     for pos = 1, baginfo.capacity do
+--         if not baginfo.items[pos] then
+--             baginfo.items[pos] = table.copy(item_data)
+--             Bag.AddLog(logs, pos, BagDef.LogType.ChangeNum, 0, 0, 0)
 
-            return ErrorCode.None, pos
-        end
-    end
+--             return ErrorCode.None, pos
+--         end
+--     end
 
-    return ErrorCode.BagFull
-end
+--     return ErrorCode.BagFull
+-- end
 
 function Bag.DelUniqItem(bagType, baginfo, itemId, uniqid, pos, logs)
     -- 参数校验
@@ -788,6 +771,8 @@ function Bag.GetItemPosNum(config_id, bagType)
     end
 end
 
+-- 检查道具消耗是否足够
+-- 输入参数可由ItemDefine.GetItemsFromCfg生成
 function Bag.CheckItemsEnough(bagType, del_items, del_unique_items)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
@@ -858,6 +843,7 @@ function Bag.CheckItemsEnough(bagType, del_items, del_unique_items)
     return ErrorCode.None
 end
 
+-- 根据pos检测道具是否足够
 function Bag.CheckItemsEnoughPos(bagType, del_items)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
@@ -895,6 +881,8 @@ function Bag.CheckItemsEnoughPos(bagType, del_items)
     return ErrorCode.None
 end
 
+-- 检查货币是否足够
+-- 输入参数可由ItemDefine.GetItemsFromCfg生成
 function Bag.CheckCoinsEnough(coins)
     local coinsdata = scripts.UserModel.GetCoinsData()
     if not coinsdata then
@@ -913,7 +901,9 @@ function Bag.CheckCoinsEnough(coins)
     return ErrorCode.None
 end
 
-function Bag.CheckEmptyEnough(bagType, add_items, add_item_datas)
+-- 检测是否有足够空位添加道具
+-- param add_items可由ItemDefine.GetItemsFromCfg生成
+function Bag.CheckEmptyEnough(bagType, add_items)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
@@ -925,11 +915,8 @@ function Bag.CheckEmptyEnough(bagType, add_items, add_item_datas)
     if not bagdata or not bagdata[bagType] then
         return ErrorCode.BagNotExist
     end
-    --local baginfo = bagdata[bagType]
+
     local empty_pos_num = Bag.GetEmptyPosNum(bagType)
-    if add_item_datas then
-        empty_pos_num = empty_pos_num - table.size(add_item_datas)
-    end
     if empty_pos_num < 0 then
         return ErrorCode.BagFull
     end
@@ -971,6 +958,9 @@ function Bag.CheckEmptyEnough(bagType, add_items, add_item_datas)
     return ErrorCode.None
 end
 
+-- 扣除道具
+-- param del_items可由ItemDefine.GetItemsFromCfg生成
+-- param del_unique_items={[uniqid] = {config_id = 1, uniqid = 1, pos = 1}}
 function Bag.DelItems(bagType, del_items, del_unique_items, change_log)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
@@ -1013,6 +1003,8 @@ function Bag.DelItems(bagType, del_items, del_unique_items, change_log)
     return ErrorCode.None
 end
 
+-- 按格子号扣除道具
+-- param del_items = {[pos] = {config_id = 1, uniqid = 0, item_count = -1}}
 function Bag.DelItemsPos(bagType, del_items, change_log)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
@@ -1051,6 +1043,8 @@ function Bag.DelItemsPos(bagType, del_items, change_log)
     return ErrorCode.None
 end
 
+-- 批量添加道具
+-- param stack_item_datas,unstack_item_datas可由ItemDefine.GetItemDataFromIdCount生成
 function Bag.AddItems(bagType, stack_item_datas, unstack_item_datas, change_log)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
@@ -1117,6 +1111,8 @@ function Bag.AddItems(bagType, stack_item_datas, unstack_item_datas, change_log)
     return ErrorCode.None
 end
 
+-- 增加或扣除货币
+-- param coins = {[PBCoin.coin_id] = PBCoin}
 function Bag.DealCoins(coins, change_log)
     local coinsdata = scripts.UserModel.GetCoinsData()
     if not coinsdata then
@@ -1514,6 +1510,7 @@ function Bag.InlayTabooWord(taboo_word_id, inlay_type, uniqid)
     -- 扣除道具消耗
     local cost_items = {}
     cost_items[taboo_word_id] = {
+        id = taboo_word_id,
         count = -1,
         pos = 0,
     }
@@ -1628,29 +1625,30 @@ function Bag.GetSpecialItemFromCommonItem(srcBagType, srcPos, item_id)
         return ErrorCode.ItemTypeMismatch
     end
 
-    local del_items = {}
-    del_items[item_id] = { count = -1, pos = srcPos}
-    local add_items = {}
-    add_items[convert_config_id] = { id = convert_config_id, count = 1 }
     -- 检查道具消耗
+    local del_items = {}
+    del_items[item_id] = { id = item_id, count = -1, pos = srcPos }
     local err_code = Bag.CheckItemsEnough(BagDef.BagType.Cangku, del_items, {})
     if err_code ~= ErrorCode.None then
         return err_code
     end
+
     -- 检查背包容量
-    err_code = Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items, {})
+    local add_items = {}
+    add_items[convert_config_id] = { id = convert_config_id, count = 1, pos = 0 }
+    err_code = Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items)
     if err_code ~= ErrorCode.None then
         return err_code
     end
+
     -- 根据道具表生成item_data
-    local ok, stack_items, unstack_items, coins = ItemDefine.GetItemDataFromIdCount(add_items)
+    local ok, stack_items, unstack_items, deal_coins = ItemDefine.GetItemDataFromIdCount(add_items)
     if not ok or table.size(stack_items) + table.size(unstack_items) <= 0 then
         return ErrorCode.ItemNotExist
     end
 
     local change_log = {}
     -- 扣除道具消耗
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     err_code = Bag.DelItems(BagDef.BagType.Cangku, del_items, {}, change_log)
     if err_code ~= ErrorCode.None then
         Bag.RollBackWithChange(change_log)
@@ -1738,7 +1736,7 @@ function Bag.Light(op_itemdata)
 
     -- 检查消耗品数量
     local cost_items, cost_coins = {}, {}
-    scripts.Item.GetItemsFromCfg(cost_cfg, 1, true, cost_items, cost_coins)
+    ItemDefine.GetItemsFromCfg(cost_cfg, 1, true, cost_items, cost_coins)
     local err_code_items = Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
     if err_code_items ~= ErrorCode.None then
         return err_code_items
@@ -1887,7 +1885,6 @@ function Bag.PBDecomposeReqCmd(req)
     local function decompose_func()
         local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         local cost_items = {}
-        local add_list = {}
         local add_items, add_coins = {}, {}
         for _, value in pairs(req.msg.decompose_items) do
             -- 获取分解配置
@@ -1907,7 +1904,7 @@ function Bag.PBDecomposeReqCmd(req)
             end
 
             -- 分解后获得的道具列表
-            scripts.Item.GetItemsFromCfg(decompose_cfg, value.item_count, false, add_items, add_coins)
+            ItemDefine.GetItemsFromCfg(decompose_cfg, value.item_count, false, add_items, add_coins)
 
             -- 消耗的道具
             cost_items[value.pos] = {
@@ -1920,17 +1917,25 @@ function Bag.PBDecomposeReqCmd(req)
         if table.size(cost_items) <= 0 then
             return ErrorCode.DecomposeFailed
         end
-
-        -- 根据道具表生成item_data
-        scripts.Item.GetItemListFromItemsCoins(add_items, add_coins, add_list)
-        local ok, stack_items, unstack_items, deal_coins = ItemDefine.GetItemDataFromIdCount(add_list)
-        if not ok then
-            return ErrorCode.ConfigError
-        end
-
         local err_code = Bag.CheckItemsEnoughPos(BagDef.BagType.Cangku, cost_items)
         if err_code ~= ErrorCode.None then
             return err_code
+        end
+
+        err_code = Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items)
+        if err_code ~= ErrorCode.None then
+            return err_code
+        end
+
+        -- 根据道具表生成item_data
+        local add_list = {}
+        ItemDefine.GetItemListFromItemsCoins(add_items, add_coins, add_list)
+        if table.size(add_list) <= 0 then
+            return ErrorCode.ConfigError
+        end
+        local ok, stack_items, unstack_items, deal_coins = ItemDefine.GetItemDataFromIdCount(add_list)
+        if not ok then
+            return ErrorCode.ConfigError
         end
 
         local change_log = {}

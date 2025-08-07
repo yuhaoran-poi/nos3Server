@@ -783,7 +783,7 @@ function User.DsAddItems(simple_items)
 
     -- 根据道具表生成item_data
     local add_list = {}
-    scripts.Item.GetItemListFromItemsCoins(add_items, add_coins, add_list)
+    ItemDefine.GetItemListFromItemsCoins(add_items, add_coins, add_list)
     local ok, stack_items, unstack_items, deal_coins = ItemDefine.GetItemDataFromIdCount(add_list)
     if not ok then
         return ErrorCode.ConfigError
@@ -898,6 +898,7 @@ function User.PBUseItemUpLvReqCmd(req)
 
     local cost_items = {}
     cost_items[req.msg.cost_id] = {
+        id = req.msg.cost_id,
         count = 0,
         pos = 0,
     }
@@ -1265,7 +1266,7 @@ function User.PBClientItemRepairReqCmd(req)
             end
             local cost_items = {}
             local cost_coins = {}
-            scripts.Item.GetItemsFromCfg(common_cfg.items, add_durability, true, cost_items, cost_coins)
+            ItemDefine.GetItemsFromCfg(common_cfg.items, add_durability, true, cost_items, cost_coins)
 
             -- 检测道具是否足够
             errcode = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
@@ -1409,7 +1410,7 @@ function User.Composite(composite_cfg)
         end
     end
     if table.size(add_items) > 0 then
-        local err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items, {})
+        local err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items)
         if err_code ~= ErrorCode.None then
             return { code = err_code, error = "背包空间不足" }
         end
@@ -1444,7 +1445,7 @@ function User.PBSureCompositeReqCmd(req)
 
     local cost_items = {}
     local cost_coins = {}
-    scripts.Item.GetItemsFromCfg(composite_cfg.cost, 1, true, cost_items, cost_coins)
+    ItemDefine.GetItemsFromCfg(composite_cfg.cost, 1, true, cost_items, cost_coins)
 
     -- 检测道具是否足够
     rsp_msg.code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
@@ -1466,9 +1467,9 @@ function User.PBSureCompositeReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
     end
 
-    local ok, stack_items, unstack_items, coins = false, nil, nil, nil
+    local ok, stack_items, unstack_items, deal_coins = false, nil, nil, nil
     if table.size(composite_ret.add_items) > 0 then
-        ok, stack_items, unstack_items, coins = ItemDefine.GetItemDataFromIdCount(composite_ret.add_items)
+        ok, stack_items, unstack_items, deal_coins = ItemDefine.GetItemDataFromIdCount(composite_ret.add_items)
         if not ok then
             rsp_msg.code = ErrorCode.ConfigError
             rsp_msg.error = "配置错误"
@@ -1559,7 +1560,7 @@ function User.PBRandomCompositeReqCmd(req)
 
     local cost_items = {}
     local cost_coins = {}
-    scripts.Item.GetItemsFromCfg(composite_cfg.cost, 1, true, cost_items, cost_coins)
+    ItemDefine.GetItemsFromCfg(composite_cfg.cost, 1, true, cost_items, cost_coins)
 
     -- 检测道具是否足够
     rsp_msg.code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
@@ -1581,9 +1582,9 @@ function User.PBRandomCompositeReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
     end
 
-    local ok, stack_items, unstack_items, coins = false, nil, nil, nil
+    local ok, stack_items, unstack_items, deal_coins = false, nil, nil, nil
     if table.size(composite_ret.add_items) > 0 then
-        ok, stack_items, unstack_items, coins = ItemDefine.GetItemDataFromIdCount(composite_ret.add_items)
+        ok, stack_items, unstack_items, deal_coins = ItemDefine.GetItemDataFromIdCount(composite_ret.add_items)
         if not ok then
             rsp_msg.code = ErrorCode.ConfigError
             rsp_msg.error = "配置错误"

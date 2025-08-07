@@ -261,7 +261,7 @@ function ItemImage.UpLvImage(config_id, add_exp)
             return ErrorCode.ItemUpLvCostNotExist
         end
 
-        scripts.Item.GetItemsFromCfg(cost_cfg, (count / cost_cfg.cnt), true, cost_items, cost_coins)
+        ItemDefine.GetItemsFromCfg(cost_cfg, (count / cost_cfg.cnt), true, cost_items, cost_coins)
     end
 
     -- 检查资源是否足够
@@ -388,7 +388,7 @@ function ItemImage.UpStarImage(config_id)
     -- 计算消耗资源
     local cost_items = {}
     local cost_coins = {}
-    scripts.Item.GetItemsFromCfg(cost_cfg, 1, true, cost_items, cost_coins)
+    ItemDefine.GetItemsFromCfg(cost_cfg, 1, true, cost_items, cost_coins)
 
     -- 检查资源是否足够
     local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})

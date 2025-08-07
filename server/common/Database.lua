@@ -946,7 +946,7 @@ end
 
 function _M.select_mailids(addr, uid, last_system_mail_id, now_ts)
     local cmd = string.format([[
-        SELECT mail_id FROM mgame.system_mail WHERE mail_id > %lld AND end_ts <= %lld AND valid = 1 AND (all_user = 1 OR JSON_CONTAINS(recv_uids, %lld));
+        SELECT mail_id FROM mgame.system_mail WHERE mail_id > %d AND end_ts < %d AND valid = 1 AND (all_user = 1 OR JSON_CONTAINS(recv_uids, '%d'));
     ]], last_system_mail_id, now_ts, uid)
     local res, err = moon.call("lua", addr, cmd)
     if err then
@@ -967,7 +967,7 @@ end
 
 function _M.select_expire_mailids(addr, uid, now_ts)
     local cmd = string.format([[
-        SELECT mail_id FROM mgame.system_mail WHERE end_ts <= %lld AND valid = 0 AND (all_user = 1 OR JSON_CONTAINS(recv_uids, %lld));
+        SELECT mail_id FROM mgame.system_mail WHERE end_ts <= %d AND valid = 0 AND (all_user = 1 OR JSON_CONTAINS(recv_uids, %d));
     ]], now_ts, uid)
     local res, err = moon.call("lua", addr, cmd)
     if err then

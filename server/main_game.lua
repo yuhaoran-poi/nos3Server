@@ -181,6 +181,7 @@ local function run(node_conf)
         local nodeinfo = {
             nid = moon.env("NODE"),
             node_type = moon.env("SERVER_TYPE"),
+            addr_gate = moon.queryservice("gate"),
         }
         assert(moon.call("lua", moon.queryservice("node"), "Console.Notify_nodemgr", nodeinfo))
         local ChatLogic = require("common.logic.ChatLogic") --聊天逻辑
