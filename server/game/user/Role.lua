@@ -679,7 +679,6 @@ function Role.PBRoleWearEquipReqCmd(req)
     }
     local bag_change_log = {}
     local err_code = ErrorCode.None
-    local takeoff_items = {}
 
     local item_small_type, takeoff_item_data = Role.GetRoleEquipment(role_info, item_data.common_info.config_id,
         req.msg.equip_idx)
@@ -705,10 +704,6 @@ function Role.PBRoleWearEquipReqCmd(req)
                 { code = ErrorCode.ConfigError, error = "八卦牌类型错误", uid = context.uid }, req.msg_context.stub_id)
         end
     end
-    if takeoff_item_data then
-        --takeoff_items[takeoff_item_data.common_info.uniqid] = takeoff_item_data
-        table.insert(takeoff_items, takeoff_item_data)
-    end
 
     -- 扣除道具消耗
     err_code = scripts.Bag.DelItems(req.msg.bag_name, {}, del_unique_items, bag_change_log)
@@ -717,12 +712,17 @@ function Role.PBRoleWearEquipReqCmd(req)
         return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
             { code = err_code, error = "更换装备失败", uid = context.uid }, req.msg_context.stub_id)
     end
-    -- 添加道具
-    err_code = scripts.Bag.AddItems(req.msg.bag_name, {}, takeoff_items, bag_change_log)
-    if err_code ~= ErrorCode.None then
-        scripts.Bag.RollBackWithChange(bag_change_log)
-        return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
-            { code = err_code, error = "更换装备失败", uid = context.uid }, req.msg_context.stub_id)
+
+    if takeoff_item_data then
+        local takeoff_items = {}
+        table.insert(takeoff_items, takeoff_item_data)
+        -- 添加道具
+        err_code = scripts.Bag.AddItems(req.msg.bag_name, {}, takeoff_items, bag_change_log)
+        if err_code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
+                { code = err_code, error = "更换装备失败", uid = context.uid }, req.msg_context.stub_id)
+        end
     end
 
     -- 角色穿戴新装备
@@ -770,7 +770,6 @@ function Role.PBRoleTakeOffEquipReqCmd(req)
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local bag_change_log = {}
     local err_code = ErrorCode.None
-    local takeoff_items = {}
     local item_small_type, takeoff_item_data = Role.GetRoleEquipment(role_info, req.msg.takeoff_config_id,
         req.msg.takeoff_idx)
     if item_small_type ~= ItemDefine.EItemSmallType.MagicItem
@@ -786,20 +785,18 @@ function Role.PBRoleTakeOffEquipReqCmd(req)
                 { code = ErrorCode.ConfigError, error = "八卦牌配置不存在", uid = context.uid }, req.msg_context.stub_id)
         end
     end
-    if takeoff_item_data then
-        --takeoff_items[takeoff_item_data.common_info.uniqid] = takeoff_item_data
-        table.insert(takeoff_items, takeoff_item_data)
-    end
 
     -- 判断卸下的装备是否一致
-    if not takeoff_items[req.msg.takeoff_uniqid]
-        or not takeoff_items[req.msg.takeoff_uniqid].common_info
-        or takeoff_items[req.msg.takeoff_uniqid].common_info.config_id ~= req.msg.takeoff_config_id
-        or takeoff_items[req.msg.takeoff_uniqid].common_info.uniqid ~= req.msg.takeoff_uniqid then
+    if not takeoff_item_data
+        or not takeoff_item_data.common_info
+        or takeoff_item_data.common_info.config_id ~= req.msg.takeoff_config_id
+        or takeoff_item_data.common_info.uniqid ~= req.msg.takeoff_uniqid then
         return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"],
             { code = ErrorCode.ItemNotExist, error = "装备不存在", uid = context.uid }, req.msg_context.stub_id)
     end
 
+    local takeoff_items = {}
+    table.insert(takeoff_items, takeoff_item_data)
     -- 添加道具
     err_code = scripts.Bag.AddItems(req.msg.bag_name, {}, takeoff_items, bag_change_log)
     if err_code ~= ErrorCode.None then
