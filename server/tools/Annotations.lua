@@ -1549,7 +1549,8 @@
 ---@field public mail_content_id integer @邮件内容id
 ---@field public mail_content string @邮件内容
 ---@field public sign string @签名
----@field public items PBItemData[] @附件
+---@field public items_simple table<integer, PBItemSimple> @附件
+---@field public item_datas PBItemData[] @附件
 ---@field public coins table<integer, PBCoin> @附件
 
 

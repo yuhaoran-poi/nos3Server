@@ -222,8 +222,7 @@ end
 -- return stack_items = {[PBItemData.common_info.config_id] = PBItemData}
 -- return unstack_items = {PBItemData, PBItemData}
 -- return stack_coins = {[PBCoin.coin_id] = PBCoin}
-function ItemDefine.GetItemDataFromIdCount(item_list)
-    local stack_items, unstack_items, stack_coins = {}, {}, {}
+function ItemDefine.GetItemDataFromIdCount(item_list, stack_items, unstack_items, stack_coins)
     if item_list and table.size(item_list) > 0 then
         for _, item in pairs(item_list) do
             if not item.id or not item.count or item.count == 0 then
@@ -361,7 +360,7 @@ function ItemDefine.GetItemDataFromIdCount(item_list)
             end
         end
     end
-    return true, stack_items, unstack_items, stack_coins
+    return true
 end
 
 return ItemDefine

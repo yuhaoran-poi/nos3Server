@@ -46,6 +46,12 @@ local defaultPBItemData = {
     special_info = {},
 }
 
+local defaultPBItemSimple = {
+    config_id = 0,
+    item_count = 0,
+    uniqid = 0,
+}
+
 local defaultPBImage = {
     config_id = 0,
     star_level = 0,
@@ -92,6 +98,11 @@ end
 --- @return PBItemData
 function ItemDef.newItemData()
     return LuaExt.const(table.copy(defaultPBItemData))
+end
+
+--- @return PBItemSimple
+function ItemDef.newItemSimple()
+    return LuaExt.const(table.copy(defaultPBItemSimple))
 end
 
 --- @return PBImage

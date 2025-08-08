@@ -39,7 +39,10 @@ function MailLogic.DealSystemMail(send_info_str)
         return false, "send_info_str sign error"
     end
 
-    local ok, stack_items, unstack_items, coins = ItemDefine.GetItemDataFromIdCount(send_info.items)
+    for key, value in pairs(t) do
+        
+    end
+    local ok, stack_items, unstack_items, deal_coins = ItemDefine.GetItemDataFromIdCount(send_info.items)
     if not ok then
         return false, "send_info_str items error"
     end

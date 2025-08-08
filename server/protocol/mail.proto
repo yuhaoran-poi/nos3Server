@@ -22,8 +22,9 @@ message PBMailData
     int32 mail_content_id   = 3;    // 邮件内容id
     string mail_content     = 4;    // 邮件内容
     string sign = 5;    // 签名
-	repeated PBItemData items   = 6;   // 附件
-    map<int32, PBCoin> coins = 7;   // 附件
+    map<int32, PBItemSimple> items_simple = 6;   // 附件
+    repeated PBItemData item_datas   = 7;   // 附件
+    map<int32, PBCoin> coins = 8;   // 附件
 }
 
 message PBUserMailBox

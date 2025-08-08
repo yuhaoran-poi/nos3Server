@@ -341,9 +341,10 @@ function Role.ChangeEquipment(battle_role_id, role_info, config_id, equip_idx, e
         if equip_item_data then
             role_info.magic_item = equip_item_data
         else
-            role_info.magic_item = nil
+            role_info.magic_item = {}
         end
         
+        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         -- 同步到玩家属性上
         if battle_role_id == role_info.config_id then
             local show_role = RoleDef.newSimpleRoleData()
@@ -1121,7 +1122,7 @@ function Role.PBRoleGetUpLvRewardReqCmd(req)
     local add_items, add_coins = {}, {}
     ItemDefine.GetItemsFromCfg(reward_cfg.award, 1, false, add_items, add_coins)
     if table.size(add_items) > 0 then
-        local err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items)
+        local err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items, 0)
         if err_code ~= ErrorCode.None then
             return context.S2C(context.net_id, CmdCode["PBRoleGetUpLvRewardRspCmd"],
                 { code = err_code, error = "背包空间不足" }, req.msg_context.stub_id)
@@ -1134,7 +1135,8 @@ function Role.PBRoleGetUpLvRewardReqCmd(req)
     if table.size(add_list) <= 0 then
         return ErrorCode.ConfigError
     end
-    local ok, stack_items, unstack_items, deal_coins = ItemDefine.GetItemDataFromIdCount(add_list)
+    local stack_items, unstack_items, deal_coins = {}, {}, {}
+    local ok = ItemDefine.GetItemDataFromIdCount(add_list, stack_items, unstack_items, deal_coins)
     if not ok then
         return ErrorCode.ConfigError
     end

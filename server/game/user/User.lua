@@ -784,7 +784,8 @@ function User.DsAddItems(simple_items)
     -- 根据道具表生成item_data
     local add_list = {}
     ItemDefine.GetItemListFromItemsCoins(add_items, add_coins, add_list)
-    local ok, stack_items, unstack_items, deal_coins = ItemDefine.GetItemDataFromIdCount(add_list)
+    local stack_items, unstack_items, deal_coins = {}, {}, {}
+    local ok = ItemDefine.GetItemDataFromIdCount(add_list, stack_items, unstack_items, deal_coins)
     if not ok then
         return ErrorCode.ConfigError
     end
@@ -1410,7 +1411,7 @@ function User.Composite(composite_cfg)
         end
     end
     if table.size(add_items) > 0 then
-        local err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items)
+        local err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items, 0)
         if err_code ~= ErrorCode.None then
             return { code = err_code, error = "背包空间不足" }
         end
@@ -1467,9 +1468,9 @@ function User.PBSureCompositeReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
     end
 
-    local ok, stack_items, unstack_items, deal_coins = false, nil, nil, nil
+    local ok, stack_items, unstack_items, deal_coins = false, {}, {}, {}
     if table.size(composite_ret.add_items) > 0 then
-        ok, stack_items, unstack_items, deal_coins = ItemDefine.GetItemDataFromIdCount(composite_ret.add_items)
+        ok = ItemDefine.GetItemDataFromIdCount(composite_ret.add_items, stack_items, unstack_items, deal_coins)
         if not ok then
             rsp_msg.code = ErrorCode.ConfigError
             rsp_msg.error = "配置错误"
@@ -1496,8 +1497,7 @@ function User.PBSureCompositeReqCmd(req)
     end
 
     if composite_ret.code == ErrorCode.None then
-        if stack_items and unstack_items
-         and table.size(stack_items) + table.size(unstack_items) > 0 then
+        if table.size(stack_items) + table.size(unstack_items) > 0 then
             rsp_msg.code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
             if rsp_msg.code ~= ErrorCode.None then
                 scripts.Bag.RollBackWithChange(bag_change_log)
@@ -1582,9 +1582,9 @@ function User.PBRandomCompositeReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
     end
 
-    local ok, stack_items, unstack_items, deal_coins = false, nil, nil, nil
+    local ok, stack_items, unstack_items, deal_coins = false, {}, {}, {}
     if table.size(composite_ret.add_items) > 0 then
-        ok, stack_items, unstack_items, deal_coins = ItemDefine.GetItemDataFromIdCount(composite_ret.add_items)
+        ok = ItemDefine.GetItemDataFromIdCount(composite_ret.add_items, stack_items, unstack_items, deal_coins)
         if not ok then
             rsp_msg.code = ErrorCode.ConfigError
             rsp_msg.error = "配置错误"
@@ -1611,8 +1611,7 @@ function User.PBRandomCompositeReqCmd(req)
     end
 
     if composite_ret.code == ErrorCode.None then
-        if stack_items and unstack_items
-            and table.size(stack_items) + table.size(unstack_items) > 0 then
+        if table.size(stack_items) + table.size(unstack_items) > 0 then
             rsp_msg.code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
             if rsp_msg.code ~= ErrorCode.None then
                 scripts.Bag.RollBackWithChange(bag_change_log)

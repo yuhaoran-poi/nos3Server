@@ -171,9 +171,12 @@ function Mail.GetLastSystemMailId()
 end
 
 -- 计算附件资源
-function Mail.GetAttachment(attachment_cfg, attachment_items, attachment_coins)
+-- param attachment_cfg {[1] = 1, [2] = 1}
+-- return attachment_items {[PBItemSimple.config_id] = PBItemSimple}
+-- return attachment_coins {[PBCoin.coin_id] = PBCoin}
+function Mail.GetAttachmentFromCfg(attachment_cfg, attachment_items, attachment_coins)
     local items, coins = {}, {}
-    scripts.Item.GetItemsFromCfg(attachment_cfg, 1, false, items, coins)
+    ItemDefine.GetItemsFromCfg(attachment_cfg, 1, false, items, coins)
     for item_id, item in pairs(items) do
         local item_cfg = nil
         if GameCfg.Item[item_id] then
@@ -184,19 +187,22 @@ function Mail.GetAttachment(attachment_cfg, attachment_items, attachment_coins)
         if not item_cfg then
             return ErrorCode.ConfigError
         end
-        -- 类型检查
-        local item_type = ItemDefine.GetItemBagType(item_id)
-        local item_data = ItemDef.newItemData()
-        item_data.itype = item_type
-        item_data.common_info.config_id = item_id
-        item_data.common_info.item_count = item.count
-        item_data.common_info.item_type = item_cfg.type1
-        item_data.common_info.trade_cnt = -1
 
-        table.insert(attachment_items, item_data)
+        if not attachment_items[item_id] then
+            local item_simple = ItemDef.newItemSimple()
+            item_simple.config_id = item_id
+            attachment_items[item_id] = item_simple
+        end
+        attachment_items[item_id].item_count = attachment_items[item_id].item_count + item.count
     end
-
-    attachment_coins = coins
+    for coin_id, coin in pairs(coins) do
+        if not attachment_coins[coin_id] then
+            local new_coin = ItemDef.newCoin()
+            new_coin.coin_id = coin_id
+            attachment_coins[coin_id] = new_coin
+        end
+        attachment_coins[coin_id].coin_count = attachment_coins[coin_id].coin_count + coin.coin_count
+    end
 
     return ErrorCode.None
 end
@@ -285,7 +291,7 @@ function Mail.RecvTriggerMail(config_id)
     return ret
 end
 
-function Mail.RecvImmediateMail(config_id, items, coins)
+function Mail.RecvImmediateMail(config_id, items_simple, item_datas, coins)
     local mails = scripts.UserModel.GetMails()
     if not mails then
         return false
@@ -304,7 +310,7 @@ function Mail.RecvImmediateMail(config_id, items, coins)
     new_mail_info.simple_data.end_ts = new_mail_info.simple_data.beg_ts + mail_common_config.validity_period
     new_mail_info.simple_data.mail_title_id = mail_common_config.title
     new_mail_info.simple_data.is_read = 0
-    if table.size(items) + table.size(coins) > 0 then
+    if table.size(items_simple) + table.size(item_datas) + table.size(coins) > 0 then
         new_mail_info.simple_data.is_have_items = 1
     end
     new_mail_info.simple_data.is_get = 0
@@ -312,10 +318,34 @@ function Mail.RecvImmediateMail(config_id, items, coins)
     new_mail_info.mail_content_id = mail_common_config.content
     new_mail_info.sign = tostring(mail_common_config.signature)
 
-    new_mail_info.items = items
+    new_mail_info.items_simple = items_simple
+    new_mail_info.item_datas = item_datas
     new_mail_info.coins = coins
 
     return true
+end
+
+function Mail.MergeAttachment(mail_info, attach_items, attach_item_datas, attach_coins)
+    for config_id, item_simple in pairs(mail_info.items_simple) do
+        if not attach_items[config_id] then
+            attach_items[config_id] = {
+                id = config_id,
+                count = 0,
+                pos = 0,
+            }
+        end
+        attach_items[config_id].count = attach_items[config_id].count + item_simple.item_count
+    end
+    for _, item_data in pairs(mail_info.item_datas) do
+        table.insert(attach_item_datas, item_data)
+    end
+    for coin_id, coin in pairs(mail_info.coins) do
+        if not attach_coins[coin_id] then
+            attach_coins[coin_id] = coin
+        else
+            attach_coins[coin_id].coin_count = attach_coins[coin_id].coin_count + coin.coin_count
+        end
+    end
 end
 
 function Mail.PBGetAllMailReqCmd(req)
@@ -380,8 +410,13 @@ function Mail.PBGetMailDetailReqCmd(req)
                 common_mail.mail_content = ""
                 if mail_common_config.attachment
                     and table.size(mail_common_config.attachment) > 0 then
-                    Mail.GetAttachment(mail_common_config.attachment, common_mail.attachment_items,
-                        common_mail.attachment_coins)
+                    local ret_code = Mail.GetAttachmentFromCfg(mail_common_config.attachment, common_mail.items_simple,
+                        common_mail.coins)
+                    if ret_code ~= ErrorCode.None then
+                        rsp.code = ret_code
+                        rsp.error = "获取附件失败"
+                        return context.S2C(context.net_id, CmdCode["PBGetMailDetailRspCmd"], rsp, req.msg_context.stub_id)
+                    end
                 end
                 table.insert(rsp.mail_list, common_mail)
             end
@@ -450,8 +485,13 @@ function Mail.PBReadMailReqCmd(req)
             common_mail.mail_content = ""
             if mail_common_config.attachment
                 and table.size(mail_common_config.attachment) > 0 then
-                Mail.GetAttachment(mail_common_config.attachment, common_mail.attachment_items,
-                    common_mail.attachment_coins)
+                local ret_code = Mail.GetAttachmentFromCfg(mail_common_config.attachment, common_mail.items_simple,
+                    common_mail.coins)
+                if ret_code ~= ErrorCode.None then
+                    rsp.code = ret_code
+                    rsp.error = "获取附件失败"
+                    return context.S2C(context.net_id, CmdCode["PBReadMailRspCmd"], rsp, req.msg_context.stub_id)
+                end
             end
             table.insert(rsp.mail_list, common_mail)
         end
@@ -516,7 +556,8 @@ function Mail.PBGetRewardReqCmd(req)
         mail_ids = req.mail_ids,
         mail_data = {}
     }
-    local add_items, add_item_datas, add_coins = {}, {}, {}
+    --local stack_items, unstack_items, stack_coins = {}, {}, {}
+    local attach_items, attach_item_datas, attach_coins = {}, {}, {}
     for _, mail_id in pairs(req.mail_ids) do
         local mail_info = mails.mails_info[mail_id]
         if not mail_info then
@@ -531,30 +572,8 @@ function Mail.PBGetRewardReqCmd(req)
         end
 
         if mail_info.simple_data.mail_type == MailDef.MailType.System then
-            -- 添加附件
-            for _, item_data in pairs(mail_info.items) do
-                if item_data.common_info.uniqid == 0 then
-                    if not add_items[item_data.common_info.config_id] then
-                        add_items[item_data.common_info.config_id] = {
-                            id = item_data.common_info.config_id,
-                            count = 0,
-                        }
-                    end
-                    local old_cnt = add_items[item_data.common_info.config_id].count
-                    add_items[item_data.common_info.config_id].count = old_cnt + item_data.common_info.item_count
-                else
-                    add_item_datas[item_data.common_info.uniqid] = item_data
-                end
-            end
-            for coin_id, coin in pairs(mail_info.coins) do
-                if not add_coins[coin_id] then
-                    add_coins[coin_id] = {
-                        coin_id = coin_id,
-                        coin_count = 0,
-                    }
-                end
-                add_coins[coin_id].coin_count = add_coins[coin_id].coin_count + coin.coin_count
-            end
+            -- 统计附件
+            Mail.MergeAttachment(mail_info, attach_items, attach_item_datas, attach_coins)
         elseif mail_info.simple_data.mail_type == MailDef.MailType.TriggerConfig then
             -- 从配置表添加附件
             local mail_common_config = GameCfg.TriggerEmailTemplateConfig[mail_info.simple_data.mail_config_id]
@@ -566,26 +585,16 @@ function Mail.PBGetRewardReqCmd(req)
 
             if mail_common_config.attachment
                 and table.size(mail_common_config.attachment) > 0 then
-                local new_add_items, new_add_coins = {}, {}
-                Mail.GetAttachment(mail_common_config.attachment, new_add_items, new_add_coins)
-                for item_id, item in pairs(new_add_items) do
-                    if not add_items[item_id] then
-                        add_items[item_id] = {
-                            id = item_id,
-                            count = 0,
-                        }
-                    end
-                    add_items[item_id].count = add_items[item_id].count + item.count
+                local ret_code = Mail.GetAttachmentFromCfg(mail_common_config.attachment, mail_info.items_simple,
+                    mail_info.coins)
+                if ret_code ~= ErrorCode.None then
+                    rsp.code = ret_code
+                    rsp.error = "获取附件失败"
+                    return context.S2C(context.net_id, CmdCode["PBGetRewardRspCmd"], rsp, req.msg_context.stub_id)
                 end
-                for coin_id, coin in pairs(new_add_coins) do
-                    if not add_coins[coin_id] then
-                        add_coins[coin_id] = {
-                            coin_id = coin_id,
-                            coin_count = 0,
-                        }
-                    end
-                    add_coins[coin_id].coin_count = add_coins[coin_id].coin_count + coin.coin_count
-                end
+
+                -- 统计附件
+                Mail.MergeAttachment(mail_info, attach_items, attach_item_datas, attach_coins)
             end
         elseif mail_info.simple_data.mail_type == MailDef.MailType.ImmediateConfig then
             local mail_common_config = GameCfg.ImmediatelyEmailTemplateConfig[mail_info.simple_data.mail_config_id]
@@ -595,30 +604,8 @@ function Mail.PBGetRewardReqCmd(req)
                 return context.S2C(context.net_id, CmdCode["PBGetRewardRspCmd"], rsp, req.msg_context.stub_id)
             end
 
-            -- 添加附件
-            for _, item_data in pairs(mail_info.items) do
-                if item_data.common_info.uniqid == 0 then
-                    if not add_items[item_data.common_info.config_id] then
-                        add_items[item_data.common_info.config_id] = {
-                            id = item_data.common_info.config_id,
-                            count = 0,
-                        }
-                    end
-                    local old_cnt = add_items[item_data.common_info.config_id].count
-                    add_items[item_data.common_info.config_id].count = old_cnt + item_data.common_info.item_count
-                else
-                    add_item_datas[item_data.common_info.uniqid] = item_data
-                end
-            end
-            for coin_id, coin in pairs(mail_info.coins) do
-                if not add_coins[coin_id] then
-                    add_coins[coin_id] = {
-                        coin_id = coin_id,
-                        coin_count = 0,
-                    }
-                end
-                add_coins[coin_id].coin_count = add_coins[coin_id].coin_count + coin.coin_count
-            end
+            -- 统计附件
+            Mail.MergeAttachment(mail_info, attach_items, attach_item_datas, attach_coins)
         else
             rsp.code = ErrorCode.MailTypeError
             rsp.error = "邮件类型错误"
@@ -626,7 +613,7 @@ function Mail.PBGetRewardReqCmd(req)
         end
     end
 
-    if table.size(add_items) + table.size(add_item_datas) + table.size(add_coins) <= 0 then
+    if table.size(attach_items) + table.size(attach_item_datas) + table.size(attach_coins) <= 0 then
         rsp.code = ErrorCode.MailNoReward
         rsp.error = "邮件没有奖励"
         return context.S2C(context.net_id, CmdCode["PBGetRewardRspCmd"], rsp, req.msg_context.stub_id)
@@ -634,14 +621,36 @@ function Mail.PBGetRewardReqCmd(req)
 
     -- 领取奖励
     -- 检查背包容量
-    rsp.code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items, add_item_datas)
+    rsp.code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, attach_items, table.size(attach_item_datas))
     if rsp.code ~= ErrorCode.None then
         rsp.error = "背包已满"
         return context.S2C(context.net_id, CmdCode["PBGetRewardRspCmd"], rsp, req.msg_context.stub_id)
     end
+
+    local stack_items, unstack_items, deal_coins = {}, {}, {}
+    if table.size(attach_items) > 0 then
+        local ok = ItemDefine.GetItemDataFromIdCount(attach_items, stack_items, unstack_items, deal_coins)
+        if not ok then
+            rsp.code = ErrorCode.ConfigError
+            rsp.error = "获取附件失败"
+            return context.S2C(context.net_id, CmdCode["PBGetRewardRspCmd"], rsp, req.msg_context.stub_id)
+        end
+    end
+    for _, item_data in pairs(attach_item_datas) do
+        table.insert(unstack_items, item_data)
+    end
+    for coin_id, coin in pairs(attach_coins) do
+        if not deal_coins[coin_id] then
+            deal_coins[coin_id] = coin
+        else
+            deal_coins[coin_id].coin_count = deal_coins[coin_id].coin_count + coin.coin_count
+        end
+    end
+
+    -- 添加道具
     local bag_change_log = {}
-    if table.size(add_items) + table.size(add_item_datas) > 0 then
-        rsp.code = scripts.Bag.AddItems(BagDef.BagType.Cangku, add_items, add_item_datas, bag_change_log)
+    if table.size(stack_items) + table.size(unstack_items) > 0 then
+        rsp.code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
         if rsp.code ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(bag_change_log)
 
@@ -649,8 +658,8 @@ function Mail.PBGetRewardReqCmd(req)
             return context.S2C(context.net_id, CmdCode["PBGetRewardRspCmd"], rsp, req.msg_context.stub_id)
         end
     end
-    if table.size(add_coins) > 0 then
-        rsp.code = scripts.Bag.DealCoins(add_coins, bag_change_log)
+    if table.size(deal_coins) > 0 then
+        rsp.code = scripts.Bag.DealCoins(deal_coins, bag_change_log)
         if rsp.code ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(bag_change_log)
 
