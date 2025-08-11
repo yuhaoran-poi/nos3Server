@@ -309,9 +309,6 @@ function Roommgr.ModRoom(req)
 
     local notify_uids = {}
     for _, player in pairs(room.players) do
-        -- if player.mem_info.uid ~= req.uid then
-        --     table.insert(notify_uids, player.mem_info.uid)
-        -- end
         table.insert(notify_uids, player.mem_info.uid)
     end
     
@@ -991,7 +988,7 @@ function Roommgr.StartGame(req)
         fleet = context.conf.fleet,
         room = room_str,
     }
-    -- Roommgr.AddWaitDSRooms(room.room_data.roomid, json.encode(allocate_data))
+    Roommgr.AddWaitDSRooms(room.room_data.roomid, json.encode(allocate_data))
 
     -- 更新房间状态
     room.room_data.state = 1  -- 游戏中状态
@@ -1010,19 +1007,19 @@ function Roommgr.StartGame(req)
     Database.upsert_room(context.addr_db_server, req.roomid, room_tags, redis_data)
 
     -----临时通知所有玩家进入DS------------
-    Roommgr.notify_uids = {}
-    for _, player in pairs(room.players) do
-        table.insert(Roommgr.notify_uids, player.mem_info.uid)
-        moon.error("OnEnterDs ", player.mem_info.uid)
-    end
-    moon.async(function()
-        moon.sleep(20000) -- 20秒后发送
-        context.send_users(Roommgr.notify_uids, {}, "Room.OnEnterDs", {
-            roomid = req.roomid,
-            ds_address = "192.168.2.31-9999",
-            ds_ip = "192.168.2.31",
-        })
-    end)
+    -- Roommgr.notify_uids = {}
+    -- for _, player in pairs(room.players) do
+    --     table.insert(Roommgr.notify_uids, player.mem_info.uid)
+    --     moon.error("OnEnterDs ", player.mem_info.uid)
+    -- end
+    -- moon.async(function()
+    --     moon.sleep(20000) -- 20秒后发送
+    --     context.send_users(Roommgr.notify_uids, {}, "Room.OnEnterDs", {
+    --         roomid = req.roomid,
+    --         ds_address = "192.168.2.31-9999",
+    --         ds_ip = "192.168.2.31",
+    --     })
+    -- end)
     -- local notify_uids = {}
     -- for _, player in pairs(room.players) do
     --     table.insert(notify_uids, player.mem_info.uid)
