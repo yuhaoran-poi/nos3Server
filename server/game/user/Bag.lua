@@ -580,25 +580,13 @@ function Bag.AddUniqItem(bagType, baginfo, item_data, itype, logs)
     -- 处理物品记录
     for pos = 1, baginfo.capacity do
         if not baginfo.items[pos] then
-            -- local new_itemdata = ItemDef.newItemData()
-            -- new_itemdata.itype = itype
-            -- new_itemdata.common_info.config_id = item_cfg.id
-            -- new_itemdata.common_info.uniqid = item_data.common_info.uniqid
-            -- new_itemdata.common_info.item_count = item_data.common_info.item_count
-            -- new_itemdata.common_info.item_type = item_cfg.type1
-            -- new_itemdata.common_info.trade_cnt = -1
-            -- if new_itemdata.common_info.uniqid == 0 then
-            --     new_itemdata.common_info.uniqid = uuid.next()
-            -- end
-            local new_item = table.copy(item_data, true)
-            if not new_item or not new_item.common_info then
-                new_item = ItemDef.newItemData()
-                new_item.itype = itype
-                new_item.common_info.config_id = item_cfg.id
-                new_item.common_info.item_count = 1
-                new_item.common_info.item_type = item_cfg.type1
-                new_item.common_info.trade_cnt = -1
-            end
+            local new_item = ItemDef.newItemData()
+            new_item.itype = itype
+            new_item.common_info.config_id = item_cfg.id
+            new_item.common_info.uniqid = item_data.common_info.uniqid
+            new_item.common_info.item_count = item_data.common_info.item_count
+            new_item.common_info.item_type = item_cfg.type1
+            new_item.common_info.trade_cnt = item_data.common_info.trade_cnt
             if new_item.common_info.uniqid == 0 then
                 new_item.common_info.uniqid = uuid.next()
             end
@@ -708,21 +696,15 @@ function Bag.AddMagicItem(bagType, baginfo, item_data, change_log)
     end
 
     local new_itemdata = baginfo.items[add_pos]
-    -- new_itemdata.special_info = {
-    --     magic_item = ItemDef.newMagicItem(),
-    -- }
-    -- if item_data.special_info and item_data.special_info.magic_item then
-    --     new_itemdata.special_info.magic_item = table.copy(item_data.special_info.magic_item, true)
-    -- else
-    --     new_itemdata.special_info.magic_item.cur_durability = 0
-    --     new_itemdata.special_info.magic_item.strong_value = 0
-    -- end
-    if not new_itemdata.special_info or not new_itemdata.special_info.magic_item then
+    if item_data.special_info and item_data.special_info.magic_item then
+        new_itemdata.special_info = table.copy(item_data.special_info, true)
+    else
         new_itemdata.special_info = {
             magic_item = ItemDef.newMagicItem(),
         }
         new_itemdata.special_info.magic_item.cur_durability = 0
         new_itemdata.special_info.magic_item.strong_value = 0
+        new_itemdata.special_info.magic_item.tabooword_id = 0
         new_itemdata.special_info.magic_item.light_cnt = 0
         new_itemdata.special_info.magic_item.tags = {}
         new_itemdata.special_info.magic_item.ability_tag = {}
@@ -739,12 +721,15 @@ function Bag.AddDiagramsCard(bagType, baginfo, item_data, change_log)
     end
 
     local new_itemdata = baginfo.items[add_pos]
-    if not new_itemdata.special_info or not new_itemdata.special_info.diagrams_item then
+    if item_data.special_info and item_data.special_info.diagrams_item then
+        new_itemdata.special_info = table.copy(item_data.special_info, true)
+    else
         new_itemdata.special_info = {
             diagrams_item = ItemDef.newDiagramsCard(),
         }
         new_itemdata.special_info.diagrams_item.cur_durability = 0
         new_itemdata.special_info.diagrams_item.strong_value = 0
+        new_itemdata.special_info.diagrams_item.tabooword_id = 0
         new_itemdata.special_info.diagrams_item.light_cnt = 0
         new_itemdata.special_info.diagrams_item.tags = {}
         new_itemdata.special_info.diagrams_item.ability_tag = {}
