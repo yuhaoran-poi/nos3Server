@@ -314,6 +314,7 @@ def gen_id_dict(sys_message,custom_message,version_crc,all_message):
       lua_cmdcode_content += "    [\"" + cmd + "\"] = " + str(custom_id_dict[cmd]) + ",\n"
       h_cmdcode_content += "		" + custom_message[cmd] + " = " + str(custom_id_dict[cmd]) + ",\n"
   #id-name
+#   lua_cmdcode_content += "    [\"CrC\"] = " + str(version_crc) + ",\n"
   #系统协议
   for cmd in sys_id_dict:
       #lua_cmdcode_content += "    [" + str(sys_id_dict[cmd]) + "] = \"" + cmd + "\",\n"

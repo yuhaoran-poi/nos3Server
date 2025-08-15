@@ -2006,7 +2006,7 @@
 ---@field public playercnt integer @当前玩家人数
 ---@field public master_id integer @房主id
 ---@field public master_name string @房主昵称
----@field public isopen integer @是否公开
+---@field public is_open integer @是否公开
 ---@field public needpwd integer @是否需要密码
 ---@field public describe string @房间描述
 
@@ -2019,7 +2019,7 @@
 
 ---@class PBRoomInfo
 ---@field public roomid integer
----@field public isopen integer
+---@field public is_open integer
 ---@field public needpwd integer
 ---@field public pwd string
 ---@field public chapter integer
@@ -2053,7 +2053,7 @@
 
 ---@class PBCreateRoomReqCmd
 ---@field public uid integer
----@field public isopen integer @是否开放
+---@field public is_open integer @是否开放
 ---@field public needpwd integer
 ---@field public pwd string
 ---@field public chapter integer
@@ -2088,7 +2088,7 @@
 ---@class PBModRoomReqCmd
 ---@field public uid integer
 ---@field public roomid integer
----@field public isopen integer
+---@field public is_open integer
 ---@field public needpwd integer
 ---@field public pwd string
 ---@field public chapter integer
@@ -2099,7 +2099,7 @@
 ---@class PBModRoomRspCmd
 ---@field public code integer @服务器返回,0成功,其他失败
 ---@field public error string @错误信息
----@field public isopen integer
+---@field public is_open integer
 ---@field public needpwd integer
 ---@field public pwd string
 ---@field public chapter integer
