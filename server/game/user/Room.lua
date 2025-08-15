@@ -75,7 +75,7 @@ function Room.PBSearchRoomReqCmd(req)
         return context.S2C(context.net_id, CmdCode["PBSearchRoomRspCmd"], res, req.msg_context.stub_id)
     else
         local conditions = {
-            isopen = 1,
+            is_open = 1,
             chapter = req.msg.chapter or 0,
             difficulty = req.msg.difficulty or 0,
         }
@@ -98,7 +98,7 @@ function Room.PBSearchRoomReqCmd(req)
                     playercnt = v.playercnt,
                     master_id = v.master_id,
                     master_name = v.master_name,
-                    isopen = v.isopen,
+                    is_open = v.is_open,
                     needpwd = v.needpwd
                 })
             end

@@ -18,14 +18,14 @@ local defaultPBRoomSearchInfo = {
     playercnt = 0,
     master_id = 0,
     master_name = "",
-    isopen = 0,
+    is_open = 0,
     needpwd = 0,
     describe = "",
 }
 
 local defaultPBRoomInfo = {
     roomid = 0,
-    isopen = 0,
+    is_open = 0,
     needpwd = 0,
     pwd = "",
     chapter = 0,
