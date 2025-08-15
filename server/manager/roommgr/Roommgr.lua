@@ -179,7 +179,7 @@ function Roommgr.NotifyDsRooms(allocated_rooms, fail_rooms)
             })
 
             room.room_data.state = 0
-            room.room_data.isopen = 0
+            room.room_data.is_open = 0
         end
     end
 end
@@ -214,7 +214,7 @@ function Roommgr.CreateRoom(req)
     local roomid = generate_roomid()
     -- local roomid = 10001
     room.room_data.roomid = roomid
-    room.room_data.isopen = req.msg.isopen
+    room.room_data.is_open = req.msg.is_open
     room.room_data.needpwd = req.msg.needpwd
     room.room_data.pwd = req.msg.pwd
     room.room_data.chapter = req.msg.chapter
@@ -227,7 +227,7 @@ function Roommgr.CreateRoom(req)
     -- moon.info(string.format("Roommgr.CreateRoom mem_info:\n%s", json.pretty_encode(room.players[1].mem_info)))
     
     local room_tags = {
-        isopen = room.room_data.isopen,
+        is_open = room.room_data.is_open,
         chapter = room.room_data.chapter,
         difficulty = room.room_data.difficulty,
     }
@@ -257,7 +257,7 @@ function Roommgr.SearchRooms(req)
             search_data.playercnt = #room.players
             search_data.master_id = room.master_id
             search_data.master_name = room.master_name
-            search_data.isopen = room.room_data.isopen
+            search_data.is_open = room.room_data.is_open
             search_data.needpwd = room.room_data.needpwd
             search_data.describe = room.room_data.describe
             table.insert(result, search_data)
@@ -279,7 +279,7 @@ function Roommgr.ModRoom(req)
         return {
             code = ErrorCode.RoomPermissionDenied,
             error = "无修改权限",
-            isopen = room.room_data.isopen,
+            is_open = room.room_data.is_open,
             needpwd = room.room_data.needpwd,
             pwd = room.room_data.pwd,
             chapter = room.room_data.chapter,
@@ -288,7 +288,7 @@ function Roommgr.ModRoom(req)
         }
     end
 
-    room.room_data.isopen = req.isopen or room.room_data.isopen
+    room.room_data.is_open = req.is_open or room.room_data.is_open
     room.room_data.needpwd = req.needpwd or room.room_data.needpwd
     room.room_data.pwd = req.pwd or room.room_data.pwd
     room.room_data.chapter = req.chapter or room.room_data.chapter
@@ -296,7 +296,7 @@ function Roommgr.ModRoom(req)
     room.room_data.describe = req.describe or room.room_data.describe
 
     local room_tags = {
-        isopen = room.room_data.isopen,
+        is_open = room.room_data.is_open,
         chapter = room.room_data.chapter,
         difficulty = room.room_data.difficulty,
     }
@@ -323,7 +323,7 @@ function Roommgr.ModRoom(req)
     return {
         code = ErrorCode.None,
         error = "修改完成",
-        isopen = room.room_data.isopen,
+        is_open = room.room_data.is_open,
         needpwd = room.room_data.needpwd,
         pwd = room.room_data.pwd,
         chapter = room.room_data.chapter,
@@ -343,7 +343,7 @@ function Roommgr.ApplyToRoom(req)
     end
 
     -- 检查是否可以申请
-    if room.room_data.isopen == 0 then
+    if room.room_data.is_open == 0 then
         return { code = ErrorCode.RoomNotOpen, error = "房间未开放" }
     end
     if room.room_data.needpwd == 1 then
@@ -385,7 +385,7 @@ function Roommgr.DealApply(req)
     end
 
     -- 检查是否可以申请
-    if room.room_data.isopen == 0 or room.room_data.needpwd == 1 then
+    if room.room_data.is_open == 0 or room.room_data.needpwd == 1 then
         return { code = ErrorCode.RoomPermissionDenied, error = "无操作权限" }
     end
 
@@ -419,7 +419,7 @@ function Roommgr.DealApply(req)
         context.uid_roomid[req.deal_uid] = req.roomid
 
         local room_tags = {
-            isopen = room.room_data.isopen,
+            is_open = room.room_data.is_open,
             chapter = room.room_data.chapter,
             difficulty = room.room_data.difficulty,
         }
@@ -475,7 +475,7 @@ function Roommgr.EnterRoom(req)
     end
 
     -- 检查是否可以直接加入
-    if room.room_data.isopen == 0 then
+    if room.room_data.is_open == 0 then
         return { code = ErrorCode.RoomNotOpen, error = "房间未开放" }
     end
 
@@ -489,7 +489,7 @@ function Roommgr.EnterRoom(req)
     context.uid_roomid[req.msg.uid] = req.roomid
 
     local room_tags = {
-        isopen = room.room_data.isopen,
+        is_open = room.room_data.is_open,
         chapter = room.room_data.chapter,
         difficulty = room.room_data.difficulty,
     }
@@ -555,7 +555,7 @@ function Roommgr.ExitRoom(req)
     context.uid_roomid[req.uid] = nil
 
     local room_tags = {
-        isopen = room.room_data.isopen,
+        is_open = room.room_data.is_open,
         chapter = room.room_data.chapter,
         difficulty = room.room_data.difficulty,
     }
@@ -757,7 +757,7 @@ function Roommgr.DealInvite(req)
         context.uid_roomid[req.msg.uid] = req.roomid
 
         local room_tags = {
-            isopen = room.room_data.isopen,
+            is_open = room.room_data.is_open,
             chapter = room.room_data.chapter,
             difficulty = room.room_data.difficulty,
         }
@@ -992,10 +992,10 @@ function Roommgr.StartGame(req)
 
     -- 更新房间状态
     room.room_data.state = 1  -- 游戏中状态
-    room.room_data.isopen = 0 -- 游戏开始后关闭房间
+    room.room_data.is_open = 0 -- 游戏开始后关闭房间
 
     local room_tags = {
-        isopen = room.room_data.isopen, -- 游戏开始后关闭房间
+        is_open = room.room_data.is_open, -- 游戏开始后关闭房间
         chapter = room.room_data.chapter,
         difficulty = room.room_data.difficulty,
     }
