@@ -64,6 +64,7 @@ Command List:
 	ping <address> :                   Ping the specificed service.
 	reload:                            Reload static table files.
 	syschat:                           Send system chat to all online users.
+	send_system_mail:                  Send system mail to users.
 	hotfix <servicename> <filename_no_path_no_ext_1> <filename_no_path_no_ext_2>....: Hotfix script file. e. S1 hotfix user Hello
 
 User command format:     U<uid> command params
@@ -346,11 +347,21 @@ function Console.addmail(uid, mail_key)
 end
 
 function Console.send_system_mail(send_info_str)
-	local ok, err = MailLogic.DealSystemMail(send_info_str)
-	if ok then
-        return Response(0, "OK")
+    local ok, info = MailLogic.DealSystemMail(send_info_str)
+    moon.debug("Console.send_system_mail ok: %s, info: %s", ok, info)
+    if ok then
+		local res, err = clusterd.call(3999, "mailmgr", "Mailmgr.AddSystemMail", info)
+        if err then
+            return Response(444, err, send_info_str)
+        end
+		
+		if res.success then
+            return Response(0, "OK", res.id)
+        else
+			return Response(444, "Failed", res.id)
+		end
     else
-		return Response(444, err, send_info_str)
+		return Response(444, info, send_info_str)
 	end
 end
 

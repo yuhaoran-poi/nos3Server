@@ -4,7 +4,9 @@ local uuid = require("uuid")
 local queue = require("moon.queue")
 local common = require("common")
 local clusterd = require("cluster")
+local serverconf = require("serverconf")
 local json = require "json"
+local fishsteam = require "fishsteam"
 
 local db = common.Database
 local CmdCode = common.CmdCode
@@ -109,6 +111,7 @@ local function doAuth(Auth, req)
         }
         addr_user = moon.new_service(conf)
         if addr_user == 0 then
+            context.openid_map[req.msg.login_data.authkey] = nil
             return { code = 2001, error = "create user service failed!" }
         end
         req.addr_user = addr_user
@@ -118,6 +121,7 @@ local function doAuth(Auth, req)
             moon.error(string.format("doAuth User.Load err = %s", json.pretty_encode(err)))
             moon.kill(addr_user)
             context.uid_map[req.uid] = nil
+            context.openid_map[req.msg.login_data.authkey] = nil
             return { code = 2002, error = err }
         end
     else
@@ -125,6 +129,7 @@ local function doAuth(Auth, req)
         -- moon.send("lua", context.addr_gate, "Gate.Kick", req.uid)
         -- addr_user = u.addr_user
         -- req.addr_user = addr_user
+        context.openid_map[req.msg.login_data.authkey] = nil
         return { code = 2005, error = "player online" }
     end
 
@@ -135,6 +140,7 @@ local function doAuth(Auth, req)
         --moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
         moon.kill(addr_user)
         context.uid_map[req.uid] = nil
+        context.openid_map[req.msg.login_data.authkey] = nil
         return { code = 2003, error = err }
     end
 
@@ -156,6 +162,7 @@ local function doAuth(Auth, req)
 
     if req.pull then
         print("doAuth pull", req.uid, req.net_id)
+        context.openid_map[req.msg.login_data.authkey] = nil
         return { code = 2004, error = "req.pull is true" }
     end
 
@@ -172,6 +179,7 @@ local function doAuth(Auth, req)
     db.updatelogin(context.addr_db_game, req.uid)
     moon.send("lua", context.addr_gate, "Gate.BindUser", req)
 
+    context.openid_map[req.msg.login_data.authkey] = nil
     local res = {
         result = 0, --maybe banned
         net_id = u.net_id,
@@ -201,7 +209,7 @@ Auth.Init = function()
 
             local now = moon.time()
 
-            local count = table.count(context.uid_map)
+            local count = table.size(context.uid_map)
             for _, u in pairs(context.uid_map) do
                 if count > mem_player_limit then
                     if u.logouttime > 0 and (now - u.logouttime) > min_online_time then
@@ -231,6 +239,21 @@ Auth.Init = function()
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     ]])
     assert(ok, "Failed to create account table: " .. tostring(err)) -- 增强错误提示
+
+    fishsteam.CheckFishSteam()
+    local rgubTicket =
+    "080210C8CC93A108180420522A8001F4F43E49CD856FC8070912D10580998E03EF9A166501D63D6A96D6DEFA624E2822FF7E8EE2C513C9E89D41BA5089706003D50F635650F4E20D4D00FE000B46A64DA2A5D7E1E332FDFB82FCF13643C14A0228A78A3AD3ACB17B103F0396D196C4639C6AFDBE3EB7A552BF061FD7E172CEB8F9D9A32F6AEA247D985938E40B6523"
+    local ticket_length = string.len(rgubTicket)
+    local appKey = serverconf.STEAM_APP_KEY
+    local appId = serverconf.STEAM_APP_ID
+    local now = moon.time()
+    local begValidTimem = now - 60
+    local endValidTime = now + 60
+    begValidTimem = 1755174198
+    endValidTime = 1755174798
+    local steam_id = fishsteam.CheckSteamAuthSessionTicket(rgubTicket, ticket_length, appKey, appId, begValidTimem,
+    endValidTime, 0)
+    moon.warn("Auth.Init steam_id = ", steam_id)
 
     return true
 end
@@ -319,44 +342,60 @@ Auth.AllocGateNetId = function(isds)
     return 0xFFFFFFFF
 end
 
-Auth.PBClientLoginReqCmd = function (req)
+Auth.PBClientLoginReqCmd = function(req)
+    local function checkSteamTicket()
+        local now_ts = moon.time()
+        local begValidTimem = now_ts - 60
+        local endValidTime = now_ts + 60
+        local steam_id = fishsteam.CheckSteamAuthSessionTicket(req.msg.login_data.authkey,
+            string.len(req.msg.login_data.authkey), serverconf.STEAM_APP_KEY, serverconf.STEAM_APP_ID, begValidTimem,
+            endValidTime, 0)
+        return steam_id
+    end
+    
     local function processLogin()
-        -- 注册逻辑（直接存储客户端提供的MD5）
-        local check_res, check_err = db.checkuser(context.addr_db_game, req.msg.login_data.authkey)
+        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        local authkey = req.msg.login_data.authkey
+        if authkey and string.sub(authkey, 1, 5) == "robot" then
+            moon.debug("robot login ", authkey)
+        else
+            local steam_id = checkSteamTicket()
+            if not steam_id or steam_id <= 10 then
+                context.openid_map[req.msg.login_data.authkey] = nil
+                return { code = ErrorCode.ParamInvalid, error = "INVALID_USERNAME_OR_PASSWORD" }
+            end
+            authkey = tostring(steam_id)
+        end
+
+        local check_res, check_err = db.checkuser(context.addr_db_game, authkey)
         if check_err then
+            context.openid_map[req.msg.login_data.authkey] = nil
             return { code = ErrorCode.NicknameAlreadyExist, error = "USERNAME_EXISTS" }
         end
         
         if not check_res or next(check_res) == nil then
             local create_res, create_err = db.createuser(
                 context.addr_db_game,
-                req.msg.login_data.authkey,
-                req.msg.password -- 直接使用客户端提供的MD5
+                authkey
             )
             --
             if create_err or not create_res.insert_id then
+                context.openid_map[req.msg.login_data.authkey] = nil
                 return { code = ErrorCode.CreateAccountFailed, error = "CREATE_ACCOUNT_FAILED" }
             end
 
             req.uid = create_res.insert_id
         else
-            if req.msg.login_data.authkey == "" or req.msg.password == "" then
-                return { code = ErrorCode.PasswordError, error = "INVALID_USERNAME_OR_PASSWORD" }
-            end
             -- 登录验证（直接比较MD5）
-            local datas, err = db.getuserbyauthkey(context.addr_db_game, req.msg.login_data.authkey)
+            local datas, err = db.getuserbyauthkey(context.addr_db_game, authkey)
             print("datas=\n" .. print_r(datas, true))
             -- 判断user_data是否为nil或空表
             if err or datas == nil or next(datas) == nil then
+                context.openid_map[req.msg.login_data.authkey] = nil
                 return { code = ErrorCode.PasswordError, error = "INVALID_AUTHKEY" }
             end
             local data = datas[1]
-            --
-            if req.msg.password ~= data.password_hash then
-                return { code = ErrorCode.PasswordError, error = "INVALID_PASSWORD" }
-            end
 
-            --db.updatelogin(context.addr_db_game, data.user_id)
             req.uid = data.user_id
         end
 
@@ -375,9 +414,10 @@ Auth.PBClientLoginReqCmd = function (req)
         req.net_id = Auth.AllocGateNetId(0)
         moon.send("lua", context.addr_gate, "Gate.BindGnId", req)
 
-        local uid = context.openid_map[req.msg.login_data.authkey]
-        if not uid then
+        local fd = context.openid_map[req.msg.login_data.authkey]
+        if not fd then
             ---避免同一个玩家瞬间发送大量登录请求
+            context.openid_map[req.msg.login_data.authkey] = req.fd
             -- local tmp = temp_openid[req.msg.login_data.authkey]
             -- if tmp then
             --     moon.error("user logining", req.fd, req.msg.login_data.authkey)
@@ -385,8 +425,8 @@ Auth.PBClientLoginReqCmd = function (req)
             -- end
             -- temp_openid[req.msg.login_data.authkey] = 1
         else
-            moon.error("user online", req.fd, req.uid)
-            return { code = ErrorCode.UserAlreadyLogin, error = "USER_ONLINE" }
+            moon.error("user logining", req.fd, req.uid)
+            return { code = ErrorCode.UserAlreadyLogin, error = "USER_LOGINING" }
         end
 
         return processLogin()

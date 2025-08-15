@@ -286,6 +286,9 @@ end
 
 -- 创建用户方法
 function _M.createuser(addr, authkey, password_hash)
+    if not password_hash then
+        password_hash = ""
+    end
     local cmd = string.format([[
         INSERT INTO mgame.account (authkey, username, password_hash) VALUES ('%s','%s','%s');
     ]], authkey, authkey, password_hash)
@@ -967,7 +970,7 @@ end
 
 function _M.select_expire_mailids(addr, uid, now_ts)
     local cmd = string.format([[
-        SELECT mail_id FROM mgame.system_mail WHERE end_ts <= %d AND valid = 0 AND (all_user = 1 OR JSON_CONTAINS(recv_uids, %d));
+        SELECT mail_id FROM mgame.system_mail WHERE end_ts <= %d AND valid = 0 AND (all_user = 1 OR JSON_CONTAINS(recv_uids, CAST(%d AS JSON), '$'));
     ]], now_ts, uid)
     local res, err = moon.call("lua", addr, cmd)
     if err then
@@ -987,16 +990,19 @@ function _M.select_expire_mailids(addr, uid, now_ts)
 end
 
 function _M.add_system_mail(addr, mail_info, all_user, recv_uids)
-    local items_str = jencode(mail_info.items)
+    local items_str = jencode(mail_info.items_simple)
+    local item_datas_str = jencode(mail_info.item_datas)
     local coins_str = jencode(mail_info.coins)
     local uids_str = json.encode(recv_uids)
+    local _, pbdata = protocol.encodewithname("PBMailData", mail_info)
+    local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
-        INSERT INTO mgame.system_mail (mail_type, beg_ts, end_ts, mail_title_id, mail_title, mail_icon_id, mail_content_id, mail_content, sign, items_data, items_json, coins_data, coins_json, all_user, recv_uids, valid)
+        INSERT INTO mgame.system_mail (mail_type, beg_ts, end_ts, mail_title_id, mail_title, mail_icon_id, mail_content_id, mail_content, sign, items_simple, item_datas, coins, mail_data, all_user, recv_uids, valid)
         VALUES (%d, %d, %d, %d, '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', %d);
     ]], mail_info.simple_data.mail_type, mail_info.simple_data.beg_ts, mail_info.simple_data.end_ts,
     mail_info.simple_data.mail_title_id, mail_info.simple_data.mail_title, mail_info.mail_icon_id,
-        mail_info.mail_content_id, mail_info.mail_content, mail_info.sign, mail_info.items, mail_info.items_json,
-        mail_info.items, items_str, mail_info.coins, coins_str, all_user, uids_str, 1)
+        mail_info.mail_content_id, mail_info.mail_content, mail_info.sign, items_str, item_datas_str,
+        coins_str, pbvalue, all_user, uids_str, 1)
 
     local res, err = moon.call("lua", addr, cmd)
     if err then
@@ -1005,7 +1011,7 @@ function _M.add_system_mail(addr, mail_info, all_user, recv_uids)
     else
         if res then
             moon.debug(string.format("add_system_mail res = %s", json.pretty_encode(res)))
-            return res
+            return res.insert_id
         end
     end
 

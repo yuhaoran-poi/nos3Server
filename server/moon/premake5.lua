@@ -99,9 +99,12 @@ project "moon"
         "sharetable",
         "mongo",
         "mimalloc",
-        "lfmt"
+        "lfmt",
+        "fishsteam",
+        -- "sdkencryptedappticket",
+        -- 'steam_api',
     }
-
+    
     defines {
         "ASIO_STANDALONE" ,
         "ASIO_NO_DEPRECATED",
@@ -112,7 +115,7 @@ project "moon"
         defines {"_WIN32_WINNT=0x0601"}
         linkoptions { '/STACK:"8388608"' }
     filter {"system:linux"}
-        links{"dl","pthread","stdc++fs"}
+        links { "dl", "pthread", "stdc++fs", "sdkencryptedappticket", "steam_api" }
         linkoptions {
             "-static-libstdc++ -static-libgcc",
             "-Wl,-E,--as-needed,-rpath=./"
@@ -206,6 +209,27 @@ add_lua_module(
     {
         windows = function ()
             disablewarnings { "4267","4457","4456", "4459", "4996", "4244", "4310"}
+        end
+    }
+)
+
+add_lua_module(
+    "./third/fishsteam",
+    "fishsteam",
+    {
+        windows = function()
+            -- 禁用Windows平台下可能的编译警告
+            disablewarnings { "4244", "4267", "4456", "4459", "4996" }
+            -- libdirs { "../../../third/fishsteam/sdk/public/steam/lib/win64" }
+            links { "sdkencryptedappticket64" }
+            -- 添加fishsteam特有的编译定义（如有需要）
+            -- defines { "FISHSTEAM_EXPORTS" }
+        end,
+        linux = function()
+            -- Linux平台额外链接库（如有需要）
+            -- libdirs { "../../../third/fishsteam/sdk/public/steam/lib/linux64" }
+            links { 'sdkencryptedappticket' }
+            links { 'steam_api' }
         end
     }
 )

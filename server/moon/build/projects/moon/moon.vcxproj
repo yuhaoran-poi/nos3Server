@@ -42,15 +42,15 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>..\..\bin\Debug\</OutDir>
-    <IntDir>..\..\obj\moon\Debug\</IntDir>
+    <OutDir>$(ProjectDir)..\..\bin\Debug\</OutDir>
+    <IntDir>$(ProjectDir)..\..\obj\moon\Debug\</IntDir>
     <TargetName>moon</TargetName>
     <TargetExt>.exe</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>..\..\bin\Release\</OutDir>
-    <IntDir>..\..\obj\moon\Release\</IntDir>
+    <OutDir>$(ProjectDir)..\..\bin\Release\</OutDir>
+    <IntDir>$(ProjectDir)..\..\obj\moon\Release\</IntDir>
     <TargetName>moon</TargetName>
     <TargetExt>.exe</TargetExt>
   </PropertyGroup>
@@ -152,6 +152,9 @@
     </ProjectReference>
     <ProjectReference Include="..\lfmt\lfmt.vcxproj">
       <Project>{D8089A7C-C43F-9B0D-6D2C-81105942170F}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\fishsteam\fishsteam.vcxproj">
+      <Project>{E90516D2-5570-CA48-9EAE-7BEE0A58A89D}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -668,8 +668,6 @@ function Bag.AddDurabItem(bagType, baginfo, item_data, change_log)
                 new_item.common_info.item_type = item_cfg.type1
                 new_item.common_info.trade_cnt = -1
                 new_item.special_info.durab_item = ItemDef.newDurabItem()
-                new_item.special_info.durab_item.cur_durability = 0
-                new_item.special_info.durab_item.strong_value = 0
             end
             if new_item.common_info.uniqid == 0 then
                 new_item.common_info.uniqid = uuid.next()
@@ -702,12 +700,6 @@ function Bag.AddMagicItem(bagType, baginfo, item_data, change_log)
         new_itemdata.special_info = {
             magic_item = ItemDef.newMagicItem(),
         }
-        new_itemdata.special_info.magic_item.cur_durability = 0
-        new_itemdata.special_info.magic_item.strong_value = 0
-        new_itemdata.special_info.magic_item.tabooword_id = 0
-        new_itemdata.special_info.magic_item.light_cnt = 0
-        new_itemdata.special_info.magic_item.tags = {}
-        new_itemdata.special_info.magic_item.ability_tag = {}
     end
 
     return ErrorCode.None
@@ -727,12 +719,6 @@ function Bag.AddDiagramsCard(bagType, baginfo, item_data, change_log)
         new_itemdata.special_info = {
             diagrams_item = ItemDef.newDiagramsCard(),
         }
-        new_itemdata.special_info.diagrams_item.cur_durability = 0
-        new_itemdata.special_info.diagrams_item.strong_value = 0
-        new_itemdata.special_info.diagrams_item.tabooword_id = 0
-        new_itemdata.special_info.diagrams_item.light_cnt = 0
-        new_itemdata.special_info.diagrams_item.tags = {}
-        new_itemdata.special_info.diagrams_item.ability_tag = {}
     end
 
     return ErrorCode.None

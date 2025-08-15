@@ -27,9 +27,6 @@ function Mail.Init()
 
 end
 
--- function Mail.Start()
--- end
-
 function Mail.Start()
     --加载好友数据
     local mails_data = Mail.LoadMails()
@@ -215,9 +212,10 @@ function Mail.RecvSystemMail(new_mail_info)
 
     local ret = Mail.AddMail(mails, new_mail_info)
     if ret then
+        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         if new_mail_info.simple_data.mail_id > mails.last_system_mail_id then
             -- 更新最后系统邮件ID
-            mails.last_system_mail_id = new_mail_info.mail_id
+            mails.last_system_mail_id = new_mail_info.simple_data.mail_id
         end
         
         Mail.SaveMailsNow()

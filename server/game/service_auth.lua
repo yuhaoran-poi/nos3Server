@@ -1,4 +1,4 @@
---require("common.LuaPanda").start("127.0.0.1", 8818)
+require("common.LuaPanda").start("127.0.0.1", 8818)
 local moon = require("moon")
 local setup = require("common.setup")
 
@@ -12,7 +12,7 @@ local context = {
     conf = conf,
     uid_map = {},
     net_id_map = {},
-    openid_map = {},--- map<authkey, uid>
+    openid_map = {},--- map<authkey, fd>
     auth_queue = {},
     service_counter = 0,
     scripts = {},

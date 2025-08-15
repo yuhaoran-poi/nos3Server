@@ -52,19 +52,20 @@ function Mailmgr.DelSystemMailDetail(mail_id)
     Database.RedisDelSystemMailsInfo(context.addr_db_redis, mail_id)
 end
 
-function Mailmgr.AddSystemMail(mail_info, all_user, recv_uids)
-    local ret_id = Database.add_system_mail(context.addr_db_game, mail_info, all_user, recv_uids)
+function Mailmgr.AddSystemMail(system_info)
+    local ret_id = Database.add_system_mail(context.addr_db_game, system_info.mail_data, system_info.all_user,
+    system_info.recv_uids)
     if ret_id <= 0 then
-        return "failed"
+        return {success = false, id = ret_id}
     end
 
-    mail_info.simple_data.mail_id = ret_id
-    Mailmgr.SetSystemMailDetail(mail_info)
+    system_info.mail_data.simple_data.mail_id = ret_id
+    Mailmgr.SetSystemMailDetail(system_info.mail_data)
 
     -- 通知所有Gate
-    context.broadcast_gate("Gate.SendSystemMail", mail_info)
+    context.broadcast_gate("Gate.SendSystemMail", system_info.mail_data)
 
-    return "success"
+    return { success = true, id = ret_id }
 end
 
 function Mailmgr.InvalidSystemMail(mail_id)

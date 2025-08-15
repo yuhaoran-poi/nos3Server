@@ -1,0 +1,149 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="sdk">
+      <UniqueIdentifier>{67A9880B-D3B2-887C-5C2E-9F7CC836947C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sdk\public">
+      <UniqueIdentifier>{D5E63C76-C19E-7EC3-2AA6-571F167D19B4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sdk\public\steam">
+      <UniqueIdentifier>{9EC00A88-8AB9-29DA-B3EB-0E5F9F4309E6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\third\fishsteam\luaFishSteam.h" />
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamapplist.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamapps.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamappticket.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamclient.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamcontroller.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamfriends.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamgamecoordinator.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamgameserver.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamgameserverstats.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamhtmlsurface.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamhttp.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteaminput.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteaminventory.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteammatchmaking.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteammusic.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteammusicremote.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamnetworking.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamnetworkingmessages.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamnetworkingsockets.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamnetworkingutils.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamparentalsettings.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamps3overlayrenderer.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamremoteplay.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamremotestorage.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamscreenshots.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamugc.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamuser.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamuserstats.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamutils.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\isteamvideo.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\matchmakingtypes.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\steam_api.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\steam_api_common.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\steam_api_flat.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\steam_api_internal.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\steam_gameserver.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\steamclientpublic.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\steamencryptedappticket.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\steamhttpenums.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\steamnetworkingtypes.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\steamps3params.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\steamtypes.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\third\fishsteam\sdk\public\steam\steamuniverse.h">
+      <Filter>sdk\public\steam</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\third\fishsteam\luaFishSteam.cpp" />
+  </ItemGroup>
+</Project>

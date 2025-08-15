@@ -84,10 +84,12 @@ end
 
 local function command_handler(cmdline, echo)
     cmdline = string.trim(cmdline)
+    moon.error("command_handler cmdline", cmdline)
     if cmdline ~= "" then
         local split = split_cmdline(cmdline)
-        local flag = string.sub(split[1],1,1)
-        if flag~="S" and flag ~= "U" and flag ~= 'T' then
+        local flag = string.sub(split[1], 1, 1)
+        if flag ~= "S" and flag ~= "U" and flag ~= 'T' then
+            moon.error("command_handler flag", flag)
             echo("Error console command: "..cmdline)
             return
         end
@@ -164,6 +166,7 @@ httpserver.content_max_len = 8192
 
 httpserver.on("/console",function(request, response, next)
     local command = string.trim(request.body)
+    --moon.debug("console command: %s", command)
     if request.headers["content-type"] == "application/json" then
         command = json.decode(command).command
     end

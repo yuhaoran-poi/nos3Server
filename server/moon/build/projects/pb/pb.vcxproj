@@ -41,14 +41,14 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>..\..\bin\Debug\</OutDir>
-    <IntDir>..\..\obj\pb\Debug\</IntDir>
+    <OutDir>$(ProjectDir)..\..\bin\Debug\</OutDir>
+    <IntDir>$(ProjectDir)..\..\obj\pb\Debug\</IntDir>
     <TargetName>pb</TargetName>
     <TargetExt>.lib</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>..\..\bin\Release\</OutDir>
-    <IntDir>..\..\obj\pb\Release\</IntDir>
+    <OutDir>$(ProjectDir)..\..\bin\Release\</OutDir>
+    <IntDir>$(ProjectDir)..\..\obj\pb\Release\</IntDir>
     <TargetName>pb</TargetName>
     <TargetExt>.lib</TargetExt>
   </PropertyGroup>

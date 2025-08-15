@@ -41,14 +41,14 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>..\..\bin\Debug\</OutDir>
-    <IntDir>..\..\obj\lualib\Debug\</IntDir>
+    <OutDir>$(ProjectDir)..\..\bin\Debug\</OutDir>
+    <IntDir>$(ProjectDir)..\..\obj\lualib\Debug\</IntDir>
     <TargetName>lualib</TargetName>
     <TargetExt>.lib</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>..\..\bin\Release\</OutDir>
-    <IntDir>..\..\obj\lualib\Release\</IntDir>
+    <OutDir>$(ProjectDir)..\..\bin\Release\</OutDir>
+    <IntDir>$(ProjectDir)..\..\obj\lualib\Release\</IntDir>
     <TargetName>lualib</TargetName>
     <TargetExt>.lib</TargetExt>
   </PropertyGroup>
