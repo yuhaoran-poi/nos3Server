@@ -84,7 +84,7 @@ end
 
 local function command_handler(cmdline, echo)
     cmdline = string.trim(cmdline)
-    moon.error("command_handler cmdline", cmdline)
+    moon.debug("command_handler cmdline", cmdline)
     if cmdline ~= "" then
         local split = split_cmdline(cmdline)
         local flag = string.sub(split[1], 1, 1)

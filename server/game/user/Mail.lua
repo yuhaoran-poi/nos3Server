@@ -55,11 +55,16 @@ function Mail.CheckExpireMail()
         return
     end
 
+    local del_num = 0
     local now_ts = moon.time()
     for mail_id, mail_info in pairs(mails.mails_info) do
         if mail_info.simple_data.end_ts and mail_info.simple_data.end_ts <= now_ts then
             mails.mails_info[mail_id] = nil
+            del_num = del_num + 1
         end
+    end
+    if del_num > 0 then
+        Mail.SaveMailsNow()
     end
 end
 
@@ -205,6 +210,8 @@ function Mail.GetAttachmentFromCfg(attachment_cfg, attachment_items, attachment_
 end
 
 function Mail.RecvSystemMail(new_mail_info)
+    -- 检查并删除过期邮件
+    Mail.CheckExpireMail()
     local mails = scripts.UserModel.GetMails()
     if not mails then
         return false
@@ -225,7 +232,7 @@ function Mail.RecvSystemMail(new_mail_info)
             del_mail_ids = {},
             update_mail_ids = {},
         }
-        table.insert(sycn_msg.add_mail_ids, new_mail_info.mail_id)
+        table.insert(sycn_msg.add_mail_ids, new_mail_info.simple_data.mail_id)
         context.S2C(context.net_id, CmdCode["PBMailSyncCmd"], sycn_msg, 0)
     end
 end
@@ -254,6 +261,8 @@ function Mail.InvalidSystemMail(mail_id)
 end
 
 function Mail.RecvTriggerMail(config_id)
+    -- 检查并删除过期邮件
+    Mail.CheckExpireMail()
     local mails = scripts.UserModel.GetMails()
     if not mails then
         return false
@@ -347,6 +356,8 @@ function Mail.MergeAttachment(mail_info, attach_items, attach_item_datas, attach
 end
 
 function Mail.PBGetAllMailReqCmd(req)
+    -- 检查并删除过期邮件
+    Mail.CheckExpireMail()
     local mails = scripts.UserModel.GetMails()
     if not mails then
         return context.S2C(context.net_id, CmdCode["PBGetAllMailRspCmd"],
@@ -369,6 +380,8 @@ function Mail.PBGetAllMailReqCmd(req)
 end
 
 function Mail.PBGetMailDetailReqCmd(req)
+    -- 检查并删除过期邮件
+    Mail.CheckExpireMail()
     local mails = scripts.UserModel.GetMails()
     if not mails or not mails.mails_info then
         return context.S2C(context.net_id, CmdCode["PBGetMailDetailRspCmd"],
@@ -379,10 +392,10 @@ function Mail.PBGetMailDetailReqCmd(req)
         code = ErrorCode.None,
         error = "",
         uid = context.uid,
-        mail_ids = req.mail_ids,
+        mail_ids = req.msg.mail_ids,
         mail_list = {}
     }
-    for _, mail_id in pairs(req.mail_ids) do
+    for _, mail_id in pairs(req.msg.mail_ids) do
         local mail_info = mails.mails_info[mail_id]
         if not mail_info then
             rsp.code = ErrorCode.MailNotExist
@@ -445,6 +458,8 @@ function Mail.PBGetMailDetailReqCmd(req)
 end
 
 function Mail.PBReadMailReqCmd(req)
+    -- 检查并删除过期邮件
+    Mail.CheckExpireMail()
     local mails = scripts.UserModel.GetMails()
     if not mails or not mails.mails_info then
         return context.S2C(context.net_id, CmdCode["PBReadMailRspCmd"],
@@ -455,10 +470,10 @@ function Mail.PBReadMailReqCmd(req)
         code = ErrorCode.None,
         error = "",
         uid = context.uid,
-        mail_id = req.mail_id,
+        mail_id = req.msg.mail_id,
         mail_data = {}
     }
-    local mail_info = mails.mails_info[req.mail_id]
+    local mail_info = mails.mails_info[req.msg.mail_id]
     if not mail_info then
         rsp.code = ErrorCode.MailNotExist
         rsp.error = "邮件不存在"
@@ -466,13 +481,13 @@ function Mail.PBReadMailReqCmd(req)
     end
 
     if mail_info.simple_data.mail_type == MailDef.MailType.System then
-        table.insert(rsp.mail_data, mails.mails_info[req.mail_id])
+        rsp.mail_data = mail_info
     elseif mail_info.simple_data.mail_type == MailDef.MailType.TriggerConfig then
         local mail_common_config = GameCfg.TriggerEmailTemplateConfig[mail_info.simple_data.mail_config_id]
         if not mail_common_config then
             rsp.code = ErrorCode.MailConfigError
             rsp.error = "邮件配置错误"
-            return context.S2C(context.net_id, CmdCode["PBReadMailRspCmd"], rsp, req.msg_context.stub_id)
+            return context.S2C(context.net_id, CmdCode["PBGetMailDetailRspCmd"], rsp, req.msg_context.stub_id)
         end
 
         local common_mail = table.copy(mail_info, true)
@@ -488,17 +503,17 @@ function Mail.PBReadMailReqCmd(req)
                 if ret_code ~= ErrorCode.None then
                     rsp.code = ret_code
                     rsp.error = "获取附件失败"
-                    return context.S2C(context.net_id, CmdCode["PBReadMailRspCmd"], rsp, req.msg_context.stub_id)
+                    return context.S2C(context.net_id, CmdCode["PBGetMailDetailRspCmd"], rsp, req.msg_context.stub_id)
                 end
             end
-            table.insert(rsp.mail_list, common_mail)
+            rsp.mail_data = common_mail
         end
     elseif mail_info.simple_data.mail_type == MailDef.MailType.ImmediateConfig then
         local mail_common_config = GameCfg.ImmediatelyEmailTemplateConfig[mail_info.simple_data.mail_config_id]
         if not mail_common_config then
             rsp.code = ErrorCode.MailConfigError
             rsp.error = "邮件配置错误"
-            return context.S2C(context.net_id, CmdCode["PBReadMailRspCmd"], rsp, req.msg_context.stub_id)
+            return context.S2C(context.net_id, CmdCode["PBGetMailDetailRspCmd"], rsp, req.msg_context.stub_id)
         end
 
         local common_mail = table.copy(mail_info, true)
@@ -507,12 +522,12 @@ function Mail.PBReadMailReqCmd(req)
             common_mail.simple_data.mail_title = ""
             common_mail.mail_content_id = mail_common_config.content
             common_mail.mail_content = ""
-            table.insert(rsp.mail_list, common_mail)
+            rsp.mail_data = common_mail
         end
     else
         rsp.code = ErrorCode.MailTypeError
         rsp.error = "邮件类型错误"
-        return context.S2C(context.net_id, CmdCode["PBReadMailRspCmd"], rsp, req.msg_context.stub_id)
+        return context.S2C(context.net_id, CmdCode["PBGetMailDetailRspCmd"], rsp, req.msg_context.stub_id)
     end
 
     -- 数据存储更新
@@ -541,6 +556,8 @@ function Mail.PBReadMailReqCmd(req)
 end
 
 function Mail.PBGetRewardReqCmd(req)
+    -- 检查并删除过期邮件
+    Mail.CheckExpireMail()
     local mails = scripts.UserModel.GetMails()
     if not mails or not mails.mails_info then
         return context.S2C(context.net_id, CmdCode["PBGetRewardRspCmd"],
@@ -551,12 +568,12 @@ function Mail.PBGetRewardReqCmd(req)
         code = ErrorCode.None,
         error = "",
         uid = context.uid,
-        mail_ids = req.mail_ids,
+        mail_ids = req.msg.mail_ids,
         mail_data = {}
     }
     --local stack_items, unstack_items, stack_coins = {}, {}, {}
     local attach_items, attach_item_datas, attach_coins = {}, {}, {}
-    for _, mail_id in pairs(req.mail_ids) do
+    for _, mail_id in pairs(req.msg.mail_ids) do
         local mail_info = mails.mails_info[mail_id]
         if not mail_info then
             rsp.code = ErrorCode.MailNotExist
@@ -668,7 +685,7 @@ function Mail.PBGetRewardReqCmd(req)
 
     -- 数据存储更新
     local now_ts = moon.time()
-    for _, mail_id in pairs(req.mail_ids) do
+    for _, mail_id in pairs(req.msg.mail_ids) do
         local mail_info = mails.mails_info[mail_id]
         if mail_info then
             mail_info.simple_data.is_read = 1
@@ -704,6 +721,8 @@ function Mail.PBGetRewardReqCmd(req)
 end
 
 function Mail.PBDelMailReqCmd(req)
+    -- 检查并删除过期邮件
+    Mail.CheckExpireMail()
     local mails = scripts.UserModel.GetMails()
     if not mails or not mails.mails_info then
         return context.S2C(context.net_id, CmdCode["PBDelMailRspCmd"],
@@ -714,9 +733,9 @@ function Mail.PBDelMailReqCmd(req)
         code = ErrorCode.None,
         error = "",
         uid = context.uid,
-        mail_ids = req.mail_ids,
+        mail_ids = req.msg.mail_ids,
     }
-    for _, mail_id in pairs(req.mail_ids) do
+    for _, mail_id in pairs(req.msg.mail_ids) do
         local mail_info = mails.mails_info[mail_id]
         if not mail_info then
             rsp.code = ErrorCode.MailNotExist

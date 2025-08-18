@@ -13,7 +13,7 @@ function Client:create_room()
     end
     local req_msg = {
         uid = self.uid,
-        isopen = 1,
+        is_open = 1,
         needpwd = 0,
         pwd = "",
         chapter = 1,
@@ -59,7 +59,7 @@ function Client:mod_room()
     local req_msg = {
         uid = self.uid,
         roomid = self.roomid,
-        isopen = 1,
+        is_open = 1,
         needpwd = 0,
         pwd = "",
         chapter = 2,

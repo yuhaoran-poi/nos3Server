@@ -262,7 +262,9 @@ function MailLogic.DealSystemMail(send_info_str)
     end
 
     local all_user = 0
-    if send_info.uids == 1 and send_info.uids[1] == 0 then
+    moon.debug("MailLogic.DealSystemMail table.size(send_info.uids)", table.size(send_info.uids))
+    moon.debug("MailLogic.DealSystemMail send_info.uids[1]", send_info.uids[1])
+    if table.size(send_info.uids) == 1 and send_info.uids[1] == 0 then
         all_user = 1
     end
 

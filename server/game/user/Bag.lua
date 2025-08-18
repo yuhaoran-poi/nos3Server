@@ -373,7 +373,7 @@ function Bag.SaveAndLog(bagTypes, change_logs)
         success = Bag.SaveCoinsNow()
     end
     
-    local success = Bag.SaveBagsNow(bagTypes)
+    success = Bag.SaveBagsNow(bagTypes)
 
     --发送PBBagUpdateSyncCmd
     if success then

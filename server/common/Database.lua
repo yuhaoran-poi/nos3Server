@@ -949,7 +949,7 @@ end
 
 function _M.select_mailids(addr, uid, last_system_mail_id, now_ts)
     local cmd = string.format([[
-        SELECT mail_id FROM mgame.system_mail WHERE mail_id > %d AND end_ts < %d AND valid = 1 AND (all_user = 1 OR JSON_CONTAINS(recv_uids, '%d'));
+        SELECT mail_id FROM mgame.system_mail WHERE mail_id > %d AND end_ts > %d AND valid = 1 AND (all_user = 1 OR JSON_CONTAINS(recv_uids, '%d'));
     ]], last_system_mail_id, now_ts, uid)
     local res, err = moon.call("lua", addr, cmd)
     if err then
@@ -970,7 +970,7 @@ end
 
 function _M.select_expire_mailids(addr, uid, now_ts)
     local cmd = string.format([[
-        SELECT mail_id FROM mgame.system_mail WHERE end_ts <= %d AND valid = 0 AND (all_user = 1 OR JSON_CONTAINS(recv_uids, CAST(%d AS JSON), '$'));
+        SELECT mail_id FROM mgame.system_mail WHERE end_ts > %d AND valid = 0 AND (all_user = 1 OR JSON_CONTAINS(recv_uids, CAST(%d AS JSON), '$'));
     ]], now_ts, uid)
     local res, err = moon.call("lua", addr, cmd)
     if err then
@@ -1025,12 +1025,12 @@ function _M.invalid_system_mail(addr, mail_id)
 
     local res, err = moon.call("lua", addr, cmd)
     if err then
-        moon.error(string.format("add_system_mail err = %s", json.pretty_encode(err)))
+        moon.error(string.format("invalid_system_mail err = %s", json.pretty_encode(err)))
         return 0
     else
         if res then
-            moon.debug(string.format("add_system_mail res = %s", json.pretty_encode(res)))
-            return res
+            moon.debug(string.format("invalid_system_mail res = %s", json.pretty_encode(res)))
+            return res.affected_rows
         end
     end
 

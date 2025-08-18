@@ -71,13 +71,15 @@ end
 function Mailmgr.InvalidSystemMail(mail_id)
     local ret = Database.invalid_system_mail(context.addr_db_game, mail_id)
     if ret <= 0 then
-        return "failed"
+        return false
     end
 
     Mailmgr.DelSystemMailDetail(mail_id)
 
     -- 通知所有Gate
     context.broadcast_gate("Gate.InvalidSystemMail", mail_id)
+
+    return true
 end
 
 function Mailmgr.Shutdown()
