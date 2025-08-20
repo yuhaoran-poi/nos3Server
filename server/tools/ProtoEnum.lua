@@ -88,9 +88,11 @@ local UserAttrType = {
     player_flag = "player_flag", -- 玩家标签
     online_time = "online_time", -- 最后一次在线时间
     sum_online_time = "sum_online_time", -- 累计在线时长 单位秒
-    pa_flag = "pa_flag", -- 是否禁言等操作
     cur_show_ghost = "cur_show_ghost", -- 覆盖更新
     is_online = "is_online", -- 是否在线
+    chat_ban = "chat_ban", -- 是否禁言
+    chat_ban_time = "chat_ban_time", -- 禁言时间(结束时间)
+    last_chat_time = "last_chat_time", -- 上次发言时间
 }
 
 

@@ -2408,9 +2408,11 @@
 ---@field public player_flag integer @玩家标签
 ---@field public online_time integer @最后一次在线时间
 ---@field public sum_online_time integer @累计在线时长 单位秒
----@field public pa_flag integer @是否禁言等操作
 ---@field public cur_show_ghost PBSimpleGhostData @覆盖更新
 ---@field public is_online integer @是否在线
+---@field public chat_ban boolean @是否禁言
+---@field public chat_ban_time integer @禁言时间(结束时间)
+---@field public last_chat_time integer @上次发言时间
 
 
 ---@class PBClientGetUsrSimInfoReqCmd
@@ -2770,6 +2772,10 @@
 ---@class static_conf
 ---@field AllTag AllTag_cfg[]
 ---@field AllTagPool AllTagPool_cfg[]
+---@field AntiqueItem AntiqueItem_cfg[]
+---@field AntiquePriceTagChangeRate AntiquePriceTagChangeRate_cfg[]
+---@field AntiqueTagPool AntiqueTagPool_cfg[]
+---@field AweItemUpLv AweItemUpLv_cfg[]
 ---@field BaGuaBrand BaGuaBrand_cfg[]
 ---@field BaGuaBrandUpLv BaGuaBrandUpLv_cfg[]
 ---@field Book Book_cfg[]

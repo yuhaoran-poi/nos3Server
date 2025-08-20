@@ -9,5 +9,5 @@
 ---@field public read_validity_period integer @已读邮件保存期（秒）
 ---@field public is_active boolean @该邮件是否有效
 return {
-[1000001] = { id=1000001,icon=1,type=1,title=1000,content=1001,signature=1002,validity_period=2592000,read_validity_period=604800,is_active=true }
+[2000001] = { id=2000001,icon=1,type=1,title=1000,content=1001,signature=1002,validity_period=2592000,read_validity_period=604800,is_active=true }
 }

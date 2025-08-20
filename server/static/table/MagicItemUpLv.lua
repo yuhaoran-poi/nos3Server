@@ -4,7 +4,7 @@
 ---@field public allexp integer @该等级至少需要达到的经验值
 ---@field public cost integer @升级资源消耗映射ID
 return {
-[1] = { id=1,exp=0,allexp=0,cost=100 },
+[1] = { id=1,exp=100,allexp=0,cost=100 },
 [2] = { id=2,exp=100,allexp=100,cost=100 },
 [3] = { id=3,exp=100,allexp=200,cost=100 },
 [4] = { id=4,exp=100,allexp=300,cost=100 },
