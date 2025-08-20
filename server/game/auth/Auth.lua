@@ -98,7 +98,7 @@ local function doDSAuth(req)
     return { code = 0, error = "sucess", res = res }
 end
 
-local function doAuth(Auth, req)
+local function doAuth(Auth, req, plateform_id)
     local u = context.uid_map[req.uid]
     -- moon.warn(string.format("req.uid %d", req.uid))
     -- moon.error(string.format("doAuth context.uid_map = %s", json.pretty_encode(context.uid_map)))
@@ -115,6 +115,7 @@ local function doAuth(Auth, req)
             return { code = 2001, error = "create user service failed!" }
         end
         req.addr_user = addr_user
+        req.plateform_id = plateform_id
 
         local ok, err = moon.call("lua", addr_user, "User.Load", req)
         if not ok then
@@ -146,7 +147,7 @@ local function doAuth(Auth, req)
 
     u = {
         addr_user = addr_user,
-        authkey = authkey,
+        authkey = plateform_id,
         openid = "",
         uid = req.uid,
         logouttime = 0,
@@ -355,19 +356,19 @@ Auth.PBClientLoginReqCmd = function(req)
     
     local function processLogin()
         local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-        local authkey = req.msg.login_data.authkey
-        if authkey and string.sub(authkey, 1, 5) == "robot" then
-            moon.debug("robot login ", authkey)
+        local plateform_id = req.msg.login_data.authkey
+        if plateform_id and string.sub(plateform_id, 1, 5) == "robot" then
+            moon.debug("robot login ", plateform_id)
         else
             local steam_id = checkSteamTicket()
             if not steam_id or steam_id <= 10 then
                 context.openid_map[req.msg.login_data.authkey] = nil
                 return { code = ErrorCode.ParamInvalid, error = "INVALID_USERNAME_OR_PASSWORD" }
             end
-            authkey = tostring(steam_id)
+            plateform_id = tostring(steam_id)
         end
 
-        local check_res, check_err = db.checkuser(context.addr_db_game, authkey)
+        local check_res, check_err = db.checkuser(context.addr_db_game, plateform_id)
         if check_err then
             context.openid_map[req.msg.login_data.authkey] = nil
             return { code = ErrorCode.NicknameAlreadyExist, error = "USERNAME_EXISTS" }
@@ -376,7 +377,7 @@ Auth.PBClientLoginReqCmd = function(req)
         if not check_res or next(check_res) == nil then
             local create_res, create_err = db.createuser(
                 context.addr_db_game,
-                authkey
+                plateform_id
             )
             --
             if create_err or not create_res.insert_id then
@@ -387,7 +388,7 @@ Auth.PBClientLoginReqCmd = function(req)
             req.uid = create_res.insert_id
         else
             -- 登录验证（直接比较MD5）
-            local datas, err = db.getuserbyauthkey(context.addr_db_game, authkey)
+            local datas, err = db.getuserbyauthkey(context.addr_db_game, plateform_id)
             print("datas=\n" .. print_r(datas, true))
             -- 判断user_data是否为nil或空表
             if err or datas == nil or next(datas) == nil then
@@ -399,7 +400,7 @@ Auth.PBClientLoginReqCmd = function(req)
             req.uid = data.user_id
         end
 
-        return doAuth(Auth, req)
+        return doAuth(Auth, req, plateform_id)
     end
 
     local function func()

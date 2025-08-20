@@ -74,7 +74,7 @@ function User.Load(req)
         if db_user_attr then
             data = {
                 user_id = db_user_attr.uid,
-                authkey = req.msg.login_data.authkey,
+                authkey = req.plateform_id,
                 user_attr = db_user_attr, -- 取出结果集第一条记录
             }
         end
@@ -88,7 +88,7 @@ function User.Load(req)
             isnew = true
             --数据库中不存在则视为新用户初始化
             data = {
-                authkey = req.msg.login_data.authkey,
+                authkey = req.plateform_id,
                 user_id = req.uid,
                 user_attr = UserAttrDef.newUserAttr(),
             }
