@@ -216,9 +216,9 @@ function Citymgr.CheckCityRun()
         Citymgr.DestroyCity(cityid)
     end
 
-    if #canEnterRoom + table.size(context.waitds_citys) < 1 then
-        Citymgr.CreateCity()
-    end
+    -- if #canEnterRoom + table.size(context.waitds_citys) < 1 then
+    --     Citymgr.CreateCity()
+    -- end
 end
 
 -- 生成唯一房间ID（保留原逻辑）
