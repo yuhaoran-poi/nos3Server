@@ -204,6 +204,7 @@ function Citymgr.CheckCityRun()
         local rsp_data = json.decode(response.body)
         local success, ret = query_cb(rsp_data)
         if not success then
+            moon.error(string.format("CheckCityRun rsp_data:\n%s", json.pretty_encode(rsp_data)))
             table.insert(dead_cityids, cityid)
         else
             if cityinfo.now_num < min_num then
@@ -216,9 +217,11 @@ function Citymgr.CheckCityRun()
         Citymgr.DestroyCity(cityid)
     end
 
-    -- if #canEnterRoom + table.size(context.waitds_citys) < 1 then
-    --     Citymgr.CreateCity()
-    -- end
+    if #canEnterRoom + table.size(context.waitds_citys) < 1 then
+        moon.info("CheckCityRun #canEnterRoom = %d, table.size(context.waitds_citys) = %d", #canEnterRoom,
+            table.size(context.waitds_citys))
+        Citymgr.CreateCity()
+    end
 end
 
 -- 生成唯一房间ID（保留原逻辑）
