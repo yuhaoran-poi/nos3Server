@@ -75,6 +75,7 @@ socket.on("message", function(fd, msg)
         --     redirect(MessagePack, c.addr_user, GameDef.PTYPE_C2S, 0, 0)
         -- end
         --wfront(msg, seri.packs(c.net_id))
+        c.last_ping_time = moon.time()
         redirect(msg, c.addr_user, GameDef.PTYPE_C2S, 0, 0)
     end
 end)

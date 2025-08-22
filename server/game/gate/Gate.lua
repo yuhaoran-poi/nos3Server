@@ -19,7 +19,24 @@ function Gate.Start()
     listenfd  = socket.listen(context.conf.host, context.conf.port, moon.PTYPE_SOCKET_MOON)
     assert(listenfd>0,"server listen failed")
     socket.start(listenfd)
-    print("GAME Server Start Listen",context.conf.host, context.conf.port)
+    print("GAME Server Start Listen", context.conf.host, context.conf.port)
+    
+    -- 新增定时器轮询
+    moon.async(function()
+        while true do
+            moon.sleep(30000) -- 每30秒检查一次
+            -- 遍历所有用户
+            local now_ts = moon.time()
+            for _, c in pairs(context.uid_map) do
+                -- 60秒超时
+                if now_ts - c.last_ping_time > 60 then
+                    moon.warn("user", c.uid, "ping timeout")
+                    socket.close(c.fd)
+                end
+            end
+        end
+    end)
+
     return true
 end
 
@@ -88,7 +105,8 @@ function Gate.BindUser(req)
         uid = req.uid,
         fd = req.fd,
         net_id = req.net_id,
-        addr_user = req.addr_user
+        addr_user = req.addr_user,
+        last_ping_time = moon.time(),
     }
 
     context.fd_map[req.fd] = c
@@ -116,13 +134,24 @@ end
 -- 发送系统消息到本gate所有玩家
 function Gate.BroadcastSysChat(channel_msgs)
     moon.info("BroadcastSysChat channel_msgs = ", channel_msgs)
-    for net_id, _ in pairs(context.net_id_map) do
+    for uid, c in pairs(context.uid_map) do
         local msg = { infos = {} }
         for _, v in ipairs(channel_msgs) do
-            table.insert(msg.infos, v)
+            if not v.blacks[uid] then
+                table.insert(msg.infos, v.chat_msg)
+            end
         end
-        context.S2C(net_id, CmdCode.PBChatSynCmd, msg, 0)
+        if table.size(msg.infos) > 0 then
+            context.S2C(c.net_id, CmdCode.PBChatSynCmd, msg, 0)
+        end
     end
+    -- for net_id, _ in pairs(context.net_id_map) do
+    --     local msg = { infos = {} }
+    --     for _, v in ipairs(channel_msgs) do
+    --         table.insert(msg.infos, v)
+    --     end
+    --     context.S2C(net_id, CmdCode.PBChatSynCmd, msg, 0)
+    -- end
     return true
 end
 
