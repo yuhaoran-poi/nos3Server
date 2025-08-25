@@ -53,8 +53,9 @@ function Room.PBCreateRoomReqCmd(req)
             error = "system error",
         }, req.msg_context.stub_id)
     end
-
-    context.roomid = res.roomid
+    if res.code == ErrorCode.None then
+        context.roomid = res.roomid
+    end
 
     return context.S2C(context.net_id, CmdCode["PBCreateRoomRspCmd"], res, req.msg_context.stub_id)
 end
@@ -130,6 +131,7 @@ end
 function Room.OnRoomInfoSync(sync_msg)
     moon.error("OnRoomInfoSync")
     -- print_r(sync_msg)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if sync_msg.sync_type == RoomDef.SyncType.PlayerEnter
      and sync_msg.sync_info and sync_msg.sync_info.players then
         for _, player_info in pairs(sync_msg.sync_info.players) do
@@ -250,6 +252,9 @@ function Room.PBEnterRoomReqCmd(req)
             error = "system error",
         }, req.msg_context.stub_id)
     end
+    if res.code == ErrorCode.None then
+        context.roomid = res.roomid
+    end
 
     return context.S2C(context.net_id, CmdCode["PBEnterRoomRspCmd"], res, req.msg_context.stub_id)
 end
@@ -280,8 +285,10 @@ function Room.PBExitRoomReqCmd(req)
             error = "system error",
         }, req.msg_context.stub_id)
     end
+    if res.code == ErrorCode.None then
+        context.roomid = nil
+    end
 
-    context.roomid = nil
     return context.S2C(context.net_id, CmdCode["PBExitRoomRspCmd"], {
         code = res.code,
         error = res.error or "",
