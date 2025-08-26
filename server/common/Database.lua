@@ -285,13 +285,13 @@ function _M.checkuser(addr, authkey)
 end
 
 -- 创建用户方法
-function _M.createuser(addr, authkey, password_hash)
+function _M.createuser(addr, plateform_id, password_hash)
     if not password_hash then
         password_hash = ""
     end
     local cmd = string.format([[
         INSERT INTO mgame.account (authkey, username, password_hash) VALUES ('%s','%s','%s');
-    ]], authkey, authkey, password_hash)
+    ]], plateform_id, plateform_id, password_hash)
     return moon.call("lua", addr, cmd)
 end
 

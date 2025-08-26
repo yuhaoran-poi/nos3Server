@@ -13,14 +13,11 @@ local scripts = context.scripts
 local Item = {}
 
 function Item.Init()
-    
+
 end
 
 function Item.Start()
-    local data = scripts.UserModel.Get()
-    if not data.itemlist then
-        data.itemlist = {}
-    end
+    
 end
 
 -- 随机词条id

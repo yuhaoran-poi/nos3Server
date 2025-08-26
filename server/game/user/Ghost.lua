@@ -18,10 +18,6 @@ local scripts = context.scripts
 local Ghost = {}
 
 function Ghost.Init()
-    
-end
-
-function Ghost.Start()
     --加载全部角色数据
     local ghostinfos = Ghost.LoadGhosts()
     if ghostinfos then
@@ -31,10 +27,20 @@ function Ghost.Start()
     local ghosts = scripts.UserModel.GetGhosts()
     if not ghosts then
         ghosts = GhostDef.newUserGhostDatas()
-        --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        scripts.UserModel.SetGhosts(ghosts)
+    end
+end
+
+function Ghost.Start(isnew)
+    local ghosts = scripts.UserModel.GetGhosts()
+    if not ghosts then
+        return false
+    end
+
+    if isnew then
         local init_cfg = GameCfg.Init[1]
         if not init_cfg then
-            return { code = ErrorCode.ConfigError, error = "no init_cfg" }
+            return false
         end
 
         for k, v in pairs(init_cfg.item) do
@@ -47,11 +53,8 @@ function Ghost.Start()
             end
         end
 
-        scripts.UserModel.SetGhosts(ghosts)
         Ghost.SaveGhostsNow()
     end
-
-    return { code = ErrorCode.None }
 end
 
 function Ghost.SaveGhostsNow()

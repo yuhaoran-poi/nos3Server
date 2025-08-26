@@ -8,6 +8,7 @@ local Database = common.Database
 local protocol = common.protocol
 local ErrorCode = common.ErrorCode
 local RoomDef = require("common.def.RoomDef")
+local ChatLogic = require("common.logic.ChatLogic")
 
 ---@type user_context
 local context = ...
@@ -19,6 +20,12 @@ local Room = {}
 function Room.ForceExitRoom()
     if not context.roomid or not context.uid then
         return
+    end
+
+    local chat_ret = ChatLogic.LeaveRoomChannel(context.roomid, context.uid)
+    if chat_ret.code ~= ErrorCode.None then
+        moon.error(string.format("LeaveRoomChannel uid:%d, roomid:%d, code:%d, error:%s", context.uid, context.roomid,
+            chat_ret.code, chat_ret.error))
     end
 
     clusterd.send(3999, "roommgr", "Roommgr.ExitRoom", { uid = context.uid, roomid = context.roomid})
@@ -55,6 +62,12 @@ function Room.PBCreateRoomReqCmd(req)
     end
     if res.code == ErrorCode.None then
         context.roomid = res.roomid
+        -- 加入队伍频道
+        local chat_ret = ChatLogic.JoinRoomChannel(context.roomid, context.uid)
+        if chat_ret.code ~= ErrorCode.None then
+            moon.error(string.format("JoinRoomChannel uid:%d, roomid:%d, code:%d, error:%s", context.uid,
+                context.roomid, chat_ret.code, chat_ret.error))
+        end
     end
 
     return context.S2C(context.net_id, CmdCode["PBCreateRoomRspCmd"], res, req.msg_context.stub_id)
@@ -138,6 +151,12 @@ function Room.OnRoomInfoSync(sync_msg)
             if player_info.mem_info and player_info.mem_info.uid == context.uid then
                 context.roomid = sync_msg.roomid
                 moon.info("OnMemberEnter roomid", context.roomid, sync_msg.roomid)
+                -- 加入队伍频道
+                local chat_ret = ChatLogic.JoinRoomChannel(sync_msg.roomid, context.uid)
+                if chat_ret.code ~= ErrorCode.None then
+                    moon.error(string.format("JoinRoomChannel uid:%d, roomid:%d, code:%d, error:%s", context.uid,
+                        sync_msg.roomid, chat_ret.code, chat_ret.error))
+                end
             end
         end
     elseif sync_msg.sync_type == RoomDef.SyncType.PlayerExit
@@ -152,6 +171,12 @@ function Room.OnRoomInfoSync(sync_msg)
      and sync_msg.sync_info and sync_msg.sync_info.players then
         for _, player_info in pairs(sync_msg.sync_info.players) do
             if player_info.mem_info and player_info.mem_info.uid == context.uid then
+                local chat_ret = ChatLogic.LeaveRoomChannel(context.roomid, context.uid)
+                if chat_ret.code ~= ErrorCode.None then
+                    moon.error(string.format("LeaveRoomChannel uid:%d, roomid:%d, code:%d, error:%s", context.uid,
+                        context.roomid,
+                        chat_ret.code, chat_ret.error))
+                end
                 context.roomid = nil
                 moon.info("OnMemberKick roomid", context.roomid, sync_msg.roomid)
             end
@@ -286,6 +311,11 @@ function Room.PBExitRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
     if res.code == ErrorCode.None then
+        local chat_ret = ChatLogic.LeaveRoomChannel(context.roomid, context.uid)
+        if chat_ret.code ~= ErrorCode.None then
+            moon.error(string.format("LeaveRoomChannel uid:%d, roomid:%d, code:%d, error:%s", context.uid, context
+                .roomid, chat_ret.code, chat_ret.error))
+        end
         context.roomid = nil
     end
 

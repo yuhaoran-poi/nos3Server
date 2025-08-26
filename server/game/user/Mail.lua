@@ -24,11 +24,7 @@ local AFTER_READ_MAIL_EXPIRE_TIME = 7 * 24 * 60 * 60
 local Mail = {}
 
 function Mail.Init()
-
-end
-
-function Mail.Start()
-    --加载好友数据
+    --加载邮件数据
     local mails_data = Mail.LoadMails()
     if mails_data then
         scripts.UserModel.SetMails(mails_data)
@@ -40,7 +36,14 @@ function Mail.Start()
         mails.last_system_mail_id = Mail.GetLastSystemMailId()
         scripts.UserModel.SetMails(mails)
     end
+end
 
+function Mail.Start()
+    local mails = scripts.UserModel.GetMails()
+    if not mails then
+        return
+    end
+    
     -- 检查并删除过期邮件
     Mail.CheckExpireMail()
     -- 获取离线期间的系统邮件

@@ -24,21 +24,12 @@ local AbilityTagIdMin = 1000000
 local Bag = {}
 
 function Bag.Init()
-    
-end
-
--- function Bag.Start()
-    
--- end
-
-function Bag.Start()
     local bagTypes = {}
     bagTypes[BagDef.BagType.Cangku] = 1
     bagTypes[BagDef.BagType.Consume] = 1
     bagTypes[BagDef.BagType.Booty] = 1
 
     local baginfos = Bag.LoadBags(bagTypes)
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if baginfos then
         scripts.UserModel.SetBagData(baginfos)
     end
@@ -49,33 +40,7 @@ function Bag.Start()
         bagdata[BagDef.BagType.Cangku].bag_item_type = ItemDefine.ItemBagType.ALL
         bagdata[BagDef.BagType.Consume].bag_item_type = ItemDefine.ItemBagType.CONSUME
         bagdata[BagDef.BagType.Booty].bag_item_type = ItemDefine.ItemBagType.ALL
-
-        local init_cfg = GameCfg.Init[1]
-        if not init_cfg then
-            return { code = ErrorCode.ConfigError, error = "no init_cfg" }
-        end
         scripts.UserModel.SetBagData(bagdata)
-
-        local init_items = {}
-        local change_log = {}
-        for k, v in pairs(init_cfg.item) do
-            local init_item_info = {
-                id = k,
-                count = v,
-            }
-            table.insert(init_items, init_item_info)
-        end
-        if table.size(init_items) > 0 then
-            local stack_items, unstack_items, deal_coins = {}, {}, {}
-            local ok = ItemDefine.GetItemDataFromIdCount(init_items, stack_items, unstack_items, deal_coins)
-            if ok then
-                if table.size(stack_items) + table.size(unstack_items) > 0 then
-                    scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, change_log)
-                end
-            end
-        end
-
-        Bag.SaveBagsNow(bagTypes)
     end
 
     local coininfos = Bag.LoadCoins()
@@ -86,21 +51,49 @@ function Bag.Start()
     local coinsdata = scripts.UserModel.GetCoinsData()
     if not coinsdata then
         coinsdata = BagDef.newPBUserCoins()
+        scripts.UserModel.SetCoinsData(coinsdata)
+    end
+end
 
+function Bag.Start(isnew)
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata then
+        return
+    end
+
+    if isnew then
         local init_cfg = GameCfg.Init[1]
         if not init_cfg then
-            return { code = ErrorCode.ConfigError, error = "no init_cfg" }
+            return
         end
-        scripts.UserModel.SetCoinsData(coinsdata)
 
+        local init_items = {}
         local init_coins = {}
         local change_log = {}
+        for k, v in pairs(init_cfg.item) do
+            local init_item_info = {
+                id = k,
+                count = v,
+            }
+            table.insert(init_items, init_item_info)
+        end
         for k, v in pairs(init_cfg.item) do
             init_coins[k] = {
                 id = k,
                 count = v,
             }
         end
+
+        if table.size(init_items) > 0 then
+            local stack_items, unstack_items, deal_coins = {}, {}, {}
+            local ok = ItemDefine.GetItemDataFromIdCount(init_items, stack_items, unstack_items, deal_coins)
+            if ok then
+                if table.size(stack_items) + table.size(unstack_items) > 0 then
+                    scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, change_log)
+                end
+            end
+        end
+
         if table.size(init_coins) > 0 then
             local stack_items, unstack_items, deal_coins = {}, {}, {}
             local ok = ItemDefine.GetItemDataFromIdCount(init_coins, stack_items, unstack_items, deal_coins)
@@ -111,11 +104,15 @@ function Bag.Start()
             end
         end
 
+        local bagTypes = {}
+        bagTypes[BagDef.BagType.Cangku] = 1
+        bagTypes[BagDef.BagType.Consume] = 1
+        bagTypes[BagDef.BagType.Booty] = 1
+        Bag.SaveBagsNow(bagTypes)
         Bag.SaveCoinsNow()
     end
 
     -- 将所有背包中的道具序列化
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     Bag.dataMap = {}
     for bagType, baginfo in pairs(bagdata) do
         for pos, itemdata in pairs(baginfo.items) do
@@ -1070,6 +1067,7 @@ function Bag.AddItems(bagType, stack_item_datas, unstack_item_datas, change_log)
             return err_code
         end
     end
+    
     for _, item_data in pairs(unstack_item_datas) do
         local item_small_type = ItemDefine.GetItemType(item_data.common_info.config_id)
 
@@ -1090,7 +1088,7 @@ function Bag.AddItems(bagType, stack_item_datas, unstack_item_datas, change_log)
     end
 
     -- 判断图鉴是否需要更新
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local change_image_ids = {}
     for pos, log in pairs(change_log[bagType]) do
         if log.log_type == BagDef.LogType.ChangeNum

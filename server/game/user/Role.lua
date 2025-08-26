@@ -19,10 +19,6 @@ local scripts = context.scripts
 local Role = {}
 
 function Role.Init()
-    
-end
-
-function Role.Start()
     --加载全部角色数据
     local roleinfos = Role.LoadRoles()
     if roleinfos then
@@ -31,13 +27,22 @@ function Role.Start()
 
     local roles = scripts.UserModel.GetRoles()
     if not roles then
+        roles = RoleDef.newUserRoleDatas()
+        scripts.UserModel.SetRoles(roles)
+    end
+end
+
+function Role.Start(isnew)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles then
+        return false
+    end
+
+    if isnew then
         local init_cfg = GameCfg.Init[1]
         if not init_cfg then
             return { code = ErrorCode.ConfigError, error = "no init_cfg" }
         end
-
-        roles = RoleDef.newUserRoleDatas()
-        scripts.UserModel.SetRoles(roles)
 
         for k, v in pairs(init_cfg.item) do
             if k >= RoleDef.RoleDefine.RoleID.Start and k <= RoleDef.RoleDefine.RoleID.End then
@@ -49,8 +54,6 @@ function Role.Start()
 
         Role.SaveRolesNow()
     end
-
-    -- return { code = ErrorCode.None }
 end
 
 function Role.SaveRolesNow()

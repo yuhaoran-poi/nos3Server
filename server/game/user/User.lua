@@ -108,7 +108,7 @@ function User.Load(req)
         ---初始化自己数据
         context.batch_invoke_throw("Init", isnew)
         ---初始化互相引用的数据
-        context.batch_invoke_throw("Start")
+        context.batch_invoke_throw("Start", isnew)
 
         if isnew then
             ---根据初始化表进行user_attr初始化
@@ -446,6 +446,10 @@ function User.PBPingCmd(req)
         time = req.msg.time
     }
     context.S2C(context.net_id, CmdCode.PBPongCmd, ret, req.msg_context.stub_id)
+
+    local update_user_attr = {}
+    update_user_attr[ProtoEnum.UserAttrType.online_time] = moon.time()
+    User.SetUserAttr(update_user_attr, false)
 end
 
 -- function User.SimpleSetShowRole(role_info)
@@ -951,7 +955,7 @@ function User.PBUseItemUpLvReqCmd(req)
     if err_code ~= ErrorCode.None then
         return context.S2C(context.net_id, CmdCode.PBUseItemUpLvRspCmd, {
             code = err_code,
-            error = "图鉴不存在",
+            error = "升级失败",
             uid = context.uid,
             target_id = req.msg.target_id,
             cost_id = req.msg.cost_id,
@@ -1066,8 +1070,8 @@ function User.PBClientItemUpStarReqCmd(req)
     end
     if err_code ~= ErrorCode.None then
         return context.S2C(context.net_id, CmdCode.PBClientItemUpStarRspCmd, {
-            code = ErrorCode.ItemNotExist,
-            error = "图鉴不存在",
+            code = err_code,
+            error = "升星失败",
             uid = context.uid,
             config_id = req.msg.config_id,
         }, req.msg_context.stub_id)

@@ -11,6 +11,7 @@ local crypt = require("crypt")
 local lock_wait = require("moon.queue")()
 local lock_run = require("moon.queue")()
 local protocol = require("common.protocol_pb")
+local ChatLogic = require("common.logic.ChatLogic")
 local jencode = json.encode
 local jdecode = json.decode
 
@@ -161,6 +162,12 @@ function Citymgr.SetNewDsCitys(allocated_citys)
             addr_dsnode = 0,
         }
 
+        -- 创建附近聊天频道
+        local res = ChatLogic.NewNearbyChannel(cityid)
+        if res.code ~= ErrorCode.None then
+            moon.error(string.format("NewNearbyChannel cityid:%d, code:%d, error:%s", cityid, res.code, res.error))
+        end
+
         local scope <close> = lock_run()
         context.citys[cityid] = city
     end
@@ -214,6 +221,11 @@ function Citymgr.CheckCityRun()
     end
 
     for _, cityid in pairs(dead_cityids) do
+        -- 销毁附近聊天频道
+        local res = ChatLogic.RemoveNearbyChannel(cityid)
+        if res.code ~= ErrorCode.None then
+            moon.error(string.format("RemoveNearbyChannel cityid:%d, code:%d, error:%s", cityid, res.code, res.error))
+        end
         Citymgr.DestroyCity(cityid)
     end
 
@@ -352,6 +364,13 @@ function Citymgr.PlayerEnterCity(req)
     end
 
     local res = enterCity()
+    if res.code == ErrorCode.None then
+        local chat_ret = ChatLogic.JoinNearbyChannel(req.cityid, req.uid)
+        if chat_ret.code ~= ErrorCode.None then
+            moon.error(string.format("JoinNearbyChannel uid:%d, cityid:%d, code:%d, error:%s", req.uid, req.cityid,
+                chat_ret.code, chat_ret.error))
+        end
+    end
     return res
 end
 
@@ -374,6 +393,13 @@ function Citymgr.PlayerExitCity(req)
     end
 
     local res = exitCity()
+    if res.code == ErrorCode.None then
+        local chat_ret = ChatLogic.LeaveNearbyChannel(req.cityid, req.uid)
+        if chat_ret.code ~= ErrorCode.None then
+            moon.error(string.format("LeaveNearbyChannel uid:%d, cityid:%d, code:%d, error:%s", req.uid, req.cityid,
+                chat_ret.code, chat_ret.error))
+        end
+    end
     return res
 end
 

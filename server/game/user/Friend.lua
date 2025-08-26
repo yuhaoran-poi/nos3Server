@@ -29,10 +29,6 @@ local apply_fields = {
 local Friend = {}
 
 function Friend.Init()
-
-end
-
-function Friend.Start()
     --加载好友数据
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local friends_data = Friend.LoadFriends()
@@ -48,6 +44,13 @@ function Friend.Start()
         friend_group.group_name = FriendDef.DefaultGroupName
         friends.friend_groups[friend_group.group_id] = friend_group
         scripts.UserModel.SetFriends(friends)
+    end
+end
+
+function Friend.Start()
+    local friends = scripts.UserModel.GetFriends()
+    if not friends then
+        return false
     end
 
     Friend.DealRelations()
@@ -452,6 +455,33 @@ function Friend.DelBlack(friends, black_uid)
     clusterd.send(3999, "friendmgr", "Friendmgr.DelBlack", black_data)
 
     return ErrorCode.None
+end
+
+function Friend.IsBlack(other_uid)
+    local friends = scripts.UserModel.GetFriends()
+    if not friends then
+        return false
+    end
+
+    if friends.black_list[other_uid] then
+        return true
+    end
+
+    return false
+end
+
+function Friend.GetBlacks()
+    local friends = scripts.UserModel.GetFriends()
+    if not friends then
+        return false
+    end
+
+    local ret = {}
+    for black_uid, _ in pairs(friends.black_list) do
+        ret[black_uid] = 1
+    end
+
+    return ret
 end
 
 function Friend.SetNotes(friends, target_uid, notes)

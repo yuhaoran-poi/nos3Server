@@ -22,10 +22,6 @@ local scripts = context.scripts
 local ItemImage = {}
 
 function ItemImage.Init()
-    
-end
-
-function ItemImage.Start()
     --加载全部图鉴数据
     local itemImageinfos = ItemImage.LoadItemImages()
     if itemImageinfos then
@@ -35,12 +31,19 @@ function ItemImage.Start()
     local itemImages = scripts.UserModel.GetItemImages()
     if not itemImages then
         itemImages = ItemDef.newUserImage()
-
         scripts.UserModel.SetItemImages(itemImages)
+    end
+end
+
+function ItemImage.Start(isnew)
+    local itemImages = scripts.UserModel.GetItemImages()
+    if not itemImages then
+        return false
+    end
+    
+    if isnew then
         ItemImage.SaveItemImagesNow()
     end
-
-    -- return { code = ErrorCode.None }
 end
 
 function ItemImage.SaveItemImagesNow()

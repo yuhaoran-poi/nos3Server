@@ -15,6 +15,7 @@ local GameCfg = common.GameCfg --游戏配置
 local ErrorCode = common.ErrorCode --逻辑错误码
 local CmdCode = common.CmdCode --客户端通信消息码
 local ChatEnum = require("common.Enum.ChatEnum") --聊天枚举
+local serverconf = require("serverconf")
 ---@type chatmgr_context
 local context = ...
 local scripts = context.scripts ---方便访问同服务的其它lua模块
@@ -29,13 +30,16 @@ function ChatMgr.Init()
     context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_TEAM] = {}   -- 队伍频道
     context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_GUILD] = {}  -- 公会频道
     context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_PRIVATE] = {} -- 私聊频道
-    context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_SYSTEM] = {}  -- 系统频道  
+    context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_SYSTEM] = {}  -- 系统频道
+    context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_ROOM] = {}  -- 房间频道
     return true
 end
 
 function ChatMgr.Start()
     -- 创建系统聊天频道
     ChatMgr.CreateSystemChannel()
+    -- 创建世界聊天频道
+    ChatMgr.CreateWorldChannel(serverconf.WORLD_ID)
     return true
 end
 
@@ -46,8 +50,9 @@ function ChatMgr.Shutdown()
 end
 -- 新增附近频道
 function ChatMgr.CreateNearbyChannel(city_id)
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 判断是否已经存在
-    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_NEARBY]
+    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_NEARBY][city_id]
     if channel then
         return { code = ErrorCode.ChannelAlreadyExists, error = "nearby chat channel already exists!" }
     end
@@ -60,6 +65,14 @@ function ChatMgr.CreateNearbyChannel(city_id)
     if addr_channel == 0 then
         return { code = ErrorCode.CreateChatChannelServiceErr, error = "create nearby chat channel service failed!" }
     end
+    -- 初始化频道数据
+    local res, err = moon.call("lua", addr_channel, "ChatChannel.InitData", channel_id,
+    ChatEnum.EChannelType.CHANNEL_TYPE_NEARBY, addr_channel)
+    if not res then
+        moon.error("init nearby chat channel data failed: ", err)
+        return { code = ErrorCode.InitChatChannelDataErr, error = err }
+    end
+
     context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_NEARBY][city_id] = {
         channel_id = channel_id,
         addr_channel = addr_channel
@@ -100,9 +113,9 @@ end
 -- 新增世界频道
 function ChatMgr.CreateWorldChannel(world_id)
     -- 判断是否已经存在
-    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_WORLD]
+    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_WORLD][world_id]
     if channel then
-        moon.warn("create world chat channel failed: channel already exists! world_id = ", world_id)
+        moon.error("create world chat channel failed: channel already exists! world_id = ", world_id)
         return { code = ErrorCode.ChannelAlreadyExists, error = "world chat channel already exists!" }
     end
     local channel_id = uuid.next()
@@ -112,7 +125,7 @@ function ChatMgr.CreateWorldChannel(world_id)
     }
     local addr_channel = moon.new_service(conf)
     if addr_channel == 0 then
-        moon.warn("create world chat channel failed: create chat channel service failed! world_id = ", world_id)
+        moon.error("create world chat channel failed: create chat channel service failed! world_id = ", world_id)
         return { code = ErrorCode.CreateChatChannelServiceErr, error = "create world chat channel service failed!" }
     end
     -- 初始化频道数据
@@ -153,10 +166,42 @@ end
 function ChatMgr.RemoveWorldChannelPlayer(world_id, uid)
     local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_WORLD][world_id]
     if not channel then
-        moon.warn("remove world chat channel player failed: channel not found! world_id = ", world_id,",uid = ",uid)
+        moon.warn("remove world chat channel player failed: channel not found! world_id = ", world_id, ",uid = ", uid)
         return { code = ErrorCode.ChannelNotExists, error = "world chat channel not found!" }
     end
     moon.send("lua", channel.addr_channel, "ChatChannel.RemovePlayer", uid)
+    return { code = ErrorCode.None }
+end
+
+-- 世界频道加入game节点
+function ChatMgr.AddWorldChannelGameNode(node_id, addr_gate, world_id)
+    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_WORLD][world_id]
+    if not channel then
+        return { code = ErrorCode.ChannelNotExists, error = "world chat channel not found!" }
+    end
+    moon.send("lua", channel.addr_channel, "ChatChannel.AddGameNode", node_id, addr_gate)
+    return { code = ErrorCode.None }
+end
+
+-- 世界频道移除game节点
+function ChatMgr.RemoveWorldChannelGameNode(node_id, world_id)
+    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_WORLD][world_id]
+    if not channel then
+        return { code = ErrorCode.ChannelNotExists, error = "world chat channel not found!" }
+    end
+    moon.send("lua", channel.addr_channel, "ChatChannel.RemoveGameNode", node_id)
+    return { code = ErrorCode.None }
+end
+
+-- 发送世界频道消息
+function ChatMgr.SendWorldChannelMsg(to_msg, world_id)
+    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_WORLD][world_id]
+    if not channel then
+        moon.error("send world chat channel msg failed: channel not found! world_id = ", world_id)
+        return { code = ErrorCode.ChannelNotExists, error = "world chat channel not found!" }
+    end
+
+    moon.send("lua", channel.addr_channel, "ChatChannel.AddMsg", to_msg)
     return { code = ErrorCode.None }
 end
  
@@ -216,16 +261,12 @@ end
 function ChatMgr.RemoveGuildChannelPlayer(guild_id, uid)
     local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_GUILD][guild_id]
     if not channel then
-        moon.warn("remove guild chat channel player failed: channel not found! guild_id = ", guild_id,",uid = ",uid)
+        moon.warn("remove guild chat channel player failed: channel not found! guild_id = ", guild_id, ",uid = ", uid)
         return { code = ErrorCode.ChannelNotExists, error = "guild chat channel not found!" }
     end
     moon.send("lua", channel.addr_channel, "ChatChannel.RemovePlayer", uid)
     return { code = ErrorCode.None }
 end
- 
-
- 
-
 
 -- 新增队伍频道
 function ChatMgr.CreateTeamChannel(team_id)
@@ -349,7 +390,72 @@ function ChatMgr.SendSystemChannelMsg(msg)
     if not channel then
         return { code = ErrorCode.ChannelNotExists, error = "system chat channel not found!" }
     end
-    moon.send("lua", channel.addr_channel, "ChatChannel.AddMsg", msg)
+    local to_msg = {
+        chat_msg = msg,
+        blacks = {},
+    }
+    moon.send("lua", channel.addr_channel, "ChatChannel.AddMsg", to_msg)
+    return { code = ErrorCode.None }
+end
+
+-- 新增房间频道
+function ChatMgr.CreateRoomChannel(room_id)
+    -- 判断是否已经存在
+    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_ROOM][room_id]
+    if channel then
+        return { code = ErrorCode.ChannelAlreadyExists, error = "room chat channel already exists!" }
+    end
+    local channel_id = uuid.next()
+    local conf = {
+        name = "channel_room" .. room_id,
+        file = "chat/service_chatchannel.lua"
+    }
+    local addr_channel = moon.new_service(conf)
+    if addr_channel == 0 then
+        return { code = ErrorCode.CreateChatChannelServiceErr, error = "create room chat channel service failed!" }
+    end
+    -- 初始化频道数据
+    local res, err = moon.call("lua", addr_channel, "ChatChannel.InitData", channel_id,
+        ChatEnum.EChannelType.CHANNEL_TYPE_ROOM, addr_channel)
+    if not res then
+        return { code = ErrorCode.InitChatChannelDataErr, error = err }
+    end
+    context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_ROOM][room_id] = {
+        channel_id = channel_id,
+        addr_channel = addr_channel
+    }
+    return { code = ErrorCode.None, channel_id = channel_id, addr_channel = addr_channel }
+end
+
+-- 移除房间频道
+function ChatMgr.RemoveRoomChannel(room_id)
+    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_ROOM][room_id]
+    if not channel then
+        return { code = ErrorCode.ChannelNotExists, error = "room chat channel not found!" }
+    end
+    moon.send("lua", channel.addr_channel, "ChatChannel.Shutdown")
+    context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_ROOM][room_id] = nil
+    return { code = ErrorCode.None }
+end
+
+-- 房间频道加入玩家
+function ChatMgr.AddRoomChannelPlayer(room_id, uid)
+    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_ROOM][room_id]
+    if not channel then
+        return { code = ErrorCode.ChannelNotExists, error = "room chat channel not found!" }
+    end
+    moon.send("lua", channel.addr_channel, "ChatChannel.AddPlayer", uid)
+    return { code = ErrorCode.None }
+end
+
+-- 房间频道移除玩家
+function ChatMgr.RemoveRoomChannelPlayer(room_id, uid)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_ROOM][room_id]
+    if not channel then
+        return { code = ErrorCode.ChannelNotExists, error = "room chat channel not found!" }
+    end
+    moon.send("lua", channel.addr_channel, "ChatChannel.RemovePlayer", uid)
     return { code = ErrorCode.None }
 end
  

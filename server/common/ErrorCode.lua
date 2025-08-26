@@ -242,6 +242,30 @@ local ErrorCode = {
     AddSystemChannelGameNodeErr = 1320,
     --- 退出系统频道失败
     RemoveSystemChannelGameNodeErr = 1321,
+    --- 加入世界频道游戏节点失败
+    AddWorldChannelGameNodeErr = 1322,
+    --- 退出世界频道失败
+    RemoveWorldChannelGameNodeErr = 1323,
+    --- 已在聊天黑名单中
+    ChatBlack = 1324,
+    --- 创建附近聊天频道失败
+    CreateNearbyChannelErr = 1325,
+    --- 删除附近聊天频道失败
+    RemoveNearbyChannelErr = 1326,
+    --- 加入附近聊天频道失败
+    JoinNearbyChannelErr = 1327,
+    --- 退出附近聊天频道失败
+    LeaveNearbyChannelErr = 1328,
+    --- 创建房间聊天频道失败
+    CreateRoomChannelErr = 1329,
+    --- 删除房间聊天频道失败
+    RemoveRoomChannelErr = 1330,
+    --- 加入房间聊天频道失败
+    JoinRoomChannelErr = 1331,
+    --- 退出房间聊天频道失败
+    LeaveRoomChannelErr = 1332,
+    --- 创建房间聊天频道失败
+    ChatChannelCreateFailed = 1333,
 
     --- 匹配相关错误码
     --- 已有匹配房间

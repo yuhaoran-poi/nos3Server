@@ -49,9 +49,12 @@ message PBUserAttr
 	int32 player_flag  = 17;	//玩家标签
 	int32 online_time   = 18;	//最后一次在线时间
 	int64 sum_online_time = 19;	//累计在线时长 单位秒
-	int32 pa_flag  = 20;		// 是否禁言等操作
-	PBSimpleGhostData cur_show_ghost	= 21;	//	覆盖更新
-	int32 is_online = 22;	//是否在线
+	PBSimpleGhostData cur_show_ghost	= 20;	//	覆盖更新
+	int32 is_online = 21;	//是否在线
+	// 聊天禁言相关
+	bool chat_ban = 22;        // 是否禁言
+	int64 chat_ban_time = 23;  // 禁言时间(结束时间)
+	int64 last_chat_time = 24; // 上次发言时间
 }
 
 // 客户端请求简略数据

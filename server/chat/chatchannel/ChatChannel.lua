@@ -44,10 +44,11 @@ function ChatChannel.InitData(channel_id, channel_type, channel_addr)
             local scope <close> = lock()
             if #context.channel_msgs > 0 then
                 -- 判断是否系统消息频道
-                if context.channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_SYSTEM then
+                if context.channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_SYSTEM
+                    or context.channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_WORLD then
                     -- 遍历所有游戏节点，发送消息到游戏节点的gate服务
                     for node_id, gate_addr in pairs(context.game_nodes) do
-                         cluster.send(node_id, gate_addr, "Gate.BroadcastSysChat", context.channel_msgs)
+                        cluster.send(node_id, gate_addr, "Gate.BroadcastSysChat", context.channel_msgs)
                     end
                 else
                     context.send_users(ChatChannel.GetMembers(), {}, "ChatProxy.OnChatMsg", context.channel_msgs)
@@ -102,7 +103,9 @@ end
 function ChatChannel.RemoveGameNode(node_id)
     local scope <close> = lock()
     context.game_nodes[node_id] = nil
-    moon.info("ChatChannel.RemoveGameNode node_id = ", node_id, " channel_id = ", context.channel_id, " channel_type = ", context.channel_type)
+    moon.info("ChatChannel.RemoveGameNode node_id = ", node_id, " channel_id = ", context.channel_id, " channel_type = ",
+    context.channel_type)
     return true
 end
+
 return ChatChannel

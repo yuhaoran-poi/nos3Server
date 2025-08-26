@@ -11,6 +11,7 @@ local json = require("json")
 local crypt = require("crypt")
 local protocol = require("common.protocol_pb")
 local RoomDef = require("common.def.RoomDef")
+local ChatLogic = require("common.logic.ChatLogic")
 local jencode = json.encode
 local jdecode = json.decode
 
@@ -226,6 +227,13 @@ function Roommgr.CreateRoom(req)
     table.insert(room.players, { is_ready = 1, mem_info = req.self_info })
     -- moon.info(string.format("Roommgr.CreateRoom mem_info:\n%s", json.pretty_encode(room.players[1].mem_info)))
     
+    -- 创建房间聊天频道
+    local res = ChatLogic.NewRoomChannel(roomid)
+    if res.code ~= ErrorCode.None then
+        moon.error(string.format("NewRoomChannel roomid:%d, code:%d, error:%s", roomid, res.code, res.error))
+        return { code = ErrorCode.ChatChannelCreateFailed, error = "创建房间聊天频道失败", roomid = roomid }
+    end
+
     local room_tags = {
         is_open = room.room_data.is_open,
         chapter = room.room_data.chapter,
@@ -599,6 +607,12 @@ function Roommgr.ExitRoom(req)
             room.master_id = room.players[1].mem_info.uid
             room.master_name = room.players[1].mem_info.nick_name
         else
+            -- 销毁房间聊天频道
+            moon.warn("Roommgr.ExitRoom roomid:", req.roomid, "master_id:", room.master_id)
+            local res = ChatLogic.RemoveRoomChannel(req.roomid)
+            if res.code ~= ErrorCode.None then
+                moon.error(string.format("RemoveRoomChannel roomid:%d, code:%d, error:%s", req.roomid, res.code, res.error))
+            end
             context.rooms[req.roomid] = nil
             local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
             Database.delete_room(context.addr_db_server, req.roomid)
