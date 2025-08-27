@@ -252,8 +252,26 @@ Robot.DoCmd = function(params)
         local ok, err = pcall(f, cur_bot, table.unpack(params))
         if not ok then print(err) end
     else
-        print("not found cmd<".. tostring(cmd).. ">! use <help> cmd for usage!")
+        print("not found cmd<" .. tostring(cmd) .. ">! use <help> cmd for usage!")
     end
+end
+
+Robot.DoPing = function()
+    moon.async(function()
+        while true do
+            moon.debug("Robot.DoPing all_robot.size = ", table.size(all_robot))
+            for idx, cur_bot in pairs(all_robot) do
+                if cur_bot then
+                    moon.debug("Robot.DoPing index = ", cur_bot.index)
+                    cur_bot:send("PBPingCmd", { time = moon.time() }, function(msg)
+                        print("rpc PBPingCmd ret = ", cur_bot.index, msg)
+                    end)
+                end
+            end
+            moon.sleep(30000)
+        end
+    end)
+    return true
 end
 
 if conf.name then

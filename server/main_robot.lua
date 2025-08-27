@@ -84,6 +84,7 @@ local function run(node_conf)
         print("main_robot start")
         ---控制服务初始化顺序,Init一般为加载DB
         assert(moon.call("lua", moon.queryservice("robot"), "Init"))
+        assert(moon.call("lua", moon.queryservice("robot"), "DoPing"))
         assert(moon.call("lua", moon.queryservice("robotmgr"), "Init"))
     end
 

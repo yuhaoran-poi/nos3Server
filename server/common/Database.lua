@@ -523,6 +523,36 @@ function _M.delete_room(addr_db, roomid)
         redis_send(addr_db, table.unpack(del_pipeline_0))
     end
 end
+
+-- 清理redis的房间记录
+function _M.clear_all_room_keys(addr_db)
+    -- 首先获取所有带ROOM_PREFIX前缀的键
+    local cursor = tonumber(0)
+    local batch_size = 1000 -- 每次处理的键数量
+
+    -- 删除房间数据
+    repeat
+        local res, err = redis_call(addr_db, "SCAN", cursor, "MATCH", ROOM_PREFIX .. "*", "COUNT", batch_size)
+        if err then
+            moon.error("Scan room keys failed: " .. tostring(err))
+            break
+        end
+
+        cursor = tonumber(res[1])
+        local keys = res[2]
+
+        if #keys > 0 then
+            local pipeline = {}
+            table.insert(pipeline, "DEL")
+            for _, key in ipairs(keys) do
+                table.insert(pipeline, key)
+            end
+            redis_send(addr_db, table.unpack(pipeline))
+        end
+    until cursor == 0
+
+    moon.info("All room keys and indexes have been cleared")
+end
  
 -- 加载所有公会id
 function _M.load_guildids(addr)
