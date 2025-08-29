@@ -263,7 +263,7 @@ Robot.DoPing = function()
             for idx, cur_bot in pairs(all_robot) do
                 if cur_bot then
                     moon.debug("Robot.DoPing index = ", cur_bot.index)
-                    cur_bot:send("PBPingCmd", { time = moon.time() }, function(msg)
+                    cur_bot:send("PBPingCmd", { time = moon.clock() }, function(msg)
                         print("rpc PBPingCmd ret = ", cur_bot.index, msg)
                     end)
                 end

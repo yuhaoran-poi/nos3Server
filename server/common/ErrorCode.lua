@@ -266,6 +266,8 @@ local ErrorCode = {
     LeaveRoomChannelErr = 1332,
     --- 创建房间聊天频道失败
     ChatChannelCreateFailed = 1333,
+    --- 重复发送聊天
+    ChatRepeat = 1334,
 
     --- 匹配相关错误码
     --- 已有匹配房间

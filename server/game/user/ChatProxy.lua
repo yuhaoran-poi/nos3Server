@@ -11,6 +11,12 @@ local ChatLogic = require("common.logic.ChatLogic")
 local context = ...
 local scripts = context.scripts
 
+local WORLD_CHAT_CD_CONFID = 1
+local WORLD_CHAT_MAX_SIZE_CONFID = 2
+local CHAT_MIN_CD_CONFID = 3
+local CHAT_REPEAT_CONFID = 4
+local CHAT_TEMP_BAN_CONFID = 5
+
 ---@class ChatProxy
 local ChatProxy = {}
 
@@ -44,9 +50,12 @@ function ChatProxy.PBChatReqCmd(req)
     local to_uid = req.msg.to_uid
     local user_attr = scripts.UserModel.GetUserAttr()
     local DB = scripts.UserModel.Get()
+    local now_ts = moon.time()
     --是否处于禁言状态
-
-    if user_attr.chat_ban and user_attr.chat_ban_time > moon.time() then
+    if user_attr.chat_ban and user_attr.chat_ban_time <= now_ts then
+        user_attr.chat_ban = false
+    end
+    if user_attr.chat_ban then
         context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatSilence }, req)
         return { code = ErrorCode.ChatSilence }
     end
@@ -56,10 +65,18 @@ function ChatProxy.PBChatReqCmd(req)
         return { code = ErrorCode.ChatInvalidParam }
     end
     -- 检查字符限制
-    local ChatWordLimit = 100 -- todo 配置
+    local ChatWordLimit = GameCfg.ChatChannelConfig[WORLD_CHAT_MAX_SIZE_CONFID] or 1000 -- todo 配置
     if utf8.len(msg_content) > ChatWordLimit then
         context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatWordLimit }, req)
         return { code = ErrorCode.ChatWordLimit }
+    end
+
+    -- 检测发送间隔
+    local last_chat_time = user_attr.last_chat_time or 0
+    local send_interval = GameCfg.ChatChannelConfig[CHAT_MIN_CD_CONFID] or 1 -- 发送间隔，单位秒
+    if now_ts - last_chat_time < send_interval then
+        context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatSendInterval }, req)
+        return { code = ErrorCode.ChatSendInterval }
     end
 
     local PBChatMsgInfo = {
@@ -82,6 +99,13 @@ function ChatProxy.PBChatReqCmd(req)
             return { code = ErrorCode.ChatBlack }
         end
     elseif channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_WORLD then --世界
+        -- 世界聊天cd
+        local world_chat_cd = GameCfg.ChatChannelConfig[WORLD_CHAT_CD_CONFID] or 30 -- todo 配置
+        if context.world_chat_last_time
+            and now_ts - context.world_chat_last_time < world_chat_cd then
+            context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatSendInterval }, req)
+            return { code = ErrorCode.ChatSendInterval }
+        end
     elseif channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_NEARBY then --附近频道
     elseif channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_GUILD then --公会
         -- 公会是否存在
@@ -104,16 +128,29 @@ function ChatProxy.PBChatReqCmd(req)
         return { code = ErrorCode.ChannelNotExists }
     end
 
-    -- 检测发送间隔
-    local last_chat_time = user_attr.last_chat_time or 0
-    local send_interval = 1 -- 发送间隔，单位秒
-    local now_ts = moon.time()
-    if now_ts - last_chat_time < send_interval then
-        context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatSendInterval }, req)
-        return { code = ErrorCode.ChatSendInterval }
+    -- 检测重复发送
+    local repeat_cnt = GameCfg.ChatChannelConfig[CHAT_REPEAT_CONFID] or 3
+    if context.last_chat_msg
+        and context.last_chat_msg == msg_content then
+        if context.re_chat_cnt then
+            context.re_chat_cnt = context.re_chat_cnt + 1
+        else
+            context.re_chat_cnt = 1
+        end
+
+        if context.re_chat_cnt > repeat_cnt then
+            -- 禁言
+            local ban_time = GameCfg.ChatChannelConfig[CHAT_TEMP_BAN_CONFID] or 60 -- 禁言时间，单位秒
+            user_attr.chat_ban = true
+            user_attr.chat_ban_time = now_ts + ban_time
+            context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatRepeat }, req)
+            return { code = ErrorCode.ChatRepeat }
+        end
     end
+    context.last_chat_msg = msg_content
     -- 记录发送时间
     user_attr.last_chat_time = now_ts
+    context.world_chat_last_time = now_ts
     -- 发送消息
     if channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_PRIVATE then --私聊
         local private_msg = {}
