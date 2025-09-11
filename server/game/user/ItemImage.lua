@@ -259,12 +259,12 @@ function ItemImage.UpLvImage(config_id, add_exp)
     local cost_items = {}
     local cost_coins = {}
     for id, count in pairs(exps) do
-        local cost_cfg = GameCfg.UpLvCostIDMapping[id]
-        if not cost_cfg then
+        local cur_cfg = GameCfg.UpLvCostIDMapping[id]
+        if not cur_cfg or not cur_cfg.cost or not cur_cfg.cnt then
             return ErrorCode.ItemUpLvCostNotExist
         end
 
-        ItemDefine.GetItemsFromCfg(cost_cfg, (count / cost_cfg.cnt), true, cost_items, cost_coins)
+        ItemDefine.GetItemsFromCfg(cur_cfg.cost, (count / cur_cfg.cnt), true, cost_items, cost_coins)
     end
 
     -- 检查资源是否足够

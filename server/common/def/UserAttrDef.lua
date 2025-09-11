@@ -1,6 +1,13 @@
 local LuaExt = require "common.LuaExt"
 
-local UserAttrDef = {}
+local UserAttrDef = {
+    ONLINE_STATE = {
+        OFFLINE = 0,
+        ONLINE = 1,
+        IN_ROOM = 2,
+        IN_GAME = 3,
+    },
+}
 
 local defaultPBRankNode = {
 	grade = 0,--品阶
@@ -67,7 +74,7 @@ local defaultPBUserAttr = {
     online_time = 0,                                                     --最后一次在线时间
     sum_online_time = 0,                                                 --累计在线时长 单位秒
     cur_show_ghost = LuaExt.const(table.copy(defaultPBSimpleGhostData)), --当前展示的鬼宠
-    is_online = 0,                                                       --是否在线
+    is_online = UserAttrDef.ONLINE_STATE.OFFLINE,                        --是否在线
     chat_ban = false,                                                    --是否被禁言
     chat_ban_time = 0,                                                   --禁言时间
     last_chat_time = 0,                                                  --最后一次发言时间

@@ -142,12 +142,16 @@ end
 function Role.AddRole(roleid)
     local roles = scripts.UserModel.GetRoles()
     if not roles then
-        return false
+        return ErrorCode.ServerInternalError
     end
 
     local role_cfg = GameCfg.HumanRole[roleid]
     if not role_cfg then
-        return { code = ErrorCode.ConfigError, error = "no role_cfg" }
+        return ErrorCode.ConfigError
+    end
+
+    if roles.role_list[roleid] and roles.role_list[roleid].config_id ~= 0 then
+        return ErrorCode.RoleExist
     end
 
     local role_info = RoleDef.newRoleData()
@@ -198,6 +202,7 @@ function Role.AddRole(roleid)
     end
 
     roles.role_list[roleid] = role_info
+    return ErrorCode.None
 end
 
 function Role.SetRoleBattle(roleid, sync_client)
@@ -496,12 +501,12 @@ function Role.UpLv(roleid, add_exp)
     local cost_items = {}
     local cost_coins = {}
     for id, count in pairs(exps) do
-        local cost_cfg = GameCfg.UpLvCostIDMapping[id]
-        if not cost_cfg then
+        local cur_cfg = GameCfg.UpLvCostIDMapping[id]
+        if not cur_cfg or not cur_cfg.cost or not cur_cfg.cnt then
             return ErrorCode.ItemUpLvCostNotExist
         end
 
-        ItemDefine.GetItemsFromCfg(cost_cfg, (count / cost_cfg.cnt), true, cost_items, cost_coins)
+        ItemDefine.GetItemsFromCfg(cur_cfg.cost, (count / cur_cfg.cnt), true, cost_items, cost_coins)
     end
 
     -- 检查资源是否足够

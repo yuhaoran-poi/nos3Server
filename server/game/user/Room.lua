@@ -7,7 +7,9 @@ local GameCfg = common.GameCfg
 local Database = common.Database
 local protocol = common.protocol
 local ErrorCode = common.ErrorCode
+local ProtoEnum = require("tools.ProtoEnum")
 local RoomDef = require("common.def.RoomDef")
+local UserAttrDef = require("common.def.UserAttrDef")
 local ChatLogic = require("common.logic.ChatLogic")
 
 ---@type user_context
@@ -68,6 +70,10 @@ function Room.PBCreateRoomReqCmd(req)
             moon.error(string.format("JoinRoomChannel uid:%d, roomid:%d, code:%d, error:%s", context.uid,
                 context.roomid, chat_ret.code, chat_ret.error))
         end
+        -- 同步进入房间状态
+        local update_user_attr = {}
+        update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.IN_ROOM
+        scripts.User.SetUserAttr(update_user_attr, true)
     end
 
     return context.S2C(context.net_id, CmdCode["PBCreateRoomRspCmd"], res, req.msg_context.stub_id)
@@ -157,6 +163,10 @@ function Room.OnRoomInfoSync(sync_msg)
                     moon.error(string.format("JoinRoomChannel uid:%d, roomid:%d, code:%d, error:%s", context.uid,
                         sync_msg.roomid, chat_ret.code, chat_ret.error))
                 end
+                -- 同步进入房间状态
+                local update_user_attr = {}
+                update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.IN_ROOM
+                scripts.User.SetUserAttr(update_user_attr, true)
             end
         end
     elseif sync_msg.sync_type == RoomDef.SyncType.PlayerExit
@@ -171,12 +181,18 @@ function Room.OnRoomInfoSync(sync_msg)
      and sync_msg.sync_info and sync_msg.sync_info.players then
         for _, player_info in pairs(sync_msg.sync_info.players) do
             if player_info.mem_info and player_info.mem_info.uid == context.uid then
+                -- 退出队伍频道
                 local chat_ret = ChatLogic.LeaveRoomChannel(context.roomid, context.uid)
                 if chat_ret.code ~= ErrorCode.None then
                     moon.error(string.format("LeaveRoomChannel uid:%d, roomid:%d, code:%d, error:%s", context.uid,
                         context.roomid,
                         chat_ret.code, chat_ret.error))
                 end
+                -- 同步退出房间状态
+                local update_user_attr = {}
+                update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.ONLINE
+                scripts.User.SetUserAttr(update_user_attr, true)
+
                 context.roomid = nil
                 moon.info("OnMemberKick roomid", context.roomid, sync_msg.roomid)
             end
@@ -284,15 +300,15 @@ function Room.PBEnterRoomReqCmd(req)
     return context.S2C(context.net_id, CmdCode["PBEnterRoomRspCmd"], res, req.msg_context.stub_id)
 end
 
-function Room.OnMemberEnter(res)
-    moon.info("OnMemberEnter uid", context.uid, res.member_data.mem_info.uid)
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    if res.member_data.mem_info.uid == context.uid then
-        context.roomid = res.roomid
-        moon.info("OnMemberEnter roomid", context.roomid, res.roomid)
-    end
-    context.S2C(context.net_id, CmdCode["PBEnterRoomSyncCmd"], res, 0)
-end
+-- function Room.OnMemberEnter(res)
+--     moon.info("OnMemberEnter uid", context.uid, res.member_data.mem_info.uid)
+--     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+--     if res.member_data.mem_info.uid == context.uid then
+--         context.roomid = res.roomid
+--         moon.info("OnMemberEnter roomid", context.roomid, res.roomid)
+--     end
+--     context.S2C(context.net_id, CmdCode["PBEnterRoomSyncCmd"], res, 0)
+-- end
 
 function Room.PBExitRoomReqCmd(req)
     if not context.roomid then
@@ -311,11 +327,17 @@ function Room.PBExitRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
     if res.code == ErrorCode.None then
+        -- 退出队伍频道
         local chat_ret = ChatLogic.LeaveRoomChannel(context.roomid, context.uid)
         if chat_ret.code ~= ErrorCode.None then
             moon.error(string.format("LeaveRoomChannel uid:%d, roomid:%d, code:%d, error:%s", context.uid, context
                 .roomid, chat_ret.code, chat_ret.error))
         end
+        -- 同步退出房间状态
+        local update_user_attr = {}
+        update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.ONLINE
+        scripts.User.SetUserAttr(update_user_attr, true)
+
         context.roomid = nil
     end
 
@@ -327,13 +349,13 @@ function Room.PBExitRoomReqCmd(req)
     }, req.msg_context.stub_id)
 end
 
-function Room.OnMemberExit(res)
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    if res.uid == context.uid then
-        context.roomid = nil -- body
-    end
-    context.S2C(context.net_id, CmdCode["PBExitRoomSyncCmd"], res, 0)
-end
+-- function Room.OnMemberExit(res)
+--     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+--     if res.uid == context.uid then
+--         context.roomid = nil -- body
+--     end
+--     context.S2C(context.net_id, CmdCode["PBExitRoomSyncCmd"], res, 0)
+-- end
 
 function Room.PBKickRoomReqCmd(req)
     if not context.roomid then
@@ -367,12 +389,12 @@ function Room.PBKickRoomReqCmd(req)
     }, req.msg_context.stub_id)
 end
 
-function Room.OnMemberKick(res)
-    if res.kick_uid == context.uid then
-        context.roomid = nil -- body
-    end
-    context.S2C(context.net_id, CmdCode["PBKickRoomSyncCmd"], res, 0)
-end
+-- function Room.OnMemberKick(res)
+--     if res.kick_uid == context.uid then
+--         context.roomid = nil -- body
+--     end
+--     context.S2C(context.net_id, CmdCode["PBKickRoomSyncCmd"], res, 0)
+-- end
 
 function Room.PBInviteRoomReqCmd(req)
     if not context.roomid or context.roomid ~= req.msg.roomid then

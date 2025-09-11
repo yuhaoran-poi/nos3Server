@@ -366,14 +366,14 @@ function Bag.SaveAndLog(bagTypes, change_logs)
         end
     end
 
+    local success_coin = false
     if bagTypes and bagTypes[BagDef.BagType.Coins] then
-        success = Bag.SaveCoinsNow()
+        success_coin = Bag.SaveCoinsNow()
     end
     
     success = Bag.SaveBagsNow(bagTypes)
-
     --发送PBBagUpdateSyncCmd
-    if success then
+    if success or success_coin then
         --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         context.S2C(context.net_id, CmdCode["PBBagUpdateSyncCmd"], update_msg, 0)
     end

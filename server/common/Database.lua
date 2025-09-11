@@ -4,8 +4,7 @@ local redisd = require("redisd")
 local uuid = require("uuid")
 local protocol = require("common.protocol_pb")
 local crypt = require("crypt")
- 
- 
+local TradeDef = require("common.def.TradeDef")
 
 ---@type sqlclient
 local pgsql = require("sqldriver")
@@ -261,6 +260,7 @@ function _M.RedisSetSimpleUserAttr(addr_db, simple_user_attrs)
         table.insert(tmp, uid)
         table.insert(tmp, json.encode(simple_user_attr))
     end
+    moon.warn(string.format("RedisSetSimpleUserAttr res = %s", json.pretty_encode(tmp)))
     redis_send(addr_db, "HSET", "user_simple_attr", table.unpack(tmp))
 end
 
@@ -878,7 +878,9 @@ function _M.saveusercoins(addr, uid, data)
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
     ]], uid, pbvalue, data_str, pbvalue, data_str)
 
-    return moon.send("lua", addr, cmd)
+    moon.send("lua", addr, cmd)
+    
+    return true
 end
 
 -- 记录道具变更日志
@@ -1107,6 +1109,252 @@ end
 
 function _M.RedisDelSystemMailsInfo(addr_db_redis, mail_id)
     redis_send(addr_db_redis, "HDEL", SYSTEM_MAIL_INFO, mail_id)
+end
+
+function _M.loadtradeinfo(addr, uid)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.trades WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBSelfTradeInfo", pbdata)
+        return tmp_data
+    end
+    print("loadtradeinfo failed", uid, err)
+    return nil
+end
+
+function _M.savetradeinfo(addr, uid, data)
+    assert(data)
+
+    local data_str = jencode(data)
+    local _, pbdata = protocol.encodewithname("PBSelfTradeInfo", data)
+    local pbvalue = crypt.base64encode(pbdata)
+    local cmd = string.format([[
+        INSERT INTO mgame.trades (uid, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
+
+    return moon.send("lua", addr, cmd)
+end
+
+function _M.addtradeproduct(addr, product_data, condition1, condition2, condition3, condition4, condition5)
+    local item_data_str = jencode(product_data.item_data)
+    local _, pbdata = protocol.encodewithname("PBItemData", product_data.item_data)
+    local pbvalue = crypt.base64encode(pbdata)
+    local cmd = string.format([[
+        INSERT INTO mgame.trade_product (trade_id, config_id, seller_uid, beg_ts, end_ts,
+        item_data, item_data_json, single_price, sale_num, condition1, condition2,
+        condition3, condition4, condition5, state)
+        VALUES (%d, %d, %d, %d, %d, '%s', '%s', %d, %d, %d, %d, %d, %d, %d, %d);
+    ]], product_data.trade_id, product_data.item_data.common_info.config_id,
+        product_data.seller_uid, product_data.beg_ts, product_data.end_ts, pbvalue,
+        item_data_str, product_data.trade_data.single_price, product_data.trade_data.sale_num,
+        condition1, condition2, condition3, condition4, condition5, product_data.state)
+
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("addtradeproduct err = %s", json.pretty_encode(err)))
+        return 0
+    else
+        if res then
+            moon.debug(string.format("addtradeproduct res = %s", json.pretty_encode(res)))
+            return res.insert_id
+        end
+    end
+end
+
+function _M.addauctionproduct(addr, product_data, condition1, condition2, condition3, condition4, condition5, custome_condition)
+    local item_data_str = jencode(product_data.item_data)
+    local _, pbdata = protocol.encodewithname("PBItemData", product_data.item_data)
+    local pbvalue = crypt.base64encode(pbdata)
+    local custome_condition_str = jencode(custome_condition)
+    local cmd = string.format([[
+        INSERT INTO mgame.auction_product (trade_id, config_id, uniqid, seller_uid, beg_ts, end_ts, item_data, item_data_json, start_price, buyout_price, cur_price, buyer_uid, condition1, condition2, condition3, condition4, condition5, custome_condition, state) VALUES (%d, %d, %d, %d, %d, %d, '%s', '%s', %d, %d, %d, %d, %d, %d, %d, %d, %d, '%s', %d);]],
+        product_data.trade_id, product_data.item_data.common_info.config_id, product_data.item_data.common_info.uniqid,
+        product_data.seller_uid, product_data.beg_ts, product_data.end_ts, pbvalue, item_data_str,
+        product_data.auction_data.start_price, product_data.auction_data.buyout_price,
+        product_data.auction_data.cur_price, product_data.auction_data.buyer_uid, condition1, condition2, condition3,
+        condition4, condition5, custome_condition_str, product_data.state)
+        
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("addauctionproduct err = %s", json.pretty_encode(err)))
+        return 0
+    else
+        if res then
+            moon.debug(string.format("addauctionproduct res = %s", json.pretty_encode(res)))
+            return res.insert_id
+        end
+    end
+end
+
+function _M.updatetraderecord(addr, record_data)
+    assert(record_data)
+
+    local cmd = string.format([[
+        INSERT INTO mgame.trade_record (trade_config_id, sale_num, sale_total_price, last_deal_price, update_ts, yes_sale_num, yes_sale_total_price, yes_average_price, min_price, min_price_num)
+        VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d)
+        ON DUPLICATE KEY UPDATE sale_num = %d, sale_total_price = %d, last_deal_price = %d, update_ts = %d, yes_sale_num = %d, yes_sale_total_price = %d, yes_average_price = %d, min_price = %d, min_price_num = %d;
+    ]], record_data.trade_config_id, record_data.sale_num, record_data.sale_total_price, record_data.last_deal_price,
+        record_data.update_ts, record_data.yes_sale_num, record_data.yes_sale_total_price, record_data.yes_average_price,
+        record_data.min_price, record_data.min_price_num, record_data.sale_num, record_data.sale_total_price,
+        record_data.last_deal_price, record_data.update_ts, record_data.yes_sale_num,
+        record_data.yes_sale_total_price, record_data.yes_average_price, record_data.min_price,
+        record_data.min_price_num, record_data.sale_num, record_data.sale_total_price)
+
+    return moon.send("lua", addr, cmd)
+end
+
+function _M.gettraderecordwithids(addr, ids, sort_describe)
+    local where_str = "trade_config_id IN ("
+    for i = 1, #ids do
+        where_str = where_str .. ids[i]
+        if i < #ids then
+            where_str = where_str .. ","
+        end
+    end
+    where_str = where_str .. ")"
+
+    local cmd = string.format([[
+        SELECT trade_config_id FROM mgame.trade_record WHERE %s ORDER BY %s;
+    ]], where_str, sort_describe)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local trade_record_ids = {}
+        for i = 1, #res do
+            table.insert(trade_record_ids, res[i].trade_config_id)
+        end
+        return trade_record_ids
+    end
+    moon.error("gettraderecordwithids failed", where_str, err)
+    return nil
+end
+
+function _M.loadplayertradelog(addr, uid)
+    local cmd = string.format([[
+        SELECT log_id, trade_id, deal_price, seller_uid, buyer_uid, trade_ts, trade_tax,
+        item_data FROM mgame.trade_log WHERE (seller_uid = %d OR buyer_uid = %d)
+        ORDER BY trade_ts DESC LIMIT 100;
+    ]], uid, uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local trade_logs = {}
+        for i = 1, #res do
+            local pbdata = crypt.base64decode(res[i].item_data)
+            local _, item_data = protocol.decodewithname("PBItemData", pbdata)
+
+            local trade_log = TradeDef.newTradeLogData()
+            trade_log.log_id = res[i].log_id
+            trade_log.trade_id = res[i].trade_id
+            trade_log.deal_price = res[i].deal_price
+            trade_log.seller_uid = res[i].seller_uid
+            trade_log.buyer_uid = res[i].buyer_uid
+            trade_log.trade_ts = res[i].trade_ts
+            trade_log.trade_tax = res[i].trade_tax
+            trade_log.item_data = item_data
+            trade_logs[trade_log.trade_id] = trade_log
+        end
+        return trade_logs
+    end
+    moon.error("loadplayertradelog failed", uid, err)
+    return nil
+end
+
+function _M.addtradelog(addr, trade_log)
+    local item_data_str = jencode(trade_log.item_data)
+    local _, pbdata = protocol.encodewithname("PBItemData", trade_log.item_data)
+    local pbvalue = crypt.base64encode(pbdata)
+
+    local cmd = string.format([[
+        INSERT INTO mgame.trade_log (trade_id, deal_price, seller_uid, buyer_uid, trade_ts,
+        trade_tax, item_data, item_data_json)
+        VALUES (%d, %d, %d, %d, %d, %d, '%s', '%s');
+    ]], trade_log.trade_id, trade_log.deal_price, trade_log.seller_uid, trade_log.buyer_uid, trade_log.trade_ts, trade_log.trade_tax, pbvalue, item_data_str)
+
+    return moon.send("lua", addr, cmd)
+end
+
+function _M.gettradelog(addr, log_id)
+    local cmd = string.format([[
+        SELECT log_id, trade_id, deal_price, seller_uid, buyer_uid, trade_ts, trade_tax,
+        item_data FROM mgame.trade_log WHERE log_id = %d;
+    ]], log_id)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local pbdata = crypt.base64decode(res[1].item_data)
+        local _, item_data = protocol.decodewithname("PBItemData", pbdata)
+        local trade_log = TradeDef.newTradeLogData()
+        trade_log.log_id = res[1].log_id
+        trade_log.trade_id = res[1].trade_id
+        trade_log.deal_price = res[1].deal_price
+        trade_log.seller_uid = res[1].seller_uid
+        trade_log.buyer_uid = res[1].buyer_uid
+        trade_log.trade_ts = res[1].trade_ts
+        trade_log.trade_tax = res[1].trade_tax
+        trade_log.item_data = item_data
+        return trade_log
+    end
+    print("gettradelog failed", log_id, err)
+    return nil
+end
+
+-- 交易行数据前缀常量
+local PRODUCT_DATA = "product_data"
+
+function _M.RedisGetProductData(addr_db_redis, product_ids)
+    local res, err = redis_call(addr_db_redis, "HMGET", PRODUCT_DATA, table.unpack(product_ids))
+    if err then
+        error("RedisGetProductData failed:" .. tostring(err))
+        return {}
+    end
+    local product_datas = {}
+    if res and #res > 0 then
+        moon.warn(string.format("RedisGetProductData res = %s", json.pretty_encode(res)))
+        for i = 1, #res do
+            product_datas[product_ids[i]] = json.decode(res[i] or "null")
+        end
+    end
+
+    return product_datas
+end
+
+function _M.RedisSetProductData(addr_db_redis, product_data)
+    local tmp = {}
+    table.insert(tmp, product_data.trade_id)
+    table.insert(tmp, json.encode(product_data))
+    redis_send(addr_db_redis, "HSET", PRODUCT_DATA, table.unpack(tmp))
+end
+
+function _M.loadshopinfo(addr, uid)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.shops WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBShopPlayerData", pbdata)
+        return tmp_data
+    end
+    print("loadshopinfo failed", uid, err)
+    return nil
+end
+
+function _M.saveshopinfo(addr, uid, data)
+    assert(data)
+
+    local data_str = jencode(data)
+    local _, pbdata = protocol.encodewithname("PBShopPlayerData", data)
+    local pbvalue = crypt.base64encode(pbdata)
+    local cmd = string.format([[
+        INSERT INTO mgame.shops (uid, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
+
+    return moon.send("lua", addr, cmd)
 end
 
 return _M

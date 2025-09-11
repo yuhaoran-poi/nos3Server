@@ -235,3 +235,21 @@ message PBFriendMoveRspCmd
     int32 old_group_id = 5;    //旧分组id
     int32 new_group_id = 6;    //新分组id
 }
+
+// 修改好友分组名
+message PBFriendSetGroupNameReqCmd
+{
+    int64 uid           = 1;
+    int32 group_id      = 2;    //分组id
+    string group_name   = 3;    //分组名称
+}
+
+message PBFriendSetGroupNameRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid = 3;
+    int32 group_id = 4;    //分组id
+    string group_name   = 5;    //分组名称
+}

@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+message PBShopBuySingle
+{
+	int32 product_id	= 1;
+	int32 product_num	= 2;
+	map<int32, int64> single_price	= 3;
+	map<int32, int64> total_price	= 4; 
+}
+
+message PBShopBuyLog
+{
+	int64 log_id	= 1;
+	int64 buyer_uid	= 2;
+	int64 buy_ts	= 3;
+	map<int32, int64> log_tota_price	= 4;
+	repeated PBShopBuySingle buy_data	= 5;
+}
+
+message PBShopPlayerData
+{
+	int64 uid	= 1;
+	int64 last_check_ts	= 2;
+	map<int32, int32> buy_product_list	= 3;
+	repeated PBShopBuyLog shop_logs		= 4;
+}
+
+// 获取商店数据
+message PBGetShopDataReqCmd
+{
+	int64 uid	= 1;
+}
+
+message PBGetShopDataRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    int64 uid	= 3;
+	int64 now_sys_ts	= 4;	//当前系统时间
+	PBShopPlayerData shop_player_data	= 5;	//玩家商店数据
+	map<int32, int32> shop_server_buy	= 6;	//商店全服已购买数据
+}

@@ -198,4 +198,28 @@ function UserModel.SetMails(mailinfos)
     DBData.mails = mailinfos
 end
 
+---@return PBSelfTradeData ? nil
+function UserModel.GetTradeData()
+    if DBData and DBData.trade_data then
+        return DBData.trade_data
+    end
+    return nil
+end
+
+function UserModel.SetTradeData(trade_data)
+    DBData.trade_data = trade_data
+end
+
+---@return PBShopPlayerData ? nil
+function UserModel.GetShopData()
+    if DBData and DBData.shops then
+        return DBData.shops
+    end
+    return nil
+end
+
+function UserModel.SetShopData(shopinfos)
+    DBData.shops = shopinfos
+end
+
 return UserModel

@@ -7,6 +7,7 @@ local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
 local Database = common.Database
 local ProtoEnum = require("tools.ProtoEnum")
+local UserAttrDef = require("common.def.UserAttrDef")
 local FriendDef = require("common.def.FriendDef")
 local UserAttrLogic = require("common.logic.UserAttrLogic")
 
@@ -76,11 +77,11 @@ function Friend.Offline()
 end
 
 function Friend.OtherOnline(uid)
-    context.S2C(context.net_id, CmdCode["PBFriendOnlineSyncCmd"], {change_uid = uid, is_online = 1}, 0)
+    context.S2C(context.net_id, CmdCode["PBFriendOnlineSyncCmd"], { change_uid = uid, is_online = UserAttrDef.ONLINE_STATE.ONLINE}, 0)
 end
 
 function Friend.OtherOffline(uid)
-    context.S2C(context.net_id, CmdCode["PBFriendOnlineSyncCmd"], {change_uid = uid, is_online = 0}, 0)
+    context.S2C(context.net_id, CmdCode["PBFriendOnlineSyncCmd"], {change_uid = uid, is_online = UserAttrDef.ONLINE_STATE.OFFLINE}, 0)
 end
 
 function Friend.DealRelations()
@@ -519,9 +520,14 @@ function Friend.PBGetFriendInfoReqCmd(req)
     }
     local friend_uids = {}
     for group_id, group_data in pairs(friends.friend_groups) do
-        for uid, friend_data in pairs(group_data) do
-            table.insert(friend_uids, uid)
+        if table.size(group_data.group_friends) > 0 then
+            for uid, friend_data in pairs(group_data.group_friends) do
+                table.insert(friend_uids, uid)
+            end
         end
+    end
+    for black_uid, _ in pairs(friends.black_list) do
+        table.insert(friend_uids, black_uid)
     end
     if table.size(friend_uids) > 0 then
         local users_attr = UserAttrLogic.QueryOtherUsersSimpleAttr(context, friend_uids)
@@ -931,6 +937,45 @@ function Friend.PBFriendMoveReqCmd(req)
         { code = ErrorCode.None, error = "", uid = context.uid, target_uid = req.msg.target_uid or 0,
             old_group_id = req.msg.old_group_id or 0, new_group_id = req.msg.new_group_id or 0 },
         req.msg_context.stub_id)
+end
+
+function Friend.PBFriendSetGroupNameReqCmd(req)
+    if context.uid ~= req.msg.uid
+        or req.msg.group_id == 0
+        or req.msg.group_name == "" then
+        return context.S2C(context.net_id, CmdCode.PBFriendSetGroupNameRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            group_id = req.msg.group_id or 0,
+            group_name = req.msg.group_name or "",
+        }, req.msg_context.stub_id)
+    end
+
+    if req.msg.group_id == FriendDef.DefaultGroupId then
+        return context.S2C(context.net_id, CmdCode.PBFriendSetGroupNameRspCmd,
+            { code = ErrorCode.ParamInvalid, error = "默认分组不能改名", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local friends = scripts.UserModel.GetFriends()
+    if not friends then
+        return context.S2C(context.net_id, CmdCode.PBFriendSetGroupNameRspCmd,
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    if not friends.friend_groups[req.msg.group_id] then
+        return context.S2C(context.net_id, CmdCode.PBFriendSetGroupNameRspCmd,
+            { code = ErrorCode.ParamInvalid, error = "分组不存在", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    friends.friend_groups[req.msg.group_id].group_name = req.msg.group_name
+
+    Friend.SaveFriendsNow()
+    Friend.SyncFriends(friends, true, false, false, {})
+
+    return context.S2C(context.net_id, CmdCode.PBFriendSetGroupNameRspCmd,
+        { code = ErrorCode.None, error = "", uid = context.uid, group_id = req.msg.group_id or 0,
+            group_name = req.msg.group_name or "" }, req.msg_context.stub_id)
 end
 
 return Friend

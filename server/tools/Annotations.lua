@@ -496,6 +496,20 @@
 ---@field public new_group_id integer @新分组id
 
 
+---@class PBFriendSetGroupNameReqCmd
+---@field public uid integer
+---@field public group_id integer @分组id
+---@field public group_name string @分组名称
+
+
+---@class PBFriendSetGroupNameRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public group_id integer @分组id
+---@field public group_name string @分组名称
+
+
 ---@class PBSimpleGhostData
 ---@field public config_id integer @配置ID
 ---@field public skin_id integer @穿戴皮肤
@@ -2279,6 +2293,41 @@
 ---@field public ds_ip string
 
 
+---@class PBShopBuySingle
+---@field public product_id integer
+---@field public product_num integer
+---@field public single_price table<integer, integer>
+---@field public total_price table<integer, integer>
+
+
+---@class PBShopBuyLog
+---@field public log_id integer
+---@field public buyer_uid integer
+---@field public buy_ts integer
+---@field public log_tota_price table<integer, integer>
+---@field public buy_data PBShopBuySingle[]
+
+
+---@class PBShopPlayerData
+---@field public uid integer
+---@field public last_check_ts integer
+---@field public buy_product_list table<integer, integer>
+---@field public shop_logs PBShopBuyLog[]
+
+
+---@class PBGetShopDataReqCmd
+---@field public uid integer
+
+
+---@class PBGetShopDataRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public now_sys_ts integer @当前系统时间
+---@field public shop_player_data PBShopPlayerData @玩家商店数据
+---@field public shop_server_buy table<integer, integer> @商店全服已购买数据
+
+
 ---@class PBTeamInfo
 ---@field public team_id integer
 ---@field public master_id integer @队长id
@@ -2343,33 +2392,162 @@
 ---@field public team_id integer @队伍id
 
 
----@class PBTradeBankProductData
----@field public trade_id integer @交易id
----@field public product_id integer @商品id(道具的配置id)
----@field public cur_num integer @当前剩余数量
----@field public book_num integer @被预订数量
+---@class PBTradeData
+---@field public single_price integer @单价
 ---@field public sale_num integer @售出数量
----@field public price integer @单价
----@field public uid integer @卖家id
----@field public beg_ts integer @本商品创建时间
----@field public end_ts integer @本商品下架时间
----@field public state integer @当前商品状态
 
 
----@class PBSelfTradeBankData
+---@class PBAuctionData
+---@field public start_price integer @起拍价格
+---@field public buyout_price integer @一口价
+---@field public cur_price integer @当前价格
+---@field public buyer_uid integer @当前买家id
+
+
+---@class PBTradeProductBaseData
+---@field public trade_id integer @交易id
+---@field public seller_uid integer @卖家id
+---@field public item_data PBItemData @商品信息
+---@field public beg_ts integer @商品上架时间
+---@field public end_ts integer @商品下架时间
+---@field public state integer
+---@field public trade_data PBTradeData @交易数据
+---@field public auction_data PBAuctionData @拍卖数据
+
+
+---@class PBTradeLogData
+---@field public log_id integer
+---@field public trade_id integer
+---@field public item_data PBItemData @商品信息
+---@field public deal_price integer @成交价
+---@field public seller_uid integer @卖家id
+---@field public buyer_uid integer @买家id
+---@field public trade_ts integer @交易时间
+---@field public trade_tax integer @交易税
+
+
+---@class PBTradeSearchData
+---@field public config_id integer @道具的配置id
+---@field public min_price integer @当前最低价
+---@field public last_deal_price integer @最近成交价
+---@field public yes_average_price integer @昨日成交平均价
+---@field public min_price_num integer @最低价数量
+---@field public price_num table<integer, integer> @价格-数量
+
+
+---@class PBPriceAndNum
+---@field public price integer
+---@field public now_num integer
+---@field public trade_id_list integer[]
+
+
+---@class PBTradeRecordInfo
+---@field public trade_config_id integer @道具的配置id
+---@field public sale_num integer
+---@field public sale_total_price integer
+---@field public last_deal_price integer
+---@field public update_ts integer
+---@field public yes_sale_num integer
+---@field public yes_sale_total_price integer
+---@field public yes_average_price number
+---@field public min_price integer
+---@field public min_price_num integer
+---@field public price_to_num table<integer, PBPriceAndNum>
+
+
+---@class PBSelfTradeInfo
 ---@field public box_capacity integer @交易行货架数
----@field public product_list PBTradeBankProductData[]
+---@field public trade_ids integer[]
+---@field public log_ids integer[]
 
 
----@class PBGetTradeBankInfoReqCmd
+---@class PBSelfTradeData
+---@field public simple_info PBSelfTradeInfo
+---@field public product_list table<integer, PBTradeProductBaseData>
+---@field public log_list table<integer, PBTradeLogData>
+
+
+---@class PBGetTradeInfoReqCmd
 ---@field public uid integer
 
 
----@class PBGetTradeBankInfoRspCmd
+---@class PBGetTradeInfoRspCmd
 ---@field public code integer @服务器返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public uid integer
----@field public self_trade_bank_info PBSelfTradeBankData @自己的交易行数据
+---@field public self_trade_info PBSelfTradeData @自己的交易行数据
+
+
+---@class PBSearchTradeProductReqCmd
+---@field public uid integer
+---@field public config_ids integer[] @搜索的道具配置id,可以为空
+---@field public condition1 integer @条件1
+---@field public condition2 integer @条件2
+---@field public condition3 integer @条件3
+---@field public condition4 integer @条件4
+---@field public condition5 integer @条件5
+---@field public sort_type integer @排序类型
+---@field public start_idx integer @起始序号
+
+
+---@class PBSearchTradeProductRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public search_products PBTradeSearchData[] @搜索到的商品信息
+
+
+---@class PBSearchAuctionProductReqCmd
+---@field public uid integer
+---@field public config_ids integer[] @搜索的道具配置id,可以为空
+---@field public condition1 integer @条件1
+---@field public condition2 integer @条件2
+---@field public condition3 integer @条件3
+---@field public condition4 integer @条件4
+---@field public condition5 integer @条件5
+---@field public custom_conditions integer[] @自定义条件
+---@field public sort_type integer @排序类型
+---@field public start_idx integer @起始序号
+
+
+---@class PBSearchAuctionProductRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public search_products table<integer, PBTradeProductBaseData> @搜索到的商品信息 key为trade_id
+
+
+---@class PBTradeSaleReqCmd
+---@field public uid integer
+---@field public config_id integer
+---@field public pos integer
+---@field public sale_num integer
+---@field public single_price integer
+---@field public sale_ts integer
+
+
+---@class PBTradeSaleRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public trade_id integer @交易号
+
+
+---@class PBAuctionSaleReqCmd
+---@field public uid integer
+---@field public config_id integer
+---@field public uniqid integer
+---@field public pos integer
+---@field public start_price integer @起拍价格
+---@field public buyout_price integer @一口价
+---@field public sale_ts integer
+
+
+---@class PBAuctionSaleRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public trade_id integer @交易号
 
 
 ---@class PBRankNode
@@ -2587,6 +2765,7 @@
 ---@class PBSureCompositeReqCmd
 ---@field public uid integer
 ---@field public composite_id integer @合成id
+---@field public composite_cnt integer @合成数量
 
 
 ---@class PBSureCompositeRspCmd
@@ -2594,11 +2773,13 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public composite_id integer @合成id
+---@field public composite_cnt integer @合成数量
 
 
 ---@class PBRandomCompositeReqCmd
 ---@field public uid integer
 ---@field public composite_id integer @合成id
+---@field public composite_cnt integer @合成数量
 
 
 ---@class PBRandomCompositeRspCmd
@@ -2606,6 +2787,7 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public composite_id integer @合成id
+---@field public composite_cnt integer @合成数量
 
 
 ---@class PBInlayTabooWordReqCmd
@@ -2677,7 +2859,9 @@
 ---@field MatchProxy MatchProxy
 ---@field Role Role
 ---@field Room Room
+---@field Shop Shop
 ---@field Team Team
+---@field Trade Trade
 ---@field User User
 ---@field UserModel UserModel
 
@@ -2759,6 +2943,10 @@
 ---@field Teammgr Teammgr
 
 
+---@class trademgr_scripts
+---@field Trademgr Trademgr
+
+
 ---@class usermgr_scripts
 ---@field Usermgr Usermgr
 
@@ -2779,9 +2967,11 @@
 ---@field BaGuaBrand BaGuaBrand_cfg[]
 ---@field BaGuaBrandUpLv BaGuaBrandUpLv_cfg[]
 ---@field Book Book_cfg[]
+---@field ChatChannelConfig ChatChannelConfig_cfg[]
 ---@field CommonConfig CommonConfig_cfg[]
 ---@field Composite Composite_cfg[]
 ---@field EquipmentTagPool EquipmentTagPool_cfg[]
+---@field ExchangeStoreWaresConfig ExchangeStoreWaresConfig_cfg[]
 ---@field FriendConfig FriendConfig_cfg[]
 ---@field GameChapter GameChapter_cfg[]
 ---@field GamePropUpLv GamePropUpLv_cfg[]

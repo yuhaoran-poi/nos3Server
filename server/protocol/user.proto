@@ -277,6 +277,7 @@ message PBSureCompositeReqCmd
 {
 	int64 uid			= 1;
 	int32 composite_id	= 2; // 合成id
+	int32 composite_cnt	= 3; // 合成数量
 }
 
 message PBSureCompositeRspCmd
@@ -285,6 +286,7 @@ message PBSureCompositeRspCmd
     string error		= 2; // 错误信息
 	int64 uid			= 3;
 	int32 composite_id	= 4; // 合成id
+	int32 composite_cnt	= 5; // 合成数量
 }
 
 // 客户端随机合成
@@ -292,6 +294,7 @@ message PBRandomCompositeReqCmd
 {
 	int64 uid			= 1;
 	int32 composite_id	= 2; // 合成id
+	int32 composite_cnt	= 3; // 合成数量
 }
 
 message PBRandomCompositeRspCmd
@@ -300,6 +303,7 @@ message PBRandomCompositeRspCmd
     string error		= 2; // 错误信息
 	int64 uid			= 3;
 	int32 composite_id	= 4; // 合成id
+	int32 composite_cnt	= 5; // 合成数量
 }
 
 // 法器或者八卦牌镶嵌讳字

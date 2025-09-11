@@ -98,7 +98,7 @@ function User.Load(req)
             data.user_attr.account_create_time = moon.time()
         end
         data.user_attr.online_time = moon.time()
-        data.user_attr.is_online = 1
+        data.user_attr.is_online = UserAttrDef.ONLINE_STATE.ONLINE
 
         scripts.UserModel.Create(data)
         context.uid = req.uid
@@ -148,6 +148,7 @@ function User.Load(req)
         Database.RedisSetUserAttr(context.addr_db_redis, context.uid, to_redis_data)
 
         local simple_attr = User.GetUserSimpleData()
+        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         local simple_to_redis = {}
         simple_to_redis[context.uid] = simple_attr
         Database.RedisSetSimpleUserAttr(context.addr_db_redis, simple_to_redis)
@@ -234,7 +235,7 @@ function User.SetUserAttr(user_attr, sync_client)
     Database.RedisSetUserAttr(context.addr_db_redis, context.uid, t)
     if hasSimpleAttr(t) then
         local simple_attr = {}
-        for _, field in pairs(simple_attr) do
+        for _, field in pairs(simple_fields) do
             if db_user_attr[field] then
                 simple_attr[field] = db_user_attr[field]
             end
@@ -356,9 +357,32 @@ function User.Offline()
     print(context.uid, "offline")
     state.online = false
 
-	if state.ismatching then
+    if state.ismatching then
         state.ismatching = false
         moon.send("lua", context.addr_center, "Center.UnMatch", context.uid)
+    end
+end
+
+function User.OnPlay()
+    -- 同步游戏中状态到redis
+    local update_user_attr = {}
+    update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.IN_GAME
+    User.SetUserAttr(update_user_attr, true)
+end
+
+function User.OutPlay()
+    local query_user_attr = {}
+    table.insert(query_user_attr, ProtoEnum.UserAttrType.is_online)
+    local query_res = User.QueryUserAttr(query_user_attr)
+    if query_res[ProtoEnum.UserAttrType.is_online] == UserAttrDef.ONLINE_STATE.IN_GAME then
+        -- 同步离开游戏中状态到redis
+        local update_user_attr = {}
+        if context.roomid then
+            update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.IN_ROOM
+        else
+            update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.ONLINE
+        end
+        User.SetUserAttr(update_user_attr, true)
     end
 end
 
@@ -376,13 +400,13 @@ function User.Exit()
         moon.error("user exit save db error", err)
     end
 
-    -- 同步离线状态到redis
-    local update_user_attr = {}
-    update_user_attr[ProtoEnum.UserAttrType.is_online] = 0
-    User.SetUserAttr(update_user_attr, false)
-
     -- 退出房间
     scripts.Room.ForceExitRoom()
+
+    -- 同步离线状态到redis
+    local update_user_attr = {}
+    update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.OFFLINE
+    User.SetUserAttr(update_user_attr, false)
 
     User.Logout()
 
@@ -847,7 +871,7 @@ function User.PBClientItemUpLvReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    context.S2C(context.net_id, CmdCode.PBClientUpLvRspCmd, {
+    context.S2C(context.net_id, CmdCode.PBClientItemUpLvRspCmd, {
         code = ErrorCode.None,
         error = "",
         uid = context.uid,
@@ -1191,7 +1215,7 @@ function User.PBGetOtherSimpleReqCmd(req)
             uid = context.uid,
             quest_uid = req.msg.quest_uid,
             info = users_attr[req.msg.quest_uid],
-        })
+        }, req.msg_context.stub_id)
     end
 end
 
@@ -1217,7 +1241,7 @@ function User.PBGetOtherDetailReqCmd(req)
             info = res.user_attr,
             role_data = res.role_data,
             ghost_data = res.ghost_data,
-        })
+        }, req.msg_context.stub_id)
     else
         return context.S2C(context.net_id, CmdCode.PBGetOtherDetailReqCmd, {
             code = ErrorCode.UserOffline,
@@ -1352,7 +1376,7 @@ function User.PBUseSkinGiftReqCmd(req)
     -- 读取皮肤礼包表
 end
 
-function User.Composite(composite_cfg)
+function User.Composite(composite_cfg, add_roles, add_items)
     local random_rate = math.random(1, 10000)
     if random_rate > composite_cfg.rate then
         return { code = ErrorCode.CompositeFail, error = "合成失败" }
@@ -1365,8 +1389,6 @@ function User.Composite(composite_cfg)
         end
     end
 
-    local add_roles = {}
-    local add_items = {}
     if total_weight > 0 then
         local random_weight = math.random(1, total_weight)
         for id, weight in pairs(composite_cfg.weight) do
@@ -1375,14 +1397,20 @@ function User.Composite(composite_cfg)
                 if composite_cfg.item_id[id] then
                     if RoleDef.RoleDefine.RoleID.Start <= id
                         and id <= RoleDef.RoleDefine.RoleID.End then
-                        table.insert(add_roles, id)
+                        if add_roles[id] then
+                            return { code = ErrorCode.RoleExist, error = "角色已拥有" }
+                        else
+                            add_roles[id] = 1
+                        end
                     else
-                        -- add_items[id] = composite_cfg.item_id[id]
-                        add_items[id] = {
-                            id = id,
-                            count = composite_cfg.item_id[id],
-                            pos = 0,
-                        }
+                        if not add_items[id] then
+                            add_items[id] = {
+                                id = id,
+                                count = 0,
+                                pos = 0,
+                            }
+                        end
+                        add_items[id].count = add_items[id].count + composite_cfg.item_id[id]
                     end
                 end
 
@@ -1390,38 +1418,40 @@ function User.Composite(composite_cfg)
             end
         end
     else
-        for id, cnt in pairs(composite_cfg.item_id) do
-            if RoleDef.RoleDefine.RoleID.Start <= id
-                and id <= RoleDef.RoleDefine.RoleID.End then
-                table.insert(add_roles, id)
+        if RoleDef.RoleDefine.RoleID.Start <= composite_cfg.item_id
+            and composite_cfg.item_id <= RoleDef.RoleDefine.RoleID.End then
+            if add_roles[composite_cfg.item_id] then
+                return { code = ErrorCode.RoleExist, error = "角色已拥有" }
             else
-                if not add_items[id] then
-                    add_items[id] = {
-                        id = id,
-                        count = 0,
-                        pos = 0,
-                    }
-                end
-                add_items[id].count = add_items[id].count + cnt
+                add_roles[composite_cfg.item_id] = 1
             end
+        else
+            if not add_items[composite_cfg.item_id] then
+                add_items[composite_cfg.item_id] = {
+                    id = composite_cfg.item_id,
+                    count = 0,
+                    pos = 0,
+                }
+            end
+            add_items[composite_cfg.item_id].count = add_items[composite_cfg.item_id].count + composite_cfg.num
         end
     end
 
     -- 检测是否可以添加
-    for _, roleid in pairs(add_roles) do
-        local role_info = scripts.Role.GetRoleInfo(roleid)
-        if role_info then
-            return { code = ErrorCode.RoleExist, error = "角色已拥有" }
-        end
-    end
-    if table.size(add_items) > 0 then
-        local err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items, 0)
-        if err_code ~= ErrorCode.None then
-            return { code = err_code, error = "背包空间不足" }
-        end
-    end
+    -- for _, roleid in pairs(add_roles) do
+    --     local role_info = scripts.Role.GetRoleInfo(roleid)
+    --     if role_info then
+    --         return { code = ErrorCode.RoleExist, error = "角色已拥有" }
+    --     end
+    -- end
+    -- if table.size(add_items) > 0 then
+    --     local err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items, 0)
+    --     if err_code ~= ErrorCode.None then
+    --         return { code = err_code, error = "背包空间不足" }
+    --     end
+    -- end
 
-    return { code = ErrorCode.None, error = "合成成功", add_roles = add_roles, add_items = add_items }
+    return { code = ErrorCode.None, error = "合成成功" }
 end
 
 function User.PBSureCompositeReqCmd(req)
@@ -1442,7 +1472,9 @@ function User.PBSureCompositeReqCmd(req)
         composite_id = req.msg.composite_id or 0,
     }
     local composite_cfg = GameCfg.Composite[req.msg.composite_id]
-    if not composite_cfg then
+    if not composite_cfg
+        or req.msg.composite_cnt < 0
+        or req.msg.composite_cnt > composite_cfg.max_num then
         rsp_msg.code = ErrorCode.ConfigError
         rsp_msg.error = "配置不存在"
         return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
@@ -1450,7 +1482,7 @@ function User.PBSureCompositeReqCmd(req)
 
     local cost_items = {}
     local cost_coins = {}
-    ItemDefine.GetItemsFromCfg(composite_cfg.cost, 1, true, cost_items, cost_coins)
+    ItemDefine.GetItemsFromCfg(composite_cfg.cost, req.msg.composite_cnt, true, cost_items, cost_coins)
 
     -- 检测道具是否足够
     rsp_msg.code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
@@ -1464,17 +1496,45 @@ function User.PBSureCompositeReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
     end
 
-    local composite_ret = User.Composite(composite_cfg)
-    if composite_ret.code ~= ErrorCode.None
-        and composite_ret.code ~= composite_ret.Errcode.CompositeFail then
-        rsp_msg.code = composite_ret.code
-        rsp_msg.error = composite_ret.error
-        return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+    local add_roles = {}
+    local add_items = {}
+    for i = 1, req.msg.composite_cnt do
+        local composite_ret = User.Composite(composite_cfg, add_roles, add_items)
+        if composite_ret.code ~= ErrorCode.None
+            and composite_ret.code ~= composite_ret.Errcode.CompositeFail then
+            rsp_msg.code = composite_ret.code
+            rsp_msg.error = composite_ret.error
+            return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    end
+
+    -- 检测是否可以添加
+    for roleid, _ in pairs(add_roles) do
+        local role_info = scripts.Role.GetRoleInfo(roleid)
+        if role_info then
+            rsp_msg.code = ErrorCode.RoleExist
+            rsp_msg.error = "角色已拥有"
+            return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+        local role_cfg = GameCfg.HumanRole[roleid]
+        if not role_cfg then
+            rsp_msg.code = ErrorCode.ConfigError
+            rsp_msg.error = "配置不存在"
+            return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    end
+    if table.size(add_items) > 0 then
+        local err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items, 0)
+        if err_code ~= ErrorCode.None then
+            rsp_msg.code = err_code
+            rsp_msg.error = "背包空间不足"
+            return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
     end
 
     local ok, stack_items, unstack_items, deal_coins = false, {}, {}, {}
-    if table.size(composite_ret.add_items) > 0 then
-        ok = ItemDefine.GetItemDataFromIdCount(composite_ret.add_items, stack_items, unstack_items, deal_coins)
+    if table.size(add_items) > 0 then
+        ok = ItemDefine.GetItemDataFromIdCount(add_items, stack_items, unstack_items, deal_coins)
         if not ok then
             rsp_msg.code = ErrorCode.ConfigError
             rsp_msg.error = "配置错误"
@@ -1500,27 +1560,25 @@ function User.PBSureCompositeReqCmd(req)
         end
     end
 
-    if composite_ret.code == ErrorCode.None then
-        if table.size(stack_items) + table.size(unstack_items) > 0 then
-            rsp_msg.code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
-            if rsp_msg.code ~= ErrorCode.None then
-                scripts.Bag.RollBackWithChange(bag_change_log)
-                return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
-            end
+    if table.size(stack_items) + table.size(unstack_items) > 0 then
+        rsp_msg.code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
+        if rsp_msg.code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    end
+
+    for roleid, _ in pairs(add_roles) do
+        rsp_msg.code = scripts.Role.AddRole(roleid)
+        if rsp_msg.code ~= ErrorCode.None then
+            rsp_msg.code = ErrorCode.RoleAddFail
+            rsp_msg.error = "角色添加失败"
+
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
         end
 
-        for _, roleid in pairs(composite_ret.add_roles) do
-            local add_success = scripts.Role.AddRole(roleid)
-            if not add_success then
-                rsp_msg.code = ErrorCode.RoleAddFail
-                rsp_msg.error = "角色添加失败"
-
-                scripts.Bag.RollBackWithChange(bag_change_log)
-                return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
-            end
-
-            change_roles[req.msg.roleid] = "AddRole"
-        end
+        change_roles[req.msg.roleid] = "AddRole"
     end
     
     -- 执行完成回复
@@ -1556,7 +1614,9 @@ function User.PBRandomCompositeReqCmd(req)
         gift_id = req.msg.gift_id or 0,
     }
     local composite_cfg = GameCfg.RandomComposite[req.msg.composite_id]
-    if not composite_cfg then
+    if not composite_cfg
+        or req.msg.composite_cnt < 0
+        or req.msg.composite_cnt > composite_cfg.max_num then
         rsp_msg.code = ErrorCode.ConfigError
         rsp_msg.error = "配置不存在"
         return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
@@ -1564,7 +1624,7 @@ function User.PBRandomCompositeReqCmd(req)
 
     local cost_items = {}
     local cost_coins = {}
-    ItemDefine.GetItemsFromCfg(composite_cfg.cost, 1, true, cost_items, cost_coins)
+    ItemDefine.GetItemsFromCfg(composite_cfg.cost, req.msg.composite_cnt, true, cost_items, cost_coins)
 
     -- 检测道具是否足够
     rsp_msg.code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
@@ -1578,17 +1638,45 @@ function User.PBRandomCompositeReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
     end
 
-    local composite_ret = User.Composite(composite_cfg)
-    if composite_ret.code ~= ErrorCode.None
-        and composite_ret.code ~= composite_ret.Errcode.CompositeFail then
-        rsp_msg.code = composite_ret.code
-        rsp_msg.error = composite_ret.error
-        return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+    local add_roles = {}
+    local add_items = {}
+    for i = 1, req.msg.composite_cnt do
+        local composite_ret = User.Composite(composite_cfg, add_roles, add_items)
+        if composite_ret.code ~= ErrorCode.None
+            and composite_ret.code ~= composite_ret.Errcode.CompositeFail then
+            rsp_msg.code = composite_ret.code
+            rsp_msg.error = composite_ret.error
+            return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    end
+
+    -- 检测是否可以添加
+    for roleid, _ in pairs(add_roles) do
+        local role_info = scripts.Role.GetRoleInfo(roleid)
+        if role_info then
+            rsp_msg.code = ErrorCode.RoleExist
+            rsp_msg.error = "角色已拥有"
+            return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+        local role_cfg = GameCfg.HumanRole[roleid]
+        if not role_cfg then
+            rsp_msg.code = ErrorCode.ConfigError
+            rsp_msg.error = "配置不存在"
+            return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    end
+    if table.size(add_items) > 0 then
+        local err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items, 0)
+        if err_code ~= ErrorCode.None then
+            rsp_msg.code = err_code
+            rsp_msg.error = "背包空间不足"
+            return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
     end
 
     local ok, stack_items, unstack_items, deal_coins = false, {}, {}, {}
-    if table.size(composite_ret.add_items) > 0 then
-        ok = ItemDefine.GetItemDataFromIdCount(composite_ret.add_items, stack_items, unstack_items, deal_coins)
+    if table.size(add_items) > 0 then
+        ok = ItemDefine.GetItemDataFromIdCount(add_items, stack_items, unstack_items, deal_coins)
         if not ok then
             rsp_msg.code = ErrorCode.ConfigError
             rsp_msg.error = "配置错误"
@@ -1614,27 +1702,25 @@ function User.PBRandomCompositeReqCmd(req)
         end
     end
 
-    if composite_ret.code == ErrorCode.None then
-        if table.size(stack_items) + table.size(unstack_items) > 0 then
-            rsp_msg.code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
-            if rsp_msg.code ~= ErrorCode.None then
-                scripts.Bag.RollBackWithChange(bag_change_log)
-                return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
-            end
+    if table.size(stack_items) + table.size(unstack_items) > 0 then
+        rsp_msg.code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
+        if rsp_msg.code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    end
+
+    for roleid, _ in pairs(add_roles) do
+        rsp_msg.code = scripts.Role.AddRole(roleid)
+        if rsp_msg.code ~= ErrorCode.None then
+            rsp_msg.code = ErrorCode.RoleAddFail
+            rsp_msg.error = "角色添加失败"
+
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
         end
 
-        for _, roleid in pairs(composite_ret.add_roles) do
-            local add_success = scripts.Role.AddRole(roleid)
-            if not add_success then
-                rsp_msg.code = ErrorCode.RoleAddFail
-                rsp_msg.error = "角色添加失败"
-
-                scripts.Bag.RollBackWithChange(bag_change_log)
-                return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
-            end
-
-            change_roles[req.msg.roleid] = "AddRole"
-        end
+        change_roles[req.msg.roleid] = "AddRole"
     end
 
     -- 执行完成回复

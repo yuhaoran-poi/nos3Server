@@ -10,6 +10,7 @@ local httpc = require("moon.http.client")
 local json = require("json")
 local crypt = require("crypt")
 local protocol = require("common.protocol_pb")
+local UserAttrDef = require("common.def.UserAttrDef")
 local FriendDef = require("common.def.FriendDef")
 local ProtoEnum = require("tools.ProtoEnum")
 local UserAttrLogic = require("common.logic.UserAttrLogic")
@@ -153,7 +154,7 @@ function Friendmgr.AddApply(data)
     if not user_attr or not user_attr[ProtoEnum.UserAttrType.is_online] then
         return ErrorCode.UserNotExist
     end
-    if user_attr[ProtoEnum.UserAttrType.is_online] == 1 then
+    if user_attr[ProtoEnum.UserAttrType.is_online] ~= UserAttrDef.ONLINE_STATE.OFFLINE then
         context.send_user(data.target_uid, "Friend.OtherApplyFriend", data.apply_data)
     end
 
@@ -205,7 +206,7 @@ function Friendmgr.AgreeApply(data)
     if not user_attr or not user_attr[ProtoEnum.UserAttrType.is_online] then
         return ErrorCode.UserNotExist
     end
-    if user_attr[ProtoEnum.UserAttrType.is_online] == 1 then
+    if user_attr[ProtoEnum.UserAttrType.is_online] ~= UserAttrDef.ONLINE_STATE.OFFLINE then
         context.send_user(data.apply_uid, "Friend.OtherAddFriend", data.from_uid)
     end
 
@@ -240,7 +241,7 @@ function Friendmgr.RefuseApply(data)
         ProtoEnum.UserAttrType.is_online,
     }
     local user_attr = UserAttrLogic.QueryOtherUserAttr(context, data.apply_uid, query_field)
-    if user_attr and user_attr[ProtoEnum.UserAttrType.is_online] == 1 then
+    if user_attr and user_attr[ProtoEnum.UserAttrType.is_online] ~= UserAttrDef.ONLINE_STATE.OFFLINE then
         context.send_user(data.apply_uid, "Friend.OtherRefuseFriend", data.from_uid)
     end
 
@@ -275,7 +276,7 @@ function Friendmgr.DelFriend(data)
             ProtoEnum.UserAttrType.is_online,
         }
         local user_attr = UserAttrLogic.QueryOtherUserAttr(context, data.del_uid, query_field)
-        if user_attr and user_attr[ProtoEnum.UserAttrType.is_online] == 1 then
+        if user_attr and user_attr[ProtoEnum.UserAttrType.is_online] ~= UserAttrDef.ONLINE_STATE.OFFLINE then
             context.send_user(data.del_uid, "Friend.OtherDelFriend", data.from_uid)
         end
     end

@@ -53,7 +53,7 @@ function ChatChannel.InitData(channel_id, channel_type, channel_addr)
                 else
                     context.send_users(ChatChannel.GetMembers(), {}, "ChatProxy.OnChatMsg", context.channel_msgs)
                 end
-               
+                
                 context.channel_msgs = {} -- 清空消息列表
             end
         end

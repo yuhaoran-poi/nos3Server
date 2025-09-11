@@ -169,6 +169,7 @@
             for(let v of arr){
                 v = v.trim()
                 var postv = utils.StringFormat('{"command":"{0}"}', v)
+                console.log(postv)
                 axios.post('/console', postv, { headers: { "Content-Type": "application/json" } })
                 .then(function (response) {
                     console.log(response)

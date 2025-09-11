@@ -247,12 +247,10 @@ function ItemDefine.GetItemDataFromIdCount(item_list, stack_items, unstack_items
                     local new_item = ItemDef.newItemData()
                     new_item.itype = item_type
                     new_item.common_info.config_id = item_cfg.id
-                    new_item.common_info.item_count = item.count
                     new_item.common_info.item_type = item_cfg.type1
                     new_item.common_info.trade_cnt = -1
                     stack_items[item.id] = new_item
                 end
-
                 stack_items[item.id].common_info.item_count = stack_items[item.id].common_info.item_count + item.count
             elseif item_big_type == ItemDefine.EItemBigType.UnStackItem then
                 local item_cfg = GameCfg.Item[item.id]
