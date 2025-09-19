@@ -30,7 +30,7 @@ function Room.ForceExitRoom()
             chat_ret.code, chat_ret.error))
     end
 
-    clusterd.send(3999, "roommgr", "Roommgr.ExitRoom", { uid = context.uid, roomid = context.roomid})
+    clusterd.send(3999, "roommgr", "Roommgr.ExitRoom", { uid = context.uid, roomid = context.roomid, is_force = true })
 
     context.roomid = nil
 end
@@ -328,9 +328,10 @@ function Room.PBExitRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local res, err = clusterd.call(3999, "roommgr", "Roommgr.ExitRoom", req.msg)
+    local res, err = clusterd.call(3999, "roommgr", "Roommgr.ExitRoom",
+        { uid = context.uid, roomid = context.roomid, is_force = false })
     if err then
-        moon.error(string.format("Roommgr.EnterRoom err:\n%s", json.pretty_encode(err)))
+        moon.error(string.format("Roommgr.ExitRoom err:\n%s", json.pretty_encode(err)))
         return context.S2C(context.net_id, CmdCode["PBExitRoomRspCmd"], {
             code = ErrorCode.ServerInternalError,
             error = "system error",

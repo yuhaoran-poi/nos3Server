@@ -555,7 +555,7 @@ function Roommgr.ExitRoom(req)
     if not room then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
-    if room.room_data.state ~= 0 then
+    if room.room_data.state ~= 0 and not req.is_force then
         return { code = ErrorCode.RoomInGame, error = "房间正在游戏中" }
     end
 
