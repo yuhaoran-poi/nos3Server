@@ -76,9 +76,9 @@ function Console.help()
 	return help
 end
 -- 发送系统聊天
-function Console.syschat(msg_content)
-	ChatLogic.SendMsgToSystemChannel(msg_content)
-	return Response(0, "OK", msg_content)
+function Console.syschat(msg_content, msg_attach)
+	ChatLogic.SendMsgToSystemChannel(msg_content, msg_attach)
+	return Response(0, "OK", { msg_content = msg_content, msg_attach = msg_attach })
 end
 ---热更某个服务目录下的脚本
 function Console.hotfix(sname, ...)

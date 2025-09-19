@@ -139,6 +139,25 @@ function Role.SaveAndLog(change_roles)
     return true
 end
 
+function Role.CheckAddRoles(roleids)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles then
+        return ErrorCode.ServerInternalError
+    end
+
+    for roleid, _ in pairs(roleids) do
+        local role_cfg = GameCfg.HumanRole[roleid]
+        if not role_cfg then
+            return ErrorCode.ConfigError
+        end
+        if roles.role_list[roleid] and roles.role_list[roleid].config_id ~= 0 then
+            return ErrorCode.RoleExist
+        end
+    end
+
+    return ErrorCode.None
+end
+
 function Role.AddRole(roleid)
     local roles = scripts.UserModel.GetRoles()
     if not roles then
@@ -229,17 +248,17 @@ function Role.SetRoleBattle(roleid, sync_client)
     end
 end
 
----@return integer, PBRoleData ? nil
+---@return PBRoleData ? nil
 function Role.GetRoleInfo(roleid)
     local roles = scripts.UserModel.GetRoles()
     if not roles or not roles.role_list or not roles.role_list[roleid] then
-        return ErrorCode.RoleNotExist, nil
+        return nil
     end
 
     local role_info = roles.role_list[roleid]
     Role.CheckRoleStudyBook(role_info)
 
-    return ErrorCode.None, role_info
+    return role_info
 end
 
 function Role.GetRolesInfo(roleids)
@@ -1138,13 +1157,13 @@ function Role.PBRoleGetUpLvRewardReqCmd(req)
     end
 
     -- 根据道具表生成item_data
-    local add_list = {}
-    ItemDefine.GetItemListFromItemsCoins(add_items, add_coins, add_list)
-    if table.size(add_list) <= 0 then
+    -- local add_list = {}
+    -- ItemDefine.GetItemListFromItemsCoins(add_items, add_coins, add_list)
+    if table.size(add_items) + table.size(add_coins) <= 0 then
         return ErrorCode.ConfigError
     end
     local stack_items, unstack_items, deal_coins = {}, {}, {}
-    local ok = ItemDefine.GetItemDataFromIdCount(add_list, stack_items, unstack_items, deal_coins)
+    local ok = ItemDefine.GetItemDataFromIdCount(add_items, add_coins, stack_items, unstack_items, deal_coins)
     if not ok then
         return ErrorCode.ConfigError
     end

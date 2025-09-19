@@ -197,6 +197,16 @@ function Room.OnRoomInfoSync(sync_msg)
                 moon.info("OnMemberKick roomid", context.roomid, sync_msg.roomid)
             end
         end
+    elseif sync_msg.sync_type == RoomDef.SyncType.GameStart then
+        if context.roomid ~= sync_msg.roomid then
+            moon.error("OnGameStart ERR uid roomid", context.uid, sync_msg.roomid)
+        end
+        moon.info("OnGameStart uid roomid", context.uid, sync_msg.roomid)
+    elseif sync_msg.sync_type == RoomDef.SyncType.GameStartFailed then
+        if context.roomid ~= sync_msg.roomid then
+            moon.error("OnGameEnd ERR uid roomid", context.uid, sync_msg.roomid)
+        end
+        moon.info("OnGameEnd uid roomid", context.uid, sync_msg.roomid)
     end
     context.S2C(context.net_id, CmdCode["PBRoomSyncCmd"], sync_msg, 0)
 end

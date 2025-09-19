@@ -40,6 +40,18 @@ function Bag.Init()
         bagdata[BagDef.BagType.Cangku].bag_item_type = ItemDefine.ItemBagType.ALL
         bagdata[BagDef.BagType.Consume].bag_item_type = ItemDefine.ItemBagType.CONSUME
         bagdata[BagDef.BagType.Booty].bag_item_type = ItemDefine.ItemBagType.ALL
+        local cangku_cfg = GameCfg.WarehouseExpansion[1]
+        if cangku_cfg then
+            bagdata[BagDef.BagType.Cangku].capacity = cangku_cfg.warehouse_grids
+        end
+        local consume_cfg = GameCfg.ConsumablesBackpackExpansion[1]
+        if consume_cfg then
+            bagdata[BagDef.BagType.Consume].capacity = consume_cfg.consumables_backpack_grids
+        end
+        local booty_cfg = GameCfg.BootyBackpackExpansion[1]
+        if booty_cfg then
+            bagdata[BagDef.BagType.Booty].capacity = booty_cfg.booty_backpack_grids
+        end
         scripts.UserModel.SetBagData(bagdata)
     end
 
@@ -79,27 +91,27 @@ function Bag.Start(isnew)
         end
         for k, v in pairs(init_cfg.item) do
             init_coins[k] = {
-                id = k,
-                count = v,
+                coin_id = k,
+                coin_count = v,
             }
         end
 
         if table.size(init_items) > 0 then
             local stack_items, unstack_items, deal_coins = {}, {}, {}
-            local ok = ItemDefine.GetItemDataFromIdCount(init_items, stack_items, unstack_items, deal_coins)
+            local ok = ItemDefine.GetItemDataFromIdCount(init_items, {}, stack_items, unstack_items, deal_coins)
             if ok then
                 if table.size(stack_items) + table.size(unstack_items) > 0 then
-                    scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, change_log)
+                    Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, change_log)
                 end
             end
         end
 
         if table.size(init_coins) > 0 then
             local stack_items, unstack_items, deal_coins = {}, {}, {}
-            local ok = ItemDefine.GetItemDataFromIdCount(init_coins, stack_items, unstack_items, deal_coins)
+            local ok = ItemDefine.GetItemDataFromIdCount({}, init_coins, stack_items, unstack_items, deal_coins)
             if ok then
                 if table.size(deal_coins) > 0 then
-                    scripts.Bag.DealCoins(deal_coins, change_log)
+                    Bag.DealCoins(deal_coins, change_log)
                 end
             end
         end
@@ -177,8 +189,8 @@ function Bag.LoadCoins()
     return coininfos
 end
 
-function Bag.AddCapacity(bagType, add_capacity)
-    if add_capacity <= 0 then
+function Bag.AddCapacity(bagType, add_capacity_id)
+    if add_capacity_id > 1 then
         return ErrorCode.ParamInvalid
     end
 
@@ -193,20 +205,79 @@ function Bag.AddCapacity(bagType, add_capacity)
         return ErrorCode.BagNotExist
     end
 
+    local cost, after_capacity = {}, 0
     local baginfo = bagdata[bagType]
-    if bagType == BagDef.BagType.Cangku
-        and baginfo.capacity + add_capacity > BagDef.max_cangku_capacity then
-        return ErrorCode.BagCapacityOverflow
-    elseif bagType == BagDef.BagType.Consume
-        and baginfo.capacity + add_capacity > BagDef.max_consume_capacity then
-        return ErrorCode.BagCapacityOverflow
-    elseif bagType == BagDef.BagType.Booty
-        and baginfo.capacity + add_capacity > BagDef.max_booty_capacity then
-        return ErrorCode.BagCapacityOverflow
+    if bagType == BagDef.BagType.Cangku then
+        local bag_cfg = GameCfg.WarehouseExpansion[add_capacity_id]
+        if not bag_cfg then
+            return ErrorCode.ParamInvalid
+        end
+        if bag_cfg.warehouse_grids <= baginfo.capacity
+            or table.size(bag_cfg.warehouse_cost) <= 0 then
+            return ErrorCode.BagCapacityOverflow
+        end
+        cost = bag_cfg.warehouse_cost
+        after_capacity = bag_cfg.warehouse_grids
+    elseif bagType == BagDef.BagType.Consume then
+        local bag_cfg = GameCfg.ConsumablesBackpackExpansion[add_capacity_id]
+        if not bag_cfg then
+            return ErrorCode.ParamInvalid
+        end
+        if bag_cfg.consumables_backpack_grids <= baginfo.capacity
+            or table.size(bag_cfg.consumables_backpack_cost) <= 0 then
+            return ErrorCode.BagCapacityOverflow
+        end
+        cost = bag_cfg.consumables_backpack_cost
+        after_capacity = bag_cfg.consumables_backpack_grids
+    elseif bagType == BagDef.BagType.Booty then
+        local bag_cfg = GameCfg.BootyBackpackExpansion[add_capacity_id]
+        if not bag_cfg then
+            return ErrorCode.ParamInvalid
+        end
+        if not bag_cfg then
+            return ErrorCode.ParamInvalid
+        end
+        if bag_cfg.booty_backpack_grids <= baginfo.capacity
+            or table.size(bag_cfg.booty_backpack_cost) <= 0 then
+            return ErrorCode.BagCapacityOverflow
+        end
+        cost = bag_cfg.booty_backpack_cost
+        after_capacity = bag_cfg.booty_backpack_grids
     end
 
-    baginfo.capacity = baginfo.capacity + add_capacity
-    return ErrorCode.None
+    -- 计算消耗资源
+    local cost_items = {}
+    local cost_coins = {}
+    ItemDefine.GetItemsFromCfg(cost, 1, true, cost_items, cost_coins)
+    -- 检查资源是否足够
+    local err_code_items = Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    if err_code_items ~= ErrorCode.None then
+        return err_code_items
+    end
+    local err_code_coins = Bag.CheckCoinsEnough(cost_coins)
+    if err_code_coins ~= ErrorCode.None then
+        return err_code_coins
+    end
+    -- 扣除消耗
+    local change_log = {}
+    local err_code_del = ErrorCode.None
+    if table.size(cost_items) > 0 then
+        err_code_del = Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_log)
+        if err_code_del ~= ErrorCode.None then
+            Bag.RollBackWithChange(change_log)
+            return err_code_del
+        end
+    end
+    if table.size(cost_coins) > 0 then
+        err_code_del = Bag.DealCoins(cost_coins, change_log)
+        if err_code_del ~= ErrorCode.None then
+            Bag.RollBackWithChange(change_log)
+            return err_code_del
+        end
+    end
+
+    baginfo.capacity = after_capacity
+    return ErrorCode.None, change_log
 end
 
 function Bag.GetEmptyPosNum(bagType)
@@ -750,7 +821,7 @@ function Bag.GetItemPosNum(config_id, bagType)
     if not bagType then
         local count = 0
         for bag_type, mapinfo in pairs(Bag.dataMap[config_id]) do
-            count = table.size(mapinfo.pos_count) + table.size(mapinfo.uniq_count)
+            count = table.size(mapinfo.pos_count) + table.size(mapinfo.uniqid_pos)
         end
 
         return count
@@ -758,9 +829,11 @@ function Bag.GetItemPosNum(config_id, bagType)
         if not Bag.dataMap[config_id][bagType] then
             return 0
         end
-
+        moon.warn("Bag.GetItemPosNum config_id=", config_id)
+        moon.warn("Bag.GetItemPosNum bagType=", bagType)
+        moon.warn(string.format("Bag.GetItemPosNum Bag.dataMap=%s", json.pretty_encode(Bag.dataMap)))
         return table.size(Bag.dataMap[config_id][bagType].pos_count) +
-        table.size(Bag.dataMap[config_id][bagType].uniq_count)
+            table.size(Bag.dataMap[config_id][bagType].uniqid_pos)
     end
 end
 
@@ -950,6 +1023,64 @@ function Bag.CheckEmptyEnough(bagType, add_items, use_pos_num)
     end
 
     return ErrorCode.None
+end
+
+-- 尝试是否有足够空位添加道具
+function Bag.TryEmptyEnough(bagType, add_items, use_pos_num)
+    local ret_code = ErrorCode.None
+    -- 参数校验
+    if bagType ~= BagDef.BagType.Cangku
+        and bagType ~= BagDef.BagType.Consume
+        and bagType ~= BagDef.BagType.Booty then
+        return ErrorCode.BagNotExist
+    end
+
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata or not bagdata[bagType] then
+        return ErrorCode.BagNotExist
+    end
+
+    local empty_pos_num = Bag.GetEmptyPosNum(bagType)
+    if empty_pos_num - use_pos_num < 0 then
+        ret_code = ErrorCode.BagFull
+    end
+    empty_pos_num = empty_pos_num - use_pos_num
+
+    -- 计算背包空间是否足够
+    for itemid, item in pairs(add_items) do
+        if item.count < 0 then
+            return ErrorCode.ParamInvalid
+        end
+        local item_cfg = GameCfg.Item[itemid]
+        local uniqitem_cfg = GameCfg.UniqueItem[itemid]
+        if not item_cfg and not uniqitem_cfg then
+            return ErrorCode.ConfigError
+        end
+
+        local item_big_type = ItemDefine.GetItemPosType(itemid)
+        if item_big_type == ItemDefine.EItemBigType.StackItem and item_cfg then
+            local remaining = item.count
+            local now_cnt = Bag.GetItemCount(itemid, bagType)
+            local now_pos_num = Bag.GetItemPosNum(itemid, bagType)
+            local need_pos = math.ceil((remaining + now_cnt) / item_cfg.stack_count)
+            if now_pos_num < need_pos then
+                empty_pos_num = empty_pos_num - (need_pos - now_pos_num)
+                if empty_pos_num < 0 then
+                    ret_code = ErrorCode.BagFull
+                end
+            end
+        elseif (item_big_type == ItemDefine.EItemBigType.UnStackItem and item_cfg)
+            or (item_big_type == ItemDefine.EItemBigType.UniqueItem and uniqitem_cfg) then
+            empty_pos_num = empty_pos_num - item.count
+            if empty_pos_num < 0 then
+                ret_code = ErrorCode.BagFull
+            end
+        else
+            return ErrorCode.ItemNotExist
+        end
+    end
+
+    return ret_code
 end
 
 -- 扣除道具
@@ -1638,7 +1769,7 @@ function Bag.GetSpecialItemFromCommonItem(srcBagType, srcPos, item_id)
 
     -- 根据道具表生成item_data
     local stack_items, unstack_items, deal_coins = {}, {}, {}
-    local ok = ItemDefine.GetItemDataFromIdCount(add_items, stack_items, unstack_items, deal_coins)
+    local ok = ItemDefine.GetItemDataFromIdCount(add_items, {}, stack_items, unstack_items, deal_coins)
     if not ok or table.size(stack_items) + table.size(unstack_items) <= 0 then
         return ErrorCode.ItemNotExist
     end
@@ -1924,13 +2055,13 @@ function Bag.PBDecomposeReqCmd(req)
         end
 
         -- 根据道具表生成item_data
-        local add_list = {}
-        ItemDefine.GetItemListFromItemsCoins(add_items, add_coins, add_list)
-        if table.size(add_list) <= 0 then
+        -- local add_list = {}
+        -- ItemDefine.GetItemListFromItemsCoins(add_items, add_coins, add_list)
+        if table.size(add_items) + table.size(add_coins) <= 0 then
             return ErrorCode.ConfigError
         end
         local stack_items, unstack_items, deal_coins = {}, {}, {}
-        local ok = ItemDefine.GetItemDataFromIdCount(add_list, stack_items, unstack_items, deal_coins)
+        local ok = ItemDefine.GetItemDataFromIdCount(add_items, add_coins, stack_items, unstack_items, deal_coins)
         if not ok then
             return ErrorCode.ConfigError
         end
@@ -1976,12 +2107,58 @@ function Bag.PBDecomposeReqCmd(req)
     for bagType, _ in pairs(change_log) do
         save_bags[bagType] = 1
     end
-    scripts.Bag.SaveAndLog(save_bags, change_log)
+    Bag.SaveAndLog(save_bags, change_log)
 
     return context.S2C(context.net_id, CmdCode.PBDecomposeRspCmd, {
         code = ErrorCode.None,
         uid = req.msg.uid,
         decompose_items = req.msg.decompose_items or {},
+    }, req.msg_context.stub_id)
+end
+
+function Bag.PBBagAddCapacityReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid
+        or not req.msg.bag_name
+        or not req.msg.add_capacity_id then
+        return context.S2C(context.net_id, CmdCode.PBBagAddCapacityRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = req.msg.uid,
+            bag_name = req.msg.bag_name,
+        }, req.msg_context.stub_id)
+    end
+
+    local err_code, change_log = Bag.AddCapacity(req.msg.bag_name, req.msg.add_capacity_id)
+    if err_code ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBBagAddCapacityRspCmd, {
+            code = err_code,
+            error = "添加容量失败",
+            uid = req.msg.uid,
+            bag_name = req.msg.bag_name,
+        }, req.msg_context.stub_id)
+    end
+
+    -- 数据存储更新
+    if change_log then
+        local save_bags = {}
+        for bagType, _ in pairs(change_log) do
+            save_bags[bagType] = 1
+        end
+        Bag.SaveAndLog(save_bags, change_log)
+    end
+
+    local bag_data = {}
+    local res_bag_data = Bag.GetBagdata(req.msg.bag_name)
+    if res_bag_data.errcode == ErrorCode.None and res_bag_data.bag_datas[req.msg.bag_name] then
+        bag_data = res_bag_data.bag_datas[req.msg.bag_name]
+    end
+    return context.S2C(context.net_id, CmdCode.PBBagAddCapacityRspCmd, {
+        code = ErrorCode.None,
+        error = "添加容量成功",
+        uid = req.msg.uid,
+        bag_name = req.msg.bag_name,
+        bag_data = bag_data,
     }, req.msg_context.stub_id)
 end
 

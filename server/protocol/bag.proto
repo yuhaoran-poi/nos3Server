@@ -87,3 +87,19 @@ message PBDecomposeRspCmd
     int64   uid     = 3;
     repeated PBDecomposeItem decompose_items = 4;
 }
+
+message PBBagAddCapacityReqCmd
+{
+    int64 uid       = 1;
+    string bag_name = 2;
+    int32 add_capacity_id   = 3;
+}
+
+message PBBagAddCapacityRspCmd
+{
+    int32   code    = 1; // 服务器验证返回,0成功,其他失败
+    string  error   = 2; // 错误信息
+    int64   uid     = 3;
+    string bag_name = 4;
+    PBBag bag_data  = 5;
+}

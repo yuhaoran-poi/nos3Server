@@ -46,13 +46,32 @@ local ErrorCode = {
 
     ---没有这个商品ID
     ShopItemNotExist = 501,
-
     ---商品已售
     ShopItemSoldOut = 502,
-
     ---兑换次数不够
     ExchangeNotEnough = 503,
-
+    ---购物车种类超出限制
+    ShopBuyCarKindOverflow = 504,
+    ---购物车数量超出限制
+    ShopBuyCarNumOverflow = 505,
+    ---不允许购买
+    ShopBuyInvalid = 506,
+    ---购物车内不存在
+    ShopBuyCarNotExist = 507,
+    ---购物车内数量不足
+    ShopBuyCarNumNotEnough = 508,
+    ---购买记录超出限制
+    ShopBuyLogOverflow = 509,
+    ---商店邮件配置不存在
+    ShopMailNotFound = 510,
+    ---购买次数超过限购
+    ShopBuyQuotaExceed = 511,
+    ---购买数量错误
+    ShopBuyNumError = 512,
+    ---购买发送邮件失败
+    ShopMailSendFailed = 513,
+    ---购买次数超过限购
+    ShopBuyLimitExceed = 514,
 
     ---奖励已经领取过
     DailyTaskReceived = 701,
@@ -114,6 +133,8 @@ local ErrorCode = {
     RoomPwdError = 912,
     ---房间邀请不存在
     RoomInviteNotFound = 913,
+    ---房间正在游戏中
+    RoomInGame = 914,
 
     ---公会相关错误码
     ---已在公会中

@@ -148,7 +148,7 @@ function User.Load(req)
         Database.RedisSetUserAttr(context.addr_db_redis, context.uid, to_redis_data)
 
         local simple_attr = User.GetUserSimpleData()
-        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         local simple_to_redis = {}
         simple_to_redis[context.uid] = simple_attr
         Database.RedisSetSimpleUserAttr(context.addr_db_redis, simple_to_redis)
@@ -363,14 +363,21 @@ function User.Offline()
     end
 end
 
-function User.OnPlay()
+function User.InPlay(roomid)
+    if not context.roomid or context.roomid ~= roomid then
+        return
+    end
     -- 同步游戏中状态到redis
     local update_user_attr = {}
     update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.IN_GAME
     User.SetUserAttr(update_user_attr, true)
 end
 
-function User.OutPlay()
+function User.OutPlay(roomid)
+    if not context.roomid or context.roomid ~= roomid then
+        return
+    end
+
     local query_user_attr = {}
     table.insert(query_user_attr, ProtoEnum.UserAttrType.is_online)
     local query_res = User.QueryUserAttr(query_user_attr)
@@ -507,8 +514,8 @@ end
 -- end
 
 local function LightRoleEquipment(msg)
-    local err_role_code, role_info = scripts.Role.GetRoleInfo(msg.roleid)
-    if err_role_code ~= ErrorCode.None or not role_info then
+    local role_info = scripts.Role.GetRoleInfo(msg.roleid)
+    if not role_info then
         return ErrorCode.RoleNotExist
     end
 
@@ -581,8 +588,8 @@ local function LightRoleEquipment(msg)
 end
 
 local function LightGhostEquipment(msg)
-    local err_ghost_code, ghost_info = scripts.Ghost.GetGhostInfo(msg.ghostid)
-    if err_ghost_code ~= ErrorCode.None or not ghost_info then
+    local ghost_info = scripts.Ghost.GetGhostInfo(msg.ghostid)
+    if not ghost_info then
         return ErrorCode.GhostNotExist
     end
 
@@ -810,10 +817,10 @@ function User.DsAddItems(simple_items)
     end
 
     -- 根据道具表生成item_data
-    local add_list = {}
-    ItemDefine.GetItemListFromItemsCoins(add_items, add_coins, add_list)
+    -- local add_list = {}
+    -- ItemDefine.GetItemListFromItemsCoins(add_items, add_coins, add_list)
     local stack_items, unstack_items, deal_coins = {}, {}, {}
-    local ok = ItemDefine.GetItemDataFromIdCount(add_list, stack_items, unstack_items, deal_coins)
+    local ok = ItemDefine.GetItemDataFromIdCount(add_items, add_coins, stack_items, unstack_items, deal_coins)
     if not ok then
         return ErrorCode.ConfigError
     end
@@ -1534,7 +1541,7 @@ function User.PBSureCompositeReqCmd(req)
 
     local ok, stack_items, unstack_items, deal_coins = false, {}, {}, {}
     if table.size(add_items) > 0 then
-        ok = ItemDefine.GetItemDataFromIdCount(add_items, stack_items, unstack_items, deal_coins)
+        ok = ItemDefine.GetItemDataFromIdCount(add_items, {}, stack_items, unstack_items, deal_coins)
         if not ok then
             rsp_msg.code = ErrorCode.ConfigError
             rsp_msg.error = "配置错误"
@@ -1676,7 +1683,7 @@ function User.PBRandomCompositeReqCmd(req)
 
     local ok, stack_items, unstack_items, deal_coins = false, {}, {}, {}
     if table.size(add_items) > 0 then
-        ok = ItemDefine.GetItemDataFromIdCount(add_items, stack_items, unstack_items, deal_coins)
+        ok = ItemDefine.GetItemDataFromIdCount(add_items, {}, stack_items, unstack_items, deal_coins)
         if not ok then
             rsp_msg.code = ErrorCode.ConfigError
             rsp_msg.error = "配置错误"

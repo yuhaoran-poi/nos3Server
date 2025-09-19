@@ -140,7 +140,7 @@ message PBModRoomRspCmd
 message PBRoomSyncCmd
 {
     int64 roomid    = 1;
-    int32 sync_type = 2;    // 1--修改房间信息 2--玩家加入 3--玩家退出 4--玩家被踢出 5--玩家改变准备状态 6--有玩家申请
+    int32 sync_type = 2;    // 1--修改房间信息 2--玩家加入 3--玩家退出 4--玩家被踢出 5--玩家改变准备状态 6--有玩家申请 7--游戏开始
     PBRoomWholeInfo sync_info   = 3;
 }
 

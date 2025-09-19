@@ -879,7 +879,7 @@ function _M.saveusercoins(addr, uid, data)
     ]], uid, pbvalue, data_str, pbvalue, data_str)
 
     moon.send("lua", addr, cmd)
-    
+
     return true
 end
 
@@ -1297,7 +1297,7 @@ function _M.gettradelog(addr, log_id)
         trade_log.item_data = item_data
         return trade_log
     end
-    print("gettradelog failed", log_id, err)
+    moon.error("gettradelog failed", log_id, err)
     return nil
 end
 
@@ -1307,7 +1307,7 @@ local PRODUCT_DATA = "product_data"
 function _M.RedisGetProductData(addr_db_redis, product_ids)
     local res, err = redis_call(addr_db_redis, "HMGET", PRODUCT_DATA, table.unpack(product_ids))
     if err then
-        error("RedisGetProductData failed:" .. tostring(err))
+        moon.error("RedisGetProductData failed:" .. tostring(err))
         return {}
     end
     local product_datas = {}
@@ -1328,6 +1328,7 @@ function _M.RedisSetProductData(addr_db_redis, product_data)
     redis_send(addr_db_redis, "HSET", PRODUCT_DATA, table.unpack(tmp))
 end
 
+-- 商店数据
 function _M.loadshopinfo(addr, uid)
     local cmd = string.format([[
         SELECT value, json FROM mgame.shops WHERE uid = %d;
@@ -1338,7 +1339,7 @@ function _M.loadshopinfo(addr, uid)
         local _, tmp_data = protocol.decodewithname("PBShopPlayerData", pbdata)
         return tmp_data
     end
-    print("loadshopinfo failed", uid, err)
+    moon.error("loadshopinfo failed", uid, err)
     return nil
 end
 
@@ -1355,6 +1356,72 @@ function _M.saveshopinfo(addr, uid, data)
     ]], uid, pbvalue, data_str, pbvalue, data_str)
 
     return moon.send("lua", addr, cmd)
+end
+
+function _M.loadshopserversale(addr, product_ids)
+    if not product_ids or table.size(product_ids) == 0 then
+        local cmd = string.format([[
+            SELECT product_id, sale_num FROM mgame.shop_server_sale;
+        ]])
+        local res, err = moon.call("lua", addr, cmd)
+        if res and #res > 0 then
+            local shop_server_sale = {}
+            for i = 1, #res do
+                shop_server_sale[res[i].product_id] = res[i].sale_num
+            end
+            return shop_server_sale
+        end
+        moon.error("loadshopserversale failed", err)
+        return nil
+    else
+        local product_id_str = table.concat(product_ids, ",")
+        local cmd = string.format([[
+            SELECT product_id, sale_num FROM mgame.shop_server_sale WHERE product_id IN (%s);
+        ]], product_id_str)
+        local res, err = moon.call("lua", addr, cmd)
+        if res and #res > 0 then
+            local shop_server_sale = {}
+            for i = 1, #res do
+                shop_server_sale[res[i].product_id] = res[i].sale_num
+            end
+            return shop_server_sale
+        end
+        moon.error("loadshopserversale failed", err)
+        return nil
+    end
+end
+
+function _M.saveshopserversale(addr, shop_server_sale)
+    assert(shop_server_sale)
+
+    for product_id, sale_num in pairs(shop_server_sale) do
+        local cmd = string.format([[
+            INSERT INTO mgame.shop_server_sale (product_id, sale_num)
+            VALUES (%d, %d)
+            ON DUPLICATE KEY UPDATE sale_num = %d;
+        ]], product_id, sale_num, sale_num)
+        moon.send("lua", addr, cmd)
+    end
+end
+
+function _M.saveshopbuylog(addr, shop_buy_log)
+    assert(shop_buy_log)
+    if not shop_buy_log.buy_data or table.size(shop_buy_log.buy_data) == 0 then
+        return
+    end
+
+    for _, buy_single in pairs(shop_buy_log.buy_data) do
+        local single_price_str = jencode(buy_single.single_price)
+        local total_price_str = jencode(buy_single.total_price)
+
+        local cmd = string.format([[
+        INSERT INTO mgame.shop_buy_log (order_id, buyer_uid, buy_ts, product_id, product_num, single_price, total_price)
+        VALUES (%d, %d, %d, %d, %d, '%s', '%s');
+        ]], shop_buy_log.order_id, shop_buy_log.buyer_uid, shop_buy_log.buy_ts, buy_single.product_id,
+            buy_single.product_num, single_price_str, total_price_str)
+
+        moon.send("lua", addr, cmd)
+    end
 end
 
 return _M

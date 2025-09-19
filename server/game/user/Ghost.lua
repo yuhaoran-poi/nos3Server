@@ -186,14 +186,14 @@ function Ghost.SetGhostBattle(ghost_uniqid, sync_client)
     end
 end
 
----@return integer, PBGhostData ? nil
+---@return PBGhostData ? nil
 function Ghost.GetGhostInfo(ghostid)
     local ghosts = scripts.UserModel.GetGhosts()
     if not ghosts or not ghosts.ghost_list or not ghosts.ghost_list[ghostid] then
-        return ErrorCode.GhostNotExist
+        return nil
     end
 
-    return ErrorCode.None, ghosts.ghost_list[ghostid]
+    return ghosts.ghost_list[ghostid]
 end
 
 function Ghost.ModDiagramsCard(ghostid, item_data, slot)

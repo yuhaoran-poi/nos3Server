@@ -151,12 +151,13 @@ function ChatLogic.RemoveSystemChannelGameNode(node_id)
 end
 
 -- 发送系统频道消息
-function ChatLogic.SendMsgToSystemChannel(msg_content)
+function ChatLogic.SendMsgToSystemChannel(msg_content, msg_attach)
     local PBChatMsgInfo = {
         channel_type = ChatEnum.EChannelType.CHANNEL_TYPE_SYSTEM, -- 系统频道类型
         uid = 0, -- 系统消息的发送者UID
         name = "系统", -- 系统消息的发送者名称
         msg_content = msg_content, -- 消息内容
+        msg_attach = msg_attach, -- 消息附加
         send_time = moon.time(), -- 发送时间
         to_uid = 0, -- 目标UID，对于系统消息通常为0
     }

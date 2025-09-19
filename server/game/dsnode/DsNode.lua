@@ -371,4 +371,56 @@ function DsNode.PBGetDsUserImageReqCmd(req)
     end
 end
 
+function DsNode.PBDsNotifyPlayerEnterReqCmd(req)
+    if not req.msg.roomid or not req.msg.uids then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "no roomid or no uids"
+        }
+        return context.S2D(context.net_id, CmdCode["PBDsNotifyPlayerEnterRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    context.send_users(req.msg.uids, CmdCode["User.InPlay"], req.msg.roomid)
+
+    local ret = {
+        code = ErrorCode.None,
+        error = "",
+        roomid = req.msg.roomid,
+        uids = req.msg.uids,
+    }
+    return context.S2D(context.net_id, CmdCode["PBDsNotifyPlayerEnterRspCmd"], ret, req.msg_context.stub_id)
+end
+
+function DsNode.PBDsNotifyPlayerExitReqCmd(req)
+    if not req.msg.roomid or not req.msg.uids then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "no roomid or no uids"
+        }
+        return context.S2D(context.net_id, CmdCode["PBDsNotifyPlayerExitRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    context.send_users(req.msg.uids, CmdCode["User.OutPlay"], req.msg.roomid)
+
+    local ret = {
+        code = ErrorCode.None,
+        error = "",
+        roomid = req.msg.roomid,
+        uids = req.msg.uids,
+    }
+    return context.S2D(context.net_id, CmdCode["PBDsNotifyPlayerExitRspCmd"], ret, req.msg_context.stub_id)
+end
+
+function DsNode.PBDsNotifyPlayEndReqCmd(req)
+    if not req.msg.roomid then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "no roomid or no uids"
+        }
+        return context.S2D(context.net_id, CmdCode["PBDsNotifyPlayEndRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    clusterd.send(3999, "roommgr", "Roommgr.PlayEnd", { roomid = req.msg.roomid })
+end
+
 return DsNode

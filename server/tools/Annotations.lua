@@ -137,11 +137,26 @@
 ---@field public decompose_items PBDecomposeItem[]
 
 
+---@class PBBagAddCapacityReqCmd
+---@field public uid integer
+---@field public bag_name string
+---@field public add_capacity_id integer
+
+
+---@class PBBagAddCapacityRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public bag_name string
+---@field public bag_data PBBag
+
+
 ---@class PBChatMsgInfo
 ---@field public channel_type integer @频道类型
 ---@field public uid integer @发送者uid
 ---@field public name string @发送者昵称
 ---@field public msg_content string @消息内容
+---@field public msg_attach string @消息附加
 ---@field public send_time integer @发送时间
 ---@field public to_uid integer @接收者uid
 
@@ -149,6 +164,7 @@
 ---@class PBChatReqCmd
 ---@field public channel_type integer @频道类型
 ---@field public msg_content string @消息内容
+---@field public msg_attach string @消息附加
 ---@field public to_uid integer @接收者uid
 
 
@@ -325,6 +341,40 @@
 ---@field public dsid integer
 ---@field public quest_uid integer
 ---@field public image_data PBUserImage
+
+
+---@class PBDsNotifyPlayerEnterReqCmd
+---@field public roomid integer
+---@field public uids integer[]
+
+
+---@class PBDsNotifyPlayerEnterRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public roomid integer
+---@field public uids integer[]
+
+
+---@class PBDsNotifyPlayerExitReqCmd
+---@field public roomid integer
+---@field public uids integer[]
+
+
+---@class PBDsNotifyPlayerExitRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public roomid integer
+---@field public uids integer[]
+
+
+---@class PBDsNotifyPlayEndReqCmd
+---@field public roomid integer
+
+
+---@class PBDsNotifyPlayEndRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public roomid integer
 
 
 ---@class PBFriendData
@@ -2122,7 +2172,7 @@
 
 ---@class PBRoomSyncCmd
 ---@field public roomid integer
----@field public sync_type integer @1--修改房间信息 2--玩家加入 3--玩家退出 4--玩家被踢出 5--玩家改变准备状态 6--有玩家申请
+---@field public sync_type integer @1--修改房间信息 2--玩家加入 3--玩家退出 4--玩家被踢出 5--玩家改变准备状态 6--有玩家申请 7--游戏开始
 ---@field public sync_info PBRoomWholeInfo
 
 
@@ -2301,17 +2351,19 @@
 
 
 ---@class PBShopBuyLog
----@field public log_id integer
+---@field public order_id integer
 ---@field public buyer_uid integer
 ---@field public buy_ts integer
----@field public log_tota_price table<integer, integer>
+---@field public log_total_price table<integer, integer>
 ---@field public buy_data PBShopBuySingle[]
 
 
 ---@class PBShopPlayerData
 ---@field public uid integer
 ---@field public last_check_ts integer
+---@field public self_order_id integer
 ---@field public buy_product_list table<integer, integer>
+---@field public buy_car_data table<integer, integer>
 ---@field public shop_logs PBShopBuyLog[]
 
 
@@ -2326,6 +2378,47 @@
 ---@field public now_sys_ts integer @当前系统时间
 ---@field public shop_player_data PBShopPlayerData @玩家商店数据
 ---@field public shop_server_buy table<integer, integer> @商店全服已购买数据
+
+
+---@class PBShopAddBuyCarReqCmd
+---@field public uid integer
+---@field public product_id integer
+---@field public product_num integer
+
+
+---@class PBShopAddBuyCarRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public now_sys_ts integer @当前系统时间
+---@field public buy_car_data table<integer, integer> @购物车数据
+
+
+---@class PBShopDelBuyCarReqCmd
+---@field public uid integer
+---@field public product_id_num table<integer, integer>
+
+
+---@class PBShopDelBuyCarRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public now_sys_ts integer @当前系统时间
+---@field public buy_car_data table<integer, integer> @购物车数据
+
+
+---@class PBShopBuyReqCmd
+---@field public uid integer
+---@field public with_car integer @是否通过购物车结算
+---@field public buy_id_num table<integer, integer>
+
+
+---@class PBShopBuyRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public now_sys_ts integer @当前系统时间
+---@field public buy_id_num table<integer, integer> @购物车数据
 
 
 ---@class PBTeamInfo
@@ -2939,6 +3032,10 @@
 ---@field Roommgr Roommgr
 
 
+---@class shopmgr_scripts
+---@field Shopmgr Shopmgr
+
+
 ---@class teammgr_scripts
 ---@field Teammgr Teammgr
 
@@ -2967,9 +3064,11 @@
 ---@field BaGuaBrand BaGuaBrand_cfg[]
 ---@field BaGuaBrandUpLv BaGuaBrandUpLv_cfg[]
 ---@field Book Book_cfg[]
+---@field BootyBackpackExpansion BootyBackpackExpansion_cfg[]
 ---@field ChatChannelConfig ChatChannelConfig_cfg[]
 ---@field CommonConfig CommonConfig_cfg[]
 ---@field Composite Composite_cfg[]
+---@field ConsumablesBackpackExpansion ConsumablesBackpackExpansion_cfg[]
 ---@field EquipmentTagPool EquipmentTagPool_cfg[]
 ---@field ExchangeStoreWaresConfig ExchangeStoreWaresConfig_cfg[]
 ---@field FriendConfig FriendConfig_cfg[]
@@ -2992,7 +3091,9 @@
 ---@field RoleLvAward RoleLvAward_cfg[]
 ---@field RoleUpLv RoleUpLv_cfg[]
 ---@field Skin Skin_cfg[]
+---@field StoreConfig StoreConfig_cfg[]
 ---@field TriggerEmailTemplateConfig TriggerEmailTemplateConfig_cfg[]
 ---@field UniqueItem UniqueItem_cfg[]
 ---@field UpLvCostIDMapping UpLvCostIDMapping_cfg[]
 ---@field UpStar UpStar_cfg[]
+---@field WarehouseExpansion WarehouseExpansion_cfg[]

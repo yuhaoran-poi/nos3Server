@@ -8,6 +8,20 @@ local ShopDef = {
         Week = 4,
         Month = 5,
     },
+    ShopLimitType = {
+        NoLimit = 1,
+        ServerLimit = 2,
+    },
+    ShopConfigId = {
+        DayFreshSeconds = 1,
+        WeekFreshSeconds = 2,
+        MonthFreshSeconds = 3,
+        BuyCarKindMax = 4,
+        ShopMailId = 5,
+        RechargeMailId = 6,
+        BuyLogMax = 7,
+        BuyCarNumMax = 8,
+    }
 }
 
 local defaultPBShopBuySingle = {
@@ -18,7 +32,7 @@ local defaultPBShopBuySingle = {
 }
 
 local defaultPBShopBuyLog = {
-    log_id = 0,
+    order_id = 0,
     buyer_uid = 0,
     buy_ts = 0,
     log_total_price = {},
@@ -28,7 +42,9 @@ local defaultPBShopBuyLog = {
 local defaultPBShopPlayerData = {
     uid = 0,
     last_check_ts = 0,
+    self_order_id = 0,
     buy_product_list = {},
+    buy_car_data = {},
     shop_logs = {},
 }
 

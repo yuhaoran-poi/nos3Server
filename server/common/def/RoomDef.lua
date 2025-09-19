@@ -7,7 +7,9 @@ local RoomDef = {
         PlayerExit = 3,     -- 玩家退出
         PlayerKick = 4,     -- 玩家被踢出
         PlayerReady = 5,    -- 玩家改变准备状态
-        PlayerApply = 6,    -- 有玩家申请加入
+        PlayerApply = 6, -- 有玩家申请加入
+        GameStart = 7,   -- 游戏开始
+        GameStartFailed = 8, -- 游戏开始失败
     }
 }
 

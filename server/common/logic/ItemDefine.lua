@@ -167,7 +167,7 @@ end
 -- return coins = {[1] = {coin_id = 1, coin_count = 1}}
 function ItemDefine.GetItemsFromCfg(item_cfg, num, negative, items, coins)
     if not item_cfg then
-        return
+        return false
     end
 
     for id, cnt in pairs(item_cfg) do
@@ -198,6 +198,7 @@ function ItemDefine.GetItemsFromCfg(item_cfg, num, negative, items, coins)
             end
         end
     end
+    return true
 end
 
 -- 合并道具和货币map转换为添加的简化数组
@@ -222,7 +223,7 @@ end
 -- return stack_items = {[PBItemData.common_info.config_id] = PBItemData}
 -- return unstack_items = {PBItemData, PBItemData}
 -- return stack_coins = {[PBCoin.coin_id] = PBCoin}
-function ItemDefine.GetItemDataFromIdCount(item_list, stack_items, unstack_items, stack_coins)
+function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, unstack_items, stack_coins)
     if item_list and table.size(item_list) > 0 then
         for _, item in pairs(item_list) do
             if not item.id or not item.count or item.count == 0 then
@@ -358,6 +359,26 @@ function ItemDefine.GetItemDataFromIdCount(item_list, stack_items, unstack_items
             end
         end
     end
+
+    if coin_list and table.size(coin_list) > 0 then
+        for _, coin in pairs(coin_list) do
+            if not coin.coin_id or not coin.coin_count or coin.coin_count == 0 then
+                return false
+            end
+            local item_big_type = ItemDefine.GetItemPosType(coin.coin_id)
+            if item_big_type == ItemDefine.EItemBigType.Coin then
+                if not stack_coins[coin.coin_id] then
+                    local new_coin = ItemDef.newCoin()
+                    new_coin.coin_id = coin.coin_id
+                    stack_coins[coin.coin_id] = new_coin
+                end
+                stack_coins[coin.coin_id].coin_count = stack_coins[coin.coin_id].coin_count + coin.coin_count
+            else
+                return false
+            end
+        end
+    end
+
     return true
 end
 

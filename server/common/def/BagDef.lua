@@ -14,19 +14,18 @@ local BagDef = {
         SplitItem = 4,  --不同背包拆分道具
         MoveItem = 5,   --不同背包移动道具
     },
-    init_cangku_capacity = 75,
-    init_consume_capacity = 25,
-    init_booty_capacity = 20,
-    max_cangku_capacity = 150,
-    max_consume_capacity = 50,
-    max_booty_capacity = 40,
+    -- init_cangku_capacity = 75,
+    -- init_consume_capacity = 25,
+    -- init_booty_capacity = 20,
+    -- max_cangku_capacity = 150,
+    -- max_consume_capacity = 50,
+    -- max_booty_capacity = 40,
 }
 
 local defaultPBBags = {
-    [BagDef.BagType.Cangku] = { bag_item_type = 1, capacity = BagDef.init_cangku_capacity, items = {} },
-    [BagDef.BagType.Consume] = { bag_item_type = 2, capacity = BagDef.init_consume_capacity, items = {} },
-    [BagDef.BagType.Booty] = { bag_item_type = 3, capacity = BagDef.init_booty_capacity, items = {} },
-    
+    [BagDef.BagType.Cangku] = { bag_item_type = 1, capacity = 1, items = {} },
+    [BagDef.BagType.Consume] = { bag_item_type = 2, capacity = 1, items = {} },
+    [BagDef.BagType.Booty] = { bag_item_type = 3, capacity = 1, items = {} },
 }
 
 local defaultPBUserCoins = {

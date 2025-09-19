@@ -68,3 +68,21 @@ function Client:simple_data()
         end
     end)
 end
+
+function Client:other_simple(uid)
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+    local req_msg = {
+        uid = self.uid,
+        quest_uid = uid,
+    }
+    self:send("PBGetOtherSimpleReqCmd", req_msg, function(msg)
+        print("rpc PBGetOtherSimpleReqCmd ret = ", msg)
+        print_r(msg)
+        if msg.code == 0 then
+            --self.login_ok = true
+        end
+    end)
+end

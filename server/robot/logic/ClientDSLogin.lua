@@ -63,17 +63,17 @@ function Client:add_items_city_player(uid, cityid)
         simple_items = {},
     }
     local item_1 = {
-        config_id = 1,
+        config_id = 2,
         item_count = 10000,
         uniqid = 0
     }
-    local item_2 = {
-        config_id = 51001,
-        item_count = 100,
-        uniqid = 0
-    }
+    -- local item_2 = {
+    --     config_id = 51001,
+    --     item_count = 100,
+    --     uniqid = 0
+    -- }
     table.insert(req_msg.simple_items, item_1)
-    table.insert(req_msg.simple_items, item_2)
+    -- table.insert(req_msg.simple_items, item_2)
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     self:send("PBAddItemsCityPlayerReqCmd", req_msg, function(msg)
         print("rpc PBAddItemsCityPlayerRspCmd ret = ", self.index, msg)

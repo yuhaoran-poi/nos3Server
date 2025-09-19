@@ -302,6 +302,8 @@ function Mail.RecvTriggerMail(config_id)
 end
 
 function Mail.RecvImmediateMail(config_id, items_simple, item_datas, coins)
+    -- 检查并删除过期邮件
+    Mail.CheckExpireMail()
     local mails = scripts.UserModel.GetMails()
     if not mails then
         return false
@@ -315,7 +317,7 @@ function Mail.RecvImmediateMail(config_id, items_simple, item_datas, coins)
     local new_mail_info = MailDef.newMailData()
     new_mail_info.simple_data.mail_id = mails.last_immediate_mail_id + 1
     new_mail_info.simple_data.mail_config_id = config_id
-    new_mail_info.simple_data.mail_type = MailDef.MailType.ImmediatelyConfig
+    new_mail_info.simple_data.mail_type = MailDef.MailType.ImmediateConfig
     new_mail_info.simple_data.beg_ts = moon.time()
     new_mail_info.simple_data.end_ts = new_mail_info.simple_data.beg_ts + mail_common_config.validity_period
     new_mail_info.simple_data.mail_title_id = mail_common_config.title
@@ -331,6 +333,12 @@ function Mail.RecvImmediateMail(config_id, items_simple, item_datas, coins)
     new_mail_info.items_simple = items_simple
     new_mail_info.item_datas = item_datas
     new_mail_info.coins = coins
+
+    local ret = Mail.AddMail(mails, new_mail_info)
+    if ret then
+        mails.last_immediate_mail_id = mails.last_immediate_mail_id + 1
+        Mail.SaveMailsNow()
+    end
 
     return true
 end
@@ -647,7 +655,7 @@ function Mail.PBGetRewardReqCmd(req)
 
     local stack_items, unstack_items, deal_coins = {}, {}, {}
     if table.size(attach_items) > 0 then
-        local ok = ItemDefine.GetItemDataFromIdCount(attach_items, stack_items, unstack_items, deal_coins)
+        local ok = ItemDefine.GetItemDataFromIdCount(attach_items, {}, stack_items, unstack_items, deal_coins)
         if not ok then
             rsp.code = ErrorCode.ConfigError
             rsp.error = "获取附件失败"

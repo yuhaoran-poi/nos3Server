@@ -140,3 +140,46 @@ message PBGetDsUserImageRspCmd
 	int64 quest_uid		= 4;
     PBUserImage image_data	= 5;
 }
+
+// DS通知玩家已进入副本
+message PBDsNotifyPlayerEnterReqCmd
+{
+    int64 roomid    = 1;
+    repeated int64 uids = 2;
+}
+
+message PBDsNotifyPlayerEnterRspCmd
+{
+    int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+    int64 roomid    = 3;
+    repeated int64 uids = 4;
+}
+
+// DS通知玩家已退出副本
+message PBDsNotifyPlayerExitReqCmd
+{
+    int64 roomid    = 1;
+    repeated int64 uids = 2;
+}
+
+message PBDsNotifyPlayerExitRspCmd
+{
+    int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+    int64 roomid    = 3;
+    repeated int64 uids = 4;
+}
+
+// DS通知副本已结束
+message PBDsNotifyPlayEndReqCmd
+{
+    int64 roomid    = 1;
+}
+
+message PBDsNotifyPlayEndRspCmd
+{
+    int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+    int64 roomid    = 3;
+}

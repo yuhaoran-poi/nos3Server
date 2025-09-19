@@ -10,10 +10,10 @@ message PBShopBuySingle
 
 message PBShopBuyLog
 {
-	int64 log_id	= 1;
+	int64 order_id	= 1;
 	int64 buyer_uid	= 2;
 	int64 buy_ts	= 3;
-	map<int32, int64> log_tota_price	= 4;
+	map<int32, int64> log_total_price	= 4;
 	repeated PBShopBuySingle buy_data	= 5;
 }
 
@@ -21,8 +21,10 @@ message PBShopPlayerData
 {
 	int64 uid	= 1;
 	int64 last_check_ts	= 2;
-	map<int32, int32> buy_product_list	= 3;
-	repeated PBShopBuyLog shop_logs		= 4;
+	int32 self_order_id	= 3;
+	map<int32, int32> buy_product_list	= 4;
+	map<int32, int32> buy_car_data		= 5;
+	repeated PBShopBuyLog shop_logs		= 6;
 }
 
 // 获取商店数据
@@ -39,4 +41,54 @@ message PBGetShopDataRspCmd
 	int64 now_sys_ts	= 4;	//当前系统时间
 	PBShopPlayerData shop_player_data	= 5;	//玩家商店数据
 	map<int32, int32> shop_server_buy	= 6;	//商店全服已购买数据
+}
+
+// 添加到购物车
+message PBShopAddBuyCarReqCmd
+{
+	int64 uid	= 1;
+	int32 product_id	= 2;
+	int32 product_num	= 3;
+}
+
+message PBShopAddBuyCarRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    int64 uid	= 3;
+	int64 now_sys_ts	= 4;	//当前系统时间
+	map<int32, int32> buy_car_data	= 5;	//购物车数据
+}
+
+// 从购物车中删除
+message PBShopDelBuyCarReqCmd
+{
+	int64 uid	= 1;
+	map<int32, int32>	product_id_num	= 2;
+}
+
+message PBShopDelBuyCarRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    int64 uid	= 3;
+	int64 now_sys_ts	= 4;	//当前系统时间
+	map<int32, int32> buy_car_data	= 5;	//购物车数据
+}
+
+// 从购物车中选择商品结算
+message PBShopBuyReqCmd
+{
+	int64 uid	= 1;
+	int32 with_car	= 2;	//是否通过购物车结算
+	map<int32, int32> buy_id_num	= 3;
+}
+
+message PBShopBuyRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    int64 uid	= 3;
+	int64 now_sys_ts	= 4;	//当前系统时间
+	map<int32, int32> buy_id_num	= 5;	//购物车数据
 }

@@ -47,6 +47,7 @@ end
 function ChatProxy.PBChatReqCmd(req)
     local channel_type = req.msg.channel_type
     local msg_content = req.msg.msg_content
+    local msg_attach = req.msg.msg_attach
     local to_uid = req.msg.to_uid
     local user_attr = scripts.UserModel.GetUserAttr()
     local DB = scripts.UserModel.Get()
@@ -65,15 +66,21 @@ function ChatProxy.PBChatReqCmd(req)
         return { code = ErrorCode.ChatInvalidParam }
     end
     -- 检查字符限制
-    local ChatWordLimit = GameCfg.ChatChannelConfig[WORLD_CHAT_MAX_SIZE_CONFID] or 1000 -- todo 配置
-    if utf8.len(msg_content) > ChatWordLimit then
+    local ChatWordLimit = 1000 -- todo 配置
+    if GameCfg.ChatChannelConfig[WORLD_CHAT_MAX_SIZE_CONFID] then
+        ChatWordLimit = GameCfg.ChatChannelConfig[WORLD_CHAT_MAX_SIZE_CONFID].value
+    end
+    if utf8.len(msg_content) + (msg_attach and utf8.len(msg_attach) or 0) > ChatWordLimit then
         context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatWordLimit }, req)
         return { code = ErrorCode.ChatWordLimit }
     end
 
     -- 检测发送间隔
     local last_chat_time = user_attr.last_chat_time or 0
-    local send_interval = GameCfg.ChatChannelConfig[CHAT_MIN_CD_CONFID] or 1 -- 发送间隔，单位秒
+    local send_interval = 1 -- 发送间隔，单位秒
+    if GameCfg.ChatChannelConfig[CHAT_MIN_CD_CONFID] then
+        send_interval = GameCfg.ChatChannelConfig[CHAT_MIN_CD_CONFID].value
+    end
     if now_ts - last_chat_time < send_interval then
         context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatSendInterval }, req)
         return { code = ErrorCode.ChatSendInterval }
@@ -84,6 +91,7 @@ function ChatProxy.PBChatReqCmd(req)
         uid = context.uid,
         name = user_attr.nick_name,
         msg_content = msg_content,
+        msg_attach = msg_attach,
         send_time = moon.time(),
         to_uid = to_uid,
     }
@@ -100,7 +108,10 @@ function ChatProxy.PBChatReqCmd(req)
         end
     elseif channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_WORLD then --世界
         -- 世界聊天cd
-        local world_chat_cd = GameCfg.ChatChannelConfig[WORLD_CHAT_CD_CONFID] or 30 -- todo 配置
+        local world_chat_cd = 30 -- todo 配置
+        if GameCfg.ChatChannelConfig[WORLD_CHAT_CD_CONFID] then
+            world_chat_cd = GameCfg.ChatChannelConfig[WORLD_CHAT_CD_CONFID].value
+        end
         if context.world_chat_last_time
             and now_ts - context.world_chat_last_time < world_chat_cd then
             context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatSendInterval }, req)
@@ -129,9 +140,12 @@ function ChatProxy.PBChatReqCmd(req)
     end
 
     -- 检测重复发送
-    local repeat_cnt = GameCfg.ChatChannelConfig[CHAT_REPEAT_CONFID] or 3
+    local repeat_cnt = 3 -- todo 配置
+    if GameCfg.ChatChannelConfig[CHAT_REPEAT_CONFID] then
+        repeat_cnt = GameCfg.ChatChannelConfig[CHAT_REPEAT_CONFID].value
+    end
     if context.last_chat_msg
-        and context.last_chat_msg == msg_content then
+        and context.last_chat_msg == (msg_content .. (msg_attach or " ")) then
         if context.re_chat_cnt then
             context.re_chat_cnt = context.re_chat_cnt + 1
         else
@@ -140,14 +154,17 @@ function ChatProxy.PBChatReqCmd(req)
 
         if context.re_chat_cnt > repeat_cnt then
             -- 禁言
-            local ban_time = GameCfg.ChatChannelConfig[CHAT_TEMP_BAN_CONFID] or 60 -- 禁言时间，单位秒
+            local ban_time = 60 -- 禁言时间，单位秒
+            if GameCfg.ChatChannelConfig[CHAT_TEMP_BAN_CONFID] then
+                ban_time = GameCfg.ChatChannelConfig[CHAT_TEMP_BAN_CONFID].value
+            end
             user_attr.chat_ban = true
             user_attr.chat_ban_time = now_ts + ban_time
             context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatRepeat }, req)
             return { code = ErrorCode.ChatRepeat }
         end
     end
-    context.last_chat_msg = msg_content
+    context.last_chat_msg = msg_content .. (msg_attach or " ")
     -- 记录发送时间
     user_attr.last_chat_time = now_ts
     context.world_chat_last_time = now_ts
