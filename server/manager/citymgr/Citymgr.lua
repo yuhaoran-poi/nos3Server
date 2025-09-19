@@ -365,6 +365,7 @@ function Citymgr.PlayerEnterCity(req)
 
     local res = enterCity()
     if res.code == ErrorCode.None then
+        -- 加入附近频道
         local chat_ret = ChatLogic.JoinNearbyChannel(req.cityid, req.uid)
         if chat_ret.code ~= ErrorCode.None then
             moon.error(string.format("JoinNearbyChannel uid:%d, cityid:%d, code:%d, error:%s", req.uid, req.cityid,
@@ -394,6 +395,7 @@ function Citymgr.PlayerExitCity(req)
 
     local res = exitCity()
     if res.code == ErrorCode.None then
+        -- 退出附近频道
         local chat_ret = ChatLogic.LeaveNearbyChannel(req.cityid, req.uid)
         if chat_ret.code ~= ErrorCode.None then
             moon.error(string.format("LeaveNearbyChannel uid:%d, cityid:%d, code:%d, error:%s", req.uid, req.cityid,

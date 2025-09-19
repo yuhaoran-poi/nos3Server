@@ -39,6 +39,10 @@ function Roommgr.Init()
             Roommgr.NotifyDsRooms(allocated_rooms, fail_rooms)
         end
     end)
+
+    -- 清理全部room记录
+    Database.clear_all_room_keys(context.addr_db_server)
+
     return true
 end
 
@@ -173,10 +177,14 @@ function Roommgr.NotifyDsRooms(allocated_rooms, fail_rooms)
             for _, player in pairs(room.players) do
                 table.insert(notify_uids, player.mem_info.uid)
             end
-            context.send_users(notify_uids, {}, "Room.OnEnterDs", {
-                roomid = roomid,
-                ds_address = fail_info.ds_address,
-                ds_ip = fail_info.ds_ip,
+            -- context.send_users(notify_uids, {}, "Room.OnEnterDs", {
+            --     roomid = roomid,
+            --     ds_address = fail_info.ds_address,
+            --     ds_ip = fail_info.ds_ip,
+            -- })
+            context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", {
+                roomid = room.room_data.roomid,
+                sync_type = RoomDef.SyncType.GameStartFailed,
             })
 
             room.room_data.state = 0
@@ -282,6 +290,10 @@ function Roommgr.ModRoom(req)
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
 
+    if room.room_data.state ~= 0 then
+        return { code = ErrorCode.RoomInGame, error = "房间正在游戏中" }
+    end
+
     -- 验证房主权限
     if room.master_id ~= req.uid then
         return {
@@ -351,7 +363,7 @@ function Roommgr.ApplyToRoom(req)
     end
 
     -- 检查是否可以申请
-    if room.room_data.is_open == 0 then
+    if room.room_data.is_open == 0 or room.room_data.state ~= 0 then
         return { code = ErrorCode.RoomNotOpen, error = "房间未开放" }
     end
     if room.room_data.needpwd == 1 then
@@ -393,7 +405,7 @@ function Roommgr.DealApply(req)
     end
 
     -- 检查是否可以申请
-    if room.room_data.is_open == 0 or room.room_data.needpwd == 1 then
+    if room.room_data.is_open == 0 or room.room_data.state ~= 0 or room.room_data.needpwd == 1 then
         return { code = ErrorCode.RoomPermissionDenied, error = "无操作权限" }
     end
 
@@ -483,7 +495,7 @@ function Roommgr.EnterRoom(req)
     end
 
     -- 检查是否可以直接加入
-    if room.room_data.is_open == 0 then
+    if room.room_data.is_open == 0 or room.room_data.state ~= 0 then
         return { code = ErrorCode.RoomNotOpen, error = "房间未开放" }
     end
 
@@ -542,6 +554,9 @@ function Roommgr.ExitRoom(req)
     local room = context.rooms[req.roomid]
     if not room then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+    if room.room_data.state ~= 0 then
+        return { code = ErrorCode.RoomInGame, error = "房间正在游戏中" }
     end
 
     -- 验证玩家是否在房间内
@@ -627,6 +642,9 @@ function Roommgr.KickMember(req)
     if not room then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
+    if room.room_data.state ~= 0 then
+        return { code = ErrorCode.RoomInGame, error = "房间正在游戏中" }
+    end
 
     -- 验证房主身份
     if room.master_id ~= req.self_uid then
@@ -686,6 +704,9 @@ function Roommgr.InviteMember(req)
     if not room then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
+    if room.room_data.state ~= 0 then
+        return { code = ErrorCode.RoomInGame, error = "房间正在游戏中" }
+    end
 
     -- 查找玩家在房间中的位置
     local self_index, invite_index = nil, nil
@@ -740,6 +761,9 @@ function Roommgr.DealInvite(req)
     local room = context.rooms[req.msg.roomid]
     if not room then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+    if room.room_data.state ~= 0 then
+        return { code = ErrorCode.RoomInGame, error = "房间正在游戏中" }
     end
 
     -- 检查是否已在其他房间
@@ -824,6 +848,9 @@ function Roommgr.UpdateReadyStatus(req)
     local room = context.rooms[req.roomid]
     if not room then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+    if room.room_data.state ~= 0 then
+        return { code = ErrorCode.RoomInGame, error = "房间正在游戏中" }
     end
 
     -- 查找玩家在房间中的位置
@@ -1020,6 +1047,17 @@ function Roommgr.StartGame(req)
     redis_data.master_name = room.master_name
     Database.upsert_room(context.addr_db_server, req.roomid, room_tags, redis_data)
 
+    -- 通知玩家游戏准备开始
+    local notify_uids = {}
+    for _, player in pairs(room.players) do
+        table.insert(notify_uids, player.mem_info.uid)
+    end
+    local sync_msg = {
+        roomid = room.room_data.roomid,
+        sync_type = RoomDef.SyncType.GameStart,
+    }
+    context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
+
     -----临时通知所有玩家进入DS------------
     -- Roommgr.notify_uids = {}
     -- for _, player in pairs(room.players) do
@@ -1034,16 +1072,6 @@ function Roommgr.StartGame(req)
     --         ds_ip = "192.168.2.31",
     --     })
     -- end)
-    -- local notify_uids = {}
-    -- for _, player in pairs(room.players) do
-    --     table.insert(notify_uids, player.mem_info.uid)
-    --     moon.error("OnEnterDs ", player.mem_info.uid)
-    -- end
-    -- context.send_users(notify_uids, {}, "Room.OnEnterDs", {
-    --     roomid = req.roomid,
-    --     ds_address = "192.168.2.31-9999",
-    --     ds_ip = "192.168.2.31",
-    -- })
     -----临时通知所有玩家进入DS------------
 
     return { code = ErrorCode.None, error = "游戏开始成功", roomid = req.roomid }
@@ -1075,6 +1103,27 @@ function Roommgr.GetRoomCreateData(req)
     local _, pbdata = protocol.encodewithname("PBDsCreateData", room_info)
     local room_str = crypt.base64encode(pbdata)
     return { code = ErrorCode.None, error = "success", roomid = req.roomid, room_str = room_str }
+end
+
+function Roommgr.PlayEnd(roomid)
+    local room = context.rooms[roomid]
+    if not room then
+        return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+
+    if room.room_data.state ~= 1 then
+        return { code = ErrorCode.RoomInvalidState, error = "房间状态错误" }
+    end
+
+    room.room_data.state = 0
+
+    local notify_uids = {}
+    for _, player in pairs(room.players) do
+        table.insert(notify_uids, player.mem_info.uid)
+    end
+    context.send_users(notify_uids, {}, "User.OutPlay", roomid)
+
+    return { code = ErrorCode.None, error = "游戏结束成功" }
 end
 
 function Roommgr.Start()
