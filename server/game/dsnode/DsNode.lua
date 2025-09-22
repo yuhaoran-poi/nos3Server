@@ -412,7 +412,9 @@ function DsNode.PBDsNotifyPlayerExitReqCmd(req)
 end
 
 function DsNode.PBDsNotifyPlayEndReqCmd(req)
+    moon.warn("PBDsNotifyPlayEndReqCmd roomid = ", req.msg.roomid)
     if not req.msg.roomid then
+        moon.error("PBDsNotifyPlayEndReqCmd no roomid")
         local ret = {
             code = ErrorCode.CityVerifyFailed,
             error = "no roomid or no uids"

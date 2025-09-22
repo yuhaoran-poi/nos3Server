@@ -374,7 +374,9 @@ function User.InPlay(roomid)
 end
 
 function User.OutPlay(roomid)
+    moon.warn("User.OutPlay roomid = ", roomid)
     if not context.roomid or context.roomid ~= roomid then
+        moon.error("User.OutPlay roomid not match, roomid = ", roomid)
         return
     end
 

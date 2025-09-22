@@ -97,17 +97,22 @@ function Roommgr.CheckWaitDSRooms()
                 local response = httpc.post(context.conf.allocate_url, v.allocate_data)
                 --
                 print_r(response)
-                local rsp_data = json.decode(response.body)
-                local success, ret = allocate_cb(rsp_data)
-                if not success or not ret then
+                --local rsp_data = json.decode(response.body)
+                local json_success, rsp_data = pcall(json.decode, response.body or "")
+                if not json_success then
                     v.failcnt = v.failcnt + 1
                 else
-                    v.ds_ip = ret.ds_ip
-                    v.region = ret.region
-                    v.serverssion = ret.serverssion
+                    local success, ret = allocate_cb(rsp_data)
+                    if not success or not ret then
+                        v.failcnt = v.failcnt + 1
+                    else
+                        v.ds_ip = ret.ds_ip
+                        v.region = ret.region
+                        v.serverssion = ret.serverssion
 
-                    v.status = 1
-                    v.failcnt = 0
+                        v.status = 1
+                        v.failcnt = 0
+                    end
                 end
             elseif v.status == 1 then
                 local get_url = context.conf.query_url .. "?name=" .. v.region
@@ -115,15 +120,20 @@ function Roommgr.CheckWaitDSRooms()
                 local response = httpc.get(get_url)
                 --
                 print_r(response)
-                local rsp_data = json.decode(response.body)
-                local success, ret = query_cb(rsp_data)
-                if not success or not ret then
+                --local rsp_data = json.decode(response.body)
+                local json_success, rsp_data = pcall(json.decode, response.body or "")
+                if not json_success then
                     v.failcnt = v.failcnt + 1
                 else
-                    v.ds_address = ret
-                    
-                    v.status = 2
-                    v.failcnt = 0
+                    local success, ret = query_cb(rsp_data)
+                    if not success or not ret then
+                        v.failcnt = v.failcnt + 1
+                    else
+                        v.ds_address = ret
+
+                        v.status = 2
+                        v.failcnt = 0
+                    end
                 end
             else
                 v.failcnt = v.failcnt + 1
@@ -1106,12 +1116,15 @@ function Roommgr.GetRoomCreateData(req)
 end
 
 function Roommgr.PlayEnd(roomid)
+    moon.warn("Roommgr.PlayEnd roomid = ", roomid)
     local room = context.rooms[roomid]
     if not room then
+        moon.error("Roommgr.PlayEnd room not found, roomid = ", roomid)
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
 
     if room.room_data.state ~= 1 then
+        moon.error("Roommgr.PlayEnd room state error, roomid = ", roomid)
         return { code = ErrorCode.RoomInvalidState, error = "房间状态错误" }
     end
 

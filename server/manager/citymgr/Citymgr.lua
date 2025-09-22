@@ -92,36 +92,48 @@ function Citymgr.CheckWaitDSCitys()
             
             if v.status == 0 then
                 local response = httpc.post(context.conf.allocate_url, v.allocate_data)
-                local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-                local rsp_data = json.decode(response.body)
-                local success, ret = allocate_cb(rsp_data)
-                if not success or not ret then
-                    moon.error(string.format("allocate_cb rsp_data:\n%s", json.pretty_encode(rsp_data)))
+                --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+                --local rsp_data = json.decode(response.body)
+                local json_success, rsp_data = pcall(json.decode, response.body or "")
+                if not json_success then
+                    moon.error(string.format("json.decode response.body:\n%s", response.body))
                     v.failcnt = v.failcnt + 1
                 else
-                    moon.info(string.format("allocate_cb rsp_data:\n%s", json.pretty_encode(rsp_data)))
-                    v.ds_ip = ret.ds_ip
-                    v.region = ret.region
-                    v.serverssion = ret.serverssion
+                    local success, ret = allocate_cb(rsp_data)
+                    if not success or not ret then
+                        moon.error(string.format("allocate_cb rsp_data:\n%s", json.pretty_encode(rsp_data)))
+                        v.failcnt = v.failcnt + 1
+                    else
+                        moon.info(string.format("allocate_cb rsp_data:\n%s", json.pretty_encode(rsp_data)))
+                        v.ds_ip = ret.ds_ip
+                        v.region = ret.region
+                        v.serverssion = ret.serverssion
 
-                    v.status = 1
-                    v.failcnt = 0
+                        v.status = 1
+                        v.failcnt = 0
+                    end
                 end
             elseif v.status == 1 then
                 local get_url = context.conf.query_url .. "?name=" .. v.region
                 local response = httpc.get(get_url)
                 local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-                local rsp_data = json.decode(response.body)
-                local success, ret = query_cb(rsp_data)
-                if not success or not ret then
-                    moon.error(string.format("query_cb rsp_data:\n%s", json.pretty_encode(rsp_data)))
+                --local rsp_data = json.decode(response.body)
+                local json_success, rsp_data = pcall(json.decode, response.body or "")
+                if not json_success then
+                    moon.error(string.format("json.decode response.body:\n%s", response.body))
                     v.failcnt = v.failcnt + 1
                 else
-                    moon.info(string.format("query_cb rsp_data:\n%s", json.pretty_encode(rsp_data)))
-                    v.ds_address = ret
-                    
-                    v.status = 2
-                    v.failcnt = 0
+                    local success, ret = query_cb(rsp_data)
+                    if not success or not ret then
+                        moon.error(string.format("query_cb rsp_data:\n%s", json.pretty_encode(rsp_data)))
+                        v.failcnt = v.failcnt + 1
+                    else
+                        moon.info(string.format("query_cb rsp_data:\n%s", json.pretty_encode(rsp_data)))
+                        v.ds_address = ret
+
+                        v.status = 2
+                        v.failcnt = 0
+                    end
                 end
             else
                 v.failcnt = v.failcnt + 1
