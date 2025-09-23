@@ -68,6 +68,9 @@ function User.Load(req)
             --moon.error(string.format("User.Load return data = %s", json.pretty_encode(data)))
             return data
         end
+        
+        -- 加载GameCfg
+        GameCfg.Load()
 
         ---加载UserAttr数据
         local db_user_attr, err = Database.loaduser_attr(context.addr_db_user, req.uid)
@@ -337,7 +340,7 @@ end
 
 function User.Init()
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    GameCfg.Load()
+    --GameCfg.Load()
 end
 
 function User.Start()
