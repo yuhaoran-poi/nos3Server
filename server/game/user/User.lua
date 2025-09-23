@@ -59,7 +59,7 @@ function User.Load(req)
             { uid = req.uid, nid = moon.env("NODE"), addr_user = req.addr_user })
 
         if res.error ~= "success" then
-            -- moon.error(string.format("User.Load res = %s", json.pretty_encode(res)))
+            moon.error(string.format("User.Load res = %s", json.pretty_encode(res)))
             return false
         end
 
