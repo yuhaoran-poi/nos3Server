@@ -135,6 +135,10 @@ local ErrorCode = {
     RoomInviteNotFound = 913,
     ---房间正在游戏中
     RoomInGame = 914,
+    ---房间不需要审核
+    RoomNotNeedCheck = 915,
+    ---房间需要审核
+    RoomNeedCheck = 916,
 
     ---公会相关错误码
     ---已在公会中

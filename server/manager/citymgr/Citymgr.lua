@@ -31,7 +31,7 @@ function Citymgr.Init()
     context.waitds_citys = {} -- 等待中主城列表
     context.addr_db_server = moon.queryservice("db_server")
 
-    Citymgr.CreateCity()
+    -- Citymgr.CreateCity()
     -- 新增定时器轮询
     moon.async(function()
         while true do
@@ -161,6 +161,7 @@ function Citymgr.CheckWaitDSCitys()
 end
 
 function Citymgr.SetNewDsCitys(allocated_citys)
+    moon.info(string.format("Citymgr.SetNewDsCitys allocated_citys:\n%s", json.pretty_encode(allocated_citys)))
     for cityid, allocate_info in pairs(allocated_citys) do
         local city = {
             cityid = cityid,
@@ -182,6 +183,10 @@ function Citymgr.SetNewDsCitys(allocated_citys)
 
         local scope <close> = lock_run()
         context.citys[cityid] = city
+        moon.info(string.format("Citymgr.SetNewDsCitys context.citys:\n%s", json.pretty_encode(context.citys)))
+        if not context.citys[1] then
+            moon.error(string.format("Citymgr.SetNewDsCitys context.citys[1] is nil"))
+        end
     end
 end
 
@@ -353,6 +358,17 @@ function Citymgr.ApplyLoginToCity(uid)
     --     ds_address = "192.168.2.31-8888",
     --     ds_ip = "192.168.2.31",
     -- }
+    -- if not context.citys[res.cityid] then
+    --     local allocated_citys = {}
+    --     allocated_citys[res.cityid] = {
+    --         cityid = res.cityid,
+    --         region = "default",
+    --         ds_address = "192.168.2.31-8888",
+    --         ds_ip = "192.168.2.31",
+    --     }
+    --     Citymgr.SetNewDsCitys(allocated_citys)
+    -- end
+
     if not res then
         return { code = ErrorCode.CityNotFound, error = "没有空闲主城" }
     end
@@ -365,6 +381,7 @@ function Citymgr.PlayerEnterCity(req)
         local scope <close> = lock_run()
 
         if not context.citys[req.cityid] then
+            moon.error(string.format("PlayerEnterCity uid:%d, cityid:%d, error:%s", req.uid, req.cityid, "主城不存在"))
             return { code = ErrorCode.CityNotFound, error = "主城不存在" }
         end
         local city = context.citys[req.cityid]

@@ -21,6 +21,7 @@ local defaultPBRoomSearchInfo = {
     master_id = 0,
     master_name = "",
     is_open = 0,
+    needcheck = 0,
     needpwd = 0,
     describe = "",
 }
@@ -28,6 +29,7 @@ local defaultPBRoomSearchInfo = {
 local defaultPBRoomInfo = {
     roomid = 0,
     is_open = 0,
+    needcheck = 0,
     needpwd = 0,
     pwd = "",
     chapter = 0,

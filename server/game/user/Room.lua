@@ -119,7 +119,8 @@ function Room.PBSearchRoomReqCmd(req)
                     master_id = v.master_id,
                     master_name = v.master_name,
                     is_open = v.is_open,
-                    needpwd = v.needpwd
+                    needcheck = v.needcheck,
+                    needpwd = v.needpwd,
                 })
             end
         end
@@ -270,6 +271,10 @@ function Room.PBDealApplyRoomReqCmd(req)
         deal_uid = req.msg.deal_uid,
         deal_op = req.msg.deal_op
     }, req.msg_context.stub_id)
+end
+
+function Room.OnDealApplyRoomSync(sync_msg)
+    context.S2C(context.net_id, CmdCode["PBDealApplyRoomSyncCmd"], sync_msg, 0)
 end
 
 function Room.PBEnterRoomReqCmd(req)

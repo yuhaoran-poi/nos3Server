@@ -5,7 +5,8 @@ local CmdCode = common.CmdCode
 local GameCfg = common.GameCfg --游戏配置
 local Database = common.Database
 local ErrorCode = common.ErrorCode
-local lock = require("moon.queue")()
+local lock_wait_room = require("moon.queue")()
+local lock_away_uid = require("moon.queue")()
 local httpc = require("moon.http.client")
 local json = require("json")
 local crypt = require("crypt")
@@ -28,7 +29,9 @@ local Roommgr = {
 
 function Roommgr.Init()
     context.rooms = {}          -- 全量房间数据存储
+    context.uid_roomid = {}     -- uid到roomid的映射
     context.waitds_roomids = {} -- 等待中房间ID列表
+    context.away_uids = {} -- 暂离房间的uid列表
     context.addr_db_server = moon.queryservice("db_server")
 
     -- 新增定时器轮询
@@ -48,7 +51,7 @@ end
 
 function Roommgr.CheckWaitDSRooms()
     local now = moon.time()
-    local scope <close> = lock()
+    local scope <close> = lock_wait_room()
 
     local function allocate_cb(rsp_data)
         if not rsp_data or not rsp_data.error or rsp_data.error ~= "success" then
@@ -95,7 +98,6 @@ function Roommgr.CheckWaitDSRooms()
             
             if v.status == 0 then
                 local response = httpc.post(context.conf.allocate_url, v.allocate_data)
-                --
                 print_r(response)
                 --local rsp_data = json.decode(response.body)
                 local json_success, rsp_data = pcall(json.decode, response.body or "")
@@ -204,7 +206,7 @@ function Roommgr.NotifyDsRooms(allocated_rooms, fail_rooms)
 end
 
 function Roommgr.AddWaitDSRooms(roomid, allocate_data)
-    local scope <close> = lock()
+    local scope <close> = lock_wait_room()
 
     context.waitds_roomids[roomid] = {
         status = 0,
@@ -234,6 +236,7 @@ function Roommgr.CreateRoom(req)
     -- local roomid = 10001
     room.room_data.roomid = roomid
     room.room_data.is_open = req.msg.is_open
+    room.room_data.needcheck = req.msg.needcheck
     room.room_data.needpwd = req.msg.needpwd
     room.room_data.pwd = req.msg.pwd
     room.room_data.chapter = req.msg.chapter
@@ -284,6 +287,7 @@ function Roommgr.SearchRooms(req)
             search_data.master_id = room.master_id
             search_data.master_name = room.master_name
             search_data.is_open = room.room_data.is_open
+            search_data.needcheck = room.room_data.needcheck
             search_data.needpwd = room.room_data.needpwd
             search_data.describe = room.room_data.describe
             table.insert(result, search_data)
@@ -310,6 +314,7 @@ function Roommgr.ModRoom(req)
             code = ErrorCode.RoomPermissionDenied,
             error = "无修改权限",
             is_open = room.room_data.is_open,
+            needcheck = room.room_data.needcheck,
             needpwd = room.room_data.needpwd,
             pwd = room.room_data.pwd,
             chapter = room.room_data.chapter,
@@ -319,6 +324,7 @@ function Roommgr.ModRoom(req)
     end
 
     room.room_data.is_open = req.is_open or room.room_data.is_open
+    room.room_data.needcheck = req.needcheck or room.room_data.needcheck
     room.room_data.needpwd = req.needpwd or room.room_data.needpwd
     room.room_data.pwd = req.pwd or room.room_data.pwd
     room.room_data.chapter = req.chapter or room.room_data.chapter
@@ -354,6 +360,7 @@ function Roommgr.ModRoom(req)
         code = ErrorCode.None,
         error = "修改完成",
         is_open = room.room_data.is_open,
+        needcheck = room.room_data.needcheck,
         needpwd = room.room_data.needpwd,
         pwd = room.room_data.pwd,
         chapter = room.room_data.chapter,
@@ -376,8 +383,8 @@ function Roommgr.ApplyToRoom(req)
     if room.room_data.is_open == 0 or room.room_data.state ~= 0 then
         return { code = ErrorCode.RoomNotOpen, error = "房间未开放" }
     end
-    if room.room_data.needpwd == 1 then
-        return { code = ErrorCode.RoomPwdError, error = "密码错误" }
+    if room.room_data.needcheck ~= 1 then
+        return { code = ErrorCode.RoomNotNeedCheck, error = "房间不需要审核" }
     end
 
     -- 检查重复申请
@@ -415,7 +422,7 @@ function Roommgr.DealApply(req)
     end
 
     -- 检查是否可以申请
-    if room.room_data.is_open == 0 or room.room_data.state ~= 0 or room.room_data.needpwd == 1 then
+    if room.room_data.is_open == 0 or room.room_data.state ~= 0 or room.room_data.needcheck ~= 1 then
         return { code = ErrorCode.RoomPermissionDenied, error = "无操作权限" }
     end
 
@@ -460,6 +467,14 @@ function Roommgr.DealApply(req)
         redis_data.master_name = room.master_name
         Database.upsert_room(context.addr_db_server, room.room_data.roomid, room_tags, redis_data)
 
+        -- 通知申请玩家结果
+        local notify_uids = {}
+        table.insert(notify_uids, apply_data.apply_info.uid)
+        context.send_users(notify_uids, {}, "Room.OnDealApplyRoomSync", {
+            deal_op = req.deal_op,
+            roomid = req.roomid,
+        })
+
         -- 广播新成员加入
         local notify_uids = {}
         for _, player in pairs(room.players) do
@@ -486,6 +501,14 @@ function Roommgr.DealApply(req)
             mem_info = apply_data.apply_info,
         })
         context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
+    else
+        -- -- 通知申请玩家结果
+        -- local notify_uids = {}
+        -- table.insert(notify_uids, apply_data.apply_info.uid)
+        -- context.send_users(notify_uids, {}, "Room.OnDealApplyRoomSync", {
+        --     deal_op = req.deal_op,
+        --     roomid = req.roomid,
+        -- })
     end
 
     local res = { code = ErrorCode.None, error = "操作成功", deal_uid = req.deal_uid, deal_op = req.deal_op }
@@ -507,6 +530,11 @@ function Roommgr.EnterRoom(req)
     -- 检查是否可以直接加入
     if room.room_data.is_open == 0 or room.room_data.state ~= 0 then
         return { code = ErrorCode.RoomNotOpen, error = "房间未开放" }
+    end
+
+    -- 检查审核
+    if room.room_data.needcheck == 1 then
+        return { code = ErrorCode.RoomNeedCheck, error = "房间需要审核" }
     end
 
     -- 检查密码
@@ -587,6 +615,15 @@ function Roommgr.ExitRoom(req)
     table.remove(room.players, member_index)
     context.uid_roomid[req.uid] = nil
 
+    -- 房主退出特殊处理
+    if req.uid == room.master_id then
+        if #room.players > 0 then
+            room.room_data.master_id = room.players[1].mem_info.uid
+            room.master_id = room.players[1].mem_info.uid
+            room.master_name = room.players[1].mem_info.nick_name
+        end
+    end
+
     local room_tags = {
         is_open = room.room_data.is_open,
         chapter = room.room_data.chapter,
@@ -612,6 +649,9 @@ function Roommgr.ExitRoom(req)
         roomid = room.room_data.roomid,
         sync_type = RoomDef.SyncType.PlayerExit,
         sync_info = {
+            roomdata = room.room_data,
+            master_id = room.master_id,
+            master_name = room.master_name,
             players = {},
         }
     }
@@ -624,27 +664,81 @@ function Roommgr.ExitRoom(req)
     })
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
-    -- 房主退出特殊处理
-    if req.uid == room.master_id then
-        -- 转移房主给下一个玩家或解散房间
-        if #room.players > 0 then
-            room.room_data.master_id = room.players[1].mem_info.uid
-            room.master_id = room.players[1].mem_info.uid
-            room.master_name = room.players[1].mem_info.nick_name
-        else
-            -- 销毁房间聊天频道
-            moon.warn("Roommgr.ExitRoom roomid:", req.roomid, "master_id:", room.master_id)
-            local res = ChatLogic.RemoveRoomChannel(req.roomid)
-            if res.code ~= ErrorCode.None then
-                moon.error(string.format("RemoveRoomChannel roomid:%d, code:%d, error:%s", req.roomid, res.code, res.error))
-            end
-            context.rooms[req.roomid] = nil
-            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-            Database.delete_room(context.addr_db_server, req.roomid)
+    if #room.players == 0 then
+        -- 销毁房间聊天频道
+        moon.warn("Roommgr.ExitRoom roomid:", req.roomid, "master_id:", room.master_id)
+        local res = ChatLogic.RemoveRoomChannel(req.roomid)
+        if res.code ~= ErrorCode.None then
+            moon.error(string.format("RemoveRoomChannel roomid:%d, code:%d, error:%s", req.roomid, res.code, res.error))
         end
+        -- 从房间列表中移除
+        context.rooms[req.roomid] = nil
+        -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        Database.delete_room(context.addr_db_server, req.roomid)
     end
 
     return { code = ErrorCode.None, error = "退出成功", uid = req.uid, roomid = req.roomid }
+end
+
+function Roommgr.AwayRoom(req)
+    local room = context.rooms[req.roomid]
+    if not room then
+        return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+
+    -- 验证玩家是否在房间内
+    local member_index = nil
+    local seat_idx = 0
+    for i, member in pairs(room.players) do
+        if member.mem_info.uid == req.uid then
+            member_index = i
+            seat_idx = member.seat_idx
+            break
+        end
+    end
+    if not member_index then
+        return { code = ErrorCode.RoomMemberNotFound, error = "不在该房间内" }
+    end
+
+    -- 更新准备状态（1-准备 2-取消准备 3-暂离）
+    room.players[member_index].is_ready = 3
+
+    -- 广播状态更新
+    local notify_uids = {}
+    for _, player in pairs(room.players) do
+        table.insert(notify_uids, player.mem_info.uid)
+    end
+    local sync_msg = {
+        roomid = room.room_data.roomid,
+        sync_type = RoomDef.SyncType.PlayerReady,
+        sync_info = {
+            players = {},
+        }
+    }
+    table.insert(sync_msg.sync_info.players, {
+        seat_idx = room.players[member_index].seat_idx,
+        is_ready = room.players[member_index].is_ready,
+        mem_info = {
+            uid = req.uid
+        },
+    })
+    context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
+
+    -- 暂离房间
+    local function away_room()
+        local scope <close> = lock_away_uid()
+
+        context.away_uids[req.uid] = {
+            roomid = req.roomid,
+            away_time = moon.time(),
+        }
+    end
+    if room.room_data.state == 0 then
+        -- 未开始游戏的房间内设置暂离玩家进入定时退出列表
+        away_room()
+    end
+
+    return { code = ErrorCode.None, error = "暂离成功", uid = req.uid, roomid = req.roomid }
 end
 
 function Roommgr.KickMember(req)
@@ -876,7 +970,7 @@ function Roommgr.UpdateReadyStatus(req)
         return { code = ErrorCode.RoomMemberNotFound, error = "玩家不在房间内" }
     end
 
-    -- 更新准备状态（1-准备 2-取消准备）
+    -- 更新准备状态（1-准备 2-取消准备 3-暂离）
     room.players[member_index].is_ready = req.ready_op
 
     -- 广播状态更新

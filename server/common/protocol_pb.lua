@@ -151,7 +151,7 @@ local ignore_print = {
 }
 ---@param uid integer
 ---@param buf buffer_ptr
-function M.print_message(uid, buf,str,isRecv)
+function M.print_message(uid, buf, str, isRecv)
     local size = buffer.size(buf)
     local offset = 0
 
@@ -163,22 +163,28 @@ function M.print_message(uid, buf,str,isRecv)
         if size >= offset then
             if not ignore_print[name] then
                 local t = (size > offset) and pdecode(name, p, len - 2) or {}
-                if name  == "PBPacketCmd" then
+                if name == "PBPacketCmd" then
                     for _, MessagePack in ipairs(t.messages) do
-                      local subname,submsg = M.DecodeMessagePack(MessagePack)
-                       if not ignore_print[subname] then
-                          if isRecv then
-                                moon.debug(string.format("[%s] Recv[from:%d][%d] MessagePack[stub_id:%d,net_id:%d]  Message:%s \n%s", str,uid,len,MessagePack.stub_id,MessagePack.net_id, subname, json.pretty_encode(submsg)))
-                           else
-                                moon.debug(string.format("[%s] Send[to:%d][%d] MessagePack[stub_id:%d,net_id:%d] Message:%s \n%s",str, uid,len, MessagePack.stub_id,MessagePack.net_id,subname,json.pretty_encode(submsg)))
-                          end
-                       end
+                        local subname, submsg = M.DecodeMessagePack(MessagePack)
+                        if not ignore_print[subname] then
+                            if isRecv then
+                                moon.debug(string.format(
+                                "[%s] Recv[from:%d][%d] MessagePack[stub_id:%d,net_id:%d]  Message:%s \n%s", str, uid,
+                                    len, MessagePack.stub_id, MessagePack.net_id, subname, json.pretty_encode(submsg)))
+                            else
+                                moon.debug(string.format(
+                                "[%s] Send[to:%d][%d] MessagePack[stub_id:%d,net_id:%d] Message:%s \n%s", str, uid, len,
+                                    MessagePack.stub_id, MessagePack.net_id, subname, json.pretty_encode(submsg)))
+                            end
+                        end
                     end
                 else
                     if isRecv then
-                      moon.debug(string.format("[%s]Recv %d Message:%s size %d \n%s", str,uid, name, len, json.pretty_encode(t)))
+                        moon.debug(string.format("[%s]Recv %d Message:%s size %d \n%s", str, uid, name, len,
+                            json.pretty_encode(t)))
                     else
-                      moon.debug(string.format("[%s]Send %d Message:%s size %d \n%s",str, uid, name, len, json.pretty_encode(t)))
+                        moon.debug(string.format("[%s]Send %d Message:%s size %d \n%s", str, uid, name, len,
+                            json.pretty_encode(t)))
                     end
                 end
             end
@@ -190,5 +196,18 @@ function M.print_message(uid, buf,str,isRecv)
         end
     end
 end
+
+-- -- 解码消息
+-- local msg = pb.decode("MyMessageType", encoded_data)
+
+-- -- 判断字段是否被显式设置（非默认值）
+-- local has_name = pb.has_field("MyMessageType", msg, "name")
+-- local has_age = pb.has_field("MyMessageType", msg, "age")
+
+-- if has_name then
+--     print("name字段被显式设置过")
+-- else
+--     print("name字段使用默认值或未设置")
+-- end
 
 return M

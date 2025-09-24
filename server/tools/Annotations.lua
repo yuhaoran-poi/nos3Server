@@ -2071,19 +2071,21 @@
 ---@field public master_id integer @房主id
 ---@field public master_name string @房主昵称
 ---@field public is_open integer @是否公开
+---@field public needcheck integer
 ---@field public needpwd integer @是否需要密码
 ---@field public describe string @房间描述
 
 
 ---@class PBRoomMemberInfo
 ---@field public seat_idx integer
----@field public is_ready integer @0未准备 1已准备
+---@field public is_ready integer @0未准备 1已准备 2暂离
 ---@field public mem_info PBUserAttr
 
 
 ---@class PBRoomInfo
 ---@field public roomid integer
 ---@field public is_open integer
+---@field public needcheck integer
 ---@field public needpwd integer
 ---@field public pwd string
 ---@field public chapter integer
@@ -2118,6 +2120,7 @@
 ---@class PBCreateRoomReqCmd
 ---@field public uid integer
 ---@field public is_open integer @是否开放
+---@field public needcheck integer
 ---@field public needpwd integer
 ---@field public pwd string
 ---@field public chapter integer
@@ -2153,6 +2156,7 @@
 ---@field public uid integer
 ---@field public roomid integer
 ---@field public is_open integer
+---@field public needcheck integer
 ---@field public needpwd integer
 ---@field public pwd string
 ---@field public chapter integer
@@ -2164,6 +2168,7 @@
 ---@field public code integer @服务器返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public is_open integer
+---@field public needcheck integer
 ---@field public needpwd integer
 ---@field public pwd string
 ---@field public chapter integer
@@ -2197,6 +2202,11 @@
 ---@field public error string @错误信息
 ---@field public deal_uid integer
 ---@field public deal_op integer
+
+
+---@class PBDealApplyRoomSyncCmd
+---@field public deal_op integer
+---@field public roomid integer
 
 
 ---@class PBEnterRoomReqCmd

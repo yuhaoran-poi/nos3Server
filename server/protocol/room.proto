@@ -21,15 +21,16 @@ message PBRoomSearchInfo
 	int64 master_id     = 5;	//房主id
     string master_name  = 6;    //房主昵称
     int32 is_open        = 7;    //是否公开
-	int32 needpwd       = 8;	//是否需要密码
-    string describe     = 9;    //房间描述
+    int32 needcheck     = 8;
+	int32 needpwd       = 9;	//是否需要密码
+    string describe     = 10;    //房间描述
 }
 
 // 房间内人员信息
 message PBRoomMemberInfo
 {
     int32 seat_idx      = 1;
-    int32 is_ready      = 2;    // 0未准备 1已准备
+    int32 is_ready      = 2;    // 0未准备 1已准备 2暂离
     PBUserAttr mem_info   = 3;
 }
 
@@ -37,15 +38,16 @@ message PBRoomInfo
 {
     int64 roomid    = 1;
 	int32 is_open    = 2;
-	int32 needpwd   = 3;
-	string pwd      = 4;
-	int32 chapter   = 5;
-	int32 difficulty    = 6;
-    int32 state     = 7;
-    string describe = 8;
-    int32 map_id    = 9;
-    int32 boss_id   = 10;
-    int64 master_id = 11;    // 房主id
+    int32 needcheck = 3;
+	int32 needpwd   = 4;
+	string pwd      = 5;
+	int32 chapter   = 6;
+	int32 difficulty    = 7;
+    int32 state     = 8;
+    string describe = 9;
+    int32 map_id    = 10;
+    int32 boss_id   = 11;
+    int64 master_id = 12;    // 房主id
 }
 
 message PBRoomApplyInfo
@@ -77,11 +79,12 @@ message PBCreateRoomReqCmd
 {
     int64 uid		= 1;
     int32 is_open    = 2;    // 是否开放
-	int32 needpwd   = 3;
-	string pwd      = 4;
-	int32 chapter   = 5;
-	int32 difficulty    = 6;
-    string describe = 7;
+    int32 needcheck = 3;
+	int32 needpwd   = 4;
+	string pwd      = 5;
+	int32 chapter   = 6;
+	int32 difficulty    = 7;
+    string describe = 8;
 }
 
 message PBCreateRoomRspCmd
@@ -118,11 +121,12 @@ message PBModRoomReqCmd
     int64 uid		= 1;
 	int64 roomid	= 2;
     int32 is_open    = 3;
-	int32 needpwd   = 4;
-	string pwd      = 5;
-	int32 chapter   = 6;
-	int32 difficulty    = 7;
-    string describe = 8;
+    int32 needcheck = 4;
+	int32 needpwd   = 5;
+	string pwd      = 6;
+	int32 chapter   = 7;
+	int32 difficulty    = 8;
+    string describe = 9;
 }
 
 message PBModRoomRspCmd
@@ -130,10 +134,11 @@ message PBModRoomRspCmd
     int32 code      = 1; // 服务器返回,0成功,其他失败
     string error    = 2; // 错误信息
     int32 is_open    = 3;
-	int32 needpwd   = 4;
-	string pwd      = 5;
-	int32 chapter   = 6;
-	int32 difficulty    = 7;
+    int32 needcheck = 4;
+	int32 needpwd   = 5;
+	string pwd      = 6;
+	int32 chapter   = 7;
+	int32 difficulty    = 8;
 }
 
 // 房间同步信息
@@ -172,6 +177,13 @@ message PBDealApplyRoomRspCmd
     string error    = 2; // 错误信息
     int64 deal_uid  = 3;
     int32 deal_op   = 4;
+}
+
+// 申请通过后通知玩家
+message PBDealApplyRoomSyncCmd
+{
+    int32 deal_op   = 1;
+    int64 roomid	= 2;
 }
 
 message PBEnterRoomReqCmd
