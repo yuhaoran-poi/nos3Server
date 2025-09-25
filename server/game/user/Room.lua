@@ -30,9 +30,9 @@ function Room.ForceExitRoom()
             chat_ret.code, chat_ret.error))
     end
 
-    clusterd.send(3999, "roommgr", "Roommgr.ExitRoom", { uid = context.uid, roomid = context.roomid, is_force = true })
-
-    context.roomid = nil
+    -- clusterd.send(3999, "roommgr", "Roommgr.ExitRoom", { uid = context.uid, roomid = context.roomid, is_force = true })
+    -- context.roomid = nil
+    clusterd.send(3999, "roommgr", "Roommgr.AwayRoom", { uid = context.uid, roomid = context.roomid })
 end
 
 function Room.PBCreateRoomReqCmd(req)
@@ -546,6 +546,27 @@ function Room.OnEnterDs(res)
     -- 加入DS广播
     moon.error("OnEnterDs ", context.net_id, context.uid)
     context.S2C(context.net_id, CmdCode["PBEnterDsRoomSyncCmd"], res, 0)
+end
+
+function Room.PBCheckReturnRoomReqCmd(req)
+    if not req.msg.uid or req.msg.uid ~= context.uid then
+        return context.S2C(context.net_id, CmdCode["PBCheckReturnRoomRspCmd"], {
+            code = ErrorCode.ParamInvalid,
+            error = "uid is nil",
+        }, req.msg_context.stub_id)
+    end
+    
+    local res, err = clusterd.call(3999, "roommgr", "Roommgr.ReturnRoom", req.msg)
+    if err then
+        return context.S2C(context.net_id, CmdCode["PBCheckReturnRoomRspCmd"], {
+            code = ErrorCode.ServerInternalError,
+            error = "system error",
+        }, req.msg_context.stub_id)
+    end
+    if res.code == ErrorCode.None then
+        context.roomid = res.room_data.roomid
+    end
+    return context.S2C(context.net_id, CmdCode["PBCheckReturnRoomRspCmd"], res, req.msg_context.stub_id)
 end
 
 return Room

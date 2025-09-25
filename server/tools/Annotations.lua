@@ -2095,6 +2095,8 @@
 ---@field public map_id integer
 ---@field public boss_id integer
 ---@field public master_id integer @房主id
+---@field public ds_address string
+---@field public ds_ip string
 
 
 ---@class PBRoomApplyInfo
@@ -2306,7 +2308,7 @@
 ---@class PBReadyRoomReqCmd
 ---@field public uid integer
 ---@field public roomid integer
----@field public ready_op integer @1--准备, 2--取消准备
+---@field public ready_op integer @0--取消准备, 1--准备
 
 
 ---@class PBReadyRoomRspCmd
@@ -2351,6 +2353,17 @@
 ---@field public roomid integer
 ---@field public ds_address string
 ---@field public ds_ip string
+
+
+---@class PBCheckReturnRoomReqCmd
+---@field public uid integer
+
+
+---@class PBCheckReturnRoomRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public room_data PBRoomInfo
+---@field public member_datas PBRoomMemberInfo[]
 
 
 ---@class PBShopBuySingle

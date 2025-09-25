@@ -39,6 +39,8 @@ local defaultPBRoomInfo = {
     map_id = 0,
     boss_id = 0,
     master_id = 0,
+    ds_address = "",
+    ds_ip = "",
 }
 
 local defaultPBRoomWholeInfo = {
