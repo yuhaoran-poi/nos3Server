@@ -146,7 +146,7 @@ function Roommgr.CheckWaitDSRooms()
     local allocated_rooms = {}
     local fail_rooms = {}
     for k, v in pairs(context.waitds_roomids) do
-        
+        moon.info("roomid = %d, status = %d, failcnt = %d", k, v.status, v.failcnt)
         if v.status == 2 then
             allocated_rooms[k] = v
         elseif v.failcnt > 5 then
@@ -170,6 +170,9 @@ function Roommgr.NotifyDsRooms(allocated_rooms, fail_rooms)
         
         local room = context.rooms[roomid]
         if room then
+            room.room_data.ds_address = allocate_info.ds_address
+            room.room_data.ds_ip = allocate_info.ds_ip
+
             local notify_uids = {}
             for _, player in pairs(room.players) do
                 table.insert(notify_uids, player.mem_info.uid)
@@ -201,6 +204,32 @@ function Roommgr.NotifyDsRooms(allocated_rooms, fail_rooms)
 
             room.room_data.state = 0
             room.room_data.is_open = 0
+        end
+    end
+end
+
+function Roommgr.CheckAwayPlayers()
+    local function get_away_list()
+        local scope <close> = lock_away_uid()
+
+        local now_ts = moon.time()
+        local away_list = {}
+        for uid, away_value in pairs(context.away_uids) do
+            if now_ts - away_value.away_time > 300 then
+                -- 超过5分钟则执行退出房间
+                away_list[uid] = away_value.roomid
+            end
+        end
+        for uid, _ in pairs(away_list) do
+            context.away_uids[uid] = nil
+        end
+        return away_list
+    end
+    
+    local away_list = get_away_list()
+    for uid, roomid in pairs(away_list) do
+        if roomid == context.uid_roomid[uid] then
+            Roommgr.SystemKickMember(roomid, uid)
         end
     end
 end
@@ -588,6 +617,70 @@ function Roommgr.EnterRoom(req)
     return { code = ErrorCode.None, error = "操作成功", uid = req.msg.uid, roomid = req.msg.roomid }
 end
 
+function Roommgr.ReturnRoom(req)
+    local roomid = context.uid_roomid[req.uid]
+    if not roomid then
+        return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+    local room = context.rooms[roomid]
+    if not room then
+        context.uid_roomid[req.uid] = nil
+        return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+
+    -- 验证玩家是否在房间内
+    local member_index = nil
+    local seat_idx = 0
+    for i, member in pairs(room.players) do
+        if member.mem_info.uid == req.uid then
+            member_index = i
+            seat_idx = member.seat_idx
+            break
+        end
+    end
+    if not member_index then
+        context.uid_roomid[req.uid] = nil
+        return { code = ErrorCode.RoomMemberNotFound, error = "不在该房间内" }
+    end
+
+    -- 更新准备状态（0-未准备 1-准备 2-暂离）
+    room.players[member_index].is_ready = 0
+
+    -- 广播状态更新
+    local notify_uids = {}
+    for _, player in pairs(room.players) do
+        table.insert(notify_uids, player.mem_info.uid)
+    end
+    local sync_msg = {
+        roomid = room.room_data.roomid,
+        sync_type = RoomDef.SyncType.PlayerReady,
+        sync_info = {
+            players = {},
+        }
+    }
+    table.insert(sync_msg.sync_info.players, {
+        seat_idx = room.players[member_index].seat_idx,
+        is_ready = room.players[member_index].is_ready,
+        mem_info = {
+            uid = req.uid
+        },
+    })
+    context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
+
+    -- 回归房间
+    local function return_room()
+        local scope <close> = lock_away_uid()
+
+        local away_value = context.away_uids[req.uid]
+        if away_value and away_value.roomid == req.roomid then
+            context.away_uids[req.uid] = nil
+        end
+    end
+    return_room()
+
+    return { code = ErrorCode.None, error = "回归成功", uid = req.uid, room_data = room.room_data, member_datas = room.players }
+end
+
 function Roommgr.ExitRoom(req)
     local room = context.rooms[req.roomid]
     if not room then
@@ -700,8 +793,8 @@ function Roommgr.AwayRoom(req)
         return { code = ErrorCode.RoomMemberNotFound, error = "不在该房间内" }
     end
 
-    -- 更新准备状态（1-准备 2-取消准备 3-暂离）
-    room.players[member_index].is_ready = 3
+    -- 更新准备状态（0-未准备 1-准备 2-暂离）
+    room.players[member_index].is_ready = 2
 
     -- 广播状态更新
     local notify_uids = {}
@@ -800,6 +893,62 @@ function Roommgr.KickMember(req)
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
     return { code = ErrorCode.None, error = "踢出成功", roomid = req.roomid, kick_uid = req.kick_uid }
+end
+
+function Roommgr.SystemKickMember(roomid, kick_uid)
+    local room = context.rooms[roomid]
+    if not room then
+        return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+    if room.room_data.state ~= 0 then
+        return { code = ErrorCode.RoomInGame, error = "房间正在游戏中" }
+    end
+
+    -- 查找被踢玩家
+    local kick_index = nil
+    local seat_idx = 0
+    for i, member in pairs(room.players) do
+        if member.mem_info.uid == kick_uid then
+            kick_index = i
+            seat_idx = member.seat_idx
+            break
+        end
+    end
+
+    if not kick_index then
+        return { code = ErrorCode.RoomMemberNotFound, error = "目标玩家不在房间" }
+    end
+
+    -- 移除玩家
+    table.remove(room.players, kick_index)
+    context.uid_roomid[kick_uid] = nil
+
+    -- 广播踢人通知
+    local notify_uids = {}
+    for _, player in pairs(room.players) do
+        table.insert(notify_uids, player.mem_info.uid)
+    end
+    -- context.send_users(notify_uids, {}, "Room.OnMemberKick", {
+    --     roomid = req.roomid,
+    --     kick_uid = req.kick_uid,
+    -- })
+    local sync_msg = {
+        roomid = room.room_data.roomid,
+        sync_type = RoomDef.SyncType.PlayerKick,
+        sync_info = {
+            players = {},
+        }
+    }
+    table.insert(sync_msg.sync_info.players, {
+        seat_idx = seat_idx,
+        is_ready = 0,
+        mem_info = {
+            uid = kick_uid,
+        }
+    })
+    context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
+
+    return { code = ErrorCode.None, error = "踢出成功", roomid = roomid, kick_uid = kick_uid }
 end
 
 -- 新增邀请功能
@@ -970,7 +1119,7 @@ function Roommgr.UpdateReadyStatus(req)
         return { code = ErrorCode.RoomMemberNotFound, error = "玩家不在房间内" }
     end
 
-    -- 更新准备状态（1-准备 2-取消准备 3-暂离）
+    -- 更新准备状态（0-未准备 1-准备 2-暂离）
     room.players[member_index].is_ready = req.ready_op
 
     -- 广播状态更新
@@ -1170,6 +1319,11 @@ function Roommgr.StartGame(req)
     -- end
     -- moon.async(function()
     --     moon.sleep(20000) -- 20秒后发送
+    --     local test_room = context.rooms[req.roomid]
+    --     if test_room then
+    --         test_room.room_data.ds_address = "192.168.2.31-9999"
+    --         test_room.room_data.ds_ip = "192.168.2.31"
+    --     end
     --     context.send_users(Roommgr.notify_uids, {}, "Room.OnEnterDs", {
     --         roomid = req.roomid,
     --         ds_address = "192.168.2.31-9999",
@@ -1223,12 +1377,29 @@ function Roommgr.PlayEnd(roomid)
     end
 
     room.room_data.state = 0
+    room.room_data.ds_address = ""
+    room.room_data.ds_ip = ""
 
     local notify_uids = {}
     for _, player in pairs(room.players) do
         table.insert(notify_uids, player.mem_info.uid)
     end
     context.send_users(notify_uids, {}, "User.OutPlay", roomid)
+
+    -- 将暂离状态玩家设置到定时退出列表
+    local function away_room(roomid, uid)
+        local scope <close> = lock_away_uid()
+
+        context.away_uids[uid] = {
+            roomid = roomid,
+            away_time = moon.time(),
+        }
+    end
+    for _, player in pairs(room.players) do
+        if player.is_ready == 2 then
+            away_room(room.room_data.roomid, player.mem_info.uid)
+        end
+    end
 
     return { code = ErrorCode.None, error = "游戏结束成功" }
 end
