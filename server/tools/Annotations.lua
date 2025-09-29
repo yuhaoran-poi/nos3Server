@@ -102,6 +102,21 @@
 ---@field public update_coins table<integer, PBCoin> @有key则执行PBCoin同步
 
 
+---@class PBBagLog
+---@field public uid integer
+---@field public config_id integer
+---@field public old_num integer
+---@field public new_num integer
+---@field public mod_uniqid integer
+---@field public del_uniqids integer[]
+---@field public add_uniqids integer[]
+---@field public old_item_data PBItemData[]
+---@field public new_item_data PBItemData[]
+---@field public change_type integer
+---@field public change_reason integer
+---@field public log_ts integer
+
+
 ---@class PBBagOperateItemReqCmd
 ---@field public uid integer
 ---@field public operate_type integer @1--堆叠,2--拆分,3--移动
@@ -375,6 +390,10 @@
 ---@field public code integer @服务器验证返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public roomid integer
+
+
+---@class PBNotifyDsPlayerOffSyncCmd
+---@field public uid integer
 
 
 ---@class PBFriendData
@@ -1903,6 +1922,18 @@
 ---@field public error string @错误信息
 ---@field public uid integer @用户ID
 ---@field public roles_info PBUserRoleDatas @所有角色数据
+
+
+---@class PBClientGetRoleInfoReqCmd
+---@field public uid integer
+---@field public roleid integer
+
+
+---@class PBClientGetRoleInfoRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public role_info PBRoleData
 
 
 ---@class PBRoleInfoSyncCmd

@@ -343,6 +343,43 @@ function Role.PBClientGetUsrRolesInfoReqCmd(req)
     return context.S2C(context.net_id, CmdCode["PBClientGetUsrRolesInfoRspCmd"], rsp_msg, req.msg_context.stub_id)
 end
 
+function Role.PBClientGetRoleInfoReqCmd(req)
+    -- 参数验证
+    if not req.msg.roleid then
+        return context.S2C(context.net_id, CmdCode.PBClientGetRoleInfoRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            roleid = req.msg.roleid or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    local roles = scripts.UserModel.GetRoles()
+    if not roles then
+        return context.S2C(context.net_id, CmdCode["PBClientGetRoleInfoRspCmd"],
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid, roleid = req.msg.roleid },
+            req.msg_context.stub_id)
+    end
+    
+    if not roles.role_list[req.msg.roleid] then
+        return context.S2C(context.net_id, CmdCode["PBClientGetRoleInfoRspCmd"],
+            { code = ErrorCode.RoleNotExist, error = "角色不存在", uid = context.uid, roleid = req.msg.roleid },
+            req.msg_context.stub_id)
+    end
+
+    local role_info = roles.role_list[req.msg.roleid]
+    Role.CheckRoleStudyBook(role_info)
+
+    local rsp_msg = {
+        code = ErrorCode.None,
+        error = "",
+        uid = req.msg.uid,
+        role_info = role_info,
+    }
+
+    return context.S2C(context.net_id, CmdCode["PBClientGetRoleInfoRspCmd"], rsp_msg, req.msg_context.stub_id)
+end
+
 function Role.GetRoleEquipment(role_info, config_id, equip_idx)
     local item_small_type = ItemDefine.GetItemType(config_id)
     if item_small_type == ItemDefine.EItemSmallType.MagicItem then
@@ -1317,7 +1354,7 @@ end
 
 function Role.PBRoleSkillCompositeReqCmd(req)
     -- 参数验证
-    if not req.msg.uid or not req.msg.roleid or not req.msg.skill_id or not req.msg.composite_id then
+    if not req.msg.uid or not req.msg.roleid or not req.msg.composite_id then
         return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
@@ -1369,7 +1406,7 @@ function Role.PBRoleSkillCompositeReqCmd(req)
             return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
         end
         for _, skill_id in pairs(role_cfg.q_skill) do
-            if skill_id == req.msg.skill_id then
+            if skill_id == req.msg.composite_id then
                 _find = true
             end
         end
@@ -1386,7 +1423,7 @@ function Role.PBRoleSkillCompositeReqCmd(req)
             return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
         end
         for _, skill_id in pairs(role_cfg.e_skill) do
-            if skill_id == req.msg.skill_id then
+            if skill_id == req.msg.composite_id then
                 _find = true
             end
         end
@@ -1403,7 +1440,7 @@ function Role.PBRoleSkillCompositeReqCmd(req)
             return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
         end
         for _, skill_id in pairs(role_cfg.passive_skill) do
-            if skill_id == req.msg.skill_id then
+            if skill_id == req.msg.composite_id then
                 _find = true
             end
         end
@@ -1420,7 +1457,7 @@ function Role.PBRoleSkillCompositeReqCmd(req)
             return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
         end
         for _, skill_id in pairs(role_cfg.main_skill) do
-            if skill_id == req.msg.skill_id then
+            if skill_id == req.msg.composite_id then
                 _find = true
             end
         end
@@ -1518,7 +1555,7 @@ end
 
 function Role.PBRoleSkillSwitchReqCmd(req)
     -- 参数验证
-    if not req.msg.uid or not req.msg.roleid or not req.msg.skill_id or not req.msg.composite_id then
+    if not req.msg.uid or not req.msg.roleid or not req.msg.skill_id or not req.msg.skill_type then
         return context.S2C(context.net_id, CmdCode.PBRoleSkillSwitchRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",

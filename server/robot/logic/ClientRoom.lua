@@ -298,6 +298,24 @@ function Client:OnPBDealInviteRoomSyncCmd(msg)
     print_r(msg)
 end
 
+function Client:return_room()
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+
+    local req_msg = {
+        uid = self.uid,
+    }
+    self:send("PBCheckReturnRoomReqCmd", req_msg, function(msg)
+        print("rpc PBCheckReturnRoomReqCmd ret = ", self.index, msg)
+        print_r(msg)
+        if msg.code == 0 then
+            self.roomid = msg.roomid
+        end
+    end)
+end
+
 function Client:apply_city()
     if not self.ok then
         print("connect failed, err = ", err)

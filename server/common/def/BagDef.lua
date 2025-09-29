@@ -32,6 +32,21 @@ local defaultPBUserCoins = {
     coins = {}
 }
 
+local defaultPBBagLog = {
+    uid = 0,
+    config_id = 0,
+    old_num = 0,
+    new_num = 0,
+    mod_uniqid = 0,
+    del_uniqids = {},
+    add_uniqids = {},
+    old_item_data = {},
+    new_item_data = {},
+    change_type = 0,
+    change_reason = 0,
+    log_ts = 0,
+}
+
 ---@return PBBags
 function BagDef.newBags()
     return LuaExt.const(table.copy(defaultPBBags))
@@ -40,6 +55,11 @@ end
 ---@return PBUserCoins
 function BagDef.newPBUserCoins()
     return LuaExt.const(table.copy(defaultPBUserCoins))
+end
+
+---@return PBBagLog
+function BagDef.newPBBagLog()
+    return LuaExt.const(table.copy(defaultPBBagLog))
 end
 
 return BagDef

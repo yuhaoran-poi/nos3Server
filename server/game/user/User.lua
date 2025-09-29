@@ -366,9 +366,35 @@ function User.Offline()
     end
 end
 
-function User.InPlay(roomid)
-    if not context.roomid or context.roomid ~= roomid then
+function User.ExitPlayDs()
+    if not context.play_ds_node
+        or not context.play_ds_node.ds_node or context.play_ds_node.ds_node == 0
+        or not context.play_ds_node.ds_addr or context.play_ds_node.ds_addr == 0 then
         return
+    end
+
+    local mine_node = math.tointeger(moon.env("NODE"))
+    if mine_node == context.play_ds_node.ds_node then
+        moon.send("lua", context.play_ds_node.ds_addr, "DsNode.ExitPlayDs", context.uid)
+    else
+        clusterd.send(context.play_ds_node.ds_node, context.play_ds_node.ds_addr, "DsNode.ExitPlayDs", context.uid)
+    end
+
+    context.play_ds_node = nil
+end
+
+function User.InPlay(msg)
+    moon.warn("User.InPlay roomid = ", msg.roomid)
+    if not context.roomid or context.roomid ~= msg.roomid then
+        moon.error("User.InPlay roomid not match, roomid = ", msg.roomid)
+        return
+    end
+    if msg.ds_node and msg.ds_node ~= 0
+        and msg.ds_addr and msg.ds_addr ~= 0 then
+        context.play_ds_node = {
+            ds_node = msg.ds_node,
+            ds_addr = msg.ds_addr,
+        }
     end
     -- 同步游戏中状态到redis
     local update_user_attr = {}
@@ -382,6 +408,7 @@ function User.OutPlay(roomid)
         moon.error("User.OutPlay roomid not match, roomid = ", roomid)
         return
     end
+    context.play_ds_node = nil
 
     local query_user_attr = {}
     table.insert(query_user_attr, ProtoEnum.UserAttrType.is_online)
@@ -389,11 +416,7 @@ function User.OutPlay(roomid)
     if query_res[ProtoEnum.UserAttrType.is_online] == UserAttrDef.ONLINE_STATE.IN_GAME then
         -- 同步离开游戏中状态到redis
         local update_user_attr = {}
-        if context.roomid then
-            update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.IN_ROOM
-        else
-            update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.ONLINE
-        end
+        update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.IN_ROOM
         User.SetUserAttr(update_user_attr, true)
     end
 end
@@ -414,6 +437,8 @@ function User.Exit()
 
     -- 退出房间
     scripts.Room.ForceExitRoom()
+    -- 退出游戏中的副本ds(如果有的话)
+    User.ExitPlayDs()
 
     -- 同步离线状态到redis
     local update_user_attr = {}

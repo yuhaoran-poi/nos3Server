@@ -42,6 +42,12 @@ function Roommgr.Init()
             Roommgr.NotifyDsRooms(allocated_rooms, fail_rooms)
         end
     end)
+    moon.async(function()
+        while true do
+            moon.sleep(30000) -- 每30秒检查一次
+            Roommgr.CheckAwayPlayers()
+        end
+    end)
 
     -- 清理全部room记录
     Database.clear_all_room_keys(context.addr_db_server)
@@ -646,26 +652,30 @@ function Roommgr.ReturnRoom(req)
     -- 更新准备状态（0-未准备 1-准备 2-暂离）
     room.players[member_index].is_ready = 0
 
-    -- 广播状态更新
+    -- 广播状态更新--排除返回者本人
     local notify_uids = {}
     for _, player in pairs(room.players) do
-        table.insert(notify_uids, player.mem_info.uid)
+        if player.mem_info.uid ~= req.uid then
+            table.insert(notify_uids, player.mem_info.uid)
+        end
     end
-    local sync_msg = {
-        roomid = room.room_data.roomid,
-        sync_type = RoomDef.SyncType.PlayerReady,
-        sync_info = {
-            players = {},
+    if #notify_uids > 0 then
+        local sync_msg = {
+            roomid = room.room_data.roomid,
+            sync_type = RoomDef.SyncType.PlayerReady,
+            sync_info = {
+                players = {},
+            }
         }
-    }
-    table.insert(sync_msg.sync_info.players, {
-        seat_idx = room.players[member_index].seat_idx,
-        is_ready = room.players[member_index].is_ready,
-        mem_info = {
-            uid = req.uid
-        },
-    })
-    context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
+        table.insert(sync_msg.sync_info.players, {
+            seat_idx = room.players[member_index].seat_idx,
+            is_ready = room.players[member_index].is_ready,
+            mem_info = {
+                uid = req.uid
+            },
+        })
+        context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
+    end
 
     -- 回归房间
     local function return_room()
@@ -678,7 +688,25 @@ function Roommgr.ReturnRoom(req)
     end
     return_room()
 
-    return { code = ErrorCode.None, error = "回归成功", uid = req.uid, room_data = room.room_data, member_datas = room.players }
+    -- 构造房间信息返回结构
+    local res = {
+        code = ErrorCode.None,
+        error = "房间信息查询成功",
+        room_data = room.room_data,
+        member_datas = {}
+    }
+
+    -- 填充成员数据
+    for i, member in pairs(room.players) do
+        --moon.info(string.format("Roommgr.GetRoomInfo member.mem_info:\n%s", json.pretty_encode(member.mem_info)))
+        table.insert(res.member_datas, {
+            seat_idx = i,
+            is_ready = member.is_ready,
+            mem_info = member.mem_info
+        })
+    end
+
+    return res
 end
 
 function Roommgr.ExitRoom(req)
@@ -759,7 +787,7 @@ function Roommgr.ExitRoom(req)
 
     if #room.players == 0 then
         -- 销毁房间聊天频道
-        moon.warn("Roommgr.ExitRoom roomid:", req.roomid, "master_id:", room.master_id)
+        moon.warn("Roommgr.ExitRoom roomid:", req.roomid, "master_id:", req.uid)
         local res = ChatLogic.RemoveRoomChannel(req.roomid)
         if res.code ~= ErrorCode.None then
             moon.error(string.format("RemoveRoomChannel roomid:%d, code:%d, error:%s", req.roomid, res.code, res.error))
@@ -923,6 +951,27 @@ function Roommgr.SystemKickMember(roomid, kick_uid)
     table.remove(room.players, kick_index)
     context.uid_roomid[kick_uid] = nil
 
+    -- 房主被踢出特殊处理
+    if kick_uid == room.master_id then
+        if #room.players > 0 then
+            room.room_data.master_id = room.players[1].mem_info.uid
+            room.master_id = room.players[1].mem_info.uid
+            room.master_name = room.players[1].mem_info.nick_name
+        end
+    end
+
+    local room_tags = {
+        is_open = room.room_data.is_open,
+        chapter = room.room_data.chapter,
+        difficulty = room.room_data.difficulty,
+    }
+    local redis_data = table.copy(room.room_data, true)
+    redis_data.pwd = nil
+    redis_data.playercnt = #room.players
+    redis_data.master_id = room.master_id
+    redis_data.master_name = room.master_name
+    Database.upsert_room(context.addr_db_server, room.room_data.roomid, room_tags, redis_data)
+
     -- 广播踢人通知
     local notify_uids = {}
     for _, player in pairs(room.players) do
@@ -936,6 +985,9 @@ function Roommgr.SystemKickMember(roomid, kick_uid)
         roomid = room.room_data.roomid,
         sync_type = RoomDef.SyncType.PlayerKick,
         sync_info = {
+            roomdata = room.room_data,
+            master_id = room.master_id,
+            master_name = room.master_name,
             players = {},
         }
     }
@@ -947,6 +999,19 @@ function Roommgr.SystemKickMember(roomid, kick_uid)
         }
     })
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
+
+    if #room.players == 0 then
+        -- 销毁房间聊天频道
+        moon.warn("Roommgr.SystemKickMember roomid:", room.room_data.roomid, "master_id:", kick_uid)
+        local res = ChatLogic.RemoveRoomChannel(room.room_data.roomid)
+        if res.code ~= ErrorCode.None then
+            moon.error(string.format("RemoveRoomChannel roomid:%d, code:%d, error:%s", room.room_data.roomid, res.code, res.error))
+        end
+        -- 从房间列表中移除
+        context.rooms[room.room_data.roomid] = nil
+        -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        Database.delete_room(context.addr_db_server, room.room_data.roomid)
+    end
 
     return { code = ErrorCode.None, error = "踢出成功", roomid = roomid, kick_uid = kick_uid }
 end

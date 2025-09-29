@@ -47,6 +47,22 @@ message PBBagUpdateSyncCmd
     map<int32, PBCoin> update_coins = 2;    // 有key则执行PBCoin同步
 }
 
+message PBBagLog
+{
+    int64 uid   = 1;
+    int32 config_id = 2;
+    int64 old_num   = 3;
+    int64 new_num   = 4;
+    int32 mod_uniqid    = 5;
+    repeated int32 del_uniqids  = 6;
+    repeated int32 add_uniqids  = 7;
+    repeated PBItemData old_item_data   = 8;
+    repeated PBItemData new_item_data   = 9;
+    int32 change_type   = 10;
+    int32 change_reason = 11;
+    int64 log_ts    = 12;
+}
+
 // 客户端请求堆叠,拆分,移动道具
 message PBBagOperateItemReqCmd
 {

@@ -183,3 +183,9 @@ message PBDsNotifyPlayEndRspCmd
     string error		= 2; // 错误信息
     int64 roomid    = 3;
 }
+
+// 通知DS玩家已和主服务器断开连接
+message PBNotifyDsPlayerOffSyncCmd
+{
+    int64 uid       = 1;
+}

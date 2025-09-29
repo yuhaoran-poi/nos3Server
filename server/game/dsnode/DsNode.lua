@@ -41,6 +41,7 @@ function DsNode.Load(req)
 
         context.ds_type = req.msg.login_data.ds_type
         context.dsid = req.dsid
+        context.addr_dsnode = req.addr_dsnode
         --scripts.UserModel.Create(data)
         ---初始化自己数据
         context.batch_invoke("Init", isnew)
@@ -371,6 +372,62 @@ function DsNode.PBGetDsUserImageReqCmd(req)
     end
 end
 
+function DsNode.CheckUserOnlineInfo(uids)
+    local now_ts = moon.time()
+    local need_query = false
+    for _, uid in pairs(uids) do
+        if not context.uid_addr_map[uid]
+            or context.uid_addr_map[uid].node == 0
+            or context.uid_addr_map[uid].addr_user == 0
+            or now_ts - context.uid_addr_map[uid].get_ts > 60 then
+            need_query = true
+            break
+        end
+    end
+
+    if need_query then
+        --查询在线用户列表
+        local online_uids, err = clusterd.call(3999, "usermgr", "Usermgr.getOnlineUsers", uids)
+        if not online_uids then
+            moon.error(err)
+        end
+        --更新uid_addr_map
+        for uid, info in pairs(online_uids) do
+            local node, addr_user = info.nid, info.addr_user
+            if node ~= 0 or addr_user ~= 0 then
+                context.uid_addr_map[uid] = {
+                    node = info.nid,
+                    addr_user = info.addr_user,
+                    get_ts = now_ts,
+                }
+            end
+        end
+    end
+
+    local offline_uids = {}
+    for _, uid in pairs(uids) do
+        if not context.uid_addr_map[uid]
+            or context.uid_addr_map[uid].node == 0
+            or context.uid_addr_map[uid].addr_user == 0 then
+            table.insert(offline_uids, uid)
+        end
+    end
+    if table.size(offline_uids) > 0 then
+        return false, offline_uids
+    end
+
+    return true
+end
+
+function DsNode.ExitPlayDs(uid)
+    if not context.uid_addr_map[uid] then
+        return
+    end
+
+    context.S2D(context.net_id, CmdCode["PBNotifyDsPlayerOffSyncCmd"], { uid = uid }, 0)
+    context.uid_addr_map[uid] = nil
+end
+
 function DsNode.PBDsNotifyPlayerEnterReqCmd(req)
     if not req.msg.roomid or not req.msg.uids then
         local ret = {
@@ -380,7 +437,33 @@ function DsNode.PBDsNotifyPlayerEnterReqCmd(req)
         return context.S2D(context.net_id, CmdCode["PBDsNotifyPlayerEnterRspCmd"], ret, req.msg_context.stub_id)
     end
 
-    context.send_users(req.msg.uids, CmdCode["User.InPlay"], req.msg.roomid)
+    local success, offline_uids = DsNode.CheckUserOnlineInfo(req.msg.uids)
+    if not success then
+        local ret = {
+            code = ErrorCode.UserOffline,
+            error = "user offline",
+            uids = offline_uids,
+        }
+        return context.S2D(context.net_id, CmdCode["PBDsNotifyPlayerEnterRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    --遍历在线用户列表，发送消息
+    local mine_node = math.tointeger(moon.env("NODE"))
+    for _, uid in pairs(req.msg.uids) do
+        if context.uid_addr_map[uid] then
+            local node, addr_user = context.uid_addr_map[uid].node, context.uid_addr_map[uid].addr_user
+            if node ~= 0 or addr_user ~= 0 then
+                if mine_node == node then
+                    moon.send("lua", addr_user, "User.InPlay",
+                        { ds_node = mine_node, ds_addr = context.addr_dsnode, roomid = req.msg.roomid })
+                else
+                    clusterd.send(node, addr_user, "User.InPlay", {ds_node = mine_node, ds_addr = context.addr_dsnode, roomid = req.msg.roomid})
+                end
+            else
+                moon.warn("send_user User.InPlay failed, node = ", node, " uid= ", uid, "addr_user = ", addr_user)
+            end
+        end
+    end
 
     local ret = {
         code = ErrorCode.None,
@@ -400,7 +483,29 @@ function DsNode.PBDsNotifyPlayerExitReqCmd(req)
         return context.S2D(context.net_id, CmdCode["PBDsNotifyPlayerExitRspCmd"], ret, req.msg_context.stub_id)
     end
 
-    context.send_users(req.msg.uids, CmdCode["User.OutPlay"], req.msg.roomid)
+    local success, offline_uids = DsNode.CheckUserOnlineInfo(req.msg.uids)
+    if not success then
+        moon.warn(string.format("PBDsNotifyPlayerExitReqCmd user offline, uids = %s", json.pretty_encode(offline_uids)))
+    end
+
+    --遍历在线用户列表，发送消息
+    local mine_node = math.tointeger(moon.env("NODE"))
+    for _, uid in pairs(req.msg.uids) do
+        if context.uid_addr_map[uid] then
+            local node, addr_user = context.uid_addr_map[uid].node, context.uid_addr_map[uid].addr_user
+            if node ~= 0 or addr_user ~= 0 then
+                if mine_node == node then
+                    moon.send("lua", addr_user, "User.OutPlay", req.msg.roomid)
+                else
+                    clusterd.send(node, addr_user, "User.OutPlay", req.msg.roomid)
+                end
+            else
+                moon.warn("send_user User.OutPlay failed, node = ", node, " uid= ", uid, "addr_user = ", addr_user)
+            end
+
+            context.uid_addr_map[uid] = nil
+        end
+    end
 
     local ret = {
         code = ErrorCode.None,
