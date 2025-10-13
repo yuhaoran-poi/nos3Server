@@ -883,12 +883,19 @@ function _M.saveusercoins(addr, uid, data)
     return true
 end
 
--- 记录道具变更日志
-function _M.ItemChangeLog(addr, uid, item_id, change_num, before_num, after_num, reason, reason_detail)
+-- 记录背包道具变更日志
+function _M.ItemChangeLog(addr, uid, config_id, old_num, new_num, mod_uniqid, del_uniqids, add_uniqids,
+                          old_item_data, new_item_data, relation_roleid, relation_ghostid, relation_ghost_uniqid, relation_imageid, change_type, change_reason, log_ts)
+    local del_uniqids_str = jencode(del_uniqids) or ""
+    local add_uniqids_str = jencode(add_uniqids) or ""
+    local old_item_data_str = jencode(old_item_data) or ""
+    local new_item_data_str = jencode(new_item_data) or ""
     local cmd = string.format([[
-        INSERT INTO mlog.t_item_change (uid, item_id, change_num, before_num, after_num, reason, reason_detail)
-        VALUES (%d, %d, %d, %d, %d, %d, '%s');
-    ]], uid, item_id, change_num, before_num, after_num, reason, reason_detail)
+        INSERT INTO mlog.bag_change_log (uid, config_id, old_num, new_num, mod_uniqid, del_uniqids,
+     add_uniqids, old_item_data, new_item_data, relation_roleid, relation_ghostid, relation_ghost_uniqid, relation_imageid, change_type, change_reason, log_ts)
+        VALUES (%d, %d, %d, %d, %d, '%s', '%s', '%s', '%s', %d, %d, %d, %d, %d, %d, %d);
+    ]], uid, config_id, old_num, new_num, mod_uniqid, del_uniqids_str, add_uniqids_str, old_item_data_str,
+        new_item_data_str, relation_roleid, relation_ghostid, relation_ghost_uniqid, relation_imageid, change_type, change_reason, log_ts)
     moon.send("lua", addr, cmd)
 end
 

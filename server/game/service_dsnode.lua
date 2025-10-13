@@ -29,6 +29,7 @@ local context = {
     ds_type = 0,
     net_id = 0,
     uid_addr_map = {},
+    addr_dsnode = 0,
 ---@diagnostic disable-next-line: missing-fields
     scripts = {},
     ---other service address

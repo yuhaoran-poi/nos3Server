@@ -15,6 +15,7 @@ local ProtoEnum = require("tools.ProtoEnum")
 local UserAttrLogic = require("common.logic.UserAttrLogic")
 local CommonCfgDef = require("common.def.CommonCfgDef")
 local ItemDefine = require("common.logic.ItemDefine")
+local ItemDef = require("common.def.ItemDef")
 
 ---@type user_context
 local context = ...
@@ -553,22 +554,46 @@ local function LightRoleEquipment(msg)
         and role_info.magic_item.common_info
         and role_info.magic_item.common_info.uniqid == msg.uniqid then
         local item_data = role_info.magic_item
+        local old_item_data = table.copy(item_data, true)
         local err_code, change_log = scripts.Bag.Light(item_data)
         if err_code ~= ErrorCode.None or not change_log then
             return ErrorCode.LightMagicItemFail
         end
 
         -- 存储背包数据
-        local save_bags = {}
-        for bagType, _ in pairs(change_log) do
-            save_bags[bagType] = 1
-        end
-        if table.size(save_bags) > 0 then
+        -- local save_bags = {}
+        -- for bagType, _ in pairs(change_log) do
+        --     save_bags[bagType] = 1
+        -- end
+        -- if table.size(save_bags) > 0 then
+        --     -- 只存储了背包变更数据
+        --     scripts.Bag.SaveAndLog(save_bags, change_log)
+        -- end
+        if table.size(change_log) > 0 then
             -- 只存储了背包变更数据
-            scripts.Bag.SaveAndLog(save_bags, change_log)
+            scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.RoleEquipLight, msg.roleid)
         end
         -- 存储角色数据
         if scripts.Role.ModMagicItem(msg.roleid, item_data) == ErrorCode.None then
+            if old_item_data and old_item_data.common_info then
+                -- 单独插入一条变更日志
+                local write_log_datas = {}
+                local new_write_log = ItemDef.newPBItemLog()
+                new_write_log.uid = context.uid
+                new_write_log.config_id = old_item_data.common_info.config_id
+                new_write_log.old_num = 1
+                new_write_log.new_num = 1
+                new_write_log.mod_uniqid = msg.uniqid
+                table.insert(new_write_log.old_item_data, old_item_data)
+                table.insert(new_write_log.new_item_data, item_data)
+                new_write_log.relation_roleid = msg.roleid
+                new_write_log.change_type = ItemDef.LogType.ChangeInfo
+                new_write_log.change_reason = ItemDef.ChangeReason.RoleEquipLight
+                new_write_log.log_ts = moon.time()
+                table.insert(write_log_datas, new_write_log)
+                scripts.Item.SendLog(write_log_datas)
+            end
+
             local change_roles = {}
             change_roles[msg.roleid] = "LightMagicItem"
             scripts.Role.SaveAndLog(change_roles)
@@ -590,22 +615,46 @@ local function LightRoleEquipment(msg)
         end
 
         local item_data = role_info.digrams_cards[slot]
+        local old_item_data = table.copy(item_data, true)
         local err_code, change_log = scripts.Bag.Light(item_data)
         if err_code ~= ErrorCode.None or not change_log then
             return ErrorCode.LightDigramsCardFail
         end
 
         -- 存储背包数据
-        local save_bags = {}
-        for bagType, _ in pairs(change_log) do
-            save_bags[bagType] = 1
-        end
-        if table.size(save_bags) > 0 then
+        -- local save_bags = {}
+        -- for bagType, _ in pairs(change_log) do
+        --     save_bags[bagType] = 1
+        -- end
+        -- if table.size(save_bags) > 0 then
+        --     -- 只存储了背包变更数据
+        --     scripts.Bag.SaveAndLog(save_bags, change_log)
+        -- end
+        if table.size(change_log) > 0 then
             -- 只存储了背包变更数据
-            scripts.Bag.SaveAndLog(save_bags, change_log)
+            scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.RoleEquipLight)
         end
         -- 存储角色数据
-        if scripts.Role.ModDiagramsCard(msg.roleid, item_data, slot) then
+        if scripts.Role.ModDiagramsCard(msg.roleid, item_data, slot) == ErrorCode.None then
+            if old_item_data and old_item_data.common_info then
+                -- 单独插入一条变更日志
+                local write_log_datas = {}
+                local new_write_log = ItemDef.newPBItemLog()
+                new_write_log.uid = context.uid
+                new_write_log.config_id = old_item_data.common_info.config_id
+                new_write_log.old_num = 1
+                new_write_log.new_num = 1
+                new_write_log.mod_uniqid = msg.uniqid
+                table.insert(new_write_log.old_item_data, old_item_data)
+                table.insert(new_write_log.new_item_data, item_data)
+                new_write_log.relation_roleid = msg.roleid
+                new_write_log.change_type = ItemDef.LogType.ChangeInfo
+                new_write_log.change_reason = ItemDef.ChangeReason.RoleEquipLight
+                new_write_log.log_ts = moon.time()
+                table.insert(write_log_datas, new_write_log)
+                scripts.Item.SendLog(write_log_datas)
+            end
+
             local change_roles = {}
             change_roles[msg.roleid] = "LightDiagramsCard"
             scripts.Role.SaveAndLog(change_roles)
@@ -636,22 +685,46 @@ local function LightGhostEquipment(msg)
         end
 
         local item_data = ghost_info.digrams_cards[slot]
+        local old_item_data = table.copy(item_data, true)
         local err_code, change_log = scripts.Bag.Light(item_data)
         if err_code ~= ErrorCode.None or not change_log then
             return ErrorCode.LightDigramsCardFail
         end
 
         -- 存储背包数据
-        local save_bags = {}
-        for bagType, _ in pairs(change_log) do
-            save_bags[bagType] = 1
-        end
-        if table.size(save_bags) > 0 then
+        -- local save_bags = {}
+        -- for bagType, _ in pairs(change_log) do
+        --     save_bags[bagType] = 1
+        -- end
+        -- if table.size(save_bags) > 0 then
+        --     -- 只存储了背包变更数据
+        --     scripts.Bag.SaveAndLog(save_bags, change_log)
+        -- end
+        if table.size(change_log) > 0 then
             -- 只存储了背包变更数据
-            scripts.Bag.SaveAndLog(save_bags, change_log)
+            scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.GhostEquipLight)
         end
         -- 存储角色数据
         scripts.Ghost.ModDiagramsCard(msg.ghostid, item_data, slot)
+        if old_item_data and old_item_data.common_info then
+            -- 单独插入一条变更日志
+            local write_log_datas = {}
+            local new_write_log = ItemDef.newPBItemLog()
+            new_write_log.uid = context.uid
+            new_write_log.config_id = old_item_data.common_info.config_id
+            new_write_log.old_num = 1
+            new_write_log.new_num = 1
+            new_write_log.mod_uniqid = msg.uniqid
+            table.insert(new_write_log.old_item_data, old_item_data)
+            table.insert(new_write_log.new_item_data, item_data)
+            new_write_log.relation_ghostid = msg.ghostid
+            new_write_log.relation_ghost_uniqid = msg.ghostid
+            new_write_log.change_type = ItemDef.LogType.ChangeInfo
+            new_write_log.change_reason = ItemDef.ChangeReason.GhostEquipLight
+            new_write_log.log_ts = moon.time()
+            table.insert(write_log_datas, new_write_log)
+            scripts.Item.SendLog(write_log_datas)
+        end
         scripts.Ghost.SaveGhostsNow()
         scripts.Ghost.AddLog(msg.ghostid, "LightDiagramsCard")
 
@@ -674,10 +747,8 @@ local function LightBagItem(msg)
         local save_bags = {}
         for bagType, logs in pairs(change_log) do
             save_bags[bagType] = 1
-            for pos, log in pairs(logs) do
-                if log.log_type == BagDef.LogType.ChangeNum
-                    and log.old_config_id == 0
-                    and log.old_count == 0 then
+            for pos, old_itemdata in pairs(logs) do
+                if table.size(old_itemdata) <= 0 then
                     light_bagid = bagType
                     light_pos = pos
                 end
@@ -685,7 +756,8 @@ local function LightBagItem(msg)
         end
 
         -- 生成新唯一道具，进行保存
-        scripts.Bag.SaveAndLog(save_bags, change_log)
+        -- scripts.Bag.SaveAndLog(save_bags, change_log)
+        scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.BagLight)
     end
 
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
@@ -711,16 +783,18 @@ local function LightBagItem(msg)
     if not change_log[light_bagid] then
         change_log[light_bagid] = {}
     end
-    scripts.Bag.AddLog(change_log[light_bagid], light_pos, BagDef.LogType.ChangeInfo, old_itemdata.common_info.config_id,
-        old_itemdata.common_info.uniqid, old_itemdata.common_info.item_count, old_itemdata)
+    -- scripts.Bag.AddLog(change_log[light_bagid], light_pos, ItemDef.LogType.ChangeInfo, old_itemdata,common_info.config_id,old_itemdata.common_info.uniqid, old_itemdata.common_info.item_count, old_itemdata)
+    scripts.Bag.AddLog(change_log[light_bagid], light_pos, old_itemdata)
 
-    local save_bags = {}
-    for bagType, _ in pairs(change_log) do
-        save_bags[bagType] = 1
-    end
-
-    if table.size(save_bags) > 0 then
-        scripts.Bag.SaveAndLog(save_bags, change_log)
+    -- local save_bags = {}
+    -- for bagType, _ in pairs(change_log) do
+    --     save_bags[bagType] = 1
+    -- end
+    -- if table.size(save_bags) > 0 then
+    --     scripts.Bag.SaveAndLog(save_bags, change_log)
+    -- end
+    if table.size(change_log) > 0 then
+        scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.BagLight)
     end
 
     return ErrorCode.None, item_data
@@ -863,12 +937,13 @@ function User.DsAddItems(simple_items)
     end
 
     if err_code == ErrorCode.None then
-        local save_bags = {}
-        for bagType, _ in pairs(change_log) do
-            save_bags[bagType] = 1
-        end
-        --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-        scripts.Bag.SaveAndLog(save_bags, change_log)
+        -- local save_bags = {}
+        -- for bagType, _ in pairs(change_log) do
+        --     save_bags[bagType] = 1
+        -- end
+        -- --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        -- scripts.Bag.SaveAndLog(save_bags, change_log)
+        scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.DsAddItems)
     end
     return err_code
 end
@@ -918,13 +993,23 @@ function User.PBClientItemUpLvReqCmd(req)
 
     -- 存储背包变更
     if change_log then
-        local save_bags = {}
-        for bagType, _ in pairs(change_log) do
-            save_bags[bagType] = 1
-        end
-
-        if table.size(save_bags) > 0 then
-            scripts.Bag.SaveAndLog(save_bags, change_log)
+        -- local save_bags = {}
+        -- for bagType, _ in pairs(change_log) do
+        --     save_bags[bagType] = 1
+        -- end
+        -- if table.size(save_bags) > 0 then
+        --     scripts.Bag.SaveAndLog(save_bags, change_log)
+        -- end
+        if table.size(change_log) > 0 then
+            if RoleDef.RoleDefine.RoleID.Start <= req.msg.config_id
+                and req.msg.config_id <= RoleDef.RoleDefine.RoleID.End then
+                scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.ImageUpLv, req.msg.config_id)
+            elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.config_id
+                and req.msg.config_id <= GhostDef.GhostDefine.GhostID.End then
+                scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.ImageUpLv, 0, req.msg.config_id)
+            else
+                scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.ImageUpLv, 0, 0, 0, req.msg.config_id)
+            end
         end
     end
     if RoleDef.RoleDefine.RoleID.Start <= req.msg.config_id
@@ -1076,13 +1161,23 @@ function User.PBUseItemUpLvReqCmd(req)
 
     -- 存储背包变更
     if bag_change_log then
-        local save_bags = {}
-        for bagType, _ in pairs(bag_change_log) do
-            save_bags[bagType] = 1
-        end
-
-        if table.size(save_bags) > 0 then
-            scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+        -- local save_bags = {}
+        -- for bagType, _ in pairs(bag_change_log) do
+        --     save_bags[bagType] = 1
+        -- end
+        -- if table.size(save_bags) > 0 then
+        --     scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+        -- end
+        if table.size(bag_change_log) > 0 then
+            if RoleDef.RoleDefine.RoleID.Start <= req.msg.config_id
+                and req.msg.config_id <= RoleDef.RoleDefine.RoleID.End then
+                scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.UseItemUpLv, req.msg.target_id)
+            elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.target_id
+                and req.msg.target_id <= GhostDef.GhostDefine.GhostID.End then
+                scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.UseItemUpLv, 0, req.msg.target_id)
+            else
+                scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.UseItemUpLv, 0, 0, 0, req.msg.target_id)
+            end
         end
     end
     if RoleDef.RoleDefine.RoleID.Start <= req.msg.target_id
@@ -1147,13 +1242,23 @@ function User.PBClientItemUpStarReqCmd(req)
 
     -- 存储背包变更
     if change_log then
-        local save_bags = {}
-        for bagType, _ in pairs(change_log) do
-            save_bags[bagType] = 1
-        end
-
-        if table.size(save_bags) > 0 then
-            scripts.Bag.SaveAndLog(save_bags, change_log)
+        -- local save_bags = {}
+        -- for bagType, _ in pairs(change_log) do
+        --     save_bags[bagType] = 1
+        -- end
+        -- if table.size(save_bags) > 0 then
+        --     scripts.Bag.SaveAndLog(save_bags, change_log)
+        -- end
+        if table.size(change_log) > 0 then
+            if RoleDef.RoleDefine.RoleID.Start <= req.msg.config_id
+                and req.msg.config_id <= RoleDef.RoleDefine.RoleID.End then
+                scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.ImageUpStar, req.msg.config_id)
+            elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.config_id
+                and req.msg.config_id <= GhostDef.GhostDefine.GhostID.End then
+                scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.ImageUpStar, 0, req.msg.config_id)
+            else
+                scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.ImageUpStar, 0, 0, 0, req.msg.config_id)
+            end
         end
     end
 
@@ -1370,17 +1475,20 @@ function User.PBClientItemRepairReqCmd(req)
             if not change_logs[BagDef.BagType.Cangku] then
                 change_logs[BagDef.BagType.Cangku] = {}
             end
-            scripts.Bag.AddLog(change_logs[BagDef.BagType.Cangku], req.msg.pos, BagDef.LogType.ChangeInfo,
-                item_data.common_info.config_id,
-                item_data.common_info.uniqid, item_data.common_info.item_count, old_item_data)
+            -- scripts.Bag.AddLog(change_logs[BagDef.BagType.Cangku], req.msg.pos, ItemDef.LogType.ChangeInfo,
+            --     item_data.common_info.config_id,
+            --     item_data.common_info.uniqid, item_data.common_info.item_count, old_item_data)
+            scripts.Bag.AddLog(change_logs[BagDef.BagType.Cangku], req.msg.pos, old_item_data)
 
-            local save_bags = {}
-            for bagType, _ in pairs(change_logs) do
-                save_bags[bagType] = 1
-            end
-
-            if table.size(save_bags) > 0 then
-                scripts.Bag.SaveAndLog(save_bags, change_logs)
+            -- local save_bags = {}
+            -- for bagType, _ in pairs(change_logs) do
+            --     save_bags[bagType] = 1
+            -- end
+            -- if table.size(save_bags) > 0 then
+            --     scripts.Bag.SaveAndLog(save_bags, change_logs)
+            -- end
+            if table.size(change_logs) > 0 then
+                scripts.Bag.SaveAndLog(change_logs, ItemDef.ChangeReason.ItemRepair)
             end
 
             return ErrorCode.None, item_data
@@ -1622,11 +1730,12 @@ function User.PBSureCompositeReqCmd(req)
     context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
 
     -- 数据存储更新
-    local save_bags = {}
-    for bagType, _ in pairs(bag_change_log) do
-        save_bags[bagType] = 1
-    end
-    scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    -- local save_bags = {}
+    -- for bagType, _ in pairs(bag_change_log) do
+    --     save_bags[bagType] = 1
+    -- end
+    -- scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.ItemComposite)
     
     if table.size(change_roles) > 0 then
         scripts.Role.SaveAndLog(change_roles)
@@ -1764,11 +1873,12 @@ function User.PBRandomCompositeReqCmd(req)
     context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
 
     -- 数据存储更新
-    local save_bags = {}
-    for bagType, _ in pairs(bag_change_log) do
-        save_bags[bagType] = 1
-    end
-    scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    -- local save_bags = {}
+    -- for bagType, _ in pairs(bag_change_log) do
+    --     save_bags[bagType] = 1
+    -- end
+    -- scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.ItemComposite)
 
     if table.size(change_roles) > 0 then
         scripts.Role.SaveAndLog(change_roles)
@@ -1806,6 +1916,7 @@ function User.PBInlayTabooWordReqCmd(req)
     local bag_change_log = nil
     local change_roles = {}
     local change_ghosts = {}
+    local change_ghost_config_id = nil
     if req.msg.inlay_type == 1 then
         -- 法器
         if req.msg.roleid and req.msg.roleid > 0 then
@@ -1823,8 +1934,7 @@ function User.PBInlayTabooWordReqCmd(req)
                 req.msg.inlay_type, req.msg.uniqid)
             change_roles[req.msg.roleid] = "InlayTabooWord"
         elseif req.msg.ghost_uniqid and req.msg.ghost_uniqid > 0 then
-            rsp_msg.code, bag_change_log = scripts.Ghost.InlayTabooWord(req.msg.ghost_uniqid, req.msg.tabooword_id,
-                req.msg.inlay_type, req.msg.uniqid)
+            rsp_msg.code, bag_change_log, change_ghost_config_id = scripts.Ghost.InlayTabooWord(req.msg.ghost_uniqid, req.msg.tabooword_id, req.msg.inlay_type, req.msg.uniqid)
             change_ghosts[req.msg.ghost_uniqid] = "InlayTabooWord"
         else
             rsp_msg.code, bag_change_log = scripts.Bag.InlayTabooWord(req.msg.tabooword_id, req.msg.inlay_type,
@@ -1842,16 +1952,21 @@ function User.PBInlayTabooWordReqCmd(req)
     context.S2C(context.net_id, CmdCode.PBInlayTabooWordRspCmd, rsp_msg, req.msg_context.stub_id)
 
     -- 数据存储更新
-    local save_bags = {}
-    for bagType, _ in pairs(bag_change_log) do
-        save_bags[bagType] = 1
+    -- local save_bags = {}
+    -- for bagType, _ in pairs(bag_change_log) do
+    --     save_bags[bagType] = 1
+    -- end
+    -- scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    if table.size(change_roles) > 0 then
+        scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.InlayItem, req.msg.roleid)
+    elseif table.size(change_ghosts) > 0 and change_ghost_config_id then
+        scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.InlayItem, 0, change_ghost_config_id,
+        req.msg.ghost_uniqid)
     end
-    scripts.Bag.SaveAndLog(save_bags, bag_change_log)
 
     if table.size(change_roles) > 0 then
         scripts.Role.SaveAndLog(change_roles)
-    end
-    if table.size(change_ghosts) > 0 then
+    elseif table.size(change_ghosts) > 0 then
         scripts.Ghost.SaveAndLog(change_ghosts)
     end
 end

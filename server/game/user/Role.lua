@@ -10,6 +10,7 @@ local RoleDef = require("common.def.RoleDef")
 local BagDef = require("common.def.BagDef")
 local ProtoEnum = require("tools.ProtoEnum")
 local ItemDefine = require("common.logic.ItemDefine")
+local ItemDef = require("common.def.ItemDef")
 
 ---@type user_context
 local context = ...
@@ -468,11 +469,17 @@ function Role.InlayTabooWord(roleid, taboo_word_id, inlay_type, uniqid)
     if not uniqitem_cfg or not item_cfg then
         return ErrorCode.ConfigError
     end
-    if uniqitem_cfg.type4 ~= item_cfg.type4 then
-        return ErrorCode.InlayTypeNotMatch
-    end
-    if inlay_type ~= 1 and uniqitem_cfg.type5 ~= item_cfg.type5 then
-        return ErrorCode.InlayTypeNotMatch
+    if inlay_type == 1 then
+        if item_cfg.type4 ~= ItemDef.TabooWordInlay.RoleType then
+            return ErrorCode.InlayTypeNotMatch
+        end
+    else
+        if uniqitem_cfg.type4 ~= item_cfg.type4 then
+            return ErrorCode.InlayTypeNotMatch
+        end
+        if uniqitem_cfg.type5 ~= item_cfg.type5 then
+            return ErrorCode.InlayTypeNotMatch
+        end
     end
 
     -- 扣除道具消耗
@@ -794,12 +801,13 @@ function Role.PBRoleWearEquipReqCmd(req)
     Role.ChangeEquipment(roles.battle_role_id, role_info, item_data.common_info.config_id, req.msg.equip_idx, item_data)
 
     -- 保存数据并同步给客户端
-    local save_bags = {}
-    for bagType, _ in pairs(bag_change_log) do
-        save_bags[bagType] = 1
-    end
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    -- local save_bags = {}
+    -- for bagType, _ in pairs(bag_change_log) do
+    --     save_bags[bagType] = 1
+    -- end
+    -- --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.RoleWearEquip, req.msg.roleid)
 
     local change_roles = {}
     change_roles[req.msg.roleid] = "WearEquipment"
@@ -874,11 +882,13 @@ function Role.PBRoleTakeOffEquipReqCmd(req)
     Role.ChangeEquipment(roles.battle_role_id, role_info, req.msg.takeoff_config_id, req.msg.takeoff_idx, nil)
 
     -- 保存数据并同步给客户端
-    local save_bags = {}
-    for bagType, _ in pairs(bag_change_log) do
-        save_bags[bagType] = 1
-    end
-    scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    -- local save_bags = {}
+    -- for bagType, _ in pairs(bag_change_log) do
+    --     save_bags[bagType] = 1
+    -- end
+    -- scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.RoleTakeoffEquip, req.msg.roleid)
+
     local change_roles = {}
     change_roles[req.msg.roleid] = "TakeOffEquipment"
     Role.SaveAndLog(change_roles)
@@ -1139,12 +1149,15 @@ function Role.PBRoleSkillUpStarReqCmd(req)
         skill_id = req.msg.skill_id,
     }, req.msg_context.stub_id)
 
-    local save_bags = {}
-    for bagType, _ in pairs(bag_change_log) do
-        save_bags[bagType] = 1
-    end
-    if table.size(save_bags) > 0 then
-        scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    -- local save_bags = {}
+    -- for bagType, _ in pairs(bag_change_log) do
+    --     save_bags[bagType] = 1
+    -- end
+    -- if table.size(save_bags) > 0 then
+    --     scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    -- end
+    if table.size(bag_change_log) > 0 then
+        scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.RoleSkillUpStar, req.msg.roleid)
     end
 
     local change_roles = {}
@@ -1240,11 +1253,12 @@ function Role.PBRoleGetUpLvRewardReqCmd(req)
     }, req.msg_context.stub_id)
 
     -- 数据存储更新
-    local save_bags = {}
-    for bagType, _ in pairs(bag_change_log) do
-        save_bags[bagType] = 1
-    end
-    scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    -- local save_bags = {}
+    -- for bagType, _ in pairs(bag_change_log) do
+    --     save_bags[bagType] = 1
+    -- end
+    -- scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.RoleUpLvReward, req.msg.roleid)
 
     if table.size(change_roles) > 0 then
         scripts.Role.SaveAndLog(change_roles)
@@ -1339,12 +1353,15 @@ function Role.PBRoleStudyBookReqCmd(req)
         book_id = req.msg.book_id,
     }, req.msg_context.stub_id)
 
-    local save_bags = {}
-    for bagType, _ in pairs(bag_change_log) do
-        save_bags[bagType] = 1
-    end
-    if table.size(save_bags) > 0 then
-        scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    -- local save_bags = {}
+    -- for bagType, _ in pairs(bag_change_log) do
+    --     save_bags[bagType] = 1
+    -- end
+    -- if table.size(save_bags) > 0 then
+    --     scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    -- end
+    if table.size(bag_change_log) > 0 then
+        scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.RoleStudyBook, req.msg.roleid)
     end
 
     local change_roles = {}
@@ -1542,11 +1559,12 @@ function Role.PBRoleSkillCompositeReqCmd(req)
     context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
 
     -- 数据存储更新
-    local save_bags = {}
-    for bagType, _ in pairs(bag_change_log) do
-        save_bags[bagType] = 1
-    end
-    scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    -- local save_bags = {}
+    -- for bagType, _ in pairs(bag_change_log) do
+    --     save_bags[bagType] = 1
+    -- end
+    -- scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.RoleCompositeSkill, req.msg.roleid)
 
     if table.size(change_roles) > 0 then
         scripts.Role.SaveAndLog(change_roles)

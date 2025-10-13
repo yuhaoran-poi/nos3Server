@@ -102,21 +102,6 @@
 ---@field public update_coins table<integer, PBCoin> @有key则执行PBCoin同步
 
 
----@class PBBagLog
----@field public uid integer
----@field public config_id integer
----@field public old_num integer
----@field public new_num integer
----@field public mod_uniqid integer
----@field public del_uniqids integer[]
----@field public add_uniqids integer[]
----@field public old_item_data PBItemData[]
----@field public new_item_data PBItemData[]
----@field public change_type integer
----@field public change_reason integer
----@field public log_ts integer
-
-
 ---@class PBBagOperateItemReqCmd
 ---@field public uid integer
 ---@field public operate_type integer @1--堆叠,2--拆分,3--移动
@@ -124,7 +109,7 @@
 ---@field public src_pos integer
 ---@field public dest_bag string
 ---@field public dest_pos integer
----@field public splitCount integer
+---@field public split_count integer
 
 
 ---@class PBBagOperateItemRspCmd
@@ -1578,6 +1563,25 @@
 ---@class PBGodsDataS
 ---@field public gods_list integer[] @神明列表
 ---@field public played_gods_data PBPlayedGodsDataS @出战的神明数据
+
+
+---@class PBItemLog
+---@field public uid integer
+---@field public config_id integer
+---@field public old_num integer
+---@field public new_num integer
+---@field public mod_uniqid integer
+---@field public del_uniqids integer[]
+---@field public add_uniqids integer[]
+---@field public old_item_data PBItemData[]
+---@field public new_item_data PBItemData[]
+---@field public relation_roleid integer
+---@field public relation_ghostid integer
+---@field public relation_ghost_uniqid integer
+---@field public relation_imageid integer
+---@field public change_type integer
+---@field public change_reason integer
+---@field public log_ts integer
 
 
 ---@class PBImage

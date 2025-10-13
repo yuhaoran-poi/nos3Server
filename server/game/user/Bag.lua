@@ -2,6 +2,7 @@ local moon = require "moon"
 local common = require "common"
 local uuid = require "uuid"
 local json = require "json"
+local clusterd = require("cluster")
 local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
@@ -292,46 +293,6 @@ function Bag.GetEmptyPosNum(bagType)
     return emptyCount
 end
 
-function Bag.RollBackWithChange(change_logs)
-    if not change_logs or table.size(change_logs) == 0 then
-        return
-    end
-
-    local bagdata = scripts.UserModel.GetBagData()
-    if not bagdata then
-        return
-    end
-
-    local coinsdata = scripts.UserModel.GetCoinsData()
-    if not coinsdata then
-        return
-    end
-
-    -- 先执行道具数量变更回滚
-    for bagType, logs in pairs(change_logs) do
-        if bagType == BagDef.BagType.Coins then
-            for coinid, log in pairs(logs) do
-                coinsdata.coins[coinid].coin_count = log.old_count
-            end
-        else
-            local baginfo = bagdata[bagType]
-            if baginfo then
-                for pos, log in pairs(logs) do
-                    if log.change_type == BagDef.LogType.ChangeNum
-                        and baginfo.items[pos] then
-                        baginfo.items[pos].common_info.item_count = log.old_count
-                        if baginfo.items[pos].common_info.item_count == 0 then
-                            baginfo.items[pos] = nil
-                        end
-                    elseif log.change_type == BagDef.LogType.ChangeInfo then
-                        baginfo.items[pos] = table.copy(log.old_itemdata)
-                    end
-                end
-            end
-        end
-    end
-end
-
 -- function Bag.RollBackWithChange(change_logs)
 --     if not change_logs or table.size(change_logs) == 0 then
 --         return
@@ -347,20 +308,24 @@ end
 --         return
 --     end
 
---     -- 执行道具变更回滚
+--     -- 先执行道具数量变更回滚
 --     for bagType, logs in pairs(change_logs) do
 --         if bagType == BagDef.BagType.Coins then
---             for coinid, old_coininfo in pairs(logs) do
---                 coinsdata.coins[coinid] = old_coininfo
+--             for coinid, log in pairs(logs) do
+--                 coinsdata.coins[coinid].coin_count = log.old_count
 --             end
 --         else
 --             local baginfo = bagdata[bagType]
 --             if baginfo then
---                 for pos, old_itemdata in pairs(logs) do
---                     if table.size(old_itemdata) == 0 then
---                         baginfo.items[pos] = nil
---                     else
---                         baginfo.items[pos] = old_itemdata
+--                 for pos, log in pairs(logs) do
+--                     if log.change_type == ItemDef.LogType.ChangeNum
+--                         and baginfo.items[pos] then
+--                         baginfo.items[pos].common_info.item_count = log.old_count
+--                         if baginfo.items[pos].common_info.item_count == 0 then
+--                             baginfo.items[pos] = nil
+--                         end
+--                     elseif log.change_type == ItemDef.LogType.ChangeInfo then
+--                         baginfo.items[pos] = table.copy(log.old_itemdata)
 --                     end
 --                 end
 --             end
@@ -368,8 +333,10 @@ end
 --     end
 -- end
 
-function Bag.SaveAndLog(bagTypes, change_logs, change_reason)
-    local success = true
+function Bag.RollBackWithChange(change_logs)
+    if not change_logs or table.size(change_logs) == 0 then
+        return
+    end
 
     local bagdata = scripts.UserModel.GetBagData()
     if not bagdata then
@@ -381,207 +348,29 @@ function Bag.SaveAndLog(bagTypes, change_logs, change_reason)
         return
     end
 
-    -- 用于日志存储的数据
-    -- local write_log_datas = {
-    --     [BagDef.LogType.ChangeNum] = {},
-    --     [BagDef.LogType.ChangeInfo] = {},
-    -- }
-    -- local now_ts = moon.time()
-
-    -- 修改dataMap
-    -- 去掉已经为0的道具格子
-    -- 将变更记录作为PBBagUpdateSyncCmd发送
-    local update_msg = {
-        update_items = {},
-        update_coins = {},
-    }
-    if change_logs then
-        for bagType, logs in pairs(change_logs) do
-            if bagType ~= BagDef.BagType.Coins then
-                local baginfo = bagdata[bagType]
-                if not baginfo then
-                    return
-                end
-
-                if not update_msg.update_items[bagType] then
-                    update_msg.update_items[bagType] = {
-                        bag_item_type = baginfo.bag_item_type,
-                        capacity = baginfo.capacity,
-                        items = {},
-                    }
-                end
-
-                for pos, loginfo in pairs(logs) do
-                    local now_itemdata = baginfo.items[pos]
-                    update_msg.update_items[bagType].items[pos] = now_itemdata
-                    loginfo.new_config_id = now_itemdata.common_info.config_id
-                    loginfo.new_uniqid = now_itemdata.common_info.uniqid
-                    loginfo.new_count = now_itemdata.common_info.item_count
-
-                    -- -- 记录Bag.dataMap变更前的背包数据
-                    -- if loginfo.log_type == BagDef.LogType.ChangeNum then
-                    --     if not write_log_datas[BagDef.LogType.ChangeNum][loginfo.old_config_id]
-                    --         and loginfo.old_config_id > 0 then
-                    --         local new_write_log = BagDef.newPBBagLog()
-                    --         new_write_log.uid = context.uid
-                    --         new_write_log.config_id = loginfo.old_config_id
-                    --         for _, tmp_data in pairs(Bag.dataMap[loginfo.old_config_id]) do
-                    --             new_write_log.old_num = new_write_log.old_num + tmp_data.allCount
-                    --         end
-                    --         new_write_log.change_type = loginfo.log_type
-                    --         new_write_log.change_reason = change_reason
-                    --         new_write_log.log_ts = now_ts
-                    --         write_log_datas[BagDef.LogType.ChangeNum][loginfo.old_config_id] = new_write_log
-                    --     end
-                    --     if not write_log_datas[BagDef.LogType.ChangeNum][loginfo.new_config_id]
-                    --         and loginfo.new_config_id > 0 then
-                    --         local new_write_log = BagDef.newPBBagLog()
-                    --         new_write_log.uid = context.uid
-                    --         new_write_log.config_id = loginfo.new_config_id
-                    --         if Bag.dataMap[loginfo.new_config_id] then
-                    --             for _, tmp_data in pairs(Bag.dataMap[loginfo.new_config_id]) do
-                    --                 new_write_log.old_num = new_write_log.old_num + tmp_data.allCount
-                    --             end
-                    --         end
-                    --         new_write_log.change_type = loginfo.log_type
-                    --         new_write_log.change_reason = change_reason
-                    --         new_write_log.log_ts = now_ts
-                    --         write_log_datas[BagDef.LogType.ChangeNum][loginfo.new_config_id] = new_write_log
-                    --     end
-                    -- elseif loginfo.log_type == BagDef.LogType.ChangeInfo then
-                    --     if not write_log_datas[BagDef.LogType.ChangeInfo][loginfo.old_config_id] then
-                    --         local new_write_log = BagDef.newPBBagLog()
-                    --         new_write_log.uid = context.uid
-                    --         new_write_log.config_id = loginfo.old_config_id
-                    --         new_write_log.old_num = 1
-                    --         new_write_log.new_num = 1
-                    --         new_write_log.mod_uniqid = loginfo.old_uniqid
-                    --         if loginfo.old_itemdata then
-                    --             new_write_log.old_item_data = loginfo.old_itemdata
-                    --         end
-                    --         if now_itemdata then
-                    --             new_write_log.new_item_data = now_itemdata
-                    --         end
-                    --         new_write_log.change_type = loginfo.log_type
-                    --         new_write_log.change_reason = change_reason
-                    --         new_write_log.log_ts = now_ts
-                    --         write_log_datas[BagDef.LogType.ChangeInfo][loginfo.old_config_id] = new_write_log
-                    --     end
-                    -- end
-
-                    -- 处理dataMap变更
-                    if not Bag.dataMap[loginfo.new_config_id] then
-                        Bag.dataMap[loginfo.new_config_id] = {}
-                    end
-                    if not Bag.dataMap[loginfo.new_config_id][bagType] then
-                        Bag.dataMap[loginfo.new_config_id][bagType] = {
-                            allCount = 0,
-                            pos_count = {},
-                            uniqid_pos = {},
-                        }
-                    end
-
-                    if Bag.dataMap[loginfo.old_config_id]
-                        and Bag.dataMap[loginfo.old_config_id][bagType] then
-                        Bag.dataMap[loginfo.old_config_id][bagType].allCount = Bag.dataMap
-                            [loginfo.old_config_id][bagType].allCount - loginfo.old_count
-                    end
-                    Bag.dataMap[loginfo.new_config_id][bagType].allCount = Bag.dataMap
-                        [loginfo.new_config_id][bagType].allCount + loginfo.new_count
-
-                    if Bag.dataMap[loginfo.old_config_id]
-                        and Bag.dataMap[loginfo.old_config_id][bagType] then
-                        if loginfo.old_uniqid ~= 0 then
-                            Bag.dataMap[loginfo.old_config_id][bagType].uniqid_pos[loginfo.old_uniqid] = nil
-
-                            -- if loginfo.log_type == BagDef.LogType.ChangeNum
-                            --     and write_log_datas[BagDef.LogType.ChangeNum][loginfo.old_config_id] then
-                            --     table.insert(write_log_datas[BagDef.LogType.ChangeNum][loginfo.old_config_id]
-                            --         .change_uniqids, loginfo.old_uniqid)
-                            -- end
-                        else
-                            Bag.dataMap[loginfo.old_config_id][bagType].pos_count[pos] = nil
-                        end
-                    end
-                    if loginfo.new_uniqid ~= 0 then
-                        Bag.dataMap[loginfo.new_config_id][bagType].uniqid_pos[loginfo.new_uniqid] = pos
-
-                        -- if loginfo.log_type == BagDef.LogType.ChangeNum
-                        --     and write_log_datas[BagDef.LogType.ChangeNum][loginfo.new_config_id] then
-                        --     table.insert(write_log_datas[BagDef.LogType.ChangeNum][loginfo.new_config_id]
-                        --         .change_uniqids, loginfo.new_uniqid)
-                        -- end
+    -- 执行道具变更回滚
+    for bagType, logs in pairs(change_logs) do
+        if bagType == BagDef.BagType.Coins then
+            for coinid, old_coininfo in pairs(logs) do
+                coinsdata.coins[coinid] = old_coininfo
+            end
+        else
+            local baginfo = bagdata[bagType]
+            if baginfo then
+                for pos, old_itemdata in pairs(logs) do
+                    if table.size(old_itemdata) == 0 then
+                        baginfo.items[pos] = nil
                     else
-                        Bag.dataMap[loginfo.new_config_id][bagType].pos_count[pos] = loginfo.new_count
+                        baginfo.items[pos] = old_itemdata
                     end
-
-                    -- 去掉已经为0的道具格子
-                    if loginfo.log_type == BagDef.LogType.ChangeNum then
-                        if baginfo.items[pos].common_info.item_count == 0 then
-                            baginfo.items[pos] = nil
-                            update_msg.update_items[bagType].items[pos] = {}
-                        end
-                    elseif loginfo.log_type == BagDef.LogType.ChangeInfo then
-                        if baginfo.items[pos].common_info.item_count == 0 then
-                            baginfo.items[pos] = nil
-                            update_msg.update_items[bagType].items[pos] = {}
-                        else
-                            -- 记录ChangeInfo后的新itemdata
-                            loginfo.new_itemdata = table.copy(now_itemdata, true)
-                        end
-                    end
-
-                    -- -- 记录Bag.dataMap变更后的背包数据
-                    -- if loginfo.log_type == BagDef.LogType.ChangeNum then
-                    --     if write_log_datas[BagDef.LogType.ChangeNum][loginfo.old_config_id] then
-                    --         for _, tmp_data in pairs(Bag.dataMap[loginfo.old_config_id]) do
-                    --             write_log_datas[BagDef.LogType.ChangeNum][loginfo.old_config_id].new_num =
-                    --                 write_log_datas[BagDef.LogType.ChangeNum][loginfo.old_config_id].new_num +
-                    --                 tmp_data.allCount
-                    --         end
-                    --     end
-                    --     if write_log_datas[BagDef.LogType.ChangeNum][loginfo.new_config_id] then
-                    --         for _, tmp_data in pairs(Bag.dataMap[loginfo.new_config_id]) do
-                    --             write_log_datas[BagDef.LogType.ChangeNum][loginfo.new_config_id].new_num =
-                    --                 write_log_datas[BagDef.LogType.ChangeNum][loginfo.new_config_id].new_num +
-                    --                 tmp_data.allCount
-                    --         end
-                    --     end
-                    -- end
-                end
-            else
-                if not update_msg.update_coins then
-                    update_msg.update_coins = {}
-                end
-
-                for coinid, _ in pairs(logs) do
-                    update_msg.update_coins[coinid] = coinsdata.coins[coinid]
                 end
             end
         end
     end
-
-    local success_coin = false
-    if bagTypes and bagTypes[BagDef.BagType.Coins] then
-        success_coin = Bag.SaveCoinsNow()
-    end
-
-    success = Bag.SaveBagsNow(bagTypes)
-    --发送PBBagUpdateSyncCmd
-    if success or success_coin then
-        --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-        context.S2C(context.net_id, CmdCode["PBBagUpdateSyncCmd"], update_msg, 0)
-    end
-
-    --存储日志
-
-    return success
 end
 
--- function Bag.SaveAndLog(change_logs, change_reason)
---     if not change_logs then
---         return
---     end
+-- function Bag.SaveAndLog(bagTypes, change_logs, change_reason)
+--     local success = true
 
 --     local bagdata = scripts.UserModel.GetBagData()
 --     if not bagdata then
@@ -594,266 +383,520 @@ end
 --     end
 
 --     -- 用于日志存储的数据
---     local tmp_log_datas = {}
+--     -- local write_log_datas = {
+--     --     [ItemDef.LogType.ChangeNum] = {},
+--     --     [ItemDef.LogType.ChangeInfo] = {},
+--     -- }
+--     -- local now_ts = moon.time()
 
 --     -- 修改dataMap
+--     -- 去掉已经为0的道具格子
 --     -- 将变更记录作为PBBagUpdateSyncCmd发送
 --     local update_msg = {
 --         update_items = {},
 --         update_coins = {},
 --     }
---     for bagType, logs in pairs(change_logs) do
---         if bagType == BagDef.BagType.Coins then
---             if not update_msg.update_coins then
---                 update_msg.update_coins = {}
---             end
+--     if change_logs then
+--         for bagType, logs in pairs(change_logs) do
+--             if bagType ~= BagDef.BagType.Coins then
+--                 local baginfo = bagdata[bagType]
+--                 if not baginfo then
+--                     return
+--                 end
 
---             for coinid, _ in pairs(logs) do
---                 update_msg.update_coins[coinid] = coinsdata.coins[coinid]
---             end
---         else
---             local baginfo = bagdata[bagType]
---             if not baginfo then
---                 return
---             end
+--                 if not update_msg.update_items[bagType] then
+--                     update_msg.update_items[bagType] = {
+--                         bag_item_type = baginfo.bag_item_type,
+--                         capacity = baginfo.capacity,
+--                         items = {},
+--                     }
+--                 end
 
---             if not update_msg.update_items[bagType] then
---                 update_msg.update_items[bagType] = {
---                     bag_item_type = baginfo.bag_item_type,
---                     capacity = baginfo.capacity,
---                     items = {},
---                 }
-
---                 for pos, old_itemdata in pairs(logs) do
---                     local old_config_id = 0
---                     local old_item_count = 0
---                     local old_uniqid = 0
---                     if old_itemdata and old_itemdata.common_info then
---                         if old_itemdata.common_info.config_id then
---                             old_config_id = old_itemdata.common_info.config_id
---                         end
---                         if old_itemdata.common_info.item_count then
---                             old_item_count = old_itemdata.common_info.item_count
---                         end
---                         if old_itemdata.common_info.uniqid then
---                             old_uniqid = old_itemdata.common_info.uniqid
---                         end
---                     end
-
+--                 for pos, loginfo in pairs(logs) do
 --                     local now_itemdata = baginfo.items[pos]
---                     local now_config_id = 0
---                     local now_item_count = 0
---                     local now_uniqid = 0
---                     if now_itemdata and now_itemdata.common_info then
---                         if now_itemdata.common_info.config_id then
---                             now_config_id = now_itemdata.common_info.config_id
---                         end
---                         if now_itemdata.common_info.item_count then
---                             now_item_count = now_itemdata.common_info.item_count
---                         end
---                         if now_itemdata.common_info.uniqid then
---                             now_uniqid = now_itemdata.common_info.uniqid
---                         end
---                     end
+--                     update_msg.update_items[bagType].items[pos] = now_itemdata
+--                     loginfo.new_config_id = now_itemdata.common_info.config_id
+--                     loginfo.new_uniqid = now_itemdata.common_info.uniqid
+--                     loginfo.new_count = now_itemdata.common_info.item_count
 
---                     -- 处理发送到客户端的更新信息
---                     if now_config_id == 0 then
---                         if old_config_id > 0 then
---                             update_msg.update_items[bagType].items[pos] = table.copy(old_itemdata, true)
---                             update_msg.update_items[bagType].items[pos].common_info.item_count = 0
---                         end
---                     else
---                         update_msg.update_items[bagType].items[pos] = now_itemdata
-
---                         -- 处理dataMap新增
---                         if not Bag.dataMap[now_config_id] then
---                             Bag.dataMap[now_config_id] = {}
---                         end
---                         if not Bag.dataMap[now_config_id][bagType] then
---                             Bag.dataMap[now_config_id][bagType] = {
---                                 allCount = 0,
---                                 pos_count = {},
---                                 uniqid_pos = {},
---                             }
---                         end
---                     end
-
---                     -- 记录Bag.dataMap变更前的背包数据
---                     if old_config_id > 0 and not tmp_log_datas[old_config_id] then
---                         local new_tmp = {
---                             old_num = 0,
---                             new_num = 0,
---                             change_uniq = {},
---                         }
---                         for _, tmp_data in pairs(Bag.dataMap[old_config_id]) do
---                             new_tmp.old_num = new_tmp.old_num + tmp_data.allCount
---                         end
---                         tmp_log_datas[old_config_id] = new_tmp
---                     end
---                     if now_config_id > 0 and not tmp_log_datas[now_config_id] then
---                         local new_tmp = {
---                             old_num = 0,
---                             new_num = 0,
---                             change_uniq = {},
---                         }
---                         for _, tmp_data in pairs(Bag.dataMap[now_config_id]) do
---                             new_tmp.old_num = new_tmp.old_num + tmp_data.allCount
---                         end
---                         tmp_log_datas[now_config_id] = new_tmp
---                     end
+--                     -- -- 记录Bag.dataMap变更前的背包数据
+--                     -- if loginfo.log_type == ItemDef.LogType.ChangeNum then
+--                     --     if not write_log_datas[ItemDef.LogType.ChangeNum][loginfo.old_config_id]
+--                     --         and loginfo.old_config_id > 0 then
+--                     --         local new_write_log = BagDef.newPBBagLog()
+--                     --         new_write_log.uid = context.uid
+--                     --         new_write_log.config_id = loginfo.old_config_id
+--                     --         for _, tmp_data in pairs(Bag.dataMap[loginfo.old_config_id]) do
+--                     --             new_write_log.old_num = new_write_log.old_num + tmp_data.allCount
+--                     --         end
+--                     --         new_write_log.change_type = loginfo.log_type
+--                     --         new_write_log.change_reason = change_reason
+--                     --         new_write_log.log_ts = now_ts
+--                     --         write_log_datas[ItemDef.LogType.ChangeNum][loginfo.old_config_id] = new_write_log
+--                     --     end
+--                     --     if not write_log_datas[ItemDef.LogType.ChangeNum][loginfo.new_config_id]
+--                     --         and loginfo.new_config_id > 0 then
+--                     --         local new_write_log = BagDef.newPBBagLog()
+--                     --         new_write_log.uid = context.uid
+--                     --         new_write_log.config_id = loginfo.new_config_id
+--                     --         if Bag.dataMap[loginfo.new_config_id] then
+--                     --             for _, tmp_data in pairs(Bag.dataMap[loginfo.new_config_id]) do
+--                     --                 new_write_log.old_num = new_write_log.old_num + tmp_data.allCount
+--                     --             end
+--                     --         end
+--                     --         new_write_log.change_type = loginfo.log_type
+--                     --         new_write_log.change_reason = change_reason
+--                     --         new_write_log.log_ts = now_ts
+--                     --         write_log_datas[ItemDef.LogType.ChangeNum][loginfo.new_config_id] = new_write_log
+--                     --     end
+--                     -- elseif loginfo.log_type == ItemDef.LogType.ChangeInfo then
+--                     --     if not write_log_datas[ItemDef.LogType.ChangeInfo][loginfo.old_config_id] then
+--                     --         local new_write_log = BagDef.newPBBagLog()
+--                     --         new_write_log.uid = context.uid
+--                     --         new_write_log.config_id = loginfo.old_config_id
+--                     --         new_write_log.old_num = 1
+--                     --         new_write_log.new_num = 1
+--                     --         new_write_log.mod_uniqid = loginfo.old_uniqid
+--                     --         if loginfo.old_itemdata then
+--                     --             new_write_log.old_item_data = loginfo.old_itemdata
+--                     --         end
+--                     --         if now_itemdata then
+--                     --             new_write_log.new_item_data = now_itemdata
+--                     --         end
+--                     --         new_write_log.change_type = loginfo.log_type
+--                     --         new_write_log.change_reason = change_reason
+--                     --         new_write_log.log_ts = now_ts
+--                     --         write_log_datas[ItemDef.LogType.ChangeInfo][loginfo.old_config_id] = new_write_log
+--                     --     end
+--                     -- end
 
 --                     -- 处理dataMap变更
---                     if old_config_id > 0 then
---                         local change_dataMap = Bag.dataMap[old_config_id][bagType]
---                         change_dataMap.allCount = change_dataMap.allCount - old_item_count
---                         if old_uniqid > 0 then
---                             change_dataMap.uniqid_pos[old_uniqid] = nil
+--                     if not Bag.dataMap[loginfo.new_config_id] then
+--                         Bag.dataMap[loginfo.new_config_id] = {}
+--                     end
+--                     if not Bag.dataMap[loginfo.new_config_id][bagType] then
+--                         Bag.dataMap[loginfo.new_config_id][bagType] = {
+--                             allCount = 0,
+--                             pos_count = {},
+--                             uniqid_pos = {},
+--                         }
+--                     end
+
+--                     if Bag.dataMap[loginfo.old_config_id]
+--                         and Bag.dataMap[loginfo.old_config_id][bagType] then
+--                         Bag.dataMap[loginfo.old_config_id][bagType].allCount = Bag.dataMap
+--                             [loginfo.old_config_id][bagType].allCount - loginfo.old_count
+--                     end
+--                     Bag.dataMap[loginfo.new_config_id][bagType].allCount = Bag.dataMap
+--                         [loginfo.new_config_id][bagType].allCount + loginfo.new_count
+
+--                     if Bag.dataMap[loginfo.old_config_id]
+--                         and Bag.dataMap[loginfo.old_config_id][bagType] then
+--                         if loginfo.old_uniqid ~= 0 then
+--                             Bag.dataMap[loginfo.old_config_id][bagType].uniqid_pos[loginfo.old_uniqid] = nil
+
+--                             -- if loginfo.log_type == ItemDef.LogType.ChangeNum
+--                             --     and write_log_datas[ItemDef.LogType.ChangeNum][loginfo.old_config_id] then
+--                             --     table.insert(write_log_datas[ItemDef.LogType.ChangeNum][loginfo.old_config_id]
+--                             --         .change_uniqids, loginfo.old_uniqid)
+--                             -- end
 --                         else
---                             change_dataMap.pos_count[pos] = nil
+--                             Bag.dataMap[loginfo.old_config_id][bagType].pos_count[pos] = nil
 --                         end
---                         Bag.dataMap[old_config_id][bagType] = change_dataMap
 --                     end
---                     if now_config_id > 0 then
---                         local change_dataMap = Bag.dataMap[now_config_id][bagType]
---                         change_dataMap.allCount = change_dataMap.allCount + now_item_count
---                         if now_uniqid > 0 then
---                             change_dataMap.uniqid_pos[now_uniqid] = pos
+--                     if loginfo.new_uniqid ~= 0 then
+--                         Bag.dataMap[loginfo.new_config_id][bagType].uniqid_pos[loginfo.new_uniqid] = pos
+
+--                         -- if loginfo.log_type == ItemDef.LogType.ChangeNum
+--                         --     and write_log_datas[ItemDef.LogType.ChangeNum][loginfo.new_config_id] then
+--                         --     table.insert(write_log_datas[ItemDef.LogType.ChangeNum][loginfo.new_config_id]
+--                         --         .change_uniqids, loginfo.new_uniqid)
+--                         -- end
+--                     else
+--                         Bag.dataMap[loginfo.new_config_id][bagType].pos_count[pos] = loginfo.new_count
+--                     end
+
+--                     -- 去掉已经为0的道具格子
+--                     if loginfo.log_type == ItemDef.LogType.ChangeNum then
+--                         if baginfo.items[pos].common_info.item_count == 0 then
+--                             baginfo.items[pos] = nil
+--                             update_msg.update_items[bagType].items[pos] = {}
+--                         end
+--                     elseif loginfo.log_type == ItemDef.LogType.ChangeInfo then
+--                         if baginfo.items[pos].common_info.item_count == 0 then
+--                             baginfo.items[pos] = nil
+--                             update_msg.update_items[bagType].items[pos] = {}
 --                         else
---                             change_dataMap.pos_count[pos] = now_item_count
---                         end
---                         Bag.dataMap[now_config_id][bagType] = change_dataMap
---                     end
-                    
---                     -- 记录唯一道具变更
---                     if old_config_id > 0 and old_uniqid > 0 then
---                         if not tmp_log_datas[old_config_id].change_uniq[old_uniqid] then
---                             tmp_log_datas[old_config_id].change_uniq[old_uniqid] = {}
---                         end
---                         if not tmp_log_datas[old_config_id].change_uniq[old_uniqid].old_itemdata then
---                             tmp_log_datas[old_config_id].change_uniq[old_uniqid].old_itemdata = old_itemdata
+--                             -- 记录ChangeInfo后的新itemdata
+--                             loginfo.new_itemdata = table.copy(now_itemdata, true)
 --                         end
 --                     end
---                     if now_config_id > 0 and now_uniqid > 0 then
---                         if not tmp_log_datas[now_config_id].change_uniq[now_uniqid] then
---                             tmp_log_datas[now_config_id].change_uniq[now_uniqid] = {}
---                         end
---                         if not tmp_log_datas[now_config_id].change_uniq[now_uniqid].new_itemdata then
---                             tmp_log_datas[now_config_id].change_uniq[now_uniqid].new_itemdata = now_itemdata
---                         end
---                     end
+
+--                     -- -- 记录Bag.dataMap变更后的背包数据
+--                     -- if loginfo.log_type == ItemDef.LogType.ChangeNum then
+--                     --     if write_log_datas[ItemDef.LogType.ChangeNum][loginfo.old_config_id] then
+--                     --         for _, tmp_data in pairs(Bag.dataMap[loginfo.old_config_id]) do
+--                     --             write_log_datas[ItemDef.LogType.ChangeNum][loginfo.old_config_id].new_num =
+--                     --                 write_log_datas[ItemDef.LogType.ChangeNum][loginfo.old_config_id].new_num +
+--                     --                 tmp_data.allCount
+--                     --         end
+--                     --     end
+--                     --     if write_log_datas[ItemDef.LogType.ChangeNum][loginfo.new_config_id] then
+--                     --         for _, tmp_data in pairs(Bag.dataMap[loginfo.new_config_id]) do
+--                     --             write_log_datas[ItemDef.LogType.ChangeNum][loginfo.new_config_id].new_num =
+--                     --                 write_log_datas[ItemDef.LogType.ChangeNum][loginfo.new_config_id].new_num +
+--                     --                 tmp_data.allCount
+--                     --         end
+--                     --     end
+--                     -- end
+--                 end
+--             else
+--                 if not update_msg.update_coins then
+--                     update_msg.update_coins = {}
+--                 end
+
+--                 for coinid, _ in pairs(logs) do
+--                     update_msg.update_coins[coinid] = coinsdata.coins[coinid]
 --                 end
 --             end
 --         end
 --     end
 
---     local write_log_datas = {
---         [BagDef.LogType.ChangeNum] = {},
---         [BagDef.LogType.ChangeInfo] = {},
---     }
---     local now_ts = moon.time()
---     -- 统计所有记录变更
---     for tmp_config_id, tmp_data in pairs(tmp_log_datas) do
---         local new_num = 0
---         for _, bag_data_map in pairs(Bag.dataMap[tmp_config_id]) do
---             new_num = new_num + bag_data_map.allCount
---         end
-
---         if table.size(tmp_data.change_uniq) == 0 then
---             if new_num ~= tmp_data.old_num then
---                 local new_write_log = BagDef.newPBBagLog()
---                 new_write_log.uid = context.uid
---                 new_write_log.config_id = tmp_config_id
---                 new_write_log.old_num = tmp_data.old_num
---                 new_write_log.new_num = new_num
---                 new_write_log.change_type = BagDef.LogType.ChangeNum
---                 new_write_log.change_reason = change_reason
---                 new_write_log.log_ts = now_ts
---                 write_log_datas[BagDef.LogType.ChangeNum][tmp_config_id] = new_write_log
---             end
---         else
---             for change_uniqid, change_data in pairs(tmp_data.change_uniq) do
---                 if not change_data.old_itemdata or not change_data.new_itemdata then
---                     if not write_log_datas[BagDef.LogType.ChangeNum][tmp_config_id] then
---                         local new_write_log = BagDef.newPBBagLog()
---                         new_write_log.uid = context.uid
---                         new_write_log.config_id = tmp_config_id
---                         new_write_log.old_num = tmp_data.old_num
---                         new_write_log.new_num = new_num
---                         new_write_log.change_type = BagDef.LogType.ChangeNum
---                         new_write_log.change_reason = change_reason
---                         new_write_log.log_ts = now_ts
---                         write_log_datas[BagDef.LogType.ChangeNum][tmp_config_id] = new_write_log
---                     end
---                     if change_data.old_itemdata then
---                         table.insert(write_log_datas[BagDef.LogType.ChangeNum][tmp_config_id].del_uniqids, change_uniqid)
---                         table.insert(write_log_datas[BagDef.LogType.ChangeNum][tmp_config_id].old_item_data,
---                         change_data.old_itemdata)
---                     end
---                     if change_data.new_itemdata then
---                         table.insert(write_log_datas[BagDef.LogType.ChangeNum][tmp_config_id].add_uniqids, change_uniqid)
---                         table.insert(write_log_datas[BagDef.LogType.ChangeNum][tmp_config_id].new_item_data,
---                         change_data.new_itemdata)
---                     end
---                 else
---                     local new_write_log = BagDef.newPBBagLog()
---                     new_write_log.uid = context.uid
---                     new_write_log.config_id = tmp_config_id
---                     new_write_log.old_num = tmp_data.old_num
---                     new_write_log.new_num = new_num
---                     new_write_log.mod_uniqid = change_uniqid
---                     new_write_log.old_item_data = change_data.old_itemdata
---                     new_write_log.new_item_data = change_data.new_itemdata
---                     new_write_log.change_type = BagDef.LogType.ChangeInfo
---                     new_write_log.change_reason = change_reason
---                     new_write_log.log_ts = now_ts
---                     if not write_log_datas[BagDef.LogType.ChangeInfo][tmp_config_id] then
---                         write_log_datas[BagDef.LogType.ChangeInfo][tmp_config_id] = {}
---                     end
---                     write_log_datas[BagDef.LogType.ChangeInfo][tmp_config_id][change_uniqid] = new_write_log
---                 end
---             end
---         end
+--     local success_coin = false
+--     if bagTypes and bagTypes[BagDef.BagType.Coins] then
+--         success_coin = Bag.SaveCoinsNow()
 --     end
 
---     local success = false
---     if table.size(update_msg.update_coins) > 0 then
---         success = Bag.SaveCoinsNow()
---     end
---     if table.size(update_msg.update_items) > 0 then
---         success = Bag.SaveBagsNow(bagTypes)
---     end
---     --存储日志
-    
+--     success = Bag.SaveBagsNow(bagTypes)
 --     --发送PBBagUpdateSyncCmd
---     if success then
+--     if success or success_coin then
 --         --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
 --         context.S2C(context.net_id, CmdCode["PBBagUpdateSyncCmd"], update_msg, 0)
 --     end
 
+--     --存储日志
+
 --     return success
 -- end
 
-function Bag.AddLog(logs, pos, log_type, old_itemid, old_uniqid, old_count, old_itemdata)
-    logs[pos] = {
-        log_type = log_type,
-        old_config_id = old_itemid,
-        old_uniqid = old_uniqid,
-        old_count = old_count,
-        old_itemdata = {},
-    }
-
-    if log_type == BagDef.LogType.ChangeInfo then
-        logs[pos].old_itemdata = old_itemdata
+function Bag.SaveAndLog(change_logs, change_reason,
+     relation_roleid, relation_ghostid, relation_ghost_uniqid, relation_imageid)
+    if not change_logs then
+        return
     end
+
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata then
+        return
+    end
+
+    local coinsdata = scripts.UserModel.GetCoinsData()
+    if not coinsdata then
+        return
+    end
+
+    -- 用于日志存储的数据
+    local coin_log_datas = {}
+    local item_log_datas = {}
+
+    -- 修改dataMap
+    -- 将变更记录作为PBBagUpdateSyncCmd发送
+    local update_msg = {
+        update_items = {},
+        update_coins = {},
+    }
+    for bagType, logs in pairs(change_logs) do
+        if bagType == BagDef.BagType.Coins then
+            if not update_msg.update_coins then
+                update_msg.update_coins = {}
+            end
+
+            for coinid, old_coininfo in pairs(logs) do
+                update_msg.update_coins[coinid] = coinsdata.coins[coinid]
+                local new_tmp = {
+                    old_num = old_coininfo.coin_count,
+                    new_num = coinsdata.coins[coinid].coin_count,
+                }
+                coin_log_datas[coinid] = new_tmp
+            end
+        else
+            local baginfo = bagdata[bagType]
+            if not baginfo then
+                return
+            end
+
+            if not update_msg.update_items[bagType] then
+                update_msg.update_items[bagType] = {
+                    bag_item_type = baginfo.bag_item_type,
+                    capacity = baginfo.capacity,
+                    items = {},
+                }
+
+                for pos, old_itemdata in pairs(logs) do
+                    local old_config_id = 0
+                    local old_item_count = 0
+                    local old_uniqid = 0
+                    if old_itemdata and old_itemdata.common_info then
+                        if old_itemdata.common_info.config_id then
+                            old_config_id = old_itemdata.common_info.config_id
+                        end
+                        if old_itemdata.common_info.item_count then
+                            old_item_count = old_itemdata.common_info.item_count
+                        end
+                        if old_itemdata.common_info.uniqid then
+                            old_uniqid = old_itemdata.common_info.uniqid
+                        end
+                    end
+
+                    local now_itemdata = baginfo.items[pos]
+                    local now_config_id = 0
+                    local now_item_count = 0
+                    local now_uniqid = 0
+                    if now_itemdata and now_itemdata.common_info then
+                        if now_itemdata.common_info.config_id then
+                            now_config_id = now_itemdata.common_info.config_id
+                        end
+                        if now_itemdata.common_info.item_count then
+                            now_item_count = now_itemdata.common_info.item_count
+                        end
+                        if now_itemdata.common_info.uniqid then
+                            now_uniqid = now_itemdata.common_info.uniqid
+                        end
+                    end
+
+                    -- 处理发送到客户端的更新信息
+                    if now_config_id == 0 then
+                        if old_config_id > 0 then
+                            update_msg.update_items[bagType].items[pos] = table.copy(old_itemdata, true)
+                            update_msg.update_items[bagType].items[pos].common_info.item_count = 0
+                        end
+                    else
+                        update_msg.update_items[bagType].items[pos] = now_itemdata
+
+                        -- 处理dataMap新增
+                        if not Bag.dataMap[now_config_id] then
+                            Bag.dataMap[now_config_id] = {}
+                        end
+                        if not Bag.dataMap[now_config_id][bagType] then
+                            Bag.dataMap[now_config_id][bagType] = {
+                                allCount = 0,
+                                pos_count = {},
+                                uniqid_pos = {},
+                            }
+                        end
+                    end
+
+                    -- 记录Bag.dataMap变更前的背包数据
+                    if old_config_id > 0 and not item_log_datas[old_config_id] then
+                        local new_tmp = {
+                            old_num = 0,
+                            new_num = 0,
+                            change_uniq = {},
+                        }
+                        for _, tmp_data in pairs(Bag.dataMap[old_config_id]) do
+                            new_tmp.old_num = new_tmp.old_num + tmp_data.allCount
+                        end
+                        item_log_datas[old_config_id] = new_tmp
+                    end
+                    if now_config_id > 0 and not item_log_datas[now_config_id] then
+                        local new_tmp = {
+                            old_num = 0,
+                            new_num = 0,
+                            change_uniq = {},
+                        }
+                        for _, tmp_data in pairs(Bag.dataMap[now_config_id]) do
+                            new_tmp.old_num = new_tmp.old_num + tmp_data.allCount
+                        end
+                        item_log_datas[now_config_id] = new_tmp
+                    end
+
+                    -- 处理dataMap变更
+                    if old_config_id > 0 then
+                        local change_dataMap = Bag.dataMap[old_config_id][bagType]
+                        change_dataMap.allCount = change_dataMap.allCount - old_item_count
+                        if old_uniqid > 0 then
+                            change_dataMap.uniqid_pos[old_uniqid] = nil
+                        else
+                            change_dataMap.pos_count[pos] = nil
+                        end
+                        Bag.dataMap[old_config_id][bagType] = change_dataMap
+                    end
+                    if now_config_id > 0 then
+                        local change_dataMap = Bag.dataMap[now_config_id][bagType]
+                        change_dataMap.allCount = change_dataMap.allCount + now_item_count
+                        if now_uniqid > 0 then
+                            change_dataMap.uniqid_pos[now_uniqid] = pos
+                        else
+                            change_dataMap.pos_count[pos] = now_item_count
+                        end
+                        Bag.dataMap[now_config_id][bagType] = change_dataMap
+                    end
+                    
+                    -- 记录唯一道具变更
+                    if old_config_id > 0 and old_uniqid > 0 then
+                        if not item_log_datas[old_config_id].change_uniq[old_uniqid] then
+                            item_log_datas[old_config_id].change_uniq[old_uniqid] = {}
+                        end
+                        if not item_log_datas[old_config_id].change_uniq[old_uniqid].old_itemdata then
+                            item_log_datas[old_config_id].change_uniq[old_uniqid].old_itemdata = old_itemdata
+                        end
+                    end
+                    if now_config_id > 0 and now_uniqid > 0 then
+                        if not item_log_datas[now_config_id].change_uniq[now_uniqid] then
+                            item_log_datas[now_config_id].change_uniq[now_uniqid] = {}
+                        end
+                        if not item_log_datas[now_config_id].change_uniq[now_uniqid].new_itemdata then
+                            item_log_datas[now_config_id].change_uniq[now_uniqid].new_itemdata = now_itemdata
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- local write_log_datas = {
+    --     [ItemDef.LogType.ChangeNum] = {},
+    --     [ItemDef.LogType.ChangeInfo] = {},
+    -- }
+    local write_log_datas = {}
+    local now_ts = moon.time()
+    -- 统计所有记录变更
+    for tmp_config_id, tmp_data in pairs(coin_log_datas) do
+        if tmp_data.new_num ~= tmp_data.old_num then
+            local new_write_log = ItemDef.newPBItemLog()
+            new_write_log.uid = context.uid
+            new_write_log.config_id = tmp_config_id
+            new_write_log.old_num = tmp_data.old_num
+            new_write_log.new_num = tmp_data.new_num
+            new_write_log.relation_roleid = relation_roleid or 0
+            new_write_log.relation_ghostid = relation_ghostid or 0
+            new_write_log.relation_ghost_uniqid = relation_ghost_uniqid or 0
+            new_write_log.relation_imageid = relation_imageid or 0
+            new_write_log.change_type = ItemDef.LogType.ChangeNum
+            new_write_log.change_reason = change_reason
+            new_write_log.log_ts = now_ts
+            table.insert(write_log_datas, new_write_log)
+            -- write_log_datas[ItemDef.LogType.ChangeNum][tmp_config_id] = new_write_log
+        end
+    end
+    for tmp_config_id, tmp_data in pairs(item_log_datas) do
+        for _, bag_data_map in pairs(Bag.dataMap[tmp_config_id]) do
+            tmp_data.new_num = tmp_data.new_num + bag_data_map.allCount
+        end
+
+        if table.size(tmp_data.change_uniq) == 0 then
+            if tmp_data.new_num ~= tmp_data.old_num then
+                local new_write_log = ItemDef.newPBItemLog()
+                new_write_log.uid = context.uid
+                new_write_log.config_id = tmp_config_id
+                new_write_log.old_num = tmp_data.old_num
+                new_write_log.new_num = tmp_data.new_num
+                new_write_log.relation_roleid = relation_roleid or 0
+                new_write_log.relation_ghostid = relation_ghostid or 0
+                new_write_log.relation_ghost_uniqid = relation_ghost_uniqid or 0
+                new_write_log.relation_imageid = relation_imageid or 0
+                new_write_log.change_type = ItemDef.LogType.ChangeNum
+                new_write_log.change_reason = change_reason
+                new_write_log.log_ts = now_ts
+                table.insert(write_log_datas, new_write_log)
+                -- write_log_datas[ItemDef.LogType.ChangeNum][tmp_config_id] = new_write_log
+            end
+        else
+            local change_num_log = ItemDef.newPBItemLog()
+            change_num_log.uid = context.uid
+            change_num_log.config_id = tmp_config_id
+            change_num_log.old_num = tmp_data.old_num
+            change_num_log.new_num = tmp_data.new_num
+            change_num_log.relation_roleid = relation_roleid or 0
+            change_num_log.relation_ghostid = relation_ghostid or 0
+            change_num_log.relation_ghost_uniqid = relation_ghost_uniqid or 0
+            change_num_log.relation_imageid = relation_imageid or 0
+            change_num_log.change_type = ItemDef.LogType.ChangeNum
+            change_num_log.change_reason = change_reason
+            change_num_log.log_ts = now_ts
+
+            for change_uniqid, change_data in pairs(tmp_data.change_uniq) do
+                if not change_data.old_itemdata or not change_data.new_itemdata then
+                    if change_data.old_itemdata then
+                        table.insert(change_num_log.del_uniqids, change_uniqid)
+                        table.insert(change_num_log.old_item_data, change_data.old_itemdata)
+                    end
+                    if change_data.new_itemdata then
+                        table.insert(change_num_log.add_uniqids, change_uniqid)
+                        table.insert(change_num_log.new_item_data, change_data.new_itemdata)
+                    end
+                else
+                    if not scripts.Item.UniqItemEqual(change_data.old_itemdata, change_data.new_itemdata) then
+                        local change_info_log = ItemDef.newPBItemLog()
+                        change_info_log.uid = context.uid
+                        change_info_log.config_id = tmp_config_id
+                        change_info_log.old_num = 1
+                        change_info_log.new_num = 1
+                        change_info_log.mod_uniqid = change_uniqid
+                        table.insert(change_info_log.old_item_data, change_data.old_itemdata)
+                        table.insert(change_info_log.new_item_data, change_data.new_itemdata)
+                        change_info_log.change_type = ItemDef.LogType.ChangeInfo
+                        change_info_log.change_reason = change_reason
+                        change_info_log.log_ts = now_ts
+                        table.insert(write_log_datas, change_info_log)
+                    end
+                end
+            end
+            if table.size(change_num_log.del_uniqids) > 0 or table.size(change_num_log.add_uniqids) > 0 then
+                table.insert(write_log_datas, change_num_log)
+            end
+        end
+    end
+
+    local success = false
+    if table.size(update_msg.update_coins) > 0 then
+        success = Bag.SaveCoinsNow()
+    end
+    local bagTypes = {}
+    for bagType, _ in pairs(change_logs) do
+        bagTypes[bagType] = 1
+    end
+    if table.size(update_msg.update_items) > 0 then
+        success = Bag.SaveBagsNow(bagTypes)
+    end
+    
+    --发送PBBagUpdateSyncCmd
+    if success then
+        --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        context.S2C(context.net_id, CmdCode["PBBagUpdateSyncCmd"], update_msg, 0)
+    end
+
+    --存储日志
+    scripts.Item.SendLog(write_log_datas)
+
+    return success
 end
 
--- function Bag.AddLog(logs, pos, old_itemdata)
---     if logs[pos] then
---         return
---     end
+-- function Bag.AddLog(logs, pos, log_type, old_itemid, old_uniqid, old_count, old_itemdata)
+--     logs[pos] = {
+--         log_type = log_type,
+--         old_config_id = old_itemid,
+--         old_uniqid = old_uniqid,
+--         old_count = old_count,
+--         old_itemdata = {},
+--     }
 
---     logs[pos] = old_itemdata
+--     if log_type == ItemDef.LogType.ChangeInfo then
+--         logs[pos].old_itemdata = old_itemdata
+--     end
 -- end
+
+function Bag.AddLog(logs, pos, old_itemdata)
+    if logs[pos] then
+        return
+    end
+
+    if not old_itemdata or table.size(old_itemdata) <= 0 then
+        logs[pos] = {}
+    else
+        logs[pos] = table.copy(old_itemdata)
+    end
+end
 
 -- 添加物品（支持自动堆叠）
 ---@param bagType string
@@ -883,8 +926,9 @@ function Bag.AddItem(bagType, baginfo, item_data, logs)
             and itemdata.common_info.item_count < item_cfg.stack_count then
             local canAdd = math.min(item_cfg.stack_count - itemdata.common_info.item_count, remaining)
 
-            Bag.AddLog(logs, pos, BagDef.LogType.ChangeNum, item_data.common_info.config_id, 0,
-            itemdata.common_info.item_count)
+            -- Bag.AddLog(logs, pos, ItemDef.LogType.ChangeNum, item_data.common_info.config_id, 0,
+            -- itemdata.common_info.item_count)
+            Bag.AddLog(logs, pos, itemdata)
             itemdata.common_info.item_count = itemdata.common_info.item_count + canAdd
             
             remaining = remaining - canAdd
@@ -921,7 +965,8 @@ function Bag.AddItem(bagType, baginfo, item_data, logs)
             end
             new_item.common_info.item_count = canAdd
 
-            Bag.AddLog(logs, pos, BagDef.LogType.ChangeNum, 0, 0, 0)
+            -- Bag.AddLog(logs, pos, ItemDef.LogType.ChangeNum, 0, 0, 0)
+            Bag.AddLog(logs, pos, {})
             baginfo.items[pos] = new_item
 
             remaining = remaining - canAdd
@@ -955,8 +1000,12 @@ function Bag.DelItem(bagType, baginfo, itemId, count, pos, logs)
             return ErrorCode.ItemNotEnough
         end
 
-        Bag.AddLog(logs, pos, BagDef.LogType.ChangeNum, itemId, 0, itemdata.common_info.item_count)
+        -- Bag.AddLog(logs, pos, ItemDef.LogType.ChangeNum, itemId, 0, itemdata.common_info.item_count)
+        Bag.AddLog(logs, pos, itemdata)
         itemdata.common_info.item_count = itemdata.common_info.item_count + remaining
+        if itemdata.common_info.item_count == 0 then
+            baginfo.items[pos] = nil
+        end
         
         remaining = 0
     else
@@ -967,8 +1016,12 @@ function Bag.DelItem(bagType, baginfo, itemId, count, pos, logs)
                 and itemdata.common_info.item_count > 0 then
                 local canSub = math.min(itemdata.common_info.item_count, -remaining)
 
-                Bag.AddLog(logs, pos, BagDef.LogType.ChangeNum, itemId, 0, itemdata.common_info.item_count)
+                -- Bag.AddLog(logs, pos, ItemDef.LogType.ChangeNum, itemId, 0, itemdata.common_info.item_count)
+                Bag.AddLog(logs, pos, itemdata)
                 itemdata.common_info.item_count = itemdata.common_info.item_count - canSub
+                if itemdata.common_info.item_count == 0 then
+                    baginfo.items[pos] = nil
+                end
 
                 remaining = remaining + canSub
                 if remaining >= 0 then
@@ -1018,7 +1071,8 @@ function Bag.AddUniqItem(bagType, baginfo, item_data, itype, logs)
             end
 
             baginfo.items[pos] = new_item
-            Bag.AddLog(logs, pos, BagDef.LogType.ChangeNum, 0, 0, 0)
+            -- Bag.AddLog(logs, pos, ItemDef.LogType.ChangeNum, 0, 0, 0)
+            Bag.AddLog(logs, pos, {})
 
             return ErrorCode.None, pos
         end
@@ -1037,7 +1091,7 @@ end
 --     for pos = 1, baginfo.capacity do
 --         if not baginfo.items[pos] then
 --             baginfo.items[pos] = table.copy(item_data)
---             Bag.AddLog(logs, pos, BagDef.LogType.ChangeNum, 0, 0, 0)
+--             Bag.AddLog(logs, pos, ItemDef.LogType.ChangeNum, 0, 0, 0)
 
 --             return ErrorCode.None, pos
 --         end
@@ -1059,7 +1113,10 @@ function Bag.DelUniqItem(bagType, baginfo, itemId, uniqid, pos, logs)
 
     baginfo.items[pos].common_info.item_count = 0
     -- 处理物品记录
-    Bag.AddLog(logs, pos, BagDef.LogType.ChangeNum, itemId, uniqid, 1)
+    -- Bag.AddLog(logs, pos, ItemDef.LogType.ChangeNum, itemId, uniqid, 1)
+    Bag.AddLog(logs, pos, baginfo.items[pos])
+    baginfo.items[pos] = nil
+
 
     return ErrorCode.None
 end
@@ -1100,7 +1157,8 @@ function Bag.AddDurabItem(bagType, baginfo, item_data, change_log)
             end
 
             baginfo.items[pos] = new_item
-            Bag.AddLog(change_log, pos, BagDef.LogType.ChangeNum, 0, 0, 0)
+            -- Bag.AddLog(change_log, pos, ItemDef.LogType.ChangeNum, 0, 0, 0)
+            Bag.AddLog(change_log, pos, {})
             add_pos = pos
         end
     end
@@ -1579,11 +1637,8 @@ function Bag.AddItems(bagType, stack_item_datas, unstack_item_datas, change_log)
     -- 判断图鉴是否需要更新
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local change_image_ids = {}
-    for pos, log in pairs(change_log[bagType]) do
-        if log.log_type == BagDef.LogType.ChangeNum
-            and log.old_config_id == 0
-            and log.old_count == 0
-            and baginfo.items[pos] then
+    for pos, old_itemdata in pairs(change_log[bagType]) do
+        if table.size(old_itemdata) <= 0 then
             scripts.ItemImage.AddItemImage(baginfo.items[pos].common_info.config_id, change_image_ids)
         end
     end
@@ -1617,7 +1672,8 @@ function Bag.DealCoins(coins, change_log)
         if not change_log[BagDef.BagType.Coins] then
             change_log[BagDef.BagType.Coins] = {}
         end
-        Bag.AddLog(change_log[BagDef.BagType.Coins], coinid, BagDef.LogType.ChangeNum, coinid, 0, coinsdata.coins[coinid].coin_count)
+        -- Bag.AddLog(change_log[BagDef.BagType.Coins], coinid, ItemDef.LogType.ChangeNum, coinid, 0, coinsdata.coins[coinid].coin_count)
+        Bag.AddLog(change_log[BagDef.BagType.Coins], coinid, coinsdata.coins[coinid])
 
         coinsdata.coins[coinid].coin_count = coinsdata.coins[coinid].coin_count + coin.coin_count
     end
@@ -1664,8 +1720,7 @@ function Bag.StackItems(srcBagType, srcPos, destBagType, destPos, change_log)
     -- 源道具校验,不能有被锁定数量的道具
     local srcItem = srcBag.items[srcPos]
     if not srcItem or srcItem.common_info.uniqid ~= 0
-        or srcItem.special_info ~= nil
-        or srcItem.common_info.lock_count ~= 0 then
+        or srcItem.special_info ~= nil then
         return ErrorCode.StackNotAllowed
     end
     if srcItem.common_info.item_count <= 0 then
@@ -1689,7 +1744,7 @@ function Bag.StackItems(srcBagType, srcPos, destBagType, destPos, change_log)
     end
 
     -- 计算可堆叠数量
-    local available_count = item_cfg.stack_count - (destItem.common_info.item_count + destItem.common_info.lock_count)
+    local available_count = item_cfg.stack_count - destItem.common_info.item_count
     if available_count <= 0 then
         return ErrorCode.StackFull
     end
@@ -1703,15 +1758,17 @@ function Bag.StackItems(srcBagType, srcPos, destBagType, destPos, change_log)
     if not change_log[destBagType] then
         change_log[destBagType] = {}
     end
-    Bag.AddLog(change_log[destBagType], destPos, BagDef.LogType.ChangeNum, destItem.common_info.config_id,
-        0, destItem.common_info.item_count)
+    -- Bag.AddLog(change_log[destBagType], destPos, ItemDef.LogType.ChangeNum, destItem.common_info.config_id,
+    --     0, destItem.common_info.item_count)
+    Bag.AddLog(change_log[destBagType], destPos, destItem)
     destItem.common_info.item_count = destItem.common_info.item_count + move_count
 
     if not change_log[srcBagType] then
         change_log[srcBagType] = {}
     end
-    Bag.AddLog(change_log[srcBagType], srcPos, BagDef.LogType.ChangeNum, srcItem.common_info.config_id,
-        0, srcItem.common_info.item_count)
+    -- Bag.AddLog(change_log[srcBagType], srcPos, ItemDef.LogType.ChangeNum, srcItem.common_info.config_id,
+    --     0, srcItem.common_info.item_count)
+    Bag.AddLog(change_log[srcBagType], srcPos, srcItem)
     srcItem.common_info.item_count = srcItem.common_info.item_count - move_count
 
     return ErrorCode.None
@@ -1754,7 +1811,6 @@ function Bag.SplitItem(srcBagType, srcPos, destBagType, destPos, splitCount, cha
     local srcItem = srcBag.items[srcPos]
     if not srcItem
         or srcItem.common_info.uniqid ~= 0
-        or srcItem.common_info.lock_count ~= 0
         or srcItem.common_info.item_count <= 1 then
         return ErrorCode.SplitNotAllowed
     end
@@ -1782,14 +1838,16 @@ function Bag.SplitItem(srcBagType, srcPos, destBagType, destPos, splitCount, cha
     if not change_log[srcBagType] then
         change_log[srcBagType] = {}
     end
-    Bag.AddLog(change_log[srcBagType], srcPos, BagDef.LogType.ChangeNum, srcItem.common_info.config_id,
-        0, srcItem.common_info.item_count)
+    -- Bag.AddLog(change_log[srcBagType], srcPos, ItemDef.LogType.ChangeNum, srcItem.common_info.config_id,
+    --     0, srcItem.common_info.item_count)
+    Bag.AddLog(change_log[srcBagType], srcPos, srcItem)
     srcItem.common_info.item_count = srcItem.common_info.item_count - splitCount
 
     if not change_log[destBagType] then
         change_log[destBagType] = {}
     end
-    Bag.AddLog(change_log[destBagType], destPos, BagDef.LogType.ChangeNum, srcItem.common_info.config_id, 0, 0)
+    -- Bag.AddLog(change_log[destBagType], destPos, ItemDef.LogType.ChangeNum, srcItem.common_info.config_id, 0, 0)
+    Bag.AddLog(change_log[destBagType], destPos, {})
     destBag.items[destPos] = table.copy(srcItem)
     destBag.items[destPos].common_info.item_count = splitCount
 
@@ -1828,7 +1886,7 @@ function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos, change_log)
 
     -- 源物品校验,不能有被锁定数量的道具
     local srcItem = srcBag.items[srcPos]
-    if not srcItem or srcItem.common_info.lock_count ~= 0 then
+    if not srcItem then
         return ErrorCode.ItemNotExist
     end
 
@@ -1842,10 +1900,6 @@ function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos, change_log)
     local destItem = destBag.items[destPos]
     if destItem then
         -- 目标位置有物品
-        -- 不能有被锁定数量的道具
-        if destItem.common_info.lock_count ~= 0 then
-            return ErrorCode.ItemNotExist
-        end
         -- 检查是否可以交换
         local destItemType = ItemDefine.GetItemBagType(destItem.common_info.config_id)
         if srcBag.bag_item_type ~= ItemDefine.ItemBagType.ALL
@@ -1861,8 +1915,9 @@ function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos, change_log)
     if not change_log[srcBagType] then
         change_log[srcBagType] = {}
     end
-    Bag.AddLog(change_log[srcBagType], srcPos, BagDef.LogType.ChangeInfo, srcItem.common_info.config_id,
-        srcItem.common_info.uniqid, srcItem.common_info.item_count, table.copy(srcItem))
+    -- Bag.AddLog(change_log[srcBagType], srcPos, ItemDef.LogType.ChangeInfo, srcItem.common_info.config_id,
+    --     srcItem.common_info.uniqid, srcItem.common_info.item_count, table.copy(srcItem))
+    Bag.AddLog(change_log[srcBagType], srcPos, srcItem)
 
     if destItem then
         -- 交换物品
@@ -1870,8 +1925,9 @@ function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos, change_log)
         if not change_log[srcBagType] then
             change_log[srcBagType] = {}
         end
-        Bag.AddLog(change_log[destBagType], destPos, BagDef.LogType.ChangeInfo, destItem.common_info.config_id,
-        destItem.common_info.uniqid, destItem.common_info.item_count, table.copy(destItem))
+        -- Bag.AddLog(change_log[destBagType], destPos, ItemDef.LogType.ChangeInfo, destItem.common_info.config_id,
+        --     destItem.common_info.uniqid, destItem.common_info.item_count, table.copy(destItem))
+        Bag.AddLog(change_log[destBagType], destPos, destItem)
         destBag.items[destPos] = srcItem
 
     else
@@ -1879,7 +1935,8 @@ function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos, change_log)
         if not change_log[srcBagType] then
             change_log[srcBagType] = {}
         end
-        Bag.AddLog(change_log[destBagType], destPos, BagDef.LogType.ChangeInfo, 0, 0, 0, nil)
+        -- Bag.AddLog(change_log[destBagType], destPos, ItemDef.LogType.ChangeInfo, 0, 0, 0, nil)
+        Bag.AddLog(change_log[destBagType], destPos, {})
         destBag.items[destPos] = srcItem
         srcBag.items[srcPos] = nil
     end
@@ -1903,9 +1960,30 @@ function Bag.GetOneItemData(bagType, pos)
     return ErrorCode.None, table.copy(baginfo.items[pos])
 end
 
+---@return integer, integer, PBItemData ? nil
+function Bag.GetUniqItemData(bagType, uniqid)
+    -- 获取数据副本
+    if uniqid <= 0 then
+        return ErrorCode.ItemNotExist, 0
+    end
+
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata then
+        return ErrorCode.BagNotExist, 0
+    end
+
+    local baginfo = bagdata[bagType]
+    for pos, itemdata in pairs(baginfo.items) do
+        if itemdata.common_info.uniqid == uniqid then
+            return ErrorCode.None, pos, table.copy(itemdata)
+        end
+    end
+
+    return ErrorCode.ItemNotExist, 0
+end
+
 ---@return integer, PBItemData ? nil
 function Bag.MutOneItemData(bagType, pos)
-    -- 获取数据副本
     local bagdata = scripts.UserModel.GetBagData()
     if not bagdata then
         return ErrorCode.BagNotExist
@@ -1917,6 +1995,27 @@ function Bag.MutOneItemData(bagType, pos)
     end
 
     return ErrorCode.None, baginfo.items[pos]
+end
+
+---@return integer, integer, PBItemData ? nil
+function Bag.MutUniqItemData(bagType, uniqid)
+    if uniqid <= 0 then
+        return ErrorCode.ItemNotExist, 0
+    end
+    
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata then
+        return ErrorCode.BagNotExist, 0
+    end
+
+    local baginfo = bagdata[bagType]
+    for pos, itemdata in pairs(baginfo.items) do
+        if itemdata.common_info.uniqid == uniqid then
+            return ErrorCode.None, pos, baginfo.items[pos]
+        end
+    end
+
+    return ErrorCode.ItemNotExist, 0
 end
 
 -- function Bag.SetOneItemData(bagType, pos, itemdata)
@@ -1962,7 +2061,7 @@ function Bag.GetBagdata(bags_name)
 end
 
 function Bag.InlayTabooWord(taboo_word_id, inlay_type, uniqid)
-    local err_code, item_data = Bag.MutOneItemData(BagDef.BagType.Cangku, uniqid)
+    local err_code, pos, item_data = Bag.MutUniqItemData(BagDef.BagType.Cangku, uniqid)
     if err_code ~= ErrorCode.None or not item_data then
         return err_code
     end
@@ -1984,11 +2083,17 @@ function Bag.InlayTabooWord(taboo_word_id, inlay_type, uniqid)
     if not uniqitem_cfg or not item_cfg then
         return ErrorCode.ConfigError
     end
-    if uniqitem_cfg.type4 ~= item_cfg.type4 then
-        return ErrorCode.InlayTypeNotMatch
-    end
-    if inlay_type ~= 1 and uniqitem_cfg.type5 ~= item_cfg.type5 then
-        return ErrorCode.InlayTypeNotMatch
+    if inlay_type == 1 then
+        if item_cfg.type4 ~= ItemDef.TabooWordInlay.RoleType then
+            return ErrorCode.InlayTypeNotMatch
+        end
+    else
+        if uniqitem_cfg.type4 ~= item_cfg.type4 then
+            return ErrorCode.InlayTypeNotMatch
+        end
+        if uniqitem_cfg.type5 ~= item_cfg.type5 then
+            return ErrorCode.InlayTypeNotMatch
+        end
     end
 
     -- 扣除道具消耗
@@ -2076,10 +2181,11 @@ function Bag.PBBagOperateItemReqCmd(req)
             { code = err_code, error = "执行出错", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    local bags = {}
-    bags[req.msg.src_bag] = 1
-    bags[req.msg.dest_bag] = 1
-    local success = Bag.SaveAndLog(bags, change_logs)
+    -- local bags = {}
+    -- bags[req.msg.src_bag] = 1
+    -- bags[req.msg.dest_bag] = 1
+    -- local success = Bag.SaveAndLog(bags, change_logs)
+    local success = Bag.SaveAndLog(change_logs, ItemDef.ChangeReason.BagMove)
     if not success then
         return context.S2C(context.net_id, CmdCode["PBBagOperateItemRspCmd"],
             { code = ErrorCode.BagSaveFailed, error = "保存背包失败", uid = context.uid }, req.msg_context.stub_id)
@@ -2461,11 +2567,12 @@ function Bag.PBDecomposeReqCmd(req)
     end
 
     -- 数据存储更新
-    local save_bags = {}
-    for bagType, _ in pairs(change_log) do
-        save_bags[bagType] = 1
-    end
-    Bag.SaveAndLog(save_bags, change_log)
+    -- local save_bags = {}
+    -- for bagType, _ in pairs(change_log) do
+    --     save_bags[bagType] = 1
+    -- end
+    -- Bag.SaveAndLog(save_bags, change_log)
+    Bag.SaveAndLog(change_log, ItemDef.ChangeReason.ItemDecompose)
 
     return context.S2C(context.net_id, CmdCode.PBDecomposeRspCmd, {
         code = ErrorCode.None,
@@ -2499,11 +2606,12 @@ function Bag.PBBagAddCapacityReqCmd(req)
 
     -- 数据存储更新
     if change_log then
-        local save_bags = {}
-        for bagType, _ in pairs(change_log) do
-            save_bags[bagType] = 1
-        end
-        Bag.SaveAndLog(save_bags, change_log)
+        -- local save_bags = {}
+        -- for bagType, _ in pairs(change_log) do
+        --     save_bags[bagType] = 1
+        -- end
+        -- Bag.SaveAndLog(save_bags, change_log)
+        Bag.SaveAndLog(change_log, ItemDef.ChangeReason.BagAddCapacity)
     end
 
     local bag_data = {}

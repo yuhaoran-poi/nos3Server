@@ -722,11 +722,12 @@ function Mail.PBGetRewardReqCmd(req)
     end
     Mail.SaveMailsNow()
 
-    local save_bags = {}
-    for bagType, _ in pairs(bag_change_log) do
-        save_bags[bagType] = 1
-    end
-    scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    -- local save_bags = {}
+    -- for bagType, _ in pairs(bag_change_log) do
+    --     save_bags[bagType] = 1
+    -- end
+    -- scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.GetMailAttach)
 
     return context.S2C(context.net_id, CmdCode["PBGetRewardRspCmd"], rsp, req.msg_context.stub_id)
 end

@@ -156,6 +156,26 @@ message PBGodsDataS
 	PBPlayedGodsDataS		played_gods_data = 2;	// 出战的神明数据
 }
 
+message PBItemLog
+{
+    int64 uid   = 1;
+    int32 config_id = 2;
+    int64 old_num   = 3;
+    int64 new_num   = 4;
+    int32 mod_uniqid    = 5;
+    repeated int32 del_uniqids  = 6;
+    repeated int32 add_uniqids  = 7;
+    repeated PBItemData old_item_data   = 8;
+    repeated PBItemData new_item_data   = 9;
+	int32 relation_roleid	= 10;
+	int32 relation_ghostid	= 11;
+	int64 relation_ghost_uniqid	= 12;
+	int32 relation_imageid	= 13;
+    int32 change_type   = 14;
+    int32 change_reason = 15;
+    int64 log_ts    = 16;
+}
+
 // 道具图鉴
 message PBImage
 {

@@ -10,6 +10,7 @@ local ShopDef = require("common.def.ShopDef")
 local RoleDef = require("common.def.RoleDef")
 local ItemDefine = require("common.logic.ItemDefine")
 local BagDef = require("common.def.BagDef")
+local ItemDef = require("common.def.ItemDef")
 local json = require("json")
 
 ---@type user_context
@@ -538,11 +539,12 @@ function Shop.PBShopBuyReqCmd(req)
     end
 
     -- 数据存储更新
-    local save_bags = {}
-    for bagType, _ in pairs(bag_change_log) do
-        save_bags[bagType] = 1
-    end
-    scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    -- local save_bags = {}
+    -- for bagType, _ in pairs(bag_change_log) do
+    --     save_bags[bagType] = 1
+    -- end
+    -- scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.ShopBuy)
 
     if table.size(change_roles) > 0 then
         scripts.Role.SaveAndLog(change_roles)

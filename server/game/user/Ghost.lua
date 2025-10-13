@@ -9,6 +9,7 @@ local GhostDef = require("common.def.GhostDef")
 local BagDef = require("common.def.BagDef")
 local ProtoEnum = require("tools.ProtoEnum")
 local ItemDefine = require("common.logic.ItemDefine")
+local ItemDef = require("common.def.ItemDef")
 
 ---@type user_context
 local context = ...
@@ -454,7 +455,7 @@ function Ghost.InlayTabooWord(ghost_uniqid, taboo_word_id, inlay_type, uniqid)
     -- 镶嵌讳字
     item_data.special_info.diagrams_item.tabooword_id = taboo_word_id
 
-    return ErrorCode.None, bag_change_log
+    return ErrorCode.None, bag_change_log, ghost_info.config_id
 end
 
 function Ghost.PBClientGetUsrGhostsInfoReqCmd(req)
@@ -569,12 +570,14 @@ function Ghost.PBGhostWearEquipReqCmd(req)
     Ghost.ChangeEquipment(ghost_info, item_data.common_info.config_id, req.msg.equip_idx, item_data)
 
     -- 保存数据并同步给客户端
-    local save_bags = {}
-    for bagType, _ in pairs(bag_change_log) do
-        save_bags[bagType] = 1
-    end
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    -- local save_bags = {}
+    -- for bagType, _ in pairs(bag_change_log) do
+    --     save_bags[bagType] = 1
+    -- end
+    -- --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.GhostWearEquip, 0, ghost_info.config_id,
+    req.msg.ghost_uniqid)
 
     local change_ghosts = {
         ghost = {},
@@ -646,11 +649,14 @@ function Ghost.PBGhostTakeOffEquipReqCmd(req)
     Ghost.ChangeEquipment(ghost_info, req.msg.takeoff_config_id, req.msg.takeoff_idx, nil)
 
     -- 保存数据并同步给客户端
-    local save_bags = {}
-    for bagType, _ in pairs(bag_change_log) do
-        save_bags[bagType] = 1
-    end
-    scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    -- local save_bags = {}
+    -- for bagType, _ in pairs(bag_change_log) do
+    --     save_bags[bagType] = 1
+    -- end
+    -- scripts.Bag.SaveAndLog(save_bags, bag_change_log)
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.GhostTakeoffEquip, 0, ghost_info.config_id,
+    req.msg.ghost_uniqid)
+
     local change_ghosts = {
         ghost = {},
         image = {},

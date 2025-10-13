@@ -7,6 +7,7 @@ local CmdCode = common.CmdCode
 local Database = common.Database
 local TradeDef = require("common.def.TradeDef")
 local BagDef = require("common.def.BagDef")
+local ItemDef = require("common.def.ItemDef")
 
 ---@type user_context
 local context = ...
@@ -226,11 +227,13 @@ function Trade.PBTradeSaleReqCmd(req)
         table.insert(trade_data.simple_info.trade_ids, product_data.trade_id)
     end
 
-    local save_bags = {}
-    for bagType, _ in pairs(change_log) do
-        save_bags[bagType] = 1
-    end
-    scripts.Bag.SaveAndLog(save_bags, change_log)
+    -- local save_bags = {}
+    -- for bagType, _ in pairs(change_log) do
+    --     save_bags[bagType] = 1
+    -- end
+    -- scripts.Bag.SaveAndLog(save_bags, change_log)
+    scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.TradeSale)
+
     scripts.UserModel.SaveTradeData(trade_data)
 
     return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
@@ -348,11 +351,12 @@ function Trade.PBAuctionSaleReqCmd(req)
         table.insert(trade_data.simple_info.trade_ids, product_data.trade_id)
     end
 
-    local save_bags = {}
-    for bagType, _ in pairs(change_log) do
-        save_bags[bagType] = 1
-    end
-    scripts.Bag.SaveAndLog(save_bags, change_log)
+    -- local save_bags = {}
+    -- for bagType, _ in pairs(change_log) do
+    --     save_bags[bagType] = 1
+    -- end
+    -- scripts.Bag.SaveAndLog(save_bags, change_log)
+    scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.TradeSale)
     scripts.UserModel.SaveTradeData(trade_data)
 
     return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
