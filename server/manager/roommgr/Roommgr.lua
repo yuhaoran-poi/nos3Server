@@ -1428,16 +1428,16 @@ function Roommgr.GetRoomCreateData(req)
     return { code = ErrorCode.None, error = "success", roomid = req.roomid, room_str = room_str }
 end
 
-function Roommgr.PlayEnd(roomid)
-    moon.warn("Roommgr.PlayEnd roomid = ", roomid)
-    local room = context.rooms[roomid]
+function Roommgr.PlayEnd(msg)
+    moon.warn("Roommgr.PlayEnd roomid = ", msg.roomid)
+    local room = context.rooms[msg.roomid]
     if not room then
-        moon.error("Roommgr.PlayEnd room not found, roomid = ", roomid)
+        moon.error("Roommgr.PlayEnd room not found, roomid = ", msg.roomid)
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
 
     if room.room_data.state ~= 1 then
-        moon.error("Roommgr.PlayEnd room state error, roomid = ", roomid)
+        moon.error("Roommgr.PlayEnd room state error, roomid = ", msg.roomid)
         return { code = ErrorCode.RoomInvalidState, error = "房间状态错误" }
     end
 
@@ -1449,7 +1449,7 @@ function Roommgr.PlayEnd(roomid)
     for _, player in pairs(room.players) do
         table.insert(notify_uids, player.mem_info.uid)
     end
-    context.send_users(notify_uids, {}, "User.OutPlay", roomid)
+    context.send_users(notify_uids, {}, "User.OutPlay", msg.roomid)
 
     -- 将暂离状态玩家设置到定时退出列表
     local function away_room(roomid, uid)
