@@ -1454,6 +1454,7 @@ function Roommgr.PlayEnd(msg)
 
     -- 将暂离状态玩家设置到定时退出列表
     local function away_room(roomid, uid)
+        moon.error("Roommgr.PlayEnd away_room roomid, uid", roomid, uid)
         local scope <close> = lock_away_uid()
 
         context.away_uids[uid] = {
