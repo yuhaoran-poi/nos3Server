@@ -1318,6 +1318,7 @@ function Roommgr.StartGame(req)
     -- 检查所有玩家准备状态
     for _, player in pairs(room.players) do
         if player.is_ready ~= 1 then
+            moon.error("Roommgr.StartGame uid, is_ready", player.mem_info.uid, player.is_ready)
             return { code = ErrorCode.RoomNotAllReady, error = "存在未准备玩家" }
         end
     end
