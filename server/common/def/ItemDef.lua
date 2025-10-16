@@ -26,6 +26,9 @@ local ItemDef = {
         ItemRepair = 22,         --道具修理
         ItemComposite = 23,      --道具合成
         InlayItem = 24,          --镶嵌道具
+        GodsUnlock = 25,         --解锁神明
+        GodsUpLv = 26,           --升级神明
+        GodsBlockUnlock = 27,    --解锁神龛
 
         -- WearEquipment = 25,      --装备道具
         -- TakeOffEquipment = 26,   --脱下道具

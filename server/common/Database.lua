@@ -544,7 +544,7 @@ function _M.clear_all_room_keys(addr_db)
         if #keys > 0 then
             local pipeline = {}
             table.insert(pipeline, "DEL")
-            for _, key in ipairs(keys) do
+            for _, key in pairs(keys) do
                 table.insert(pipeline, key)
             end
             redis_send(addr_db, table.unpack(pipeline))
@@ -562,7 +562,7 @@ function _M.load_guildids(addr)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
         local guild_ids = {}
-        for _, row in ipairs(res) do
+        for _, row in pairs(res) do
             table.insert(guild_ids, row.guildId)
         end
         return guild_ids
@@ -997,7 +997,7 @@ function _M.select_mailids(addr, uid, last_system_mail_id, now_ts)
     else
         if res then
             local mail_ids = {}
-            for _, row in ipairs(res) do
+            for _, row in pairs(res) do
                 mail_ids[row.mail_id] = 1
             end
             return mail_ids
@@ -1018,7 +1018,7 @@ function _M.select_expire_mailids(addr, uid, now_ts)
     else
         if res then
             local mail_ids = {}
-            for _, row in ipairs(res) do
+            for _, row in pairs(res) do
                 mail_ids[row.mail_id] = 1
             end
             return mail_ids
@@ -1429,6 +1429,35 @@ function _M.saveshopbuylog(addr, shop_buy_log)
 
         moon.send("lua", addr, cmd)
     end
+end
+
+function _M.loadusergods(addr, uid)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.gods WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBUserGods", pbdata)
+        return tmp_data
+    end
+    print("loadusergods failed", uid, err)
+    return nil
+end
+
+function _M.saveusergods(addr, uid, data)
+    assert(data)
+
+    local data_str = jencode(data)
+    local _, pbdata = protocol.encodewithname("PBUserGods", data)
+    local pbvalue = crypt.base64encode(pbdata)
+    local cmd = string.format([[
+        INSERT INTO mgame.gods (uid, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
+
+    return moon.send("lua", addr, cmd)
 end
 
 return _M

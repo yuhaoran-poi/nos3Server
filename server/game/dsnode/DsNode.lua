@@ -530,4 +530,34 @@ function DsNode.PBDsNotifyPlayEndReqCmd(req)
     clusterd.send(3999, "roommgr", "Roommgr.PlayEnd", { roomid = req.msg.roomid })
 end
 
+function DsNode.PBGetDsUserBattleGodsReqCmd(req)
+    if not req.msg.dsid
+        or not req.msg.quest_uid then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "no dsid or no quest_uid"
+        }
+        return context.S2D(context.net_id, CmdCode.PBGetDsUserBattleGodsRspCmd, ret, req.msg_context.stub_id)
+    end
+
+    local res, err = context.call_user(req.msg.quest_uid, "Gods.GetBattleGods")
+    if not res then
+        moon.error("GetDsUserBattleGods failed:", err)
+        local ret = {
+            code = ErrorCode.UserOffline,
+            error = "no user"
+        }
+        return context.S2D(context.net_id, CmdCode.PBGetDsUserBattleGodsRspCmd, ret, req.msg_context.stub_id)
+    end
+
+    local ret = {
+        code = res.errcode,
+        error = "",
+        dsid = context.dsid,
+        quest_uid = req.msg.quest_uid,
+        gods_info = res,
+    }
+    return context.S2D(context.net_id, CmdCode.PBGetDsUserBattleGodsRspCmd, ret, req.msg_context.stub_id)
+end
+
 return DsNode

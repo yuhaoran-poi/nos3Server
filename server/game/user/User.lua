@@ -414,7 +414,7 @@ function User.OutPlay(roomid)
     local query_user_attr = {}
     table.insert(query_user_attr, ProtoEnum.UserAttrType.is_online)
     local query_res = User.QueryUserAttr(query_user_attr)
-    if query_res[ProtoEnum.UserAttrType.is_online] == UserAttrDef.ONLINE_STATE.IN_GAME then
+    if query_res.user_attr[ProtoEnum.UserAttrType.is_online] == UserAttrDef.ONLINE_STATE.IN_GAME then
         -- 同步离开游戏中状态到redis
         local update_user_attr = {}
         update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.IN_ROOM

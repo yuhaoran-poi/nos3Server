@@ -129,7 +129,7 @@ function MatchMgr.MatchTeam(all_teams, match_type, mapMatching)
     local used_teams = {}       -- 记录已经匹配的人队伍
     local used_ghost_teams = {} -- 记录已经匹配的鬼队伍
     for i = MatchEnum.HUMAN_COUNT, 1, -1 do
-        for k, v in ipairs(all_teams_bk[i]) do
+        for k, v in pairs(all_teams_bk[i]) do
             repeat
                 local team_id = v
                 if used_teams[team_id] then
@@ -199,7 +199,7 @@ function MatchMgr.FilterAI(all_teams)
  
     local ai_teams =  MatchRoomDef.newMatchTeamQueue()
     for i = 1,6 do
-        for _, team_id in ipairs(all_teams[i]) do
+        for _, team_id in pairs(all_teams[i]) do
             repeat
                 local team_info = context.all_teams[team_id]
                 if not team_info then
@@ -234,7 +234,7 @@ function MatchMgr.MatchTeamAI(all_teams, match_type)
     local used_teams = {}       -- 记录已经匹配的人队伍
     local used_ghost_teams = {} -- 记录已经匹配的鬼队伍
     for i = MatchEnum.HUMAN_COUNT, 1, -1 do
-        for k, v in ipairs(all_teams_bk[i]) do
+        for k, v in pairs(all_teams_bk[i]) do
             repeat
                 local team_id = v
                 if used_teams[team_id] then
@@ -325,7 +325,7 @@ function MatchMgr.FindFitTeam(now_count, need_human, min_score, max_score, all_t
         end
         return false
     end
-    for k, v in ipairs(all_teams[need_human]) do
+    for k, v in pairs(all_teams[need_human]) do
         repeat
             local team_id = v
             -- 过滤掉已经匹配的队伍
@@ -371,7 +371,7 @@ end
 ---@return number 鬼队伍ID
 function MatchMgr.FindFitGhostTeam(min_ghost_score, max_ghost_score, all_teams, used_ghost_teams,need_score)
     if table.size(all_teams[6]) > 0 then
-        for k, v in ipairs(all_teams[6]) do
+        for k, v in pairs(all_teams[6]) do
             repeat
                 local ghost_team_id = v
                 -- 过滤掉已经匹配的鬼队伍

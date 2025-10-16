@@ -381,6 +381,19 @@
 ---@field public uid integer
 
 
+---@class PBGetDsUserBattleGodsReqCmd
+---@field public dsid integer
+---@field public quest_uid integer @请求的玩家uid
+
+
+---@class PBGetDsUserBattleGodsRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public dsid integer
+---@field public quest_uid integer
+---@field public gods_info PBUserGods
+
+
 ---@class PBFriendData
 ---@field public uid integer
 ---@field public notes string @备注
@@ -680,6 +693,85 @@
 ---@field public uid integer
 ---@field public ghost_config_id integer @鬼宠id
 ---@field public skin integer @穿戴皮肤
+
+
+---@class PBGodImage
+---@field public config_id integer @配置ID
+---@field public lv integer @等级
+
+
+---@class PBGodBlock
+---@field public idx integer
+---@field public god_id integer
+
+
+---@class PBUserGods
+---@field public gods_image table<integer, PBGodImage>
+---@field public gods_block table<integer, PBGodBlock>
+
+
+---@class PBGodsGetInfoReqCmd
+---@field public uid integer
+
+
+---@class PBGodsGetInfoRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public gods_info PBUserGods
+
+
+---@class PBGodsInfoSyncCmd
+---@field public gods_info PBUserGods
+
+
+---@class PBGodsUnlockReqCmd
+---@field public uid integer
+---@field public god_id integer
+
+
+---@class PBGodsUnlockRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public god_image PBGodImage
+
+
+---@class PBGodsUpLvReqCmd
+---@field public uid integer
+---@field public god_id integer
+
+
+---@class PBGodsUpLvRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public god_image PBGodImage
+
+
+---@class PBGodsBlockUnlockReqCmd
+---@field public uid integer
+---@field public unlock_idx integer
+
+
+---@class PBGodsBlockUnlockRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public god_block PBGodBlock
+
+
+---@class PBGodsWearOrTakeoffReqCmd
+---@field public uid integer
+---@field public block_idx integer
+---@field public god_id integer
+
+
+---@class PBGodsWearOrTakeoffRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public god_block PBGodBlock
 
 
 ---@class Any
@@ -3002,6 +3094,7 @@
 ---@field City City
 ---@field Friend Friend
 ---@field Ghost Ghost
+---@field Gods Gods
 ---@field GuildProxy GuildProxy
 ---@field Hello Hello
 ---@field Item Item
@@ -3135,6 +3228,9 @@
 ---@field GhostEquipmentUpLv GhostEquipmentUpLv_cfg[]
 ---@field GhostInfo GhostInfo_cfg[]
 ---@field GhostUpLv GhostUpLv_cfg[]
+---@field GodLevel GodLevel_cfg[]
+---@field GodList GodList_cfg[]
+---@field GodSlot GodSlot_cfg[]
 ---@field HumanRole HumanRole_cfg[]
 ---@field HumanSkill HumanSkill_cfg[]
 ---@field ImmediatelyEmailTemplateConfig ImmediatelyEmailTemplateConfig_cfg[]

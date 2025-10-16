@@ -28,20 +28,10 @@ require "robot.logic.ClientBag"
 require "robot.logic.ClientRole"
 require "robot.logic.ClientGhost"
 require "robot.logic.ClientShop"
+require "robot.logic.ClientGods"
 local all_robot = {}
 local cur_index = 1
 
- 
-
-
- 
- 
-
-
-
- 
-
- 
 local function read(fd)
     local now_cmd_data = {}
     local data, err = socket.read(fd, 2)

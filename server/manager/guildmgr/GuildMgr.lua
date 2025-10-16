@@ -61,7 +61,7 @@ function GuildMgr.LoadGuilds()
         return false
     end
     local ret = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    for _, guild_id in ipairs(guild_ids) do
+    for _, guild_id in pairs(guild_ids) do
         
         local node = GuildMgr.FindLeastLoadedNode()
         if  node then

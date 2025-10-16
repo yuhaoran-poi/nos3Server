@@ -650,7 +650,11 @@ function Roommgr.ReturnRoom(req)
     end
 
     -- 更新准备状态（0-未准备 1-准备 2-暂离）
-    room.players[member_index].is_ready = 0
+    if req.uid == room.room_data.master_id then
+        room.players[member_index].is_ready = 1
+    else
+        room.players[member_index].is_ready = 0
+    end
 
     -- 广播状态更新--排除返回者本人
     local notify_uids = {}
@@ -1378,21 +1382,27 @@ function Roommgr.StartGame(req)
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
     -----临时通知所有玩家进入DS------------
+    -- moon.warn("Roommgr.StartGame test_url get")
+    -- local test_url =
+    --     "http://192.168.2.31:8080/job/LaunchGH-DS/buildWithParameters?token=WXCY&MAP=5001&DSID=" .. room.room_data.roomid .. "&PORT=" .. (room.room_data.roomid - 2000)
+    -- moon.info("Roommgr.StartGame test_url", test_url)
+    -- print_r(httpc.get(test_url))
+
     -- Roommgr.notify_uids = {}
     -- for _, player in pairs(room.players) do
     --     table.insert(Roommgr.notify_uids, player.mem_info.uid)
     --     moon.error("OnEnterDs ", player.mem_info.uid)
     -- end
     -- moon.async(function()
-    --     moon.sleep(20000) -- 20秒后发送
+    --     moon.sleep(60000) -- 60秒后发送
     --     local test_room = context.rooms[req.roomid]
     --     if test_room then
-    --         test_room.room_data.ds_address = "192.168.2.31-9999"
+    --         test_room.room_data.ds_address = "192.168.2.31-" .. (room.room_data.roomid - 2000)
     --         test_room.room_data.ds_ip = "192.168.2.31"
     --     end
     --     context.send_users(Roommgr.notify_uids, {}, "Room.OnEnterDs", {
     --         roomid = req.roomid,
-    --         ds_address = "192.168.2.31-9999",
+    --         ds_address = "192.168.2.31-" .. (room.room_data.roomid - 2000),
     --         ds_ip = "192.168.2.31",
     --     })
     -- end)

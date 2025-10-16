@@ -939,11 +939,78 @@ inlay_type (R	inlayType
 inlay_type (R	inlayType
 uniqid (Runiqid!
 tabooword_id (RtaboowordIdbproto3
-ñ
+¨
+
+gods.proto"9
+
+PBGodImage
+	config_id (RconfigId
+lv (Rlv"5
+
+PBGodBlock
+idx (Ridx
+god_id (RgodId"ò
+
+PBUserGods9
+
+gods_image (2.PBUserGods.GodsImageEntryR	godsImage9
+
+gods_block (2.PBUserGods.GodsBlockEntryR	godsBlockI
+GodsImageEntry
+key (Rkey!
+value (2.PBGodImageRvalue:8I
+GodsBlockEntry
+key (Rkey!
+value (2.PBGodBlockRvalue:8"'
+PBGodsGetInfoReqCmd
+uid (Ruid"{
+PBGodsGetInfoRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid(
+	gods_info (2.PBUserGodsRgodsInfo"=
+PBGodsInfoSyncCmd(
+	gods_info (2.PBUserGodsRgodsInfo"=
+PBGodsUnlockReqCmd
+uid (Ruid
+god_id (RgodId"z
+PBGodsUnlockRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid(
+	god_image (2.PBGodImageRgodImage";
+PBGodsUpLvReqCmd
+uid (Ruid
+god_id (RgodId"x
+PBGodsUpLvRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid(
+	god_image (2.PBGodImageRgodImage"J
+PBGodsBlockUnlockReqCmd
+uid (Ruid
+
+unlock_idx (R	unlockIdx"
+PBGodsBlockUnlockRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid(
+	god_block (2.PBGodBlockRgodBlock"a
+PBGodsWearOrTakeoffReqCmd
+uid (Ruid
+	block_idx (RblockIdx
+god_id (RgodId"Å
+PBGodsWearOrTakeoffRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid(
+	god_block (2.PBGodBlockRgodBlockbproto3
+ó
 dsnode.proto
 item.proto
 user.proto	bag.proto
-role.proto"=
+role.proto
+gods.proto"=
 PBEnterCityReqCmd
 uid (Ruid
 cityid (Rcityid"=
@@ -1046,7 +1113,16 @@ image_data (2.PBUserImageR	imageData"I
 error (	Rerror
 roomid (Rroomid".
 PBNotifyDsPlayerOffSyncCmd
-uid (Ruidbproto3
+uid (Ruid"N
+PBGetDsUserBattleGodsReqCmd
+dsid (Rdsid
+	quest_uid (RquestUid"¢
+PBGetDsUserBattleGodsRspCmd
+code (Rcode
+error (	Rerror
+dsid (Rdsid
+	quest_uid (RquestUid(
+	gods_info (2.PBUserGodsRgodsInfobproto3
 Å
 friend.proto
 user.proto"6

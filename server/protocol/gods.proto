@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+message PBGodImage
+{
+	int32 config_id	= 1;	//配置ID
+	int32 lv		= 2;	//等级
+}
+
+message PBGodBlock
+{
+	int32 idx	= 1;
+	int32 god_id	= 3;
+}
+
+message PBUserGods
+{
+	map<int32, PBGodImage> gods_image	= 1;
+	map<int32, PBGodBlock> gods_block	= 2;
+}
+
+message PBGodsGetInfoReqCmd
+{
+	// 协议数据
+    int64 uid		= 1;
+}
+
+message PBGodsGetInfoRspCmd
+{
+	int32 code        = 1; // 服务器验证返回,0成功,其他失败
+    string error      = 2; // 错误信息
+	int64 uid				= 3;
+	PBUserGods gods_info	= 4;
+}
+
+message PBGodsInfoSyncCmd
+{
+	PBUserGods gods_info	= 1;
+}
+
+message PBGodsUnlockReqCmd
+{
+	// 协议数据
+    int64 uid		= 1;
+	int32 god_id	= 2;
+}
+
+message PBGodsUnlockRspCmd
+{
+	int32 code        = 1; // 服务器验证返回,0成功,其他失败
+    string error      = 2; // 错误信息
+	int64 uid				= 3;
+	PBGodImage god_image	= 4;
+}
+
+message PBGodsUpLvReqCmd
+{
+	// 协议数据
+    int64 uid		= 1;
+	int32 god_id	= 2;
+}
+
+message PBGodsUpLvRspCmd
+{
+	int32 code        = 1; // 服务器验证返回,0成功,其他失败
+    string error      = 2; // 错误信息
+	int64 uid				= 3;
+	PBGodImage god_image	= 4;
+}
+
+message PBGodsBlockUnlockReqCmd
+{
+	// 协议数据
+    int64 uid		= 1;
+	int32 unlock_idx	= 2;
+}
+
+message PBGodsBlockUnlockRspCmd
+{
+	int32 code        = 1; // 服务器验证返回,0成功,其他失败
+    string error      = 2; // 错误信息
+	int64 uid				= 3;
+	PBGodBlock god_block	= 4;
+}
+
+message PBGodsWearOrTakeoffReqCmd
+{
+	// 协议数据
+    int64 uid		= 1;
+	int32 block_idx	= 2;
+	int32 god_id	= 3;
+}
+
+message PBGodsWearOrTakeoffRspCmd
+{
+	int32 code        = 1; // 服务器验证返回,0成功,其他失败
+    string error      = 2; // 错误信息
+	int64 uid				= 3;
+	PBGodBlock god_block	= 4;
+}

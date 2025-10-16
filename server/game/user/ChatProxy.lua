@@ -201,7 +201,7 @@ function ChatProxy.OnChatMsg(channel_msgs)
     moon.info("OnChatMsg channel_msgs = ", channel_msgs)
 
     local msg = { infos = {} }
-    for _, v in ipairs(channel_msgs) do
+    for _, v in pairs(channel_msgs) do
         if not v.blacks or not v.blacks[context.uid] then
             table.insert(msg.infos, v.chat_msg)
         end

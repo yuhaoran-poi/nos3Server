@@ -67,13 +67,13 @@ function Client:add_items_city_player(uid, cityid)
         item_count = 10000,
         uniqid = 0
     }
-    -- local item_2 = {
-    --     config_id = 51001,
-    --     item_count = 100,
-    --     uniqid = 0
-    -- }
+    local item_2 = {
+        config_id = 51001,
+        item_count = 100,
+        uniqid = 0
+    }
     table.insert(req_msg.simple_items, item_1)
-    -- table.insert(req_msg.simple_items, item_2)
+    table.insert(req_msg.simple_items, item_2)
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     self:send("PBAddItemsCityPlayerReqCmd", req_msg, function(msg)
         print("rpc PBAddItemsCityPlayerRspCmd ret = ", self.index, msg)
@@ -139,6 +139,21 @@ function Client:get_ds_user_images(uid)
     }
     self:send("PBGetDsUserImageReqCmd", req_msg, function(msg)
         print("rpc PBGetDsUserImageRspCmd ret = ", self.index, msg)
+        print_r(msg)
+    end)
+end
+
+function Client:get_ds_user_gods(uid)
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+    local req_msg = {
+        dsid = 1,
+        quest_uid = uid,
+    }
+    self:send("PBGetDsUserBattleGodsReqCmd", req_msg, function(msg)
+        print("rpc PBGetDsUserBattleGodsReqCmd ret = ", self.index, msg)
         print_r(msg)
     end)
 end

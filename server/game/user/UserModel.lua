@@ -110,7 +110,7 @@ function UserModel.SetBagData(baginfos)
     if not DBData.bagdata then
         DBData.bagdata = baginfos
     else
-        for bagtype, baginfo in ipairs(baginfos) do
+        for bagtype, baginfo in pairs(baginfos) do
             DBData.bagdata[bagtype] = baginfo
         end
     end
@@ -168,7 +168,7 @@ function UserModel.SetCoinsData(coininfos)
     if not DBData.coinsdata then
         DBData.coinsdata = coininfos
     else
-        for coin_id, coin_info in ipairs(coininfos) do
+        for coin_id, coin_info in pairs(coininfos) do
             DBData.coinsdata[coin_id] = coin_info
         end
     end
@@ -220,6 +220,18 @@ end
 
 function UserModel.SetShopData(shopinfos)
     DBData.shops = shopinfos
+end
+
+---@return PBUserGods ? nil
+function UserModel.GetGods()
+    if DBData and DBData.gods then
+        return DBData.gods
+    end
+    return nil
+end
+
+function UserModel.SetGods(godsinfo)
+    DBData.gods = godsinfo
 end
 
 return UserModel

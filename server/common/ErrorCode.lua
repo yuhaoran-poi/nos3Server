@@ -442,6 +442,20 @@ local ErrorCode = {
     MailHasGet = 1904,
     --- 邮件没有奖励
     MailNoReward = 1905,
+
+    --神明系统相关错误码
+    --- 神明已解锁
+    GodAlreadyUnlock = 2001,
+    --- 神明未解锁
+    GodNotUnlock = 2002,
+    --- 神龛已解锁
+    GodBlockAlreadyUnlock = 2003,
+    --- 神龛未解锁
+    GodBlockNotUnlock = 2004,
+    --- 神龛解锁等级不足
+    GodBlockUnlockLevelNotEnough = 2005,
+    --- 神龛解锁神明数量不足
+    GodBlockUnlockGodNumNotEnough = 2006,
 }
 
 return ErrorCode

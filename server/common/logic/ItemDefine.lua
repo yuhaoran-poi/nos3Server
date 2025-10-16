@@ -161,7 +161,7 @@ function ItemDefine.GetItemBagType(nConfigId)
     return ItemDefine.ItemBagType.ALL
 end
 
--- 从配置map中获取道具map,货币map
+-- 从配置map中获取可堆叠道具map,货币map DelItems可以直接使用 AddItems需GetItemDataFromIdCount转换
 -- param item_cfg = {[1] = 1}
 -- return items = {[1] = {id = 1, count = 1, pos = 0}}
 -- return coins = {[1] = {coin_id = 1, coin_count = 1}}
@@ -218,7 +218,7 @@ function ItemDefine.GetItemListFromItemsCoins(items, coins, add_list)
     end
 end
 
--- 根据道具货币简化数组生成可堆叠道具map，不可堆叠道具数组，货币map
+-- 根据道具货币简化数组生成可堆叠道具map，不可堆叠道具数组，货币map AddItems时可直接使用
 -- param item_list = {{id = 1, count = 1}, {id = 2, count = 1}}
 -- return stack_items = {[PBItemData.common_info.config_id] = PBItemData}
 -- return unstack_items = {PBItemData, PBItemData}

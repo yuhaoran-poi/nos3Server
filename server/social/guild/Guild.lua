@@ -310,7 +310,7 @@ function Guild.ApplyJoinGuild(uid, guild_id)
     
     -- 通知会长和管理员
     local notify_members = {guild_info.president_id}
-    for _, mid in ipairs(guild_info.master_ids) do
+    for _, mid in pairs(guild_info.master_ids) do
         table.insert(notify_members, mid)
     end
     context.send_users(notify_members, "GuildProxy.OnGuildApplyJoin", guild_id, uid)

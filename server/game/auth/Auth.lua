@@ -398,6 +398,8 @@ Auth.PBClientLoginReqCmd = function(req)
             local data = datas[1]
 
             req.uid = data.user_id
+            -- --强制登录
+            -- req.uid = 1060
         end
 
         return doAuth(Auth, req, plateform_id)

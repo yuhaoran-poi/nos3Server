@@ -182,7 +182,7 @@ function Room.Update()
         if not player.dead then
             local radius = player.radius
             local res = scripts.Aoi.query(player.x, player.y, player.radius, player.radius)
-            for _, id in ipairs(res) do
+            for _, id in pairs(res) do
                 local entity
                 if uuid.isuid(id) then
                     entity = Room.FindPlayer(id)
@@ -223,7 +223,7 @@ function Room.Update()
 
     local deadcount = #dead
 
-    for _,id in ipairs(dead) do
+    for _,id in pairs(dead) do
         scripts.Aoi.erase(id)
         if uuid.isuid(id) then
             context.S2C(id, "S2CDead",{id=id})
