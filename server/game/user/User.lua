@@ -839,7 +839,7 @@ function User.PBClientLightReqCmd(req)
             pos = req.msg.pos or 0,
             config_id = req.msg.config_id or 0,
             uniqid = req.msg.uniqid or 0,
-        })
+        }, req.msg_context.stub_id)
     else
         return context.S2C(context.net_id, CmdCode.PBClientLightRspCmd, {
             code = err_code,
@@ -851,7 +851,7 @@ function User.PBClientLightReqCmd(req)
             pos = req.msg.pos or 0,
             config_id = req.msg.config_id or 0,
             uniqid = req.msg.uniqid or 0,
-        })
+        }, req.msg_context.stub_id)
     end
 end
 
