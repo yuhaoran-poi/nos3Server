@@ -461,11 +461,6 @@ function User.Exit()
     return true
 end
 
--- 接收DS崩溃的通知
-function User.CityDestory()
-
-end
-
 function User.C2SUserData()
     context.S2C(CmdCode.S2CUserData, scripts.UserModel.Get())
 end
