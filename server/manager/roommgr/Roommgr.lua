@@ -1383,8 +1383,10 @@ function Roommgr.StartGame(req)
 
     -----临时通知所有玩家进入DS------------
     -- moon.warn("Roommgr.StartGame test_url get")
+    -- local test_port = math.random(room.room_data.roomid - 2000, 10000)
     -- local test_url =
-    --     "http://192.168.2.31:8080/job/LaunchGH-DS/buildWithParameters?token=WXCY&MAP=5001&DSID=" .. room.room_data.roomid .. "&PORT=" .. (room.room_data.roomid - 2000)
+    --     "http://192.168.2.31:8080/job/LaunchGH-DS/buildWithParameters?token=WXCY&MAP=5001&DSID=" ..
+    --     room.room_data.roomid .. "&PORT=" .. test_port
     -- moon.info("Roommgr.StartGame test_url", test_url)
     -- print_r(httpc.get(test_url))
 
@@ -1397,12 +1399,12 @@ function Roommgr.StartGame(req)
     --     moon.sleep(60000) -- 60秒后发送
     --     local test_room = context.rooms[req.roomid]
     --     if test_room then
-    --         test_room.room_data.ds_address = "192.168.2.31-" .. (room.room_data.roomid - 2000)
+    --         test_room.room_data.ds_address = "192.168.2.31-" .. test_port
     --         test_room.room_data.ds_ip = "192.168.2.31"
     --     end
     --     context.send_users(Roommgr.notify_uids, {}, "Room.OnEnterDs", {
     --         roomid = req.roomid,
-    --         ds_address = "192.168.2.31-" .. (room.room_data.roomid - 2000),
+    --         ds_address = "192.168.2.31-" .. test_port,
     --         ds_ip = "192.168.2.31",
     --     })
     -- end)

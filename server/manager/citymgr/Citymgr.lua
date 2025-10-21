@@ -289,9 +289,12 @@ function Citymgr.DestroyCity(cityid)
     if not city then
         return
     end
+    local notify_uids = {}
     for uid, _ in pairs(city.players) do
         context.uid_cityid[uid] = nil
+        table.insert(notify_uids, uid)
     end
+    context.send_users(notify_uids, {}, "City.OnDsDestory", { cityid = cityid })
     context.citys[cityid] = nil
 end
 
@@ -447,6 +450,15 @@ function Citymgr.UpdateCityPlayer(req)
     end
 
     updateCity()
+end
+
+function Citymgr.SetCityDestroy(cityid)
+    -- 销毁附近聊天频道
+    local res = ChatLogic.RemoveNearbyChannel(cityid)
+    if res.code ~= ErrorCode.None then
+        moon.error(string.format("RemoveNearbyChannel cityid:%d, code:%d, error:%s", cityid, res.code, res.error))
+    end
+    Citymgr.DestroyCity(cityid)
 end
 
 function Citymgr.Start()
