@@ -7,7 +7,7 @@ local conf = ...
 ---@class auth_context:base_context
 ---@field uid_map table<integer,AuthUser> @内存加载的玩家服务信息
 ---@field scripts auth_scripts
----@field ds_map table<integer,AuthDs> @内存加载的ds服务信息
+---@field dsid_map table<integer,AuthDs> @内存加载的ds服务信息
 local context = {
     conf = conf,
     uid_map = {},
@@ -16,7 +16,7 @@ local context = {
     auth_queue = {},
     service_counter = 0,
     scripts = {},
-    ds_map = {}
+    dsid_map = {}
 }
 
 local command = setup(context)

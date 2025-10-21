@@ -544,7 +544,7 @@ end
 
 function Room.OnEnterDs(res)
     -- 加入DS广播
-    moon.error("OnEnterDs ", context.net_id, context.uid)
+    moon.warn("OnEnterDs ", context.net_id, context.uid)
     context.S2C(context.net_id, CmdCode["PBEnterDsRoomSyncCmd"], res, 0)
 end
 

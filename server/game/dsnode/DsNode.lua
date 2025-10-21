@@ -108,12 +108,42 @@ function DsNode.Offline()
     end
 end
 
+-- local ok, err = xpcall(scripts.UserModel.Save, debug.traceback)
+-- if not ok then
+--     moon.error("user exit save db error", err)
+-- end
 
+-- -- 退出房间
+-- scripts.Room.ForceExitRoom()
+-- -- 退出游戏中的副本ds(如果有的话)
+-- User.ExitPlayDs()
+
+-- -- 同步离线状态到redis
+-- local update_user_attr = {}
+-- update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.OFFLINE
+-- User.SetUserAttr(update_user_attr, false)
+
+-- User.Logout()
+
+-- -- 通知usermgr
+-- local res, err = clusterd.call(3999, "usermgr", "Usermgr.NotifyLogout", { uid = context.uid, nid = moon.env("NODE") })
+-- if err then
+--     moon.error(string.format("User.Exit err = %s", json.pretty_encode(err)))
+-- end
+-- if res.error ~= "success" then
+--     moon.error(string.format("User.Exit res = %s", json.pretty_encode(res)))
+-- end
+
+-- moon.quit()
+-- return true
 function DsNode.Exit()
-    local ok, err = xpcall(scripts.UserModel.Save, debug.traceback)
-    if not ok then
-        moon.error("user exit save db error", err)
+    -- 如果是副本则通知RoomMgr
+    if context.dsid > 10000 then
+        clusterd.send(3999, "roommgr", "Roommgr.PlayEnd", { roomid = context.dsid })
+    else
+        clusterd.send(3999, "citymgr", "Citymgr.SetCityDestroy", { cityid = context.dsid })
     end
+
     moon.quit()
     return true
 end

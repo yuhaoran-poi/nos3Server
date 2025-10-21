@@ -456,9 +456,14 @@ function User.Exit()
     if res.error ~= "success" then
         moon.error(string.format("User.Exit res = %s", json.pretty_encode(res)))
     end
-    
+
     moon.quit()
     return true
+end
+
+-- 接收DS崩溃的通知
+function User.CityDestory()
+
 end
 
 function User.C2SUserData()
@@ -1963,7 +1968,9 @@ function User.PBInlayTabooWordReqCmd(req)
         scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.InlayItem, req.msg.roleid)
     elseif table.size(change_ghosts) > 0 and change_ghost_config_id then
         scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.InlayItem, 0, change_ghost_config_id,
-        req.msg.ghost_uniqid)
+            req.msg.ghost_uniqid)
+    else
+        scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.InlayItem)
     end
 
     if table.size(change_roles) > 0 then

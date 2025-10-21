@@ -346,6 +346,10 @@ local ErrorCode = {
     BagSaveFailed = 1511,
     --- 背包容量溢出
     BagCapacityOverflow = 1512,
+    --- 背包为空
+    BagEmpty = 1513,
+    --- 背包整理失败
+    BagSortOutFailed = 1514,
 
     --装备强化系列错误码
     --- 开光次数达到上限

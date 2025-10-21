@@ -39,7 +39,7 @@ function Client:operate_bag()
         src_index = 1,
         dst_bag = "Consume",
         dst_index = 1,
-        splitCount = 1
+        split_count = 1
     }
     self:send("PBBagOperateItemReqCmd", req_msg, function(msg)
         print("rpc PBBagOperateItemRspCmd ret = ", self.index, msg)
@@ -118,6 +118,22 @@ function Client:composite()
     }
     self:send("PBRandomCompositeReqCmd", req_msg, function(msg)
         print("rpc PBRandomCompositeReqCmd ret = ", self.index, msg)
+        print_r(msg)
+    end)
+end
+
+function Client:sortout()
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+
+    local req_msg = {
+        uid = self.uid,
+        bag_name = "Cangku",
+    }
+    self:send("PBBagSortOutReqCmd", req_msg, function(msg)
+        print("rpc PBBagSortOutRspCmd ret = ", self.index, msg)
         print_r(msg)
     end)
 end

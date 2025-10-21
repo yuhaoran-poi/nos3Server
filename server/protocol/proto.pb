@@ -223,7 +223,7 @@ skin_image (2.PBUserImage.SkinImageEntryR	skinImageF
 image_data (2.PBUserImageR	imageData"I
 PBImageUpdateSyncCmd1
 update_images (2.PBUserImageRupdateImagesbproto3
-Ê
+ñ
 	bag.proto
 item.proto"∑
 PBBag"
@@ -303,7 +303,15 @@ item_count (R	itemCount
 error (	Rerror
 uid (Ruid
 bag_name (	RbagName!
-bag_data (2.PBBagRbagDatabproto3
+bag_data (2.PBBagRbagData"A
+PBBagSortOutReqCmd
+uid (Ruid
+bag_name (	RbagName"k
+PBBagSortOutRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+bag_name (	RbagNamebproto3
 ò
 
 chat.proto"Ã
@@ -350,7 +358,7 @@ worldIndex*–
 CHANNEL_TYPE_PRIVATE
 CHANNEL_TYPE_SYSTEM
 CHANNEL_TYPE_ROOMbproto3
-È
+Ø
 
 city.proto"*
 PBApplyLoginCityReqCmd
@@ -362,7 +370,10 @@ city.proto"*
 region (	Rregion
 
 ds_address (	R	dsAddress
-ds_ip (	RdsIpbproto3
+ds_ip (	RdsIp"D
+PBNotifyDsDestorySyncCmd
+uid (Ruid
+cityid (Rcityidbproto3
 ç
 common.proto"ì
 PBMessagePack

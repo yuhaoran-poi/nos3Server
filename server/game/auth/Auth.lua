@@ -71,7 +71,7 @@ local function doDSAuth(req)
             online = false
         }
 
-        context.ds_map[req.dsid] = u
+        context.dsid_map[req.dsid] = u
         context.net_id_map[req.net_id] = u
     end
 
@@ -194,6 +194,13 @@ local function QuitOneUser(u)
     context.uid_map[u.uid] = nil
     context.net_id_map[u.net_id] = nil
     moon.error(string.format("QuitOneUser net_id = %d", u.net_id))
+end
+
+local function QuitOneDs(ds)
+    moon.send("lua", ds.addr_dsnode, "DsNode.Exit")
+    context.dsid_map[ds.dsid] = nil
+    context.net_id_map[ds.net_id] = nil
+    moon.error(string.format("QuitOneDs net_id = %d", ds.net_id))
 end
 
 ---@class Auth
@@ -570,6 +577,13 @@ function Auth.Disconnect(uid)
     end
     -- moon.error(string.format("Auth.Disconnect end context.uid_map = %s", json.pretty_encode(context.uid_map)))
     -- moon.error(string.format("Auth.Disconnect end context.net_id_map = %s", json.pretty_encode(context.net_id_map)))
+end
+
+function Auth.DsDisconnect(dsid)
+    local ds = context.dsid_map[dsid]
+    if ds then
+        QuitOneDs(ds)
+    end
 end
 
 return Auth

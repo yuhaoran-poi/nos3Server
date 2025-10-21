@@ -20,7 +20,25 @@ function DGate.Start()
     listenfd  = socket.listen(context.conf.host, context.conf.port, moon.PTYPE_SOCKET_MOON)
     assert(listenfd>0,"DGate server listen failed")
     socket.start(listenfd)
-    print("DGate GAME Server Start Listen",context.conf.host, context.conf.port)
+    print("DGate GAME Server Start Listen", context.conf.host, context.conf.port)
+    
+    -- 新增定时器轮询
+    -- moon.async(function()
+    --     while true do
+    --         moon.sleep(30000) -- 每30秒检查一次
+    --         -- 遍历所有用户
+    --         local now_ts = moon.time()
+    --         for _, c in pairs(context.dsid_map) do
+    --             -- 60秒超时
+    --             -- if now_ts - c.last_ping_time > 60 and c.dsid > 10000 then
+    --             if now_ts - c.last_ping_time > 60 then
+    --                 moon.warn("user", c.dsid, "ping timeout")
+    --                 socket.close(c.fd)
+    --             end
+    --         end
+    --     end
+    -- end)
+
     return true
 end
 
@@ -66,12 +84,15 @@ function DGate.BindDS(req)
     end
 
     local c = {
+        dsid = req.dsid,
         net_id = req.net_id,
         fd = req.fd,
-        addr_dsnode = req.addr_dsnode
+        addr_dsnode = req.addr_dsnode,
+        last_ping_time = moon.time(),
     }
 
     context.fd_map[req.fd] = c
+    context.dsid_map[req.dsid] = c
     context.net_id_map[req.net_id] = c
     context.auth_watch[req.fd] = nil
     print(string.format("BindDS fd:%d net_id:%d serviceid:%08X", req.fd, req.net_id,  req.addr_dsnode))

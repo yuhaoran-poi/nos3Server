@@ -37,4 +37,12 @@ function City.PBApplyLoginCityReqCmd(req)
     return context.S2C(context.net_id, CmdCode["PBApplyLoginCityRspCmd"], res, req.msg_context.stub_id)
 end
 
+function City.OnDsDestory(res)
+    -- 通知玩家主城链接断开
+    context.S2C(context.net_id, CmdCode.PBNotifyDsDestorySyncCmd, {
+        uid = context.uid,
+        cityid = res.cityid,
+    }, 0)
+end
+
 return City

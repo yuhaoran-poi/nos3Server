@@ -580,7 +580,7 @@ end
 -- end
 
 function Bag.SaveAndLog(change_logs, change_reason,
-     relation_roleid, relation_ghostid, relation_ghost_uniqid, relation_imageid)
+                        relation_roleid, relation_ghostid, relation_ghost_uniqid, relation_imageid)
     if not change_logs then
         return
     end
@@ -731,7 +731,7 @@ function Bag.SaveAndLog(change_logs, change_reason,
                         end
                         Bag.dataMap[now_config_id][bagType] = change_dataMap
                     end
-                    
+
                     -- 记录唯一道具变更
                     if old_config_id > 0 and old_uniqid > 0 then
                         if not item_log_datas[old_config_id].change_uniq[old_uniqid] then
@@ -761,30 +761,9 @@ function Bag.SaveAndLog(change_logs, change_reason,
     local write_log_datas = {}
     local now_ts = moon.time()
     -- 统计所有记录变更
-    for tmp_config_id, tmp_data in pairs(coin_log_datas) do
-        if tmp_data.new_num ~= tmp_data.old_num then
-            local new_write_log = ItemDef.newPBItemLog()
-            new_write_log.uid = context.uid
-            new_write_log.config_id = tmp_config_id
-            new_write_log.old_num = tmp_data.old_num
-            new_write_log.new_num = tmp_data.new_num
-            new_write_log.relation_roleid = relation_roleid or 0
-            new_write_log.relation_ghostid = relation_ghostid or 0
-            new_write_log.relation_ghost_uniqid = relation_ghost_uniqid or 0
-            new_write_log.relation_imageid = relation_imageid or 0
-            new_write_log.change_type = ItemDef.LogType.ChangeNum
-            new_write_log.change_reason = change_reason
-            new_write_log.log_ts = now_ts
-            table.insert(write_log_datas, new_write_log)
-            -- write_log_datas[ItemDef.LogType.ChangeNum][tmp_config_id] = new_write_log
-        end
-    end
-    for tmp_config_id, tmp_data in pairs(item_log_datas) do
-        for _, bag_data_map in pairs(Bag.dataMap[tmp_config_id]) do
-            tmp_data.new_num = tmp_data.new_num + bag_data_map.allCount
-        end
-
-        if table.size(tmp_data.change_uniq) == 0 then
+    if change_reason ~= ItemDef.ChangeReason.BagMove
+        and change_reason ~= ItemDef.ChangeReason.SortOutItems then
+        for tmp_config_id, tmp_data in pairs(coin_log_datas) do
             if tmp_data.new_num ~= tmp_data.old_num then
                 local new_write_log = ItemDef.newPBItemLog()
                 new_write_log.uid = context.uid
@@ -801,52 +780,77 @@ function Bag.SaveAndLog(change_logs, change_reason,
                 table.insert(write_log_datas, new_write_log)
                 -- write_log_datas[ItemDef.LogType.ChangeNum][tmp_config_id] = new_write_log
             end
-        else
-            local change_num_log = ItemDef.newPBItemLog()
-            change_num_log.uid = context.uid
-            change_num_log.config_id = tmp_config_id
-            change_num_log.old_num = tmp_data.old_num
-            change_num_log.new_num = tmp_data.new_num
-            change_num_log.relation_roleid = relation_roleid or 0
-            change_num_log.relation_ghostid = relation_ghostid or 0
-            change_num_log.relation_ghost_uniqid = relation_ghost_uniqid or 0
-            change_num_log.relation_imageid = relation_imageid or 0
-            change_num_log.change_type = ItemDef.LogType.ChangeNum
-            change_num_log.change_reason = change_reason
-            change_num_log.log_ts = now_ts
+        end
+        for tmp_config_id, tmp_data in pairs(item_log_datas) do
+            for _, bag_data_map in pairs(Bag.dataMap[tmp_config_id]) do
+                tmp_data.new_num = tmp_data.new_num + bag_data_map.allCount
+            end
 
-            for change_uniqid, change_data in pairs(tmp_data.change_uniq) do
-                if not change_data.old_itemdata or not change_data.new_itemdata then
-                    if change_data.old_itemdata then
-                        table.insert(change_num_log.del_uniqids, change_uniqid)
-                        table.insert(change_num_log.old_item_data, change_data.old_itemdata)
-                    end
-                    if change_data.new_itemdata then
-                        table.insert(change_num_log.add_uniqids, change_uniqid)
-                        table.insert(change_num_log.new_item_data, change_data.new_itemdata)
-                    end
-                else
-                    if not scripts.Item.UniqItemEqual(change_data.old_itemdata, change_data.new_itemdata) then
-                        local change_info_log = ItemDef.newPBItemLog()
-                        change_info_log.uid = context.uid
-                        change_info_log.config_id = tmp_config_id
-                        change_info_log.old_num = 1
-                        change_info_log.new_num = 1
-                        change_info_log.mod_uniqid = change_uniqid
-                        table.insert(change_info_log.old_item_data, change_data.old_itemdata)
-                        table.insert(change_info_log.new_item_data, change_data.new_itemdata)
-                        change_info_log.change_type = ItemDef.LogType.ChangeInfo
-                        change_info_log.change_reason = change_reason
-                        change_info_log.log_ts = now_ts
-                        table.insert(write_log_datas, change_info_log)
+            if table.size(tmp_data.change_uniq) == 0 then
+                if tmp_data.new_num ~= tmp_data.old_num then
+                    local new_write_log = ItemDef.newPBItemLog()
+                    new_write_log.uid = context.uid
+                    new_write_log.config_id = tmp_config_id
+                    new_write_log.old_num = tmp_data.old_num
+                    new_write_log.new_num = tmp_data.new_num
+                    new_write_log.relation_roleid = relation_roleid or 0
+                    new_write_log.relation_ghostid = relation_ghostid or 0
+                    new_write_log.relation_ghost_uniqid = relation_ghost_uniqid or 0
+                    new_write_log.relation_imageid = relation_imageid or 0
+                    new_write_log.change_type = ItemDef.LogType.ChangeNum
+                    new_write_log.change_reason = change_reason
+                    new_write_log.log_ts = now_ts
+                    table.insert(write_log_datas, new_write_log)
+                    -- write_log_datas[ItemDef.LogType.ChangeNum][tmp_config_id] = new_write_log
+                end
+            else
+                local change_num_log = ItemDef.newPBItemLog()
+                change_num_log.uid = context.uid
+                change_num_log.config_id = tmp_config_id
+                change_num_log.old_num = tmp_data.old_num
+                change_num_log.new_num = tmp_data.new_num
+                change_num_log.relation_roleid = relation_roleid or 0
+                change_num_log.relation_ghostid = relation_ghostid or 0
+                change_num_log.relation_ghost_uniqid = relation_ghost_uniqid or 0
+                change_num_log.relation_imageid = relation_imageid or 0
+                change_num_log.change_type = ItemDef.LogType.ChangeNum
+                change_num_log.change_reason = change_reason
+                change_num_log.log_ts = now_ts
+
+                for change_uniqid, change_data in pairs(tmp_data.change_uniq) do
+                    if not change_data.old_itemdata or not change_data.new_itemdata then
+                        if change_data.old_itemdata then
+                            table.insert(change_num_log.del_uniqids, change_uniqid)
+                            table.insert(change_num_log.old_item_data, change_data.old_itemdata)
+                        end
+                        if change_data.new_itemdata then
+                            table.insert(change_num_log.add_uniqids, change_uniqid)
+                            table.insert(change_num_log.new_item_data, change_data.new_itemdata)
+                        end
+                    else
+                        if not scripts.Item.UniqItemEqual(change_data.old_itemdata, change_data.new_itemdata) then
+                            local change_info_log = ItemDef.newPBItemLog()
+                            change_info_log.uid = context.uid
+                            change_info_log.config_id = tmp_config_id
+                            change_info_log.old_num = 1
+                            change_info_log.new_num = 1
+                            change_info_log.mod_uniqid = change_uniqid
+                            table.insert(change_info_log.old_item_data, change_data.old_itemdata)
+                            table.insert(change_info_log.new_item_data, change_data.new_itemdata)
+                            change_info_log.change_type = ItemDef.LogType.ChangeInfo
+                            change_info_log.change_reason = change_reason
+                            change_info_log.log_ts = now_ts
+                            table.insert(write_log_datas, change_info_log)
+                        end
                     end
                 end
-            end
-            if table.size(change_num_log.del_uniqids) > 0 or table.size(change_num_log.add_uniqids) > 0 then
-                table.insert(write_log_datas, change_num_log)
+                if table.size(change_num_log.del_uniqids) > 0 or table.size(change_num_log.add_uniqids) > 0 then
+                    table.insert(write_log_datas, change_num_log)
+                end
             end
         end
     end
+    
 
     local success = false
     if table.size(update_msg.update_coins) > 0 then
@@ -859,7 +863,7 @@ function Bag.SaveAndLog(change_logs, change_reason,
     if table.size(update_msg.update_items) > 0 then
         success = Bag.SaveBagsNow(bagTypes)
     end
-    
+
     --发送PBBagUpdateSyncCmd
     if success then
         --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
@@ -867,7 +871,10 @@ function Bag.SaveAndLog(change_logs, change_reason,
     end
 
     --存储日志
-    scripts.Item.SendLog(write_log_datas)
+    if change_reason ~= ItemDef.ChangeReason.BagMove
+        and change_reason ~= ItemDef.ChangeReason.SortOutItems then
+        scripts.Item.SendLog(write_log_datas)
+    end
 
     return success
 end
@@ -896,6 +903,144 @@ function Bag.AddLog(logs, pos, old_itemdata)
     else
         logs[pos] = table.copy(old_itemdata)
     end
+end
+
+-- Bag.dataMap[itemdata.common_info.config_id][bagType] = {
+--                     allCount = 0,
+--                     pos_count = {},
+--                     uniqid_pos = {},
+--                 }
+-- 整理背包
+function Bag.SortOut(bagType)
+    -- 参数校验
+    if bagType ~= BagDef.BagType.Cangku
+        and bagType ~= BagDef.BagType.Consume
+        and bagType ~= BagDef.BagType.Booty then
+        return ErrorCode.BagNotExist
+    end
+
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata or not bagdata[bagType] then
+        return ErrorCode.BagNotExist
+    end
+
+    local now_config_ids = {}
+    for config_id, _ in pairs(Bag.dataMap) do
+        table.insert(now_config_ids, config_id)
+    end
+    if table.size(now_config_ids) <= 0 then
+        return ErrorCode.BagEmpty
+    end
+    table.sort(now_config_ids)
+
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- 先堆叠
+    local stack_baginfo = bagdata[bagType]
+    local stack_change_logs = {
+        [bagType] = {}
+    }
+    for config_id, bdata in pairs(Bag.dataMap) do
+        if bdata[bagType]
+            and bdata[bagType].allCount > 0
+            and table.size(bdata[bagType].pos_count) > 0 then
+            local item_cfg = GameCfg.Item[config_id]
+            if item_cfg then
+                local dest_pos, dest_count = 0, 0
+                for pos, count in pairs(bdata[bagType].pos_count) do
+                    if count ~= 0 then
+                        if dest_pos == 0 then
+                            if count < item_cfg.stack_count then
+                                dest_pos = pos
+                                dest_count = count
+                            end
+                        else
+                            local src_pos, src_count = 0, 0
+                            if count < item_cfg.stack_count then
+                                src_pos = pos
+                                src_count = math.min(count, item_cfg.stack_count - dest_count)
+                            end
+                            if src_pos > 0 then
+                                local dest_item = stack_baginfo.items[dest_pos]
+                                local src_item = stack_baginfo.items[src_pos]
+                                Bag.AddLog(stack_change_logs[bagType], dest_pos, dest_item)
+                                Bag.AddLog(stack_change_logs[bagType], src_pos, src_item)
+                                dest_item.common_info.item_count = dest_item.common_info.item_count + src_count
+                                src_item.common_info.item_count = src_item.common_info.item_count - src_count
+
+                                dest_count = dest_item.common_info.item_count
+                                src_count = src_item.common_info.item_count
+                                if src_count ~= 0 then
+                                    dest_pos = src_pos
+                                    dest_count = src_count
+                                else
+                                    if dest_count >= item_cfg.stack_count then
+                                        dest_pos = 0
+                                        dest_count = 0
+                                    end
+                                    stack_baginfo.items[src_pos] = nil
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    if table.size(stack_change_logs[bagType]) > 0 then
+        local success = Bag.SaveAndLog(stack_change_logs, ItemDef.ChangeReason.SortOutItems)
+        if not success then
+            return ErrorCode.BagSortOutFailed
+        end
+    end
+
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- 再移动
+    local cur_use_pos = 1
+    local move_baginfo = bagdata[bagType]
+    local move_change_logs = {
+        [bagType] = {}
+    }
+    local old_items = table.copy(move_baginfo.items, true)
+    if not old_items or table.size(old_items) <= 0 then
+        return ErrorCode.BagEmpty
+    end
+    for _, config_id in pairs(now_config_ids) do
+        local bdata = Bag.dataMap[config_id][bagType]
+        for pos, count in pairs(bdata.pos_count) do
+            if pos ~= cur_use_pos and count ~= 0 then
+                local dest_item = move_baginfo.items[cur_use_pos]
+                local src_item = old_items[pos]
+                Bag.AddLog(move_change_logs[bagType], cur_use_pos, dest_item)
+                Bag.AddLog(move_change_logs[bagType], pos, move_baginfo.items[pos])
+                move_baginfo.items[cur_use_pos] = src_item
+                if pos > cur_use_pos then
+                    move_baginfo.items[pos] = nil
+                end
+
+                cur_use_pos = cur_use_pos + 1
+            end
+        end
+        for uniqid, pos in pairs(bdata.uniqid_pos) do
+            if pos ~= cur_use_pos and pos > 0 then
+                local src_item = old_items[pos]
+                Bag.AddLog(move_change_logs[bagType], cur_use_pos, old_items[cur_use_pos])
+                Bag.AddLog(move_change_logs[bagType], pos, src_item)
+                move_baginfo.items[cur_use_pos] = src_item
+                if pos > cur_use_pos then
+                    move_baginfo.items[pos] = nil
+                end
+                cur_use_pos = cur_use_pos + 1
+            end
+        end
+    end
+    if table.size(move_change_logs[bagType]) > 0 then
+        local success = Bag.SaveAndLog(move_change_logs, ItemDef.ChangeReason.SortOutItems)
+        if not success then
+            return ErrorCode.BagSortOutFailed
+        end
+    end
+
+    return ErrorCode.None
 end
 
 -- 添加物品（支持自动堆叠）
@@ -1111,12 +1256,11 @@ function Bag.DelUniqItem(bagType, baginfo, itemId, uniqid, pos, logs)
         return ErrorCode.ItemNotExist
     end
 
-    baginfo.items[pos].common_info.item_count = 0
     -- 处理物品记录
     -- Bag.AddLog(logs, pos, ItemDef.LogType.ChangeNum, itemId, uniqid, 1)
     Bag.AddLog(logs, pos, baginfo.items[pos])
+    baginfo.items[pos].common_info.item_count = 0
     baginfo.items[pos] = nil
-
 
     return ErrorCode.None
 end
@@ -1635,7 +1779,7 @@ function Bag.AddItems(bagType, stack_item_datas, unstack_item_datas, change_log)
     end
 
     -- 判断图鉴是否需要更新
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local change_image_ids = {}
     for pos, old_itemdata in pairs(change_log[bagType]) do
         if table.size(old_itemdata) <= 0 then
@@ -1774,9 +1918,9 @@ function Bag.StackItems(srcBagType, srcPos, destBagType, destPos, change_log)
     return ErrorCode.None
 end
 
-function Bag.SplitItem(srcBagType, srcPos, destBagType, destPos, splitCount, change_log)
+function Bag.SplitItem(srcBagType, srcPos, destBagType, destPos, split_count, change_log)
     -- 参数校验
-    if splitCount <= 0 then
+    if split_count <= 0 then
         return ErrorCode.ParamInvalid
     end
 
@@ -1815,7 +1959,7 @@ function Bag.SplitItem(srcBagType, srcPos, destBagType, destPos, splitCount, cha
         return ErrorCode.SplitNotAllowed
     end
 
-    if splitCount >= srcItem.common_info.item_count then
+    if split_count >= srcItem.common_info.item_count then
         return ErrorCode.SplitCountInvalid
     end
 
@@ -1841,7 +1985,7 @@ function Bag.SplitItem(srcBagType, srcPos, destBagType, destPos, splitCount, cha
     -- Bag.AddLog(change_log[srcBagType], srcPos, ItemDef.LogType.ChangeNum, srcItem.common_info.config_id,
     --     0, srcItem.common_info.item_count)
     Bag.AddLog(change_log[srcBagType], srcPos, srcItem)
-    srcItem.common_info.item_count = srcItem.common_info.item_count - splitCount
+    srcItem.common_info.item_count = srcItem.common_info.item_count - split_count
 
     if not change_log[destBagType] then
         change_log[destBagType] = {}
@@ -1849,7 +1993,7 @@ function Bag.SplitItem(srcBagType, srcPos, destBagType, destPos, splitCount, cha
     -- Bag.AddLog(change_log[destBagType], destPos, ItemDef.LogType.ChangeNum, srcItem.common_info.config_id, 0, 0)
     Bag.AddLog(change_log[destBagType], destPos, {})
     destBag.items[destPos] = table.copy(srcItem)
-    destBag.items[destPos].common_info.item_count = splitCount
+    destBag.items[destPos].common_info.item_count = split_count
 
     return ErrorCode.None
 end
@@ -2115,6 +2259,12 @@ function Bag.InlayTabooWord(taboo_word_id, inlay_type, uniqid)
         return ErrorCode.ItemNotEnough
     end
 
+    -- 处理物品记录
+    if not bag_change_log[BagDef.BagType.Cangku] then
+        bag_change_log[BagDef.BagType.Cangku] = {}
+    end
+    Bag.AddLog(bag_change_log[BagDef.BagType.Cangku], pos, item_data)
+
     -- 镶嵌讳字
     if inlay_type == 1 then
         item_data.special_info.magic_item.tabooword_id = taboo_word_id
@@ -2171,7 +2321,7 @@ function Bag.PBBagOperateItemReqCmd(req)
         err_code = Bag.StackItems(req.msg.src_bag, req.msg.src_pos, req.msg.dest_bag, req.msg.dest_pos, change_logs)
     elseif req.msg.operate_type == 2 then
         err_code = Bag.SplitItem(req.msg.src_bag, req.msg.src_pos, req.msg.dest_bag, req.msg.dest_pos,
-        req.msg.splitCount, change_logs)
+            req.msg.split_count, change_logs)
     elseif req.msg.operate_type == 3 then
         err_code = Bag.MoveItem(req.msg.src_bag, req.msg.src_pos, req.msg.dest_bag, req.msg.dest_pos, change_logs)
     end
@@ -2339,7 +2489,6 @@ function Bag.Light(op_itemdata)
 
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 随机出词条池子
-    local light_cfg
     local id_weight = {}
     for pool_id, pool_weight in pairs(light_cfg.lightpooltype) do
         local pool_cfg = GameCfg.AllTagPool[pool_id]
@@ -2625,6 +2774,36 @@ function Bag.PBBagAddCapacityReqCmd(req)
         uid = req.msg.uid,
         bag_name = req.msg.bag_name,
         bag_data = bag_data,
+    }, req.msg_context.stub_id)
+end
+
+function Bag.PBBagSortOutReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid
+        or not req.msg.bag_name then
+        return context.S2C(context.net_id, CmdCode.PBBagSortOutRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = req.msg.uid,
+            bag_name = req.msg.bag_name,
+        }, req.msg_context.stub_id)
+    end
+
+    local err_code = Bag.SortOut(req.msg.bag_name)
+    if err_code ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBBagSortOutRspCmd, {
+            code = err_code,
+            error = "整理失败",
+            uid = req.msg.uid,
+            bag_name = req.msg.bag_name,
+        }, req.msg_context.stub_id)
+    end
+
+    return context.S2C(context.net_id, CmdCode.PBBagSortOutRspCmd, {
+        code = ErrorCode.None,
+        error = "整理成功",
+        uid = req.msg.uid,
+        bag_name = req.msg.bag_name,
     }, req.msg_context.stub_id)
 end
 

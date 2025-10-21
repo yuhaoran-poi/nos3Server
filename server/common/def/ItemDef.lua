@@ -29,6 +29,7 @@ local ItemDef = {
         GodsUnlock = 25,         --解锁神明
         GodsUpLv = 26,           --升级神明
         GodsBlockUnlock = 27,    --解锁神龛
+        SortOutItems = 28,       --整理物品
 
         -- WearEquipment = 25,      --装备道具
         -- TakeOffEquipment = 26,   --脱下道具

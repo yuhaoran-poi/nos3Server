@@ -151,6 +151,18 @@
 ---@field public bag_data PBBag
 
 
+---@class PBBagSortOutReqCmd
+---@field public uid integer
+---@field public bag_name string
+
+
+---@class PBBagSortOutRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public bag_name string
+
+
 ---@class PBChatMsgInfo
 ---@field public channel_type integer @频道类型
 ---@field public uid integer @发送者uid
@@ -204,6 +216,11 @@
 ---@field public region string
 ---@field public ds_address string
 ---@field public ds_ip string
+
+
+---@class PBNotifyDsDestorySyncCmd
+---@field public uid integer
+---@field public cityid integer
 
 
 ---@class PBMessagePack
@@ -3101,6 +3118,7 @@
 ---@field ItemImage ItemImage
 ---@field Mail Mail
 ---@field MatchProxy MatchProxy
+---@field NewBag NewBag
 ---@field Role Role
 ---@field Room Room
 ---@field Shop Shop

@@ -17,6 +17,7 @@ local PTYPE_D2S = GameDef.PTYPE_D2S
 ---@field scripts gate_scripts
 local context = {
     conf = conf,
+    dsid_map = {},
     net_id_map = {},  --直连到本Gate的所有ds服务器,gateNetId
     fd_map = {},
     auth_watch = {},
@@ -65,6 +66,7 @@ socket.on("message", function(fd, msg)
             protocol.print_message(c.net_id, buf, "message", 1)
         end
         local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        c.last_ping_time = moon.time()
         redirect(msg, c.addr_dsnode, GameDef.PTYPE_D2S, 0, 0)
     end
 
@@ -79,8 +81,13 @@ socket.on("close", function(fd, msg)
         return
     end
     context.fd_map[fd] = nil
-    context.net_id_map[c.net_id] = nil
-    moon.send('lua', context.addr_auth, "Auth.Disconnect", c.net_id)
+    if c.dsid then
+        context.dsid_map[c.dsid] = nil -- body
+    end
+    if c.net_id then
+        context.net_id_map[c.net_id] = nil
+    end
+    moon.send('lua', context.addr_auth, "Auth.DsDisconnect", c.dsid)
     print("GAME SERVER: close", fd, c.net_id, data)
 end)
 
