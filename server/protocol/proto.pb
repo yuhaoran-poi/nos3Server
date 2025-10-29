@@ -56,7 +56,7 @@ login_data (2.PBDSLoginDataR	loginData"f
 error (	Rerror
 dsid (Rdsid
 net_id (RnetIdbproto3
-Š!
+Ê%
 
 item.proto"@
 PBCoin
@@ -103,13 +103,14 @@ abilityTag"ß
 abilityTag"B
 	PBAweItem
 idx (Ridx#
-up_lv_fail_cnt (RupLvFailCnt"º
-	PBAntique
-price (2.PBCoinRprice.
-remain_identify_num (RremainIdentifyNum
-tags (2.PBTagRtags
-is_fake (RisFake)
-identify_histroy (RidentifyHistroy"œ
+up_lv_fail_cnt (RupLvFailCnt"Ô
+	PBAntique
+quality (Rquality
+price (2.PBCoinRprice.
+remain_identify_num (RremainIdentifyNum
+tags (2.PBTagRtags
+is_fake (RisFake)
+identify_histroy (RidentifyHistroy"œ
 PBItemCommon
 	config_id (RconfigId
 uniqid (Runiqid
@@ -212,7 +213,13 @@ skin_image (2.PBUserImage.SkinImageEntryR	skinImageF
 value (2.PBImageRvalue:8J
 SkinImageEntry
 key (Rkey"
-value (2.PBSkinImageRvalue:8"(
+value (2.PBSkinImageRvalue:8"q
+PBAntiqueShowcaseData
+showcase_id (R
+showcaseId7
+antique_show_list (2.PBItemDataRantiqueShowList"d
+PBAntiqueShowcaseDataSJ
+antique_showcase_list (2.PBAntiqueShowcaseDataRantiqueShowcaseList"(
 PBImageGetDataReqCmd
 uid (Ruid"
 PBImageGetDataRspCmd
@@ -222,8 +229,17 @@ skin_image (2.PBUserImage.SkinImageEntryR	skinImageF
 
 image_data (2.PBUserImageR	imageData"I
 PBImageUpdateSyncCmd1
-update_images (2.PBUserImageRupdateImagesbproto3
-–
+update_images (2.PBUserImageRupdateImages"/
+PBAntiqueShowcaseDataReqCmd
+uid (Ruid"¦
+PBAntiqueShowcaseDataRspCmd
+code (Rcode
+error (	Rerror
+uid (RuidK
+antique_showcase_data (2.PBAntiqueShowcaseDataSRantiqueShowcaseData"q
+PBAntiqueShowcaseUpdateSyncCmdO
+update_antique_showcase (2.PBAntiqueShowcaseDataSRupdateAntiqueShowcasebproto3
+½
 	bag.proto
 item.proto"·
 PBBag"
@@ -311,7 +327,35 @@ item_count (R	itemCount
 code (Rcode
 error (	Rerror
 uid (Ruid
-bag_name (	RbagNamebproto3
+bag_name (	RbagName"`
+PBAntiqueIdentifyReqCmd
+	config_id (RconfigId
+uniqid (Runiqid
+pos (Rpos"Š
+PBAntiqueIdentifyRspCmd
+code (Rcode
+error (	Rerror
+	config_id (RconfigId
+uniqid (Runiqid
+pos (Rpos"Ä
+PBAntiqueShowReqCmd
+	config_id (RconfigId
+uniq_id (RuniqId
+showcase_id (R
+showcaseId!
+showcase_idx (RshowcaseIdx!
+operate_type (RoperateType
+pos (Rpos"î
+PBAntiqueShowRspCmd
+code (Rcode
+error (	Rerror
+	config_id (RconfigId
+uniq_id (RuniqId
+showcase_id (R
+showcaseId!
+showcase_idx (RshowcaseIdx!
+operate_type (RoperateType
+pos (Rposbproto3
 ˜
 
 chat.proto"Ì

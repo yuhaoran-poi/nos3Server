@@ -234,4 +234,29 @@ function UserModel.SetGods(godsinfo)
     DBData.gods = godsinfo
 end
 
+---@return PBAntiqueShowcaseDataS ? nil
+function UserModel.GetAntiqueShowcase()
+    if DBData and DBData.antique_showcase then
+        return DBData.antique_showcase
+    end
+    return nil
+end
+
+function UserModel.SetAntiqueShowcase(antique_showcase)
+    if not DBData then
+        return
+    end
+
+    if not DBData.antique_showcase then
+        -- 第一次直接赋值整张表
+        DBData.antique_showcase = antique_showcase
+    else
+        -- 如果要按 showcase_id 更新/合并
+        for idx, showcase in ipairs(antique_showcase) do
+            local sid = showcase.showcase_id
+            DBData.antique_showcase[sid] = showcase
+        end
+    end
+end
+
 return UserModel

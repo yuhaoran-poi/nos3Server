@@ -118,3 +118,41 @@ message PBBagSortOutRspCmd
     int64   uid     = 3;
     string bag_name = 4;
 }
+
+message PBAntiqueIdentifyReqCmd
+{
+	int32 config_id 	= 1;
+	int64 uniqid 		= 2;
+	int32 pos			= 3;	// 道具所在格子号
+}
+
+message PBAntiqueIdentifyRspCmd
+{
+	int32 code		= 1; 		// 服务器验证返回,0成功,其他失败
+	string error	= 2; 		// 错误信息
+	int32 config_id 	= 3;
+	int64 uniqid 		= 4;
+	int32 pos			= 5;	// 道具所在格子号
+}
+
+message PBAntiqueShowReqCmd
+{
+	int32 config_id = 1; 			// id
+	int64 uniq_id	= 2; 			// 唯一id
+	int32 showcase_id = 3;			// 展示柜id
+	int32 showcase_idx = 4;			// 展示柜中的具体展柜下标
+	int32 operate_type = 5;			// 1 -- 展示 0 -- 取消展示
+	int32 pos			= 6;		// 道具所在格子号
+}
+
+message PBAntiqueShowRspCmd
+{
+	int32 code		= 1; 			// 服务器验证返回,0成功,其他失败
+	string error	= 2; 			// 错误信息
+	int32 config_id = 3; 			// id
+	int64 uniq_id	= 4; 			// 唯一id
+	int32 showcase_id = 5;			// 展示柜id
+	int32 showcase_idx = 6;			// 展示柜中的具体展柜下标
+	int32 operate_type = 7;			// 1 -- 展示 0 -- 取消展示
+	int32 pos			= 8;		// 道具所在格子号
+}

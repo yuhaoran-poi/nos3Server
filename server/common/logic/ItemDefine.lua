@@ -355,6 +355,37 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                         end
                     end
                     table.insert(unstack_items, new_item)
+                elseif item_small_type == ItemDefine.EItemSmallType.Antique then
+                    new_item.special_info.antique_item = ItemDef.newAntique()
+                    local item_cfg = GameCfg.AntiqueItem[item.id]
+                    for coin_id, cnt in pairs(item_cfg.initprice) do
+                        new_item.special_info.antique_item.price.coin_id = coin_id
+                        new_item.special_info.antique_item.price.coin_count = cnt
+                    end
+                    new_item.special_info.antique_item.quality = item_cfg.quality
+                    new_item.special_info.antique_item.remain_identify_num = item_cfg.identifynum
+
+                    if item.special_info and item.special_info.antique_item then
+                        if item.special_info.antique_item.quality then
+                            new_item.special_info.antique_item.quality = item.special_info.antique_item.quality
+                        end
+                        if item.special_info.antique_item.price then
+                            new_item.special_info.antique_item.price = item.special_info.antique_item.price
+                        end
+                        if item.special_info.antique_item.remain_identify_num then
+                            new_item.special_info.antique_item.remain_identify_num = item.special_info.antique_item.remain_identify_num
+                        end
+                        if item.special_info.antique_item.tags then
+                            new_item.special_info.antique_item.tags = item.special_info.antique_item.tags
+                        end
+                        if item.special_info.antique_item.is_fake then
+                            new_item.special_info.antique_item.is_fake = item.special_info.antique_item.is_fake
+                        end
+                        if item.special_info.antique_item.identify_histroy then
+                            new_item.special_info.antique_item.identify_histroy = item.special_info.antique_item.identify_histroy
+                        end
+                    end
+                    table.insert(unstack_items, new_item)
                 end
             end
         end

@@ -1,3 +1,4 @@
+require("common.LuaPanda").start("127.0.0.1", 8818)
 local moon = require "moon"
 local common = require "common"
 local uuid = require "uuid"
@@ -25,6 +26,11 @@ local AbilityTagIdMin = 1000000
 local Bag = {}
 
 function Bag.Init()
+    -- 随机数种子
+    local seed = os.time() + math.floor(tonumber(tostring(os.clock()):reverse():sub(1, 6)))
+    math.randomseed(seed)
+    print("Random seed initialized:", seed)
+
     local bagTypes = {}
     bagTypes[BagDef.BagType.Cangku] = 1
     bagTypes[BagDef.BagType.Consume] = 1
@@ -1265,6 +1271,38 @@ function Bag.DelUniqItem(bagType, baginfo, itemId, uniqid, pos, logs)
     return ErrorCode.None
 end
 
+-- 添加古董
+function Bag.AddAntique(bagType, baginfo, item_data, change_log)
+    local item_cfg = GameCfg.AntiqueItem[item_data.common_info.config_id]
+    if not item_cfg then
+        return ErrorCode.ItemNotExist
+    end
+
+    local itype = ItemDefine.GetItemType(item_data.common_info.config_id)
+    local errorCode, add_pos = Bag.AddUniqItem(bagType, baginfo, item_data, itype, change_log)
+    if errorCode ~= ErrorCode.None or not add_pos then
+        return errorCode
+    end
+
+    local new_itemdata = baginfo.items[add_pos]
+    if item_data.special_info and item_data.special_info.antique_item then
+        new_itemdata.special_info = table.copy(item_data.special_info, true)
+    else
+        new_itemdata.special_info = {
+            antique_item = ItemDef.newAntique(),
+        }
+
+        for coin_id, cnt in pairs(item_cfg.initprice) do
+            new_itemdata.special_info.antique_item.price.coin_id = coin_id
+            new_itemdata.special_info.antique_item.price.coin_count = cnt
+        end
+        new_itemdata.special_info.antique_item.quality = item_cfg.quality
+        new_itemdata.special_info.antique_item.remain_identify_num = item_cfg.identifynum
+    end
+
+    return ErrorCode.None
+end
+
 function Bag.AddDurabItem(bagType, baginfo, item_data, change_log)
     local item_cfg = GameCfg.Item[item_data.common_info.config_id]
     if not item_cfg then
@@ -1769,6 +1807,8 @@ function Bag.AddItems(bagType, stack_item_datas, unstack_item_datas, change_log)
             err_code = Bag.AddMagicItem(bagType, baginfo, item_data, change_log[bagType])
         elseif item_small_type == ItemDefine.EItemSmallType.DurabItem then
             err_code = Bag.AddDurabItem(bagType, baginfo, item_data, change_log[bagType])
+        elseif item_small_type == ItemDefine.EItemSmallType.Antique then
+            err_code = Bag.AddAntique(bagType, baginfo, item_data, change_log[bagType])
         else
             err_code = ErrorCode.ItemNotExist
         end
@@ -2804,6 +2844,90 @@ function Bag.PBBagSortOutReqCmd(req)
         error = "整理成功",
         uid = req.msg.uid,
         bag_name = req.msg.bag_name,
+    }, req.msg_context.stub_id)
+end
+
+-- 根据概率随机是否成功
+function Bag.RandomSucc(rate)
+    if rate < 0 or rate > 10000 then
+        print("Bag.RandomSucc - rate is invalid")
+        return ErrorCode.ParamInvalid, 0
+    end
+
+    local succ = math.random(1, 10000) <= rate and 1 or 0
+    return ErrorCode.None, succ
+end
+
+-- 获取随机元素
+function Bag.GetRandomElement(container)
+    if not container or #container == 0 then
+        print("Bag.GetRandomElement - container is empty")
+        return ErrorCode.ParamInvalid
+    end
+
+    local randomIndex = math.random(1, #container)
+    return ErrorCode.None, container[randomIndex]
+end
+
+-- 范围内随机值
+function Bag.RandomValue(min, max)
+    if max <= min then
+        print("Bag.RandomValue_ - max is less than min")
+        return ErrorCode.ParamInvalid
+    end
+
+    return ErrorCode.None, math.random(min, max)
+end
+
+function Bag.RandomWeightedIndex(weightMap)
+    local totalWeight = 0
+    for _, weight in pairs(weightMap) do
+        if weight < 0 then
+            print("Bag.RandomWeightedIndex_ weight is less than 0")
+            return ErrorCode.ParamInvalid
+        end
+        totalWeight = totalWeight + weight
+    end
+
+    if totalWeight == 0 then
+        print("Bag.RandomWeightedIndex_ totalWeight is 0")
+        return ErrorCode.ParamInvalid
+    end
+
+    local rand = math.random(1, totalWeight)
+    local sum = 0
+    for key, weight in pairs(weightMap) do
+        sum = sum + weight
+        if rand <= sum then
+            return ErrorCode.None, key
+        end
+    end
+
+    return ErrorCode.ParamInvalid
+end
+
+function Bag.PBAntiqueIdentifyReqCmd(req)
+    local err_code, error = scripts.AntiqueShowcase.IdentifyAntique(req.msg.config_id, req.msg.uniqid, req.msg.pos)
+    return context.S2C(context.net_id, CmdCode.PBAntiqueIdentifyRspCmd, {
+        code = err_code,
+        error = error,
+        config_id = req.msg.config_id,
+        uniqid = req.msg.uniqid,
+        pos = req.msg.pos,
+    }, req.msg_context.stub_id)
+end
+
+function Bag.PBAntiqueShowReqCmd(req)
+    local err_code, error = scripts.AntiqueShowcase.AntiqueShow(req.msg.config_id, req.msg.uniq_id, req.msg.showcase_id, req.msg.showcase_idx, req.msg.operate_type, req.msg.pos)
+    return context.S2C(context.net_id, CmdCode.PBAntiqueShowRspCmd, {
+        code = err_code,
+        error = error,
+        config_id = req.msg.config_id,
+        uniq_id = req.msg.uniq_id,
+        showcase_id = req.msg.showcase_id,
+        showcase_idx = req.msg.showcase_idx,
+        operate_type = req.msg.operate_type,
+        pos = req.msg.pos,
     }, req.msg_context.stub_id)
 end
 

@@ -137,3 +137,42 @@ function Client:sortout()
         print_r(msg)
     end)
 end
+
+-- 鉴定古董
+function Client:identify_antique(config_id, uniqid, pos)
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+
+    local req_msg = {
+        config_id = config_id,
+        uniqid = uniqid,
+        pos = pos,
+    }
+    self:send("PBAntiqueIdentifyReqCmd", req_msg, function(msg)
+        print("rpc PBAntiqueIdentifyRspCmd ret = ", self.index, msg)
+        print_r(msg)
+    end)
+end
+
+-- 展示古董
+function Client:show_antique(config_id, uniqid, showcase_id, showcase_idx, operate_type, pos)
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+
+    local req_msg = {
+        config_id = config_id,
+        uniq_id = uniqid,
+        showcase_id = showcase_id,
+        showcase_idx = showcase_idx,
+        operate_type = operate_type,
+        pos = pos,
+    }
+    self:send("PBAntiqueShowReqCmd", req_msg, function(msg)
+        print("rpc PBAntiqueShowRspCmd ret = ", self.index, msg)
+        print_r(msg)
+    end)
+end

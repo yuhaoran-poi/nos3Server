@@ -163,6 +163,40 @@
 ---@field public bag_name string
 
 
+---@class PBAntiqueIdentifyReqCmd
+---@field public config_id integer
+---@field public uniqid integer
+---@field public pos integer @道具所在格子号
+
+
+---@class PBAntiqueIdentifyRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public config_id integer
+---@field public uniqid integer
+---@field public pos integer @道具所在格子号
+
+
+---@class PBAntiqueShowReqCmd
+---@field public config_id integer @id
+---@field public uniq_id integer @唯一id
+---@field public showcase_id integer @展示柜id
+---@field public showcase_idx integer @展示柜中的具体展柜下标
+---@field public operate_type integer @1 -- 展示 0 -- 取消展示
+---@field public pos integer @道具所在格子号
+
+
+---@class PBAntiqueShowRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public config_id integer @id
+---@field public uniq_id integer @唯一id
+---@field public showcase_id integer @展示柜id
+---@field public showcase_idx integer @展示柜中的具体展柜下标
+---@field public operate_type integer @1 -- 展示 0 -- 取消展示
+---@field public pos integer @道具所在格子号
+
+
 ---@class PBChatMsgInfo
 ---@field public channel_type integer @频道类型
 ---@field public uid integer @发送者uid
@@ -1611,10 +1645,11 @@
 
 
 ---@class PBAntique
+---@field public quality integer @品质
 ---@field public price PBCoin @价格
 ---@field public remain_identify_num integer @剩余鉴定次数
 ---@field public tags PBTag[] @词条数量,最大10个
----@field public is_fake integer
+---@field public is_fake integer @是否赝品		1 -- 赝品	0 -- 还未鉴定或非赝品
 ---@field public identify_histroy integer[] @历史鉴定结果
 
 
@@ -1711,6 +1746,15 @@
 ---@field public skin_image table<integer, PBSkinImage> @皮肤动作表情图鉴	有key则执行覆盖
 
 
+---@class PBAntiqueShowcaseData
+---@field public showcase_id integer @展柜id
+---@field public antique_show_list PBItemData[] @在展古董数据
+
+
+---@class PBAntiqueShowcaseDataS
+---@field public antique_showcase_list PBAntiqueShowcaseData[] @展柜列表
+
+
 ---@class PBImageGetDataReqCmd
 ---@field public uid integer
 
@@ -1724,6 +1768,21 @@
 
 ---@class PBImageUpdateSyncCmd
 ---@field public update_images PBUserImage
+
+
+---@class PBAntiqueShowcaseDataReqCmd
+---@field public uid integer
+
+
+---@class PBAntiqueShowcaseDataRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public antique_showcase_data PBAntiqueShowcaseDataS @古董展示柜数据
+
+
+---@class PBAntiqueShowcaseUpdateSyncCmd
+---@field public update_antique_showcase PBAntiqueShowcaseDataS
 
 
 ---@class PBMailSimpleData
@@ -3106,6 +3165,7 @@
 
 
 ---@class user_scripts
+---@field AntiqueShowcase AntiqueShowcase
 ---@field Bag Bag
 ---@field ChatProxy ChatProxy
 ---@field City City
@@ -3118,7 +3178,6 @@
 ---@field ItemImage ItemImage
 ---@field Mail Mail
 ---@field MatchProxy MatchProxy
----@field NewBag NewBag
 ---@field Role Role
 ---@field Room Room
 ---@field Shop Shop

@@ -46,6 +46,8 @@ local ItemDef = {
         -- UpLv = 37,               --升级
         -- UpStar = 38,             --升级星数
         -- InlayTabooWord = 39,     --镶嵌讳字
+        AntiqueIdentify = 40,       -- 古董鉴定
+        AntiqueShow = 41,           -- 古董展示
     },
     TabooWordInlay = {
         RoleType = 1000,
@@ -144,6 +146,24 @@ local defaultPBUserImage = {
     skin_image = {},
 }
 
+local defaultPBAntique = {
+    quality = 0,
+    price = {},
+    remain_identify_num = 0,
+    tags = {},
+    is_fake = 0,
+    identify_histroy = {},
+}
+
+local defaultAntiqueShowcase = {
+    showcase_id = 0,
+    antique_show_list = {},
+}
+
+local defaultAntiqueShowcaseS = {
+    antique_showcase_list = {},
+}
+
 --- @return PBCoin
 function ItemDef.newCoin()
     return LuaExt.const(table.copy(defaultPBCoin))
@@ -197,6 +217,23 @@ end
 --- @return PBUserImage
 function ItemDef.newUserImage()
     return LuaExt.const(table.copy(defaultPBUserImage))
+end
+
+--- @return PBAntique
+function ItemDef.newAntique()
+    return LuaExt.const(table.copy(defaultPBAntique))
+end
+
+--- @class PBAntiqueShowcaseData
+--- @field showcase_id number
+--- @return PBAntiqueShowcaseData
+function ItemDef.newAntiqueShowcase()
+    return LuaExt.const(table.copy(defaultAntiqueShowcase))
+end
+
+--- @return PBAntiqueShowcaseDataS
+function ItemDef.newAntiqueShowcaseS()
+    return LuaExt.const(table.copy(defaultAntiqueShowcaseS))
 end
 
 return ItemDef

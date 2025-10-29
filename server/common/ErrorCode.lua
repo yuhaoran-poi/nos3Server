@@ -380,6 +380,20 @@ local ErrorCode = {
     InlayTypeInvalid = 1613,
     --- 镶嵌目标类型不匹配
     InlayTypeNotMatch = 1614,
+        --- 不可鉴定
+    IdentifyInvalid = 1615,
+    --- 未找到展示位置
+    ShowcaseNotFound = 1616,
+    --- 展示位置索引超出范围
+    ShowcaseIdxOutOfBounds = 1617,
+    --- 品质不匹配
+    QualityNotMatch = 1618,
+    --- 该位置已有相同的古董
+    SameAntiqueInShowcase = 1619,
+    --- 古董不在该展示位置
+    AntiqueNotInShowcase = 1620,
+    --- 操作类型无效
+    InvalidOperateType = 1621,
 
     --角色相关错误码
     --- 角色不存在

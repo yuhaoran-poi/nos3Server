@@ -78,11 +78,12 @@ message PBAweItem
 // 古董
 message PBAntique
 {
-	PBCoin		price = 1;					// 价格
-	int32		remain_identify_num = 2;	// 剩余鉴定次数
-	repeated PBTag	tags = 3;	// 词条数量,最大10个
-	int32		is_fake = 4;
-	repeated int32	identify_histroy = 5;	// 历史鉴定结果
+	int32		quality = 1;				// 品质
+	PBCoin		price = 2;					// 价格
+	int32		remain_identify_num = 3;	// 剩余鉴定次数
+	repeated PBTag	tags = 4;				// 词条数量,最大10个
+	int32		is_fake = 5;				// 是否赝品		1 -- 赝品	0 -- 还未鉴定或非赝品
+	repeated int32	identify_histroy = 6;	// 历史鉴定结果
 }
 
 // 通用道具数据
@@ -199,6 +200,17 @@ message PBUserImage
 	map<int32, PBSkinImage> skin_image			= 5;	//皮肤动作表情图鉴	有key则执行覆盖
 }
 
+// 古董展柜
+message PBAntiqueShowcaseData {
+    int32 showcase_id = 1;                     			// 展柜id
+    repeated PBItemData antique_show_list = 2;    		// 在展古董数据
+}
+
+// 古董展柜总数据
+message PBAntiqueShowcaseDataS {
+    repeated PBAntiqueShowcaseData antique_showcase_list = 1; // 展柜列表
+}
+
 // 客户端获取图鉴数据
 message PBImageGetDataReqCmd
 {
@@ -216,4 +228,23 @@ message PBImageGetDataRspCmd
 message PBImageUpdateSyncCmd
 {
     PBUserImage update_images = 1;
+}
+
+// 客户端获取古董展示柜数据
+message PBAntiqueShowcaseDataReqCmd
+{
+	int64 uid 		= 1;
+}
+
+message PBAntiqueShowcaseDataRspCmd
+{
+	int32   code    = 1; // 服务器验证返回,0成功,其他失败
+    string  error   = 2; // 错误信息
+    int64   uid     = 3;
+    PBAntiqueShowcaseDataS antique_showcase_data = 4;	// 古董展示柜数据
+}
+
+message PBAntiqueShowcaseUpdateSyncCmd
+{
+	PBAntiqueShowcaseDataS update_antique_showcase = 1;
 }
