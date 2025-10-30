@@ -1,4 +1,3 @@
-require("common.LuaPanda").start("127.0.0.1", 8818)
 local moon = require "moon"
 local common = require "common"
 local uuid = require "uuid"
@@ -197,7 +196,7 @@ function Bag.LoadCoins()
 end
 
 function Bag.AddCapacity(bagType, add_capacity_id)
-    if add_capacity_id > 1 then
+    if add_capacity_id <= 1 then
         return ErrorCode.ParamInvalid
     end
 
@@ -267,6 +266,7 @@ function Bag.AddCapacity(bagType, add_capacity_id)
     end
     -- 扣除消耗
     local change_log = {}
+    change_log[bagType] = {}
     local err_code_del = ErrorCode.None
     if table.size(cost_items) > 0 then
         err_code_del = Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_log)
@@ -720,7 +720,8 @@ function Bag.SaveAndLog(change_logs, change_reason,
                     if old_config_id > 0 then
                         local change_dataMap = Bag.dataMap[old_config_id][bagType]
                         change_dataMap.allCount = change_dataMap.allCount - old_item_count
-                        if old_uniqid > 0 then
+                        if old_uniqid > 0 and change_dataMap.uniqid_pos[old_uniqid] == pos then
+                            -- 唯一道具pos可能已经变更，需要比较是否为当前pos
                             change_dataMap.uniqid_pos[old_uniqid] = nil
                         else
                             change_dataMap.pos_count[pos] = nil
@@ -998,6 +999,9 @@ function Bag.SortOut(bagType)
             return ErrorCode.BagSortOutFailed
         end
     end
+    -- moon.warn(string.format("stack_baginfo.items = %s", json.pretty_encode(stack_baginfo.items)))
+    -- moon.warn(string.format("Bag.dataMap = %s", json.pretty_encode(Bag.dataMap)))
+    -- moon.warn(string.format("stack_change_logs[bagType] = %s", json.pretty_encode(stack_change_logs[bagType])))
 
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 再移动
@@ -1013,27 +1017,30 @@ function Bag.SortOut(bagType)
     for _, config_id in pairs(now_config_ids) do
         local bdata = Bag.dataMap[config_id][bagType]
         for pos, count in pairs(bdata.pos_count) do
-            if pos ~= cur_use_pos and count ~= 0 then
-                local dest_item = move_baginfo.items[cur_use_pos]
-                local src_item = old_items[pos]
-                Bag.AddLog(move_change_logs[bagType], cur_use_pos, dest_item)
-                Bag.AddLog(move_change_logs[bagType], pos, move_baginfo.items[pos])
-                move_baginfo.items[cur_use_pos] = src_item
-                if pos > cur_use_pos then
-                    move_baginfo.items[pos] = nil
+            if count ~= 0 then
+                if pos ~= cur_use_pos then
+                    local src_item = old_items[pos]
+                    Bag.AddLog(move_change_logs[bagType], cur_use_pos, old_items[cur_use_pos])
+                    Bag.AddLog(move_change_logs[bagType], pos, move_baginfo.items[pos])
+                    move_baginfo.items[cur_use_pos] = src_item
+                    if pos > cur_use_pos then
+                        move_baginfo.items[pos] = nil
+                    end
                 end
 
                 cur_use_pos = cur_use_pos + 1
             end
         end
         for uniqid, pos in pairs(bdata.uniqid_pos) do
-            if pos ~= cur_use_pos and pos > 0 then
-                local src_item = old_items[pos]
-                Bag.AddLog(move_change_logs[bagType], cur_use_pos, old_items[cur_use_pos])
-                Bag.AddLog(move_change_logs[bagType], pos, src_item)
-                move_baginfo.items[cur_use_pos] = src_item
-                if pos > cur_use_pos then
-                    move_baginfo.items[pos] = nil
+            if pos > 0 then
+                if pos ~= cur_use_pos then
+                    local src_item = old_items[pos]
+                    Bag.AddLog(move_change_logs[bagType], cur_use_pos, old_items[cur_use_pos])
+                    Bag.AddLog(move_change_logs[bagType], pos, src_item)
+                    move_baginfo.items[cur_use_pos] = src_item
+                    if pos > cur_use_pos then
+                        move_baginfo.items[pos] = nil
+                    end
                 end
                 cur_use_pos = cur_use_pos + 1
             end
@@ -1045,6 +1052,9 @@ function Bag.SortOut(bagType)
             return ErrorCode.BagSortOutFailed
         end
     end
+    -- moon.warn(string.format("move_baginfo.items = %s", json.pretty_encode(move_baginfo.items)))
+    -- moon.warn(string.format("Bag.dataMap = %s", json.pretty_encode(Bag.dataMap)))
+    -- moon.warn(string.format("move_change_logs[bagType] = %s", json.pretty_encode(move_change_logs[bagType])))
 
     return ErrorCode.None
 end
@@ -2793,6 +2803,7 @@ function Bag.PBBagAddCapacityReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 数据存储更新
     if change_log then
         -- local save_bags = {}
@@ -2804,8 +2815,10 @@ function Bag.PBBagAddCapacityReqCmd(req)
     end
 
     local bag_data = {}
-    local res_bag_data = Bag.GetBagdata(req.msg.bag_name)
-    if res_bag_data.errcode == ErrorCode.None and res_bag_data.bag_datas[req.msg.bag_name] then
+    local res_bag_data = Bag.GetBagdata({req.msg.bag_name})
+    if res_bag_data.errcode == ErrorCode.None
+        and res_bag_data.bag_datas
+        and res_bag_data.bag_datas[req.msg.bag_name] then
         bag_data = res_bag_data.bag_datas[req.msg.bag_name]
     end
     return context.S2C(context.net_id, CmdCode.PBBagAddCapacityRspCmd, {

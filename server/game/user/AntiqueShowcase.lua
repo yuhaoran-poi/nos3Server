@@ -36,20 +36,16 @@ function AntiqueShowcase.Init()
             return ErrorCode.ConfigError, "配置错误"
         end
 
-        for _, config in ipairs(showcaseConfig) do
+        for _, config in pairs(showcaseConfig) do
             local newShowcase = ItemDef.newAntiqueShowcase()
             newShowcase.showcase_id = config.id
-            newShowcase.antique_show_list = {}
-
-            -- 创建指定数量的展柜
-            for i = 1, config.num do
-                newShowcase.antique_show_list[i] = {}
-            end
+            newShowcase.box_num = config.num
 
             showcases.antique_showcase_list[newShowcase.showcase_id] = newShowcase
         end
+
+        scripts.UserModel.SetAntiqueShowcase(showcases)
     end
-    scripts.UserModel.SetAntiqueShowcase(showcases)
 end
 
 function AntiqueShowcase.Start(isnew)
@@ -89,7 +85,7 @@ function AntiqueShowcase.SaveAndLog(update_showcase_ids)
         update_showcases = {}
     }
 
-    for _, sid in ipairs(update_showcase_ids) do
+    for _, sid in pairs(update_showcase_ids) do
         local showcase = showcases.antique_showcase_list[sid]
         if showcase then
             update_msg.update_showcases[sid] = showcase
@@ -111,7 +107,8 @@ function AntiqueShowcase.AddShowcase(showcase_id, change_ids)
     if not showcases[showcase_id] then
         local newShowcase = ItemDef.newAntiqueShowcase()
         newShowcase.showcase_id = showcase_id
-        showcases[showcase_id] = newShowcase
+        newShowcase.box_num = 0
+        showcases.antique_showcase_list[showcase_id] = newShowcase
 
         table.insert(change_ids, showcase_id)
     end
@@ -341,7 +338,7 @@ function AntiqueShowcase.AntiqueShow(config_id, uniq_id, showcase_id, showcase_i
     end
 
     -- 检查展示索引是否越界
-    if showcase_idx > #tar_showcase.antique_show_list then
+    if showcase_idx > tar_showcase.box_num then
         return ErrorCode.ShowcaseIdxOutOfBounds, "展示索引越界"
     end
 
@@ -418,7 +415,7 @@ function AntiqueShowcase.AntiqueShow(config_id, uniq_id, showcase_id, showcase_i
             end
 
         -- 清除展示的古董
-        tar_showcase.antique_show_list[showcase_idx] = {}
+        tar_showcase.antique_show_list[showcase_idx] = nil
     else
         return ErrorCode.InvalidOperateType, "操作类型错误"
     end

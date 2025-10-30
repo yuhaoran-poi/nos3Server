@@ -56,7 +56,7 @@ login_data (2.PBDSLoginDataR	loginData"f
 error (	Rerror
 dsid (Rdsid
 net_id (RnetIdbproto3
-Ê%
+Ð'
 
 item.proto"@
 PBCoin
@@ -213,13 +213,20 @@ skin_image (2.PBUserImage.SkinImageEntryR	skinImageF
 value (2.PBImageRvalue:8J
 SkinImageEntry
 key (Rkey"
-value (2.PBSkinImageRvalue:8"q
+value (2.PBSkinImageRvalue:8"û
 PBAntiqueShowcaseData
 showcase_id (R
-showcaseId7
-antique_show_list (2.PBItemDataRantiqueShowList"d
-PBAntiqueShowcaseDataSJ
-antique_showcase_list (2.PBAntiqueShowcaseDataRantiqueShowcaseList"(
+showcaseId
+box_num (RboxNumW
+antique_show_list (2+.PBAntiqueShowcaseData.AntiqueShowListEntryRantiqueShowListO
+AntiqueShowListEntry
+key (Rkey!
+value (2.PBItemDataRvalue:8"Þ
+PBAntiqueShowcaseDataSd
+antique_showcase_list (20.PBAntiqueShowcaseDataS.AntiqueShowcaseListEntryRantiqueShowcaseList^
+AntiqueShowcaseListEntry
+key (Rkey,
+value (2.PBAntiqueShowcaseDataRvalue:8"(
 PBImageGetDataReqCmd
 uid (Ruid"
 PBImageGetDataRspCmd

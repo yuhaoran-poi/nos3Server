@@ -1748,11 +1748,12 @@
 
 ---@class PBAntiqueShowcaseData
 ---@field public showcase_id integer @展柜id
----@field public antique_show_list PBItemData[] @在展古董数据
+---@field public box_num integer
+---@field public antique_show_list table<integer, PBItemData> @在展古董数据
 
 
 ---@class PBAntiqueShowcaseDataS
----@field public antique_showcase_list PBAntiqueShowcaseData[] @展柜列表
+---@field public antique_showcase_list table<integer, PBAntiqueShowcaseData>
 
 
 ---@class PBImageGetDataReqCmd
@@ -3178,6 +3179,7 @@
 ---@field ItemImage ItemImage
 ---@field Mail Mail
 ---@field MatchProxy MatchProxy
+---@field NewBag NewBag
 ---@field Role Role
 ---@field Room Room
 ---@field Shop Shop

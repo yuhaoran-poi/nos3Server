@@ -243,20 +243,21 @@ function UserModel.GetAntiqueShowcase()
 end
 
 function UserModel.SetAntiqueShowcase(antique_showcase)
-    if not DBData then
-        return
-    end
+    DBData.antique_showcase = antique_showcase
+    -- if not DBData then
+    --     return
+    -- end
 
-    if not DBData.antique_showcase then
-        -- 第一次直接赋值整张表
-        DBData.antique_showcase = antique_showcase
-    else
-        -- 如果要按 showcase_id 更新/合并
-        for idx, showcase in ipairs(antique_showcase) do
-            local sid = showcase.showcase_id
-            DBData.antique_showcase[sid] = showcase
-        end
-    end
+    -- if not DBData.antique_showcase then
+    --     -- 第一次直接赋值整张表
+    --     DBData.antique_showcase = antique_showcase
+    -- else
+    --     -- 如果要按 showcase_id 更新/合并
+    --     for _, showcase in pairs(antique_showcase) do
+    --         local sid = showcase.showcase_id
+    --         DBData.antique_showcase[sid] = showcase
+    --     end
+    -- end
 end
 
 return UserModel

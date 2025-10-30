@@ -176,3 +176,20 @@ function Client:show_antique(config_id, uniqid, showcase_id, showcase_idx, opera
         print_r(msg)
     end)
 end
+
+function Client:addbag()
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+
+    local req_msg = {
+        uid = self.uid,
+        bag_name = "Cangku",
+        add_capacity_id = 2,
+    }
+    self:send("PBBagAddCapacityReqCmd", req_msg, function(msg)
+        print("rpc PBBagAddCapacityReqCmd ret = ", self.index, msg)
+        print_r(msg)
+    end)
+end

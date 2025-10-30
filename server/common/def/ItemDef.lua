@@ -157,6 +157,7 @@ local defaultPBAntique = {
 
 local defaultAntiqueShowcase = {
     showcase_id = 0,
+    box_num = 0,
     antique_show_list = {},
 }
 
@@ -224,8 +225,6 @@ function ItemDef.newAntique()
     return LuaExt.const(table.copy(defaultPBAntique))
 end
 
---- @class PBAntiqueShowcaseData
---- @field showcase_id number
 --- @return PBAntiqueShowcaseData
 function ItemDef.newAntiqueShowcase()
     return LuaExt.const(table.copy(defaultAntiqueShowcase))

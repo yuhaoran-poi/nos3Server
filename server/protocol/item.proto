@@ -202,13 +202,14 @@ message PBUserImage
 
 // 古董展柜
 message PBAntiqueShowcaseData {
-    int32 showcase_id = 1;                     			// 展柜id
-    repeated PBItemData antique_show_list = 2;    		// 在展古董数据
+    int32 showcase_id	= 1;                     			// 展柜id
+	int32 box_num		= 2;
+	map<int32, PBItemData> antique_show_list	= 3;	// 在展古董数据
 }
 
 // 古董展柜总数据
 message PBAntiqueShowcaseDataS {
-    repeated PBAntiqueShowcaseData antique_showcase_list = 1; // 展柜列表
+	map<int32, PBAntiqueShowcaseData> antique_showcase_list = 1;
 }
 
 // 客户端获取图鉴数据

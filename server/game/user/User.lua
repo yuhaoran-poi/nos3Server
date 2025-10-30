@@ -1647,7 +1647,7 @@ function User.PBSureCompositeReqCmd(req)
     for i = 1, req.msg.composite_cnt do
         local composite_ret = User.Composite(composite_cfg, add_roles, add_items)
         if composite_ret.code ~= ErrorCode.None
-            and composite_ret.code ~= composite_ret.Errcode.CompositeFail then
+            and composite_ret.code ~= ErrorCode.CompositeFail then
             rsp_msg.code = composite_ret.code
             rsp_msg.error = composite_ret.error
             return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
@@ -1692,7 +1692,7 @@ function User.PBSureCompositeReqCmd(req)
     local change_roles = {}
     -- 扣除道具消耗
     if table.size(cost_items) > 0 then
-        rsp_msg.code = scripts.Bag.DelItems(req.msg.bag_name, cost_items, {}, bag_change_log)
+        rsp_msg.code = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, bag_change_log)
         if rsp_msg.code ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(bag_change_log)
             return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
