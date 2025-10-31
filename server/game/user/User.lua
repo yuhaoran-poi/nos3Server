@@ -976,8 +976,8 @@ function User.PBClientItemUpLvReqCmd(req)
     
     if err_code ~= ErrorCode.None then
         return context.S2C(context.net_id, CmdCode.PBClientItemUpLvRspCmd, {
-            code = ErrorCode.ItemNotExist,
-            error = "图鉴不存在",
+            code = err_code,
+            error = "升级失败",
             uid = context.uid,
             config_id = req.msg.config_id,
             add_exp = req.msg.add_exp,

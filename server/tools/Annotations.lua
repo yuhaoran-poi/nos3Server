@@ -1783,7 +1783,7 @@
 
 
 ---@class PBAntiqueShowcaseUpdateSyncCmd
----@field public update_antique_showcase PBAntiqueShowcaseDataS
+---@field public antique_showcase_list table<integer, PBAntiqueShowcaseData>
 
 
 ---@class PBMailSimpleData

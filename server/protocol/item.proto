@@ -247,5 +247,5 @@ message PBAntiqueShowcaseDataRspCmd
 
 message PBAntiqueShowcaseUpdateSyncCmd
 {
-	PBAntiqueShowcaseDataS update_antique_showcase = 1;
+	map<int32, PBAntiqueShowcaseData> antique_showcase_list = 1;
 }

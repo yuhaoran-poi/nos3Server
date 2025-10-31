@@ -82,13 +82,13 @@ function AntiqueShowcase.SaveAndLog(update_showcase_ids)
     end
 
     local update_msg = {
-        update_showcases = {}
+        antique_showcase_list = {}
     }
 
     for _, sid in pairs(update_showcase_ids) do
         local showcase = showcases.antique_showcase_list[sid]
         if showcase then
-            update_msg.update_showcases[sid] = showcase
+            update_msg.antique_showcase_list[sid] = showcase
         end
     end
 
@@ -432,8 +432,8 @@ function AntiqueShowcase.AntiqueShow(config_id, uniq_id, showcase_id, showcase_i
 end
 
 function AntiqueShowcase.PBAntiqueShowcaseDataReqCmd(req)
-    local AntiqueShowcse = scripts.UserModel.GetAntiqueShowcase()
-    if not AntiqueShowcse then
+    local antiqueShowcse = scripts.UserModel.GetAntiqueShowcase()
+    if not antiqueShowcse then
         return context.S2C(context.net_id, CmdCode["PBAntiqueShowcaseDataRspCmd"], {code = ErrorCode.ServerInternalError, error = "服务器内部错误"}, req.msg_context.stub_id)
     end
 
@@ -441,7 +441,7 @@ function AntiqueShowcase.PBAntiqueShowcaseDataReqCmd(req)
         code = ErrorCode.None,
         error = "",
         uid = context.uid,
-        antique_showcase_data = AntiqueShowcse
+        antique_showcase_data = antiqueShowcse
     }
     return context.S2C(context.net_id, CmdCode["PBAntiqueShowcaseDataRspCmd"], res, req.msg_context.stub_id)
 end

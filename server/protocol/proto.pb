@@ -56,7 +56,7 @@ login_data (2.PBDSLoginDataR	loginData"f
 error (	Rerror
 dsid (Rdsid
 net_id (RnetIdbproto3
-Ð'
+Î(
 
 item.proto"@
 PBCoin
@@ -243,9 +243,12 @@ image_data (2.PBUserImageR	imageData"I
 code (Rcode
 error (	Rerror
 uid (RuidK
-antique_showcase_data (2.PBAntiqueShowcaseDataSRantiqueShowcaseData"q
-PBAntiqueShowcaseUpdateSyncCmdO
-update_antique_showcase (2.PBAntiqueShowcaseDataSRupdateAntiqueShowcasebproto3
+antique_showcase_data (2.PBAntiqueShowcaseDataSRantiqueShowcaseData"î
+PBAntiqueShowcaseUpdateSyncCmdl
+antique_showcase_list (28.PBAntiqueShowcaseUpdateSyncCmd.AntiqueShowcaseListEntryRantiqueShowcaseList^
+AntiqueShowcaseListEntry
+key (Rkey,
+value (2.PBAntiqueShowcaseDataRvalue:8bproto3
 ½
 	bag.proto
 item.proto"·
