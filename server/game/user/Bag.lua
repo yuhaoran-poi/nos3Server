@@ -1913,8 +1913,7 @@ function Bag.StackItems(srcBagType, srcPos, destBagType, destPos, change_log)
 
     -- 源道具校验,不能有被锁定数量的道具
     local srcItem = srcBag.items[srcPos]
-    if not srcItem or srcItem.common_info.uniqid ~= 0
-        or srcItem.special_info ~= nil then
+    if not srcItem or srcItem.common_info.uniqid ~= 0 then
         return ErrorCode.StackNotAllowed
     end
     if srcItem.common_info.item_count <= 0 then
@@ -1923,7 +1922,7 @@ function Bag.StackItems(srcBagType, srcPos, destBagType, destPos, change_log)
 
     -- 目标道具校验
     local destItem = destBag.items[destPos]
-    if not destItem or destItem.common_info.uniqid ~= 0 or destItem.special_info ~= nil then
+    if not destItem or destItem.common_info.uniqid ~= 0 then
         return ErrorCode.StackNotAllowed
     end
 
@@ -1964,6 +1963,9 @@ function Bag.StackItems(srcBagType, srcPos, destBagType, destPos, change_log)
     --     0, srcItem.common_info.item_count)
     Bag.AddLog(change_log[srcBagType], srcPos, srcItem)
     srcItem.common_info.item_count = srcItem.common_info.item_count - move_count
+    if srcItem.common_info.item_count == 0 then
+        srcBag.items[srcPos] = nil
+    end
 
     return ErrorCode.None
 end
