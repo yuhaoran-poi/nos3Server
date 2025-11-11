@@ -2865,7 +2865,7 @@ end
 -- 根据概率随机是否成功
 function Bag.RandomSucc(rate)
     if rate < 0 or rate > 10000 then
-        print("Bag.RandomSucc - rate is invalid")
+        moon.error("Bag.RandomSucc - rate is invalid", rate)
         return ErrorCode.ParamInvalid, 0
     end
 
@@ -2876,7 +2876,7 @@ end
 -- 获取随机元素
 function Bag.GetRandomElement(container)
     if not container or #container == 0 then
-        print("Bag.GetRandomElement - container is empty")
+        moon.error("Bag.GetRandomElement - container is empty")
         return ErrorCode.ParamInvalid
     end
 
@@ -2887,7 +2887,7 @@ end
 -- 范围内随机值
 function Bag.RandomValue(min, max)
     if max <= min then
-        print("Bag.RandomValue_ - max is less than min")
+        moon.error("Bag.RandomValue_ - max is less than min", min, max)
         return ErrorCode.ParamInvalid
     end
 
@@ -2898,14 +2898,14 @@ function Bag.RandomWeightedIndex(weightMap)
     local totalWeight = 0
     for _, weight in pairs(weightMap) do
         if weight < 0 then
-            print("Bag.RandomWeightedIndex_ weight is less than 0")
+            moon.error("Bag.RandomWeightedIndex_ weight is less than 0")
             return ErrorCode.ParamInvalid
         end
         totalWeight = totalWeight + weight
     end
 
     if totalWeight == 0 then
-        print("Bag.RandomWeightedIndex_ totalWeight is 0")
+        moon.error("Bag.RandomWeightedIndex_ totalWeight is 0")
         return ErrorCode.ParamInvalid
     end
 

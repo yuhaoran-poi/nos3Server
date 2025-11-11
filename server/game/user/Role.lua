@@ -76,15 +76,17 @@ function Role.CheckRoleStudyBook(role_info)
     local now_time = moon.time()
     moon.warn(string.format("CheckRoleStudyBook role_info = %s", json.pretty_encode(role_info)))
     if now_time - role_info.last_check_time < 10 then
-        return
+        return false
     end
 
+    local is_change = false
     local end_study = {}
     for book_id, study_book in pairs(role_info.study_books) do
         study_book.now_time = now_time
         if study_book.end_time <= now_time then
             role_info.equip_books[book_id] = 1
             table.insert(end_study, book_id)
+            is_change = true
         end
     end
 
@@ -93,6 +95,7 @@ function Role.CheckRoleStudyBook(role_info)
     end
 
     role_info.last_check_time = now_time
+    return is_change
 end
 
 function Role.SaveAndLog(change_roles)
@@ -334,6 +337,18 @@ function Role.PBClientGetUsrRolesInfoReqCmd(req)
             { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
     end
 
+    local change_roles = {}
+    for roleid, role_info in pairs(roles.role_list) do
+        local is_change = Role.CheckRoleStudyBook(role_info)
+        if is_change then
+            change_roles[roleid] = "StudyBook"
+        end
+    end
+    if table.size(change_roles) > 0 then
+        Role.SaveAndLog(change_roles)
+        roles = scripts.UserModel.GetRoles()
+    end
+
     local rsp_msg = {
         code = ErrorCode.None,
         error = "",
@@ -369,7 +384,12 @@ function Role.PBClientGetRoleInfoReqCmd(req)
     end
 
     local role_info = roles.role_list[req.msg.roleid]
-    Role.CheckRoleStudyBook(role_info)
+    local is_change = Role.CheckRoleStudyBook(role_info)
+    if is_change then
+        local change_roles = {}
+        change_roles[req.msg.roleid] = "StudyBook"
+        Role.SaveAndLog(change_roles)
+    end
 
     local rsp_msg = {
         code = ErrorCode.None,

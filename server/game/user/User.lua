@@ -1170,8 +1170,8 @@ function User.PBUseItemUpLvReqCmd(req)
         --     scripts.Bag.SaveAndLog(save_bags, bag_change_log)
         -- end
         if table.size(bag_change_log) > 0 then
-            if RoleDef.RoleDefine.RoleID.Start <= req.msg.config_id
-                and req.msg.config_id <= RoleDef.RoleDefine.RoleID.End then
+            if RoleDef.RoleDefine.RoleID.Start <= req.msg.target_id
+                and req.msg.target_id <= RoleDef.RoleDefine.RoleID.End then
                 scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.UseItemUpLv, req.msg.target_id)
             elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.target_id
                 and req.msg.target_id <= GhostDef.GhostDefine.GhostID.End then
