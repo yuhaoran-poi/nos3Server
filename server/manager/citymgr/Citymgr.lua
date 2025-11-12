@@ -12,6 +12,7 @@ local lock_wait = require("moon.queue")()
 local lock_run = require("moon.queue")()
 local protocol = require("common.protocol_pb")
 local ChatLogic = require("common.logic.ChatLogic")
+local serverconf = require("serverconf")
 local jencode = json.encode
 local jdecode = json.decode
 
@@ -115,6 +116,7 @@ function Citymgr.CheckWaitDSCitys()
                 end
             elseif v.status == 1 then
                 local get_url = context.conf.query_url .. "?name=" .. v.region
+                moon.warn(string.format("query_url:\n%s", get_url))
                 local response = httpc.get(get_url)
                 local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 --local rsp_data = json.decode(response.body)
@@ -219,37 +221,39 @@ function Citymgr.CheckCityRun()
         return true
     end
 
-    -- 检查是否有主城已死亡或者需要新创主城
-    local dead_cityids = {}
-    local canEnterRoom = {}
-    for cityid, cityinfo in pairs(context.citys) do
-        local get_url = context.conf.query_url .. "?name=" .. cityinfo.region
-        local response = httpc.get(get_url)
-        local rsp_data = json.decode(response.body)
-        local success, ret = query_cb(rsp_data)
-        if not success then
-            moon.error(string.format("CheckCityRun rsp_data:\n%s", json.pretty_encode(rsp_data)))
-            table.insert(dead_cityids, cityid)
-        else
-            if cityinfo.now_num < min_num then
-                table.insert(canEnterRoom, cityid)
+    if not serverconf.TEST_MODE then
+        -- 检查是否有主城已死亡或者需要新创主城
+        local dead_cityids = {}
+        local canEnterRoom = {}
+        for cityid, cityinfo in pairs(context.citys) do
+            local get_url = context.conf.query_url .. "?name=" .. cityinfo.region
+            local response = httpc.get(get_url)
+            local rsp_data = json.decode(response.body)
+            local success, ret = query_cb(rsp_data)
+            if not success then
+                moon.error(string.format("CheckCityRun rsp_data:\n%s", json.pretty_encode(rsp_data)))
+                table.insert(dead_cityids, cityid)
+            else
+                if cityinfo.now_num < min_num then
+                    table.insert(canEnterRoom, cityid)
+                end
             end
         end
-    end
 
-    for _, cityid in pairs(dead_cityids) do
-        -- 销毁附近聊天频道
-        local res = ChatLogic.RemoveNearbyChannel(cityid)
-        if res.code ~= ErrorCode.None then
-            moon.error(string.format("RemoveNearbyChannel cityid:%d, code:%d, error:%s", cityid, res.code, res.error))
+        for _, cityid in pairs(dead_cityids) do
+            -- 销毁附近聊天频道
+            local res = ChatLogic.RemoveNearbyChannel(cityid)
+            if res.code ~= ErrorCode.None then
+                moon.error(string.format("RemoveNearbyChannel cityid:%d, code:%d, error:%s", cityid, res.code, res.error))
+            end
+            Citymgr.DestroyCity(cityid)
         end
-        Citymgr.DestroyCity(cityid)
-    end
 
-    if #canEnterRoom + table.size(context.waitds_citys) < 1 then
-        moon.info("CheckCityRun #canEnterRoom = %d, table.size(context.waitds_citys) = %d", #canEnterRoom,
-            table.size(context.waitds_citys))
-        Citymgr.CreateCity()
+        if #canEnterRoom + table.size(context.waitds_citys) < 1 then
+            moon.info("CheckCityRun #canEnterRoom = %d, table.size(context.waitds_citys) = %d", #canEnterRoom,
+                table.size(context.waitds_citys))
+            Citymgr.CreateCity()
+        end
     end
 end
 
@@ -299,9 +303,11 @@ function Citymgr.DestroyCity(cityid)
 end
 
 function Citymgr.ConnectCity(req)
-    -- return { code = ErrorCode.None, error = "连接主城成功" }
-
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if serverconf.TEST_MODE then
+        return { code = ErrorCode.None, error = "连接主城成功" }
+    end
+
     if not context.citys[req.cityid] then
         return { code = ErrorCode.CityNotFound, error = "主城不存在" }
     end
@@ -352,31 +358,35 @@ function Citymgr.ApplyLoginToCity(uid)
         return { code = ErrorCode.CityAlreadyInCity, error = "已在其他主城", cityid = context.uid_cityid[uid] }
     end
 
-    local res = findFreeCity()
-    -- local res = {
-    --     code = ErrorCode.None,
-    --     error = "允许加入",
-    --     cityid = 1,
-    --     region = "default",
-    --     ds_address = "192.168.2.31-8888",
-    --     ds_ip = "192.168.2.31",
-    -- }
-    -- if not context.citys[res.cityid] then
-    --     local allocated_citys = {}
-    --     allocated_citys[res.cityid] = {
-    --         cityid = res.cityid,
-    --         region = "default",
-    --         ds_address = "192.168.2.31-8888",
-    --         ds_ip = "192.168.2.31",
-    --     }
-    --     Citymgr.SetNewDsCitys(allocated_citys)
-    -- end
+    if not serverconf.TEST_MODE then
+        local res = findFreeCity()
+        if not res then
+            return { code = ErrorCode.CityNotFound, error = "没有空闲主城" }
+        end
 
-    if not res then
-        return { code = ErrorCode.CityNotFound, error = "没有空闲主城" }
+        return res
+    else
+        local res = {
+            code = ErrorCode.None,
+            error = "允许加入",
+            cityid = 1,
+            region = "default",
+            ds_address = "192.168.2.31-8888",
+            ds_ip = "192.168.2.31",
+        }
+        if not context.citys[res.cityid] then
+            local allocated_citys = {}
+            allocated_citys[res.cityid] = {
+                cityid = res.cityid,
+                region = "default",
+                ds_address = "192.168.2.31-8888",
+                ds_ip = "192.168.2.31",
+            }
+            Citymgr.SetNewDsCitys(allocated_citys)
+        end
+
+        return res
     end
-
-    return res
 end
 
 function Citymgr.PlayerEnterCity(req)
