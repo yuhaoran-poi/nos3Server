@@ -148,7 +148,7 @@ function Citymgr.CheckWaitDSCitys()
     for k, v in pairs(context.waitds_citys) do
         if v.status == 2 then
             allocated_citys[k] = v
-        elseif v.failcnt > 5 then
+        elseif v.failcnt > 50 then
             table.insert(fail_citys, k)
         end
     end
