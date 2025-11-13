@@ -1491,4 +1491,33 @@ function _M.saveuserantiqueshowcase(addr, uid, data)
     return moon.send("lua", addr, cmd)
 end
 
+-- 好友离线数据前缀常量
+local NICKNAME_UID = "nickname:uid"
+
+function _M.RedisGetNick(addr_db_redis, nickname)
+    local res, err = redis_call(addr_db_redis, "GET", SYSTEM_MAIL_INFO .. nickname)
+    if err then
+        error("RedisCheckNick failed:" .. tostring(err))
+        return {}
+    end
+
+    local nick_info = {}
+    if res and #res > 0 then
+        moon.warn(string.format("RedisCheckNick res = %s", json.pretty_encode(res)))
+        for i = 1, #res do
+            nick_info[nickname] = json.decode(res[i] or "null")
+        end
+    end
+
+    return nick_info
+end
+
+function _M.RedisSetNick(addr_db_redis, nickname, uid)
+    redis_send(addr_db_redis, "SET", NICKNAME_UID .. nickname, uid)
+end
+
+function _M.RedisDelNick(addr_db_redis, nickname)
+    redis_send(addr_db_redis, "DEL", NICKNAME_UID .. nickname)
+end
+
 return _M

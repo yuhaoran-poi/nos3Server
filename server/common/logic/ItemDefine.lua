@@ -74,7 +74,7 @@ local ItemDefine = {
 
     ItemBagType = {
         ALL = 1,
-        Consume = 2,
+        CONSUME = 2,
     },
 }
 
@@ -153,9 +153,9 @@ function ItemDefine.GetItemPosType(nConfigId)
 end
 
 function ItemDefine.GetItemBagType(nConfigId)
-    if (nConfigId >= ItemDefine.CostItem.start and nConfigId <= ItemDefine.CostItem.End)
+    if (nConfigId >= ItemDefine.PlayItem.start and nConfigId <= ItemDefine.PlayItem.End)
         or (nConfigId >= ItemDefine.DurabItem.start and nConfigId <= ItemDefine.DurabItem.End) then
-        return ItemDefine.ItemBagType.Consume
+        return ItemDefine.ItemBagType.CONSUME
     end
 
     return ItemDefine.ItemBagType.ALL
