@@ -36,7 +36,7 @@ function Citymgr.Init()
     -- 新增定时器轮询
     moon.async(function()
         while true do
-            moon.sleep(1000) -- 每10秒检查一次
+            moon.sleep(10000) -- 每10秒检查一次
             local allocated_citys = Citymgr.CheckWaitDSCitys()
             Citymgr.SetNewDsCitys(allocated_citys)
             Citymgr.CheckCityRun()
@@ -148,7 +148,7 @@ function Citymgr.CheckWaitDSCitys()
     for k, v in pairs(context.waitds_citys) do
         if v.status == 2 then
             allocated_citys[k] = v
-        elseif v.failcnt > 50 then
+        elseif v.failcnt > 5 then
             table.insert(fail_citys, k)
         end
     end
