@@ -85,29 +85,47 @@ function Bag.Start(isnew)
             return
         end
 
-        local init_items = {}
+        local init_cangku_items = {}
         local init_coins = {}
+        local init_consume_items = {}
         local change_log = {}
-        for k, v in pairs(init_cfg.item) do
+        for k, v in pairs(init_cfg.warehouse_bag) do
             local init_item_info = {
                 id = k,
                 count = v,
             }
-            table.insert(init_items, init_item_info)
+            table.insert(init_cangku_items, init_item_info)
         end
-        for k, v in pairs(init_cfg.item) do
+        for k, v in pairs(init_cfg.consumables_bag) do
+            local init_item_info = {
+                id = k,
+                count = v,
+            }
+            table.insert(init_consume_items, init_item_info)
+        end
+        for k, v in pairs(init_cfg.warehouse_bag) do
             init_coins[k] = {
                 coin_id = k,
                 coin_count = v,
             }
         end
 
-        if table.size(init_items) > 0 then
+        if table.size(init_cangku_items) > 0 then
             local stack_items, unstack_items, deal_coins = {}, {}, {}
-            local ok = ItemDefine.GetItemDataFromIdCount(init_items, {}, stack_items, unstack_items, deal_coins)
+            local ok = ItemDefine.GetItemDataFromIdCount(init_cangku_items, {}, stack_items, unstack_items, deal_coins)
             if ok then
                 if table.size(stack_items) + table.size(unstack_items) > 0 then
                     Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, change_log)
+                end
+            end
+        end
+
+        if table.size(init_consume_items) > 0 then
+            local stack_items, unstack_items, deal_coins = {}, {}, {}
+            local ok = ItemDefine.GetItemDataFromIdCount(init_consume_items, {}, stack_items, unstack_items, deal_coins)
+            if ok then
+                if table.size(stack_items) + table.size(unstack_items) > 0 then
+                    Bag.AddItems(BagDef.BagType.Consume, stack_items, unstack_items, change_log)
                 end
             end
         end

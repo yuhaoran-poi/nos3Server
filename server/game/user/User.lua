@@ -99,7 +99,7 @@ function User.Load(req)
             }
             data.user_attr.uid = data.user_id
             data.user_attr.plateform_id = data.authkey
-            data.user_attr.nick_name = data.name or data.authkey
+            -- data.user_attr.nick_name = data.name or data.authkey
             data.user_attr.account_create_time = moon.time()
         end
         data.user_attr.online_time = moon.time()
@@ -1975,5 +1975,100 @@ function User.PBInlayTabooWordReqCmd(req)
         scripts.Ghost.SaveAndLog(change_ghosts)
     end
 end
+
+-- function User.PBModNickNameReqCmd(req)
+--     -- 参数验证
+--     if not req.msg.uid0
+--         or not req.msg.nick_name
+--         or req.msg.nick_name == "" then
+--         return context.S2C(context.net_id, CmdCode.PBModNickNameRspCmd, {
+--             code = ErrorCode.ParamInvalid,
+--             error = "无效请求参数",
+--             uid = req.msg.uid,
+--             nick_name = req.msg.nick_name or "",
+--         }, req.msg_context.stub_id)
+--     end
+
+--     local nick_info = Database.RedisGetNick(context.addr_db_redis, req.msg.nick_name)
+--     if nick_info and table.size(nick_info) > 0 then
+--         return context.S2C(context.net_id, CmdCode.PBModNickNameRspCmd, {
+--             code = ErrorCode.NicknameAlreadyExist,
+--             error = "昵称已存在",
+--             uid = req.msg.uid,
+--             nick_name = req.msg.nick_name or "",
+--         }, req.msg_context.stub_id)
+--     end
+
+--     local nickname_fields = {
+--         ProtoEnum.UserAttrType.nick_name,
+--     }
+--     local user_attr = User.GetOnlineUserAttr(nickname_fields)
+--     if not user_attr[ProtoEnum.UserAttrType.nick_name]
+--         or user_attr[ProtoEnum.UserAttrType.nick_name] == "" then
+--         User.SetUserAttr(nickname_fields, req.msg.nick_name)
+--         Database.RedisSetNick(context.addr_db_redis, req.msg.nick_name, context.uid)
+--     else
+--         local old_nick_name = user_attr[ProtoEnum.UserAttrType.nick_name]
+--         if old_nick_name == req.msg.nick_name then
+--             return context.S2C(context.net_id, CmdCode.PBModNickNameRspCmd, {
+--                 code = ErrorCode.NicknameAlreadyExist,
+--                 error = "昵称与当前昵称相同",
+--                 uid = req.msg.uid,
+--                 nick_name = user_attr[ProtoEnum.UserAttrType.nick_name],
+--             }, req.msg_context.stub_id)
+--         end
+
+--         local init_cfg = GameCfg.Init[1]
+--         if not init_cfg then
+--             return context.S2C(context.net_id, CmdCode.PBModNickNameRspCmd, {
+--                 code = ErrorCode.ConfigError,
+--                 error = "初始化配置错误",
+--                 uid = req.msg.uid,
+--                 nick_name = old_nick_name,
+--             }, req.msg_context.stub_id)
+--         end
+
+--         local cost_items = {}
+--         cost_items[req.msg.cost_id] = {
+--             id = init_cfg.named_item,
+--             count = -1,
+--             pos = 0,
+--         }
+--         -- 检测道具是否足够
+--         local bag_cost_code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+--         if bag_cost_code ~= ErrorCode.None then
+--             return context.S2C(context.net_id, CmdCode.PBModNickNameRspCmd, {
+--                 code = bag_cost_code,
+--                 error = "道具不足",
+--                 uid = req.msg.uid,
+--                 nick_name = old_nick_name,
+--             }, req.msg_context.stub_id)
+--         end
+
+--         if table.size(cost_items) > 0 then
+--             local errcode = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_logs)
+--             if errcode ~= ErrorCode.None then
+--                 scripts.Bag.RollBackWithChange(change_logs)
+--                 return context.S2C(context.net_id, CmdCode.PBModNickNameRspCmd, {
+--                     code = errcode,
+--                     error = "道具不足",
+--                     uid = req.msg.uid,
+--                     nick_name = old_nick_name,
+--                 }, req.msg_context.stub_id)
+--             end
+--         end
+
+--         Database.RedisDelNick(context.addr_db_redis, old_nick_name)
+--         User.SetUserAttr(nickname_fields, req.msg.nick_name)
+--         Database.RedisSetNick(context.addr_db_redis, req.msg.nick_name, context.uid)
+--     end
+    
+--     return context.S2C(context.net_id, CmdCode.PBModNickNameRspCmd, {
+--         code = ErrorCode.None,
+--         error = "",
+--         uid = req.msg.uid,
+--         nick_name = req.msg.nick_name,
+--     }, req.msg_context.stub_id)
+-- end
 
 return User

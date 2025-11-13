@@ -3166,6 +3166,7 @@
 
 
 ---@class user_scripts
+---@field Achievement Achievement
 ---@field AntiqueShowcase AntiqueShowcase
 ---@field Bag Bag
 ---@field ChatProxy ChatProxy

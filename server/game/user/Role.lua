@@ -45,10 +45,10 @@ function Role.Start(isnew)
             return { code = ErrorCode.ConfigError, error = "no init_cfg" }
         end
 
-        for k, v in pairs(init_cfg.item) do
-            if k >= RoleDef.RoleDefine.RoleID.Start and k <= RoleDef.RoleDefine.RoleID.End then
+        for _, v in pairs(init_cfg.unlock_role) do
+            if v >= RoleDef.RoleDefine.RoleID.Start and v <= RoleDef.RoleDefine.RoleID.End then
                 --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-                Role.AddRole(k)
+                Role.AddRole(v)
             end
         end
         Role.SetRoleBattle(init_cfg.battle_role, false)

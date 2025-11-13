@@ -44,7 +44,7 @@ function Ghost.Start(isnew)
             return false
         end
 
-        for k, v in pairs(init_cfg.item) do
+        for k, v in pairs(init_cfg.warehouse_bag) do
             if k >= GhostDef.GhostDefine.GhostID.Start and k <= GhostDef.GhostDefine.GhostID.End then
                 local ret = Ghost.AddGhost(k)
 

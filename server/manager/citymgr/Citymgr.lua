@@ -308,6 +308,9 @@ function Citymgr.ConnectCity(req)
         return { code = ErrorCode.None, error = "连接主城成功" }
     end
 
+    moon.warn(string.format("ConnectCity req:\n%s", json.pretty_encode(req)))
+    moon.warn(string.format("ConnectCity context.citys:\n%s", json.pretty_encode(context.citys)))
+
     if not context.citys[req.cityid] then
         return { code = ErrorCode.CityNotFound, error = "主城不存在" }
     end
