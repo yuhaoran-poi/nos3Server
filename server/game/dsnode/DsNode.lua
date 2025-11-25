@@ -50,7 +50,7 @@ function DsNode.Load(req)
         return { code = ErrorCode.None, error = "", data = data }
     end
 
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local ok, res = xpcall(fn, debug.traceback, req)
     if not ok then
         return ok, res
@@ -158,16 +158,16 @@ function DsNode.PBPingCmd(req)
     {
         time = req.msg.time
     }
-    context.S2C(context.net_id, CmdCode.PBPongCmd, ret, req.msg_context.stub_id)
+    context.S2D(context.net_id, CmdCode.PBPongCmd, ret, req.msg_context.stub_id)
 end
 
 function DsNode.PBEnterCityReqCmd(req)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local res, err = clusterd.call(3999, "citymgr", "Citymgr.PlayerEnterCity", {
         cityid = req.msg.cityid,
         uid = req.msg.uid,
     })
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if not err and res then
         local ret = {
             code = res.code,
@@ -181,12 +181,12 @@ function DsNode.PBEnterCityReqCmd(req)
 end
 
 function DsNode.PBExitCityReqCmd(req)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local res, err = clusterd.call(3999, "citymgr", "Citymgr.PlayerExitCity", {
         cityid = req.msg.cityid,
         uid = req.msg.uid,
     })
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if not err and res then
         local ret = {
             code = res.code,
@@ -200,12 +200,12 @@ function DsNode.PBExitCityReqCmd(req)
 end
 
 function DsNode.PBUpdateCityReqCmd(req)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local res, err = clusterd.call(3999, "citymgr", "Citymgr.UpdateCityPlayer", {
         cityid = req.msg.cityid,
         player_num = req.msg.player_num,
     })
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if not err and res then
         local ret = {
             code = res.code,
@@ -221,7 +221,7 @@ end
 function DsNode.PBAddItemsCityPlayerReqCmd(req)
     -- 暂时省略校验，直接转发给玩家
     local res, err = context.call_user(req.msg.uid, "User.DsAddItems", req.msg.simple_items)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if err then
         moon.error(string.format("err = %s", json.pretty_encode(err)))
     end
@@ -257,7 +257,7 @@ function DsNode.PBGetDsUserAttrReqCmd(req)
 end
 
 function DsNode.PBGetDsUserBagsReqCmd(req)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if not req.msg.dsid or not req.msg.quest_uid then
         local ret = {
             code = ErrorCode.CityVerifyFailed,
@@ -505,43 +505,51 @@ function DsNode.PBDsNotifyPlayerEnterReqCmd(req)
 end
 
 function DsNode.PBDsNotifyPlayerExitReqCmd(req)
-    if not req.msg.roomid or not req.msg.uids then
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    if not req.msg.roomid or not req.msg.uid then
         local ret = {
             code = ErrorCode.CityVerifyFailed,
-            error = "no roomid or no uids"
+            error = "no roomid or no uid"
         }
         return context.S2D(context.net_id, CmdCode["PBDsNotifyPlayerExitRspCmd"], ret, req.msg_context.stub_id)
     end
 
-    local success, offline_uids = DsNode.CheckUserOnlineInfo(req.msg.uids)
+    local success, offline_uids = DsNode.CheckUserOnlineInfo({req.msg.uid})
     if not success then
-        moon.warn(string.format("PBDsNotifyPlayerExitReqCmd user offline, uids = %s", json.pretty_encode(offline_uids)))
+        moon.warn(string.format("PBDsNotifyPlayerExitReqCmd user offline, uid = %s", json.pretty_encode(offline_uids)))
     end
 
     --遍历在线用户列表，发送消息
     local mine_node = math.tointeger(moon.env("NODE"))
-    for _, uid in pairs(req.msg.uids) do
-        if context.uid_addr_map[uid] then
-            local node, addr_user = context.uid_addr_map[uid].node, context.uid_addr_map[uid].addr_user
-            if node ~= 0 or addr_user ~= 0 then
-                if mine_node == node then
-                    moon.send("lua", addr_user, "User.OutPlay", req.msg.roomid)
-                else
-                    clusterd.send(node, addr_user, "User.OutPlay", req.msg.roomid)
-                end
-            else
-                moon.warn("send_user User.OutPlay failed, node = ", node, " uid= ", uid, "addr_user = ", addr_user)
+    if context.uid_addr_map[req.msg.uid] then
+        local node, addr_user = context.uid_addr_map[req.msg.uid].node, context.uid_addr_map[req.msg.uid].addr_user
+        if node ~= 0 or addr_user ~= 0 then
+            local send_data = {
+                roomid = req.msg.roomid,
+                need_exit_room = false,
+                need_settle = req.msg.need_settle,
+                player_settle = req.msg.player_settle,
+            }
+            if req.msg.need_settle and req.msg.need_settle == 1 then
+                send_data.need_exit_room = true
             end
-
-            context.uid_addr_map[uid] = nil
+            if mine_node == node then
+                moon.send("lua", addr_user, "User.OutPlay", send_data)
+            else
+                clusterd.send(node, addr_user, "User.OutPlay", send_data)
+            end
+        else
+            moon.warn("send_user User.OutPlay failed, node = ", node, " uid= ", req.msg.uid, "addr_user = ", addr_user)
         end
+
+        context.uid_addr_map[req.msg.uid] = nil
     end
 
     local ret = {
         code = ErrorCode.None,
         error = "",
         roomid = req.msg.roomid,
-        uids = req.msg.uids,
+        uid = req.msg.uid,
     }
     return context.S2D(context.net_id, CmdCode["PBDsNotifyPlayerExitRspCmd"], ret, req.msg_context.stub_id)
 end

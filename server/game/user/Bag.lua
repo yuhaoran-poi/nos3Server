@@ -112,6 +112,7 @@ function Bag.Start(isnew)
 
         if table.size(init_cangku_items) > 0 then
             local stack_items, unstack_items, deal_coins = {}, {}, {}
+            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
             local ok = ItemDefine.GetItemDataFromIdCount(init_cangku_items, {}, stack_items, unstack_items, deal_coins)
             if ok then
                 if table.size(stack_items) + table.size(unstack_items) > 0 then
@@ -1416,6 +1417,43 @@ function Bag.AddDiagramsCard(bagType, baginfo, item_data, change_log)
     end
 
     return ErrorCode.None
+end
+
+function Bag.SyncBagInfo(bagType, sync_baginfo, change_log)
+    -- 参数校验
+    if bagType ~= BagDef.BagType.Cangku
+        and bagType ~= BagDef.BagType.Consume
+        and bagType ~= BagDef.BagType.Booty then
+        return ErrorCode.BagNotExist
+    end
+
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata or not bagdata[bagType] then
+        return ErrorCode.BagNotExist
+    end
+    local now_baginfo = bagdata[bagType]
+
+    if sync_baginfo.capacity then
+        if sync_baginfo.capacity < now_baginfo.capacity then
+            return ErrorCode.BagNotExist
+        end
+        now_baginfo.capacity = sync_baginfo.capacity
+    end
+        
+    if not change_log[bagType] then
+        change_log[bagType] = {}
+    end
+    for i = 1, now_baginfo.capacity do
+        local now_itemdata = now_baginfo.items[i]
+        local sync_itemdata = sync_baginfo.items[i]
+        
+        if now_itemdata and sync_itemdata then
+            if sync_itemdata.common_info.uniqid ~= now_itemdata.common_info.uniqid then
+                Bag.AddLog(change_log[bagType], i, now_itemdata)
+                now_baginfo.items[i] = sync_itemdata
+            end
+        end
+    end
 end
 
 function Bag.GetItemCount(config_id, bagType)

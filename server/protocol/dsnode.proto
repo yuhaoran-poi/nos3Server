@@ -5,6 +5,22 @@ import "bag.proto";
 import "role.proto";
 import "gods.proto";
 
+message PBGameAddRoleExp
+{
+    int32 role_id   = 1;
+    int32 add_role_exp  = 2;
+}
+
+// DS结算数据
+message PBGameSettle
+{
+    string settle_data = 1;//结算展示信息
+    int32 account_experience = 2;//账户经验值
+    repeated PBGameAddRoleExp game_role_exp = 3;//角色增加经验
+    PBBag consume_bag   = 4;//消耗品背包
+    PBBag booty_bag     = 5;//战利品背包
+}
+
 // 玩家进入主城
 message PBEnterCityReqCmd
 {
@@ -161,7 +177,9 @@ message PBDsNotifyPlayerEnterRspCmd
 message PBDsNotifyPlayerExitReqCmd
 {
     int64 roomid    = 1;
-    repeated int64 uids = 2;
+    int64 uid       = 2;
+    int32 need_settle   = 3;    //是否结算 0--否 1--是
+    PBGameSettle player_settle  = 4;    //结算数据
 }
 
 message PBDsNotifyPlayerExitRspCmd
@@ -169,13 +187,15 @@ message PBDsNotifyPlayerExitRspCmd
     int32 code			= 1; // 服务器验证返回,0成功,其他失败
     string error		= 2; // 错误信息
     int64 roomid    = 3;
-    repeated int64 uids = 4;
+    int64 uid       = 4;
 }
 
 // DS通知副本已结束
 message PBDsNotifyPlayEndReqCmd
 {
     int64 roomid    = 1;
+    int32 need_settle   = 2;    //是否结算 0--否 1--是
+    map<int64, PBGameSettle> players_settle  = 3;    //结算数据
 }
 
 message PBDsNotifyPlayEndRspCmd

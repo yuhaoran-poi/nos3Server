@@ -403,10 +403,10 @@ function User.InPlay(msg)
     User.SetUserAttr(update_user_attr, true)
 end
 
-function User.OutPlay(roomid)
-    moon.warn("User.OutPlay roomid = ", roomid)
-    if not context.roomid or context.roomid ~= roomid then
-        moon.error("User.OutPlay roomid not match, roomid = ", roomid)
+function User.OutPlay(out_data)
+    moon.warn("User.OutPlay roomid = ", out_data.roomid)
+    if not context.roomid or context.roomid ~= out_data.roomid then
+        moon.error("User.OutPlay roomid not match, roomid = ", out_data.roomid)
         return
     end
     context.play_ds_node = nil
@@ -419,6 +419,16 @@ function User.OutPlay(roomid)
         local update_user_attr = {}
         update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.IN_ROOM
         User.SetUserAttr(update_user_attr, true)
+    end
+
+    if out_data.need_exit_room then
+        clusterd.send(3999, "roommgr", "Roommgr.ExitRoom",
+            { uid = context.uid, roomid = context.roomid, is_force = true })
+        context.roomid = nil
+    end
+    
+    if out_data.need_settle and out_data.need_settle == 1 and out_data.player_settle then
+        -- scripts.Room.GameSettle(out_data.player_settle)
     end
 end
 

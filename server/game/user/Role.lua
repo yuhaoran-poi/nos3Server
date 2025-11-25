@@ -74,7 +74,7 @@ end
 
 function Role.CheckRoleStudyBook(role_info)
     local now_time = moon.time()
-    moon.warn(string.format("CheckRoleStudyBook role_info = %s", json.pretty_encode(role_info)))
+    -- moon.warn(string.format("CheckRoleStudyBook role_info = %s", json.pretty_encode(role_info)))
     if now_time - role_info.last_check_time < 10 then
         return false
     end
@@ -625,6 +625,33 @@ function Role.UpLv(roleid, add_exp)
     end
 
     return ErrorCode.None, change_log
+end
+
+function Role.GameAddExp(roleid, add_exp)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list or not roles.role_list[roleid] then
+        return ErrorCode.RoleNotExist
+    end
+
+    local role_info = roles.role_list[roleid]
+    local up_exp_cfgs = GameCfg.RoleUpLv
+    if not up_exp_cfgs then
+        return ErrorCode.ConfigError
+    end
+    local last_lv_exp = 0
+    if up_exp_cfgs[#up_exp_cfgs] and up_exp_cfgs[#up_exp_cfgs].allexp then
+        last_lv_exp = up_exp_cfgs[#up_exp_cfgs].allexp
+    end
+    if role_info.exp + add_exp >= last_lv_exp then
+        return ErrorCode.RoleMaxExp
+    end
+    local add_exp = math.min(add_exp, last_lv_exp - role_info.exp)
+
+    -- 增加经验
+    local new_exp = role_info.exp + add_exp
+    role_info.exp = new_exp
+
+    return ErrorCode.None, new_exp
 end
 
 function Role.CheckUseItemUpLv(roleid, exp_id, exp_cnt)

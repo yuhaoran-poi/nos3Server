@@ -13,6 +13,7 @@ local crypt = require("crypt")
 local protocol = require("common.protocol_pb")
 local RoomDef = require("common.def.RoomDef")
 local ChatLogic = require("common.logic.ChatLogic")
+local serverconf = require("serverconf")
 local jencode = json.encode
 local jdecode = json.decode
 
@@ -304,6 +305,7 @@ function Roommgr.CreateRoom(req)
     Database.upsert_room(context.addr_db_server, roomid, room_tags, redis_data)
 
     context.rooms[roomid] = room
+    moon.debug(string.format("Roommgr.CreateRoom uid:%d, roomid:%d", req.msg.uid, roomid))
     context.uid_roomid[req.msg.uid] = roomid
     return { code = ErrorCode.None, error = "创建房间成功", roomid = roomid }
 end
@@ -488,6 +490,7 @@ function Roommgr.DealApply(req)
 
         -- 添加玩家到房间
         table.insert(room.players, { is_ready = 0, mem_info = apply_data.apply_info })
+        moon.debug(string.format("Roommgr.DealApply uid:%d, roomid:%d", req.deal_uid, req.roomid))
         context.uid_roomid[req.deal_uid] = req.roomid
 
         local room_tags = {
@@ -579,7 +582,9 @@ function Roommgr.EnterRoom(req)
 
     -- 添加玩家到房间
     table.insert(room.players, { is_ready = 0, mem_info = req.mem_info })
-    context.uid_roomid[req.msg.uid] = req.roomid
+    moon.debug(string.format("Roommgr.EnterRoom uid:%d, roomid:%d", req.msg.uid, req.msg.roomid))
+    context.uid_roomid[req.msg.uid] = req.msg.roomid
+    moon.debug(string.format("Roommgr.EnterRoom context.uid_roomid=%s", json.pretty_encode(context.uid_roomid)))
 
     local room_tags = {
         is_open = room.room_data.is_open,
@@ -624,12 +629,14 @@ function Roommgr.EnterRoom(req)
 end
 
 function Roommgr.ReturnRoom(req)
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local roomid = context.uid_roomid[req.uid]
     if not roomid then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
     local room = context.rooms[roomid]
     if not room then
+        moon.debug(string.format("Roommgr.ReturnRoom room not found, uid:%d, roomid:%d", req.uid, roomid))
         context.uid_roomid[req.uid] = nil
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
@@ -645,6 +652,7 @@ function Roommgr.ReturnRoom(req)
         end
     end
     if not member_index then
+        moon.debug(string.format("Roommgr.ReturnRoom member not found, uid:%d, roomid:%d", req.uid, roomid))
         context.uid_roomid[req.uid] = nil
         return { code = ErrorCode.RoomMemberNotFound, error = "不在该房间内" }
     end
@@ -714,6 +722,7 @@ function Roommgr.ReturnRoom(req)
 end
 
 function Roommgr.ExitRoom(req)
+    moon.info("ExitRoom beg roomid = , uid = ", req.roomid, req.uid)
     local room = context.rooms[req.roomid]
     if not room then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
@@ -738,6 +747,7 @@ function Roommgr.ExitRoom(req)
 
     -- 移除玩家数据
     table.remove(room.players, member_index)
+    moon.debug(string.format("Roommgr.ExitRoom uid:%d, roomid:%d", req.uid, req.roomid))
     context.uid_roomid[req.uid] = nil
 
     -- 房主退出特殊处理
@@ -760,6 +770,17 @@ function Roommgr.ExitRoom(req)
     redis_data.master_id = room.master_id
     redis_data.master_name = room.master_name
     Database.upsert_room(context.addr_db_server, room.room_data.roomid, room_tags, redis_data)
+
+    -- 消除暂离房间
+    local function clear_away_room()
+        local scope <close> = lock_away_uid()
+
+        local away_value = context.away_uids[req.uid]
+        if away_value and away_value.roomid == req.roomid then
+            context.away_uids[req.uid] = nil
+        end
+    end
+    clear_away_room()
 
     -- 广播玩家退出
     local notify_uids = {}
@@ -806,6 +827,7 @@ function Roommgr.ExitRoom(req)
 end
 
 function Roommgr.AwayRoom(req)
+    moon.info("AwayRoom beg roomid = , uid = ", req.roomid, req.uid)
     local room = context.rooms[req.roomid]
     if not room then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
@@ -897,6 +919,7 @@ function Roommgr.KickMember(req)
 
     -- 移除玩家
     table.remove(room.players, kick_index)
+    moon.debug(string.format("Roommgr.KickMember uid:%d, roomid:%d", req.kick_uid, req.roomid))
     context.uid_roomid[req.kick_uid] = nil
 
     -- 广播踢人通知
@@ -953,6 +976,7 @@ function Roommgr.SystemKickMember(roomid, kick_uid)
 
     -- 移除玩家
     table.remove(room.players, kick_index)
+    moon.debug(string.format("Roommgr.SystemKickMember uid:%d, roomid:%d", kick_uid, roomid))
     context.uid_roomid[kick_uid] = nil
 
     -- 房主被踢出特殊处理
@@ -1114,7 +1138,8 @@ function Roommgr.DealInvite(req)
         end
         -- 添加玩家到房间
         table.insert(room.players, { is_ready = 0, mem_info = req.invite_info })
-        context.uid_roomid[req.msg.uid] = req.roomid
+        moon.debug(string.format("Roommgr.DealInvite uid:%d, roomid:%d", req.msg.uid, req.msg.roomid))
+        context.uid_roomid[req.msg.uid] = req.msg.roomid
 
         local room_tags = {
             is_open = room.room_data.is_open,
@@ -1352,7 +1377,9 @@ function Roommgr.StartGame(req)
         fleet = context.conf.fleet,
         room = room_str,
     }
-    Roommgr.AddWaitDSRooms(room.room_data.roomid, json.encode(allocate_data))
+    if not serverconf.TEST_MODE then
+        Roommgr.AddWaitDSRooms(room.room_data.roomid, json.encode(allocate_data))
+    end
 
     -- 更新房间状态
     room.room_data.state = 1  -- 游戏中状态
@@ -1381,40 +1408,42 @@ function Roommgr.StartGame(req)
     }
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
-    -----临时通知所有玩家进入DS------------
-    -- moon.warn("Roommgr.StartGame test_url get")
-    -- local test_port = math.random(room.room_data.roomid - 2000, 10000)
-    -- local test_url =
-    --     "http://192.168.2.31:8080/job/LaunchGH-DS/buildWithParameters?token=WXCY&MAP=5001&DSID=" ..
-    --     room.room_data.roomid .. "&PORT=" .. test_port
-    -- moon.info("Roommgr.StartGame test_url", test_url)
-    -- print_r(httpc.get(test_url))
+    if serverconf.TEST_MODE then
+        -----临时通知所有玩家进入DS------------
+        moon.warn("Roommgr.StartGame test_url get")
+        local test_port = math.random(room.room_data.roomid - 2000, 10000)
+        local test_url =
+            "http://192.168.2.31:8080/job/LaunchGH-DS/buildWithParameters?token=WXCY&MAP=5001&DSID=" ..
+            room.room_data.roomid .. "&PORT=" .. test_port
+        moon.info("Roommgr.StartGame test_url", test_url)
+        print_r(httpc.get(test_url))
 
-    -- Roommgr.notify_uids = {}
-    -- for _, player in pairs(room.players) do
-    --     table.insert(Roommgr.notify_uids, player.mem_info.uid)
-    --     moon.error("OnEnterDs ", player.mem_info.uid)
-    -- end
-    -- moon.async(function()
-    --     moon.sleep(60000) -- 60秒后发送
-    --     local test_room = context.rooms[req.roomid]
-    --     if test_room then
-    --         test_room.room_data.ds_address = "192.168.2.31-" .. test_port
-    --         test_room.room_data.ds_ip = "192.168.2.31"
-    --     end
-    --     context.send_users(Roommgr.notify_uids, {}, "Room.OnEnterDs", {
-    --         roomid = req.roomid,
-    --         ds_address = "192.168.2.31-" .. test_port,
-    --         ds_ip = "192.168.2.31",
-    --     })
-    -- end)
-    -----临时通知所有玩家进入DS------------
+        Roommgr.notify_uids = {}
+        for _, player in pairs(room.players) do
+            table.insert(Roommgr.notify_uids, player.mem_info.uid)
+            moon.error("OnEnterDs ", player.mem_info.uid)
+        end
+        moon.async(function()
+            moon.sleep(60000) -- 60秒后发送
+            local test_room = context.rooms[req.roomid]
+            if test_room then
+                test_room.room_data.ds_address = "192.168.2.31-" .. test_port
+                test_room.room_data.ds_ip = "192.168.2.31"
+            end
+            context.send_users(Roommgr.notify_uids, {}, "Room.OnEnterDs", {
+                roomid = req.roomid,
+                ds_address = "192.168.2.31-" .. test_port,
+                ds_ip = "192.168.2.31",
+            })
+        end)
+        -----临时通知所有玩家进入DS------------
+    end
 
     return { code = ErrorCode.None, error = "游戏开始成功", roomid = req.roomid }
 end
 
 function Roommgr.GetRoomCreateData(req)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if not req.roomid then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
@@ -1458,11 +1487,15 @@ function Roommgr.PlayEnd(msg)
     room.room_data.ds_address = ""
     room.room_data.ds_ip = ""
 
+    local send_data = {
+        roomid = msg.roomid,
+        need_exit_room = false,
+    }
     local notify_uids = {}
     for _, player in pairs(room.players) do
         table.insert(notify_uids, player.mem_info.uid)
     end
-    context.send_users(notify_uids, {}, "User.OutPlay", msg.roomid)
+    context.send_users(notify_uids, {}, "User.OutPlay", send_data)
 
     -- 将暂离状态玩家设置到定时退出列表
     local function away_room(roomid, uid)

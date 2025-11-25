@@ -288,6 +288,19 @@
 ---@field public time number @用户统计服务器之间延时
 
 
+---@class PBGameAddRoleExp
+---@field public role_id integer
+---@field public add_role_exp integer
+
+
+---@class PBGameSettle
+---@field public settle_data string @结算展示信息
+---@field public account_experience integer @账户经验值
+---@field public game_role_exp PBGameAddRoleExp[] @角色增加经验
+---@field public consume_bag PBBag @消耗品背包
+---@field public booty_bag PBBag @战利品背包
+
+
 ---@class PBEnterCityReqCmd
 ---@field public uid integer
 ---@field public cityid integer
@@ -408,18 +421,22 @@
 
 ---@class PBDsNotifyPlayerExitReqCmd
 ---@field public roomid integer
----@field public uids integer[]
+---@field public uid integer
+---@field public need_settle integer @是否结算 0--否 1--是
+---@field public player_settle PBGameSettle @结算数据
 
 
 ---@class PBDsNotifyPlayerExitRspCmd
 ---@field public code integer @服务器验证返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public roomid integer
----@field public uids integer[]
+---@field public uid integer
 
 
 ---@class PBDsNotifyPlayEndReqCmd
 ---@field public roomid integer
+---@field public need_settle integer @是否结算 0--否 1--是
+---@field public players_settle table<integer, PBGameSettle> @结算数据
 
 
 ---@class PBDsNotifyPlayEndRspCmd
@@ -3128,6 +3145,18 @@
 ---@field public inlay_type integer @1-法器 2-八卦牌
 ---@field public uniqid integer @道具id
 ---@field public tabooword_id integer @讳字id
+
+
+---@class PBModNickNameReqCmd
+---@field public uid integer
+---@field public nick_name string
+
+
+---@class PBModNickNameRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public nick_name string
 
 
 

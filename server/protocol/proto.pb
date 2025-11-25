@@ -791,7 +791,7 @@ takeoffIdx"e
 uid (Ruid&
 ghost_config_id (RghostConfigId
 skin (Rskinbproto3
-À(
+ö)
 
 user.proto
 item.proto	bag.proto
@@ -1003,7 +1003,15 @@ inlay_type (R	inlayType
 
 inlay_type (R	inlayType
 uniqid (Runiqid!
-tabooword_id (RtaboowordIdbproto3
+tabooword_id (RtaboowordId"D
+PBModNickNameReqCmd
+uid (Ruid
+	nick_name (	RnickName"n
+PBModNickNameRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+	nick_name (	RnickNamebproto3
 ¬
 
 gods.proto"9
@@ -1070,12 +1078,24 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-—
+å
 dsnode.proto
 item.proto
 user.proto	bag.proto
 role.proto
-gods.proto"=
+gods.proto"M
+PBGameAddRoleExp
+role_id (RroleId 
+add_role_exp (R
+addRoleExp"ã
+PBGameSettle
+settle_data (	R
+settleData-
+account_experience (RaccountExperience5
+game_role_exp (2.PBGameAddRoleExpRgameRoleExp'
+consume_bag (2.PBBagR
+consumeBag#
+	booty_bag (2.PBBagRbootyBag"=
 PBEnterCityReqCmd
 uid (Ruid
 cityid (Rcityid"=
@@ -1162,17 +1182,26 @@ image_data (2.PBUserImageR	imageData"I
 code (Rcode
 error (	Rerror
 roomid (Rroomid
-uids (Ruids"H
+uids (Ruids"›
 PBDsNotifyPlayerExitReqCmd
-roomid (Rroomid
-uids (Ruids"r
+roomid (Rroomid
+uid (Ruid
+need_settle (R
+needSettle2
+player_settle (2.PBGameSettleRplayerSettle"p
 PBDsNotifyPlayerExitRspCmd
 code (Rcode
 error (	Rerror
-roomid (Rroomid
-uids (Ruids"1
+roomid (Rroomid
+uid (Ruid"÷
 PBDsNotifyPlayEndReqCmd
-roomid (Rroomid"[
+roomid (Rroomid
+need_settle (R
+needSettleR
+players_settle (2+.PBDsNotifyPlayEndReqCmd.PlayersSettleEntryRplayersSettleO
+PlayersSettleEntry
+key (Rkey#
+value (2.PBGameSettleRvalue:8"[
 PBDsNotifyPlayEndRspCmd
 code (Rcode
 error (	Rerror

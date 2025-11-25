@@ -11,6 +11,7 @@ local ProtoEnum = require("tools.ProtoEnum")
 local RoomDef = require("common.def.RoomDef")
 local UserAttrDef = require("common.def.UserAttrDef")
 local ChatLogic = require("common.logic.ChatLogic")
+local BagDef = require("common.def.BagDef")
 
 ---@type user_context
 local context = ...
@@ -555,7 +556,7 @@ function Room.PBCheckReturnRoomReqCmd(req)
             error = "uid is nil",
         }, req.msg_context.stub_id)
     end
-    
+
     local res, err = clusterd.call(3999, "roommgr", "Roommgr.ReturnRoom", req.msg)
     if err then
         return context.S2C(context.net_id, CmdCode["PBCheckReturnRoomRspCmd"], {
@@ -567,6 +568,42 @@ function Room.PBCheckReturnRoomReqCmd(req)
         context.roomid = res.room_data.roomid
     end
     return context.S2C(context.net_id, CmdCode["PBCheckReturnRoomRspCmd"], res, req.msg_context.stub_id)
+end
+
+function Room.GameSettle(player_settle)
+    -- 游戏结算
+    if player_settle.account_experience and player_settle.account_experience > 0 then
+        -- 增加账户经验
+        local query_user_attr = {}
+        table.insert(query_user_attr, ProtoEnum.UserAttrType.account_exp)
+        local query_res = scripts.User.QueryUserAttr(query_user_attr)
+        local now_exp = 0
+        if query_res.user_attr[ProtoEnum.UserAttrType.account_exp] then
+            now_exp = query_res.user_attr[ProtoEnum.UserAttrType.account_exp]
+        end
+        local update_user_attr = {}
+        update_user_attr[ProtoEnum.UserAttrType.account_exp] = now_exp + player_settle.account_experience
+        scripts.User.SetUserAttr(update_user_attr, true)
+    end
+    if player_settle.game_role_exp and table.size(player_settle.game_role_exp) > 0 then
+        -- 增加角色经验
+        local change_roles = {}
+        for role_id, exp in pairs(player_settle.game_role_exp) do
+            if exp and exp > 0 then
+                local err, new_exp = scripts.Role.GameAddExp(role_id, exp)
+                if err == ErrorCode.None then
+                    change_roles[role_id] = "UpLv"
+                end
+            end
+        end
+        if table.size(change_roles) > 0 then
+            scripts.Role.SaveAndLog(change_roles)
+        end
+    end
+    if player_settle.consume_bag then
+        -- 同步消耗品背包
+        -- scripts.Bag.SyncBagInfo(BagDef.BagType.Consume, player_settle.consume_bag, change_roles)
+    end
 end
 
 return Room

@@ -23,21 +23,21 @@ function DGate.Start()
     print("DGate GAME Server Start Listen", context.conf.host, context.conf.port)
     
     -- 新增定时器轮询
-    -- moon.async(function()
-    --     while true do
-    --         moon.sleep(30000) -- 每30秒检查一次
-    --         -- 遍历所有用户
-    --         local now_ts = moon.time()
-    --         for _, c in pairs(context.dsid_map) do
-    --             -- 60秒超时
-    --             -- if now_ts - c.last_ping_time > 60 and c.dsid > 10000 then
-    --             if now_ts - c.last_ping_time > 60 then
-    --                 moon.warn("user", c.dsid, "ping timeout")
-    --                 socket.close(c.fd)
-    --             end
-    --         end
-    --     end
-    -- end)
+    moon.async(function()
+        while true do
+            moon.sleep(30000) -- 每30秒检查一次
+            -- 遍历所有用户
+            local now_ts = moon.time()
+            for _, c in pairs(context.dsid_map) do
+                -- 60秒超时
+                -- if now_ts - c.last_ping_time > 60 and c.dsid > 10000 then
+                if now_ts - c.last_ping_time > 60 then
+                    moon.warn("user", c.dsid, "ping timeout")
+                    socket.close(c.fd)
+                end
+            end
+        end
+    end)
 
     return true
 end
