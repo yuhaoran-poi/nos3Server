@@ -43,7 +43,7 @@ local function doDSAuth(req)
         if not ok then
             --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
             moon.error("DsNode.Load failed! net_id = , fd = , error = ", req.net_id, req.fd, err)
-            moon.send("lua", context.addr_dgate, "DGate.Kick", 0, req.fd)
+            -- moon.send("lua", context.addr_dgate, "DGate.Kick", 0, req.fd)
             moon.kill(addr_dsnode)
             context.net_id_map[req.net_id] = nil
             return { code = 2002, error = err }
@@ -57,7 +57,7 @@ local function doDSAuth(req)
     if not dsid then
         --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         moon.error("DsNode.Login failed! net_id = , fd = , error = ", req.net_id, req.fd, err)
-        moon.send("lua", context.addr_dgate, "DGate.Kick", 0, req.fd)
+        -- moon.send("lua", context.addr_dgate, "DGate.Kick", 0, req.fd)
         moon.kill(addr_dsnode)
         context.net_id_map[req.net_id] = nil
         return { code = 2003, error = err }
@@ -483,11 +483,11 @@ Auth.PBDSLoginReqCmd = function(req)
         end
 
         req.net_id = Auth.AllocGateNetId(1)
-        --moon.send("lua", context.addr_dgate, "DGate.BindGnId", req)
+        moon.send("lua", context.addr_dgate, "DGate.BindGnId", req)
 
         local dsid = context.openid_map[req.msg.login_data.authkey]
         if dsid then
-            moon.error("user online", req.fd, dsid)
+            moon.error("ds online", req.fd, dsid)
             return { code = ErrorCode.CityAlreadyConnected, error = "USER_ONLINE" }
         end
 
@@ -502,11 +502,15 @@ Auth.PBDSLoginReqCmd = function(req)
         dsid = res.res and res.res.dsid or 0,
         net_id = res.res and res.res.net_id or 0,
     }
+    moon.warn(string.format("PBDSLoginRspCmd req.net_id:\n%d", req.net_id))
+    moon.warn(string.format("PBDSLoginRspCmd ret:\n%s", json.pretty_encode(ret)))
+    moon.warn(string.format("PBDSLoginRspCmd req.msg_context.stub_id:\n%d", req.msg_context.stub_id))
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     context.S2D(req.net_id, CmdCode["PBDSLoginRspCmd"], ret, req.msg_context.stub_id)
 
     if res.code ~= 0 then
         --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-        moon.error("DsNode.Login failed! res.code = , error = ", res.code, res.error)
+        moon.error("PBDSLoginReqCmd failed! res.code = , error = ", res.code, res.error)
         moon.send("lua", context.addr_dgate, "DGate.Kick", 0, req.fd) -- body
     end
 end

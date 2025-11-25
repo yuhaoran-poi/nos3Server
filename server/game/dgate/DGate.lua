@@ -62,6 +62,7 @@ function DGate.Kick(net_id, fd, ignore_socket_event)
         end
         if ignore_socket_event then
             context.fd_map[c.fd] = nil
+            context.dsid_map[c.dsid] = nil
             context.net_id_map[net_id] = nil
         end
     end
@@ -98,6 +99,17 @@ function DGate.BindDS(req)
     print(string.format("BindDS fd:%d net_id:%d serviceid:%08X", req.fd, req.net_id,  req.addr_dsnode))
     --向集群记录net_id-node
 
+    return true
+end
+
+function DGate.BindGnId(req)
+    local c = {
+        fd = req.fd,
+        net_id = req.net_id
+    }
+    context.fd_map[req.fd] = c
+    context.net_id_map[req.net_id] = c
+    moon.warn(string.format("BindGnId fd:%d net_id:%d ", req.fd, req.net_id))
     return true
 end
 
