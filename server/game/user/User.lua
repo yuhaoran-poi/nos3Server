@@ -1987,7 +1987,7 @@ end
 
 function User.PBModNickNameReqCmd(req)
     -- 参数验证
-    if not req.msg.uid0
+    if not req.msg.uid
         or not req.msg.nick_name
         or req.msg.nick_name == "" then
         return context.S2C(context.net_id, CmdCode.PBModNickNameRspCmd, {
