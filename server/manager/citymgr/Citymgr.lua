@@ -312,12 +312,14 @@ function Citymgr.ConnectCity(req)
     moon.warn(string.format("ConnectCity context.citys:\n%s", json.pretty_encode(context.citys)))
 
     if not context.citys[req.cityid] then
+        moon.error(string.format("ConnectCity req.cityid:%d, error:CityNotFound", req.cityid))
         return { code = ErrorCode.CityNotFound, error = "主城不存在" }
     end
 
     local city = context.citys[req.cityid]
     city.nid = req.nid
     city.addr_dsnode = req.addr_dsnode
+    moon.warn(string.format("ConnectCity success context.citys:\n%s", json.pretty_encode(context.citys)))
     return { code = ErrorCode.None, error = "连接主城成功" }
 end
 
