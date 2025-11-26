@@ -244,7 +244,7 @@ function Citymgr.CheckCityRun()
             -- 销毁附近聊天频道
             local res = ChatLogic.RemoveNearbyChannel(cityid)
             if res.code ~= ErrorCode.None then
-                moon.error(string.format("RemoveNearbyChannel cityid:%d, code:%d, error:%s", cityid, res.code, res.error))
+                moon.error(string.format("RemoveNearbyChannel cityid:%d, code:%d", cityid, res.code))
             end
             Citymgr.DestroyCity(cityid)
         end
@@ -471,7 +471,7 @@ function Citymgr.SetCityDestroy(cityid)
     -- 销毁附近聊天频道
     local res = ChatLogic.RemoveNearbyChannel(cityid)
     if res.code ~= ErrorCode.None then
-        moon.error(string.format("RemoveNearbyChannel cityid:%d, code:%d, error:%s", cityid, res.code, res.error))
+        moon.error(string.format("RemoveNearbyChannel cityid:%d, code:%d, error:%s", cityid, res.code, res.error or "nil"))
     end
     Citymgr.DestroyCity(cityid)
 end

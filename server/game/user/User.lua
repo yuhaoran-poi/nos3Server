@@ -2014,7 +2014,10 @@ function User.PBModNickNameReqCmd(req)
     local user_attr = User.GetOnlineUserAttr(nickname_fields)
     if not user_attr[ProtoEnum.UserAttrType.nick_name]
         or user_attr[ProtoEnum.UserAttrType.nick_name] == "" then
-        User.SetUserAttr(nickname_fields, req.msg.nick_name)
+        -- 修复调用SetUserAttr的方式，创建一个包含属性和值的表
+        local update_user_attr = {}
+        update_user_attr[ProtoEnum.UserAttrType.nick_name] = req.msg.nick_name
+        User.SetUserAttr(update_user_attr, true)
         Database.RedisSetNick(context.addr_db_redis, req.msg.nick_name, context.uid)
     else
         local old_nick_name = user_attr[ProtoEnum.UserAttrType.nick_name]

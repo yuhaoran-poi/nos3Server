@@ -141,7 +141,7 @@ function DsNode.Exit()
     if context.dsid > 10000 then
         clusterd.send(3999, "roommgr", "Roommgr.PlayEnd", { roomid = context.dsid })
     else
-        clusterd.send(3999, "citymgr", "Citymgr.SetCityDestroy", { cityid = context.dsid })
+        clusterd.send(3999, "citymgr", "Citymgr.SetCityDestroy", context.dsid)
     end
 
     moon.quit()
