@@ -30,6 +30,7 @@ local ItemDef = {
         GodsUpLv = 26,           --升级神明
         GodsBlockUnlock = 27,    --解锁神龛
         SortOutItems = 28,       --整理物品
+        BattleSettle = 29,       --战斗结算
 
         -- WearEquipment = 25,      --装备道具
         -- TakeOffEquipment = 26,   --脱下道具
@@ -233,6 +234,66 @@ end
 --- @return PBAntiqueShowcaseDataS
 function ItemDef.newAntiqueShowcaseS()
     return LuaExt.const(table.copy(defaultAntiqueShowcaseS))
+end
+
+--- @return PBItemData
+function ItemDef.newItemDataFromData(itemdata)
+    local new_data = LuaExt.const(table.copy(defaultPBItemData))
+    new_data.itype = itemdata.itype
+    if itemdata.common_info then
+        if itemdata.common_info.config_id then
+            new_data.common_info.config_id = itemdata.common_info.config_id
+        end
+        if itemdata.common_info.uniqid then
+            new_data.common_info.uniqid = itemdata.common_info.uniqid
+        end
+        if itemdata.common_info.item_count then
+            new_data.common_info.item_count = itemdata.common_info.item_count
+        end
+        if itemdata.common_info.item_type then
+            new_data.common_info.item_type = itemdata.common_info.item_type
+        end
+        if itemdata.common_info.trade_cnt then
+            new_data.common_info.trade_cnt = itemdata.common_info.trade_cnt
+        end
+    end
+    if itemdata.special_info then
+        if itemdata.special_info.durab_item and next(itemdata.special_info.durab_item) ~= nil then
+            new_data.special_info.durab_item = LuaExt.const(table.copy(defaultPBDurabItem))
+            new_data.special_info.durab_item.cur_durability = itemdata.special_info.durab_item.cur_durability
+            new_data.special_info.durab_item.strong_value = itemdata.special_info.durab_item.strong_value
+        end
+        if itemdata.special_info.magic_item and next(itemdata.special_info.magic_item) ~= nil then
+            new_data.special_info.magic_item = LuaExt.const(table.copy(defaultPBMagicItem))
+            new_data.special_info.magic_item.cur_durability = itemdata.special_info.magic_item.cur_durability
+            new_data.special_info.magic_item.strong_value = itemdata.special_info.magic_item.strong_value
+            new_data.special_info.magic_item.tabooword_id = itemdata.special_info.magic_item.tabooword_id
+            new_data.special_info.magic_item.light_cnt = itemdata.special_info.magic_item.light_cnt
+            new_data.special_info.magic_item.tags = itemdata.special_info.magic_item.tags
+            new_data.special_info.magic_item.ability_tag = itemdata.special_info.magic_item.ability_tag
+        end
+        if itemdata.special_info.diagrams_card and next(itemdata.special_info.diagrams_card) ~= nil then
+            new_data.special_info.diagrams_card = LuaExt.const(table.copy(defaultPBDiagramsCard))
+            new_data.special_info.diagrams_card.cur_durability = itemdata.special_info.diagrams_card.cur_durability
+            new_data.special_info.diagrams_card.strong_value = itemdata.special_info.diagrams_card.strong_value
+            new_data.special_info.diagrams_card.tabooword_id = itemdata.special_info.diagrams_card.tabooword_id
+            new_data.special_info.diagrams_card.light_cnt = itemdata.special_info.diagrams_card.light_cnt
+            new_data.special_info.diagrams_card.tags = itemdata.special_info.diagrams_card.tags
+            new_data.special_info.diagrams_card.ability_tag = itemdata.special_info.diagrams_card.ability_tag
+        end
+        if itemdata.special_info.antique_item and next(itemdata.special_info.antique_item) ~= nil then
+            new_data.special_info.antique_item = LuaExt.const(table.copy(defaultPBAntique))
+            new_data.special_info.antique_item.quality = itemdata.special_info.antique_item.quality
+            new_data.special_info.antique_item.price = itemdata.special_info.antique_item.price
+            new_data.special_info.antique_item.remain_identify_num = itemdata.special_info.antique_item
+                .remain_identify_num
+            new_data.special_info.antique_item.tags = itemdata.special_info.antique_item.tags
+            new_data.special_info.antique_item.is_fake = itemdata.special_info.antique_item.is_fake
+            new_data.special_info.antique_item.identify_histroy = itemdata.special_info.antique_item.identify_histroy
+        end
+    end
+
+    return new_data
 end
 
 return ItemDef

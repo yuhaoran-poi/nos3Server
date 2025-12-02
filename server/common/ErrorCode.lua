@@ -426,6 +426,8 @@ local ErrorCode = {
     RoleSkillAlreadyActive = 1714,
     --- 技能不存在
     RoleSkillNotExist = 1715,
+    --- 皮肤不匹配
+    SkinNotMatch = 1716,
 
     --角色相关错误码
     --- 好友申请错误码

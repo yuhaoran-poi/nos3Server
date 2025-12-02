@@ -1078,14 +1078,14 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-å
+ä
 dsnode.proto
 item.proto
 user.proto	bag.proto
 role.proto
-gods.proto"M
-PBGameAddRoleExp
-role_id (RroleId 
+gods.proto"L
+PBGameAddRoleExp
+roleid (Rroleid 
 add_role_exp (R
 addRoleExp"ã
 PBGameSettle

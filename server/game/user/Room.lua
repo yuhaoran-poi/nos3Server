@@ -12,6 +12,7 @@ local RoomDef = require("common.def.RoomDef")
 local UserAttrDef = require("common.def.UserAttrDef")
 local ChatLogic = require("common.logic.ChatLogic")
 local BagDef = require("common.def.BagDef")
+local ItemDef = require("common.def.ItemDef")
 
 ---@type user_context
 local context = ...
@@ -588,11 +589,11 @@ function Room.GameSettle(player_settle)
     if player_settle.game_role_exp and table.size(player_settle.game_role_exp) > 0 then
         -- 增加角色经验
         local change_roles = {}
-        for role_id, exp in pairs(player_settle.game_role_exp) do
+        for roleid, exp in pairs(player_settle.game_role_exp) do
             if exp and exp > 0 then
-                local err, new_exp = scripts.Role.GameAddExp(role_id, exp)
+                local err, new_exp = scripts.Role.GameAddExp(roleid, exp)
                 if err == ErrorCode.None then
-                    change_roles[role_id] = "UpLv"
+                    change_roles[roleid] = "UpLv"
                 end
             end
         end
@@ -602,7 +603,20 @@ function Room.GameSettle(player_settle)
     end
     if player_settle.consume_bag then
         -- 同步消耗品背包
-        -- scripts.Bag.SyncBagInfo(BagDef.BagType.Consume, player_settle.consume_bag, change_roles)
+        local sync_baginfo = {
+            items = {}
+        }
+        for pos, itemdata in pairs(player_settle.consume_bag.items) do
+            sync_baginfo.items[pos] = ItemDef.newItemDataFromData(itemdata)
+        end
+
+        local change_bag_log = {}
+        local errcode = scripts.Bag.SyncBagInfo(BagDef.BagType.Consume, sync_baginfo, change_bag_log)
+        if errcode == ErrorCode.None then
+            scripts.Bag.SaveAndLog(change_bag_log, ItemDef.ChangeReason.BattleSettle)
+        else
+            scripts.Bag.RollBackWithChange(change_bag_log)
+        end
     end
 end
 

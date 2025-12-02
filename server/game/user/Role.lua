@@ -972,6 +972,15 @@ function Role.PBRoleWearSkinReqCmd(req)
             return context.S2C(context.net_id, CmdCode["PBRoleWearSkinRspCmd"],
                 { code = ErrorCode.ItemNotExist, error = "皮肤不存在", uid = context.uid }, req.msg_context.stub_id)
         end
+        local skin_cfg = GameCfg.Skin[skin_id]
+        if not skin_cfg then
+            return context.S2C(context.net_id, CmdCode["PBRoleWearSkinRspCmd"],
+                { code = ErrorCode.ConfigError, error = "配置错误", uid = context.uid }, req.msg_context.stub_id)
+        end
+        if skin_cfg.belong ~= req.msg.roleid then
+            return context.S2C(context.net_id, CmdCode["PBRoleWearSkinRspCmd"],
+                { code = ErrorCode.SkinNotMatch, error = "皮肤不匹配", uid = context.uid }, req.msg_context.stub_id)
+        end
     end
 
     for idx, skin_id in pairs(req.msg.change_skins) do
@@ -1024,19 +1033,20 @@ function Role.PBRoleChangeEmojiReqCmd(req)
         end
 
         local emoji_cfg = GameCfg.Skin[emoji_id]
-        if not emoji_cfg or emoji_cfg.type ~= itype then
-            local emoji_match = false
-            for _, emoji_type in pairs(role_cfg.action_slot_type) do
-                if emoji_type == emoji_cfg.type then
-                    emoji_match = true
-                    break
-                end
+        if not emoji_cfg then
+            return context.S2C(context.net_id, CmdCode["PBRoleChangeEmojiRspCmd"],
+                { code = ErrorCode.EmojiNotMatch, error = "表情类型不匹配", uid = context.uid }, req.msg_context.stub_id)
+        end
+        local emoji_match = false
+        for _, emoji_type in pairs(role_cfg.action_slot_type) do
+            if emoji_type == emoji_cfg.type then
+                emoji_match = true
+                break
             end
-
-            if not emoji_match then
-                return context.S2C(context.net_id, CmdCode["PBRoleChangeEmojiRspCmd"],
-                    { code = ErrorCode.EmojiNotMatch, error = "表情类型不匹配", uid = context.uid }, req.msg_context.stub_id)
-            end
+        end
+        if not emoji_match then
+            return context.S2C(context.net_id, CmdCode["PBRoleChangeEmojiRspCmd"],
+                { code = ErrorCode.EmojiNotMatch, error = "表情类型不匹配", uid = context.uid }, req.msg_context.stub_id)
         end
     end
 

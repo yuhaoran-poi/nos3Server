@@ -289,7 +289,7 @@
 
 
 ---@class PBGameAddRoleExp
----@field public role_id integer
+---@field public roleid integer
 ---@field public add_role_exp integer
 
 
