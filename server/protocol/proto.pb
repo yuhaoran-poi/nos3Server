@@ -56,7 +56,7 @@ login_data (2.PBDSLoginDataR	loginData"f
 error (	Rerror
 dsid (Rdsid
 net_id (RnetIdbproto3
-Œ(
+Ô(
 
 item.proto"@
 PBCoin
@@ -127,13 +127,15 @@ magic_item (2.PBMagicItemR	magicItem4
 awe_item (2
 .PBAweItemRaweItem-
 antique_item (2
-.PBAntiqueRantiqueItem"Ö
+.PBAntiqueRantiqueItem"¶
 
 PBItemData
 itype (Ritype.
 common_info (2.PBItemCommonR
 commonInfo1
-special_info (2.PBItemSpecialRspecialInfo"b
+special_info (2.PBItemSpecialRspecialInfo
+extra_param (R
+extraParam"b
 PBItemSimple
 	config_id (RconfigId
 
@@ -1078,7 +1080,7 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-‰
+¥
 dsnode.proto
 item.proto
 user.proto	bag.proto
@@ -1216,7 +1218,15 @@ needSettleR
 error (	Rerror
 dsid (Rdsid
 	quest_uid (RquestUid(
-	gods_info (2.PBUserGodsRgodsInfobproto3
+	gods_info (2.PBUserGodsRgodsInfo"Ñ
+PBDsNotifyRemainItemsReqCmd
+roomid (Rroomid
+
+belong_uid (R	belongUid.
+remain_items (2.PBItemDataRremainItems"G
+PBDsNotifyRemainItemsRspCmd
+code (Rcode
+error (	Rerrorbproto3
 Å
 friend.proto
 user.proto"6

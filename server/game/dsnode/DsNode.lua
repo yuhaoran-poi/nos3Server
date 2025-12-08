@@ -3,6 +3,7 @@ local common = require("common")
 local CmdCode = common.CmdCode
 local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
+local Database = common.Database
 local clusterd = require("cluster")
 local json = require "json"
 local UserAttrLogic = require("common.logic.UserAttrLogic")
@@ -519,31 +520,47 @@ function DsNode.PBDsNotifyPlayerExitReqCmd(req)
         moon.warn(string.format("PBDsNotifyPlayerExitReqCmd user offline, uid = %s", json.pretty_encode(offline_uids)))
     end
 
-    --遍历在线用户列表，发送消息
     local mine_node = math.tointeger(moon.env("NODE"))
+    local node, addr_user = 0, 0
     if context.uid_addr_map[req.msg.uid] then
-        local node, addr_user = context.uid_addr_map[req.msg.uid].node, context.uid_addr_map[req.msg.uid].addr_user
-        if node ~= 0 or addr_user ~= 0 then
-            local send_data = {
-                roomid = req.msg.roomid,
-                need_exit_room = false,
-                need_settle = req.msg.need_settle,
-                player_settle = req.msg.player_settle,
-            }
-            if req.msg.need_settle and req.msg.need_settle == 1 then
-                send_data.need_exit_room = true
-            end
-            if mine_node == node then
-                moon.send("lua", addr_user, "User.OutPlay", send_data)
-            else
-                clusterd.send(node, addr_user, "User.OutPlay", send_data)
-            end
-        else
-            moon.warn("send_user User.OutPlay failed, node = ", node, " uid= ", req.msg.uid, "addr_user = ", addr_user)
-        end
-
-        context.uid_addr_map[req.msg.uid] = nil
+        node, addr_user = context.uid_addr_map[req.msg.uid].node, context.uid_addr_map[req.msg.uid].addr_user
     end
+
+    --寻找在线用户列表，发送消息
+    if node ~= 0 or addr_user ~= 0 then
+        local send_data = {
+            roomid = req.msg.roomid,
+            need_exit_room = false,
+            need_settle = req.msg.need_settle,
+            -- player_settle = req.msg.player_settle,
+        }
+        if req.msg.need_settle and req.msg.need_settle == 1 then
+            send_data.need_exit_room = true
+        end
+        if mine_node == node then
+            moon.send("lua", addr_user, "User.OutPlay", send_data)
+        else
+            clusterd.send(node, addr_user, "User.OutPlay", send_data)
+        end
+    else
+        moon.warn("send_user User.OutPlay failed, node = ", node, " uid= ", req.msg.uid, "addr_user = ", addr_user)
+    end
+
+    -- 往数据库中写入结算信息并通知User
+    if req.msg.need_settle and req.msg.need_settle == 1 then
+        Database.BattleListPushRight(context.addr_db_redis, Database.GetBattleSettleKey(), req.msg.uid,
+            req.msg.player_settle)
+
+        if node ~= 0 or addr_user ~= 0 then
+            if mine_node == node then
+                moon.send("lua", addr_user, "User.NotifyGameSettle")
+            else
+                clusterd.send(node, addr_user, "User.NotifyGameSettle")
+            end
+        end
+    end
+
+    context.uid_addr_map[req.msg.uid] = nil
 
     local ret = {
         code = ErrorCode.None,
@@ -563,6 +580,13 @@ function DsNode.PBDsNotifyPlayEndReqCmd(req)
             error = "no roomid or no uids"
         }
         return context.S2D(context.net_id, CmdCode["PBDsNotifyPlayEndRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    -- 先往数据库中写入结算信息
+    if req.msg.need_settle == 1 then
+        for uid, settle_info in pairs(req.msg.players_settle) do
+            Database.BattleListPushRight(context.addr_db_redis, Database.GetBattleSettleKey(), uid, settle_info)
+        end
     end
 
     clusterd.send(3999, "roommgr", "Roommgr.PlayEnd", { roomid = req.msg.roomid })
@@ -596,6 +620,55 @@ function DsNode.PBGetDsUserBattleGodsReqCmd(req)
         gods_info = res,
     }
     return context.S2D(context.net_id, CmdCode.PBGetDsUserBattleGodsRspCmd, ret, req.msg_context.stub_id)
+end
+
+function DsNode.PBDsNotifyRemainItemsReqCmd(req)
+    if not req.msg.roomid or not req.msg.belong_uid or not req.msg.remain_items then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "no roomid or no belong_uid or no remain_items"
+        }
+        return context.S2D(context.net_id, CmdCode.PBDsNotifyRemainItemsRspCmd, ret, req.msg_context.stub_id)
+    end
+
+    -- 先往数据库中写入退还信息
+    if table.size(req.msg.remain_items) > 0 then
+        Database.BattleListPushRight(context.addr_db_redis, Database.GetBattleReturnKey(), req.msg.belong_uid,
+            req.msg.remain_items)
+        
+        local mine_node = math.tointeger(moon.env("NODE"))
+        if context.uid_addr_map[req.msg.belong_uid] then
+            local node, addr_user = context.uid_addr_map[req.msg.belong_uid].node, context.uid_addr_map[req.msg.belong_uid].addr_user
+            if mine_node == node then
+                moon.send("lua", addr_user, "User.NotifyGameReturnItems")
+            else
+                clusterd.send(node, addr_user, "User.NotifyGameReturnItems")
+            end
+        end
+        
+        -- 发送邮件
+        -- local item_datas = {}
+        -- for _, item_data in pairs(stack_items) do
+        --     table.insert(item_datas, item_data)
+        -- end
+        -- for _, item_data in pairs(unstack_items) do
+        --     table.insert(item_datas, item_data)
+        -- end
+        -- local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
+        -- if mail_ret ~= ErrorCode.None then
+        --     rsp_msg.code = ErrorCode.ShopMailSendFailed
+        --     rsp_msg.error = "发送邮件失败"
+
+        --     scripts.Bag.RollBackWithChange(bag_change_log)
+        --     clusterd.send(3999, "shopmgr", "Shopmgr.DelShopServerBuy", server_product_list)
+        --     return context.S2C(context.net_id, CmdCode.PBShopBuyRspCmd, rsp_msg, req.msg_context.stub_id)
+        -- end
+    end
+    local ret = {
+        code = ErrorCode.None,
+        error = "",
+    }
+    return context.S2D(context.net_id, CmdCode.PBDsNotifyRemainItemsRspCmd, ret, req.msg_context.stub_id)
 end
 
 return DsNode

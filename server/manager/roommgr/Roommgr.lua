@@ -1496,6 +1496,7 @@ function Roommgr.PlayEnd(msg)
         table.insert(notify_uids, player.mem_info.uid)
     end
     context.send_users(notify_uids, {}, "User.OutPlay", send_data)
+    context.send_users(notify_uids, {}, "User.NotifyGameSettle")
 
     -- 将暂离状态玩家设置到定时退出列表
     local function away_room(roomid, uid)

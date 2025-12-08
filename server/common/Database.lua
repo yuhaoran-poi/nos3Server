@@ -1520,4 +1520,93 @@ function _M.RedisDelNick(addr_db_redis, nickname)
     redis_send(addr_db_redis, "DEL", NICKNAME_UID .. nickname)
 end
 
+-- 战绩和返还列表操作
+local BATTLE_SETTLE_INFO = "battle_settle_"
+local BATTLE_RETURN_INFO = "battle_return_"
+function _M.GetBattleSettleKey()
+    return BATTLE_SETTLE_INFO
+end
+function _M.GetBattleReturnKey()
+    return BATTLE_RETURN_INFO
+end
+
+---@param addr_db integer
+---@param key string
+---@param value any
+---@return integer 列表长度
+function _M.BattleListPushRight(addr_db, key, uid, value)
+    local value_str = jencode(value)
+    local base64_str = crypt.base64encode(value_str)
+    local res, err = redis_call(addr_db, "RPUSH", key .. uid, base64_str)
+    if err then
+        moon.error("ListPushRight failed:" .. tostring(err) .. uid .. " value" .. value_str)
+    end
+    return res
+end
+
+---@param addr_db integer
+---@param key string
+---@return any 弹出的元素
+function _M.BattleListPopLeft(addr_db, key, uid)
+    local res, err = redis_call(addr_db, "LPOP", key .. uid)
+    if err then
+        moon.error("ListPopLeft failed:" .. tostring(err) .. uid)
+    end
+    if res then
+        local value_str = crypt.base64decode(res)
+        local value = jdecode(value_str)
+        return value
+    end
+    return nil
+end
+
+---@param addr_db integer
+---@param key string
+---@param start integer 开始索引（0为第一个元素）
+---@param stop integer 结束索引（-1为最后一个元素）
+---@return table 元素列表
+function _M.BattleListRange(addr_db, key, uid, start, stop)
+    local res, err = redis_call(addr_db, "LRANGE", key .. uid, start, stop)
+    if err then
+        moon.error("ListRange failed:" .. tostring(err) .. uid)
+    end
+    if res then
+        for i = 1, #res do
+            local value_str = crypt.base64decode(res[i])
+            local value = jdecode(value_str)
+            res[i] = value
+        end
+    end
+    return res
+end
+
+---@param addr_db integer
+---@param key string
+---@return integer 列表长度
+function _M.BattleListLen(addr_db, key, uid)
+    local res, err = redis_call(addr_db, "LLEN", key .. uid)
+    if err then
+        moon.error("ListLen failed:" .. tostring(err) .. uid)
+    end
+    return res
+end
+
+---@param addr_db integer
+---@param key string
+function _M.BattleDeleteEmptyList(addr_db, key, uid)
+    -- Lua脚本：检查列表是否为空，为空则删除
+    local script = [[
+        local len = redis.call('LLEN', KEYS[1])
+        if len == 0 then
+            return redis.call('DEL', KEYS[1])
+        end
+        return 0
+    ]]
+    
+    local res, err = redis_send(addr_db, "EVAL", script, 1, key .. uid)
+    if err then
+        moon.error("DeleteEmptyList failed:" .. tostring(err) .. uid)
+    end
+end
+
 return _M

@@ -102,6 +102,7 @@ local defaultPBItemData = {
     itype = 0,
     common_info =  LuaExt.const(table.copy(defaultPBItemCommonData)),
     special_info = {},
+    extra_param = 0,
 }
 
 local defaultPBItemSimple = {
@@ -237,9 +238,9 @@ function ItemDef.newAntiqueShowcaseS()
 end
 
 --- @return PBItemData
-function ItemDef.newItemDataFromData(itemdata)
+function ItemDef.newItemDataFromData(itemdata, itype, item_type)
     local new_data = LuaExt.const(table.copy(defaultPBItemData))
-    new_data.itype = itemdata.itype
+    new_data.itype = itype
     if itemdata.common_info then
         if itemdata.common_info.config_id then
             new_data.common_info.config_id = itemdata.common_info.config_id
@@ -250,12 +251,10 @@ function ItemDef.newItemDataFromData(itemdata)
         if itemdata.common_info.item_count then
             new_data.common_info.item_count = itemdata.common_info.item_count
         end
-        if itemdata.common_info.item_type then
-            new_data.common_info.item_type = itemdata.common_info.item_type
-        end
         if itemdata.common_info.trade_cnt then
             new_data.common_info.trade_cnt = itemdata.common_info.trade_cnt
         end
+        new_data.common_info.item_type = item_type
     end
     if itemdata.special_info then
         if itemdata.special_info.durab_item and next(itemdata.special_info.durab_item) ~= nil then

@@ -104,15 +104,20 @@ function Bag.Start(isnew)
             table.insert(init_consume_items, init_item_info)
         end
         for k, v in pairs(init_cfg.warehouse_bag) do
-            init_coins[k] = {
-                coin_id = k,
-                coin_count = v,
-            }
+            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+            local item_big_type = ItemDefine.GetItemPosType(k)
+            if item_big_type == ItemDefine.EItemBigType.Coin then
+                local init_coin_info = {
+                    coin_id = k,
+                    coin_count = v,
+                }
+                table.insert(init_coins, init_coin_info)
+            end
         end
 
         if table.size(init_cangku_items) > 0 then
             local stack_items, unstack_items, deal_coins = {}, {}, {}
-            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+            -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
             local ok = ItemDefine.GetItemDataFromIdCount(init_cangku_items, {}, stack_items, unstack_items, deal_coins)
             if ok then
                 if table.size(stack_items) + table.size(unstack_items) > 0 then
@@ -1138,7 +1143,7 @@ function Bag.AddItem(bagType, baginfo, item_data, logs)
             local new_item = table.copy(item_data)
             if not new_item or not new_item.common_info then
                 new_item = ItemDef.newItemData()
-                new_item.itype = item_type
+                new_item.itype = ItemDefine.GetItemType(item_cfg.id)
                 new_item.common_info.config_id = item_cfg.id
                 new_item.common_info.item_type = item_cfg.type1
                 new_item.common_info.trade_cnt = -1

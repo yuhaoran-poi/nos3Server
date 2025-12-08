@@ -339,6 +339,11 @@ function User.Logout()
     return true
 end
 
+function User.InitCheckData()
+    User.NotifyGameSettle()
+    User.NotifyGameReturnItems()
+end
+
 function User.Init()
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     --GameCfg.Load()
@@ -427,9 +432,31 @@ function User.OutPlay(out_data)
         context.roomid = nil
     end
     
-    if out_data.need_settle and out_data.need_settle == 1 and out_data.player_settle then
-        -- scripts.Room.GameSettle(out_data.player_settle)
-    end
+    -- if out_data.need_settle and out_data.need_settle == 1 and out_data.player_settle then
+    --     -- scripts.Room.GameSettle(out_data.player_settle)
+    -- end
+end
+
+function User.NotifyGameSettle()
+    -- while true do
+    --     local settle_info = Database.BattleListPopLeft(context.addr_db_redis, Database.GetBattleSettleKey(), context.uid)
+    --     if settle_info then
+    --         scripts.Room.GameSettle(settle_info)
+    --     else
+    --         break
+    --     end
+    -- end
+end
+
+function User.NotifyGameReturnItems()
+    -- while true do
+    --     local return_info = Database.BattleListPopLeft(context.addr_db_redis, Database.GetBattleReturnKey(), context.uid)
+    --     if return_info then
+    --         -- scripts.Room.GameReturnItems(return_info)
+    --     else
+    --         break
+    --     end
+    -- end
 end
 
 function User.OnHour()

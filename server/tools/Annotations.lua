@@ -462,6 +462,17 @@
 ---@field public gods_info PBUserGods
 
 
+---@class PBDsNotifyRemainItemsReqCmd
+---@field public roomid integer
+---@field public belong_uid integer
+---@field public remain_items PBItemData[]
+
+
+---@class PBDsNotifyRemainItemsRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+
+
 ---@class PBFriendData
 ---@field public uid integer
 ---@field public notes string @备注
@@ -1690,6 +1701,7 @@
 ---@field public itype integer
 ---@field public common_info PBItemCommon
 ---@field public special_info PBItemSpecial
+---@field public extra_param integer
 
 
 ---@class PBItemSimple

@@ -13,6 +13,7 @@ local UserAttrDef = require("common.def.UserAttrDef")
 local ChatLogic = require("common.logic.ChatLogic")
 local BagDef = require("common.def.BagDef")
 local ItemDef = require("common.def.ItemDef")
+local ItemDefine = require("common.logic.ItemDefine")
 
 ---@type user_context
 local context = ...
@@ -571,9 +572,9 @@ function Room.PBCheckReturnRoomReqCmd(req)
     return context.S2C(context.net_id, CmdCode["PBCheckReturnRoomRspCmd"], res, req.msg_context.stub_id)
 end
 
-function Room.GameSettle(player_settle)
+function Room.GameSettle(settle_info)
     -- 游戏结算
-    if player_settle.account_experience and player_settle.account_experience > 0 then
+    if settle_info.account_experience and settle_info.account_experience > 0 then
         -- 增加账户经验
         local query_user_attr = {}
         table.insert(query_user_attr, ProtoEnum.UserAttrType.account_exp)
@@ -583,13 +584,13 @@ function Room.GameSettle(player_settle)
             now_exp = query_res.user_attr[ProtoEnum.UserAttrType.account_exp]
         end
         local update_user_attr = {}
-        update_user_attr[ProtoEnum.UserAttrType.account_exp] = now_exp + player_settle.account_experience
+        update_user_attr[ProtoEnum.UserAttrType.account_exp] = now_exp + settle_info.account_experience
         scripts.User.SetUserAttr(update_user_attr, true)
     end
-    if player_settle.game_role_exp and table.size(player_settle.game_role_exp) > 0 then
+    if settle_info.game_role_exp and table.size(settle_info.game_role_exp) > 0 then
         -- 增加角色经验
         local change_roles = {}
-        for roleid, exp in pairs(player_settle.game_role_exp) do
+        for roleid, exp in pairs(settle_info.game_role_exp) do
             if exp and exp > 0 then
                 local err, new_exp = scripts.Role.GameAddExp(roleid, exp)
                 if err == ErrorCode.None then
@@ -601,13 +602,21 @@ function Room.GameSettle(player_settle)
             scripts.Role.SaveAndLog(change_roles)
         end
     end
-    if player_settle.consume_bag then
+    if settle_info.consume_bag then
         -- 同步消耗品背包
         local sync_baginfo = {
             items = {}
         }
-        for pos, itemdata in pairs(player_settle.consume_bag.items) do
-            sync_baginfo.items[pos] = ItemDef.newItemDataFromData(itemdata)
+        for pos, itemdata in pairs(settle_info.consume_bag.items) do
+            if itemdata and itemdata.common_info and itemdata.common_info.config_id then
+                local itype = ItemDefine.GetItemType(itemdata.common_info.config_id)
+                local item_type = 0
+                local item_cfg = GameCfg.Item[itemdata.common_info.config_id]
+                if item_cfg then
+                    item_type = item_cfg.type1
+                end
+                sync_baginfo.items[pos] = ItemDef.newItemDataFromData(itemdata, itype, item_type)
+            end
         end
 
         local change_bag_log = {}
@@ -617,6 +626,19 @@ function Room.GameSettle(player_settle)
         else
             scripts.Bag.RollBackWithChange(change_bag_log)
         end
+    end
+end
+
+function Room.GameReturnItems(return_info)
+    -- 发送邮件
+    local item_datas = {}
+    for _, item_data in pairs(return_info) do
+        table.insert(item_datas, item_data)
+    end
+
+    local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
+    if mail_ret ~= ErrorCode.None then
+        moon.error(string.format("GameReturnItems mail_ret err:\n%s", json.pretty_encode(mail_ret)))
     end
 end
 

@@ -180,6 +180,9 @@ local function doAuth(Auth, req, plateform_id)
 
     db.updatelogin(context.addr_db_game, req.uid)
     moon.send("lua", context.addr_gate, "Gate.BindUser", req)
+    
+    -- 初始化检查数据
+    moon.send("lua", addr_user, "User.InitCheckData")
 
     context.openid_map[req.msg.login_data.authkey] = nil
     local res = {

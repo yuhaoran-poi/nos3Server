@@ -111,6 +111,7 @@ message PBItemData
 	int32	itype	= 1;
 	PBItemCommon	common_info		= 2;
 	PBItemSpecial	special_info	= 3;
+	int64	extra_param	= 4;
 }
 
 // 道具简化信息

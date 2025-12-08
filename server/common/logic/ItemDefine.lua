@@ -34,7 +34,7 @@ local ItemDefine = {
     HumanDiagrams = { start = 630000, End = 639999 },
     GhostDiagrams = { start = 640000, End = 649999 },
     GhostSkin = { start = 1070000, End = 1119999 },
-    RoleSkin = { start = 1132000, End = 1281999 },
+    RoleSkin = { start = 1132000, End = 1351999 },
 
     EItemSmallType = {
         Coin = 1,
@@ -243,7 +243,7 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                     if not item_cfg then
                         return false
                     end
-                    local item_type = ItemDefine.GetItemBagType(item.id)
+                    local item_type = ItemDefine.GetItemType(item.id)
 
                     local new_item = ItemDef.newItemData()
                     new_item.itype = item_type
@@ -258,7 +258,7 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                 if not item_cfg then
                     return false
                 end
-                local item_type = ItemDefine.GetItemBagType(item.id)
+                local item_type = ItemDefine.GetItemType(item.id)
 
                 local new_item = ItemDef.newItemData()
                 new_item.itype = item_type
@@ -287,7 +287,7 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                 if not uniqitem_cfg then
                     return false
                 end
-                local item_type = ItemDefine.GetItemBagType(item.id)
+                local item_type = ItemDefine.GetItemType(item.id)
 
                 local new_item = ItemDef.newItemData()
                 new_item.itype = item_type

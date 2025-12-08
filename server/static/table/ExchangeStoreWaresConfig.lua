@@ -9,9 +9,22 @@
 ---@field public limited_num integer @全服限量数量
 ---@field public default_price table @原价
 return {
-[1] = { id=1,price={[1]=1000,[2]=2000},prop={[22003]=10,[22010]=5},validity_time_stamp={1754020800,1756500000},quota_type=1,quota_num=0,limited_type=1,limited_num=0,default_price={[1]=1000,[2]=2000} },
-[2] = { id=2,price={[1]=1000,[2]=2000},prop={[40016]=3,[40015]=5,[40021]=6},validity_time_stamp={1754020800,1756500000},quota_type=1,quota_num=0,limited_type=2,limited_num=1000,default_price={[1]=1000,[2]=2000} },
-[3] = { id=3,price={[1]=1000,[2]=2000},prop={[31006]=20,[31012]=5,[31015]=1,[20008]=50},validity_time_stamp={1754020800,1756500000},quota_type=1,quota_num=0,limited_type=1,limited_num=0,default_price={[1]=1000,[2]=2000} },
-[4] = { id=4,price={[1]=1000,[2]=2000},prop={[24006]=10,[24008]=5},validity_time_stamp={1754020800,1756500000},quota_type=3,quota_num=5,limited_type=2,limited_num=1000,default_price={[1]=1000,[2]=2000} },
-[5] = { id=5,price={[1]=1000,[2]=2000},prop={[1000004]=1},validity_time_stamp={1754020800,1756500000},quota_type=2,quota_num=1,limited_type=1,limited_num=0,default_price={[1]=1000,[2]=2000} }
+[1000000] = { id=1000000,price={[1]=1},prop={[1000000]=1},validity_time_stamp={1764570414,1806560814},quota_type=2,quota_num=1,limited_type=1,limited_num=0,default_price={} },
+[1000001] = { id=1000001,price={[1]=2},prop={[1000001]=1},validity_time_stamp={1764570414,1806560814},quota_type=0,quota_num=0,limited_type=0,limited_num=0,default_price={} },
+[1000002] = { id=1000002,price={[1]=3},prop={[1000002]=1},validity_time_stamp={1764570414,1806560814},quota_type=0,quota_num=0,limited_type=0,limited_num=0,default_price={} },
+[1000003] = { id=1000003,price={[1]=4},prop={[1000003]=1},validity_time_stamp={1764570414,1806560814},quota_type=0,quota_num=0,limited_type=0,limited_num=0,default_price={} },
+[1000004] = { id=1000004,price={[1]=5},prop={[1000004]=1},validity_time_stamp={1764570414,1806560814},quota_type=0,quota_num=0,limited_type=0,limited_num=0,default_price={} },
+[1] = { id=1,price={[1]=1},prop={[1152000]=1},validity_time_stamp={1764570414,1806560814},quota_type=1,quota_num=0,limited_type=1,limited_num=0,default_price={[1]=10} },
+[2] = { id=2,price={[1]=1},prop={[1162000]=1},validity_time_stamp={1764570414,1806560814},quota_type=1,quota_num=0,limited_type=1,limited_num=0,default_price={[1]=1} },
+[3] = { id=3,price={[1]=1},prop={[1172000]=1},validity_time_stamp={1764570414,1806560814},quota_type=1,quota_num=0,limited_type=1,limited_num=0,default_price={[1]=1} },
+[4] = { id=4,price={[1]=1},prop={[1192000]=1},validity_time_stamp={1764570414,1806560814},quota_type=1,quota_num=0,limited_type=1,limited_num=0,default_price={[1]=1} },
+[5] = { id=5,price={[1]=1},prop={[1162001]=1},validity_time_stamp={1764570414,1806560814},quota_type=1,quota_num=0,limited_type=1,limited_num=0,default_price={[1]=1} },
+[6] = { id=6,price={[1]=1},prop={[1172001]=1},validity_time_stamp={1764570414,1806560814},quota_type=1,quota_num=0,limited_type=1,limited_num=0,default_price={[1]=1} },
+[7] = { id=7,price={[1]=1},prop={[1192001]=1},validity_time_stamp={1764570414,1806560814},quota_type=1,quota_num=0,limited_type=1,limited_num=0,default_price={[1]=1} },
+[8] = { id=8,price={[1]=1},prop={[1142000]=1},validity_time_stamp={1764570414,1806560814},quota_type=1,quota_num=0,limited_type=1,limited_num=0,default_price={[1]=1} },
+[9] = { id=9,price={[1]=1},prop={[1192002]=1},validity_time_stamp={1764570414,1806560814},quota_type=1,quota_num=0,limited_type=1,limited_num=0,default_price={[1]=1} },
+[10] = { id=10,price={[1]=1},prop={[1162002]=1},validity_time_stamp={1764570414,1806560814},quota_type=1,quota_num=0,limited_type=1,limited_num=0,default_price={[1]=1} },
+[11] = { id=11,price={[1]=1},prop={[1172002]=1},validity_time_stamp={1764570414,1806560814},quota_type=1,quota_num=0,limited_type=1,limited_num=0,default_price={[1]=1} },
+[12] = { id=12,price={[1]=1},prop={[1182000]=1},validity_time_stamp={1764570414,1806560814},quota_type=1,quota_num=0,limited_type=1,limited_num=0,default_price={[1]=1} },
+[13] = { id=13,price={[1]=1},prop={[1192003]=1},validity_time_stamp={1764570414,1806560814},quota_type=1,quota_num=0,limited_type=1,limited_num=0,default_price={[1]=1} }
 }
