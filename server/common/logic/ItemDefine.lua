@@ -27,12 +27,14 @@ local ItemDefine = {
     GhostStackDiagrams = { start = 106000, End = 115999 },
     HumanTabooWord = { start = 116000, End = 119999 },
     GhostTabooWord = { start = 120000, End = 123999 },
+    StackSpaceRing = { start = 124000, End = 133999 },
     Gift = { start = 320000, End = 329999 },
     DurabItem = { start = 500000, End = 500999 },
     MagicItem = { start = 600000, End = 624999 },
     Antique = { start = 625000, End = 629999 },
     HumanDiagrams = { start = 630000, End = 639999 },
     GhostDiagrams = { start = 640000, End = 649999 },
+    SpaceRing = { start = 650000, End = 659999 },
     GhostSkin = { start = 1070000, End = 1119999 },
     RoleSkin = { start = 1132000, End = 1351999 },
 
@@ -52,14 +54,16 @@ local ItemDefine = {
         GhostStackDiagrams = 13,
         HumanTabooWord = 14,
         GhostTabooWord = 15,
-        Gift = 16,
-        DurabItem = 17,
-        MagicItem = 18,
-        Antique = 19,
-        HumanDiagrams = 20,
-        GhostDiagrams = 21,
-        RoleSkin = 22,
-        GhostSkin = 23,
+        StackSpaceRing = 16,
+        Gift = 17,
+        DurabItem = 18,
+        MagicItem = 19,
+        Antique = 20,
+        HumanDiagrams = 21,
+        GhostDiagrams = 22,
+        RoleSkin = 23,
+        GhostSkin = 24,
+        SpaceRing = 25,
         Other = 255,
     },
 
@@ -109,6 +113,8 @@ function ItemDefine.GetItemType(nConfigId)
         return ItemDefine.EItemSmallType.HumanTabooWord
     elseif nConfigId >= ItemDefine.GhostTabooWord.start and nConfigId <= ItemDefine.GhostTabooWord.End then
         return ItemDefine.EItemSmallType.GhostTabooWord
+    elseif nConfigId >= ItemDefine.StackSpaceRing.start and nConfigId <= ItemDefine.StackSpaceRing.End then
+        return ItemDefine.EItemSmallType.StackSpaceRing
     elseif nConfigId >= ItemDefine.Gift.start and nConfigId <= ItemDefine.Gift.End then
         return ItemDefine.EItemSmallType.Gift
     elseif nConfigId >= ItemDefine.DurabItem.start and nConfigId <= ItemDefine.DurabItem.End then
@@ -125,6 +131,8 @@ function ItemDefine.GetItemType(nConfigId)
         return ItemDefine.EItemSmallType.RoleSkin
     elseif nConfigId >= ItemDefine.GhostSkin.start and nConfigId <= ItemDefine.GhostSkin.End then
         return ItemDefine.EItemSmallType.GhostSkin
+    elseif nConfigId >= ItemDefine.SpaceRing.start and nConfigId <= ItemDefine.SpaceRing.End then
+        return ItemDefine.EItemSmallType.SpaceRing
     else
         moon.error("GetItemType - unknown config_id:", nConfigId)
         return ItemDefine.EItemSmallType.Other
@@ -146,6 +154,8 @@ function ItemDefine.GetItemPosType(nConfigId)
     elseif nItemType >= ItemDefine.EItemSmallType.RoleSkin
         and nItemType <= ItemDefine.EItemSmallType.GhostSkin then
         return ItemDefine.EItemBigType.Skin
+    elseif nItemType == ItemDefine.EItemSmallType.SpaceRing then
+        return ItemDefine.EItemBigType.UniqueItem
     else
         moon.error("GetItemPosType - unknown config_id:", nConfigId)
         return ItemDefine.EItemBigType.Other
@@ -273,13 +283,18 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                     new_item.common_info.trade_cnt = item.trade_cnt
                 end
                 new_item.special_info.durab_item = ItemDef.newDurabItem()
+                local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 if item.special_info and item.special_info.durab_item then
                     if item.special_info.durab_item.cur_durability then
                         new_item.special_info.durab_item.cur_durability = item.special_info.durab_item.cur_durability
+                    else
+                        new_item.special_info.durab_item.cur_durability = item_cfg.Durability
                     end
                     if item.special_info.durab_item.strong_value then
                         new_item.special_info.durab_item.strong_value = item.special_info.durab_item.strong_value
                     end
+                else
+                    new_item.special_info.durab_item.cur_durability = item_cfg.Durability
                 end
                 table.insert(unstack_items, new_item)
             elseif item_big_type == ItemDefine.EItemBigType.UniqueItem then
@@ -310,10 +325,14 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                         if item.special_info.diagrams_item.cur_durability then
                             new_item.special_info.diagrams_item.cur_durability = item.special_info.diagrams_item
                                 .cur_durability
+                        else
+                            new_item.special_info.diagrams_item.cur_durability = uniqitem_cfg.durability
                         end
                         if item.special_info.diagrams_item.strong_value then
                             new_item.special_info.diagrams_item.strong_value = item.special_info.diagrams_item
                                 .strong_value
+                        else
+                            new_item.special_info.diagrams_item.strong_value = uniqitem_cfg.sturdy
                         end
                         if item.special_info.diagrams_item.tabooword_id then
                             new_item.special_info.diagrams_item.tabooword_id = item.special_info.diagrams_item
@@ -329,6 +348,9 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                             new_item.special_info.diagrams_item.ability_tag = item.special_info.diagrams_item
                                 .ability_tag
                         end
+                    else
+                        new_item.special_info.diagrams_item.cur_durability = uniqitem_cfg.durability
+                        new_item.special_info.diagrams_item.strong_value = uniqitem_cfg.sturdy
                     end
                     table.insert(unstack_items, new_item)
                 elseif item_small_type == ItemDefine.EItemSmallType.MagicItem then
@@ -337,9 +359,13 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                         if item.special_info.magic_item.cur_durability then
                             new_item.special_info.magic_item.cur_durability = item.special_info.magic_item
                                 .cur_durability
+                        else
+                            new_item.special_info.magic_item.cur_durability = uniqitem_cfg.durability
                         end
                         if item.special_info.magic_item.strong_value then
                             new_item.special_info.magic_item.strong_value = item.special_info.magic_item.strong_value
+                        else
+                            new_item.special_info.magic_item.strong_value = uniqitem_cfg.sturdy
                         end
                         if item.special_info.magic_item.tabooword_id then
                             new_item.special_info.magic_item.tabooword_id = item.special_info.magic_item.tabooword_id
@@ -353,6 +379,9 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                         if item.special_info.magic_item.ability_tag then
                             new_item.special_info.magic_item.ability_tag = item.special_info.magic_item.ability_tag
                         end
+                    else
+                        new_item.special_info.magic_item.cur_durability = uniqitem_cfg.durability
+                        new_item.special_info.magic_item.strong_value = uniqitem_cfg.sturdy
                     end
                     table.insert(unstack_items, new_item)
                 elseif item_small_type == ItemDefine.EItemSmallType.Antique then
@@ -386,6 +415,29 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                         end
                     end
                     table.insert(unstack_items, new_item)
+                -- elseif item_small_type == ItemDefine.EItemSmallType.SpaceRing then
+                --     new_item.special_info.space_ring = ItemDef.newSpaceRing()
+                --     if item.special_info and item.special_info.space_ring then
+                --         if item.special_info.space_ring.cur_durability then
+                --             new_item.special_info.space_ring.cur_durability = item.special_info.space_ring.cur_durability
+                --         end
+                --         if item.special_info.space_ring.strong_value then
+                --             new_item.special_info.space_ring.strong_value = item.special_info.space_ring.strong_value
+                --         end
+                --         if item.special_info.space_ring.tabooword_id then
+                --             new_item.special_info.space_ring.tabooword_id = item.special_info.space_ring.tabooword_id
+                --         end
+                --         if item.special_info.space_ring.light_cnt then
+                --             new_item.special_info.space_ring.light_cnt = item.special_info.space_ring.light_cnt
+                --         end
+                --         if item.special_info.space_ring.tags then
+                --             new_item.special_info.space_ring.tags = item.special_info.space_ring.tags
+                --         end
+                --         if item.special_info.space_ring.ability_tag then
+                --             new_item.special_info.space_ring.ability_tag = item.special_info.space_ring.ability_tag
+                --         end
+                --     end
+                --     table.insert(unstack_items, new_item)
                 end
             end
         end
