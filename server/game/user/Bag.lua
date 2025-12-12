@@ -1367,6 +1367,7 @@ function Bag.AddDurabItem(bagType, baginfo, item_data, change_log)
                 new_item.common_info.item_type = item_cfg.type1
                 new_item.common_info.trade_cnt = -1
                 new_item.special_info.durab_item = ItemDef.newDurabItem()
+                new_item.special_info.durab_item.cur_durability = item_cfg.Durability
             end
             if new_item.common_info.uniqid == 0 then
                 new_item.common_info.uniqid = uuid.next()
@@ -1400,6 +1401,11 @@ function Bag.AddMagicItem(bagType, baginfo, item_data, change_log)
         new_itemdata.special_info = {
             magic_item = ItemDef.newMagicItem(),
         }
+        local item_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+        if item_cfg then
+            new_itemdata.special_info.magic_item.cur_durability = item_cfg.durability
+            new_itemdata.special_info.magic_item.strong_value = item_cfg.sturdy
+        end
     end
 
     return ErrorCode.None
@@ -1419,10 +1425,34 @@ function Bag.AddDiagramsCard(bagType, baginfo, item_data, change_log)
         new_itemdata.special_info = {
             diagrams_item = ItemDef.newDiagramsCard(),
         }
+        local item_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+        if item_cfg then
+            new_itemdata.special_info.diagrams_item.cur_durability = item_cfg.durability
+            new_itemdata.special_info.diagrams_item.strong_value = item_cfg.sturdy
+        end
     end
 
     return ErrorCode.None
 end
+
+-- function Bag.AddSpaceRing(bagType, baginfo, item_data, change_log)
+--     local itype = ItemDefine.GetItemType(item_data.common_info.config_id)
+--     local errorCode, add_pos = Bag.AddUniqItem(bagType, baginfo, item_data, itype, change_log)
+--     if errorCode ~= ErrorCode.None or not add_pos then
+--         return errorCode
+--     end
+
+--     local new_itemdata = baginfo.items[add_pos]
+--     if item_data.special_info and item_data.special_info.space_ring then
+--         new_itemdata.special_info = table.copy(item_data.special_info, true)
+--     else
+--         new_itemdata.special_info = {
+--             space_ring = ItemDef.newSpaceRing(),
+--         }
+--     end
+
+--     return ErrorCode.None
+-- end
 
 function Bag.SyncBagInfo(bagType, sync_baginfo, change_log)
     -- 参数校验
@@ -1899,6 +1929,8 @@ function Bag.AddItems(bagType, stack_item_datas, unstack_item_datas, change_log)
             err_code = Bag.AddDurabItem(bagType, baginfo, item_data, change_log[bagType])
         elseif item_small_type == ItemDefine.EItemSmallType.Antique then
             err_code = Bag.AddAntique(bagType, baginfo, item_data, change_log[bagType])
+        -- elseif item_small_type == ItemDefine.EItemSmallType.SpaceRing then
+        --     err_code = Bag.AddSpaceRing(bagType, baginfo, item_data, change_log[bagType])
         else
             err_code = ErrorCode.ItemNotExist
         end
@@ -2347,11 +2379,16 @@ function Bag.InlayTabooWord(taboo_word_id, inlay_type, uniqid)
             or not item_data.special_info.magic_item then
             return ErrorCode.ItemNotExist
         end
-    else
+    else--[[if inlay_type == 2 then]]
         if not item_data.special_info
             or not item_data.special_info.diagrams_item then
             return ErrorCode.ItemNotExist
         end
+    -- elseif inlay_type == 3 then
+    --     if not item_data.special_info
+    --         or not item_data.special_info.space_ring then
+    --         return ErrorCode.ItemNotExist
+    --     end
     end
 
     local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
@@ -2363,7 +2400,7 @@ function Bag.InlayTabooWord(taboo_word_id, inlay_type, uniqid)
         if item_cfg.type4 ~= ItemDef.TabooWordInlay.RoleType then
             return ErrorCode.InlayTypeNotMatch
         end
-    else
+    else--[[if inlay_type == 2 then]]
         if uniqitem_cfg.type4 ~= item_cfg.type4 then
             return ErrorCode.InlayTypeNotMatch
         end
@@ -2400,8 +2437,10 @@ function Bag.InlayTabooWord(taboo_word_id, inlay_type, uniqid)
     -- 镶嵌讳字
     if inlay_type == 1 then
         item_data.special_info.magic_item.tabooword_id = taboo_word_id
-    else
+    else--[[if inlay_type == 2 then]]
         item_data.special_info.diagrams_item.tabooword_id = taboo_word_id
+    -- elseif inlay_type == 3 then
+    --     item_data.special_info.space_ring.tabooword_id = taboo_word_id
     end
 
     return ErrorCode.None, bag_change_log
@@ -2494,6 +2533,7 @@ function Bag.GetSpecialItemFromCommonItem(srcBagType, srcPos, item_id)
     if item_type ~= small_types.MagicItem
         and item_type ~= small_types.HumanDiagrams
         and item_type ~= small_types.GhostDiagrams then
+        -- and item_type ~= small_types.SpaceRing then
         return ErrorCode.ItemTypeMismatch
     end
 
@@ -2568,6 +2608,14 @@ function Bag.Light(op_itemdata)
         else
             return ErrorCode.ItemNotExist
         end
+    -- elseif op_itemdata.itype == ItemDefine.EItemSmallType.SpaceRing then
+    --     if op_itemdata.special_info and op_itemdata.special_info.space_ring then
+    --         cur_light_cnt = op_itemdata.special_info.space_ring.light_cnt
+    --         cur_tags = op_itemdata.special_info.space_ring.tags
+    --         cur_ability_tag = op_itemdata.special_info.space_ring.ability_tag
+    --     else
+    --         return ErrorCode.ItemNotExist
+    --     end
     else
         return ErrorCode.ItemNotExist
     end
@@ -2733,6 +2781,13 @@ function Bag.Light(op_itemdata)
         else
             table.insert(op_itemdata.special_info.diagrams_item.tags, new_tag)
         end
+    -- elseif op_itemdata.itype == ItemDefine.EItemSmallType.SpaceRing then
+    --     op_itemdata.special_info.space_ring.light_cnt = cur_light_cnt + 1
+    --     if new_tag_id >= AbilityTagIdMin then
+    --         table.insert(op_itemdata.special_info.space_ring.ability_tag, new_tag)
+    --     else
+    --         table.insert(op_itemdata.special_info.space_ring.tags, new_tag)
+    --     end
     else
         Bag.RollBackWithChange(change_log)
         return ErrorCode.ItemNotExist
