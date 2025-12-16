@@ -124,6 +124,7 @@ function Room.PBSearchRoomReqCmd(req)
                     is_open = v.is_open,
                     needcheck = v.needcheck,
                     needpwd = v.needpwd,
+                    describe = v.describe,
                 })
             end
         end

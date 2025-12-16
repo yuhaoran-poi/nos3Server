@@ -917,20 +917,21 @@ function Roommgr.KickMember(req)
         return { code = ErrorCode.RoomMemberNotFound, error = "目标玩家不在房间" }
     end
 
-    -- 移除玩家
-    table.remove(room.players, kick_index)
-    moon.debug(string.format("Roommgr.KickMember uid:%d, roomid:%d", req.kick_uid, req.roomid))
-    context.uid_roomid[req.kick_uid] = nil
-
-    -- 广播踢人通知
+    -- 获取通知列表
     local notify_uids = {}
     for _, player in pairs(room.players) do
         table.insert(notify_uids, player.mem_info.uid)
     end
+
+    -- 移除玩家
+    table.remove(room.players, kick_index)
+    moon.debug(string.format("Roommgr.KickMember uid:%d, roomid:%d", req.kick_uid, req.roomid))
+    context.uid_roomid[req.kick_uid] = nil
     -- context.send_users(notify_uids, {}, "Room.OnMemberKick", {
     --     roomid = req.roomid,
     --     kick_uid = req.kick_uid,
     -- })
+    -- 广播踢人通知
     local sync_msg = {
         roomid = room.room_data.roomid,
         sync_type = RoomDef.SyncType.PlayerKick,
