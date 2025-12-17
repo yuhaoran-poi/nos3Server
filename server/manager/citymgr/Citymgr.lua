@@ -158,12 +158,17 @@ function Citymgr.CheckWaitDSCitys()
     for cityid, _ in pairs(fail_citys) do
         context.waitds_citys[cityid] = nil
     end
-    moon.error(string.format("allocated_citys:\n%s", json.pretty_encode(allocated_citys)))
+    
+    if table.size(allocated_citys) > 0 then
+        moon.warn(string.format("allocated_citys:\n%s", json.pretty_encode(allocated_citys)))
+    end
     return allocated_citys
 end
 
 function Citymgr.SetNewDsCitys(allocated_citys)
-    moon.info(string.format("Citymgr.SetNewDsCitys allocated_citys:\n%s", json.pretty_encode(allocated_citys)))
+    if table.size(allocated_citys) > 0 then
+        moon.info(string.format("Citymgr.SetNewDsCitys allocated_citys:\n%s", json.pretty_encode(allocated_citys)))
+    end
     for cityid, allocate_info in pairs(allocated_citys) do
         local city = {
             cityid = cityid,
