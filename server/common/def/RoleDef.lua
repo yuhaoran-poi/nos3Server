@@ -6,6 +6,7 @@ local RoleDef = {
         SimpleInfo = 2,
         MagicInfo = 3,
         DiagramsInfo = 4,
+        SpaceRingInfo = 5,
     },
     RoleDefine = {
         RoleID = { Start = 1000000, End = 1000999 },
@@ -53,6 +54,7 @@ local defaultPBRoleData = {
     passive_skill = {},
     emoji = {},
     up_lv_rewards = {},
+    space_ring = {},
 }
 
 local defaultPBUserRoleDatas = {

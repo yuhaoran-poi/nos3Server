@@ -330,6 +330,18 @@ function Role.ModDiagramsCard(roleid, item_data, slot)
     return ErrorCode.None
 end
 
+function Role.ModSpaceRing(roleid, item_data, slot)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list or not roles.role_list[roleid] then
+        return ErrorCode.RoleNotExist
+    end
+
+    local role_info = roles.role_list[roleid]
+    role_info.space_ring = item_data
+
+    return ErrorCode.None
+end
+
 function Role.PBClientGetUsrRolesInfoReqCmd(req)
     local roles = scripts.UserModel.GetRoles()
     if not roles then
@@ -415,6 +427,11 @@ function Role.GetRoleEquipment(role_info, config_id, equip_idx)
             and role_info.digrams_cards[equip_idx].common_info then
             return item_small_type, role_info.digrams_cards[equip_idx]
         end
+    elseif item_small_type == ItemDefine.EItemSmallType.SpaceRing then
+        -- 检测现在是否携带有相应位置空间戒指
+        if role_info.space_ring and role_info.space_ring.common_info then
+            return item_small_type, role_info.space_ring
+        end
     end
 
     return item_small_type, nil
@@ -451,6 +468,12 @@ function Role.ChangeEquipment(battle_role_id, role_info, config_id, equip_idx, e
         else
             role_info.digrams_cards[equip_idx] = nil
         end
+    elseif item_small_type == ItemDefine.EItemSmallType.SpaceRing then
+        if equip_item_data then
+            role_info.space_ring = equip_item_data
+        else
+            role_info.space_ring = {}
+        end
     end
 end
 
@@ -468,7 +491,7 @@ function Role.InlayTabooWord(roleid, taboo_word_id, inlay_type, uniqid)
             and role_info.magic_item.common_info.uniqid == uniqid then
             item_data = role_info.magic_item
         end
-    else
+    elseif inlay_type == 2 then
         if role_info.digrams_cards then
             for _, digrams_card in pairs(role_info.digrams_cards) do
                 if digrams_card
@@ -478,6 +501,12 @@ function Role.InlayTabooWord(roleid, taboo_word_id, inlay_type, uniqid)
                     break
                 end
             end
+        end
+    elseif inlay_type == 3 then
+        if role_info.space_ring
+            and role_info.space_ring.common_info
+            and role_info.space_ring.common_info.uniqid == uniqid then
+            item_data = role_info.space_ring
         end
     end
     if not item_data then
@@ -493,7 +522,7 @@ function Role.InlayTabooWord(roleid, taboo_word_id, inlay_type, uniqid)
         if item_cfg.type4 ~= ItemDef.TabooWordInlay.RoleType then
             return ErrorCode.InlayTypeNotMatch
         end
-    else
+    elseif inlay_type == 2 then
         if uniqitem_cfg.type4 ~= item_cfg.type4 then
             return ErrorCode.InlayTypeNotMatch
         end
@@ -524,8 +553,10 @@ function Role.InlayTabooWord(roleid, taboo_word_id, inlay_type, uniqid)
     -- 镶嵌讳字
     if inlay_type == 1 then
         item_data.special_info.magic_item.tabooword_id = taboo_word_id
-    else
+    elseif inlay_type == 2 then
         item_data.special_info.diagrams_item.tabooword_id = taboo_word_id
+    elseif inlay_type == 3 then
+        item_data.special_info.space_ring.tabooword_id = taboo_word_id
     end
 
     return ErrorCode.None, bag_change_log
@@ -654,38 +685,64 @@ function Role.GameAddExp(roleid, add_exp)
     return ErrorCode.None, new_exp
 end
 
-function Role.CheckUseItemUpLv(roleid, exp_id, exp_cnt)
+function Role.CheckUseItemUpLv(roleid, exp_id, up_exp_total, item_exps)
     local roles = scripts.UserModel.GetRoles()
     if not roles or not roles.role_list or not roles.role_list[roleid] then
-        return ErrorCode.RoleNotExist
+        return ErrorCode.RoleNotExist, 0, {}
     end
 
-    local role_info = roles.role_list[roleid]
-    local after_up_exp = role_info.exp + exp_cnt
-    local success = false
     local up_exp_cfgs = GameCfg.RoleUpLv
     if not up_exp_cfgs then
-        return ErrorCode.ConfigError
+        return ErrorCode.ConfigError, 0, {}
     end
+
+    local success = false
+    local max_exp = 0
+    local role_info = roles.role_list[roleid]
+    local after_up_exp = role_info.exp + up_exp_total
     for _, cfg in pairs(up_exp_cfgs) do
-        if role_info.exp < cfg.allexp and after_up_exp >= cfg.allexp then
+        if role_info.exp < cfg.allexp then
             if cfg.cost ~= exp_id then
-                return ErrorCode.ConfigError
+                return ErrorCode.ConfigError, 0, {}
             end
         end
-
-        if after_up_exp < cfg.allexp then
+        if after_up_exp <= cfg.allexp then
             success = true
             break
         end
+        max_exp = cfg.allexp
     end
-    if not success then
-        return ErrorCode.RoleMaxExp
+    if success then
+        local cost_items = {}
+        for cost_id, exp_num in pairs(item_exps) do
+            cost_items[cost_id] = {
+                id = cost_id,
+                count = -exp_num.num,
+                pos = 0,
+            }
+        end
+        return ErrorCode.None, up_exp_total, cost_items
     end
 
-    -- role_info.exp = after_up_exp
+    local cost_items = {}
+    local need_exp = max_exp - role_info.exp
+    if need_exp > 0 then
+        for cost_id, exp_num in pairs(item_exps) do
+            local need_num = math.ceil(need_exp / exp_num.exp_cnt)
+            need_num = math.min(need_num, exp_num.num)
+            cost_items[cost_id] = {
+                id = cost_id,
+                count = -need_num,
+                pos = 0,
+            }
+            need_exp = need_exp - need_num * exp_num.exp_cnt
+            if need_exp <= 0 then
+                break
+            end
+        end
+    end
 
-    return ErrorCode.None
+    return ErrorCode.None, max_exp - role_info.exp, cost_items
 end
 
 function Role.UpExp(roleid, exp_cnt)
@@ -802,7 +859,8 @@ function Role.PBRoleWearEquipReqCmd(req)
     local item_small_type, takeoff_item_data = Role.GetRoleEquipment(role_info, item_data.common_info.config_id,
         req.msg.equip_idx)
     if item_small_type ~= ItemDefine.EItemSmallType.MagicItem
-        and item_small_type ~= item_small_type == ItemDefine.EItemSmallType.HumanDiagrams then
+        and item_small_type ~= item_small_type == ItemDefine.EItemSmallType.HumanDiagrams
+        and item_small_type ~= ItemDefine.EItemSmallType.SpaceRing then
         return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
             { code = ErrorCode.ItemNotExist, error = "装备不存在", uid = context.uid }, req.msg_context.stub_id)
     end
@@ -893,7 +951,8 @@ function Role.PBRoleTakeOffEquipReqCmd(req)
     local item_small_type, takeoff_item_data = Role.GetRoleEquipment(role_info, req.msg.takeoff_config_id,
         req.msg.takeoff_idx)
     if item_small_type ~= ItemDefine.EItemSmallType.MagicItem
-        and item_small_type ~= item_small_type == ItemDefine.EItemSmallType.HumanDiagrams then
+        and item_small_type ~= item_small_type == ItemDefine.EItemSmallType.HumanDiagrams
+        and item_small_type ~= ItemDefine.EItemSmallType.SpaceRing then
         return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"],
             { code = ErrorCode.ItemNotExist, error = "装备不存在", uid = context.uid }, req.msg_context.stub_id)
     end

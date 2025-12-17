@@ -68,6 +68,17 @@ message PBDiagramsCard
 	repeated PBTag	ability_tag	= 6;	//能力词条
 }
 
+// 空间戒指
+message PBSpaceRing
+{
+	int32		cur_durability = 1;	//当前耐久度
+	int32		strong_value = 2;	//耐久度上限
+	int32		tabooword_id	= 3;	//讳字id
+	int32		light_cnt	= 4;	//开光次数
+	repeated PBTag	tags	= 5;	//随机词条id,最大10条
+	repeated PBTag	ability_tag	= 6;	//能力词条
+}
+
 // 镇山之宝
 message PBAweItem
 {
@@ -104,6 +115,7 @@ message PBItemSpecial
 	PBDiagramsCard	diagrams_item	= 3;
 	PBAweItem	awe_item	= 4;
 	PBAntique	antique_item		= 5;
+	PBSpaceRing space_ring	= 6;
 }
 
 message PBItemData
@@ -199,6 +211,7 @@ message PBUserImage
 	map<int32, PBImage> human_diagrams_image	= 3;	//角色八卦牌图鉴	有key则执行覆盖
 	map<int32, PBImage> ghost_diagrams_image	= 4;	//鬼宠八卦牌图鉴	有key则执行覆盖
 	map<int32, PBSkinImage> skin_image			= 5;	//皮肤动作表情图鉴	有key则执行覆盖
+	map<int32, PBImage> space_ring_image	= 6;	//空间戒指图鉴		有key则执行覆盖
 }
 
 // 古董展柜

@@ -394,6 +394,8 @@ local ErrorCode = {
     AntiqueNotInShowcase = 1620,
     --- 操作类型无效
     InvalidOperateType = 1621,
+    --- 强化空间戒指失败
+    LightSpaceRingFail = 1622,
 
     --角色相关错误码
     --- 角色不存在

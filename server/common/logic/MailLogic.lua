@@ -223,7 +223,8 @@ function MailLogic.DealSystemMail(send_info_str)
                         if attachment.special_info and attachment.special_info.ability_tag then
                             new_item_data.special_info.magic_item.ability_tag = attachment.special_info.ability_tag
                         end
-                    elseif small_type == ItemDefine.EItemSmallType.DiagramsCard then
+                    elseif small_type == ItemDefine.EItemSmallType.HumanDiagrams
+                        or small_type == ItemDefine.EItemSmallType.GhostDiagrams then
                         new_item_data.special_info.diagrams_item = ItemDef.newDiagramsCard()
                         if attachment.special_info and attachment.special_info.cur_durability then
                             new_item_data.special_info.diagrams_item.cur_durability = attachment.special_info
@@ -243,6 +244,24 @@ function MailLogic.DealSystemMail(send_info_str)
                         end
                         if attachment.special_info and attachment.special_info.ability_tag then
                             new_item_data.special_info.diagrams_item.ability_tag = attachment.special_info.ability_tag
+                        end
+                    elseif small_type == ItemDefine.EItemSmallType.SpaceRing then
+                        new_item_data.special_info.space_ring = ItemDef.newSpaceRing()
+                        if attachment.special_info and attachment.special_info.cur_durability then
+                            new_item_data.special_info.space_ring.cur_durability = attachment.special_info
+                                .cur_durability
+                        end
+                        if attachment.special_info and attachment.special_info.strong_value then
+                            new_item_data.special_info.space_ring.strong_value = attachment.special_info.strong_value
+                        end
+                        if attachment.special_info and attachment.special_info.tabooword_id then
+                            new_item_data.special_info.space_ring.tabooword_id = attachment.special_info.tabooword_id
+                        end
+                        if attachment.special_info and attachment.special_info.light_cnt then
+                            new_item_data.special_info.space_ring.light_cnt = attachment.special_info.light_cnt
+                        end
+                        if attachment.special_info and attachment.special_info.tags then
+                            new_item_data.special_info.space_ring.tags = attachment.special_info.tags
                         end
                     else
                         return false, "send_info_str attachments error, config_id not exist"

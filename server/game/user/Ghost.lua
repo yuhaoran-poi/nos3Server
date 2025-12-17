@@ -294,39 +294,92 @@ function Ghost.UpLv(config_id, add_exp)
     return ErrorCode.None, change_log
 end
 
-function Ghost.CheckUseItemUpLv(config_id, exp_id, exp_cnt)
+function Ghost.CheckUseItemUpLv(config_id, exp_id, up_exp_total, item_exps)
     local ghosts = scripts.UserModel.GetGhosts()
     if not ghosts or not ghosts.ghost_image_list or not ghosts.ghost_image_list[config_id] then
-        return ErrorCode.GhostNotExist
+        return ErrorCode.GhostNotExist, 0, {}
     end
 
-    local ghost_image_info = ghosts.ghost_image_list[config_id]
-    local after_up_exp = ghost_image_info.exp + exp_cnt
-    local success = false
     local up_exp_cfgs = GameCfg.GhostUpLv
     if not up_exp_cfgs then
-        return ErrorCode.ConfigError
+        return ErrorCode.ConfigError, 0, {}
     end
 
+    local success = false
+    local max_exp = 0
+    local ghost_image_info = ghosts.ghost_image_list[config_id]
+    local after_up_exp = ghost_image_info.exp + up_exp_total
     for _, cfg in pairs(up_exp_cfgs) do
-        if ghost_image_info.exp < cfg.allexp and after_up_exp >= cfg.allexp then
+        if ghost_image_info.exp < cfg.allexp then
             if cfg.cost ~= exp_id then
-                return ErrorCode.ConfigError
+                return ErrorCode.ConfigError, 0, {}
             end
         end
-
-        if after_up_exp < cfg.allexp then
+        if after_up_exp <= cfg.allexp then
             success = true
             break
         end
+        max_exp = cfg.allexp
     end
-    if not success then
-        return ErrorCode.GhostMaxExp
+    if success then
+        local cost_items = {}
+        for cost_id, exp_num in pairs(item_exps) do
+            cost_items[cost_id] = {
+                id = cost_id,
+                count = -exp_num.num,
+                pos = 0,
+            }
+        end
+        return ErrorCode.None, up_exp_total, cost_items
     end
 
-    -- ghost_image_info.exp = after_up_exp
+    local cost_items = {}
+    local need_exp = max_exp - ghost_image_info.exp
+    if need_exp > 0 then
+        for cost_id, exp_num in pairs(item_exps) do
+            local need_num = math.ceil(need_exp / exp_num.exp_cnt)
+            need_num = math.min(need_num, exp_num.num)
+            cost_items[cost_id] = {
+                id = cost_id,
+                count = -need_num,
+                pos = 0,
+            }
+            need_exp = need_exp - need_num * exp_num.exp_cnt
+            if need_exp <= 0 then
+                break
+            end
+        end
+    end
 
-    return ErrorCode.None
+    return ErrorCode.None, max_exp - ghost_image_info.exp, cost_items
+
+    -- local ghost_image_info = ghosts.ghost_image_list[config_id]
+    -- local after_up_exp = ghost_image_info.exp + exp_cnt
+    -- local success = false
+    -- local up_exp_cfgs = GameCfg.GhostUpLv
+    -- if not up_exp_cfgs then
+    --     return ErrorCode.ConfigError
+    -- end
+
+    -- for _, cfg in pairs(up_exp_cfgs) do
+    --     if ghost_image_info.exp < cfg.allexp and after_up_exp >= cfg.allexp then
+    --         if cfg.cost ~= exp_id then
+    --             return ErrorCode.ConfigError
+    --         end
+    --     end
+
+    --     if after_up_exp < cfg.allexp then
+    --         success = true
+    --         break
+    --     end
+    -- end
+    -- if not success then
+    --     return ErrorCode.GhostMaxExp
+    -- end
+
+    -- -- ghost_image_info.exp = after_up_exp
+
+    -- return ErrorCode.None
 end
 
 function Ghost.UpExp(config_id, exp_cnt)

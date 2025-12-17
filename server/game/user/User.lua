@@ -639,6 +639,48 @@ local function LightRoleEquipment(msg)
         end
 
         return ErrorCode.None, item_data
+    elseif role_info.space_ring
+        and role_info.space_ring.common_info
+        and role_info.space_ring.common_info.uniqid == msg.uniqid then
+        local item_data = role_info.space_ring
+        local old_item_data = table.copy(item_data, true)
+        local err_code, change_log = scripts.Bag.Light(item_data)
+        if err_code ~= ErrorCode.None or not change_log then
+            return ErrorCode.LightSpaceRingFail
+        end
+        if table.size(change_log) > 0 then
+            -- 只存储了背包变更数据
+            scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.RoleEquipLight, msg.roleid)
+        end
+        -- 存储角色数据
+        if scripts.Role.ModSpaceRing(msg.roleid, item_data) == ErrorCode.None then
+            if old_item_data and old_item_data.common_info then
+                -- 单独插入一条变更日志
+                local write_log_datas = {}
+                local new_write_log = ItemDef.newPBItemLog()
+                new_write_log.uid = context.uid
+                new_write_log.config_id = old_item_data.common_info.config_id
+                new_write_log.old_num = 1
+                new_write_log.new_num = 1
+                new_write_log.mod_uniqid = msg.uniqid
+                table.insert(new_write_log.old_item_data, old_item_data)
+                table.insert(new_write_log.new_item_data, item_data)
+                new_write_log.relation_roleid = msg.roleid
+                new_write_log.change_type = ItemDef.LogType.ChangeInfo
+                new_write_log.change_reason = ItemDef.ChangeReason.RoleEquipLight
+                new_write_log.log_ts = moon.time()
+                table.insert(write_log_datas, new_write_log)
+                scripts.Item.SendLog(write_log_datas)
+            end
+
+            local change_roles = {}
+            change_roles[msg.roleid] = "LightSpaceRing"
+            scripts.Role.SaveAndLog(change_roles)
+        else
+            moon.error("LightRoleEquipment LightSpaceRing Fail:", msg.roleid)
+        end
+
+        return ErrorCode.None, item_data
     else
         local slot = 0
         for k, v in pairs(role_info.digrams_cards) do
@@ -1073,24 +1115,66 @@ end
 -- 客户端请求--使用道具升级
 function User.PBUseItemUpLvReqCmd(req)
     -- 参数验证
-    if not req.msg.target_id or not req.msg.cost_id or req.msg.cost_num <= 0 then
+    if not req.msg.target_id or not req.msg.cost_items or table.size(req.msg.cost_items) <= 0 then
         return context.S2C(context.net_id, CmdCode.PBUseItemUpLvRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
             uid = context.uid,
             target_id = req.msg.target_id or 0,
-            cost_id = req.msg.cost_id or 0,
-            cost_num = req.msg.cost_num or 0,
+            cost_items = req.msg.cost_items or {},
         }, req.msg_context.stub_id)
     end
 
-    local cost_items = {}
-    cost_items[req.msg.cost_id] = {
-        id = req.msg.cost_id,
-        count = 0,
-        pos = 0,
-    }
-    cost_items[req.msg.cost_id].count = cost_items[req.msg.cost_id].count - req.msg.cost_num
+    local cost_items, item_exps = {}, {}
+    local up_exp_id, up_exp_total = 0, 0
+    for _, cost_item in pairs(req.msg.cost_items) do
+        local item_cfg = GameCfg.Item[cost_item.config_id]
+        if not item_cfg or not item_cfg.use_award or table.size(item_cfg.use_award) ~= 1 then
+            return context.S2C(context.net_id, CmdCode.PBUseItemUpLvRspCmd, {
+                code = ErrorCode.ConfigError,
+                error = "道具配置错误",
+                uid = context.uid,
+                target_id = req.msg.target_id,
+                cost_items = {},
+            }, req.msg_context.stub_id)
+        end
+
+        for exp_id, exp_cnt in pairs(item_cfg.use_award) do
+            if up_exp_id ~= 0 and up_exp_id ~= exp_id then
+                return context.S2C(context.net_id, CmdCode.PBUseItemUpLvRspCmd, {
+                    code = ErrorCode.ConfigError,
+                    error = "道具配置错误",
+                    uid = context.uid,
+                    target_id = req.msg.target_id,
+                    cost_items = {},
+                }, req.msg_context.stub_id)
+            end
+            up_exp_id = exp_id
+
+            if not item_exps[cost_item.config_id] then
+                item_exps[cost_item.config_id] = {
+                    exp_cnt = exp_cnt,
+                    num = 0,
+                }
+            end
+            -- item_exps[cost_item.config_id].num = item_exps[cost_item.config_id].num + cost_item.item_count
+            up_exp_total = up_exp_total + exp_cnt * cost_item.item_count
+        end
+
+        if not cost_items[cost_item.config_id] then
+            cost_items[cost_item.config_id] = {
+                id = cost_item.config_id,
+                count = 0,
+                pos = 0,
+            }
+        end
+        cost_items[cost_item.config_id].count = cost_items[cost_item.config_id].count - cost_item.item_count
+    end
+    for cost_id, cost_item in pairs(cost_items) do
+        if cost_item.count < 0 and item_exps[cost_id] then
+            item_exps[cost_id].num = -cost_item.count
+        end
+    end
 
     -- 检测道具是否足够
     local bag_cost_code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
@@ -1100,40 +1184,23 @@ function User.PBUseItemUpLvReqCmd(req)
             error = "道具不足",
             uid = context.uid,
             target_id = req.msg.target_id,
-            cost_id = req.msg.cost_id,
-            cost_num = req.msg.cost_num,
+            cost_items = {},
         }, req.msg_context.stub_id)
     end
 
-    local item_cfg = GameCfg.Item[req.msg.cost_id]
-    if not item_cfg or not item_cfg.use_award or table.size(item_cfg.use_award) ~= 1 then
-        return context.S2C(context.net_id, CmdCode.PBUseItemUpLvRspCmd, {
-            code = ErrorCode.ConfigError,
-            error = "道具配置错误",
-            uid = context.uid,
-            target_id = req.msg.target_id,
-            cost_id = req.msg.cost_id,
-            cost_num = req.msg.cost_num,
-        }, req.msg_context.stub_id)
-    end
-
-    local up_exp_id, up_exp_cnt = 0, 0
-    for id, cnt in pairs(item_cfg.use_award) do
-        up_exp_id = id
-        up_exp_cnt = cnt * req.msg.cost_num
-    end
-
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 检查经验增加
-    local err_code = ErrorCode.None
+    local err_code, up_exp_cnt, real_cost_items = ErrorCode.None, 0, {}
     if RoleDef.RoleDefine.RoleID.Start <= req.msg.target_id
         and req.msg.target_id <= RoleDef.RoleDefine.RoleID.End then
-        err_code = scripts.Role.CheckUseItemUpLv(req.msg.target_id, up_exp_id, up_exp_cnt)
+        err_code, up_exp_cnt, real_cost_items = scripts.Role.CheckUseItemUpLv(req.msg.target_id, up_exp_id, up_exp_total, item_exps)
     elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.target_id
         and req.msg.target_id <= GhostDef.GhostDefine.GhostID.End then
-        err_code = scripts.Ghost.CheckUseItemUpLv(req.msg.target_id, up_exp_id, up_exp_cnt)
+        err_code, up_exp_cnt, real_cost_items = scripts.Ghost.CheckUseItemUpLv(req.msg.target_id, up_exp_id, up_exp_cnt)
     else
         -- 图鉴升级
-        err_code = scripts.ItemImage.CheckUseItemUpLv(req.msg.target_id, up_exp_id, up_exp_cnt)
+        err_code, up_exp_cnt, real_cost_items = scripts.ItemImage.CheckUseItemUpLv(req.msg.target_id, up_exp_id,
+        up_exp_cnt)
     end
     if err_code ~= ErrorCode.None then
         return context.S2C(context.net_id, CmdCode.PBUseItemUpLvRspCmd, {
@@ -1149,8 +1216,8 @@ function User.PBUseItemUpLvReqCmd(req)
     -- 扣除消耗
     local bag_change_log = {}
     local err_code_del = ErrorCode.None
-    if table.size(cost_items) > 0 then
-        err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, bag_change_log)
+    if table.size(real_cost_items) > 0 then
+        err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, real_cost_items, {}, bag_change_log)
         if err_code_del ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(bag_change_log)
             return context.S2C(context.net_id, CmdCode.PBUseItemUpLvRspCmd, {
@@ -1450,6 +1517,17 @@ function User.PBClientItemRepairReqCmd(req)
             return errcode
         end
         local old_item_data = table.copy(item_data)
+
+        -- 消耗配置
+        local common_cfg = CommonCfgDef.getConf("MaintenanceCost")
+        if not common_cfg then
+            return ErrorCode.ConfigError
+        end
+        local cost_items = {}
+        local cost_coins = {}
+        local change_logs = {}
+        local add_durability = 0
+
         local smallType = ItemDefine.GetItemType(item_data.common_info.config_id)
         if smallType == ItemDefine.EItemSmallType.MagicItem then
             if item_data.special_info.magic_item.strong_value <= 0 then
@@ -1463,75 +1541,104 @@ function User.PBClientItemRepairReqCmd(req)
                 return ErrorCode.DurabilityMax
             end
 
-            local change_logs = {}
             local add_durability = math.min(magic_cfg.durability - item_data.special_info.magic_item.cur_durability,
                 item_data.special_info.magic_item.strong_value)
-            
-            -- 消耗配置
-            local common_cfg = CommonCfgDef.getConf("MaintenanceCost")
-            if not common_cfg then
+            ItemDefine.GetItemsFromCfg(common_cfg.items, add_durability, true, cost_items, cost_coins)
+        elseif smallType == ItemDefine.EItemSmallType.HumanDiagrams
+            or smallType == ItemDefine.EItemSmallType.GhostDiagrams then
+            if item_data.special_info.diagrams_item.strong_value <= 0 then
+                return ErrorCode.StrongNotEnough
+            end
+            local uniq_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+            if not uniq_cfg then
                 return ErrorCode.ConfigError
             end
-            local cost_items = {}
-            local cost_coins = {}
+            if item_data.special_info.diagrams_item.cur_durability >= uniq_cfg.durability then
+                return ErrorCode.DurabilityMax
+            end
+
+            local add_durability = math.min(uniq_cfg.durability - item_data.special_info.diagrams_item.cur_durability,
+                item_data.special_info.diagrams_item.strong_value)
             ItemDefine.GetItemsFromCfg(common_cfg.items, add_durability, true, cost_items, cost_coins)
+        elseif smallType == ItemDefine.EItemSmallType.SpaceRing then
+            if item_data.special_info.space_ring.strong_value <= 0 then
+                return ErrorCode.StrongNotEnough
+            end
+            local uniq_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+            if not uniq_cfg then
+                return ErrorCode.ConfigError
+            end
+            if item_data.special_info.space_ring.cur_durability >= uniq_cfg.durability then
+                return ErrorCode.DurabilityMax
+            end
 
-            -- 检测道具是否足够
-            errcode = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+            add_durability = math.min(uniq_cfg.durability - item_data.special_info.space_ring.cur_durability,
+                item_data.special_info.space_ring.strong_value)
+            ItemDefine.GetItemsFromCfg(common_cfg.items, add_durability, true, cost_items, cost_coins)
+        else
+            return ErrorCode.ItemTypeMismatch
+        end
+        
+        -- 检测道具是否足够
+        errcode = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+        if errcode ~= ErrorCode.None then
+            return errcode
+        end
+        errcode = scripts.Bag.CheckCoinsEnough(cost_coins)
+        if errcode ~= ErrorCode.None then
+            return errcode
+        end
+
+        -- 扣除道具
+        if table.size(cost_items) > 0 then
+            errcode = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_logs)
             if errcode ~= ErrorCode.None then
+                scripts.Bag.RollBackWithChange(change_logs)
                 return errcode
             end
-            errcode = scripts.Bag.CheckCoinsEnough(cost_coins)
+        end
+        if table.size(cost_coins) > 0 then
+            errcode = scripts.Bag.DealCoins(cost_coins, change_logs)
             if errcode ~= ErrorCode.None then
+                scripts.Bag.RollBackWithChange(change_logs)
                 return errcode
             end
+        end
 
-            -- 扣除道具
-            if table.size(cost_items) > 0 then
-                errcode = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_logs)
-                if errcode ~= ErrorCode.None then
-                    scripts.Bag.RollBackWithChange(change_logs)
-                    return errcode
-                end
-            end
-            if table.size(cost_coins) > 0 then
-                errcode = scripts.Bag.DealCoins(cost_coins, change_logs)
-                if errcode ~= ErrorCode.None then
-                    scripts.Bag.RollBackWithChange(change_logs)
-                    return errcode
-                end
-            end
-            
+        if smallType == ItemDefine.EItemSmallType.MagicItem then
             -- 增加法器耐久度
             item_data.special_info.magic_item.cur_durability = item_data.special_info.magic_item.cur_durability
                 + add_durability
             item_data.special_info.magic_item.strong_value = item_data.special_info.magic_item.strong_value
                 - add_durability
 
-            -- 存储数据
-            if not change_logs[BagDef.BagType.Cangku] then
-                change_logs[BagDef.BagType.Cangku] = {}
-            end
-            -- scripts.Bag.AddLog(change_logs[BagDef.BagType.Cangku], req.msg.pos, ItemDef.LogType.ChangeInfo,
-            --     item_data.common_info.config_id,
-            --     item_data.common_info.uniqid, item_data.common_info.item_count, old_item_data)
-            scripts.Bag.AddLog(change_logs[BagDef.BagType.Cangku], req.msg.pos, old_item_data)
+        elseif smallType == ItemDefine.EItemSmallType.HumanDiagrams
+            or smallType == ItemDefine.EItemSmallType.GhostDiagrams then
+            -- 增加八卦牌耐久度
+            item_data.special_info.diagrams_item.cur_durability = item_data.special_info.diagrams_item.cur_durability
+                + add_durability
+            item_data.special_info.diagrams_item.strong_value = item_data.special_info.diagrams_item.strong_value
+                - add_durability
 
-            -- local save_bags = {}
-            -- for bagType, _ in pairs(change_logs) do
-            --     save_bags[bagType] = 1
-            -- end
-            -- if table.size(save_bags) > 0 then
-            --     scripts.Bag.SaveAndLog(save_bags, change_logs)
-            -- end
-            if table.size(change_logs) > 0 then
-                scripts.Bag.SaveAndLog(change_logs, ItemDef.ChangeReason.ItemRepair)
-            end
+        elseif smallType == ItemDefine.EItemSmallType.SpaceRing then
+            -- 增加戒指耐久度
+            item_data.special_info.space_ring.cur_durability = item_data.special_info.space_ring.cur_durability
+                + add_durability
+            item_data.special_info.space_ring.strong_value = item_data.special_info.space_ring.strong_value
+                - add_durability
 
-            return ErrorCode.None, item_data
-        else
-            return ErrorCode.ItemTypeMismatch
         end
+
+        -- 存储数据
+        if not change_logs[BagDef.BagType.Cangku] then
+            change_logs[BagDef.BagType.Cangku] = {}
+        end
+        scripts.Bag.AddLog(change_logs[BagDef.BagType.Cangku], req.msg.pos, old_item_data)
+        if table.size(change_logs) > 0 then
+            scripts.Bag.SaveAndLog(change_logs, ItemDef.ChangeReason.ItemRepair)
+        end
+
+        return ErrorCode.None, item_data
     end
 
     local errcode = repair_func()
@@ -1973,8 +2080,19 @@ function User.PBInlayTabooWordReqCmd(req)
                 req.msg.inlay_type, req.msg.uniqid)
             change_roles[req.msg.roleid] = "InlayTabooWord"
         elseif req.msg.ghost_uniqid and req.msg.ghost_uniqid > 0 then
-            rsp_msg.code, bag_change_log, change_ghost_config_id = scripts.Ghost.InlayTabooWord(req.msg.ghost_uniqid, req.msg.tabooword_id, req.msg.inlay_type, req.msg.uniqid)
+            rsp_msg.code, bag_change_log, change_ghost_config_id = scripts.Ghost.InlayTabooWord(req.msg.ghost_uniqid,
+            req.msg.tabooword_id, req.msg.inlay_type, req.msg.uniqid)
             change_ghosts[req.msg.ghost_uniqid] = "InlayTabooWord"
+        else
+            rsp_msg.code, bag_change_log = scripts.Bag.InlayTabooWord(req.msg.tabooword_id, req.msg.inlay_type,
+                req.msg.uniqid)
+        end
+    elseif req.msg.inlay_type == 3 then
+        -- 戒指
+        if req.msg.roleid and req.msg.roleid > 0 then
+            rsp_msg.code, bag_change_log = scripts.Role.InlayTabooWord(req.msg.roleid, req.msg.tabooword_id,
+                req.msg.inlay_type, req.msg.uniqid)
+            change_roles[req.msg.roleid] = "InlayTabooWord"
         else
             rsp_msg.code, bag_change_log = scripts.Bag.InlayTabooWord(req.msg.tabooword_id, req.msg.inlay_type,
                 req.msg.uniqid)
@@ -2085,9 +2203,10 @@ function User.PBModNickNameReqCmd(req)
         end
 
         if table.size(cost_items) > 0 then
-            local errcode = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_logs)
+            local bag_change_log = {}
+            local errcode = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, bag_change_log)
             if errcode ~= ErrorCode.None then
-                scripts.Bag.RollBackWithChange(change_logs)
+                scripts.Bag.RollBackWithChange(bag_change_log)
                 return context.S2C(context.net_id, CmdCode.PBModNickNameRspCmd, {
                     code = errcode,
                     error = "道具不足",

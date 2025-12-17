@@ -97,6 +97,15 @@ local defaultPBDiagramsCard = {
     ability_tag = {},
 }
 
+local defaultPBSpaceRing = {
+    cur_durability = 0,
+    strong_value = 0,
+    tabooword_id = 0,
+    light_cnt = 0,
+    tags = {},
+    ability_tag = {},
+}
+
 -- 道具数据
 local defaultPBItemData = {
     itype = 0,
@@ -146,6 +155,7 @@ local defaultPBUserImage = {
     human_diagrams_image = {},
     ghost_diagrams_image = {},
     skin_image = {},
+    space_ring_image = {},
 }
 
 local defaultPBAntique = {
@@ -190,6 +200,11 @@ end
 --- @return PBDiagramsCard
 function ItemDef.newDiagramsCard()
     return LuaExt.const(table.copy(defaultPBDiagramsCard))
+end
+
+--- @return PBSpaceRing
+function ItemDef.newSpaceRing()
+    return LuaExt.const(table.copy(defaultPBSpaceRing))
 end
 
 --- @return PBItemData
@@ -289,6 +304,15 @@ function ItemDef.newItemDataFromData(itemdata, itype, item_type)
             new_data.special_info.antique_item.tags = itemdata.special_info.antique_item.tags
             new_data.special_info.antique_item.is_fake = itemdata.special_info.antique_item.is_fake
             new_data.special_info.antique_item.identify_histroy = itemdata.special_info.antique_item.identify_histroy
+        end
+        if itemdata.special_info.space_ring and next(itemdata.special_info.space_ring) ~= nil then
+            new_data.special_info.space_ring = LuaExt.const(table.copy(defaultPBSpaceRing))
+            new_data.special_info.space_ring.cur_durability = itemdata.special_info.space_ring.cur_durability
+            new_data.special_info.space_ring.strong_value = itemdata.special_info.space_ring.strong_value
+            new_data.special_info.space_ring.tabooword_id = itemdata.special_info.space_ring.tabooword_id
+            new_data.special_info.space_ring.light_cnt = itemdata.special_info.space_ring.light_cnt
+            new_data.special_info.space_ring.tags = itemdata.special_info.space_ring.tags
+            new_data.special_info.space_ring.ability_tag = itemdata.special_info.space_ring.ability_tag
         end
     end
 

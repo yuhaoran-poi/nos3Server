@@ -99,6 +99,13 @@ function ItemImage.SaveAndLog(config_ids)
                 update_msg.update_images.skin_image = {}
             end
             update_msg.update_images.skin_image[config_id] = itemImages.skin_image[config_id]
+        elseif item_type == ItemDefine.EItemSmallType.SpaceRing then
+            if itemImages.space_ring_image[config_id] then
+                if not update_msg.update_images.space_ring_image then
+                    update_msg.update_images.space_ring_image = {}
+                end
+                update_msg.update_images.space_ring_image[config_id] = itemImages.space_ring_image[config_id]
+            end
         else
             if itemImages.item_image[config_id] then
                 if not update_msg.update_images.item_image then
@@ -118,7 +125,8 @@ end
 -- map<int32, PBImage> magic_item_image		= 2;	//法器图鉴	有key则执行覆盖
 -- map<int32, PBImage> human_diagrams_image	= 3;	//角色八卦牌图鉴	有key则执行覆盖
 -- map<int32, PBImage> ghost_diagrams_image	= 4;	//鬼宠八卦牌图鉴	有key则执行覆盖
--- map<int32, PBSkinImage> skin_image			= 5;	//皮肤动作表情图鉴	有key则执行覆盖
+-- map<int32, PBSkinImage> skin_image            = 5;    //皮肤动作表情图鉴    有key则执行覆盖
+-- map<int32, PBImage> space_ring_image       = 6;    //空间戒指图鉴    有key则执行覆盖
 function ItemImage.AddItemImage(config_id, change_image_ids)
     local itemImages = scripts.UserModel.GetItemImages()
     if not itemImages then
@@ -159,6 +167,14 @@ function ItemImage.AddItemImage(config_id, change_image_ids)
 
             table.insert(change_image_ids, config_id)
         end
+    elseif item_type == ItemDefine.EItemSmallType.SpaceRing then
+        if not itemImages.space_ring_image[config_id] then
+            local itemImage_info = ItemDef.newImage()
+            itemImage_info.config_id = config_id
+            itemImages.space_ring_image[config_id] = itemImage_info
+
+            table.insert(change_image_ids, config_id)
+        end
     elseif item_type == ItemDefine.EItemSmallType.PlayItem
         or item_type == ItemDefine.EItemSmallType.DurabItem then
         if not itemImages.item_image[config_id] then
@@ -189,6 +205,8 @@ function ItemImage.GetImage(config_id)
     elseif item_type == ItemDefine.EItemSmallType.RoleSkin
         or item_type == ItemDefine.EItemSmallType.GhostSkin then
         return itemImages.skin_image[config_id], item_type
+    elseif item_type == ItemDefine.EItemSmallType.SpaceRing then
+        return itemImages.space_ring_image[config_id], item_type
     else
         return itemImages.item_image[config_id], item_type
     end
@@ -249,6 +267,11 @@ function ItemImage.UpLvImage(config_id, add_exp)
         if up_exp_cfgs then
             remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp)
         end
+    elseif item_type == ItemDefine.EItemSmallType.SpaceRing then
+        local up_exp_cfgs = GameCfg.SpaceRingUpLv
+        if up_exp_cfgs then
+            remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp)
+        end
     end
 
     if remain_exp > 0 or table.size(exps) <= 0 then
@@ -302,59 +325,97 @@ function ItemImage.UpLvImage(config_id, add_exp)
     return ErrorCode.None, change_log
 end
 
-function ItemImage.CheckUseItemUpLv(config_id, exp_id, exp_cnt)
+function ItemImage.CheckUseItemUpLv(config_id, exp_id, up_exp_total, item_exps)
     local image_data, item_type = ItemImage.GetImage(config_id)
     if not image_data then
-        return ErrorCode.ItemNotExist
+        return ErrorCode.ItemNotExist, 0, {}
     end
 
+    -- local function check_add_exp(up_exp_cfgs, cur_exp, after_up_exp)
+    --     for _, cfg in pairs(up_exp_cfgs) do
+    --         if image_data.exp < cfg.allexp and after_up_exp >= cfg.allexp then
+    --             if cfg.cost ~= exp_id then
+    --                 return ErrorCode.ConfigError
+    --             end
+    --         end
+
+    --         if after_up_exp < cfg.allexp then
+    --             return ErrorCode.None
+    --         end
+    --     end
+
+    --     return ErrorCode.ItemMaxExp
+    -- end
     local function check_add_exp(up_exp_cfgs, cur_exp, after_up_exp)
+        local success = false
+        local max_exp = 0
         for _, cfg in pairs(up_exp_cfgs) do
-            if image_data.exp < cfg.allexp and after_up_exp >= cfg.allexp then
+            if cur_exp < cfg.allexp then
                 if cfg.cost ~= exp_id then
-                    return ErrorCode.ConfigError
+                    return ErrorCode.ConfigError, 0, {}
                 end
             end
+            if after_up_exp <= cfg.allexp then
+                success = true
+                break
+            end
+            max_exp = cfg.allexp
+        end
+        if success then
+            local cost_items = {}
+            for cost_id, exp_num in pairs(item_exps) do
+                cost_items[cost_id] = {
+                    id = cost_id,
+                    count = -exp_num.num,
+                    pos = 0,
+                }
+            end
+            return ErrorCode.None, up_exp_total, cost_items
+        end
 
-            if after_up_exp < cfg.allexp then
-                return ErrorCode.None
+        local cost_items = {}
+        local need_exp = max_exp - cur_exp
+        if need_exp > 0 then
+            for cost_id, exp_num in pairs(item_exps) do
+                local need_num = math.ceil(need_exp / exp_num.exp_cnt)
+                need_num = math.min(need_num, exp_num.num)
+                cost_items[cost_id] = {
+                    id = cost_id,
+                    count = -need_num,
+                    pos = 0,
+                }
+                need_exp = need_exp - need_num * exp_num.exp_cnt
+                if need_exp <= 0 then
+                    break
+                end
             end
         end
 
-        return ErrorCode.ItemMaxExp
+        return ErrorCode.None, max_exp - cur_exp, cost_items
     end
 
-    local after_up_exp = image_data.exp + exp_cnt
+    local after_up_exp = image_data.exp + up_exp_total
     if item_type == ItemDefine.EItemSmallType.MagicItem then
         local up_exp_cfgs = GameCfg.MagicItemUpLv
-        local err_code = check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
-        if err_code ~= ErrorCode.None then
-            return err_code
-        end
+        return check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
     elseif item_type == ItemDefine.EItemSmallType.PlayItem
         or item_type == ItemDefine.EItemSmallType.UnStackItem then
         local up_exp_cfgs = GameCfg.GamePropUpLv
-        local err_code = check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
-        if err_code ~= ErrorCode.None then
-            return err_code
-        end
+        return check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
     elseif item_type == ItemDefine.EItemSmallType.HumanDiagrams then
         local up_exp_cfgs = GameCfg.BaGuaBrandUpLv
-        local err_code = check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
-        if err_code ~= ErrorCode.None then
-            return err_code
-        end
+        return check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
     elseif item_type == ItemDefine.EItemSmallType.GhostDiagrams then
         local up_exp_cfgs = GameCfg.GhostEquipmentUpLv
-        local err_code = check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
-        if err_code ~= ErrorCode.None then
-            return err_code
-        end
+        return check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
+    elseif item_type == ItemDefine.EItemSmallType.SpaceRing then
+        local up_exp_cfgs = GameCfg.SpaceRingUpLv
+        return check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
     end
     
     -- image_data.exp = after_up_exp
 
-    return ErrorCode.None
+    return ErrorCode.ConfigError, 0, {}
 end
 
 function ItemImage.UpExp(config_id, exp_cnt)

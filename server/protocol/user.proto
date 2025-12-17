@@ -173,8 +173,7 @@ message PBUseItemUpLvReqCmd
 {
 	int64 uid		= 1;
 	int32 target_id = 2;
-	int32 cost_id	= 3;
-	int32 cost_num	= 4;
+	repeated PBItemSimple cost_items	= 3;
 }
 
 message PBUseItemUpLvRspCmd
@@ -183,8 +182,7 @@ message PBUseItemUpLvRspCmd
     string error	= 2; // 错误信息
 	int64 uid		= 3;
 	int32 target_id = 4;
-	int32 cost_id	= 5;
-	int32 cost_num	= 6;
+	repeated PBItemSimple cost_items	= 5;
 }
 
 // 客户端请求--道具升星

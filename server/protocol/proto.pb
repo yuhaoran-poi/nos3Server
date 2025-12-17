@@ -56,7 +56,7 @@ login_data (2.PBDSLoginDataR	loginData"f
 error (	Rerror
 dsid (Rdsid
 net_id (RnetIdbproto3
-Ô(
+î,
 
 item.proto"@
 PBCoin
@@ -100,6 +100,14 @@ abilityTag"ﬂ
 	light_cnt (RlightCnt
 tags (2.PBTagRtags'
 ability_tag (2.PBTagR
+abilityTag"‹
+PBSpaceRing%
+cur_durability (RcurDurability!
+strong_value (RstrongValue!
+tabooword_id (RtaboowordId
+	light_cnt (RlightCnt
+tags (2.PBTagRtags'
+ability_tag (2.PBTagR
 abilityTag"B
 	PBAweItem
 idx (Ridx#
@@ -117,7 +125,7 @@ abilityTag"B
 
 item_count (R	itemCount
 	item_type (RitemType
-	trade_cnt (RtradeCnt"ı
+	trade_cnt (RtradeCnt"¢
 PBItemSpecial+
 
 durab_item (2.PBDurabItemR	durabItem+
@@ -127,7 +135,9 @@ magic_item (2.PBMagicItemR	magicItem4
 awe_item (2
 .PBAweItemRaweItem-
 antique_item (2
-.PBAntiqueRantiqueItem"¶
+.PBAntiqueRantiqueItem+
+
+space_ring (2.PBSpaceRingR	spaceRing"¶
 
 PBItemData
 itype (Ritype.
@@ -192,7 +202,7 @@ changeType#
 star_level (R	starLevel
 exp (Rexp"*
 PBSkinImage
-	config_id (RconfigId"Ñ
+	config_id (RconfigId"ù
 PBUserImage:
 
 item_image (2.PBUserImage.ItemImageEntryR	itemImageJ
@@ -200,7 +210,8 @@ item_image (2.PBUserImage.ItemImageEntryR	itemImageJ
 human_diagrams_image (2$.PBUserImage.HumanDiagramsImageEntryRhumanDiagramsImageV
 ghost_diagrams_image (2$.PBUserImage.GhostDiagramsImageEntryRghostDiagramsImage:
 
-skin_image (2.PBUserImage.SkinImageEntryR	skinImageF
+skin_image (2.PBUserImage.SkinImageEntryR	skinImageJ
+space_ring_image (2 .PBUserImage.SpaceRingImageEntryRspaceRingImageF
 ItemImageEntry
 key (Rkey
 value (2.PBImageRvalue:8K
@@ -215,7 +226,10 @@ skin_image (2.PBUserImage.SkinImageEntryR	skinImageF
 value (2.PBImageRvalue:8J
 SkinImageEntry
 key (Rkey"
-value (2.PBSkinImageRvalue:8"˚
+value (2.PBSkinImageRvalue:8K
+SpaceRingImageEntry
+key (Rkey
+value (2.PBImageRvalue:8"˚
 PBAntiqueShowcaseData
 showcase_id (R
 showcaseId
@@ -456,7 +470,7 @@ serverPort
 time (Rtime"
 	PBPongCmd
 time (Rtimebproto3
-†,
+Ã,
 
 role.proto
 item.proto"4
@@ -475,7 +489,7 @@ start_time (R	startTime
 
 SkinsEntry
 key (Rkey
-value (Rvalue:8"™
+value (Rvalue:8"÷
 
 PBRoleData
 	config_id (RconfigId
@@ -502,7 +516,9 @@ main_skill (2.PBRoleData.MainSkillEntryR	mainSkill-
 cur_passive_skill_id (RcurPassiveSkillIdB
 passive_skill (2.PBRoleData.PassiveSkillEntryRpassiveSkill
 emoji (Remoji@
-up_lv_rewards (2.PBRoleData.UpLvRewardsEntryRupLvRewardsL
+up_lv_rewards (2.PBRoleData.UpLvRewardsEntryRupLvRewards*
+
+space_ring (2.PBItemDataR	spaceRingL
 DigramsCardsEntry
 key (Rkey!
 value (2.PBItemDataRvalue:8=
@@ -793,7 +809,7 @@ takeoffIdx"e
 uid (Ruid&
 ghost_config_id (RghostConfigId
 skin (Rskinbproto3
-ˆ)
+Í)
 
 user.proto
 item.proto	bag.proto
@@ -908,19 +924,19 @@ coins_info (2.PBUserCoinsR	coinsInfo"ª
 error (	Rerror
 uid (Ruid
 	config_id (RconfigId
-add_exp (RaddExp"x
+add_exp (RaddExp"r
 PBUseItemUpLvReqCmd
 uid (Ruid
-	target_id (RtargetId
-cost_id (RcostId
-cost_num (RcostNum"¢
+	target_id (RtargetId,
+
+cost_items (2.PBItemSimpleR	costItems"ú
 PBUseItemUpLvRspCmd
 code (Rcode
 error (	Rerror
 uid (Ruid
-	target_id (RtargetId
-cost_id (RcostId
-cost_num (RcostNum"I
+	target_id (RtargetId,
+
+cost_items (2.PBItemSimpleR	costItems"I
 PBClientItemUpStarReqCmd
 uid (Ruid
 	config_id (RconfigId"s

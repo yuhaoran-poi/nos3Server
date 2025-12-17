@@ -1667,6 +1667,15 @@
 ---@field public ability_tag PBTag[] @能力词条
 
 
+---@class PBSpaceRing
+---@field public cur_durability integer @当前耐久度
+---@field public strong_value integer @耐久度上限
+---@field public tabooword_id integer @讳字id
+---@field public light_cnt integer @开光次数
+---@field public tags PBTag[] @随机词条id,最大10条
+---@field public ability_tag PBTag[] @能力词条
+
+
 ---@class PBAweItem
 ---@field public idx integer
 ---@field public up_lv_fail_cnt integer @当前等级升级失败次数
@@ -1695,6 +1704,7 @@
 ---@field public diagrams_item PBDiagramsCard
 ---@field public awe_item PBAweItem
 ---@field public antique_item PBAntique
+---@field public space_ring PBSpaceRing
 
 
 ---@class PBItemData
@@ -1773,6 +1783,7 @@
 ---@field public human_diagrams_image table<integer, PBImage> @角色八卦牌图鉴	有key则执行覆盖
 ---@field public ghost_diagrams_image table<integer, PBImage> @鬼宠八卦牌图鉴	有key则执行覆盖
 ---@field public skin_image table<integer, PBSkinImage> @皮肤动作表情图鉴	有key则执行覆盖
+---@field public space_ring_image table<integer, PBImage> @空间戒指图鉴		有key则执行覆盖
 
 
 ---@class PBAntiqueShowcaseData
@@ -2108,6 +2119,7 @@
 ---@field public passive_skill table<integer, PBSkill> @可选被动技能
 ---@field public emoji integer[] @表情槽
 ---@field public up_lv_rewards table<integer, integer> @已领取的升级奖励
+---@field public space_ring PBItemData @空间戒指
 
 
 ---@class PBUserRoleDatas
@@ -3032,8 +3044,7 @@
 ---@class PBUseItemUpLvReqCmd
 ---@field public uid integer
 ---@field public target_id integer
----@field public cost_id integer
----@field public cost_num integer
+---@field public cost_items PBItemSimple[]
 
 
 ---@class PBUseItemUpLvRspCmd
@@ -3041,8 +3052,7 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public target_id integer
----@field public cost_id integer
----@field public cost_num integer
+---@field public cost_items PBItemSimple[]
 
 
 ---@class PBClientItemUpStarReqCmd
@@ -3362,11 +3372,13 @@
 ---@field LightInfo LightInfo_cfg[]
 ---@field MagicItem MagicItem_cfg[]
 ---@field MagicItemUpLv MagicItemUpLv_cfg[]
+---@field PropCompose PropCompose_cfg[]
 ---@field RandomComposite RandomComposite_cfg[]
 ---@field RankLevel RankLevel_cfg[]
 ---@field RoleLvAward RoleLvAward_cfg[]
 ---@field RoleUpLv RoleUpLv_cfg[]
 ---@field Skin Skin_cfg[]
+---@field SpaceRingUpLv SpaceRingUpLv_cfg[]
 ---@field StoreConfig StoreConfig_cfg[]
 ---@field TriggerEmailTemplateConfig TriggerEmailTemplateConfig_cfg[]
 ---@field UniqueItem UniqueItem_cfg[]
