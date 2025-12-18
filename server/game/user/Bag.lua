@@ -129,7 +129,7 @@ function Bag.Start(isnew)
         if table.size(init_consume_items) > 0 then
             local stack_items, unstack_items, deal_coins = {}, {}, {}
             local ok = ItemDefine.GetItemDataFromIdCount(init_consume_items, {}, stack_items, unstack_items, deal_coins)
-            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+            -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
             if ok then
                 if table.size(stack_items) + table.size(unstack_items) > 0 then
                     Bag.AddItems(BagDef.BagType.Consume, stack_items, unstack_items, change_log)
@@ -958,14 +958,16 @@ function Bag.SortOut(bagType)
 
     local now_config_ids = {}
     for config_id, _ in pairs(Bag.dataMap) do
-        table.insert(now_config_ids, config_id)
+        if Bag.dataMap[config_id][bagType] then
+            table.insert(now_config_ids, config_id)
+        end
     end
     if table.size(now_config_ids) <= 0 then
         return ErrorCode.BagEmpty
     end
     table.sort(now_config_ids)
 
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 先堆叠
     local stack_baginfo = bagdata[bagType]
     local stack_change_logs = {
@@ -1028,7 +1030,7 @@ function Bag.SortOut(bagType)
     -- moon.warn(string.format("Bag.dataMap = %s", json.pretty_encode(Bag.dataMap)))
     -- moon.warn(string.format("stack_change_logs[bagType] = %s", json.pretty_encode(stack_change_logs[bagType])))
 
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 再移动
     local cur_use_pos = 1
     local move_baginfo = bagdata[bagType]
@@ -1041,33 +1043,36 @@ function Bag.SortOut(bagType)
     end
     for _, config_id in pairs(now_config_ids) do
         local bdata = Bag.dataMap[config_id][bagType]
-        for pos, count in pairs(bdata.pos_count) do
-            if count ~= 0 then
-                if pos ~= cur_use_pos then
-                    local src_item = old_items[pos]
-                    Bag.AddLog(move_change_logs[bagType], cur_use_pos, old_items[cur_use_pos])
-                    Bag.AddLog(move_change_logs[bagType], pos, move_baginfo.items[pos])
-                    move_baginfo.items[cur_use_pos] = src_item
-                    if pos > cur_use_pos then
-                        move_baginfo.items[pos] = nil
+        if bdata then
+            for pos, count in pairs(bdata.pos_count) do
+                if count ~= 0 then
+                    if pos ~= cur_use_pos then
+                        local src_item = old_items[pos]
+                        Bag.AddLog(move_change_logs[bagType], cur_use_pos, old_items[cur_use_pos])
+                        Bag.AddLog(move_change_logs[bagType], pos, move_baginfo.items[pos])
+                        move_baginfo.items[cur_use_pos] = src_item
+                        if pos > cur_use_pos then
+                            move_baginfo.items[pos] = nil
+                        end
                     end
-                end
 
-                cur_use_pos = cur_use_pos + 1
-            end
-        end
-        for uniqid, pos in pairs(bdata.uniqid_pos) do
-            if pos > 0 then
-                if pos ~= cur_use_pos then
-                    local src_item = old_items[pos]
-                    Bag.AddLog(move_change_logs[bagType], cur_use_pos, old_items[cur_use_pos])
-                    Bag.AddLog(move_change_logs[bagType], pos, src_item)
-                    move_baginfo.items[cur_use_pos] = src_item
-                    if pos > cur_use_pos then
-                        move_baginfo.items[pos] = nil
-                    end
+                    cur_use_pos = cur_use_pos + 1
                 end
-                cur_use_pos = cur_use_pos + 1
+            end
+
+            for uniqid, pos in pairs(bdata.uniqid_pos) do
+                if pos > 0 then
+                    if pos ~= cur_use_pos then
+                        local src_item = old_items[pos]
+                        Bag.AddLog(move_change_logs[bagType], cur_use_pos, old_items[cur_use_pos])
+                        Bag.AddLog(move_change_logs[bagType], pos, src_item)
+                        move_baginfo.items[cur_use_pos] = src_item
+                        if pos > cur_use_pos then
+                            move_baginfo.items[pos] = nil
+                        end
+                    end
+                    cur_use_pos = cur_use_pos + 1
+                end
             end
         end
     end
@@ -1083,7 +1088,6 @@ function Bag.SortOut(bagType)
 
     return ErrorCode.None
 end
-
 -- 添加物品（支持自动堆叠）
 ---@param bagType string
 ---@param baginfo PBBag
