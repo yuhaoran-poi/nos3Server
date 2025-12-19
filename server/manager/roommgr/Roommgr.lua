@@ -1383,7 +1383,8 @@ function Roommgr.StartGame(req)
     end
 
     -- 更新房间状态
-    room.room_data.state = 1  -- 游戏中状态
+    room.room_data.state = 1   -- 游戏中状态
+    room.room_data.last_start_is_open = room.room_data.is_open
     room.room_data.is_open = 0 -- 游戏开始后关闭房间
 
     local room_tags = {
@@ -1485,6 +1486,7 @@ function Roommgr.PlayEnd(msg)
     end
 
     room.room_data.state = 0
+    room.room_data.is_open = room.room_data.last_start_is_open -- 游戏结束后打开房间
     room.room_data.ds_address = ""
     room.room_data.ds_ip = ""
 
@@ -1514,6 +1516,18 @@ function Roommgr.PlayEnd(msg)
             away_room(room.room_data.roomid, player.mem_info.uid)
         end
     end
+
+    local room_tags = {
+        is_open = room.room_data.is_open, -- 游戏开始后关闭房间
+        chapter = room.room_data.chapter,
+        difficulty = room.room_data.difficulty,
+    }
+    local redis_data = table.copy(room.room_data, true)
+    redis_data.pwd = nil
+    redis_data.playercnt = #room.players
+    redis_data.master_id = room.master_id
+    redis_data.master_name = room.master_name
+    Database.upsert_room(context.addr_db_server, msg.roomid, room_tags, redis_data)
 
     return { code = ErrorCode.None, error = "游戏结束成功" }
 end

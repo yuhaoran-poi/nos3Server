@@ -2285,7 +2285,7 @@ PBRankInfo
 uid (Ruid(
 	rank_info (2.PBRankInfoRrankInfo(
 	self_data (2.PBRankDataRselfDatabproto3
-ê+
+Ω+
 
 room.proto
 user.proto"≠
@@ -2307,7 +2307,7 @@ masterName
 PBRoomMemberInfo
 seat_idx (RseatIdx
 is_ready (RisReady&
-mem_info (2.PBUserAttrRmemInfo"Ù
+mem_info (2.PBUserAttrRmemInfo"°
 
 PBRoomInfo
 roomid (Rroomid
@@ -2327,7 +2327,8 @@ difficulty
 	master_id (RmasterId
 
 ds_address (	R	dsAddress
-ds_ip (	RdsIp"n
+ds_ip (	RdsIp+
+last_start_is_open (RlastStartIsOpen"n
 PBRoomApplyInfo
 uid (Ruid*
 

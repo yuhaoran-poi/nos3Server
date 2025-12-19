@@ -2342,6 +2342,7 @@
 ---@field public master_id integer @房主id
 ---@field public ds_address string
 ---@field public ds_ip string
+---@field public last_start_is_open integer
 
 
 ---@class PBRoomApplyInfo

@@ -41,6 +41,7 @@ local defaultPBRoomInfo = {
     master_id = 0,
     ds_address = "",
     ds_ip = "",
+    last_start_is_open = 0,
 }
 
 local defaultPBRoomWholeInfo = {

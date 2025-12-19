@@ -50,6 +50,7 @@ message PBRoomInfo
     int64 master_id = 12;    // 房主id
     string ds_address   = 13;
     string ds_ip        = 14;
+    int32 last_start_is_open = 15;
 }
 
 message PBRoomApplyInfo
