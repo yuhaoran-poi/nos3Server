@@ -92,7 +92,9 @@ function Citymgr.CheckWaitDSCitys()
             v.lasttime = now
             
             if v.status == 0 then
+                moon.warn(string.format("allocate_url:\n%s", context.conf.allocate_url))
                 local response = httpc.post(context.conf.allocate_url, v.allocate_data)
+                moon.warn(string.format("allocate response:\n%s", response))
                 --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 --local rsp_data = json.decode(response.body)
                 local json_success, rsp_data = pcall(json.decode, response.body or "")
