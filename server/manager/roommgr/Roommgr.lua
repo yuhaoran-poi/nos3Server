@@ -210,7 +210,7 @@ function Roommgr.NotifyDsRooms(allocated_rooms, fail_rooms)
             })
 
             room.room_data.state = 0
-            room.room_data.is_open = 0
+            room.room_data.is_open = room.room_data.last_start_is_open
         end
     end
 end
@@ -1486,7 +1486,7 @@ function Roommgr.PlayEnd(msg)
     end
 
     room.room_data.state = 0
-    room.room_data.is_open = room.room_data.last_start_is_open -- 游戏结束后打开房间
+    room.room_data.is_open = room.room_data.last_start_is_open -- 游戏结束后恢复房间
     room.room_data.ds_address = ""
     room.room_data.ds_ip = ""
 
