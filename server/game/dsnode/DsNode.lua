@@ -590,6 +590,12 @@ function DsNode.PBDsNotifyPlayEndReqCmd(req)
     end
 
     clusterd.send(3999, "roommgr", "Roommgr.PlayEnd", { roomid = req.msg.roomid })
+
+    local ret = {
+        code = ErrorCode.None,
+        error = "success end"
+    }
+    return context.S2D(context.net_id, CmdCode["PBDsNotifyPlayEndRspCmd"], ret, req.msg_context.stub_id)
 end
 
 function DsNode.PBGetDsUserBattleGodsReqCmd(req)
@@ -645,24 +651,6 @@ function DsNode.PBDsNotifyRemainItemsReqCmd(req)
                 clusterd.send(node, addr_user, "User.NotifyGameReturnItems")
             end
         end
-        
-        -- 发送邮件
-        -- local item_datas = {}
-        -- for _, item_data in pairs(stack_items) do
-        --     table.insert(item_datas, item_data)
-        -- end
-        -- for _, item_data in pairs(unstack_items) do
-        --     table.insert(item_datas, item_data)
-        -- end
-        -- local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
-        -- if mail_ret ~= ErrorCode.None then
-        --     rsp_msg.code = ErrorCode.ShopMailSendFailed
-        --     rsp_msg.error = "发送邮件失败"
-
-        --     scripts.Bag.RollBackWithChange(bag_change_log)
-        --     clusterd.send(3999, "shopmgr", "Shopmgr.DelShopServerBuy", server_product_list)
-        --     return context.S2C(context.net_id, CmdCode.PBShopBuyRspCmd, rsp_msg, req.msg_context.stub_id)
-        -- end
     end
     local ret = {
         code = ErrorCode.None,
