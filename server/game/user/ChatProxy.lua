@@ -1,6 +1,7 @@
 local moon = require "moon"
 local common = require "common"
 local cluster = require("cluster")
+local json = require("json")
 local ChatEnum = require("common.Enum.ChatEnum")
 local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
@@ -170,9 +171,12 @@ function ChatProxy.PBChatReqCmd(req)
     context.world_chat_last_time = now_ts
     -- 发送消息
     if channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_PRIVATE then --私聊
-        local private_msg = {}
-        table.insert(private_msg, PBChatMsgInfo)
-        context.send_user(to_uid, "ChatProxy.OnChatMsg", private_msg)
+        local msg_array = {}
+        local private_msg = {
+            chat_msg = PBChatMsgInfo,
+        }
+        table.insert(msg_array, private_msg)
+        context.send_user(to_uid, "ChatProxy.OnChatMsg", msg_array)
     else
         local channel_addr = DB.chat_addrs[channel_type]
         -- 检查频道是否存在
@@ -198,7 +202,7 @@ function ChatProxy.PBChatReqCmd(req)
 end
 
 function ChatProxy.OnChatMsg(channel_msgs)
-    moon.info("OnChatMsg channel_msgs = ", channel_msgs)
+    moon.info(string.format("OnChatMsg channel_msgs = %s", json.pretty_encode(channel_msgs)))
 
     local msg = { infos = {} }
     for _, v in pairs(channel_msgs) do
