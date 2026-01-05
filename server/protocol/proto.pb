@@ -1096,7 +1096,7 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-¥
+∆
 dsnode.proto
 item.proto
 user.proto	bag.proto
@@ -1242,7 +1242,16 @@ belong_uid (R	belongUid.
 remain_items (2.PBItemDataRremainItems"G
 PBDsNotifyRemainItemsRspCmd
 code (Rcode
-error (	Rerrorbproto3
+error (	Rerror"K
+PBGetDsUserAntiqueReqCmd
+dsid (Rdsid
+	quest_uid (RquestUid"¬
+PBGetDsUserAntiqueRspCmd
+code (Rcode
+error (	Rerror
+dsid (Rdsid
+	quest_uid (RquestUidK
+antique_showcase_data (2.PBAntiqueShowcaseDataSRantiqueShowcaseDatabproto3
 Å
 friend.proto
 user.proto"6

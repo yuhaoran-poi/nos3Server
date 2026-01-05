@@ -409,10 +409,10 @@ function AntiqueShowcase.AntiqueShow(config_id, uniq_id, showcase_id, showcase_i
 
         -- 将古董返回背包
         local err_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, {}, takeoff_items, bag_change_log)
-            if err_code ~= ErrorCode.None then
-                scripts.Bag.RollBackWithChange(bag_change_log)
-                return err_code, "添加古董失败"
-            end
+        if err_code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return err_code, "添加古董失败"
+        end
 
         -- 清除展示的古董
         tar_showcase.antique_show_list[showcase_idx] = nil
@@ -429,6 +429,15 @@ function AntiqueShowcase.AntiqueShow(config_id, uniq_id, showcase_id, showcase_i
     end
 
     return ErrorCode.None, "操作成功"
+end
+
+function AntiqueShowcase.GetAntiqueShowcaseInfo()
+    local antiqueShowcse = scripts.UserModel.GetAntiqueShowcase()
+    if not antiqueShowcse then
+        return { errcode = ErrorCode.ServerInternalError }
+    end
+
+    return { errcode = ErrorCode.None, antique_showcase_data = antiqueShowcse }
 end
 
 function AntiqueShowcase.PBAntiqueShowcaseDataReqCmd(req)

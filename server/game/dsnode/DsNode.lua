@@ -641,10 +641,11 @@ function DsNode.PBDsNotifyRemainItemsReqCmd(req)
     if table.size(req.msg.remain_items) > 0 then
         Database.BattleListPushRight(context.addr_db_redis, Database.GetBattleReturnKey(), req.msg.belong_uid,
             req.msg.remain_items)
-        
+
         local mine_node = math.tointeger(moon.env("NODE"))
         if context.uid_addr_map[req.msg.belong_uid] then
-            local node, addr_user = context.uid_addr_map[req.msg.belong_uid].node, context.uid_addr_map[req.msg.belong_uid].addr_user
+            local node, addr_user = context.uid_addr_map[req.msg.belong_uid].node,
+            context.uid_addr_map[req.msg.belong_uid].addr_user
             if mine_node == node then
                 moon.send("lua", addr_user, "User.NotifyGameReturnItems")
             else
@@ -657,6 +658,42 @@ function DsNode.PBDsNotifyRemainItemsReqCmd(req)
         error = "",
     }
     return context.S2D(context.net_id, CmdCode.PBDsNotifyRemainItemsRspCmd, ret, req.msg_context.stub_id)
+end
+
+function DsNode.PBGetDsUserAntiqueReqCmd(req)
+    if not req.msg.dsid or not req.msg.quest_uid then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "no cityid"
+        }
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserAntiqueRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    local res, err = context.call_user(req.msg.quest_uid, "AntiqueShowcase.GetAntiqueShowcaseInfo")
+    if not res then
+        moon.error("GetDsUserRoles failed:", err)
+        local ret = {
+            code = ErrorCode.UserOffline,
+            error = "no user"
+        }
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserAntiqueRspCmd"], ret, req.msg_context.stub_id)
+    end
+
+    --moon.warn(string.format("GetImagesInfo res = %s", json.pretty_encode(res)))
+
+    local ret = {
+        code = res.errcode,
+        error = "",
+        dsid = context.dsid,
+        quest_uid = req.msg.quest_uid,
+    }
+    if res.errcode == ErrorCode.None and res.antique_showcase_data then
+        ret.antique_showcase_data = res.antique_showcase_data
+        --moon.warn(string.format("GetImagesInfo ret = %s", json.pretty_encode(ret)))
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserAntiqueRspCmd"], ret, req.msg_context.stub_id)
+    else
+        return context.S2D(context.net_id, CmdCode["PBGetDsUserAntiqueRspCmd"], ret, req.msg_context.stub_id)
+    end
 end
 
 return DsNode

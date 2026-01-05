@@ -473,6 +473,19 @@
 ---@field public error string @错误信息
 
 
+---@class PBGetDsUserAntiqueReqCmd
+---@field public dsid integer
+---@field public quest_uid integer @请求的玩家uid
+
+
+---@class PBGetDsUserAntiqueRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public dsid integer
+---@field public quest_uid integer
+---@field public antique_showcase_data PBAntiqueShowcaseDataS @古董展示柜数据
+
+
 ---@class PBFriendData
 ---@field public uid integer
 ---@field public notes string @备注

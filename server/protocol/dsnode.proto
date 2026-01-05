@@ -239,3 +239,20 @@ message PBDsNotifyRemainItemsRspCmd
     int32 code			= 1; // 服务器验证返回,0成功,其他失败
     string error		= 2; // 错误信息
 }
+
+// DS获取玩家古董数据
+message PBGetDsUserAntiqueReqCmd
+{
+    // 协议数据
+    int32 dsid		= 1;
+	int64 quest_uid	= 2;    // 请求的玩家uid
+}
+
+message PBGetDsUserAntiqueRspCmd
+{
+    int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+    int32 dsid			= 3;
+	int64 quest_uid		= 4;
+    PBAntiqueShowcaseDataS antique_showcase_data = 5;	// 古董展示柜数据
+}
