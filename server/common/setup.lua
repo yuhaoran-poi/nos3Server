@@ -248,7 +248,7 @@ local function _internal(context)
         local res, err = cluster.call(3999, 'usermgr', "Usermgr.getAddrUserByUid", uid)
         if not res then
             print(err)
-            return
+            return false, err
         end
         local node, addr_user = res.nid, res.addr_user
         if not context.NODE then
@@ -260,6 +260,7 @@ local function _internal(context)
         else
             cluster.send(node, addr_user, cmd, ...)
         end
+        return true
     end
     base_context.send_users = function(uids, not_uids, cmd, ...)
         if not_uids then
