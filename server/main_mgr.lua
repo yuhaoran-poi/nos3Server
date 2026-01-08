@@ -112,10 +112,10 @@ local function run(node_conf)
             threadid = 7,
             websocket = false,
             room_startid = 10000,
-            allocate_url = "http://43.136.214.127:8000/api/allocator",
-            -- allocate_url = "http://106.55.79.212:8000/api/allocator",
-            query_url = "http://43.136.214.127:8000/api/gameservers",
-            -- query_url = "http://106.55.79.212:8000/api/gameservers",
+            -- allocate_url = "http://43.136.214.127:8000/api/allocator",
+            allocate_url = "http://106.55.79.212:8000/api/allocator",
+            -- query_url = "http://43.136.214.127:8000/api/gameservers",
+            query_url = "http://106.55.79.212:8000/api/gameservers",
             fleet = "nos3-fleet-test",
             redis_nginx_ip = "172.27.0.3",
             redis_nginx_port = 3379,
@@ -147,10 +147,10 @@ local function run(node_conf)
             threadid = 7,
             websocket = false,
             city_startid = 0,
-            allocate_url = "http://43.136.214.127:8000/api/allocator",
-            -- allocate_url = "http://106.55.79.212:8000/api/allocator",
-            query_url = "http://43.136.214.127:8000/api/gameservers",
-            -- query_url = "http://106.55.79.212:8000/api/gameservers",
+            -- allocate_url = "http://43.136.214.127:8000/api/allocator",
+            allocate_url = "http://106.55.79.212:8000/api/allocator",
+            -- query_url = "http://43.136.214.127:8000/api/gameservers",
+            query_url = "http://106.55.79.212:8000/api/gameservers",
             fleet = "nos3-fleet-test",
             redis_nginx_ip = "172.27.0.3",
             redis_nginx_port = 3379,
@@ -208,6 +208,10 @@ local function run(node_conf)
         end
         ---服务器启动次数+1
         data.boot_times = data.boot_times + 1
+        ---限制启动次数不超过UUID模块允许的最大值
+        if data.boot_times > 1023 then
+            data.boot_times = 1
+        end
         moon.env("SERVER_START_TIMES", tostring(data.boot_times))
         ---初始化唯一ID生成器
         uuid.init(1, tonumber(arg[1]), data.boot_times)
