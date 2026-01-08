@@ -127,7 +127,7 @@ end
 -- map<int32, PBImage> ghost_diagrams_image	= 4;	//鬼宠八卦牌图鉴	有key则执行覆盖
 -- map<int32, PBSkinImage> skin_image            = 5;    //皮肤动作表情图鉴    有key则执行覆盖
 -- map<int32, PBImage> space_ring_image       = 6;    //空间戒指图鉴    有key则执行覆盖
-function ItemImage.AddItemImage(config_id, change_image_ids)
+function ItemImage.AddItemImage(config_id, change_image_ids, use_item)
     local itemImages = scripts.UserModel.GetItemImages()
     if not itemImages then
         return false
@@ -158,8 +158,8 @@ function ItemImage.AddItemImage(config_id, change_image_ids)
 
             table.insert(change_image_ids, config_id)
         end
-    elseif item_type == ItemDefine.EItemSmallType.RoleSkin
-        or item_type == ItemDefine.EItemSmallType.GhostSkin then
+    elseif (item_type == ItemDefine.EItemSmallType.RoleSkin
+            or item_type == ItemDefine.EItemSmallType.GhostSkin) and use_item then
         if not itemImages.skin_image[config_id] then
             local itemImage_info = ItemDef.newSkinImage()
             itemImage_info.config_id = config_id

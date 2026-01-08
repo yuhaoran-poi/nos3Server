@@ -1953,7 +1953,7 @@ function Bag.AddItems(bagType, stack_item_datas, unstack_item_datas, change_log)
     local change_image_ids = {}
     for pos, old_itemdata in pairs(change_log[bagType]) do
         if table.size(old_itemdata) <= 0 then
-            scripts.ItemImage.AddItemImage(baginfo.items[pos].common_info.config_id, change_image_ids)
+            scripts.ItemImage.AddItemImage(baginfo.items[pos].common_info.config_id, change_image_ids, true)
         end
     end
     -- 发送图鉴更新消息
@@ -2238,8 +2238,8 @@ function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos, change_log)
     if destItem then
         -- 交换物品
         srcBag.items[srcPos] = destItem
-        if not change_log[srcBagType] then
-            change_log[srcBagType] = {}
+        if not change_log[destBagType] then
+            change_log[destBagType] = {}
         end
         -- Bag.AddLog(change_log[destBagType], destPos, ItemDef.LogType.ChangeInfo, destItem.common_info.config_id,
         --     destItem.common_info.uniqid, destItem.common_info.item_count, table.copy(destItem))
@@ -2248,8 +2248,8 @@ function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos, change_log)
 
     else
         -- 移动到空位
-        if not change_log[srcBagType] then
-            change_log[srcBagType] = {}
+        if not change_log[destBagType] then
+            change_log[destBagType] = {}
         end
         -- Bag.AddLog(change_log[destBagType], destPos, ItemDef.LogType.ChangeInfo, 0, 0, 0, nil)
         Bag.AddLog(change_log[destBagType], destPos, {})
