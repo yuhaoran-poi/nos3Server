@@ -130,7 +130,7 @@ end
 function ItemImage.AddItemImage(config_id, change_image_ids, use_item)
     local itemImages = scripts.UserModel.GetItemImages()
     if not itemImages then
-        return false
+        return ErrorCode.ServerInternalError
     end
 
     local item_type = ItemDefine.GetItemType(config_id)
@@ -141,6 +141,8 @@ function ItemImage.AddItemImage(config_id, change_image_ids, use_item)
             itemImages.magic_item_image[config_id] = itemImage_info
 
             table.insert(change_image_ids, config_id)
+        else
+            return ErrorCode.ItemImageExist
         end
     elseif item_type == ItemDefine.EItemSmallType.HumanDiagrams then
         if not itemImages.human_diagrams_image[config_id] then
@@ -149,6 +151,8 @@ function ItemImage.AddItemImage(config_id, change_image_ids, use_item)
             itemImages.human_diagrams_image[config_id] = itemImage_info
 
             table.insert(change_image_ids, config_id)
+        else
+            return ErrorCode.ItemImageExist
         end
     elseif item_type == ItemDefine.EItemSmallType.GhostDiagrams then
         if not itemImages.ghost_diagrams_image[config_id] then
@@ -157,15 +161,19 @@ function ItemImage.AddItemImage(config_id, change_image_ids, use_item)
             itemImages.ghost_diagrams_image[config_id] = itemImage_info
 
             table.insert(change_image_ids, config_id)
+        else
+            return ErrorCode.ItemImageExist
         end
     elseif (item_type == ItemDefine.EItemSmallType.RoleSkin
             or item_type == ItemDefine.EItemSmallType.GhostSkin) and use_item then
-        if not itemImages.skin_image[config_id] then
+        if not itemImages.skin_image[config_id] or itemImages.skin_image[config_id].valid_ts ~= 0 then
             local itemImage_info = ItemDef.newSkinImage()
             itemImage_info.config_id = config_id
             itemImages.skin_image[config_id] = itemImage_info
 
             table.insert(change_image_ids, config_id)
+        else
+            return ErrorCode.ItemImageExist
         end
     elseif item_type == ItemDefine.EItemSmallType.SpaceRing then
         if not itemImages.space_ring_image[config_id] then
@@ -174,6 +182,8 @@ function ItemImage.AddItemImage(config_id, change_image_ids, use_item)
             itemImages.space_ring_image[config_id] = itemImage_info
 
             table.insert(change_image_ids, config_id)
+        else
+            return ErrorCode.ItemImageExist
         end
     elseif item_type == ItemDefine.EItemSmallType.PlayItem
         or item_type == ItemDefine.EItemSmallType.DurabItem then
@@ -183,10 +193,49 @@ function ItemImage.AddItemImage(config_id, change_image_ids, use_item)
             itemImages.item_image[config_id] = itemImage_info
 
             table.insert(change_image_ids, config_id)
+        else
+            return ErrorCode.ItemImageExist
         end
+    else
+        return ErrorCode.ItemNotExist
     end
 
-    return true
+    return ErrorCode.None
+end
+
+function ItemImage.AddItemImageValidtime(config_id, change_image_ids, use_item, valid_ts)
+    local itemImages = scripts.UserModel.GetItemImages()
+    if not itemImages then
+        return ErrorCode.ServerInternalError
+    end
+
+    local item_type = ItemDefine.GetItemType(config_id)
+    if (item_type == ItemDefine.EItemSmallType.RoleSkin
+            or item_type == ItemDefine.EItemSmallType.GhostSkin) and use_item then
+        if itemImages.skin_image[config_id] and itemImages.skin_image[config_id].valid_ts == 0 then
+            return ErrorCode.ItemImageExist
+        else
+            local now_ts = moon.time()
+            if not itemImages.skin_image[config_id] then
+                local itemImage_info = ItemDef.newSkinImage()
+                itemImage_info.config_id = config_id
+                itemImage_info.valid_ts = now_ts + valid_ts
+                itemImages.skin_image[config_id] = itemImage_info
+            else
+                if now_ts >= itemImages.skin_image[config_id].valid_ts then
+                    itemImages.skin_image[config_id].valid_ts = now_ts + valid_ts
+                else
+                    itemImages.skin_image[config_id].valid_ts = itemImages.skin_image[config_id].valid_ts + valid_ts
+                end
+            end
+
+            table.insert(change_image_ids, config_id)
+        end
+    else
+        return ErrorCode.ItemNotExist
+    end
+
+    return ErrorCode.None
 end
 
 function ItemImage.GetImage(config_id)
@@ -209,6 +258,50 @@ function ItemImage.GetImage(config_id)
         return itemImages.space_ring_image[config_id], item_type
     else
         return itemImages.item_image[config_id], item_type
+    end
+end
+
+function ItemImage.CheckImageValid(config_id)
+    local itemImages = scripts.UserModel.GetItemImages()
+    if not itemImages then
+        return false
+    end
+
+    local item_type = ItemDefine.GetItemType(config_id)
+    if item_type == ItemDefine.EItemSmallType.MagicItem then
+        if not itemImages.magic_item_image[config_id] then
+            return false
+        end
+        return true
+    elseif item_type == ItemDefine.EItemSmallType.HumanDiagrams then
+        if not itemImages.human_diagrams_image[config_id] then
+            return false
+        end
+        return true
+    elseif item_type == ItemDefine.EItemSmallType.GhostDiagrams then
+        if not itemImages.ghost_diagrams_image[config_id] then
+            return false
+        end
+        return true
+    elseif item_type == ItemDefine.EItemSmallType.RoleSkin
+        or item_type == ItemDefine.EItemSmallType.GhostSkin then
+        if not itemImages.skin_image[config_id] then
+            return false
+        end
+        if itemImages.skin_image[config_id].valid_ts == 0 then
+            return true
+        end
+        if itemImages.skin_image[config_id].valid_ts > moon.time() then
+            return true
+        end
+        return false
+    elseif item_type == ItemDefine.EItemSmallType.SpaceRing then
+        if not itemImages.space_ring_image[config_id] then
+            return false
+        end
+        return true
+    else
+        return false
     end
 end
 

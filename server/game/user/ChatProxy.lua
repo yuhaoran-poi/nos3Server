@@ -178,8 +178,8 @@ function ChatProxy.PBChatReqCmd(req)
         table.insert(msg_array, private_msg)
         local send_success, send_err = context.send_user(to_uid, "ChatProxy.OnChatMsg", msg_array)
         if not send_success then
-            context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.UserNotExist }, req)
-            return { code = ErrorCode.UserNotExist }
+            context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.UserOffline }, req)
+            return { code = ErrorCode.UserOffline }
         end
     else
         local channel_addr = DB.chat_addrs[channel_type]

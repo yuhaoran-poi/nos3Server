@@ -27,5 +27,6 @@ return {
 [21] = { id=21,name="Initialhuman_LV",value=1,items={} },
 [22] = { id=22,name="Initialitem_LV",value=1,items={} },
 [23] = { id=23,name="ChangeGhostNameCost",value=0,items={[1]=1000} },
-[24] = { id=24,name="MaintenanceCost",value=1,items={[1]=10,[2]=1} }
+[24] = { id=24,name="MaintenanceCost",value=1,items={[1]=10,[2]=1} },
+[25] = { id=25,name="DungeonAwardEmailId",value=2000003,items={} }
 }

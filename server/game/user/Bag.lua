@@ -1443,24 +1443,24 @@ function Bag.AddDiagramsCard(bagType, baginfo, item_data, change_log)
     return ErrorCode.None
 end
 
--- function Bag.AddSpaceRing(bagType, baginfo, item_data, change_log)
---     local itype = ItemDefine.GetItemType(item_data.common_info.config_id)
---     local errorCode, add_pos = Bag.AddUniqItem(bagType, baginfo, item_data, itype, change_log)
---     if errorCode ~= ErrorCode.None or not add_pos then
---         return errorCode
---     end
+function Bag.AddSpaceRing(bagType, baginfo, item_data, change_log)
+    local itype = ItemDefine.GetItemType(item_data.common_info.config_id)
+    local errorCode, add_pos = Bag.AddUniqItem(bagType, baginfo, item_data, itype, change_log)
+    if errorCode ~= ErrorCode.None or not add_pos then
+        return errorCode
+    end
 
---     local new_itemdata = baginfo.items[add_pos]
---     if item_data.special_info and item_data.special_info.space_ring then
---         new_itemdata.special_info = table.copy(item_data.special_info, true)
---     else
---         new_itemdata.special_info = {
---             space_ring = ItemDef.newSpaceRing(),
---         }
---     end
+    local new_itemdata = baginfo.items[add_pos]
+    if item_data.special_info and item_data.special_info.space_ring then
+        new_itemdata.special_info = table.copy(item_data.special_info, true)
+    else
+        new_itemdata.special_info = {
+            space_ring = ItemDef.newSpaceRing(),
+        }
+    end
 
---     return ErrorCode.None
--- end
+    return ErrorCode.None
+end
 
 function Bag.SyncBagInfo(bagType, sync_baginfo, change_log)
     -- 参数校验
@@ -1758,11 +1758,13 @@ function Bag.TryEmptyEnough(bagType, add_items, use_pos_num)
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
         and bagType ~= BagDef.BagType.Booty then
+        moon.error("Bag.TryEmptyEnough error bagType", bagType)
         return ErrorCode.BagNotExist
     end
 
     local bagdata = scripts.UserModel.GetBagData()
     if not bagdata or not bagdata[bagType] then
+        moon.error("Bag.TryEmptyEnough not bagdata", bagType)
         return ErrorCode.BagNotExist
     end
 
@@ -1775,11 +1777,13 @@ function Bag.TryEmptyEnough(bagType, add_items, use_pos_num)
     -- 计算背包空间是否足够
     for itemid, item in pairs(add_items) do
         if item.count < 0 then
+            moon.error(string.format("Shop.PBShopBuyReqCmd add_items=%s", json.pretty_encode(add_items)))
             return ErrorCode.ParamInvalid
         end
         local item_cfg = GameCfg.Item[itemid]
         local uniqitem_cfg = GameCfg.UniqueItem[itemid]
         if not item_cfg and not uniqitem_cfg then
+            moon.error(string.format("Bag.TryEmptyEnough not item_cfg and not uniqitem_cfg itemid=%d", itemid))
             return ErrorCode.ConfigError
         end
 
@@ -1802,6 +1806,7 @@ function Bag.TryEmptyEnough(bagType, add_items, use_pos_num)
                 ret_code = ErrorCode.BagFull
             end
         else
+            moon.error(string.format("Bag.TryEmptyEnough not item_big_type itemid=%d", itemid))
             return ErrorCode.ItemNotExist
         end
     end
@@ -1937,8 +1942,8 @@ function Bag.AddItems(bagType, stack_item_datas, unstack_item_datas, change_log)
             err_code = Bag.AddDurabItem(bagType, baginfo, item_data, change_log[bagType])
         elseif item_small_type == ItemDefine.EItemSmallType.Antique then
             err_code = Bag.AddAntique(bagType, baginfo, item_data, change_log[bagType])
-        -- elseif item_small_type == ItemDefine.EItemSmallType.SpaceRing then
-        --     err_code = Bag.AddSpaceRing(bagType, baginfo, item_data, change_log[bagType])
+        elseif item_small_type == ItemDefine.EItemSmallType.SpaceRing then
+            err_code = Bag.AddSpaceRing(bagType, baginfo, item_data, change_log[bagType])
         else
             err_code = ErrorCode.ItemNotExist
         end
@@ -2376,6 +2381,24 @@ function Bag.GetBagdata(bags_name)
     return res
 end
 
+function Bag.GetBagCapacity(bags_name)
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata then
+        return nil
+    end
+
+    local capacitys = {}
+    for _, bag_name in pairs(bags_name) do
+        if bag_name == BagDef.BagType.Cangku
+            or bag_name == BagDef.BagType.Consume
+            or bag_name == BagDef.BagType.Booty then
+            capacitys[bag_name] = bagdata[bag_name].capacity
+        end
+    end
+
+    return capacitys
+end
+
 function Bag.InlayTabooWord(taboo_word_id, inlay_type, uniqid)
     local err_code, pos, item_data = Bag.MutUniqItemData(BagDef.BagType.Cangku, uniqid)
     if err_code ~= ErrorCode.None or not item_data then
@@ -2540,8 +2563,8 @@ function Bag.GetSpecialItemFromCommonItem(srcBagType, srcPos, item_id)
     local small_types = ItemDefine.EItemSmallType
     if item_type ~= small_types.MagicItem
         and item_type ~= small_types.HumanDiagrams
-        and item_type ~= small_types.GhostDiagrams then
-        -- and item_type ~= small_types.SpaceRing then
+        and item_type ~= small_types.GhostDiagrams
+        and item_type ~= small_types.SpaceRing then
         return ErrorCode.ItemTypeMismatch
     end
 
@@ -2616,14 +2639,14 @@ function Bag.Light(op_itemdata)
         else
             return ErrorCode.ItemNotExist
         end
-    -- elseif op_itemdata.itype == ItemDefine.EItemSmallType.SpaceRing then
-    --     if op_itemdata.special_info and op_itemdata.special_info.space_ring then
-    --         cur_light_cnt = op_itemdata.special_info.space_ring.light_cnt
-    --         cur_tags = op_itemdata.special_info.space_ring.tags
-    --         cur_ability_tag = op_itemdata.special_info.space_ring.ability_tag
-    --     else
-    --         return ErrorCode.ItemNotExist
-    --     end
+    elseif op_itemdata.itype == ItemDefine.EItemSmallType.SpaceRing then
+        if op_itemdata.special_info and op_itemdata.special_info.space_ring then
+            cur_light_cnt = op_itemdata.special_info.space_ring.light_cnt
+            cur_tags = op_itemdata.special_info.space_ring.tags
+            cur_ability_tag = op_itemdata.special_info.space_ring.ability_tag
+        else
+            return ErrorCode.ItemNotExist
+        end
     else
         return ErrorCode.ItemNotExist
     end
@@ -2789,13 +2812,13 @@ function Bag.Light(op_itemdata)
         else
             table.insert(op_itemdata.special_info.diagrams_item.tags, new_tag)
         end
-    -- elseif op_itemdata.itype == ItemDefine.EItemSmallType.SpaceRing then
-    --     op_itemdata.special_info.space_ring.light_cnt = cur_light_cnt + 1
-    --     if new_tag_id >= AbilityTagIdMin then
-    --         table.insert(op_itemdata.special_info.space_ring.ability_tag, new_tag)
-    --     else
-    --         table.insert(op_itemdata.special_info.space_ring.tags, new_tag)
-    --     end
+    elseif op_itemdata.itype == ItemDefine.EItemSmallType.SpaceRing then
+        op_itemdata.special_info.space_ring.light_cnt = cur_light_cnt + 1
+        if new_tag_id >= AbilityTagIdMin then
+            table.insert(op_itemdata.special_info.space_ring.ability_tag, new_tag)
+        else
+            table.insert(op_itemdata.special_info.space_ring.tags, new_tag)
+        end
     else
         Bag.RollBackWithChange(change_log)
         return ErrorCode.ItemNotExist

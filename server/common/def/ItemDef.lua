@@ -31,6 +31,7 @@ local ItemDef = {
         GodsBlockUnlock = 27,    --解锁神龛
         SortOutItems = 28,       --整理物品
         BattleSettle = 29,       --战斗结算
+        BattleRunAway = 30,      --战斗逃跑
 
         -- WearEquipment = 25,      --装备道具
         -- TakeOffEquipment = 26,   --脱下道具
@@ -147,6 +148,7 @@ local defaultPBImage = {
 
 local defaultPBSkinImage = {
     config_id = 0,
+    valid_ts = 0,
 }
 
 local defaultPBUserImage = {

@@ -1025,9 +1025,9 @@ function Role.PBRoleWearSkinReqCmd(req)
             { code = ErrorCode.RoleNotExist, error = "角色不存在", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    for idx, skin_id in pairs(req.msg.change_skins) do
-        local skin_image, itype = scripts.ItemImage.GetImage(skin_id)
-        if not skin_image then
+    for idx, skin_id in pairs(req.msg.skins) do
+        local is_valid = scripts.ItemImage.CheckImageValid(skin_id)
+        if not is_valid then
             return context.S2C(context.net_id, CmdCode["PBRoleWearSkinRspCmd"],
                 { code = ErrorCode.ItemNotExist, error = "皮肤不存在", uid = context.uid }, req.msg_context.stub_id)
         end
@@ -1042,7 +1042,7 @@ function Role.PBRoleWearSkinReqCmd(req)
         end
     end
 
-    for idx, skin_id in pairs(req.msg.change_skins) do
+    for idx, skin_id in pairs(req.msg.skins) do
         role_info.skins[idx] = skin_id
     end
 
@@ -1085,10 +1085,10 @@ function Role.PBRoleChangeEmojiReqCmd(req)
     end
 
     for _, emoji_id in pairs(req.msg.emoji) do
-        local emoji_image, itype = scripts.ItemImage.GetImage(emoji_id)
-        if not emoji_image then
+        local is_valid = scripts.ItemImage.CheckImageValid(emoji_id)
+        if not is_valid then
             return context.S2C(context.net_id, CmdCode["PBRoleChangeEmojiRspCmd"],
-                { code = ErrorCode.ItemNotExist, error = "皮肤不存在", uid = context.uid }, req.msg_context.stub_id)
+                { code = ErrorCode.ItemNotExist, error = "表情不存在", uid = context.uid }, req.msg_context.stub_id)
         end
 
         local emoji_cfg = GameCfg.Skin[emoji_id]

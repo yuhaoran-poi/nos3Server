@@ -299,6 +299,7 @@
 ---@field public game_role_exp PBGameAddRoleExp[] @角色增加经验
 ---@field public consume_bag PBBag @消耗品背包
 ---@field public booty_bag PBBag @战利品背包
+---@field public reward_boxs PBItemSimple[] @获得的奖励宝箱
 
 
 ---@class PBEnterCityReqCmd
@@ -1788,6 +1789,7 @@
 
 ---@class PBSkinImage
 ---@field public config_id integer @配置ID
+---@field public valid_ts integer @有效期时间
 
 
 ---@class PBUserImage
@@ -3193,6 +3195,32 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public nick_name string
+
+
+---@class PBUseItemReqCmd
+---@field public uid integer
+---@field public use_item_id integer
+---@field public use_item_cnt integer
+
+
+---@class PBUseItemRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public use_item_id integer
+---@field public use_item_cnt integer
+
+
+---@class PBRefuseReturnRoomReqCmd
+---@field public uid integer
+---@field public roomid integer
+
+
+---@class PBRefuseReturnRoomRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roomid integer
 
 
 

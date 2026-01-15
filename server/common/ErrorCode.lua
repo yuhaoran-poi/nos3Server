@@ -37,6 +37,8 @@ local ErrorCode = {
     ForbidDecompose = 308,
     --- 分解失败
     DecomposeFailed = 309,
+    --- 道具图鉴已存在
+    ItemImageExist = 310,
 
     ---宝物相关错误码
     ---没有拥有该宝物

@@ -16,6 +16,7 @@ local UserAttrLogic = require("common.logic.UserAttrLogic")
 local CommonCfgDef = require("common.def.CommonCfgDef")
 local ItemDefine = require("common.logic.ItemDefine")
 local ItemDef = require("common.def.ItemDef")
+local ChatLogic = require("common.logic.ChatLogic")
 
 ---@type user_context
 local context = ...
@@ -414,22 +415,37 @@ function User.OutPlay(out_data)
         moon.error("User.OutPlay roomid not match, roomid = ", out_data.roomid)
         return
     end
-    context.play_ds_node = nil
+    -- 退出游戏中的副本ds(如果有的话)
+    User.ExitPlayDs()
 
     local query_user_attr = {}
     table.insert(query_user_attr, ProtoEnum.UserAttrType.is_online)
     local query_res = User.QueryUserAttr(query_user_attr)
-    if query_res.user_attr[ProtoEnum.UserAttrType.is_online] == UserAttrDef.ONLINE_STATE.IN_GAME then
-        -- 同步离开游戏中状态到redis
-        local update_user_attr = {}
-        update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.IN_ROOM
-        User.SetUserAttr(update_user_attr, true)
-    end
 
     if out_data.need_exit_room then
         clusterd.send(3999, "roommgr", "Roommgr.ExitRoom",
             { uid = context.uid, roomid = context.roomid, is_force = true })
         context.roomid = nil
+
+        -- 同步退出房间状态
+        local update_user_attr = {}
+        update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.ONLINE
+        scripts.User.SetUserAttr(update_user_attr, true)
+
+        -- 退出队伍频道
+        local chat_ret = ChatLogic.LeaveRoomChannel(out_data.roomid, context.uid)
+        if chat_ret.code ~= ErrorCode.None then
+            moon.error(string.format("LeaveRoomChannel uid:%d, roomid:%d, code:%d, error:%s", context.uid,
+                out_data.roomid,
+                chat_ret.code, chat_ret.error))
+        end
+    else
+        if query_res.user_attr[ProtoEnum.UserAttrType.is_online] == UserAttrDef.ONLINE_STATE.IN_GAME then
+            -- 同步离开游戏中状态到redis
+            local update_user_attr = {}
+            update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.IN_ROOM
+            User.SetUserAttr(update_user_attr, true)
+        end
     end
     
     -- if out_data.need_settle and out_data.need_settle == 1 and out_data.player_settle then
@@ -438,14 +454,14 @@ function User.OutPlay(out_data)
 end
 
 function User.NotifyGameSettle()
-    -- while true do
-    --     local settle_info = Database.BattleListPopLeft(context.addr_db_redis, Database.GetBattleSettleKey(), context.uid)
-    --     if settle_info then
-    --         scripts.Room.GameSettle(settle_info)
-    --     else
-    --         break
-    --     end
-    -- end
+    while true do
+        local settle_info = Database.BattleListPopLeft(context.addr_db_redis, Database.GetBattleSettleKey(), context.uid)
+        if settle_info then
+            scripts.Room.GameSettle(settle_info)
+        else
+            break
+        end
+    end
 end
 
 function User.NotifyGameReturnItems()
@@ -2220,12 +2236,191 @@ function User.PBModNickNameReqCmd(req)
         User.SetUserAttr(nickname_fields, req.msg.nick_name)
         Database.RedisSetNick(context.addr_db_redis, req.msg.nick_name, context.uid)
     end
-    
+
     return context.S2C(context.net_id, CmdCode.PBModNickNameRspCmd, {
         code = ErrorCode.None,
         error = "",
         uid = req.msg.uid,
         nick_name = req.msg.nick_name,
+    }, req.msg_context.stub_id)
+end
+
+-- 客户端请求--使用道具
+function User.PBUseItemReqCmd(req)
+    -- 参数验证
+    if not req.msg.use_item_id or not req.msg.use_item_cnt then
+        return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            use_item_id = req.msg.use_item_id or 0,
+            use_item_cnt = req.msg.use_item_cnt or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    local cost_items = {}
+    cost_items[req.msg.use_item_id] = {
+        id = req.msg.use_item_id,
+        count = -req.msg.use_item_cnt,
+        pos = 0,
+    }
+    -- 检测道具是否足够
+    local bag_cost_code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    if bag_cost_code ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
+            code = bag_cost_code,
+            error = "道具不足",
+            uid = context.uid,
+            use_item_id = req.msg.use_item_id,
+            use_item_cnt = req.msg.use_item_cnt,
+        }, req.msg_context.stub_id)
+    end
+
+    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- 不同使用类型
+    local change_image_ids = {}
+    local item_cfg = GameCfg.Item[req.msg.use_item_id]
+    if item_cfg and item_cfg.use_type then
+        if item_cfg.use_type == 1
+            and req.msg.use_item_cnt == 1
+            and item_cfg.use_skin
+            and item_cfg.use_skin > 0 then
+            local err_code = scripts.ItemImage.AddItemImage(item_cfg.use_skin, change_image_ids, true)
+            if err_code ~= ErrorCode.None then
+                return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
+                    code = err_code,
+                    error = "使用道具失败",
+                    uid = context.uid,
+                    use_item_id = req.msg.use_item_id,
+                    use_item_cnt = req.msg.use_item_cnt,
+                }, req.msg_context.stub_id)
+            end
+        elseif item_cfg.use_type == 2
+            and item_cfg.use_skin
+            and item_cfg.use_skin > 0
+            and item_cfg.skin_time
+            and item_cfg.skin_time > 0 then
+            local err_code = scripts.ItemImage.AddItemImageValidtime(item_cfg.use_skin, change_image_ids, true,
+            item_cfg.skin_time * req.msg.use_item_cnt)
+            if err_code ~= ErrorCode.None then
+                return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
+                    code = err_code,
+                    error = "使用道具失败",
+                    uid = context.uid,
+                    use_item_id = req.msg.use_item_id,
+                    use_item_cnt = req.msg.use_item_cnt,
+                }, req.msg_context.stub_id)
+            end
+        else
+            return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
+                code = ErrorCode.ItemTypeMismatch,
+                error = "道具类型错误",
+                uid = context.uid,
+                use_item_id = req.msg.use_item_id,
+                use_item_cnt = req.msg.use_item_cnt,
+            }, req.msg_context.stub_id)
+        end
+    else
+        return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
+            code = ErrorCode.ItemTypeMismatch,
+            error = "道具类型错误",
+            uid = context.uid,
+            use_item_id = req.msg.use_item_id,
+            use_item_cnt = req.msg.use_item_cnt,
+        }, req.msg_context.stub_id)
+    end
+
+    -- 扣除消耗
+    local bag_change_log = {}
+    local errcode = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, bag_change_log)
+    if errcode ~= ErrorCode.None then
+        scripts.Bag.RollBackWithChange(bag_change_log)
+        return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
+            code = errcode,
+            error = "道具不足",
+            uid = context.uid,
+            use_item_id = req.msg.use_item_id,
+            use_item_cnt = req.msg.use_item_cnt,
+        }, req.msg_context.stub_id)
+    end
+
+    context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
+        code = ErrorCode.None,
+        error = "success",
+        uid = context.uid,
+        use_item_id = req.msg.use_item_id,
+        use_item_cnt = req.msg.use_item_cnt,
+    }, req.msg_context.stub_id)
+
+    -- 存储背包变更
+    if bag_change_log then
+        if table.size(bag_change_log) > 0 then
+            scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.UseItemUpLv, 0, 0, 0, req.msg.target_id)
+        end
+    end
+    -- 图鉴信息变更
+    if table.size(change_image_ids) > 0 then
+        scripts.ItemImage.SaveAndLog(change_image_ids)
+    end
+end
+
+function User.PBRefuseReturnRoomReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid or not req.msg.roomid then
+        return context.S2C(context.net_id, CmdCode.PBRefuseReturnRoomRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            roomid = req.msg.roomid or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    if context.roomid ~= req.msg.roomid then
+        return context.S2C(context.net_id, CmdCode.PBRefuseReturnRoomRspCmd, {
+            code = ErrorCode.RoomNotFound,
+            error = "无效请求参数",
+            uid = context.uid,
+            roomid = req.msg.roomid or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    -- 玩家强制退出房间
+    local out_data = {
+        roomid = req.msg.roomid,
+        need_exit_room = true,
+    }
+    User.OutPlay(out_data)
+
+    -- 清空消耗品背包
+    local bag_change_log = {}
+    local sync_baginfo = {
+        capacity = 0,
+        items = {}
+    }
+    local capacitys = scripts.Bag.GetBagCapacity({ BagDef.BagType.Consume })
+    if capacitys and capacitys[BagDef.BagType.Consume] then
+        sync_baginfo.capacity = capacitys[BagDef.BagType.Consume]
+    end
+    local errcode = scripts.Bag.SyncBagInfo(BagDef.BagType.Consume, sync_baginfo, bag_change_log)
+    if errcode ~= ErrorCode.None then
+        scripts.Bag.RollBackWithChange(bag_change_log)
+        moon.error(string.format("GameSettle SyncBagInfo err:\n%s", json.pretty_encode(sync_baginfo)))
+        return context.S2C(context.net_id, CmdCode.PBRefuseReturnRoomRspCmd, {
+            code = ErrorCode.BagSortOutFailed,
+            error = "背包清理失败",
+            uid = context.uid,
+            roomid = req.msg.roomid or 0,
+        }, req.msg_context.stub_id)
+    end
+    if table.size(bag_change_log) > 0 then
+        scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.BattleRunAway)
+    end
+
+    return context.S2C(context.net_id, CmdCode.PBRefuseReturnRoomRspCmd, {
+        code = ErrorCode.None,
+        error = "",
+        uid = context.uid,
+        roomid = req.msg.roomid or 0,
     }, req.msg_context.stub_id)
 end
 

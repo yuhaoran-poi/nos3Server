@@ -16,7 +16,8 @@ local context = {
     rooms = {}, --当前房间列表
     uid_roomid = {}, --uid所在的房间id
     waitds_roomids = {}, --等待DS的房间id列表 status:0--请求DS,1--查询DS状态
-    away_uids = {}, -- 暂离房间的uid列表
+    away_uids = {},      -- 暂离房间的uid列表
+    roomid_addr_dsnode = {}, -- 房间id对应的DS节点地址
 }
 --
 

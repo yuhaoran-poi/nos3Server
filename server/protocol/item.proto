@@ -202,6 +202,7 @@ message PBImage
 message PBSkinImage
 {
 	int32 config_id		= 1;	//配置ID
+	int64 valid_ts		= 2;	//有效期时间
 }
 
 message PBUserImage

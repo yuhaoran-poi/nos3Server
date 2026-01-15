@@ -32,7 +32,8 @@ function Roommgr.Init()
     context.rooms = {}          -- 全量房间数据存储
     context.uid_roomid = {}     -- uid到roomid的映射
     context.waitds_roomids = {} -- 等待中房间ID列表
-    context.away_uids = {} -- 暂离房间的uid列表
+    context.away_uids = {}      -- 暂离房间的uid列表
+    context.roomid_addr_dsnode = {} -- 房间id对应的DS节点地址
     context.addr_db_server = moon.queryservice("db_server")
 
     -- 新增定时器轮询
@@ -1472,6 +1473,18 @@ function Roommgr.GetRoomCreateData(req)
     return { code = ErrorCode.None, error = "success", roomid = req.roomid, room_str = room_str }
 end
 
+function Roommgr.ConnectRoomDS(msg)
+    local room = context.rooms[msg.roomid]
+    if not room then
+        moon.error("Roommgr.ConnectRoomDS room not found, roomid = ", msg.roomid)
+        return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+
+    context.roomid_addr_dsnode[msg.roomid] = msg.addr_dsnode
+    moon.warn(string.format("ConnectRoomDS success context.rooms:\n%s", json.pretty_encode(context.rooms)))
+    return { code = ErrorCode.None, error = "连接房间DS成功" }
+end
+
 function Roommgr.PlayEnd(msg)
     moon.warn("Roommgr.PlayEnd roomid = ", msg.roomid)
     local room = context.rooms[msg.roomid]
@@ -1529,6 +1542,7 @@ function Roommgr.PlayEnd(msg)
     redis_data.master_name = room.master_name
     Database.upsert_room(context.addr_db_server, msg.roomid, room_tags, redis_data)
 
+    context.roomid_addr_dsnode[msg.roomid] = nil
     return { code = ErrorCode.None, error = "游戏结束成功" }
 end
 

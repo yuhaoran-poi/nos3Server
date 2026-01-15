@@ -56,7 +56,7 @@ login_data (2.PBDSLoginDataR	loginData"f
 error (	Rerror
 dsid (Rdsid
 net_id (RnetIdbproto3
-î,
+Ø,
 
 item.proto"@
 PBCoin
@@ -200,9 +200,10 @@ changeType#
 	config_id (RconfigId
 
 star_level (R	starLevel
-exp (Rexp"*
+exp (Rexp"E
 PBSkinImage
-	config_id (RconfigId"ù
+	config_id (RconfigId
+valid_ts (RvalidTs"ù
 PBUserImage:
 
 item_image (2.PBUserImage.ItemImageEntryR	itemImageJ
@@ -809,7 +810,7 @@ takeoffIdx"e
 uid (Ruid&
 ghost_config_id (RghostConfigId
 skin (Rskinbproto3
-Í)
+ô-
 
 user.proto
 item.proto	bag.proto
@@ -1029,7 +1030,27 @@ inlay_type (R	inlayType
 code (Rcode
 error (	Rerror
 uid (Ruid
-	nick_name (	RnickNamebproto3
+	nick_name (	RnickName"e
+PBUseItemReqCmd
+uid (Ruid
+use_item_id (R	useItemId 
+use_item_cnt (R
+useItemCnt"è
+PBUseItemRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+use_item_id (R	useItemId 
+use_item_cnt (R
+useItemCnt"D
+PBRefuseReturnRoomReqCmd
+uid (Ruid
+roomid (Rroomid"n
+PBRefuseReturnRoomRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+roomid (Rroomidbproto3
 ¨
 
 gods.proto"9
@@ -1096,7 +1117,7 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-∆
+ˆ
 dsnode.proto
 item.proto
 user.proto	bag.proto
@@ -1105,7 +1126,7 @@ gods.proto"L
 PBGameAddRoleExp
 roleid (Rroleid 
 add_role_exp (R
-addRoleExp"„
+addRoleExp"ì
 PBGameSettle
 settle_data (	R
 settleData-
@@ -1113,7 +1134,9 @@ settleData-
 game_role_exp (2.PBGameAddRoleExpRgameRoleExp'
 consume_bag (2.PBBagR
 consumeBag#
-	booty_bag (2.PBBagRbootyBag"=
+	booty_bag (2.PBBagRbootyBag.
+reward_boxs (2.PBItemSimpleR
+rewardBoxs"=
 PBEnterCityReqCmd
 uid (Ruid
 cityid (Rcityid"=

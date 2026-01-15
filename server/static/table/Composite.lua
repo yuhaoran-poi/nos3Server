@@ -7,6 +7,7 @@
 ---@field public rate integer @合成成功率0~10000
 ---@field public show_ui integer @是否展示在合成界面 1=法器 2=八卦牌 3=道具 4=讳字 5=技能书 6=真经
 return {
+[65000000] = { id=65000000,max_num=5,item_id=650000,num=1,cost={[41008]=5,[41010]=1,[41000]=3,[1]=300},rate=8000,show_ui=1 },
 [5100100] = { id=5100100,max_num=10,item_id=51001,num=1,cost={[22001]=10},rate=10000,show_ui=1 },
 [5100200] = { id=5100200,max_num=10,item_id=51002,num=1,cost={[22006]=10},rate=10000,show_ui=1 },
 [5100300] = { id=5100300,max_num=10,item_id=51003,num=1,cost={[22005]=10},rate=10000,show_ui=1 },

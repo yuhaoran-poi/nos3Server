@@ -75,5 +75,6 @@ return {
 [640004] = { id=640004,type1=0,type2=1,tagcost=0,type4=1001,type5=5,type6=0,removecost={[1]=100},decompose={[1]=100},durability=50,sturdy=100,item_weight=1 },
 [640005] = { id=640005,type1=0,type2=1,tagcost=0,type4=1001,type5=6,type6=0,removecost={[1]=100},decompose={[1]=100},durability=50,sturdy=100,item_weight=1 },
 [640006] = { id=640006,type1=0,type2=1,tagcost=0,type4=1001,type5=7,type6=0,removecost={[1]=100},decompose={[1]=100},durability=50,sturdy=100,item_weight=1 },
-[640007] = { id=640007,type1=0,type2=1,tagcost=0,type4=1001,type5=8,type6=0,removecost={[1]=100},decompose={[1]=100},durability=50,sturdy=100,item_weight=1 }
+[640007] = { id=640007,type1=0,type2=1,tagcost=0,type4=1001,type5=8,type6=0,removecost={[1]=100},decompose={[1]=100},durability=50,sturdy=100,item_weight=1 },
+[650000] = { id=650000,type1=0,type2=1,tagcost=0,type4=1001,type5=8,type6=0,removecost={[1]=100},decompose={[1]=100},durability=50,sturdy=100,item_weight=1 }
 }

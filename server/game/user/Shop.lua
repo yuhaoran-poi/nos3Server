@@ -414,6 +414,7 @@ function Shop.PBShopBuyReqCmd(req)
     if table.size(add_items) > 0 then
         local ret_code = scripts.Bag.TryEmptyEnough(BagDef.BagType.Cangku, add_items, 0)
         if ret_code ~= ErrorCode.None then
+            moon.error(string.format("Shop.PBShopBuyReqCmd TryEmptyEnough error ret_code=%d", ret_code))
             if ret_code == ErrorCode.BagFull then
                 use_mail = true
             else

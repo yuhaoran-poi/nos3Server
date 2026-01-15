@@ -14,6 +14,7 @@ local ChatLogic = require("common.logic.ChatLogic")
 local BagDef = require("common.def.BagDef")
 local ItemDef = require("common.def.ItemDef")
 local ItemDefine = require("common.logic.ItemDefine")
+local CommonCfgDef = require("common.def.CommonCfgDef")
 
 ---@type user_context
 local context = ...
@@ -575,6 +576,101 @@ end
 
 function Room.GameSettle(settle_info)
     -- 游戏结算
+    local mail_id_cfg = CommonCfgDef.getConf("DungeonAwardEmailId")
+    if not mail_id_cfg then
+        moon.error("CommonCfgDef.getConf err")
+        return
+    end
+
+    local bag_change_log = {}
+    if settle_info.booty_bag then
+        -- 获取战利品
+        local item_list = {}
+        for pos, itemdata in pairs(settle_info.booty_bag.items) do
+            local item_id = itemdata.common_info.config_id
+            if not item_list[item_id] then
+                item_list[item_id] = {
+                    id = item_id,
+                    count = 0,
+                    pos = 0,
+                }
+            end
+            item_list[item_id].count = item_list[item_id].count + itemdata.common_info.item_count
+        end
+        if table.size(item_list) > 0 then
+            local stack_items, unstack_items, deal_coins = {}, {}, {}
+            local ok = ItemDefine.GetItemDataFromIdCount(item_list, {}, stack_items, unstack_items, deal_coins)
+            if not ok then
+                moon.error(string.format("GameSettle GetItemDataFromIdCount err:\n%s", json.pretty_encode(item_list)))
+                return
+            end
+
+            local bag_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, item_list, 0)
+            if bag_code ~= bag_code then
+                -- 仓库已满 发送邮件
+                local item_datas = {}
+                for _, item_data in pairs(stack_items) do
+                    table.insert(item_datas, item_data)
+                end
+                for _, item_data in pairs(unstack_items) do
+                    table.insert(item_datas, item_data)
+                end
+                local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
+                if mail_ret ~= ErrorCode.None then
+                    moon.error(string.format("GameSettle RecvImmediateMail err:\n%s", json.pretty_encode(item_datas)))
+                    return
+                end
+            else
+                -- 添加道具
+                if table.size(stack_items) + table.size(unstack_items) > 0 then
+                    bag_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
+                    if bag_code ~= ErrorCode.None then
+                        scripts.Bag.RollBackWithChange(bag_change_log)
+                        moon.error(string.format("GameSettle AddItems stack_items err:\n%s",
+                            json.pretty_encode(stack_items)))
+                        moon.error(string.format("GameSettle AddItems unstack_items err:\n%s",
+                            json.pretty_encode(unstack_items)))
+                        return
+                    end
+                end
+            end
+        end
+    end
+
+    if settle_info.consume_bag then
+        -- 同步消耗品背包
+        local sync_baginfo = {
+            capacity = 0,
+            items = {}
+        }
+        local capacitys = scripts.Bag.GetBagCapacity({ BagDef.BagType.Consume })
+        if capacitys and capacitys[BagDef.BagType.Consume] then
+            sync_baginfo.capacity = capacitys[BagDef.BagType.Consume]
+        end
+        for pos, itemdata in pairs(settle_info.consume_bag.items) do
+            if itemdata and itemdata.common_info and itemdata.common_info.config_id then
+                local itype = ItemDefine.GetItemType(itemdata.common_info.config_id)
+                local item_type = 0
+                local item_cfg = GameCfg.Item[itemdata.common_info.config_id]
+                if item_cfg then
+                    item_type = item_cfg.type1
+                end
+                sync_baginfo.items[pos] = ItemDef.newItemDataFromData(itemdata, itype, item_type)
+            end
+        end
+
+        local errcode = scripts.Bag.SyncBagInfo(BagDef.BagType.Consume, sync_baginfo, bag_change_log)
+        if errcode ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            moon.error(string.format("GameSettle SyncBagInfo err:\n%s", json.pretty_encode(sync_baginfo)))
+            return
+        end
+    end
+
+    if table.size(bag_change_log) > 0 then
+        scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.BattleSettle)
+    end
+
     if settle_info.account_experience and settle_info.account_experience > 0 then
         -- 增加账户经验
         local query_user_attr = {}
@@ -588,6 +684,7 @@ function Room.GameSettle(settle_info)
         update_user_attr[ProtoEnum.UserAttrType.account_exp] = now_exp + settle_info.account_experience
         scripts.User.SetUserAttr(update_user_attr, true)
     end
+
     if settle_info.game_role_exp and table.size(settle_info.game_role_exp) > 0 then
         -- 增加角色经验
         local change_roles = {}
@@ -603,34 +700,15 @@ function Room.GameSettle(settle_info)
             scripts.Role.SaveAndLog(change_roles)
         end
     end
-    if settle_info.consume_bag then
-        -- 同步消耗品背包
-        local sync_baginfo = {
-            items = {}
-        }
-        for pos, itemdata in pairs(settle_info.consume_bag.items) do
-            if itemdata and itemdata.common_info and itemdata.common_info.config_id then
-                local itype = ItemDefine.GetItemType(itemdata.common_info.config_id)
-                local item_type = 0
-                local item_cfg = GameCfg.Item[itemdata.common_info.config_id]
-                if item_cfg then
-                    item_type = item_cfg.type1
-                end
-                sync_baginfo.items[pos] = ItemDef.newItemDataFromData(itemdata, itype, item_type)
-            end
-        end
-
-        local change_bag_log = {}
-        local errcode = scripts.Bag.SyncBagInfo(BagDef.BagType.Consume, sync_baginfo, change_bag_log)
-        if errcode == ErrorCode.None then
-            scripts.Bag.SaveAndLog(change_bag_log, ItemDef.ChangeReason.BattleSettle)
-        else
-            scripts.Bag.RollBackWithChange(change_bag_log)
-        end
-    end
 end
 
 function Room.GameReturnItems(return_info)
+    local mail_id_cfg = CommonCfgDef.getConf("DungeonAwardEmailId")
+    if not mail_id_cfg then
+        moon.error("CommonCfgDef.getConf err")
+        return
+    end
+
     -- 发送邮件
     local item_datas = {}
     for _, item_data in pairs(return_info) do
@@ -639,7 +717,7 @@ function Room.GameReturnItems(return_info)
 
     local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
     if mail_ret ~= ErrorCode.None then
-        moon.error(string.format("GameReturnItems mail_ret err:\n%s", json.pretty_encode(mail_ret)))
+        moon.error(string.format("GameReturnItems mail_ret err:\n%s", json.pretty_encode(item_datas)))
     end
 end
 

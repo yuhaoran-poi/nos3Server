@@ -28,7 +28,9 @@ local ItemDefine = {
     HumanTabooWord = { start = 116000, End = 119999 },
     GhostTabooWord = { start = 120000, End = 123999 },
     StackSpaceRing = { start = 124000, End = 133999 },
-    Gift = { start = 320000, End = 329999 },
+    SkinCard = { start = 134000, End = 353999 },
+    Gift = { start = 354000, End = 363999 },
+    SkinTryCard = { start = 364000, End = 379999 },
     DurabItem = { start = 500000, End = 500999 },
     MagicItem = { start = 600000, End = 624999 },
     Antique = { start = 625000, End = 629999 },
@@ -64,6 +66,7 @@ local ItemDefine = {
         RoleSkin = 23,
         GhostSkin = 24,
         SpaceRing = 25,
+        SkinCard = 26,
         Other = 255,
     },
 
@@ -115,8 +118,12 @@ function ItemDefine.GetItemType(nConfigId)
         return ItemDefine.EItemSmallType.GhostTabooWord
     elseif nConfigId >= ItemDefine.StackSpaceRing.start and nConfigId <= ItemDefine.StackSpaceRing.End then
         return ItemDefine.EItemSmallType.StackSpaceRing
+    elseif nConfigId >= ItemDefine.SkinCard.start and nConfigId <= ItemDefine.SkinCard.End then
+        return ItemDefine.EItemSmallType.SkinCard
     elseif nConfigId >= ItemDefine.Gift.start and nConfigId <= ItemDefine.Gift.End then
         return ItemDefine.EItemSmallType.Gift
+    elseif nConfigId >= ItemDefine.SkinTryCard.start and nConfigId <= ItemDefine.SkinTryCard.End then
+        return ItemDefine.EItemSmallType.SkinTryCard
     elseif nConfigId >= ItemDefine.DurabItem.start and nConfigId <= ItemDefine.DurabItem.End then
         return ItemDefine.EItemSmallType.DurabItem
     elseif nConfigId >= ItemDefine.MagicItem.start and nConfigId <= ItemDefine.MagicItem.End then
@@ -156,6 +163,9 @@ function ItemDefine.GetItemPosType(nConfigId)
         return ItemDefine.EItemBigType.Skin
     elseif nItemType == ItemDefine.EItemSmallType.SpaceRing then
         return ItemDefine.EItemBigType.UniqueItem
+    elseif nItemType == ItemDefine.EItemSmallType.SkinCard
+        or nItemType == ItemDefine.EItemSmallType.SkinTryCard then
+        return ItemDefine.EItemBigType.StackItem
     else
         moon.error("GetItemPosType - unknown config_id:", nConfigId)
         return ItemDefine.EItemBigType.Other
@@ -415,29 +425,29 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                         end
                     end
                     table.insert(unstack_items, new_item)
-                -- elseif item_small_type == ItemDefine.EItemSmallType.SpaceRing then
-                --     new_item.special_info.space_ring = ItemDef.newSpaceRing()
-                --     if item.special_info and item.special_info.space_ring then
-                --         if item.special_info.space_ring.cur_durability then
-                --             new_item.special_info.space_ring.cur_durability = item.special_info.space_ring.cur_durability
-                --         end
-                --         if item.special_info.space_ring.strong_value then
-                --             new_item.special_info.space_ring.strong_value = item.special_info.space_ring.strong_value
-                --         end
-                --         if item.special_info.space_ring.tabooword_id then
-                --             new_item.special_info.space_ring.tabooword_id = item.special_info.space_ring.tabooword_id
-                --         end
-                --         if item.special_info.space_ring.light_cnt then
-                --             new_item.special_info.space_ring.light_cnt = item.special_info.space_ring.light_cnt
-                --         end
-                --         if item.special_info.space_ring.tags then
-                --             new_item.special_info.space_ring.tags = item.special_info.space_ring.tags
-                --         end
-                --         if item.special_info.space_ring.ability_tag then
-                --             new_item.special_info.space_ring.ability_tag = item.special_info.space_ring.ability_tag
-                --         end
-                --     end
-                --     table.insert(unstack_items, new_item)
+                elseif item_small_type == ItemDefine.EItemSmallType.SpaceRing then
+                    new_item.special_info.space_ring = ItemDef.newSpaceRing()
+                    if item.special_info and item.special_info.space_ring then
+                        if item.special_info.space_ring.cur_durability then
+                            new_item.special_info.space_ring.cur_durability = item.special_info.space_ring.cur_durability
+                        end
+                        if item.special_info.space_ring.strong_value then
+                            new_item.special_info.space_ring.strong_value = item.special_info.space_ring.strong_value
+                        end
+                        if item.special_info.space_ring.tabooword_id then
+                            new_item.special_info.space_ring.tabooword_id = item.special_info.space_ring.tabooword_id
+                        end
+                        if item.special_info.space_ring.light_cnt then
+                            new_item.special_info.space_ring.light_cnt = item.special_info.space_ring.light_cnt
+                        end
+                        if item.special_info.space_ring.tags then
+                            new_item.special_info.space_ring.tags = item.special_info.space_ring.tags
+                        end
+                        if item.special_info.space_ring.ability_tag then
+                            new_item.special_info.space_ring.ability_tag = item.special_info.space_ring.ability_tag
+                        end
+                    end
+                    table.insert(unstack_items, new_item)
                 end
             end
         end

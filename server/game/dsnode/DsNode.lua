@@ -31,6 +31,8 @@ function DsNode.Load(req)
             if err or res.code ~= ErrorCode.None then
                 return res
             end
+        else
+
         end
 
         local isnew = false
@@ -531,7 +533,7 @@ function DsNode.PBDsNotifyPlayerExitReqCmd(req)
         local send_data = {
             roomid = req.msg.roomid,
             need_exit_room = false,
-            need_settle = req.msg.need_settle,
+            -- need_settle = req.msg.need_settle,
             -- player_settle = req.msg.player_settle,
         }
         if req.msg.need_settle and req.msg.need_settle == 1 then
