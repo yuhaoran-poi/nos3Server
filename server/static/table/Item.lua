@@ -15,6 +15,7 @@
 ---@field public use_skin integer @皮肤/头像图鉴ID （当 ues_type = 1~3时生效）
 ---@field public skin_time integer @皮肤体验卡有效期（单位：秒）
 return {
+[65000000] = { id=65000000,type1=0,type2=1,type3=0,type4=0,type5=0,stack_count=999,use_award={},decompose={[1]=10},Durability=0,bundlecount=1,item_weight=1,use_type=0,use_skin=0,skin_time=0 },
 [20000] = { id=20000,type1=0,type2=1,type3=0,type4=0,type5=0,stack_count=999,use_award={},decompose={[1]=10},Durability=0,bundlecount=1,item_weight=1,use_type=0,use_skin=0,skin_time=0 },
 [20001] = { id=20001,type1=0,type2=1,type3=0,type4=0,type5=0,stack_count=999,use_award={},decompose={[1]=11},Durability=0,bundlecount=1,item_weight=1,use_type=0,use_skin=0,skin_time=0 },
 [20002] = { id=20002,type1=0,type2=1,type3=0,type4=0,type5=0,stack_count=999,use_award={},decompose={[1]=12},Durability=0,bundlecount=1,item_weight=1,use_type=0,use_skin=0,skin_time=0 },

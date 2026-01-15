@@ -1467,17 +1467,20 @@ function Bag.SyncBagInfo(bagType, sync_baginfo, change_log)
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
         and bagType ~= BagDef.BagType.Booty then
+        moon.error("Bag.SyncBagInfo bagType error: ", bagType)
         return ErrorCode.BagNotExist
     end
 
     local bagdata = scripts.UserModel.GetBagData()
     if not bagdata or not bagdata[bagType] then
+        moon.error("Bag.SyncBagInfo not bagdata bagType: ", bagType)
         return ErrorCode.BagNotExist
     end
     local now_baginfo = bagdata[bagType]
 
     if sync_baginfo.capacity then
         if sync_baginfo.capacity < now_baginfo.capacity then
+            moon.error("Bag.SyncBagInfo sync_baginfo.capacity error: ", sync_baginfo.capacity, now_baginfo.capacity)
             return ErrorCode.BagNotExist
         end
         now_baginfo.capacity = sync_baginfo.capacity
@@ -1489,7 +1492,7 @@ function Bag.SyncBagInfo(bagType, sync_baginfo, change_log)
     for i = 1, now_baginfo.capacity do
         local now_itemdata = now_baginfo.items[i]
         local sync_itemdata = sync_baginfo.items[i]
-        
+
         if now_itemdata and sync_itemdata then
             if sync_itemdata.common_info.uniqid ~= now_itemdata.common_info.uniqid then
                 Bag.AddLog(change_log[bagType], i, now_itemdata)
@@ -1516,6 +1519,8 @@ function Bag.SyncBagInfo(bagType, sync_baginfo, change_log)
             now_baginfo.items[i] = nil
         end
     end
+    
+    return ErrorCode.None
 end
 
 function Bag.GetItemCount(config_id, bagType)
