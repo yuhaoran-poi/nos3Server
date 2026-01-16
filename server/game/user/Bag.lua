@@ -1519,7 +1519,7 @@ function Bag.SyncBagInfo(bagType, sync_baginfo, change_log)
             now_baginfo.items[i] = nil
         end
     end
-    
+
     return ErrorCode.None
 end
 
@@ -1782,7 +1782,7 @@ function Bag.TryEmptyEnough(bagType, add_items, use_pos_num)
     -- 计算背包空间是否足够
     for itemid, item in pairs(add_items) do
         if item.count < 0 then
-            moon.error(string.format("Shop.PBShopBuyReqCmd add_items=%s", json.pretty_encode(add_items)))
+            moon.error(string.format("Bag.TryEmptyEnough add_items=%s", json.pretty_encode(add_items)))
             return ErrorCode.ParamInvalid
         end
         local item_cfg = GameCfg.Item[itemid]

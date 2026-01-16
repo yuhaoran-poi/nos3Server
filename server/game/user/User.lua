@@ -2245,6 +2245,190 @@ function User.PBModNickNameReqCmd(req)
     }, req.msg_context.stub_id)
 end
 
+function User.OpenGift(item_cfg, msg_data, bag_change_log)
+    local err_code = ErrorCode.ItemTypeMismatch
+    local item_list = {}
+    if item_cfg.use_type == 4 then
+        -- 普通礼包
+        if not item_cfg.use_award or table.size(item_cfg.use_award) == 0 then
+            err_code = ErrorCode.ConfigError
+            return err_code
+        end
+        for item_id, item_cnt in pairs(item_cfg.use_award) do
+            if not item_list[item_id] then
+                item_list[item_id] = {
+                    id = item_id,
+                    count = 0,
+                    pos = 0,
+                }
+            end
+            item_list[item_id].count = item_list[item_id].count + (item_cnt * msg_data.use_item_cnt)
+        end
+    elseif item_cfg.use_type == 5 then
+        -- 自选礼包
+        if not item_cfg.use_award or table.size(item_cfg.use_award) == 0 then
+            err_code = ErrorCode.ConfigError
+            return err_code
+        end
+        if not item_cfg.award_count
+            or item_cfg.award_count <= 0
+            or item_cfg.award_count >= table.size(item_cfg.use_award) then
+            err_code = ErrorCode.ConfigError
+            return err_code
+        end
+        if not msg_data.choose_item_ids or table.size(msg_data.choose_item_ids) ~= item_cfg.award_count then
+            err_code = ErrorCode.ParamInvalid
+            return err_code
+        end
+        for item_id, _ in pairs(msg_data.choose_item_ids) do
+            if not item_cfg.use_award[item_id] then
+                err_code = ErrorCode.ParamInvalid
+                return err_code
+            end
+            if not item_list[item_id] then
+                item_list[item_id] = {
+                    id = item_id,
+                    count = 0,
+                    pos = 0,
+                }
+            end
+            item_list[item_id].count = item_list[item_id].count + (item_cfg.use_award[item_id] * msg_data.use_item_cnt)
+        end
+    elseif item_cfg.use_type == 6 then
+        -- 随机礼包
+        if not item_cfg.use_award or table.size(item_cfg.use_award) == 0 then
+            err_code = ErrorCode.ConfigError
+            return err_code
+        end
+        if not item_cfg.award_count
+            or item_cfg.award_count <= 0
+            or item_cfg.award_count >= table.size(item_cfg.use_award) then
+            err_code = ErrorCode.ConfigError
+            return err_code
+        end
+        if not item_cfg.award_weight or table.size(item_cfg.award_weight) ~= item_cfg.award_count then
+            err_code = ErrorCode.ConfigError
+            return err_code
+        else
+            for item_id, item_cnt in pairs(item_cfg.use_award) do
+                if not item_cfg.award_weight[item_id] then
+                    err_code = ErrorCode.ConfigError
+                    return err_code
+                end
+            end
+        end
+        if not item_cfg.award_repetition
+            or (item_cfg.award_repetition ~= 1 and item_cfg.award_repetition ~= 2) then
+            err_code = ErrorCode.ConfigError
+            return err_code
+        end
+        local id_weight = table.copy(item_cfg.award_weight, true)
+        for i = 1, item_cfg.award_count do
+            local rand_item_id = scripts.Item.RangeTags(id_weight)
+            if rand_item_id == 0 then
+                moon.error(string.format("User.OpenGift Item.RangeTags err:\n%s", json.pretty_encode(id_weight)))
+                err_code = ErrorCode.ConfigError
+                return err_code
+            end
+            if not item_cfg.use_award[rand_item_id] then
+                err_code = ErrorCode.ConfigError
+                return err_code
+            end
+            if not item_list[rand_item_id] then
+                item_list[rand_item_id] = {
+                    id = rand_item_id,
+                    count = 0,
+                    pos = 0,
+                }
+            end
+            item_list[rand_item_id].count = item_list[rand_item_id].count +
+                (item_cfg.use_award[rand_item_id] * msg_data.use_item_cnt)
+
+            if item_cfg.award_repetition == 1 then
+                id_weight[rand_item_id] = nil
+            end
+        end
+    else
+        return err_code
+    end
+
+    if table.size(item_list) == 0 then
+        err_code = ErrorCode.ConfigError
+        return err_code
+    end
+
+    local stack_items, unstack_items, deal_coins = {}, {}, {}
+    local ok = ItemDefine.GetItemDataFromIdCount(item_list, {}, stack_items, unstack_items, deal_coins)
+    if not ok then
+        moon.error(string.format("User.OpenGift GetItemDataFromIdCount err:\n%s", json.pretty_encode(item_list)))
+        err_code = ErrorCode.ConfigError
+        return err_code
+    end
+    err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, item_list, 0)
+    if err_code ~= ErrorCode.None then
+        return err_code
+    end
+    -- 添加道具
+    if table.size(stack_items) + table.size(unstack_items) > 0 then
+        err_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
+        if err_code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            moon.error(string.format("User.OpenGift AddItems stack_items err:\n%s",
+                json.pretty_encode(stack_items)))
+            moon.error(string.format("User.OpenGift AddItems unstack_items err:\n%s",
+                json.pretty_encode(unstack_items)))
+        end
+
+        return err_code
+    end
+
+    return err_code
+end
+
+-- function User.AddAccountBuff(item_cfg, msg_data)
+--     local err_code = ErrorCode.ItemTypeMismatch
+--     if not item_cfg.buff_type or not item_cfg.buff_count then
+--         err_code = ErrorCode.ConfigError
+--         return err_code
+--     end
+--     local buff_cfg = GameCfg.AccountBuffConfig[item_cfg.buff_type]
+--     if not buff_cfg then
+--         err_code = ErrorCode.ConfigError
+--         return err_code
+--     end
+
+--     local query_user_attr = {}
+--     table.insert(query_user_attr, ProtoEnum.UserAttrType.buff_datas)
+--     local query_res = scripts.User.QueryUserAttr(query_user_attr)
+--     if query_res.user_attr[ProtoEnum.UserAttrType.buff_datas] then
+--         local buff_datas = query_res.user_attr[ProtoEnum.UserAttrType.buff_datas]
+--         if buff_datas[buff_cfg.buff_effect] then
+--             local old_buff_data = buff_datas[buff_cfg.buff_effect]
+--             if old_buff_data.buff_id == buff_cfg.id then
+--                 if buff_cfg.period_type == 1 then
+--                     old_buff_data.surplus_cnt = old_buff_data.surplus_cnt + (item_cfg.buff_count * msg_data.use_item_cnt)
+--                 elseif buff_cfg.period_type == 2 then
+--                     local now_ts = moon.time()
+--                     if now_ts > old_buff_data.end_ts then
+--                         old_buff_data.end_ts = now_ts + (item_cfg.buff_count * msg_data.use_item_cnt)
+--                     else
+--                         old_buff_data.end_ts = old_buff_data.end_ts + (item_cfg.buff_count * msg_data.use_item_cnt)
+--                     end
+--                 else
+--                     err_code = ErrorCode.ConfigError
+--                     return err_code
+--                 end
+--             else
+--                 local new_buff_data = {}
+--             end
+--         end
+--     end
+
+--     local update_user_attr = {}
+--     update_user_attr[ProtoEnum.UserAttrType.account_exp] = now_exp + settle_info.account_experience
+--     scripts.User.SetUserAttr(update_user_attr, true)
+-- end
+
 -- 客户端请求--使用道具
 function User.PBUseItemReqCmd(req)
     -- 参数验证
@@ -2279,13 +2463,13 @@ function User.PBUseItemReqCmd(req)
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 不同使用类型
     local change_image_ids = {}
+    local bag_change_log = {}
     local item_cfg = GameCfg.Item[req.msg.use_item_id]
     if item_cfg and item_cfg.use_type then
         if item_cfg.use_type == 1
-            and req.msg.use_item_cnt == 1
-            and item_cfg.use_skin
-            and item_cfg.use_skin > 0 then
-            local err_code = scripts.ItemImage.AddItemImage(item_cfg.use_skin, change_image_ids, true)
+            or item_cfg.use_type == 2
+            or item_cfg.use_type == 3 then
+            local err_code = scripts.ItemImage.UseItemAddImage(item_cfg, req.msg, change_image_ids)
             if err_code ~= ErrorCode.None then
                 return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
                     code = err_code,
@@ -2295,13 +2479,11 @@ function User.PBUseItemReqCmd(req)
                     use_item_cnt = req.msg.use_item_cnt,
                 }, req.msg_context.stub_id)
             end
-        elseif item_cfg.use_type == 2
-            and item_cfg.use_skin
-            and item_cfg.use_skin > 0
-            and item_cfg.skin_time
-            and item_cfg.skin_time > 0 then
-            local err_code = scripts.ItemImage.AddItemImageValidtime(item_cfg.use_skin, change_image_ids, true,
-            item_cfg.skin_time * req.msg.use_item_cnt)
+        elseif item_cfg.use_type == 4
+            or item_cfg.use_type == 5
+            or item_cfg.use_type == 6 then
+            -- 使用礼包
+            local err_code = User.OpenGift(item_cfg, req.msg, bag_change_log)
             if err_code ~= ErrorCode.None then
                 return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
                     code = err_code,
@@ -2311,6 +2493,9 @@ function User.PBUseItemReqCmd(req)
                     use_item_cnt = req.msg.use_item_cnt,
                 }, req.msg_context.stub_id)
             end
+        elseif item_cfg.use_type == 7 then
+            -- 使用账户功能buff卡
+            
         else
             return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
                 code = ErrorCode.ItemTypeMismatch,
@@ -2331,7 +2516,6 @@ function User.PBUseItemReqCmd(req)
     end
 
     -- 扣除消耗
-    local bag_change_log = {}
     local errcode = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, bag_change_log)
     if errcode ~= ErrorCode.None then
         scripts.Bag.RollBackWithChange(bag_change_log)
@@ -2404,7 +2588,7 @@ function User.PBRefuseReturnRoomReqCmd(req)
     local errcode = scripts.Bag.SyncBagInfo(BagDef.BagType.Consume, sync_baginfo, bag_change_log)
     if errcode ~= ErrorCode.None then
         scripts.Bag.RollBackWithChange(bag_change_log)
-        moon.error(string.format("GameSettle SyncBagInfo err:\n%s", json.pretty_encode(sync_baginfo)))
+        moon.error(string.format("PBRefuseReturnRoomReqCmd SyncBagInfo err:\n%s", json.pretty_encode(sync_baginfo)))
         return context.S2C(context.net_id, CmdCode.PBRefuseReturnRoomRspCmd, {
             code = ErrorCode.BagSortOutFailed,
             error = "背包清理失败",

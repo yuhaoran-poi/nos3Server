@@ -24,6 +24,16 @@ message PBRankLevel
 	PBRankNode human_top_rank = 4;
 }
 
+// 账户buff加成
+message PBBuffData
+{
+	int32 buff_id	= 1;
+	int32 buff_effect	= 2;
+	int32 period_type	= 3;
+	int64 end_ts		= 4;
+	int32 surplus_cnt	= 5;
+}
+
 // 玩家账号属性信息
 message PBUserAttr
 {
@@ -55,6 +65,8 @@ message PBUserAttr
 	bool chat_ban = 22;        // 是否禁言
 	int64 chat_ban_time = 23;  // 禁言时间(结束时间)
 	int64 last_chat_time = 24; // 上次发言时间
+	// 账户加成相关
+	map<int32, PBBuffData> buff_datas	= 25;	// 账户加成数据
 }
 
 // 客户端请求简略数据
@@ -348,6 +360,7 @@ message PBUseItemReqCmd
 	int64 uid	= 1;
 	int32 use_item_id	= 2;
 	int32 use_item_cnt	= 3;
+	map<int32, int32> choose_item_ids	= 4;
 }
 
 message PBUseItemRspCmd

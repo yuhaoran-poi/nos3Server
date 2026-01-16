@@ -590,6 +590,29 @@ function ItemImage.GetImagesInfo()
     return { errcode = ErrorCode.None, image_data = itemImages }
 end
 
+function ItemImage.UseItemAddImage(item_cfg, msg_data, change_image_ids)
+    local err_code = ErrorCode.ItemTypeMismatch
+    if item_cfg.use_type == 1
+        and msg_data.use_item_cnt == 1
+        and item_cfg.use_skin
+        and item_cfg.use_skin > 0 then
+        err_code = scripts.ItemImage.AddItemImage(item_cfg.use_skin, change_image_ids, true)
+        return err_code
+    elseif item_cfg.use_type == 2
+        and item_cfg.use_skin
+        and item_cfg.use_skin > 0
+        and item_cfg.skin_time
+        and item_cfg.skin_time > 0 then
+        err_code = scripts.ItemImage.AddItemImageValidtime(item_cfg.use_skin, change_image_ids, true,
+            item_cfg.skin_time * msg_data.use_item_cnt)
+        return err_code
+    elseif item_cfg.use_type == 3 then
+        -- 头像框
+    end
+
+    return err_code
+end
+
 function ItemImage.PBImageGetDataReqCmd(req)
     local itemImages = scripts.UserModel.GetItemImages()
     if not itemImages then

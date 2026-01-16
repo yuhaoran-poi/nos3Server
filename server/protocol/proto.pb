@@ -810,7 +810,7 @@ takeoffIdx"e
 uid (Ruid&
 ghost_config_id (RghostConfigId
 skin (Rskinbproto3
-ô-
+—0
 
 user.proto
 item.proto	bag.proto
@@ -829,7 +829,17 @@ ghost_rank (2.PBRankNodeR	ghostRank*
 
 human_rank (2.PBRankNodeR	humanRank1
 ghost_top_rank (2.PBRankNodeRghostTopRank1
-human_top_rank (2.PBRankNodeRhumanTopRank"’
+human_top_rank (2.PBRankNodeRhumanTopRank"ü
+
+PBBuffData
+buff_id (RbuffId
+buff_effect (R
+buffEffect
+period_type (R
+periodType
+end_ts (RendTs
+surplus_cnt (R
+surplusCnt"€
 
 PBUserAttr
 uid (Ruid!
@@ -863,7 +873,12 @@ onlineTime&
 	is_online (RisOnline
 chat_ban (RchatBan"
 chat_ban_time (RchatBanTime$
-last_chat_time (RlastChatTime"/
+last_chat_time (RlastChatTime9
+
+buff_datas (2.PBUserAttr.BuffDatasEntryR	buffDatasI
+BuffDatasEntry
+key (Rkey!
+value (2.PBBuffDataRvalue:8"/
 PBClientGetUsrSimInfoReqCmd
 uid (Ruid"z
 PBClientGetUsrSimInfoRspCmd
@@ -1030,12 +1045,16 @@ inlay_type (R	inlayType
 code (Rcode
 error (	Rerror
 uid (Ruid
-	nick_name (	RnickName"e
+	nick_name (	RnickName"Ù
 PBUseItemReqCmd
 uid (Ruid
 use_item_id (R	useItemId 
 use_item_cnt (R
-useItemCnt"è
+useItemCntK
+choose_item_ids (2#.PBUseItemReqCmd.ChooseItemIdsEntryRchooseItemIds@
+ChooseItemIdsEntry
+key (Rkey
+value (Rvalue:8"è
 PBUseItemRspCmd
 code (Rcode
 error (	Rerror

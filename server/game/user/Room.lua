@@ -606,7 +606,7 @@ function Room.GameSettle(settle_info)
             end
 
             local bag_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, item_list, 0)
-            if bag_code ~= bag_code then
+            if bag_code ~= ErrorCode.None then
                 -- 仓库已满 发送邮件
                 local item_datas = {}
                 for _, item_data in pairs(stack_items) do

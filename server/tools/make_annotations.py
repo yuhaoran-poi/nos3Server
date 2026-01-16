@@ -255,6 +255,14 @@ class EmmyLuaIntelliSense:
                                attr_type_content += f"    {attr_name} = \"{attr_name}\", -- {line_tuple[4].strip('\n \t/')}\n"
                             else:
                                attr_type_content += f"    {attr_name} = \"{attr_name}\",\n"
+                        elif line_tuple[0] == "map" and len(line_tuple) >= 5:
+                            # 处理 map 类型字段
+                            attr_name = line_tuple[3]  # map类型的字段名在索引3
+                            attr_id = line_tuple[4]    # map类型的字段ID在索引4
+                            if line_tuple[5] is not None:
+                               attr_type_content += f"    {attr_name} = \"{attr_name}\", -- {line_tuple[5].strip('\n \t/')}\n"
+                            else:
+                               attr_type_content += f"    {attr_name} = \"{attr_name}\",\n"
                             
                     
                     attr_type_content += "}\n"

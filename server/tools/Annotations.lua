@@ -2943,6 +2943,14 @@
 ---@field public human_top_rank PBRankNode
 
 
+---@class PBBuffData
+---@field public buff_id integer
+---@field public buff_effect integer
+---@field public period_type integer
+---@field public end_ts integer
+---@field public surplus_cnt integer
+
+
 ---@class PBUserAttr
 ---@field public uid integer
 ---@field public plateform_id string
@@ -2968,6 +2976,7 @@
 ---@field public chat_ban boolean @是否禁言
 ---@field public chat_ban_time integer @禁言时间(结束时间)
 ---@field public last_chat_time integer @上次发言时间
+---@field public buff_datas table<integer, PBBuffData> @账户加成数据
 
 
 ---@class PBClientGetUsrSimInfoReqCmd
@@ -3201,6 +3210,7 @@
 ---@field public uid integer
 ---@field public use_item_id integer
 ---@field public use_item_cnt integer
+---@field public choose_item_ids table<integer, integer>
 
 
 ---@class PBUseItemRspCmd
@@ -3379,6 +3389,7 @@
 
 
 ---@class static_conf
+---@field AccountBuffConfig AccountBuffConfig_cfg[]
 ---@field AllTag AllTag_cfg[]
 ---@field AllTagPool AllTagPool_cfg[]
 ---@field AntiqueItem AntiqueItem_cfg[]

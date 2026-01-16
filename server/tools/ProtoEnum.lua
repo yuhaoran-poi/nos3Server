@@ -94,6 +94,7 @@ local UserAttrType = {
     chat_ban = "chat_ban", -- 是否禁言
     chat_ban_time = "chat_ban_time", -- 禁言时间(结束时间)
     last_chat_time = "last_chat_time", -- 上次发言时间
+    buff_datas = "buff_datas", -- 账户加成数据
 }
 
 

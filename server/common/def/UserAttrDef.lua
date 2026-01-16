@@ -78,6 +78,7 @@ local defaultPBUserAttr = {
     chat_ban = false,                                                    --是否被禁言
     chat_ban_time = 0,                                                   --禁言时间
     last_chat_time = 0,                                                  --最后一次发言时间
+    buff_datas = {},                                                     --账户加成数据
 }
 
 ---@return PBUserAttr
