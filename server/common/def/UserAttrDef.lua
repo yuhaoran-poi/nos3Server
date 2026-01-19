@@ -53,6 +53,14 @@ local defaultPBSimpleGhostData = {
     skin_id = 0,
 }
 
+local defaultPBBuffData = {
+    buff_id = 0,
+    buff_effect = 0,
+    period_type = 0,
+    end_ts = 0,
+    surplus_cnt = 0,
+}
+
 local defaultPBUserAttr = {
     uid = 0,                                                             --用户ID
     plateform_id = "",                                                   --平台ID
@@ -80,6 +88,11 @@ local defaultPBUserAttr = {
     last_chat_time = 0,                                                  --最后一次发言时间
     buff_datas = {},                                                     --账户加成数据
 }
+
+---@return PBBuffData
+function UserAttrDef.newBuffData()
+    return LuaExt.const(table.copy(defaultPBBuffData))
+end
 
 ---@return PBUserAttr
 function UserAttrDef.newUserAttr()

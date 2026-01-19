@@ -430,7 +430,7 @@ function User.OutPlay(out_data)
         -- 同步退出房间状态
         local update_user_attr = {}
         update_user_attr[ProtoEnum.UserAttrType.is_online] = UserAttrDef.ONLINE_STATE.ONLINE
-        scripts.User.SetUserAttr(update_user_attr, true)
+        User.SetUserAttr(update_user_attr, true)
 
         -- 退出队伍频道
         local chat_ret = ChatLogic.LeaveRoomChannel(out_data.roomid, context.uid)
@@ -2385,49 +2385,81 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log)
     return err_code
 end
 
--- function User.AddAccountBuff(item_cfg, msg_data)
---     local err_code = ErrorCode.ItemTypeMismatch
---     if not item_cfg.buff_type or not item_cfg.buff_count then
---         err_code = ErrorCode.ConfigError
---         return err_code
---     end
---     local buff_cfg = GameCfg.AccountBuffConfig[item_cfg.buff_type]
---     if not buff_cfg then
---         err_code = ErrorCode.ConfigError
---         return err_code
---     end
+function User.AddAccountBuff(item_cfg, msg_data)
+    local err_code = ErrorCode.ItemTypeMismatch
+    if not item_cfg.buff_type or not item_cfg.buff_count then
+        err_code = ErrorCode.ConfigError
+        return err_code
+    end
+    local buff_cfg = GameCfg.AccountBuffConfig[item_cfg.buff_type]
+    if not buff_cfg then
+        err_code = ErrorCode.ConfigError
+        return err_code
+    end
 
---     local query_user_attr = {}
---     table.insert(query_user_attr, ProtoEnum.UserAttrType.buff_datas)
---     local query_res = scripts.User.QueryUserAttr(query_user_attr)
---     if query_res.user_attr[ProtoEnum.UserAttrType.buff_datas] then
---         local buff_datas = query_res.user_attr[ProtoEnum.UserAttrType.buff_datas]
---         if buff_datas[buff_cfg.buff_effect] then
---             local old_buff_data = buff_datas[buff_cfg.buff_effect]
---             if old_buff_data.buff_id == buff_cfg.id then
---                 if buff_cfg.period_type == 1 then
---                     old_buff_data.surplus_cnt = old_buff_data.surplus_cnt + (item_cfg.buff_count * msg_data.use_item_cnt)
---                 elseif buff_cfg.period_type == 2 then
---                     local now_ts = moon.time()
---                     if now_ts > old_buff_data.end_ts then
---                         old_buff_data.end_ts = now_ts + (item_cfg.buff_count * msg_data.use_item_cnt)
---                     else
---                         old_buff_data.end_ts = old_buff_data.end_ts + (item_cfg.buff_count * msg_data.use_item_cnt)
---                     end
---                 else
---                     err_code = ErrorCode.ConfigError
---                     return err_code
---                 end
---             else
---                 local new_buff_data = {}
---             end
---         end
---     end
+    local now_ts = moon.time()
+    local query_user_attr = {}
+    table.insert(query_user_attr, ProtoEnum.UserAttrType.buff_datas)
+    local query_res = User.QueryUserAttr(query_user_attr)
+    local buff_datas = query_res.user_attr[ProtoEnum.UserAttrType.buff_datas]
+    if buff_datas then
+        if buff_datas[buff_cfg.buff_effect] then
+            local old_buff_data = buff_datas[buff_cfg.buff_effect]
+            if old_buff_data.buff_id == buff_cfg.id then
+                if buff_cfg.period_type == 1 then
+                    old_buff_data.surplus_cnt = old_buff_data.surplus_cnt + (item_cfg.buff_count * msg_data.use_item_cnt)
+                elseif buff_cfg.period_type == 2 then
+                    if now_ts > old_buff_data.end_ts then
+                        old_buff_data.end_ts = now_ts + (item_cfg.buff_count * msg_data.use_item_cnt)
+                    else
+                        old_buff_data.end_ts = old_buff_data.end_ts + (item_cfg.buff_count * msg_data.use_item_cnt)
+                    end
+                else
+                    err_code = ErrorCode.ConfigError
+                    return err_code
+                end
+            else
+                local new_buff_data = UserAttrDef.newBuffData()
+                new_buff_data.buff_id = buff_cfg.id
+                new_buff_data.buff_effect = buff_cfg.buff_effect
+                new_buff_data.period_type = buff_cfg.period_type
+                new_buff_data.end_ts = 0
+                new_buff_data.surplus_cnt = 0
+                if buff_cfg.period_type == 1 then
+                    new_buff_data.surplus_cnt = item_cfg.buff_count * msg_data.use_item_cnt
+                elseif buff_cfg.period_type == 2 then
+                    new_buff_data.end_ts = now_ts + (item_cfg.buff_count * msg_data.use_item_cnt)
+                else
+                    err_code = ErrorCode.ConfigError
+                    return err_code
+                end
+                buff_datas[buff_cfg.buff_effect] = new_buff_data
+            end
+        else
+            local new_buff_data = UserAttrDef.newBuffData()
+            new_buff_data.buff_id = buff_cfg.id
+            new_buff_data.buff_effect = buff_cfg.buff_effect
+            new_buff_data.period_type = buff_cfg.period_type
+            new_buff_data.end_ts = 0
+            new_buff_data.surplus_cnt = 0
+            if buff_cfg.period_type == 1 then
+                new_buff_data.surplus_cnt = item_cfg.buff_count * msg_data.use_item_cnt
+            elseif buff_cfg.period_type == 2 then
+                new_buff_data.end_ts = now_ts + (item_cfg.buff_count * msg_data.use_item_cnt)
+            else
+                err_code = ErrorCode.ConfigError
+                return err_code
+            end
+            buff_datas[buff_cfg.buff_effect] = new_buff_data
+        end
+    else
+        moon.error(string.format("User.AddAccountBuff QueryUserAttr err:\n%s", json.pretty_encode(query_res)))
+        err_code = ErrorCode.ServerInternalError
+        return err_code
+    end
 
---     local update_user_attr = {}
---     update_user_attr[ProtoEnum.UserAttrType.account_exp] = now_exp + settle_info.account_experience
---     scripts.User.SetUserAttr(update_user_attr, true)
--- end
+    return ErrorCode.None, buff_datas
+end
 
 -- 客户端请求--使用道具
 function User.PBUseItemReqCmd(req)
@@ -2464,6 +2496,7 @@ function User.PBUseItemReqCmd(req)
     -- 不同使用类型
     local change_image_ids = {}
     local bag_change_log = {}
+    local update_user_attr = {}
     local item_cfg = GameCfg.Item[req.msg.use_item_id]
     if item_cfg and item_cfg.use_type then
         if item_cfg.use_type == 1
@@ -2495,7 +2528,17 @@ function User.PBUseItemReqCmd(req)
             end
         elseif item_cfg.use_type == 7 then
             -- 使用账户功能buff卡
-            
+            local err_code, buff_datas = User.AddAccountBuff(item_cfg, req.msg)
+            if err_code ~= ErrorCode.None then
+                return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
+                    code = err_code,
+                    error = "使用道具失败",
+                    uid = context.uid,
+                    use_item_id = req.msg.use_item_id,
+                    use_item_cnt = req.msg.use_item_cnt,
+                }, req.msg_context.stub_id)
+            end
+            update_user_attr[ProtoEnum.UserAttrType.buff_datas] = buff_datas
         else
             return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
                 code = ErrorCode.ItemTypeMismatch,
@@ -2545,6 +2588,10 @@ function User.PBUseItemReqCmd(req)
     -- 图鉴信息变更
     if table.size(change_image_ids) > 0 then
         scripts.ItemImage.SaveAndLog(change_image_ids)
+    end
+    -- 账户数据变更
+    if table.size(update_user_attr) > 0 then
+        User.SetUserAttr(update_user_attr, true)
     end
 end
 
