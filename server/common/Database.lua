@@ -359,8 +359,25 @@ function _M.loaduser_attr(addr, uid)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
-        local _, tmp_data = protocol.decodewithname("PBUserAttr", pbdata)
-        return tmp_data
+        local success, result = pcall(function()
+            local _, tmp_data = protocol.decodewithname("PBUserAttr", pbdata)
+            return tmp_data
+        end)
+        
+        if success then
+            return result
+        else
+            -- 解码失败，可能是协议格式不兼容，尝试修复
+            moon.error(string.format("Failed to decode PBUserAttr for uid %d: %s", uid, result))
+            
+            -- 尝试使用旧的解码方式或其他修复逻辑
+            -- 这里可以根据具体情况实现数据迁移逻辑
+            -- 目前返回默认值，让系统重新初始化
+            local UserAttrDef = require("common.def.UserAttrDef")
+            local default_attr = UserAttrDef.newUserAttr()
+            default_attr.uid = uid
+            return default_attr
+        end
     end
 
     return nil
@@ -1607,6 +1624,36 @@ function _M.BattleDeleteEmptyList(addr_db, key, uid)
     if err then
         moon.error("DeleteEmptyList failed:" .. tostring(err) .. uid)
     end
+end
+
+-- 段位数据
+function _M.loadgradeinfo(addr, uid)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.grades WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBGradePlayerData", pbdata)
+        return tmp_data
+    end
+    moon.error("loadgradeinfo failed", uid, err)
+    return nil
+end
+
+function _M.savegradeinfo(addr, uid, data)
+    assert(data)
+
+    local data_str = jencode(data)
+    local _, pbdata = protocol.encodewithname("PBGradePlayerData", data)
+    local pbvalue = crypt.base64encode(pbdata)
+    local cmd = string.format([[
+        INSERT INTO mgame.grades (uid, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
+
+    return moon.send("lua", addr, cmd)
 end
 
 return _M

@@ -3,27 +3,9 @@ import "item.proto";
 import "bag.proto";
 import "role.proto";
 import "ghost.proto";
+import "grade.proto";
 
 //----------------------------------新增协议----------------------------------//
-message PBRankNode{
-		int32 grade = 1;//品阶
-		int32 level = 2;//品级
-		int32 star = 3;//当前星星数量
-		int32 score = 4;//隐藏分
-		int32 zhu_ji_points = 5;//筑基点（用于升星或抵扣星星）
-		int32 all_stars = 6;//所有星星数（记录玩家所有的星星数量，用于换算品阶、品级这些）
-}
-// 段位
-message PBRankLevel
-{
-	
-	PBRankNode ghost_rank = 1;
-	PBRankNode human_rank = 2;
-	// 历史最高段位
-	PBRankNode ghost_top_rank = 3;
-	PBRankNode human_top_rank = 4;
-}
-
 // 账户buff加成
 message PBBuffData
 {
@@ -51,8 +33,8 @@ message PBUserAttr
     // 战队ID
     int64 guild_id       = 11;
     string guild_name      = 12;
-	// 段位信息
-	PBRankLevel rank_level	= 13;	//	覆盖更新
+	// 段位简略信息
+	PBGradeShowInfo grade_show_info	= 13;	//	覆盖更新
     PBSimpleRoleData cur_show_role = 14;	//	覆盖更新
     PBPinchFaceData pinch_face_data = 15;	// 捏脸数据	覆盖更新
 	int32 title     = 16;	//当前佩戴的称号
@@ -265,6 +247,7 @@ message PBGetOtherDetailRspCmd
     PBUserAttr info		= 5; // 账号信息
 	PBRoleData role_data	= 6; // 角色数据
 	PBGhostData ghost_data	= 7; // 鬼宠数据
+	map<int32, PBGradeShowInfo> grade_show_infos	= 8; // 段位信息
 }
 
 // 客户端使用皮肤礼包

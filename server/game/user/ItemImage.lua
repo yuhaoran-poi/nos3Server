@@ -596,14 +596,14 @@ function ItemImage.UseItemAddImage(item_cfg, msg_data, change_image_ids)
         and msg_data.use_item_cnt == 1
         and item_cfg.use_skin
         and item_cfg.use_skin > 0 then
-        err_code = scripts.ItemImage.AddItemImage(item_cfg.use_skin, change_image_ids, true)
+        err_code = ItemImage.AddItemImage(item_cfg.use_skin, change_image_ids, true)
         return err_code
     elseif item_cfg.use_type == 2
         and item_cfg.use_skin
         and item_cfg.use_skin > 0
         and item_cfg.skin_time
         and item_cfg.skin_time > 0 then
-        err_code = scripts.ItemImage.AddItemImageValidtime(item_cfg.use_skin, change_image_ids, true,
+        err_code = ItemImage.AddItemImageValidtime(item_cfg.use_skin, change_image_ids, true,
             item_cfg.skin_time * msg_data.use_item_cnt)
         return err_code
     elseif item_cfg.use_type == 3 then

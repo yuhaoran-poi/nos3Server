@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+message PBGradeData
+{
+	int32 grade_id	= 1;
+	int32 now_grade_score	= 2;
+	int32 highest_grade_score	= 3;
+	map<int32, int32> already_get_reward_ids	= 4;
+}
+
+message PBGradeInfo
+{
+	int32 season_id	= 1;
+	map<int32, PBGradeData> grade_datas	= 2;
+}
+
+message PBGradeShowData
+{
+	int32 grade_id	= 1;
+	int32 now_grade_score	= 2;
+}
+
+message PBGradeShowInfo
+{
+	int32 season_id	= 1;
+	map<int32, PBGradeShowData> grade_show_datas	= 2;
+}
+
+message PBGradePlayerData
+{
+	int32 cur_season_id	= 1;
+	map<int32, PBGradeInfo> grade_infos	= 2;
+}
+
+// 获取段位数据
+message PBGetGradeDataReqCmd
+{
+	int64 uid	= 1;
+}
+
+message PBGetGradeDataRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    int64 uid	= 3;
+	int64 now_sys_ts	= 4;	//当前系统时间
+	PBGradePlayerData grade_player_data	= 5;	//玩家段位数据
+}
+
+// 获得段位奖励
+message PBGetGradeRewardReqCmd
+{
+	int64 uid	= 1;
+	int32 grade_id	= 2;
+	repeated int32 level_ids	= 3;
+}
+
+message PBGetGradeRewardRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    int64 uid	= 3;
+	PBGradeData grade_data	= 4;
+}

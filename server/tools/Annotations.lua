@@ -299,6 +299,8 @@
 ---@field public game_role_exp PBGameAddRoleExp[] @角色增加经验
 ---@field public consume_bag PBBag @消耗品背包
 ---@field public booty_bag PBBag @战利品背包
+---@field public grade_id integer
+---@field public change_score integer @段位积分
 ---@field public reward_boxs PBItemSimple[] @获得的奖励宝箱
 
 
@@ -870,6 +872,58 @@
 ---@class Any
 ---@field public type_url string
 ---@field public value string
+
+
+---@class PBGradeData
+---@field public grade_id integer
+---@field public now_grade_score integer
+---@field public highest_grade_score integer
+---@field public already_get_reward_ids table<integer, integer>
+
+
+---@class PBGradeInfo
+---@field public season_id integer
+---@field public grade_datas table<integer, PBGradeData>
+
+
+---@class PBGradeShowData
+---@field public grade_id integer
+---@field public now_grade_score integer
+
+
+---@class PBGradeShowInfo
+---@field public season_id integer
+---@field public grade_show_datas table<integer, PBGradeShowData>
+
+
+---@class PBGradePlayerData
+---@field public cur_season_id integer
+---@field public grade_infos table<integer, PBGradeInfo>
+
+
+---@class PBGetGradeDataReqCmd
+---@field public uid integer
+
+
+---@class PBGetGradeDataRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public now_sys_ts integer @当前系统时间
+---@field public grade_player_data PBGradePlayerData @玩家段位数据
+
+
+---@class PBGetGradeRewardReqCmd
+---@field public uid integer
+---@field public grade_id integer
+---@field public level_ids integer[]
+
+
+---@class PBGetGradeRewardRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public grade_data PBGradeData
 
 
 ---@class PBGuildItemData
@@ -2927,22 +2981,6 @@
 ---@field public trade_id integer @交易号
 
 
----@class PBRankNode
----@field public grade integer @品阶
----@field public level integer @品级
----@field public star integer @当前星星数量
----@field public score integer @隐藏分
----@field public zhu_ji_points integer @筑基点（用于升星或抵扣星星）
----@field public all_stars integer @所有星星数（记录玩家所有的星星数量，用于换算品阶、品级这些）
-
-
----@class PBRankLevel
----@field public ghost_rank PBRankNode
----@field public human_rank PBRankNode
----@field public ghost_top_rank PBRankNode
----@field public human_top_rank PBRankNode
-
-
 ---@class PBBuffData
 ---@field public buff_id integer
 ---@field public buff_effect integer
@@ -2964,7 +3002,7 @@
 ---@field public account_exp integer
 ---@field public guild_id integer
 ---@field public guild_name string
----@field public rank_level PBRankLevel @覆盖更新
+---@field public grade_show_info PBGradeShowInfo @覆盖更新
 ---@field public cur_show_role PBSimpleRoleData @覆盖更新
 ---@field public pinch_face_data PBPinchFaceData @捏脸数据	覆盖更新
 ---@field public title integer @当前佩戴的称号
@@ -3132,6 +3170,7 @@
 ---@field public info PBUserAttr @账号信息
 ---@field public role_data PBRoleData @角色数据
 ---@field public ghost_data PBGhostData @鬼宠数据
+---@field public grade_show_infos table<integer, PBGradeShowInfo> @段位信息
 
 
 ---@class PBUseSkinGiftReqCmd
@@ -3277,6 +3316,7 @@
 ---@field Friend Friend
 ---@field Ghost Ghost
 ---@field Gods Gods
+---@field Grade Grade
 ---@field GuildProxy GuildProxy
 ---@field Hello Hello
 ---@field Item Item
@@ -3407,6 +3447,7 @@
 ---@field ConsumablesBackpackExpansion ConsumablesBackpackExpansion_cfg[]
 ---@field EquipmentTagPool EquipmentTagPool_cfg[]
 ---@field ExchangeStoreWaresConfig ExchangeStoreWaresConfig_cfg[]
+---@field FallBox FallBox_cfg[]
 ---@field FriendConfig FriendConfig_cfg[]
 ---@field GameChapter GameChapter_cfg[]
 ---@field GamePropUpLv GamePropUpLv_cfg[]
@@ -3427,7 +3468,9 @@
 ---@field MagicItemUpLv MagicItemUpLv_cfg[]
 ---@field PropCompose PropCompose_cfg[]
 ---@field RandomComposite RandomComposite_cfg[]
+---@field RankConfig RankConfig_cfg[]
 ---@field RankLevel RankLevel_cfg[]
+---@field RankRewardPool RankRewardPool_cfg[]
 ---@field RoleLvAward RoleLvAward_cfg[]
 ---@field RoleUpLv RoleUpLv_cfg[]
 ---@field Skin Skin_cfg[]

@@ -1,4 +1,5 @@
 local LuaExt = require "common.LuaExt"
+local GradeDef = require "common.def.GradeDef"
 
 local UserAttrDef = {
     ONLINE_STATE = {
@@ -74,7 +75,7 @@ local defaultPBUserAttr = {
     account_exp = 0,                                                     --账号经验
     guild_id = 0,                                                       --公会UID
     guild_name = "",                                                     --公会名称
-    rank_level = LuaExt.const(table.copy(defaultPBRankLevel)),           --排名
+    grade_show_info = GradeDef.newGradeShowInfo(),                       --段位
     cur_show_role = LuaExt.const(table.copy(defaultPBSimpleRoleData)),   --当前展示的角色
     pinch_face_data = LuaExt.const(table.copy(defaultPBPinchFaceData)),  --捏脸数据
     title = 0,                                                           --当前佩戴的称号

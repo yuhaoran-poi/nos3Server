@@ -810,26 +810,63 @@ takeoffIdx"e
 uid (Ruid&
 ghost_config_id (RghostConfigId
 skin (Rskinbproto3
-—0
+≤
+grade.proto"§
+PBGradeData
+grade_id (RgradeId&
+now_grade_score (RnowGradeScore.
+highest_grade_score (RhighestGradeScoreZ
+already_get_reward_ids (2%.PBGradeData.AlreadyGetRewardIdsEntryRalreadyGetRewardIdsF
+AlreadyGetRewardIdsEntry
+key (Rkey
+value (Rvalue:8"∂
+PBGradeInfo
+	season_id (RseasonId=
+grade_datas (2.PBGradeInfo.GradeDatasEntryR
+gradeDatasK
+GradeDatasEntry
+key (Rkey"
+value (2.PBGradeDataRvalue:8"T
+PBGradeShowData
+grade_id (RgradeId&
+now_grade_score (RnowGradeScore"”
+PBGradeShowInfo
+	season_id (RseasonIdN
+grade_show_datas (2$.PBGradeShowInfo.GradeShowDatasEntryRgradeShowDatasS
+GradeShowDatasEntry
+key (Rkey&
+value (2.PBGradeShowDataRvalue:8"…
+PBGradePlayerData"
+cur_season_id (RcurSeasonIdC
+grade_infos (2".PBGradePlayerData.GradeInfosEntryR
+gradeInfosK
+GradeInfosEntry
+key (Rkey"
+value (2.PBGradeInfoRvalue:8"(
+PBGetGradeDataReqCmd
+uid (Ruid"∞
+PBGetGradeDataRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+
+now_sys_ts (RnowSysTs>
+grade_player_data (2.PBGradePlayerDataRgradePlayerData"b
+PBGetGradeRewardReqCmd
+uid (Ruid
+grade_id (RgradeId
+	level_ids (RlevelIds"Å
+PBGetGradeRewardRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid+
+
+grade_data (2.PBGradeDataR	gradeDatabproto3
+£/
 
 user.proto
 item.proto	bag.proto
-role.protoghost.proto"£
-
-PBRankNode
-grade (Rgrade
-level (Rlevel
-star (Rstar
-score (Rscore"
-zhu_ji_points (RzhuJiPoints
-	all_stars (RallStars"À
-PBRankLevel*
-
-ghost_rank (2.PBRankNodeR	ghostRank*
-
-human_rank (2.PBRankNodeR	humanRank1
-ghost_top_rank (2.PBRankNodeRghostTopRank1
-human_top_rank (2.PBRankNodeRhumanTopRank"ü
+role.protoghost.protograde.proto"ü
 
 PBBuffData
 buff_id (RbuffId
@@ -839,7 +876,7 @@ buffEffect
 periodType
 end_ts (RendTs
 surplus_cnt (R
-surplusCnt"€
+surplusCnt"Ë
 
 PBUserAttr
 uid (Ruid!
@@ -858,9 +895,8 @@ head_frame (R	headFrame.
 accountExp
 guild_id (RguildId
 
-guild_name (	R	guildName+
-
-rank_level (2.PBRankLevelR	rankLevel5
+guild_name (	R	guildName8
+grade_show_info (2.PBGradeShowInfoRgradeShowInfo5
 cur_show_role (2.PBSimpleRoleDataRcurShowRole8
 pinch_face_data (2.PBPinchFaceDataRpinchFaceData
 title (Rtitle
@@ -982,7 +1018,7 @@ cost_items (2.PBItemSimpleR	costItems"I
 info (2.PBUserAttrRinfo"G
 PBGetOtherDetailReqCmd
 uid (Ruid
-	quest_uid (RquestUid"È
+	quest_uid (RquestUid"ï
 PBGetOtherDetailRspCmd
 code (Rcode
 error (	Rerror
@@ -991,7 +1027,11 @@ cost_items (2.PBItemSimpleR	costItems"I
 info (2.PBUserAttrRinfo(
 	role_data (2.PBRoleDataRroleData+
 
-ghost_data (2.PBGhostDataR	ghostData"@
+ghost_data (2.PBGhostDataR	ghostDataU
+grade_show_infos (2+.PBGetOtherDetailRspCmd.GradeShowInfosEntryRgradeShowInfosS
+GradeShowInfosEntry
+key (Rkey&
+value (2.PBGradeShowInfoRvalue:8"@
 PBUseSkinGiftReqCmd
 uid (Ruid
 gift_id (RgiftId"j
@@ -1136,7 +1176,7 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-ˆ
+¥
 dsnode.proto
 item.proto
 user.proto	bag.proto
@@ -1145,7 +1185,7 @@ gods.proto"L
 PBGameAddRoleExp
 roleid (Rroleid 
 add_role_exp (R
-addRoleExp"ì
+addRoleExp"—
 PBGameSettle
 settle_data (	R
 settleData-
@@ -1153,8 +1193,10 @@ settleData-
 game_role_exp (2.PBGameAddRoleExpRgameRoleExp'
 consume_bag (2.PBBagR
 consumeBag#
-	booty_bag (2.PBBagRbootyBag.
-reward_boxs (2.PBItemSimpleR
+	booty_bag (2.PBBagRbootyBag
+grade_id (RgradeId!
+change_score (RchangeScore.
+reward_boxs (2.PBItemSimpleR
 rewardBoxs"=
 PBEnterCityReqCmd
 uid (Ruid

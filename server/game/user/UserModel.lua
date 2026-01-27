@@ -260,4 +260,16 @@ function UserModel.SetAntiqueShowcase(antique_showcase)
     -- end
 end
 
+---@return PBGradePlayerData ? nil
+function UserModel.GetGrades()
+    if DBData and DBData.grades then
+        return DBData.grades
+    end
+    return nil
+end
+
+function UserModel.SetGrades(grades)
+    DBData.grades = grades
+end
+
 return UserModel

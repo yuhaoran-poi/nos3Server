@@ -480,6 +480,16 @@ local ErrorCode = {
     GodBlockUnlockLevelNotEnough = 2005,
     --- 神龛解锁神明数量不足
     GodBlockUnlockGodNumNotEnough = 2006,
+
+    --段位系统相关错误码
+    --- 段位数据不存在
+    GradeNoData = 2051,
+    --- 段位未解锁
+    GradeUnlock = 2052,
+    --- 段位奖励已领取
+    GradeRewardAlreadyGet = 2053,
+    --- 段位积分不足
+    GradeScoreNotEnough = 2054,
 }
 
 return ErrorCode

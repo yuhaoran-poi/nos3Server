@@ -700,6 +700,11 @@ function Room.GameSettle(settle_info)
             scripts.Role.SaveAndLog(change_roles)
         end
     end
+
+    if settle_info.grade_id and settle_info.change_score then
+        -- 变更段位积分
+        scripts.Grade.ChangeScore(settle_info.grade_id, settle_info.change_score)
+    end
 end
 
 function Room.GameReturnItems(return_info)

@@ -32,6 +32,7 @@ local ItemDef = {
         SortOutItems = 28,       --整理物品
         BattleSettle = 29,       --战斗结算
         BattleRunAway = 30,      --战斗逃跑
+        GradeReward = 31,        --段位奖励
 
         -- WearEquipment = 25,      --装备道具
         -- TakeOffEquipment = 26,   --脱下道具

@@ -291,7 +291,7 @@ function User.GetUsrRoomBriefData()
         ProtoEnum.UserAttrType.head_icon,
         ProtoEnum.UserAttrType.sex,
         ProtoEnum.UserAttrType.head_frame,
-        ProtoEnum.UserAttrType.rank_level,
+        ProtoEnum.UserAttrType.grade_show_info,
         ProtoEnum.UserAttrType.cur_show_role,
         ProtoEnum.UserAttrType.title,
         ProtoEnum.UserAttrType.player_flag,
@@ -309,7 +309,7 @@ function User.GetUserDetails()
         ProtoEnum.UserAttrType.head_icon,
         ProtoEnum.UserAttrType.sex,
         ProtoEnum.UserAttrType.head_frame,
-        ProtoEnum.UserAttrType.rank_level,
+        ProtoEnum.UserAttrType.grade_show_info,
         ProtoEnum.UserAttrType.guild_id,
         ProtoEnum.UserAttrType.guild_name,
         ProtoEnum.UserAttrType.cur_show_role,
@@ -320,8 +320,10 @@ function User.GetUserDetails()
     local details_data = User.GetOnlineUserAttr(details_fields)
     local role_data = scripts.Role.GetRoleInfo(details_data.cur_show_role.config_id)
     local ghost_data = scripts.Ghost.GetGhostInfo(details_data.cur_show_ghost.config_id)
+    local grade_show_infos = scripts.Grade.GetGradeShowInfos()
 
-    return {user_attr = details_data, role_data = role_data, ghost_data = ghost_data}
+    return { user_attr = details_data, role_data = role_data, ghost_data = ghost_data, grade_show_infos =
+    grade_show_infos }
 end
 
 function User.Login(req)
@@ -539,7 +541,7 @@ end
 
 function User.PBClientGetAllUserAttrReqCmd(req)
     local total_attr = User.GetOnlineUserAttr()
-
+    moon.warn(string.format("PBClientGetAllUserAttrReqCmd total_attr = %s", json.pretty_encode(total_attr)))
     local ret = {
         code = ErrorCode.None,
         error = "success",
@@ -1503,9 +1505,10 @@ function User.PBGetOtherDetailReqCmd(req)
             info = res.user_attr,
             role_data = res.role_data,
             ghost_data = res.ghost_data,
+            grade_show_infos = res.grade_show_infos,
         }, req.msg_context.stub_id)
     else
-        return context.S2C(context.net_id, CmdCode.PBGetOtherDetailReqCmd, {
+        return context.S2C(context.net_id, CmdCode.PBGetOtherDetailRspCmd, {
             code = ErrorCode.UserOffline,
             error = "用户离线",
             uid = context.uid,
@@ -1667,19 +1670,19 @@ function User.PBClientItemRepairReqCmd(req)
     }, req.msg_context.stub_id)
 end
 
-function User.PBUseSkinGiftReqCmd(req)
-    -- 参数验证
-    if not req.msg.uid or not req.msg.gift_id then
-        return context.S2C(context.net_id, CmdCode.PBUseSkinGiftRspCmd, {
-            code = ErrorCode.ParamInvalid,
-            error = "无效请求参数",
-            uid = context.uid,
-            gift_id = req.msg.gift_id or 0,
-        }, req.msg_context.stub_id)
-    end
+-- function User.PBUseSkinGiftReqCmd(req)
+--     -- 参数验证
+--     if not req.msg.uid or not req.msg.gift_id then
+--         return context.S2C(context.net_id, CmdCode.PBUseSkinGiftRspCmd, {
+--             code = ErrorCode.ParamInvalid,
+--             error = "无效请求参数",
+--             uid = context.uid,
+--             gift_id = req.msg.gift_id or 0,
+--         }, req.msg_context.stub_id)
+--     end
 
-    -- 读取皮肤礼包表
-end
+--     -- 读取皮肤礼包表
+-- end
 
 function User.Composite(composite_cfg, add_roles, add_items)
     local random_rate = math.random(1, 10000)
