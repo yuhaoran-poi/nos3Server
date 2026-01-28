@@ -1493,6 +1493,12 @@ function Roommgr.PlayEnd(msg)
     for _, player in pairs(room.players) do
         if player.is_ready == 2 then
             away_room(room.room_data.roomid, player.mem_info.uid)
+        else
+            if player.mem_info.uid == room.room_data.master_id then
+                player.is_ready = 1
+            else
+                player.is_ready = 0
+            end
         end
     end
 
