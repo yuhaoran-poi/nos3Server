@@ -14,6 +14,9 @@ function CommonCfgDef.loadCfg()
 end
 
 function CommonCfgDef.getConf(name)
+    if not CommonCfgDef.confs or table.size(CommonCfgDef.confs) == 0 then
+        CommonCfgDef.loadCfg()
+    end
     return CommonCfgDef.confs[name]
 end
 
