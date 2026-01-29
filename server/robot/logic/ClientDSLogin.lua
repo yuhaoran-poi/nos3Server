@@ -63,29 +63,29 @@ function Client:add_items_city_player(uid, cityid)
         simple_items = {},
     }
     local item_1 = {
-        config_id = 2,
-        item_count = 10000,
+        config_id = 30000,
+        item_count = 1,
         uniqid = 0
     }
     local item_3 = {
-        config_id = 51002,
-        item_count = 777,
+        config_id = 30001,
+        item_count = 2,
         uniqid = 0
     }
     local item_2 = {
-        config_id = 51001,
-        item_count = 777,
+        config_id = 354000,
+        item_count = 3,
         uniqid = 0
     }
     local item_5 = {
-        config_id = 600001,
-        item_count = 1,
-        uniqid = 1100003934210
+        config_id = 354001,
+        item_count = 4,
+        uniqid = 0
     }
     local item_4 = {
-        config_id = 600003,
-        item_count = 1,
-        uniqid = 1100003934211
+        config_id = 354002,
+        item_count = 5,
+        uniqid = 0
     }
     local item_6 = {
         config_id = 600002,
@@ -98,13 +98,13 @@ function Client:add_items_city_player(uid, cityid)
         uniqid = 1100004196359
     }
     
-    -- table.insert(req_msg.simple_items, item_1)
-    -- table.insert(req_msg.simple_items, item_2)
-    -- table.insert(req_msg.simple_items, item_3)
-    -- table.insert(req_msg.simple_items, item_4)
-    -- table.insert(req_msg.simple_items, item_5)
+    table.insert(req_msg.simple_items, item_1)
+    table.insert(req_msg.simple_items, item_2)
+    table.insert(req_msg.simple_items, item_3)
+    table.insert(req_msg.simple_items, item_4)
+    table.insert(req_msg.simple_items, item_5)
     -- table.insert(req_msg.simple_items, item_6)
-    table.insert(req_msg.simple_items, item_7)
+    -- table.insert(req_msg.simple_items, item_7)
 
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     self:send("PBAddItemsCityPlayerReqCmd", req_msg, function(msg)
