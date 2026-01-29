@@ -575,6 +575,7 @@ function Room.PBCheckReturnRoomReqCmd(req)
 end
 
 function Room.GameSettle(settle_info)
+    moon.info(string.format("Room.GameSettle settle_info:\n%s", json.pretty_encode(settle_info)))
     -- 游戏结算
     local mail_id_cfg = CommonCfgDef.getConf("DungeonAwardEmailId")
     if not mail_id_cfg then
