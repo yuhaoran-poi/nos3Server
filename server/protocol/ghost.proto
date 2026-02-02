@@ -30,6 +30,7 @@ message PBGhostImage
 	int32 exp			= 3;	//经验值
 	int32 cur_skin_id	= 4;	//当前装备皮肤
 	repeated int32 skin_id_list	= 5;	//拥有皮肤
+	int32 star_fail_cnt		= 6;	//升星失败次数
 }
 
 // 鬼宠数据

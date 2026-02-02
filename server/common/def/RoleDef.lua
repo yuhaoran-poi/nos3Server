@@ -55,6 +55,7 @@ local defaultPBRoleData = {
     emoji = {},
     up_lv_rewards = {},
     space_ring = {},
+    star_fail_cnt = 0,
 }
 
 local defaultPBUserRoleDatas = {

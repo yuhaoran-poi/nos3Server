@@ -67,6 +67,12 @@ local defaultPBCoin = {
     coin_count = 0,
 }
 
+local defaultPBSkill = {
+    config_id = 0,
+    star = 0,
+    star_fail_cnt = 0,
+}
+
 -- 通用道具数据
 local defaultPBItemCommonData = {
     config_id = 0,
@@ -145,6 +151,7 @@ local defaultPBImage = {
     config_id = 0,
     star_level = 0,
     exp = 0,
+    star_fail_cnt = 0,
 }
 
 local defaultPBSkinImage = {
@@ -183,6 +190,11 @@ local defaultAntiqueShowcaseS = {
 --- @return PBCoin
 function ItemDef.newCoin()
     return LuaExt.const(table.copy(defaultPBCoin))
+end
+
+--- @return PBSkill
+function ItemDef.newSkill()
+    return LuaExt.const(table.copy(defaultPBSkill))
 end
 
 --- @return PBItemCommon

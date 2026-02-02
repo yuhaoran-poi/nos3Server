@@ -30,6 +30,7 @@ local defaultPBGhostImage = {
     exp = 0,
     cur_skin_id = 0,
     skin_id_list = {},
+    star_fail_cnt = 0,
 }
 
 local defaultPBUserGhostDatas = {

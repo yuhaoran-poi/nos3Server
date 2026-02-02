@@ -47,6 +47,7 @@ message PBRoleData
 	repeated int32 emoji				= 18;	//表情槽
 	map<int32, int32> up_lv_rewards		= 19;	//已领取的升级奖励
 	PBItemData space_ring	= 20;	//空间戒指
+	int32 star_fail_cnt		= 21;	//升星失败次数
 }
 
 // 角色数据

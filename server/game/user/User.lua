@@ -1346,7 +1346,7 @@ function User.PBClientItemUpStarReqCmd(req)
         -- 图鉴升星
         err_code, change_log = scripts.ItemImage.UpStarImage(req.msg.config_id)
     end
-    if err_code ~= ErrorCode.None then
+    if err_code ~= ErrorCode.None and err_code ~= ErrorCode.UpStarProbFail then
         return context.S2C(context.net_id, CmdCode.PBClientItemUpStarRspCmd, {
             code = err_code,
             error = "升星失败",
@@ -1356,7 +1356,7 @@ function User.PBClientItemUpStarReqCmd(req)
     end
 
     context.S2C(context.net_id, CmdCode.PBClientItemUpStarRspCmd, {
-        code = ErrorCode.None,
+        code = err_code,
         error = "",
         uid = context.uid,
         config_id = req.msg.config_id,

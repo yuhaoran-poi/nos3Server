@@ -11,6 +11,7 @@ local BagDef = require("common.def.BagDef")
 local ProtoEnum = require("tools.ProtoEnum")
 local ItemDefine = require("common.logic.ItemDefine")
 local ItemDef = require("common.def.ItemDef")
+local CommonCfgDef = require("common.def.CommonCfgDef")
 
 ---@type user_context
 local context = ...
@@ -181,10 +182,9 @@ function Role.AddRole(roleid)
     role_info.config_id = roleid
     role_info.cur_main_skill_id = role_cfg.init_main_skill
     for _, skillid in pairs(role_cfg.main_skill) do
-        local skill_info = {
-            config_id = skillid,
-            star = -1,
-        }
+        local skill_info = ItemDef.newSkill()
+        skill_info.config_id = skillid
+        skill_info.star = -1
         if skillid == role_info.cur_main_skill_id then
             skill_info.star = 0
         end
@@ -192,10 +192,9 @@ function Role.AddRole(roleid)
     end
     role_info.cur_minor_skill1_id = role_cfg.init_q_skill
     for _, skillid in pairs(role_cfg.q_skill) do
-        local skill_info = {
-            config_id = skillid,
-            star = -1,
-        }
+        local skill_info = ItemDef.newSkill()
+        skill_info.config_id = skillid
+        skill_info.star = -1
         if skillid == role_info.cur_minor_skill1_id then
             skill_info.star = 0
         end
@@ -203,10 +202,9 @@ function Role.AddRole(roleid)
     end
     role_info.cur_minor_skill2_id = role_cfg.init_e_skill
     for _, skillid in pairs(role_cfg.e_skill) do
-        local skill_info = {
-            config_id = skillid,
-            star = -1,
-        }
+        local skill_info = ItemDef.newSkill()
+        skill_info.config_id = skillid
+        skill_info.star = -1
         if skillid == role_info.cur_minor_skill2_id then
             skill_info.star = 0
         end
@@ -214,10 +212,9 @@ function Role.AddRole(roleid)
     end
     role_info.cur_passive_skill_id = role_cfg.init_passive_skill
     for _, skillid in pairs(role_cfg.passive_skill) do
-        local skill_info = {
-            config_id = skillid,
-            star = -1,
-        }
+        local skill_info = ItemDef.newSkill()
+        skill_info.config_id = skillid
+        skill_info.star = -1
         if skillid == role_info.cur_passive_skill_id then
             skill_info.star = 0
         end
@@ -778,6 +775,17 @@ function Role.UpStar(roleid)
     end
     local cost_cfg = star_cfg[cost_key]
 
+    local rate_key = "rate" .. (role_info.star_level + 1)
+    if not star_cfg[rate_key] then
+        return ErrorCode.ConfigError
+    end
+    local rate_cfg = star_cfg[rate_key]
+
+    local add_rate_cfg = CommonCfgDef.getConf("UpStarAdditionRate")
+    if not add_rate_cfg then
+        return ErrorCode.ConfigError
+    end
+
     -- 计算消耗资源
     local cost_items = {}
     local cost_coins = {}
@@ -792,9 +800,6 @@ function Role.UpStar(roleid)
     if err_code_coins ~= ErrorCode.None then
         return err_code_coins
     end
-
-    -- 增加星星
-    role_info.star_level = role_info.star_level + 1
 
     -- 扣除消耗
     local change_log = {}
@@ -814,7 +819,19 @@ function Role.UpStar(roleid)
         end
     end
 
-    return ErrorCode.None, change_log
+    -- 计算升星概率
+    local now_rate = rate_cfg + add_rate_cfg.value * role_info.star_fail_cnt
+    local random_rate = math.random(1, 10000)
+    if random_rate > now_rate then
+        -- 增加升星失败次数
+        role_info.star_fail_cnt = role_info.star_fail_cnt + 1
+        return ErrorCode.UpStarProbFail, change_log
+    else
+        -- 增加星星
+        role_info.star_level = role_info.star_level + 1
+        role_info.star_fail_cnt = 0
+        return ErrorCode.None, change_log
+    end
 end
 
 function Role.PBRoleWearEquipReqCmd(req)
@@ -1155,10 +1172,12 @@ function Role.PBRoleSkillUpStarReqCmd(req)
     -- 确定升级的技能
     local skill_star = -1
     local skill_name = "none"
+    local skill_star_fail_cnt = 0
     for id, skill in pairs(role_info.main_skill) do
         if id == req.msg.skill_id then
             skill_star = skill.star
             skill_name = "main_skill"
+            skill_star_fail_cnt = skill.star_fail_cnt
             break
         end
     end
@@ -1167,6 +1186,7 @@ function Role.PBRoleSkillUpStarReqCmd(req)
             if id == req.msg.skill_id then
                 skill_star = skill.star
                 skill_name = "minor_skill1"
+                skill_star_fail_cnt = skill.star_fail_cnt
                 break
             end
         end
@@ -1176,6 +1196,7 @@ function Role.PBRoleSkillUpStarReqCmd(req)
             if id == req.msg.skill_id then
                 skill_star = skill.star
                 skill_name = "minor_skill2"
+                skill_star_fail_cnt = skill.star_fail_cnt
                 break
             end
         end
@@ -1185,6 +1206,7 @@ function Role.PBRoleSkillUpStarReqCmd(req)
             if id == req.msg.skill_id then
                 skill_star = skill.star
                 skill_name = "passive_skill"
+                skill_star_fail_cnt = skill.star_fail_cnt
                 break
             end
         end
@@ -1211,6 +1233,17 @@ function Role.PBRoleSkillUpStarReqCmd(req)
     end
     local cost_cfg = star_cfg[cost_key]
 
+    local rate_key = "rate" .. (skill_star + 1)
+    if not star_cfg[rate_key] then
+        return ErrorCode.ConfigError
+    end
+    local rate_cfg = star_cfg[rate_key]
+
+    local add_rate_cfg = CommonCfgDef.getConf("UpStarAdditionRate")
+    if not add_rate_cfg then
+        return ErrorCode.ConfigError
+    end
+
     -- 计算消耗资源
     local cost_items = {}
     local cost_coins = {}
@@ -1226,15 +1259,6 @@ function Role.PBRoleSkillUpStarReqCmd(req)
     if err_code_coins ~= ErrorCode.None then
         return context.S2C(context.net_id, CmdCode["PBRoleSkillUpStarRspCmd"],
             { code = err_code_coins, error = "金币不足", uid = context.uid, skill_id = req.msg.skill_id }, req.msg_context.stub_id)
-    end
-
-    -- 增加星星
-    skill_star = skill_star + 1
-    for id, skill in pairs(role_info[skill_name]) do
-        if id == req.msg.skill_id then
-            skill.star = skill_star
-            break
-        end
     end
 
     -- 扣除消耗
@@ -1257,13 +1281,44 @@ function Role.PBRoleSkillUpStarReqCmd(req)
         end
     end
 
-    context.S2C(context.net_id, CmdCode.PBRoleSkillUpStarRspCmd, {
-        code = ErrorCode.None,
-        error = "",
-        uid = context.uid,
-        roleid = req.msg.roleid,
-        skill_id = req.msg.skill_id,
-    }, req.msg_context.stub_id)
+    -- 计算升星概率
+    local now_rate = rate_cfg + add_rate_cfg.value * skill_star_fail_cnt
+    local random_rate = math.random(1, 10000)
+    if random_rate > now_rate then
+        -- 增加升星失败次数
+        for id, skill in pairs(role_info[skill_name]) do
+            if id == req.msg.skill_id then
+                skill.star_fail_cnt = skill_star_fail_cnt + 1
+                break
+            end
+        end
+
+        context.S2C(context.net_id, CmdCode.PBRoleSkillUpStarRspCmd, {
+            code = ErrorCode.UpStarProbFail,
+            error = "",
+            uid = context.uid,
+            roleid = req.msg.roleid,
+            skill_id = req.msg.skill_id,
+        }, req.msg_context.stub_id)
+    else
+        -- 增加星星
+        skill_star = skill_star + 1
+        for id, skill in pairs(role_info[skill_name]) do
+            if id == req.msg.skill_id then
+                skill.star = skill_star
+                skill.star_fail_cnt = 0
+                break
+            end
+        end
+
+        context.S2C(context.net_id, CmdCode.PBRoleSkillUpStarRspCmd, {
+            code = ErrorCode.None,
+            error = "",
+            uid = context.uid,
+            roleid = req.msg.roleid,
+            skill_id = req.msg.skill_id,
+        }, req.msg_context.stub_id)
+    end
 
     -- local save_bags = {}
     -- for bagType, _ in pairs(bag_change_log) do
@@ -1640,28 +1695,24 @@ function Role.PBRoleSkillCompositeReqCmd(req)
     end
 
     if composite_cfg.type == RoleDef.SkillType.MinorSkill_1 then
-        local skill_info = {
-            config_id = req.msg.composite_id,
-            star = 0,
-        }
+        local skill_info = ItemDef.newSkill()
+        skill_info.config_id = req.msg.composite_id
+
         role_info.minor_skill1[req.msg.composite_id] = skill_info
     elseif composite_cfg.type == RoleDef.SkillType.MinorSkill_2 then
-        local skill_info = {
-            config_id = req.msg.composite_id,
-            star = 0,
-        }
+        local skill_info = ItemDef.newSkill()
+        skill_info.config_id = req.msg.composite_id
+
         role_info.minor_skill2[req.msg.composite_id] = skill_info
     elseif composite_cfg.type == RoleDef.SkillType.PassiveSkill then
-        local skill_info = {
-            config_id = req.msg.composite_id,
-            star = 0,
-        }
+        local skill_info = ItemDef.newSkill()
+        skill_info.config_id = req.msg.composite_id
+
         role_info.passive_skill[req.msg.composite_id] = skill_info
     elseif composite_cfg.type == RoleDef.SkillType.MainSkill then
-        local skill_info = {
-            config_id = req.msg.composite_id,
-            star = 0,
-        }
+        local skill_info = ItemDef.newSkill()
+        skill_info.config_id = req.msg.composite_id
+
         role_info.main_skill[req.msg.composite_id] = skill_info
     else
         rsp_msg.code = ErrorCode.ConfigError

@@ -56,7 +56,7 @@ login_data (2.PBDSLoginDataR	loginData"f
 error (	Rerror
 dsid (Rdsid
 net_id (RnetIdbproto3
-Ø,
+˜,
 
 item.proto"@
 PBCoin
@@ -78,10 +78,11 @@ PBBlessing
 val (Rval")
 PBTag
 id (Rid
-val (Rval":
+val (Rval"^
 PBSkill
 	config_id (RconfigId
-star (Rstar"W
+star (Rstar"
+star_fail_cnt (RstarFailCnt"W
 PBDurabItem%
 cur_durability (RcurDurability!
 strong_value (RstrongValue"‹
@@ -195,12 +196,13 @@ addUniqids/
 change_type (R
 changeType#
 change_reason (RchangeReason
-log_ts (RlogTs"W
+log_ts (RlogTs"{
 PBImage
 	config_id (RconfigId
 
 star_level (R	starLevel
-exp (Rexp"E
+exp (Rexp"
+star_fail_cnt (RstarFailCnt"E
 PBSkinImage
 	config_id (RconfigId
 valid_ts (RvalidTs"ù
@@ -471,7 +473,7 @@ serverPort
 time (Rtime"
 	PBPongCmd
 time (Rtimebproto3
-Ã,
+,
 
 role.proto
 item.proto"4
@@ -490,7 +492,7 @@ start_time (R	startTime
 
 SkinsEntry
 key (Rkey
-value (Rvalue:8"÷
+value (Rvalue:8"˙
 
 PBRoleData
 	config_id (RconfigId
@@ -519,7 +521,8 @@ main_skill (2.PBRoleData.MainSkillEntryR	mainSkill-
 emoji (Remoji@
 up_lv_rewards (2.PBRoleData.UpLvRewardsEntryRupLvRewards*
 
-space_ring (2.PBItemDataR	spaceRingL
+space_ring (2.PBItemDataR	spaceRing"
+star_fail_cnt (RstarFailCntL
 DigramsCardsEntry
 key (Rkey!
 value (2.PBItemDataRvalue:8=
@@ -699,7 +702,7 @@ skill_type (R	skillType
 
 skill_type (R	skillType
 skill_id (RskillIdbproto3
-Û
+ó
 ghost.proto
 item.proto"I
 PBSimpleGhostData
@@ -718,7 +721,7 @@ star_level (R	starLevel
 nature	 (RnatureL
 DigramsCardsEntry
 key (Rkey!
-value (2.PBItemDataRvalue:8"û
+value (2.PBItemDataRvalue:8"¬
 PBGhostImage
 	config_id (RconfigId
 
@@ -726,7 +729,8 @@ star_level (R	starLevel
 exp (Rexp
 cur_skin_id (R	curSkinId 
 skin_id_list (R
-skinIdList"ö
+skinIdList"
+star_fail_cnt (RstarFailCnt"ö
 PBUserGhostDatas&
 battle_ghost_id (RbattleGhostId.
 battle_ghost_uniqid (RbattleGhostUniqid?

@@ -28,7 +28,7 @@ function Bag.Init()
     -- 随机数种子
     local seed = os.time() + math.floor(tonumber(tostring(os.clock()):reverse():sub(1, 6)))
     math.randomseed(seed)
-    print("Random seed initialized:", seed)
+    print("Bag.Init Random seed initialized:", seed)
 
     local bagTypes = {}
     bagTypes[BagDef.BagType.Cangku] = 1

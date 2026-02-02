@@ -10,6 +10,7 @@ local BagDef = require("common.def.BagDef")
 local ProtoEnum = require("tools.ProtoEnum")
 local ItemDefine = require("common.logic.ItemDefine")
 local ItemDef = require("common.def.ItemDef")
+local CommonCfgDef = require("common.def.CommonCfgDef")
 
 ---@type user_context
 local context = ...
@@ -415,6 +416,17 @@ function Ghost.UpStar(config_id)
     end
     local cost_cfg = star_cfg[cost_key]
 
+    local rate_key = "rate" .. (ghost_image_info.star_level + 1)
+    if not star_cfg[rate_key] then
+        return ErrorCode.ConfigError
+    end
+    local rate_cfg = star_cfg[rate_key]
+
+    local add_rate_cfg = CommonCfgDef.getConf("UpStarAdditionRate")
+    if not add_rate_cfg then
+        return ErrorCode.ConfigError
+    end
+
     -- 计算消耗资源
     local cost_items = {}
     local cost_coins = {}
@@ -429,9 +441,6 @@ function Ghost.UpStar(config_id)
     if err_code_coins ~= ErrorCode.None then
         return err_code_coins
     end
-
-    -- 增加星星
-    ghost_image_info.star_level = ghost_image_info.star_level + 1
 
     -- 扣除消耗
     local change_log = {}
@@ -451,7 +460,19 @@ function Ghost.UpStar(config_id)
         end
     end
 
-    return ErrorCode.None, change_log
+    -- 计算升星概率
+    local now_rate = rate_cfg + add_rate_cfg.value * ghost_image_info.star_fail_cnt
+    local random_rate = math.random(1, 10000)
+    if random_rate > now_rate then
+        -- 增加升星失败次数
+        ghost_image_info.star_fail_cnt = ghost_image_info.star_fail_cnt + 1
+        return ErrorCode.UpStarProbFail, change_log
+    else
+        -- 增加星星
+        ghost_image_info.star_level = ghost_image_info.star_level + 1
+        ghost_image_info.star_fail_cnt = 0
+        return ErrorCode.None, change_log
+    end
 end
 
 function Ghost.InlayTabooWord(ghost_uniqid, taboo_word_id, inlay_type, uniqid)

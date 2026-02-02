@@ -695,6 +695,7 @@
 ---@field public exp integer @经验值
 ---@field public cur_skin_id integer @当前装备皮肤
 ---@field public skin_id_list integer[] @拥有皮肤
+---@field public star_fail_cnt integer @升星失败次数
 
 
 ---@class PBUserGhostDatas
@@ -1710,6 +1711,7 @@
 ---@class PBSkill
 ---@field public config_id integer
 ---@field public star integer
+---@field public star_fail_cnt integer @升星失败次数
 
 
 ---@class PBDurabItem
@@ -1839,6 +1841,7 @@
 ---@field public config_id integer @配置ID
 ---@field public star_level integer @星级
 ---@field public exp integer @经验值
+---@field public star_fail_cnt integer @升星失败次数
 
 
 ---@class PBSkinImage
@@ -2189,6 +2192,7 @@
 ---@field public emoji integer[] @表情槽
 ---@field public up_lv_rewards table<integer, integer> @已领取的升级奖励
 ---@field public space_ring PBItemData @空间戒指
+---@field public star_fail_cnt integer @升星失败次数
 
 
 ---@class PBUserRoleDatas
