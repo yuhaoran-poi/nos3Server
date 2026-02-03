@@ -263,8 +263,8 @@ function Gods.PBGodsUpLvReqCmd(req)
     end
 
     local now_lv = gods.gods_image[req.msg.god_id].lv
-    local level_cfg = GameCfg.GodLevel[now_lv + 1]
-    if not level_cfg then
+    local level_cfg = GameCfg.GodLevel[now_lv]
+    if not level_cfg or not level_cfg.cost or table.size(level_cfg.cost) == 0 then
         return context.S2C(context.net_id, CmdCode.PBGodsUpLvRspCmd, {
             code = ErrorCode.ConfigError,
             error = "配置不存在",

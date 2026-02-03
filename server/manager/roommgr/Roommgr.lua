@@ -29,6 +29,11 @@ local Roommgr = {
 }
 
 function Roommgr.Init()
+    -- 随机数种子
+    local seed = os.time() + math.floor(tonumber(tostring(os.clock()):reverse():sub(1, 6)))
+    math.randomseed(seed)
+    print("Roommgr.Init Random seed initialized:", seed)
+        
     context.rooms = {}          -- 全量房间数据存储
     context.uid_roomid = {}     -- uid到roomid的映射
     context.waitds_roomids = {} -- 等待中房间ID列表

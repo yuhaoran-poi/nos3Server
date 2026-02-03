@@ -520,6 +520,22 @@ function User.C2SUserData()
     context.S2C(CmdCode.S2CUserData, scripts.UserModel.Get())
 end
 
+function User.GMAddAccountExp(add_exp)
+    -- 增加账户经验
+    local query_user_attr = {}
+    table.insert(query_user_attr, ProtoEnum.UserAttrType.account_exp)
+    local query_res = scripts.User.QueryUserAttr(query_user_attr)
+    local now_exp = 0
+    if query_res.user_attr[ProtoEnum.UserAttrType.account_exp] then
+        now_exp = query_res.user_attr[ProtoEnum.UserAttrType.account_exp]
+    end
+    local update_user_attr = {}
+    update_user_attr[ProtoEnum.UserAttrType.account_exp] = now_exp + add_exp
+    User.SetUserAttr(update_user_attr, true)
+
+    return true
+end
+
 function User.PBClientGetUsrSimInfoReqCmd(req)
     local simple_data = User.GetUserSimpleData()
 

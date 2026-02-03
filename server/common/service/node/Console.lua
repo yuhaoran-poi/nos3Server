@@ -383,4 +383,18 @@ function Console.cancel_system_mail(cancel_id_str)
 	end
 end
 
+function Console.add_account_exp(uid, add_exp)
+	add_exp = math.tointeger(add_exp)
+    local res, err = context.call_user(uid, "User.GMAddAccountExp", add_exp)
+    if err then
+        return Response(444, err, string.format("%d %d", uid, add_exp))
+    end
+
+    if res then
+		return Response(0, "OK")
+    else
+		return Response(444, "Failed", string.format("%d %d", uid, add_exp))
+	end
+end
+
 return Console

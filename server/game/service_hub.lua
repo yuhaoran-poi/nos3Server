@@ -82,10 +82,33 @@ local function handle_one(split, to_serverid, echo)
     end
 end
 
+local CONSOLE_API_KEY = "your_actual_api_key_here"
 local function command_handler(cmdline, echo)
     cmdline = string.trim(cmdline)
     moon.debug("command_handler cmdline", cmdline)
     if cmdline ~= "" then
+        -- Extract authentication key from cmdline
+        -- local parts = {}
+        -- for part in string.gmatch(cmdline, "%S+") do
+        --     table.insert(parts, part)
+        -- end
+        
+        -- if #parts < 2 then
+        --     echo("Authentication failed: Missing command")
+        --     return
+        -- end
+        
+        -- local auth_key = parts[1]
+        -- local actual_cmdline = table.concat(parts, " ", 2)  -- Reconstruct command portion
+        
+        -- -- Validate key against pre-defined key
+        -- if auth_key ~= CONSOLE_API_KEY then
+        --     echo("Authentication failed: Invalid key")
+        --     moon.error("Unauthorized access attempt with invalid key")
+        --     return
+        -- end
+        
+        -- cmdline = actual_cmdline
         local split = split_cmdline(cmdline)
         local flag = string.sub(split[1], 1, 1)
         if flag ~= "S" and flag ~= "U" and flag ~= 'T' then
@@ -287,7 +310,7 @@ function command.start(fd, timeout)
             break
         end
 
-        if cmdline:sub(1,4) == "GET " or cmdline:sub(1,4) == "POST" then
+        if cmdline:sub(1,4) == "GET " or cmdline:sub(1,4) == "POST " then
             httpserver.start(fd, timeout, cmdline.."\n")
             break
         end

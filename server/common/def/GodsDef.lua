@@ -4,7 +4,7 @@ local GodsDef = {}
 
 local defaultPBGodImage = {
     config_id = 0,
-    lv = 0,
+    lv = 1,
 }
 
 local defaultPBGodBlock = {
