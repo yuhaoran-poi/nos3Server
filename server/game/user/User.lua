@@ -343,6 +343,7 @@ function User.Logout()
 end
 
 function User.InitCheckData()
+    User.CheckAccountLevel()
     User.NotifyGameSettle()
     User.NotifyGameReturnItems()
 end
@@ -516,22 +517,96 @@ function User.Exit()
     return true
 end
 
-function User.C2SUserData()
-    context.S2C(CmdCode.S2CUserData, scripts.UserModel.Get())
-end
+-- function User.C2SUserData()
+--     context.S2C(CmdCode.S2CUserData, scripts.UserModel.Get())
+-- end
 
-function User.GMAddAccountExp(add_exp)
-    -- 增加账户经验
+function User.CheckAccountLevel()
+    local min_level = 1
+    local max_level = table.size(GameCfg.ExperienceLevel)
+
     local query_user_attr = {}
     table.insert(query_user_attr, ProtoEnum.UserAttrType.account_exp)
-    local query_res = scripts.User.QueryUserAttr(query_user_attr)
+    local query_res = User.QueryUserAttr(query_user_attr)
     local now_exp = 0
     if query_res.user_attr[ProtoEnum.UserAttrType.account_exp] then
         now_exp = query_res.user_attr[ProtoEnum.UserAttrType.account_exp]
     end
+
+    local now_level = min_level
+    for i = min_level, max_level, 1 do
+        local conf_lv = GameCfg.ExperienceLevel[i]
+        if not conf_lv then
+            break
+        end
+        if now_exp < conf_lv.level_exp then
+            break
+        else
+            now_level = i
+        end
+    end
+
     local update_user_attr = {}
-    update_user_attr[ProtoEnum.UserAttrType.account_exp] = now_exp + add_exp
+    update_user_attr[ProtoEnum.UserAttrType.account_level] = now_level
+    User.SetUserAttr(update_user_attr, false)
+end
+
+function User.AddAccountExp(add_exp)
+    if add_exp == 0 then
+        return
+    end
+    local min_level = 1
+    local max_level = table.size(GameCfg.ExperienceLevel)
+
+    local query_user_attr = {}
+    table.insert(query_user_attr, ProtoEnum.UserAttrType.account_level)
+    table.insert(query_user_attr, ProtoEnum.UserAttrType.account_exp)
+    local query_res = User.QueryUserAttr(query_user_attr)
+    local now_level = min_level
+    if query_res.user_attr[ProtoEnum.UserAttrType.account_level] then
+        now_level = query_res.user_attr[ProtoEnum.UserAttrType.account_level]
+    end
+    local now_exp = 0
+    if query_res.user_attr[ProtoEnum.UserAttrType.account_exp] then
+        now_exp = query_res.user_attr[ProtoEnum.UserAttrType.account_exp]
+    end
+    now_exp = now_exp + add_exp
+
+    -- 经验转换等级
+    if add_exp < 0 then
+        for i = now_level, min_level, -1 do
+            local conf_lv = GameCfg.ExperienceLevel[i]
+            if not conf_lv then
+                break
+            end
+            if now_exp >= conf_lv.level_exp then
+                now_level = i
+                break
+            end
+        end
+    else
+        for i = now_level, max_level, 1 do
+            local conf_lv = GameCfg.ExperienceLevel[i]
+            if not conf_lv then
+                break
+            end
+            if now_exp < conf_lv.level_exp then
+                break
+            else
+                now_level = i
+            end
+        end
+    end
+
+    local update_user_attr = {}
+    update_user_attr[ProtoEnum.UserAttrType.account_level] = now_level
+    update_user_attr[ProtoEnum.UserAttrType.account_exp] = now_exp
     User.SetUserAttr(update_user_attr, true)
+end
+
+function User.GMAddAccountExp(add_exp)
+    -- GM增加账户经验
+    User.AddAccountExp(add_exp)
 
     return true
 end

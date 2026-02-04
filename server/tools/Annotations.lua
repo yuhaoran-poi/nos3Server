@@ -3451,6 +3451,7 @@
 ---@field ConsumablesBackpackExpansion ConsumablesBackpackExpansion_cfg[]
 ---@field EquipmentTagPool EquipmentTagPool_cfg[]
 ---@field ExchangeStoreWaresConfig ExchangeStoreWaresConfig_cfg[]
+---@field ExperienceLevel ExperienceLevel_cfg[]
 ---@field FallBox FallBox_cfg[]
 ---@field FriendConfig FriendConfig_cfg[]
 ---@field GameChapter GameChapter_cfg[]

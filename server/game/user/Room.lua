@@ -674,16 +674,7 @@ function Room.GameSettle(settle_info)
 
     if settle_info.account_experience and settle_info.account_experience > 0 then
         -- 增加账户经验
-        local query_user_attr = {}
-        table.insert(query_user_attr, ProtoEnum.UserAttrType.account_exp)
-        local query_res = scripts.User.QueryUserAttr(query_user_attr)
-        local now_exp = 0
-        if query_res.user_attr[ProtoEnum.UserAttrType.account_exp] then
-            now_exp = query_res.user_attr[ProtoEnum.UserAttrType.account_exp]
-        end
-        local update_user_attr = {}
-        update_user_attr[ProtoEnum.UserAttrType.account_exp] = now_exp + settle_info.account_experience
-        scripts.User.SetUserAttr(update_user_attr, true)
+        scripts.User.AddAccountExp(settle_info.account_experience)
     end
 
     if settle_info.game_role_exp and table.size(settle_info.game_role_exp) > 0 then
