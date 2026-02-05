@@ -310,7 +310,7 @@ function command.start(fd, timeout)
             break
         end
 
-        if cmdline:sub(1,4) == "GET " or cmdline:sub(1,4) == "POST " then
+        if cmdline:sub(1,4) == "GET " or cmdline:sub(1,4) == "POST" then
             httpserver.start(fd, timeout, cmdline.."\n")
             break
         end
