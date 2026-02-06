@@ -1685,6 +1685,37 @@ function Bag.CheckCoinsEnough(coins)
     if not coinsdata then
         return ErrorCode.CoinNotExist
     end
+
+    --绑定货币不足时进行对应转换
+    local mod_coins = {}
+    for coinid, coin in pairs(coins) do
+        if coin.coin_count < 0 then
+            local coin_cfg = GameCfg.Coin[coinid]
+            if coin_cfg and coin_cfg.coin_bound ~= 0 then
+                local need_coin_cnt = coin.coin_count
+                local have_coin_cnt = 0
+                if coinsdata.coins[coinid] and coinsdata.coins[coinid].coin_count ~= 0 then
+                    have_coin_cnt = coinsdata.coins[coinid].coin_count
+                end
+                if have_coin_cnt + need_coin_cnt < 0 then
+                    local need_coin_bound_cnt = have_coin_cnt + need_coin_cnt
+                    if not mod_coins[coin_cfg.coin_bound] then
+                        mod_coins[coin_cfg.coin_bound] = 0
+                    end
+                    mod_coins[coin_cfg.coin_bound] = mod_coins[coin_cfg.coin_bound] + need_coin_bound_cnt
+                end
+            end
+        end
+    end
+    for id, cnt in pairs(mod_coins) do
+        if not coins[id] then
+            coins[id] = {
+                coin_id = id,
+                coin_count = 0,
+            }
+        end
+        coins[id].coin_count = coins[id].coin_count + cnt
+    end
     
     --检测扣除的道具是否足够
     for coinid, coin in pairs(coins) do

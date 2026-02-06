@@ -2749,10 +2749,16 @@
 ---@field public buy_car_data table<integer, integer> @购物车数据
 
 
+---@class PBShopSelectBuy
+---@field public product_id integer
+---@field public product_num integer
+---@field public price_type integer
+
+
 ---@class PBShopBuyReqCmd
 ---@field public uid integer
 ---@field public with_car integer @是否通过购物车结算
----@field public buy_id_num table<integer, integer>
+---@field public buy_id_num PBShopSelectBuy[]
 
 
 ---@class PBShopBuyRspCmd
@@ -2760,7 +2766,7 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public now_sys_ts integer @当前系统时间
----@field public buy_id_num table<integer, integer> @购物车数据
+---@field public buy_id_num PBShopSelectBuy[]
 
 
 ---@class PBTeamInfo
@@ -3446,6 +3452,7 @@
 ---@field Book Book_cfg[]
 ---@field BootyBackpackExpansion BootyBackpackExpansion_cfg[]
 ---@field ChatChannelConfig ChatChannelConfig_cfg[]
+---@field Coin Coin_cfg[]
 ---@field CommonConfig CommonConfig_cfg[]
 ---@field Composite Composite_cfg[]
 ---@field ConsumablesBackpackExpansion ConsumablesBackpackExpansion_cfg[]

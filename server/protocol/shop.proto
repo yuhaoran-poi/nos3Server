@@ -76,12 +76,20 @@ message PBShopDelBuyCarRspCmd
 	map<int32, int32> buy_car_data	= 5;	//购物车数据
 }
 
+message PBShopSelectBuy
+{
+	int32 product_id	= 1;
+	int32 product_num	= 2;
+	int32 price_type	= 3;
+}
+
 // 从购物车中选择商品结算
 message PBShopBuyReqCmd
 {
 	int64 uid	= 1;
 	int32 with_car	= 2;	//是否通过购物车结算
-	map<int32, int32> buy_id_num	= 3;
+	//map<int32, int32> buy_id_num	= 3;
+	repeated PBShopSelectBuy buy_id_num	= 3;
 }
 
 message PBShopBuyRspCmd
@@ -90,5 +98,6 @@ message PBShopBuyRspCmd
     string error = 2; // 错误信息
     int64 uid	= 3;
 	int64 now_sys_ts	= 4;	//当前系统时间
-	map<int32, int32> buy_id_num	= 5;	//购物车数据
+	//map<int32, int32> buy_id_num	= 5;	//购物车数据
+	repeated PBShopSelectBuy buy_id_num	= 5;
 }

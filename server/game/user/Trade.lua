@@ -56,7 +56,7 @@ function Trade.CheckData()
     end
     trade_data.simple_info.trade_ids = {}
     for _, product_data in pairs(new_product_datas) do
-        trade_data.product_datas[product_data.trade_id] = product_data
+        trade_data.product_list[product_data.trade_id] = product_data
         table.insert(trade_data.simple_info.trade_ids, product_data.trade_id)
     end
 
@@ -152,6 +152,7 @@ function Trade.PBTradeSaleReqCmd(req)
 
     local errcode, item_data = scripts.Bag.GetOneItemData(BagDef.BagType.Cangku, req.msg.pos)
     if errcode ~= ErrorCode.None
+        or not item_data
         or item_data.common_info.config_id ~= req.msg.config_id then
         return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
             { code = ErrorCode.ItemNotExist, error = "物品不存在", uid = context.uid }, req.msg_context.stub_id)
@@ -223,7 +224,7 @@ function Trade.PBTradeSaleReqCmd(req)
         end
 
         product_data.trade_id = res
-        trade_data.product_datas[product_data.trade_id] = product_data
+        trade_data.product_list[product_data.trade_id] = product_data
         table.insert(trade_data.simple_info.trade_ids, product_data.trade_id)
     end
 
@@ -234,7 +235,7 @@ function Trade.PBTradeSaleReqCmd(req)
     -- scripts.Bag.SaveAndLog(save_bags, change_log)
     scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.TradeSale)
 
-    scripts.UserModel.SaveTradeData(trade_data)
+    scripts.UserModel.SetTradeData(trade_data)
 
     return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
         { code = ErrorCode.None, error = "寄售商品成功", uid = context.uid, trade_id = product_data.trade_id },
@@ -276,6 +277,7 @@ function Trade.PBAuctionSaleReqCmd(req)
 
     local errcode, item_data = scripts.Bag.GetOneItemData(BagDef.BagType.Cangku, req.msg.pos)
     if errcode ~= ErrorCode.None
+        or not item_data
         or item_data.common_info.config_id ~= req.msg.config_id
         or item_data.common_info.uniqid ~= req.msg.uniqid then
         return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
@@ -347,7 +349,7 @@ function Trade.PBAuctionSaleReqCmd(req)
         end
 
         product_data.trade_id = res
-        trade_data.product_datas[product_data.trade_id] = product_data
+        trade_data.product_list[product_data.trade_id] = product_data
         table.insert(trade_data.simple_info.trade_ids, product_data.trade_id)
     end
 
@@ -357,7 +359,7 @@ function Trade.PBAuctionSaleReqCmd(req)
     -- end
     -- scripts.Bag.SaveAndLog(save_bags, change_log)
     scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.TradeSale)
-    scripts.UserModel.SaveTradeData(trade_data)
+    scripts.UserModel.SetTradeData(trade_data)
 
     return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
         { code = ErrorCode.None, error = "寄售商品成功", uid = context.uid, trade_id = product_data.trade_id },

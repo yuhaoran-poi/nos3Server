@@ -289,18 +289,18 @@ function Shop.PBShopBuyReqCmd(req)
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local product_id_num = {}
     if req.msg.with_car == 0 then
-        for id, num in pairs(req.msg.buy_id_num) do
-            product_id_num[id] = num
+        for _, selecbuy in pairs(req.msg.buy_id_num) do
+            table.insert(product_id_num, selecbuy)
         end
     else
-        for id, num in pairs(req.msg.buy_id_num) do
-            if not shops.buy_car_data[id]
-                or num > shops.buy_car_data[id] then
+        for _, selecbuy in pairs(req.msg.buy_id_num) do
+            if not shops.buy_car_data[selecbuy.product_id]
+                or selecbuy.product_num > shops.buy_car_data[selecbuy.product_id] then
                 rsp_msg.code = ErrorCode.ShopBuyCarNotExist
                 rsp_msg.error = "购物车不存在"
                 return context.S2C(context.net_id, CmdCode.PBShopBuyRspCmd, rsp_msg, req.msg_context.stub_id)
             end
-            product_id_num[id] = num
+            table.insert(product_id_num, selecbuy)
         end
     end
 
@@ -311,12 +311,12 @@ function Shop.PBShopBuyReqCmd(req)
     local server_product_list = {}
     local person_product_list = {}
     local buy_data = {}
-    for id, num in pairs(product_id_num) do
-        local product_cfg = GameCfg.ExchangeStoreWaresConfig[id]
+    for _, selecbuy in pairs(product_id_num) do
+        local product_cfg = GameCfg.ExchangeStoreWaresConfig[selecbuy.product_id]
         if not product_cfg then
             rsp_msg.code = ErrorCode.ConfigError
             rsp_msg.error = "配置错误"
-            moon.error("Shop.PBShopBuyReqCmd config error product_id=%d", id)
+            moon.error("Shop.PBShopBuyReqCmd config error product_id=%d", selecbuy.product_id)
             return context.S2C(context.net_id, CmdCode.PBShopBuyRspCmd, rsp_msg, req.msg_context.stub_id)
         end
         if not product_cfg.validity_time_stamp
@@ -328,23 +328,23 @@ function Shop.PBShopBuyReqCmd(req)
             rsp_msg.error = "不允许购买"
             return context.S2C(context.net_id, CmdCode.PBShopAddBuyCarRspCmd, rsp_msg, req.msg_context.stub_id)
         end
-        local now_buy_cnt = shops.buy_product_list[id] or 0
+        local now_buy_cnt = shops.buy_product_list[selecbuy.product_id] or 0
         if product_cfg.quota_type ~= ShopDef.ShopQuotaType.NoQuota
-            and now_buy_cnt + num > product_cfg.quota_num then
+            and now_buy_cnt + selecbuy.product_num > product_cfg.quota_num then
             rsp_msg.code = ErrorCode.ShopBuyQuotaExceed
             rsp_msg.error = "购买次数超过限购"
             return context.S2C(context.net_id, CmdCode.PBShopBuyRspCmd, rsp_msg, req.msg_context.stub_id)
         end
         if product_cfg.limited_type == ShopDef.ShopLimitType.ServerLimit then
-            server_product_list[id] = num
+            server_product_list[selecbuy.product_id] = selecbuy.product_num
         else
-            person_product_list[id] = num
+            person_product_list[selecbuy.product_id] = selecbuy.product_num
         end
 
         for config_id, prop_num in pairs(product_cfg.prop) do
             if RoleDef.RoleDefine.RoleID.Start <= config_id
                 and config_id <= RoleDef.RoleDefine.RoleID.End then
-                if prop_num * num > 1 or add_roles[config_id] then
+                if prop_num * selecbuy.product_num > 1 or add_roles[config_id] then
                     rsp_msg.code = ErrorCode.ShopBuyNumError
                     rsp_msg.error = "购买数量错误"
                     return context.S2C(context.net_id, CmdCode.PBShopBuyRspCmd, rsp_msg, req.msg_context.stub_id)
@@ -354,22 +354,28 @@ function Shop.PBShopBuyReqCmd(req)
                 if not add_list[config_id] then
                     add_list[config_id] = 0
                 end
-                add_list[config_id] = add_list[config_id] + prop_num * num
+                add_list[config_id] = add_list[config_id] + prop_num * selecbuy.product_num
             end
         end
 
         local buy_single = ShopDef.newShopBuySingle()
-        buy_single.product_id = id
-        buy_single.product_num = num
-        buy_single.single_price = product_cfg.price
+        buy_single.product_id = selecbuy.product_id
+        buy_single.product_num = selecbuy.product_num
+        local price_key = "price" .. selecbuy.price_type
+        if not product_cfg[price_key] or table.size(product_cfg[price_key]) == 0 then
+            rsp_msg.code = ErrorCode.ConfigError
+            rsp_msg.error = "货币类型错误"
+            return context.S2C(context.net_id, CmdCode.PBShopBuyRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+        buy_single.single_price = product_cfg[price_key]
 
-        for config_id, price_num in pairs(product_cfg.price) do
+        for config_id, price_num in pairs(product_cfg[price_key]) do
             if not cost_list[config_id] then
                 cost_list[config_id] = 0
             end
-            cost_list[config_id] = cost_list[config_id] + price_num * num
+            cost_list[config_id] = cost_list[config_id] + price_num * selecbuy.product_num
 
-            buy_single.total_price[config_id] = price_num * num
+            buy_single.total_price[config_id] = price_num * selecbuy.product_num
         end
 
         table.insert(buy_data, buy_single)

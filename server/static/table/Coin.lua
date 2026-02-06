@@ -1,0 +1,46 @@
+---@class Coin_cfg
+---@field public id integer @唯一ID(必须为第一列且名称为id，类型为INT)
+---@field public max_num integer @携带上限
+---@field public day_num integer @日获取上限
+---@field public weak_num integer @周获取上限
+---@field public year_num integer @年获取上限
+---@field public coin_bound integer @关联的非绑定货币id
+return {
+[1] = { id=1,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[2] = { id=2,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[3] = { id=3,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=2 },
+[4] = { id=4,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[5] = { id=5,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[6] = { id=6,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[7] = { id=7,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[8] = { id=8,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[9] = { id=9,max_num=500,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[10] = { id=10,max_num=3,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[11] = { id=11,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[12] = { id=12,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[13] = { id=13,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[14] = { id=14,max_num=50,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[15] = { id=15,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[16] = { id=16,max_num=1,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[17] = { id=17,max_num=1,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[18] = { id=18,max_num=1000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[19] = { id=19,max_num=1000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[20] = { id=20,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[21] = { id=21,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[22] = { id=22,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[23] = { id=23,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[24] = { id=24,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[25] = { id=25,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[26] = { id=26,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[27] = { id=27,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[28] = { id=28,max_num=1,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[29] = { id=29,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[30] = { id=30,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[31] = { id=31,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[32] = { id=32,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[33] = { id=33,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[34] = { id=34,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[35] = { id=35,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[101] = { id=101,max_num=10000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[102] = { id=102,max_num=10000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 }
+}

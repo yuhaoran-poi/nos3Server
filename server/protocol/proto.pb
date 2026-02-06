@@ -2635,7 +2635,7 @@ ds_address (	R	dsAddress
 error (	Rerror(
 	room_data (2.PBRoomInfoRroomData4
 member_datas (2.PBRoomMemberInfoRmemberDatasbproto3
-î
+É
 
 shop.proto"Ù
 PBShopBuySingle
@@ -2721,26 +2721,27 @@ now_sys_ts (RnowSysTsH
 buyCarData=
 BuyCarDataEntry
 key (Rkey
-value (Rvalue:8"¹
+value (Rvalue:8"p
+PBShopSelectBuy
+
+product_id (R	productId
+product_num (R
+productNum
+
+price_type (R	priceType"n
 PBShopBuyReqCmd
 uid (Ruid
-with_car (RwithCar<
+with_car (RwithCar.
 
-buy_id_num (2.PBShopBuyReqCmd.BuyIdNumEntryRbuyIdNum;
-BuyIdNumEntry
-key (Rkey
-value (Rvalue:8"æ
+buy_id_num (2.PBShopSelectBuyRbuyIdNum"›
 PBShopBuyRspCmd
 code (Rcode
 error (	Rerror
 uid (Ruid
 
-now_sys_ts (RnowSysTs<
+now_sys_ts (RnowSysTs.
 
-buy_id_num (2.PBShopBuyRspCmd.BuyIdNumEntryRbuyIdNum;
-BuyIdNumEntry
-key (Rkey
-value (Rvalue:8bproto3
+buy_id_num (2.PBShopSelectBuyRbuyIdNumbproto3
 Ž
 
 team.proto
