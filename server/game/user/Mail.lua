@@ -131,7 +131,7 @@ local function sort_mails_by_beg_time(mail_list)
 end
 
 function Mail.AddMail(mails, mail_info)
-    if mails.mails_info[mail_info.mail_id] then
+    if mails.mails_info[mail_info.simple_data.mail_id] then
         return false
     end
 
