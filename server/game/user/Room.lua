@@ -701,8 +701,8 @@ function Room.GameSettle(settle_info)
 
     if settle_info.reward_boxs and table.size(settle_info.reward_boxs) > 0 then
         local box_list = {}
-        for pos, itemdata in pairs(settle_info.reward_boxs) do
-            local item_id = itemdata.common_info.config_id
+        for _, item_simple in pairs(settle_info.reward_boxs) do
+            local item_id = item_simple.config_id
             if not box_list[item_id] then
                 box_list[item_id] = {
                     id = item_id,
@@ -710,7 +710,7 @@ function Room.GameSettle(settle_info)
                     pos = 0,
                 }
             end
-            box_list[item_id].count = box_list[item_id].count + itemdata.common_info.item_count
+            box_list[item_id].count = box_list[item_id].count + item_simple.item_count
         end
         if table.size(box_list) > 0 then
             local stack_items, unstack_items, deal_coins = {}, {}, {}
