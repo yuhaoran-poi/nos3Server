@@ -3088,9 +3088,11 @@ end
 
 -- 范围内随机值
 function Bag.RandomValue(min, max)
-    if max <= min then
+    if max < min then
         moon.error("Bag.RandomValue_ - max is less than min", min, max)
         return ErrorCode.ParamInvalid
+    elseif min == max then
+        return ErrorCode.None, min
     end
 
     return ErrorCode.None, math.random(min, max)
