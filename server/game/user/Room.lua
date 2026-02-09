@@ -680,11 +680,12 @@ function Room.GameSettle(settle_info)
     if settle_info.game_role_exp and table.size(settle_info.game_role_exp) > 0 then
         -- 增加角色经验
         local change_roles = {}
-        for roleid, exp in pairs(settle_info.game_role_exp) do
-            if exp and exp > 0 then
-                local err, new_exp = scripts.Role.GameAddExp(roleid, exp)
+        for _, role_exp in pairs(settle_info.game_role_exp) do
+            if role_exp.roleid and role_exp.roleid > 0
+                and role_exp.add_role_exp and role_exp.add_role_exp > 0 then
+                local err, new_exp = scripts.Role.GameAddExp(role_exp.roleid, role_exp.add_role_exp)
                 if err == ErrorCode.None then
-                    change_roles[roleid] = "UpLv"
+                    change_roles[role_exp.roleid] = "UpLv"
                 end
             end
         end

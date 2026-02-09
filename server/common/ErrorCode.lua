@@ -492,6 +492,24 @@ local ErrorCode = {
     GradeRewardAlreadyGet = 2053,
     --- 段位积分不足
     GradeScoreNotEnough = 2054,
+
+    --交易行系统相关错误码
+    --- 搜索商品类型错误
+    SearchProductTypeErr = 2101,
+    --- 搜索商品起始错误
+    SearchProductStartErr = 2102,
+    --- 搜索商品失败
+    SearchProductFailed = 2103,
+    --- 搜索商品无结果
+    SearchProductNone = 2104,
+    --- 交易行容量不足
+    TradeCapacityNotEnough = 2105,
+    --- 交易行销售商品错误
+    SaleProductErr = 2106,
+    --- 搜索商品ID列表溢出
+    SearchIdsOverflow = 2107,
+    --- 搜索参数无效
+    SearchParamsInvalid = 2108,
 }
 
 return ErrorCode

@@ -9,7 +9,7 @@ local GameCfg = common.GameCfg
 local MailLogic = {}
 
 function MailLogic.DealSystemMail(send_info_str)
-    moon.debug("MailLogic.DealSystemMail send_info_str: %s", send_info_str)
+    moon.warn("MailLogic.DealSystemMail send_info_str: %s", send_info_str)
     local send_info = json.decode(send_info_str)
     if not send_info then
         return false, "send_info_str error"
