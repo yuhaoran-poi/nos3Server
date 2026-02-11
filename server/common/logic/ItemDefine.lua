@@ -257,6 +257,7 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                     stack_coins[item.id] = new_coin
                 end
                 stack_coins[item.id].coin_count = stack_coins[item.id].coin_count + item.count
+
             elseif item_big_type == ItemDefine.EItemBigType.StackItem then
                 if not stack_items[item.id] then
                     local item_cfg = GameCfg.Item[item.id]
@@ -273,6 +274,7 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                     stack_items[item.id] = new_item
                 end
                 stack_items[item.id].common_info.item_count = stack_items[item.id].common_info.item_count + item.count
+
             elseif item_big_type == ItemDefine.EItemBigType.UnStackItem then
                 local item_cfg = GameCfg.Item[item.id]
                 if not item_cfg then
@@ -280,175 +282,194 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                 end
                 local item_type = ItemDefine.GetItemType(item.id)
 
-                local new_item = ItemDef.newItemData()
-                new_item.itype = item_type
-                new_item.common_info.config_id = item_cfg.id
-                if item.uniqid then
-                    new_item.common_info.uniqid = item.uniqid
-                end
-                new_item.common_info.item_count = item.count
-                new_item.common_info.item_type = item_cfg.type1
-                new_item.common_info.trade_cnt = -1
-                if item.trade_cnt then
-                    new_item.common_info.trade_cnt = item.trade_cnt
-                end
-                new_item.special_info.durab_item = ItemDef.newDurabItem()
-                local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-                if item.special_info and item.special_info.durab_item then
-                    if item.special_info.durab_item.cur_durability then
-                        new_item.special_info.durab_item.cur_durability = item.special_info.durab_item.cur_durability
+                for i = 1, item.count do
+                    local new_item = ItemDef.newItemData()
+                    new_item.itype = item_type
+                    new_item.common_info.config_id = item_cfg.id
+                    if item.uniqid and i == 1 then
+                        new_item.common_info.uniqid = item.uniqid
+                    end
+                    new_item.common_info.item_count = 1
+                    new_item.common_info.item_type = item_cfg.type1
+                    new_item.common_info.trade_cnt = -1
+                    if item.trade_cnt then
+                        new_item.common_info.trade_cnt = item.trade_cnt
+                    end
+                    new_item.special_info.durab_item = ItemDef.newDurabItem()
+                    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+                    if item.special_info and item.special_info.durab_item then
+                        if item.special_info.durab_item.cur_durability then
+                            new_item.special_info.durab_item.cur_durability = item.special_info.durab_item
+                                .cur_durability
+                        else
+                            new_item.special_info.durab_item.cur_durability = item_cfg.Durability
+                        end
+                        if item.special_info.durab_item.strong_value then
+                            new_item.special_info.durab_item.strong_value = item.special_info.durab_item.strong_value
+                        end
                     else
                         new_item.special_info.durab_item.cur_durability = item_cfg.Durability
                     end
-                    if item.special_info.durab_item.strong_value then
-                        new_item.special_info.durab_item.strong_value = item.special_info.durab_item.strong_value
-                    end
-                else
-                    new_item.special_info.durab_item.cur_durability = item_cfg.Durability
+                    table.insert(unstack_items, new_item)
                 end
-                table.insert(unstack_items, new_item)
+                
             elseif item_big_type == ItemDefine.EItemBigType.UniqueItem then
                 local uniqitem_cfg = GameCfg.UniqueItem[item.id]
                 if not uniqitem_cfg then
                     return false
                 end
                 local item_type = ItemDefine.GetItemType(item.id)
-
-                local new_item = ItemDef.newItemData()
-                new_item.itype = item_type
-                new_item.common_info.config_id = uniqitem_cfg.id
-                if item.uniqid then
-                    new_item.common_info.uniqid = item.uniqid
-                end
-                new_item.common_info.item_count = item.count
-                new_item.common_info.item_type = uniqitem_cfg.type1
-                new_item.common_info.trade_cnt = -1
-                if item.trade_cnt then
-                    new_item.common_info.trade_cnt = item.trade_cnt
-                end
-
                 local item_small_type = ItemDefine.GetItemType(item.id)
-                if item_small_type == ItemDefine.EItemSmallType.HumanDiagrams
-                    or item_small_type == ItemDefine.EItemSmallType.GhostDiagrams then
-                    new_item.special_info.diagrams_item = ItemDef.newDiagramsCard()
-                    if item.special_info and item.special_info.diagrams_item then
-                        if item.special_info.diagrams_item.cur_durability then
-                            new_item.special_info.diagrams_item.cur_durability = item.special_info.diagrams_item
-                                .cur_durability
+
+                for i = 1, item.count do
+                    local new_item = ItemDef.newItemData()
+                    new_item.itype = item_type
+                    new_item.common_info.config_id = uniqitem_cfg.id
+                    if item.uniqid and i == 1 then
+                        new_item.common_info.uniqid = item.uniqid
+                    end
+                    new_item.common_info.item_count = 1
+                    new_item.common_info.item_type = uniqitem_cfg.type1
+                    new_item.common_info.trade_cnt = -1
+                    if item.trade_cnt then
+                        new_item.common_info.trade_cnt = item.trade_cnt
+                    end
+
+                    if item_small_type == ItemDefine.EItemSmallType.HumanDiagrams
+                        or item_small_type == ItemDefine.EItemSmallType.GhostDiagrams then
+                        new_item.special_info.diagrams_item = ItemDef.newDiagramsCard()
+                        if item.special_info and item.special_info.diagrams_item then
+                            if item.special_info.diagrams_item.cur_durability then
+                                new_item.special_info.diagrams_item.cur_durability = item.special_info.diagrams_item
+                                    .cur_durability
+                            else
+                                new_item.special_info.diagrams_item.cur_durability = uniqitem_cfg.durability
+                            end
+                            if item.special_info.diagrams_item.strong_value then
+                                new_item.special_info.diagrams_item.strong_value = item.special_info.diagrams_item
+                                    .strong_value
+                            else
+                                new_item.special_info.diagrams_item.strong_value = uniqitem_cfg.sturdy
+                            end
+                            if item.special_info.diagrams_item.tabooword_id then
+                                new_item.special_info.diagrams_item.tabooword_id = item.special_info.diagrams_item
+                                    .tabooword_id
+                            end
+                            if item.special_info.diagrams_item.light_cnt then
+                                new_item.special_info.diagrams_item.light_cnt = item.special_info.diagrams_item
+                                .light_cnt
+                            end
+                            if item.special_info.diagrams_item.tags then
+                                new_item.special_info.diagrams_item.tags = item.special_info.diagrams_item.tags
+                            end
+                            if item.special_info.diagrams_item.ability_tag then
+                                new_item.special_info.diagrams_item.ability_tag = item.special_info.diagrams_item
+                                    .ability_tag
+                            end
                         else
                             new_item.special_info.diagrams_item.cur_durability = uniqitem_cfg.durability
-                        end
-                        if item.special_info.diagrams_item.strong_value then
-                            new_item.special_info.diagrams_item.strong_value = item.special_info.diagrams_item
-                                .strong_value
-                        else
                             new_item.special_info.diagrams_item.strong_value = uniqitem_cfg.sturdy
                         end
-                        if item.special_info.diagrams_item.tabooword_id then
-                            new_item.special_info.diagrams_item.tabooword_id = item.special_info.diagrams_item
+                        table.insert(unstack_items, new_item)
+
+                    elseif item_small_type == ItemDefine.EItemSmallType.MagicItem then
+                        new_item.special_info.magic_item = ItemDef.newMagicItem()
+                        if item.special_info and item.special_info.magic_item then
+                            if item.special_info.magic_item.cur_durability then
+                                new_item.special_info.magic_item.cur_durability = item.special_info.magic_item
+                                    .cur_durability
+                            else
+                                new_item.special_info.magic_item.cur_durability = uniqitem_cfg.durability
+                            end
+                            if item.special_info.magic_item.strong_value then
+                                new_item.special_info.magic_item.strong_value = item.special_info.magic_item
+                                .strong_value
+                            else
+                                new_item.special_info.magic_item.strong_value = uniqitem_cfg.sturdy
+                            end
+                            if item.special_info.magic_item.tabooword_id then
+                                new_item.special_info.magic_item.tabooword_id = item.special_info.magic_item
                                 .tabooword_id
-                        end
-                        if item.special_info.diagrams_item.light_cnt then
-                            new_item.special_info.diagrams_item.light_cnt = item.special_info.diagrams_item.light_cnt
-                        end
-                        if item.special_info.diagrams_item.tags then
-                            new_item.special_info.diagrams_item.tags = item.special_info.diagrams_item.tags
-                        end
-                        if item.special_info.diagrams_item.ability_tag then
-                            new_item.special_info.diagrams_item.ability_tag = item.special_info.diagrams_item
-                                .ability_tag
-                        end
-                    else
-                        new_item.special_info.diagrams_item.cur_durability = uniqitem_cfg.durability
-                        new_item.special_info.diagrams_item.strong_value = uniqitem_cfg.sturdy
-                    end
-                    table.insert(unstack_items, new_item)
-                elseif item_small_type == ItemDefine.EItemSmallType.MagicItem then
-                    new_item.special_info.magic_item = ItemDef.newMagicItem()
-                    if item.special_info and item.special_info.magic_item then
-                        if item.special_info.magic_item.cur_durability then
-                            new_item.special_info.magic_item.cur_durability = item.special_info.magic_item
-                                .cur_durability
+                            end
+                            if item.special_info.magic_item.light_cnt then
+                                new_item.special_info.magic_item.light_cnt = item.special_info.magic_item.light_cnt
+                            end
+                            if item.special_info.magic_item.tags then
+                                new_item.special_info.magic_item.tags = item.special_info.magic_item.tags
+                            end
+                            if item.special_info.magic_item.ability_tag then
+                                new_item.special_info.magic_item.ability_tag = item.special_info.magic_item.ability_tag
+                            end
                         else
                             new_item.special_info.magic_item.cur_durability = uniqitem_cfg.durability
-                        end
-                        if item.special_info.magic_item.strong_value then
-                            new_item.special_info.magic_item.strong_value = item.special_info.magic_item.strong_value
-                        else
                             new_item.special_info.magic_item.strong_value = uniqitem_cfg.sturdy
                         end
-                        if item.special_info.magic_item.tabooword_id then
-                            new_item.special_info.magic_item.tabooword_id = item.special_info.magic_item.tabooword_id
-                        end
-                        if item.special_info.magic_item.light_cnt then
-                            new_item.special_info.magic_item.light_cnt = item.special_info.magic_item.light_cnt
-                        end
-                        if item.special_info.magic_item.tags then
-                            new_item.special_info.magic_item.tags = item.special_info.magic_item.tags
-                        end
-                        if item.special_info.magic_item.ability_tag then
-                            new_item.special_info.magic_item.ability_tag = item.special_info.magic_item.ability_tag
-                        end
-                    else
-                        new_item.special_info.magic_item.cur_durability = uniqitem_cfg.durability
-                        new_item.special_info.magic_item.strong_value = uniqitem_cfg.sturdy
-                    end
-                    table.insert(unstack_items, new_item)
-                elseif item_small_type == ItemDefine.EItemSmallType.Antique then
-                    new_item.special_info.antique_item = ItemDef.newAntique()
-                    local item_cfg = GameCfg.AntiqueItem[item.id]
-                    for coin_id, cnt in pairs(item_cfg.initprice) do
-                        new_item.special_info.antique_item.price.coin_id = coin_id
-                        new_item.special_info.antique_item.price.coin_count = cnt
-                    end
-                    new_item.special_info.antique_item.quality = item_cfg.quality
-                    new_item.special_info.antique_item.remain_identify_num = item_cfg.identifynum
+                        table.insert(unstack_items, new_item)
 
-                    if item.special_info and item.special_info.antique_item then
-                        if item.special_info.antique_item.quality then
-                            new_item.special_info.antique_item.quality = item.special_info.antique_item.quality
+                    elseif item_small_type == ItemDefine.EItemSmallType.Antique then
+                        new_item.special_info.antique_item = ItemDef.newAntique()
+                        local item_cfg = GameCfg.AntiqueItem[item.id]
+                        for coin_id, cnt in pairs(item_cfg.initprice) do
+                            new_item.special_info.antique_item.price.coin_id = coin_id
+                            new_item.special_info.antique_item.price.coin_count = cnt
                         end
-                        if item.special_info.antique_item.price then
-                            new_item.special_info.antique_item.price = item.special_info.antique_item.price
+                        new_item.special_info.antique_item.quality = item_cfg.quality
+                        new_item.special_info.antique_item.remain_identify_num = item_cfg.identifynum
+
+                        if item.special_info and item.special_info.antique_item then
+                            if item.special_info.antique_item.quality then
+                                new_item.special_info.antique_item.quality = item.special_info.antique_item.quality
+                            end
+                            if item.special_info.antique_item.price then
+                                new_item.special_info.antique_item.price = item.special_info.antique_item.price
+                            end
+                            if item.special_info.antique_item.remain_identify_num then
+                                new_item.special_info.antique_item.remain_identify_num = item.special_info.antique_item
+                                .remain_identify_num
+                            end
+                            if item.special_info.antique_item.tags then
+                                new_item.special_info.antique_item.tags = item.special_info.antique_item.tags
+                            end
+                            if item.special_info.antique_item.is_fake then
+                                new_item.special_info.antique_item.is_fake = item.special_info.antique_item.is_fake
+                            end
+                            if item.special_info.antique_item.identify_histroy then
+                                new_item.special_info.antique_item.identify_histroy = item.special_info.antique_item
+                                .identify_histroy
+                            end
                         end
-                        if item.special_info.antique_item.remain_identify_num then
-                            new_item.special_info.antique_item.remain_identify_num = item.special_info.antique_item.remain_identify_num
+                        table.insert(unstack_items, new_item)
+
+                    elseif item_small_type == ItemDefine.EItemSmallType.SpaceRing then
+                        new_item.special_info.space_ring = ItemDef.newSpaceRing()
+                        if item.special_info and item.special_info.space_ring then
+                            if item.special_info.space_ring.cur_durability then
+                                new_item.special_info.space_ring.cur_durability = item.special_info.space_ring
+                                .cur_durability
+                            end
+                            if item.special_info.space_ring.strong_value then
+                                new_item.special_info.space_ring.strong_value = item.special_info.space_ring
+                                .strong_value
+                            end
+                            if item.special_info.space_ring.tabooword_id then
+                                new_item.special_info.space_ring.tabooword_id = item.special_info.space_ring
+                                .tabooword_id
+                            end
+                            if item.special_info.space_ring.light_cnt then
+                                new_item.special_info.space_ring.light_cnt = item.special_info.space_ring.light_cnt
+                            end
+                            if item.special_info.space_ring.tags then
+                                new_item.special_info.space_ring.tags = item.special_info.space_ring.tags
+                            end
+                            if item.special_info.space_ring.ability_tag then
+                                new_item.special_info.space_ring.ability_tag = item.special_info.space_ring.ability_tag
+                            end
                         end
-                        if item.special_info.antique_item.tags then
-                            new_item.special_info.antique_item.tags = item.special_info.antique_item.tags
-                        end
-                        if item.special_info.antique_item.is_fake then
-                            new_item.special_info.antique_item.is_fake = item.special_info.antique_item.is_fake
-                        end
-                        if item.special_info.antique_item.identify_histroy then
-                            new_item.special_info.antique_item.identify_histroy = item.special_info.antique_item.identify_histroy
-                        end
+                        table.insert(unstack_items, new_item)
+
                     end
-                    table.insert(unstack_items, new_item)
-                elseif item_small_type == ItemDefine.EItemSmallType.SpaceRing then
-                    new_item.special_info.space_ring = ItemDef.newSpaceRing()
-                    if item.special_info and item.special_info.space_ring then
-                        if item.special_info.space_ring.cur_durability then
-                            new_item.special_info.space_ring.cur_durability = item.special_info.space_ring.cur_durability
-                        end
-                        if item.special_info.space_ring.strong_value then
-                            new_item.special_info.space_ring.strong_value = item.special_info.space_ring.strong_value
-                        end
-                        if item.special_info.space_ring.tabooword_id then
-                            new_item.special_info.space_ring.tabooword_id = item.special_info.space_ring.tabooword_id
-                        end
-                        if item.special_info.space_ring.light_cnt then
-                            new_item.special_info.space_ring.light_cnt = item.special_info.space_ring.light_cnt
-                        end
-                        if item.special_info.space_ring.tags then
-                            new_item.special_info.space_ring.tags = item.special_info.space_ring.tags
-                        end
-                        if item.special_info.space_ring.ability_tag then
-                            new_item.special_info.space_ring.ability_tag = item.special_info.space_ring.ability_tag
-                        end
-                    end
-                    table.insert(unstack_items, new_item)
                 end
+
             end
         end
     end

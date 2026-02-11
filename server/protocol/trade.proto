@@ -5,6 +5,7 @@ message PBTradeData
 {
 	int32 single_price = 1;	// 单价
 	int32 sale_num = 2;	// 售出数量
+	int32 now_num = 3; // 现有数量
 }
 
 message PBAuctionData

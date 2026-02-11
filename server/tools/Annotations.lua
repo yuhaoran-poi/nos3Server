@@ -1704,7 +1704,7 @@
 
 
 ---@class PBTag
----@field public id integer
+---@field public tag_id integer
 ---@field public val integer
 
 
@@ -2836,6 +2836,7 @@
 ---@class PBTradeData
 ---@field public single_price integer @单价
 ---@field public sale_num integer @售出数量
+---@field public now_num integer @现有数量
 
 
 ---@class PBAuctionData

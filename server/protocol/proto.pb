@@ -56,7 +56,7 @@ login_data (2.PBDSLoginDataR	loginData"f
 error (	Rerror
 dsid (Rdsid
 net_id (RnetIdbproto3
-˜,
+˛,
 
 item.proto"@
 PBCoin
@@ -75,9 +75,9 @@ PBBlessing
 idx (Ridx"/
 PBAttribute
 id (Rid
-val (Rval")
-PBTag
-id (Rid
+val (Rval"0
+PBTag
+tag_id (RtagId
 val (Rval"^
 PBSkill
 	config_id (RconfigId
@@ -2794,12 +2794,13 @@ master_uid (R	masterUid
 
 master_uid (R	masterUid
 team_id (RteamIdbproto3
-Ä 
+ô 
 trade.proto
-item.proto"K
+item.proto"d
 PBTradeData!
 single_price (RsinglePrice
-sale_num (RsaleNum"ç
+sale_num (RsaleNum
+now_num (RnowNum"ç
 PBAuctionData
 start_price (R
 startPrice!

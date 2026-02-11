@@ -2752,7 +2752,7 @@ function Bag.Light(op_itemdata)
             --现有词条去重
             local had_tag = false
             for _, tag in pairs(cur_tags) do
-                if tag.id == tag_id then
+                if tag.tag_id == tag_id then
                     had_tag = true
                 end
             end
@@ -2829,7 +2829,7 @@ function Bag.Light(op_itemdata)
 
     -- 修改属性
     local new_tag = {
-        id = new_tag_id,
+        tag_id = new_tag_id,
         val = new_tag_value,
     }
     moon.debug(string.format("new_tag:\n%s", json.pretty_encode(new_tag)))

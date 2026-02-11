@@ -287,7 +287,7 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
         end
 
         local new_tag = {
-            id = tag_id,
+            tag_id = tag_id,
             val = tag_val,
         }
         table.insert(item_data.special_info.antique_item.tags, new_tag)

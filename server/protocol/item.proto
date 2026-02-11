@@ -28,7 +28,7 @@ message PBAttribute
 // 通用词条
 message PBTag
 {
-	int32	id	= 1;
+	int32	tag_id	= 1;
 	int32	val	= 2;
 }
 
