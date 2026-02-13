@@ -288,15 +288,16 @@
 ---@field public time number @用户统计服务器之间延时
 
 
----@class PBGameAddRoleExp
+---@class PBGameChangeRoleInfo
 ---@field public roleid integer
----@field public add_role_exp integer
+---@field public add_role_exp integer @角色经验变化
+---@field public magic_item PBItemData @法器
 
 
 ---@class PBGameSettle
 ---@field public settle_data string @结算展示信息
 ---@field public account_experience integer @账户经验值
----@field public game_role_exp PBGameAddRoleExp[] @角色增加经验
+---@field public game_role_change PBGameChangeRoleInfo[] @角色信息变更
 ---@field public consume_bag PBBag @消耗品背包
 ---@field public booty_bag PBBag @战利品背包
 ---@field public grade_id integer

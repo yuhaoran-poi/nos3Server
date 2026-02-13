@@ -677,10 +677,10 @@ function Room.GameSettle(settle_info)
         scripts.User.AddAccountExp(settle_info.account_experience)
     end
 
-    if settle_info.game_role_exp and table.size(settle_info.game_role_exp) > 0 then
+    if settle_info.game_role_change and table.size(settle_info.game_role_change) > 0 then
         -- 增加角色经验
         local change_roles = {}
-        for _, role_exp in pairs(settle_info.game_role_exp) do
+        for _, role_exp in pairs(settle_info.game_role_change) do
             if role_exp.roleid and role_exp.roleid > 0
                 and role_exp.add_role_exp and role_exp.add_role_exp > 0 then
                 local err, new_exp = scripts.Role.GameAddExp(role_exp.roleid, role_exp.add_role_exp)

@@ -5,10 +5,11 @@ import "bag.proto";
 import "role.proto";
 import "gods.proto";
 
-message PBGameAddRoleExp
+message PBGameChangeRoleInfo
 {
     int32 roleid   = 1;
-    int32 add_role_exp  = 2;
+    int32 add_role_exp  = 2;    //角色经验变化
+    PBItemData magic_item   = 3;	//法器
 }
 
 // DS结算数据
@@ -16,7 +17,7 @@ message PBGameSettle
 {
     string settle_data = 1;//结算展示信息
     int32 account_experience = 2;//账户经验值
-    repeated PBGameAddRoleExp game_role_exp = 3;//角色增加经验
+    repeated PBGameChangeRoleInfo game_role_change = 3;//角色信息变更
     PBBag consume_bag   = 4;//消耗品背包
     PBBag booty_bag     = 5;//战利品背包
     int32 grade_id      = 6;

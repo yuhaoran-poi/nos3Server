@@ -100,6 +100,8 @@ function Trade.SearchTradeProductWithIds(ids, sort_type, start_idx)
         return ErrorCode.SearchProductNone
     end
 
+    -- 通知Trademgr从trade_record加载请求的商品记录数据,数据库中没有则在Trademgr中进行初始化
+
     -- 向Trademgr请求商品类目详情
 end
 
@@ -195,12 +197,13 @@ function Trade.PBTradeSaleReqCmd(req)
         item_data = item_data,
         beg_ts = moon.time(),
         end_ts = moon.time() + req.msg.sale_ts,
-        state = TradeDef.TradeState.ON_SALE,
-        trade_data = {
-            single_price = req.msg.single_price,
-            sale_num = req.msg.sale_num,
-        },
+        state = TradeDef.StateType.ON_SALE,
+        trade_data = TradeDef.newTradeData(),
     }
+    product_data.trade_data.single_price = req.msg.single_price
+    product_data.trade_data.sale_num = 0
+    product_data.trade_data.now_num = req.msg.sale_num
+    
     local sale_data = {
         uid = context.uid,
         product_data = product_data,
@@ -240,7 +243,6 @@ function Trade.PBTradeSaleReqCmd(req)
     return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
         { code = ErrorCode.None, error = "寄售商品成功", uid = context.uid, trade_id = product_data.trade_id },
         req.msg_context.stub_id)
-        
 end
 
 function Trade.PBAuctionSaleReqCmd(req)
@@ -316,14 +318,14 @@ function Trade.PBAuctionSaleReqCmd(req)
         item_data = item_data,
         beg_ts = moon.time(),
         end_ts = moon.time() + req.msg.sale_ts,
-        state = TradeDef.TradeState.ON_SALE,
-        auction_data = {
-            start_price = req.msg.start_price,
-            buyout_price = req.msg.buyout_price,
-            cur_price = req.msg.start_price,
-            buyer_uid = 0,
-        },
+        state = TradeDef.StateType.ON_SALE,
+        auction_data = TradeDef.newAuctionData(),
     }
+    product_data.auction_data.start_price = req.msg.start_price
+    product_data.auction_data.buyout_price = req.msg.buyout_price
+    product_data.auction_data.cur_price = req.msg.start_price
+    product_data.auction_data.buyer_uid = 0
+
     local sale_data = {
         uid = context.uid,
         product_data = product_data,

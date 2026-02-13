@@ -1180,21 +1180,23 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-´
+î
 dsnode.proto
 item.proto
 user.proto	bag.proto
 role.proto
-gods.proto"L
-PBGameAddRoleExp
+gods.proto"|
+PBGameChangeRoleInfo
 roleid (Rroleid 
 add_role_exp (R
-addRoleExp"Ñ
+addRoleExp*
+
+magic_item (2.PBItemDataR	magicItem"Û
 PBGameSettle
 settle_data (	R
 settleData-
-account_experience (RaccountExperience5
-game_role_exp (2.PBGameAddRoleExpRgameRoleExp'
+account_experience (RaccountExperience?
+game_role_change (2.PBGameChangeRoleInfoRgameRoleChange'
 consume_bag (2.PBBagR
 consumeBag#
 	booty_bag (2.PBBagRbootyBag

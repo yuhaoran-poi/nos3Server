@@ -24,6 +24,7 @@ local TradeDef = {
 local defaultPBTradeData = {
     single_price = 0,
     sale_num = 0,
+    now_num = 0,
 }
 
 local defaultPBAuctionData = {
