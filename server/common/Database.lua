@@ -1164,6 +1164,18 @@ function _M.savetradeinfo(addr, uid, data)
     return moon.send("lua", addr, cmd)
 end
 
+function _M.getmaxtradeid(addr)
+    local res, err = moon.call("lua", addr, "SELECT MAX(trade_id) as max_trade_id FROM mgame.trade_product;")
+    if err then
+        error("getmaxtradeid failed:" .. tostring(err))
+        return -1
+    end
+    if res and res[1] then
+        return tonumber(res[1].max_trade_id) or 0
+    end
+    return 0
+end
+
 function _M.addtradeproduct(addr, product_data, condition1, condition2, condition3, condition4, condition5)
     local item_data_str = jencode(product_data.item_data)
     local _, pbdata = protocol.encodewithname("PBItemData", product_data.item_data)
@@ -1235,7 +1247,7 @@ function _M.gettradeproductwithids(addr, trade_ids)
     where_str = where_str .. ") AND state=" .. TradeDef.StateType.ON_SALE
 
     local cmd = string.format([[
-        SELECT trade_id, seller_uid, item_data, single_price, sale_num, now_num FROM mgame.trade_record WHERE %s;
+        SELECT trade_id, seller_uid, item_data, single_price, sale_num, now_num FROM mgame.trade_product WHERE %s;
     ]], where_str)
     local res, err = moon.call("lua", addr, cmd)
     if err then
@@ -1265,10 +1277,85 @@ function _M.gettradeproductwithids(addr, trade_ids)
     return nil
 end
 
-function _M.updatetradeproduct(addr, trade_id, update_data)
+function _M.updatetradeproductwithids(addr, trade_ids, where_data, update_data)
+    if not update_data or type(update_data) ~= "table" then
+        moon.error("updatetradeproductwithids: update_data should be a table")
+        return false
+    end
+
+    local where_str = "trade_id IN ("
+    for i = 1, #trade_ids do
+        where_str = where_str .. trade_ids[i]
+        if i < #trade_ids then
+            where_str = where_str .. ","
+        end
+    end
+    where_str = where_str .. ") "
+
+    local where_fields = {}
+    if where_data then
+        for field, value in pairs(where_data) do
+            if field == "state" then
+                -- 数值型字段
+                table.insert(where_fields, string.format("%s = %d", field, value))
+            else
+                -- 对于未知字段，可以选择忽略或报错
+                moon.error("updatetradeproductwithids: unknown field '%s', skipping", field)
+                return false
+            end
+        end
+    end
+    if #where_fields > 0 then
+        where_str = where_str .. " AND " .. table.concat(where_fields, " AND ")
+    end
+
+    local update_fields = {}
+    for field, value in pairs(update_data) do
+        if field == "beg_ts" or field == "end_ts" or field == "single_price" or field == "sale_num"
+            or field == "now_num" or field == "state" or field == "condition1" or field == "condition2"
+            or field == "condition3" or field == "condition4" or field == "condition5" then
+            -- 数值型字段
+            table.insert(update_fields, string.format("%s = %d", field, value))
+        else
+            -- 对于未知字段，可以选择忽略或报错
+            moon.error("updatetradeproductwithids: unknown field '%s', skipping", field)
+        end
+    end
+    if #update_fields == 0 then
+        moon.error("updatetradeproductwithids: no valid fields to update")
+        return false
+    end
+
+    local cmd = string.format([[
+        UPDATE mgame.trade_product SET %s WHERE %s;
+    ]], table.concat(update_fields, ", "), where_str)
+
+    return moon.send("lua", addr, cmd)
+end
+
+function _M.updatetradeproduct(addr, trade_id, where_data, update_data, need_ret)
     if not update_data or type(update_data) ~= "table" then
         moon.error("updatetradeproduct: update_data should be a table")
-        return false
+        return 0
+    end
+
+    local where_str = string.format("WHERE trade_id = %d", trade_id)
+
+    local where_fields = {}
+    if where_data then
+        for field, value in pairs(where_data) do
+            if field == "state" then
+                -- 数值型字段
+                table.insert(where_fields, string.format("%s = %d", field, value))
+            else
+                -- 对于未知字段，可以选择忽略或报错
+                moon.error("updatetradeproduct: unknown field '%s', skipping", field)
+                return 0
+            end
+        end
+    end
+    if #where_fields > 0 then
+        where_str = where_str .. " AND " .. table.concat(where_fields, " AND ")
     end
 
     local update_fields = {}
@@ -1283,17 +1370,30 @@ function _M.updatetradeproduct(addr, trade_id, update_data)
             moon.error("updatetradeproduct: unknown field '%s', skipping", field)
         end
     end
-
     if #update_fields == 0 then
         moon.error("updatetradeproduct: no valid fields to update")
-        return false
+        return 0
     end
 
     local cmd = string.format([[
-        UPDATE mgame.trade_product SET %s WHERE trade_id = %d;
-    ]], table.concat(update_fields, ", "), trade_id)
-
-    return moon.send("lua", addr, cmd)
+        UPDATE mgame.trade_product SET %s WHERE %s;
+    ]], table.concat(update_fields, ", "), where_str)
+    if need_ret then
+        local res, err = moon.call("lua", addr, cmd)
+        if err then
+            moon.error(string.format("updatetradeproduct err = %s", json.pretty_encode(err)))
+            return 0
+        else
+            if res then
+                moon.debug(string.format("updatetradeproduct res = %s", json.pretty_encode(res)))
+                return res.affected_rows
+            end
+        end
+        return 0
+    else
+        moon.send("lua", addr, cmd)
+        return 0
+    end
 end
 
 function _M.addauctionproduct(addr, product_data, condition1, condition2, condition3, condition4, condition5, custome_condition)
@@ -1349,7 +1449,7 @@ function _M.gettraderecordwithids(addr, ids, sort_describe)
     where_str = where_str .. ")"
 
     local cmd = string.format([[
-        SELECT trade_config_id FROM mgame.trade_record WHERE %s ORDER BY %s;
+        SELECT trade_config_id, last_deal_price, yes_average_price, min_price, min_price_num FROM mgame.trade_record WHERE %s ORDER BY %s;
     ]], where_str, sort_describe)
     local res, err = moon.call("lua", addr, cmd)
     if err then
@@ -1357,13 +1457,79 @@ function _M.gettraderecordwithids(addr, ids, sort_describe)
         return nil
     end
     if res and #res > 0 then
-        local trade_record_ids = {}
+        local trade_records = {}
         for i = 1, #res do
-            table.insert(trade_record_ids, res[i].trade_config_id)
+            local record = TradeDef.newTradeSearchSimpleData()
+            record.config_id = res[i].trade_config_id
+            record.min_price = res[i].min_price
+            record.last_deal_price = res[i].last_deal_price
+            record.yes_average_price = res[i].yes_average_price
+            record.min_price_num = res[i].min_price_num
+            table.insert(trade_records, record)
         end
-        return trade_record_ids
+        return trade_records
     end
     moon.error("gettraderecordwithids failed", where_str, err)
+    return nil
+end
+
+function _M.gettraderecordswithconditions(addr, condition1, condition2, condition3, condition4, condition5
+    , sort_describe, start_idx, num)
+    local where_str = "WHERE "
+    if condition1 > 0 then
+        where_str = where_str .. string.format("condition1=%d", condition1)
+    end
+    if condition2 > 0 then
+        if where_str ~= "WHERE " then
+            where_str = where_str .. " AND "
+        end
+        where_str = where_str .. string.format("condition2=%d", condition2)
+    end
+    if condition3 > 0 then
+        if where_str ~= "WHERE " then
+            where_str = where_str .. " AND "
+        end
+        where_str = where_str .. string.format("condition3 = %d", condition3)
+    end
+    if condition4 > 0 then
+        if where_str ~= "WHERE " then
+            where_str = where_str .. " AND "
+        end
+        where_str = where_str .. string.format("condition4 = %d", condition4)
+    end
+    if condition5 > 0 then
+        if where_str ~= "WHERE " then
+            where_str = where_str .. " AND "
+        end
+        where_str = where_str .. string.format("condition5 = %d", condition5)
+    end
+
+    if where_str == "WHERE " then
+        where_str = ""
+    end
+
+    local cmd = string.format([[
+        SELECT trade_config_id, last_deal_price, yes_average_price, min_price, min_price_num FROM mgame.trade_record WHERE %s ORDER BY %s LIMIT %d OFFSET %d;
+    ]], where_str, sort_describe, num, start_idx)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("gettraderecordswithconditions err = %s", json.pretty_encode(err)))
+        return nil
+    end
+    if res and #res > 0 then
+        local trade_records = {}
+        for i = 1, #res do
+            local record = TradeDef.newTradeSearchSimpleData()
+            record.config_id = res[i].trade_config_id
+            record.min_price = res[i].min_price
+            record.last_deal_price = res[i].last_deal_price
+            record.yes_average_price = res[i].yes_average_price
+            record.min_price_num = res[i].min_price_num
+            table.insert(trade_records, record)
+        end
+        return trade_records
+    end
+    moon.error("gettraderecordswithconditions failed", where_str, err)
     return nil
 end
 
@@ -1403,28 +1569,48 @@ function _M.gettraderecordseq(addr, start_config_id, num)
     return nil
 end
 
+-- function _M.RedisAddCompletelogid(addr_db_redis, uid, log_id)
+--     local redis_key = string.format("trade:completed:log_ids:%d", uid)
+--     redis_send(addr_db_redis, "SADD", redis_key, log_id)
+-- end
+
+-- function _M.RedisDelProductData(addr_db_redis, product_ids)
+--     redis_send(addr_db_redis, "HDEL", PRODUCT_DATA, table.unpack(product_ids))
+-- end
+
+function _M.getmaxtradelogid(addr)
+    local res, err = moon.call("lua", addr, "SELECT MAX(log_id) as max_log_id FROM mgame.trade_log;")
+    if err then
+        error("getmaxtradelogid failed:" .. tostring(err))
+        return -1
+    end
+    if res and res[1] then
+        return tonumber(res[1].max_log_id) or 0
+    end
+    return 0
+end
+
 function _M.loadplayertradelog(addr, uid)
     local cmd = string.format([[
-        SELECT log_id, trade_id, deal_price, seller_uid, buyer_uid, trade_ts, trade_tax,
-        item_data FROM mgame.trade_log WHERE (seller_uid = %d OR buyer_uid = %d)
+        SELECT log_id, trade_id, config_id, deal_num, deal_price, seller_uid, buyer_uid, trade_ts,
+        trade_tax, send_mail FROM mgame.trade_log WHERE (seller_uid = %d OR buyer_uid = %d)
         ORDER BY trade_ts DESC LIMIT 100;
     ]], uid, uid)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
         local trade_logs = {}
         for i = 1, #res do
-            local pbdata = crypt.base64decode(res[i].item_data)
-            local _, item_data = protocol.decodewithname("PBItemData", pbdata)
-
             local trade_log = TradeDef.newTradeLogData()
             trade_log.log_id = res[i].log_id
             trade_log.trade_id = res[i].trade_id
+            trade_log.config_id = res[i].config_id
+            trade_log.deal_num = res[i].deal_num
             trade_log.deal_price = res[i].deal_price
             trade_log.seller_uid = res[i].seller_uid
             trade_log.buyer_uid = res[i].buyer_uid
             trade_log.trade_ts = res[i].trade_ts
             trade_log.trade_tax = res[i].trade_tax
-            trade_log.item_data = item_data
+            trade_log.send_mail = res[i].send_mail
             trade_logs[trade_log.trade_id] = trade_log
         end
         return trade_logs
@@ -1433,24 +1619,21 @@ function _M.loadplayertradelog(addr, uid)
     return nil
 end
 
-function _M.addtradelog(addr, trade_log)
-    local item_data_str = jencode(trade_log.item_data)
-    local _, pbdata = protocol.encodewithname("PBItemData", trade_log.item_data)
-    local pbvalue = crypt.base64encode(pbdata)
-
+function _M.addtradelog(addr, log_id, trade_log)
     local cmd = string.format([[
-        INSERT INTO mgame.trade_log (trade_id, deal_price, seller_uid, buyer_uid, trade_ts,
-        trade_tax, item_data, item_data_json)
-        VALUES (%d, %d, %d, %d, %d, %d, '%s', '%s');
-    ]], trade_log.trade_id, trade_log.deal_price, trade_log.seller_uid, trade_log.buyer_uid, trade_log.trade_ts, trade_log.trade_tax, pbvalue, item_data_str)
+        INSERT INTO mgame.trade_log (log_id, trade_id, config_id, deal_num, deal_price, seller_uid, buyer_uid,
+        trade_ts, trade_tax)
+        VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d);
+    ]], log_id, trade_log.trade_id, trade_log.config_id, trade_log.deal_num, trade_log.deal_price,
+    trade_log.seller_uid, trade_log.buyer_uid, trade_log.trade_ts, trade_log.trade_tax)
 
     return moon.send("lua", addr, cmd)
 end
 
 function _M.gettradelog(addr, log_id)
     local cmd = string.format([[
-        SELECT log_id, trade_id, deal_price, seller_uid, buyer_uid, trade_ts, trade_tax,
-        item_data FROM mgame.trade_log WHERE log_id = %d;
+        SELECT log_id, trade_id, config_id, deal_num, deal_price, seller_uid, buyer_uid, trade_ts,
+        trade_tax FROM mgame.trade_log WHERE log_id = %d;
     ]], log_id)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
@@ -1459,15 +1642,85 @@ function _M.gettradelog(addr, log_id)
         local trade_log = TradeDef.newTradeLogData()
         trade_log.log_id = res[1].log_id
         trade_log.trade_id = res[1].trade_id
+        trade_log.config_id = res[1].config_id
+        trade_log.deal_num = res[1].deal_num
         trade_log.deal_price = res[1].deal_price
         trade_log.seller_uid = res[1].seller_uid
         trade_log.buyer_uid = res[1].buyer_uid
         trade_log.trade_ts = res[1].trade_ts
         trade_log.trade_tax = res[1].trade_tax
-        trade_log.item_data = item_data
+        trade_log.send_mail = res[1].send_mail
         return trade_log
     end
     moon.error("gettradelog failed", log_id, err)
+    return nil
+end
+
+function _M.loadplayerauctionlog(addr, uid)
+    local cmd = string.format([[
+        SELECT log_id, auction_id, deal_price, seller_uid, buyer_uid, trade_ts, trade_tax,
+        item_data FROM mgame.auction_log WHERE (seller_uid = %d OR buyer_uid = %d)
+        ORDER BY trade_ts DESC LIMIT 100;
+    ]], uid, uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local auction_logs = {}
+        for i = 1, #res do
+            local pbdata = crypt.base64decode(res[i].item_data)
+            local _, item_data = protocol.decodewithname("PBItemData", pbdata)
+
+            local auction_log = TradeDef.newAuctionLogData()
+            auction_log.log_id = res[i].log_id
+            auction_log.auction_id = res[i].auction_id
+            auction_log.deal_price = res[i].deal_price
+            auction_log.seller_uid = res[i].seller_uid
+            auction_log.buyer_uid = res[i].buyer_uid
+            auction_log.trade_ts = res[i].trade_ts
+            auction_log.trade_tax = res[i].trade_tax
+            auction_log.item_data = item_data
+            auction_logs[auction_log.auction_id] = auction_log
+        end
+        return auction_logs
+    end
+    moon.error("loadplayerauctionlog failed", uid, err)
+    return nil
+end
+
+function _M.addauctionlog(addr, auction_log)
+    local item_data_str = jencode(auction_log.item_data)
+    local _, pbdata = protocol.encodewithname("PBItemData", auction_log.item_data)
+    local pbvalue = crypt.base64encode(pbdata)
+
+    local cmd = string.format([[
+        INSERT INTO mgame.auction_log (auction_id, deal_price, seller_uid, buyer_uid, trade_ts,
+        trade_tax, item_data, item_data_json)
+        VALUES (%d, %d, %d, %d, %d, %d, '%s', '%s');
+    ]], auction_log.auction_id, auction_log.deal_price, auction_log.seller_uid, auction_log.buyer_uid, auction_log.trade_ts, auction_log.trade_tax, pbvalue, item_data_str)
+
+    return moon.send("lua", addr, cmd)
+end
+
+function _M.getauctionlog(addr, log_id)
+    local cmd = string.format([[
+        SELECT log_id, auction_id, deal_price, seller_uid, buyer_uid, trade_ts, trade_tax,
+        item_data FROM mgame.auction_log WHERE log_id = %d;
+    ]], log_id)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local pbdata = crypt.base64decode(res[1].item_data)
+        local _, item_data = protocol.decodewithname("PBItemData", pbdata)
+        local auction_log = TradeDef.newAuctionLogData()
+        auction_log.log_id = res[1].log_id
+        auction_log.auction_id = res[1].auction_id
+        auction_log.deal_price = res[1].deal_price
+        auction_log.seller_uid = res[1].seller_uid
+        auction_log.buyer_uid = res[1].buyer_uid
+        auction_log.trade_ts = res[1].trade_ts
+        auction_log.trade_tax = res[1].trade_tax
+        auction_log.item_data = item_data
+        return auction_log
+    end
+    moon.error("getauctionlog failed", log_id, err)
     return nil
 end
 

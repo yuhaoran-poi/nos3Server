@@ -32,6 +32,20 @@ message PBTradeLogData
 {
 	int64 log_id	= 1;
 	int64 trade_id	= 2;
+	int32 config_id	= 3;		//商品配置id
+	int32 deal_num	= 4;		//成交数量
+	int32 deal_price	= 5;	//成交价
+	int64 seller_uid	= 6;	//卖家id
+	int64 buyer_uid		= 7;	//买家id
+	int64 trade_ts		= 8;	//交易时间
+	int32 trade_tax		= 9;	//交易税
+	int32 send_mail		= 10;	//是否已发送邮件
+}
+
+message PBAuctionLogData
+{
+	int64 log_id	= 1;
+	int64 auction_id	= 2;
 	PBItemData item_data = 3;	//商品信息
 	int32 deal_price	= 4;	//成交价
 	int64 seller_uid	= 5;	//卖家id
@@ -40,14 +54,19 @@ message PBTradeLogData
 	int32 trade_tax		= 8;	//交易税
 }
 
-message PBTradeSearchData
+message PBTradeSearchSimpleData
 {
 	int32 config_id	= 1;	//道具的配置id
 	int32 min_price	= 2;	//当前最低价
 	int32 last_deal_price	= 3;	//最近成交价
 	int32 yes_average_price = 4;	//昨日成交平均价
 	int32 min_price_num		= 5;	//最低价数量
-	map<int32, int32> price_num	= 6;	//价格-数量
+}
+
+message PBTradeSearchData
+{
+	PBTradeSearchSimpleData trade_sim_data	= 1;
+	map<int32, int32> price_num	= 2;	//价格-数量
 }
 
 message PBPriceAndNum
@@ -120,7 +139,21 @@ message PBSearchTradeProductRspCmd
 	int32 code = 1; // 服务器返回,0成功,其他失败
     string error = 2; // 错误信息
     int64 uid	= 3;
-	repeated PBTradeSearchData search_products = 4;	//搜索到的商品信息
+	repeated PBTradeSearchSimpleData search_products = 4;	//搜索到的商品信息
+}
+
+message PBGetSingleTradeRecordReqCmd
+{
+	int64 uid	= 1;
+	int32 config_id	= 2;
+}
+
+message PBGetSingleTradeRecordRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    int64 uid	= 3;
+	PBTradeRecordInfo trade_record	= 4;
 }
 
 // 客户端搜索拍卖行商品
@@ -163,6 +196,23 @@ message PBTradeSaleRspCmd
     string error = 2; // 错误信息
     int64 uid	= 3;
 	int64 trade_id	= 4;	//交易号
+}
+
+// 购买交易行商品
+message PBTradeBuyReqCmd
+{
+	int64 uid	= 1;
+	int32 config_id	= 2;
+	int32 buy_num	= 3;
+	int32 buy_max_price	= 4;
+}
+
+message PBTradeBuyRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+	int32 buy_num	= 3;
+	int32 buy_total_price	= 4;
 }
 
 // 上架拍卖行商品

@@ -292,6 +292,8 @@
 ---@field public roleid integer
 ---@field public add_role_exp integer @角色经验变化
 ---@field public magic_item PBItemData @法器
+---@field public digrams_cards table<integer, PBItemData> @八卦牌
+---@field public space_ring PBItemData @空间戒指
 
 
 ---@class PBGameSettle
@@ -2861,6 +2863,19 @@
 ---@class PBTradeLogData
 ---@field public log_id integer
 ---@field public trade_id integer
+---@field public config_id integer @商品配置id
+---@field public deal_num integer @成交数量
+---@field public deal_price integer @成交价
+---@field public seller_uid integer @卖家id
+---@field public buyer_uid integer @买家id
+---@field public trade_ts integer @交易时间
+---@field public trade_tax integer @交易税
+---@field public send_mail integer @是否已发送邮件
+
+
+---@class PBAuctionLogData
+---@field public log_id integer
+---@field public auction_id integer
 ---@field public item_data PBItemData @商品信息
 ---@field public deal_price integer @成交价
 ---@field public seller_uid integer @卖家id
@@ -2869,12 +2884,16 @@
 ---@field public trade_tax integer @交易税
 
 
----@class PBTradeSearchData
+---@class PBTradeSearchSimpleData
 ---@field public config_id integer @道具的配置id
 ---@field public min_price integer @当前最低价
 ---@field public last_deal_price integer @最近成交价
 ---@field public yes_average_price integer @昨日成交平均价
 ---@field public min_price_num integer @最低价数量
+
+
+---@class PBTradeSearchData
+---@field public trade_sim_data PBTradeSearchSimpleData
 ---@field public price_num table<integer, integer> @价格-数量
 
 
@@ -2937,7 +2956,19 @@
 ---@field public code integer @服务器返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public uid integer
----@field public search_products PBTradeSearchData[] @搜索到的商品信息
+---@field public search_products PBTradeSearchSimpleData[] @搜索到的商品信息
+
+
+---@class PBGetSingleTradeRecordReqCmd
+---@field public uid integer
+---@field public config_id integer
+
+
+---@class PBGetSingleTradeRecordRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public trade_record PBTradeRecordInfo
 
 
 ---@class PBSearchAuctionProductReqCmd
@@ -2974,6 +3005,20 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public trade_id integer @交易号
+
+
+---@class PBTradeBuyReqCmd
+---@field public uid integer
+---@field public config_id integer
+---@field public buy_num integer
+---@field public buy_max_price integer
+
+
+---@class PBTradeBuyRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public buy_num integer
+---@field public buy_total_price integer
 
 
 ---@class PBAuctionSaleReqCmd

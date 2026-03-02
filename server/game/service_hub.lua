@@ -110,6 +110,7 @@ local function command_handler(cmdline, echo)
         
         -- cmdline = actual_cmdline
         local split = split_cmdline(cmdline)
+        -- moon.warn(string.format("command_handler split = %s", json.pretty_encode(split)))
         local flag = string.sub(split[1], 1, 1)
         if flag ~= "S" and flag ~= "U" and flag ~= 'T' then
             moon.error("command_handler flag", flag)

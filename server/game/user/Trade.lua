@@ -5,6 +5,7 @@ local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
 local Database = common.Database
+local json = require "json"
 local TradeDef = require("common.def.TradeDef")
 local BagDef = require("common.def.BagDef")
 local ItemDef = require("common.def.ItemDef")
@@ -14,7 +15,7 @@ local context = ...
 local scripts = context.scripts
 
 local MAX_SALE_CAPACITY = 50
-local MAX_SEARCH_IDS_COUNT = 10
+local MAX_SEARCH_IDS_COUNT = 100
 
 ---@class Trade
 local Trade = {}
@@ -84,7 +85,24 @@ function Trade.LoadTradeInfo()
     return trade_info
 end
 
-function Trade.SearchTradeProductWithIds(ids, sort_type, start_idx)
+function Trade.SearchTradeRecordWitchConditions(condition1, condition2, condition3, condition4, condition5, sort_type, start_idx)
+    if not TradeDef.SortDescribe[sort_type] then
+        return ErrorCode.SearchProductTypeErr
+    end
+
+    local trade_records = Database.gettraderecordswithconditions(context.addr_db_user, condition1, condition2,
+        condition3, condition4, condition5, TradeDef.SortDescribe[sort_type], start_idx, MAX_SEARCH_IDS_COUNT)
+    if not trade_records then
+        return ErrorCode.SearchProductFailed
+    end
+    if table.size(trade_records) == 0 then
+        return ErrorCode.SearchProductNone
+    end
+
+    return ErrorCode.None, trade_records
+end
+
+function Trade.SearchTradeRecordWithIds(ids, sort_type, start_idx)
     if not TradeDef.SortDescribe[sort_type] then
         return ErrorCode.SearchProductTypeErr
     end
@@ -92,17 +110,40 @@ function Trade.SearchTradeProductWithIds(ids, sort_type, start_idx)
         return ErrorCode.SearchProductStartErr
     end
 
-    local trade_record_ids = Database.gettraderecordwithids(context.addr_db_user, ids, TradeDef.SortDescribe[sort_type])
-    if not trade_record_ids then
+    local trade_records = Database.gettraderecordwithids(context.addr_db_user, ids, TradeDef.SortDescribe[sort_type])
+    if not trade_records then
         return ErrorCode.SearchProductFailed
     end
-    if table.size(trade_record_ids) == 0 then
+    if table.size(trade_records) == 0 then
         return ErrorCode.SearchProductNone
     end
 
-    -- 通知Trademgr从trade_record加载请求的商品记录数据,数据库中没有则在Trademgr中进行初始化
+    return ErrorCode.None, trade_records
+end
 
-    -- 向Trademgr请求商品类目详情
+function Trade.OnTradeTakeDownMail(trade_product)
+    local mail_id_cfg = GameCfg.StoreConfig[trade_mail_id]
+    if not mail_id_cfg then
+        moon.error(string.format("OnTradeTakeDownMail mail_id_cfg not found = %s", trade_mail_id))
+        return
+    end
+
+    local ret = Database.updatetradeproduct(context.addr_db_user, trade_product.trade_id,
+        { state = TradeDef.StateType.TAKE_DOWNING }, { state = TradeDef.StateType.TAKE_DOWNED }, true)
+    if ret ~= 1 then
+        moon.error(string.format("OnTradeTakeDownMail err = %s", json.pretty_encode(trade_product)))
+        return
+    end
+
+    -- 发送邮件
+    local item_datas = {}
+    table.insert(item_datas, trade_product.item_data)
+    local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
+    if mail_ret ~= ErrorCode.None then
+        moon.error(string.format("OnTradeTakeDownMail mail_ret false trade_product = %s",
+            json.pretty_encode(trade_product)))
+        return
+    end
 end
 
 function Trade.PBGetTradeInfoReqCmd(req)
@@ -203,7 +244,7 @@ function Trade.PBTradeSaleReqCmd(req)
     product_data.trade_data.single_price = req.msg.single_price
     product_data.trade_data.sale_num = 0
     product_data.trade_data.now_num = req.msg.sale_num
-    
+
     local sale_data = {
         uid = context.uid,
         product_data = product_data,
@@ -393,6 +434,23 @@ function Trade.PBSearchTradeProductReqCmd(req)
                 uid = context.uid,
             }, req.msg_context.stub_id)
         end
+
+        local errcode, trade_records = Trade.SearchTradeRecordWithIds(req.msg.config_ids, req.msg.sort_type,
+            req.msg.start_idx)
+        if errcode ~= ErrorCode.None then
+            return context.S2C(context.net_id, CmdCode.PBSearchTradeProductRspCmd, {
+                code = errcode,
+                error = "搜索商品出错",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
+        end
+
+        return context.S2C(context.net_id, CmdCode.PBSearchTradeProductRspCmd, {
+            code = ErrorCode.None,
+            error = "搜索商品成功",
+            uid = context.uid,
+            trade_records = trade_records,
+        }, req.msg_context.stub_id)
     else
         if not req.msg.condition1 and not req.msg.condition2 and not req.msg.condition3
             and not req.msg.condition4 and not req.msg.condition5 then
@@ -402,7 +460,94 @@ function Trade.PBSearchTradeProductReqCmd(req)
                 uid = context.uid,
             }, req.msg_context.stub_id)
         end
+
+        local errcode, trade_records = Trade.SearchTradeRecordWitchConditions(req.msg.condition1, req.msg.condition2,
+            req.msg.condition3, req.msg.condition4, req.msg.condition5, req.msg.sort_type, req.msg.start_idx)
+        if errcode ~= ErrorCode.None then
+            return context.S2C(context.net_id, CmdCode.PBSearchTradeProductRspCmd, {
+                code = errcode,
+                error = "搜索商品出错",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
+        end
+
+
+        return context.S2C(context.net_id, CmdCode.PBSearchTradeProductRspCmd, {
+            code = ErrorCode.None,
+            error = "搜索商品成功",
+            uid = context.uid,
+            trade_records = trade_records,
+        }, req.msg_context.stub_id)
     end
+end
+
+function Trade.PBGetSingleTradeRecordReqCmd(req)
+    -- 参数验证
+    if not req.msg.config_id then
+        return context.S2C(context.net_id, CmdCode.PBGetSingleTradeRecordRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local res, err = clusterd.call(3999, "trademgr", "Trademgr.GetTradeRecordInfo", req.msg.config_id)
+    if err then
+        moon.error(string.format("Trade.PBGetSingleTradeRecordReqCmd Trademgr.GetTradeRecordInfo err:%s", err))
+        return context.S2C(context.net_id, CmdCode.PBGetSingleTradeRecordRspCmd, {
+            code = ErrorCode.SearchProductFailed,
+            error = "搜索商品出错",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+    if not res then
+        return context.S2C(context.net_id, CmdCode.PBGetSingleTradeRecordRspCmd, {
+            code = ErrorCode.SearchProductFailed,
+            error = "搜索商品出错",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local record = {
+        trade_sim_data = TradeDef.newTradeSearchSimpleData(),
+        price_to_num = {},
+    }
+    record.trade_sim_data.config_id = res.trade_config_id
+    record.trade_sim_data.min_price = res.min_price
+    record.trade_sim_data.last_deal_price = res.last_deal_price
+    record.trade_sim_data.yes_average_price = res.yes_average_price
+    record.trade_sim_data.min_price_num = res.min_price_num
+    if res.price_to_num and table.size(res.price_to_num) > 0 then
+        for price, price_num_data in pairs(res.price_to_num) do
+            local price_and_num = {
+                price = price,
+                now_num = price_num_data.now_num,
+            }
+            record.price_to_num[price] = price_and_num
+        end
+    end
+
+    return context.S2C(context.net_id, CmdCode.PBGetSingleTradeRecordRspCmd, {
+        code = ErrorCode.None,
+        error = "搜索商品成功",
+        uid = context.uid,
+        trade_record = record,
+    }, req.msg_context.stub_id)
+end
+
+function Trade.PBTradeBuyReqCmd(req)
+    -- 参数验证
+    if not req.msg.config_id
+        or not req.msg.buy_num
+        or not req.msg.buy_max_price then
+        return context.S2C(context.net_id, CmdCode.PBTradeBuyRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+
 end
 
 return Trade

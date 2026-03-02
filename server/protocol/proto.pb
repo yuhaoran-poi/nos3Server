@@ -1180,18 +1180,24 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-î
+·!
 dsnode.proto
 item.proto
 user.proto	bag.proto
 role.proto
-gods.proto"|
+gods.proto"Ä
 PBGameChangeRoleInfo
 roleid (Rroleid 
 add_role_exp (R
 addRoleExp*
 
-magic_item (2.PBItemDataR	magicItem"Û
+magic_item (2.PBItemDataR	magicItemL
+digrams_cards (2'.PBGameChangeRoleInfo.DigramsCardsEntryRdigramsCards*
+
+space_ring (2.PBItemDataR	spaceRingL
+DigramsCardsEntry
+key (Rkey!
+value (2.PBItemDataRvalue:8"Û
 PBGameSettle
 settle_data (	R
 settleData-
@@ -2796,7 +2802,7 @@ master_uid (R	masterUid
 
 master_uid (R	masterUid
 team_id (RteamIdbproto3
-™ 
+'
 trade.proto
 item.proto"d
 PBTradeData!
@@ -2819,10 +2825,25 @@ seller_uid (R	sellerUid(
 state (Rstate+
 
 trade_data (2.PBTradeDataR	tradeData1
-auction_data (2.PBAuctionDataRauctionData"ÿ
+auction_data (2.PBAuctionDataRauctionData"ª
 PBTradeLogData
 log_id (RlogId
-trade_id (RtradeId(
+trade_id (RtradeId
+	config_id (RconfigId
+deal_num (RdealNum
+
+deal_price (R	dealPrice
+
+seller_uid (R	sellerUid
+	buyer_uid (RbuyerUid
+trade_ts (RtradeTs
+	trade_tax	 (RtradeTax
+	send_mail
+ (RsendMail"…
+PBAuctionLogData
+log_id (RlogId
+
+auction_id (R	auctionId(
 	item_data (2.PBItemDataRitemData
 
 deal_price (R	dealPrice
@@ -2830,14 +2851,16 @@ deal_price (R	dealPrice
 seller_uid (R	sellerUid
 	buyer_uid (RbuyerUid
 trade_ts (RtradeTs
-	trade_tax (RtradeTax"Á
-PBTradeSearchData
+	trade_tax (RtradeTax"Ë
+PBTradeSearchSimpleData
 	config_id (RconfigId
 	min_price (RminPrice&
 last_deal_price (RlastDealPrice*
 yes_average_price (RyesAveragePrice"
-min_price_num (RminPriceNum=
-	price_num (2 .PBTradeSearchData.PriceNumEntryRpriceNum;
+min_price_num (RminPriceNum"Ï
+PBTradeSearchData>
+trade_sim_data (2.PBTradeSearchSimpleDataRtradeSimData=
+	price_num (2 .PBTradeSearchData.PriceNumEntryRpriceNum;
 PriceNumEntry
 key (Rkey
 value (Rvalue:8"b
@@ -2905,12 +2928,20 @@ condition4
 condition5 (R
 condition5
 	sort_type (RsortType
-	start_idx	 (RstartIdx"•
+	start_idx	 (RstartIdx"›
 PBSearchTradeProductRspCmd
 code (Rcode
 error (	Rerror
-uid (Ruid;
-search_products (2.PBTradeSearchDataRsearchProducts"Ö
+uid (RuidA
+search_products (2.PBTradeSearchSimpleDataRsearchProducts"M
+PBGetSingleTradeRecordReqCmd
+uid (Ruid
+	config_id (RconfigId"‘
+PBGetSingleTradeRecordRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid5
+trade_record (2.PBTradeRecordInfoRtradeRecord"Ö
 PBSearchAuctionProductReqCmd
 uid (Ruid
 
@@ -2953,7 +2984,17 @@ condition5+
 code (Rcode
 error (	Rerror
 uid (Ruid
-trade_id (RtradeId"Ë
+trade_id (RtradeId"~
+PBTradeBuyReqCmd
+uid (Ruid
+	config_id (RconfigId
+buy_num (RbuyNum"
+buy_max_price (RbuyMaxPrice"}
+PBTradeBuyRspCmd
+code (Rcode
+error (	Rerror
+buy_num (RbuyNum&
+buy_total_price (RbuyTotalPrice"Ë
 PBAuctionSaleReqCmd
 uid (Ruid
 	config_id (RconfigId

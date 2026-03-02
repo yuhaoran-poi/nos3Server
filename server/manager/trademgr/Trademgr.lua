@@ -6,7 +6,8 @@ local CmdCode = common.CmdCode
 local GameCfg = common.GameCfg --游戏配置
 local Database = common.Database
 local ErrorCode = common.ErrorCode
-local lock_trade = require("moon.queue")()
+local lock_trade_data = require("moon.queue")()
+local lock_trade_log = require("moon.queue")()
 local httpc = require("moon.http.client")
 local json = require("json")
 local crypt = require("crypt")
@@ -25,20 +26,53 @@ local MAX_SEARCH_NUM = 1000
 
 ---@class Trademgr
 local Trademgr = {
+    load_finish = false,
     now_trade_id = 0,
+    now_log_id = 0,
     product_list = {},          -- 交易行商品简要信息
     trade_record_infos = {},  -- 交易行商品记录
     change_record_ids = {},   -- 交易行商品记录变更
     product_endts = {},       -- 商品id-过期时间
     min_endts = 0,             -- 最近过期时间
-    take_down_trade_ids = {},   -- 交易行下架商品id
+    take_down_trade_ids = {}, -- 交易行下架商品id
+    change_product_num_state = {}, -- 交易行商品数量状态变更
+    add_trade_logs = {},           -- 交易行商品日志添加
 }
 
 function Trademgr.Init()
-    return 123
+    -- -- 新增定时器轮询
+    -- moon.async(function()
+    --     while true do
+    --         moon.sleep(5000) -- 每5秒检查一次
+    --         if Trademgr.load_finish then
+    --             Trademgr.CheckEndts()
+    --             Trademgr.UpdateChangeTradeRecords()
+    --             Trademgr.TakeDownProduct()
+    --         end
+    --     end
+    -- end)
+
+    return true
 end
 
 function Trademgr.Start()
+    -- Trademgr.now_trade_id = Database.getmaxtradeid(context.addr_db_game)
+    -- if Trademgr.now_trade_id < 0 then
+    --     moon.error("Trademgr.Start getmaxtradeid failed")
+    --     return
+    -- end
+    -- if Trademgr.now_trade_id == 0 then
+    --     Trademgr.now_trade_id = 1
+    -- end
+    -- Trademgr.now_log_id = Database.getmaxtradelogid(context.addr_db_game)
+    -- if Trademgr.now_log_id < 0 then
+    --     moon.error("Trademgr.Start getmaxtradelogid failed")
+    --     return
+    -- end
+    -- if Trademgr.now_log_id == 0 then
+    --     Trademgr.now_log_id = 1
+    -- end
+
     -- local now_ts = moon.time()
     -- -- 从trade_record表中加载trade_record_infos
     -- local need_mod_record = {}
@@ -112,7 +146,7 @@ function Trademgr.Start()
     --                 -- 已过期，应该下架
     --                 Trademgr.take_down_trade_ids[trade_product.trade_id] = {
     --                     config_id = trade_product.config_id,
-    --                     state = TradeDef.StateType.TAKE_DOWN,
+    --                     state = TradeDef.StateType.TAKE_DOWNING,
     --                 }
     --             else
     --                 if not Trademgr.trade_record_infos[trade_product.config_id] then
@@ -140,6 +174,7 @@ function Trademgr.Start()
     --                 Trademgr.product_list[trade_product.trade_id] = {
     --                     trade_id = trade_product.trade_id,
     --                     config_id = trade_product.config_id,
+    --                     seller_uid = trade_product.seller_uid,
     --                     end_ts = trade_product.end_ts,
     --                     single_price = trade_product.trade_data.single_price,
     --                     sale_num = trade_product.trade_data.sale_num,
@@ -157,7 +192,7 @@ function Trademgr.Start()
 
     -- local del_product_ids = {}
     -- for trade_id, sold_out_data in pairs(sold_out_trade_ids) do
-    --     Database.updatetradeproduct(context.addr_db_game, trade_id, sold_out_data)
+    --     Database.updatetradeproduct(context.addr_db_game, trade_id, sold_out_data, false)
     --     table.insert(del_product_ids, trade_id)
     -- end
     -- if table.size(del_product_ids) > 0 then
@@ -171,17 +206,7 @@ function Trademgr.Start()
     --         need_mod_record[config_id] = 1
     --     end
     --     if not datetime.is_same_day(record_data.update_ts, now_ts) then
-    --         record_data.yes_sale_num = 0
-    --         record_data.yes_sale_total_price = 0
-    --         record_data.yes_average_price = 0
-    --         if datetime.past_day(record_data.update_ts, now_ts) == 1 then
-    --             record_data.yes_sale_num = record_data.sale_num
-    --             record_data.yes_sale_total_price = record_data.sale_total_price
-    --             record_data.yes_average_price = record_data.sale_total_price / record_data.sale_num
-    --         end
-    --         record_data.sale_num = 0
-    --         record_data.sale_total_price = 0
-    --         record_data.update_ts = now_ts
+    --         Trademgr.UpdateSaleNum(record_data, now_ts)
     --         need_mod_record[config_id] = 1
     --     end
     -- end
@@ -195,13 +220,29 @@ function Trademgr.Start()
     --     end
     -- end
 
+    -- Trademgr.load_finish = true
     return true
+end
+
+function Trademgr.UpdateSaleNum(record_data, now_ts)
+    -- 设置昨日售价和销量,清空今日售价和销量
+    record_data.yes_sale_num = 0
+    record_data.yes_sale_total_price = 0
+    record_data.yes_average_price = 0
+    if datetime.past_day(record_data.update_ts, now_ts) == 1 then
+        record_data.yes_sale_num = record_data.sale_num
+        record_data.yes_sale_total_price = record_data.sale_total_price
+        record_data.yes_average_price = record_data.sale_total_price / record_data.sale_num
+    end
+    record_data.sale_num = 0
+    record_data.sale_total_price = 0
+    record_data.update_ts = now_ts
 end
 
 function Trademgr.CheckEndts()
     local now_ts = moon.time()
 
-    local scope <close> = lock_trade()
+    local scope <close> = lock_trade_data()
     if now_ts >= Trademgr.min_endts then
         local function change_trade_record(product_simple_data)
             if not Trademgr.trade_record_infos[product_simple_data.config_id] then
@@ -221,7 +262,6 @@ function Trademgr.CheckEndts()
             end
             if record_data.min_price == price_data.price then
                 record_data.min_price_num = price_data.now_num
-                record_data.update_ts = now_ts
                 Trademgr.change_record_ids[record_data.trade_config_id] = 1
             end
             if record_data.min_price_num <= 0 then
@@ -232,19 +272,18 @@ function Trademgr.CheckEndts()
                         record_data.min_price_num = value.now_num
                     end
                 end
-                record_data.update_ts = now_ts
                 Trademgr.change_record_ids[record_data.trade_config_id] = 1
             end
         end
 
-        local del_trade_ids = {}
+        local remove_trade_ids = {}
         for trade_id, end_ts in pairs(Trademgr.product_endts) do
             if now_ts >= end_ts then
                 Trademgr.take_down_trade_ids[trade_id] = {
                     config_id = Trademgr.product_list[trade_id].config_id,
-                    state = TradeDef.StateType.TAKE_DOWN,
+                    state = TradeDef.StateType.TAKE_DOWNING,
                 }
-                table.insert(del_trade_ids, trade_id)
+                table.insert(remove_trade_ids, trade_id)
 
                 if Trademgr.product_list[trade_id] then
                     local product_simple_data = Trademgr.product_list[trade_id]
@@ -257,7 +296,7 @@ function Trademgr.CheckEndts()
                 end
             end
         end
-        for _, trade_id in pairs(del_trade_ids) do
+        for _, trade_id in pairs(remove_trade_ids) do
             Trademgr.product_endts[trade_id] = nil
         end
     end
@@ -270,7 +309,7 @@ function Trademgr.UpdateChangeTradeRecords()
 
     for config_id, _ in pairs(Trademgr.change_record_ids) do
         local item_conf = GameCfg.Item[config_id]
-        local scope <close> = lock_trade()
+        local scope <close> = lock_trade_data()
         local record_data = Trademgr.trade_record_infos[config_id]
         if record_data and item_conf and item_conf.type1 and item_conf.type2
             and item_conf.type3 and item_conf.type4 and item_conf.type5 then
@@ -299,22 +338,30 @@ function Trademgr.TakeDownProduct()
         local trade_products = Database.gettradeproductwithids(context.addr_db_game, select_trade_ids)
         if trade_products and table.size(trade_products) > 0 then
             local del_trade_ids = {}
+            local close_trade_ids = {}
+            local take_down_ids = {}
+            local take_down_products = {}
             for _, trade_product in pairs(trade_products) do
                 table.insert(del_trade_ids, trade_product.trade_id)
                 if trade_product.trade_data.now_num == 0 then
                     -- 数量为0，认为是已售罄
-                    Database.updatetradeproduct(context.addr_db_game, trade_product.trade_id, {
-                        state = TradeDef.StateType.CLOSE,
-                    })
+                    table.insert(close_trade_ids, trade_product.trade_id)
                 else
                     -- 数量不为0，认为是未售罄, 剩余商品返还给卖家
-                    Database.updatetradeproduct(context.addr_db_game, trade_product.trade_id, {
-                        state = TradeDef.StateType.TAKE_DOWN,
-                    })
-
-                    -- 发送邮件
-
+                    trade_product.item_data.common_info.item_count = trade_product.trade_data.now_num
+                    table.insert(take_down_ids, trade_product.trade_id)
+                    table.insert(take_down_products, trade_product)
                 end
+            end
+            if table.size(close_trade_ids) > 0 then
+                Database.updatetradeproductwithids(context.addr_db_game, close_trade_ids,
+                    { state = TradeDef.StateType.ON_SALE }, { state = TradeDef.StateType.CLOSE }
+                )
+            end
+            if table.size(take_down_ids) > 0 then
+                Database.updatetradeproductwithids(context.addr_db_game, take_down_ids,
+                    { state = TradeDef.StateType.ON_SALE }, { state = TradeDef.StateType.TAKE_DOWNING }
+                )
             end
             if table.size(del_trade_ids) > 0 then
                 for _, trade_id in pairs(del_trade_ids) do
@@ -322,8 +369,50 @@ function Trademgr.TakeDownProduct()
                 end
                 Database.RedisDelProductData(context.addr_db_redis, del_trade_ids)
             end
+            for _, trade_product in pairs(take_down_products) do
+                -- 通知卖家商品已下架
+                context.send_user(trade_product.seller_uid, "Trade.OnTradeTakeDownMail", trade_product)
+            end
         end
     end
+end
+
+function Trademgr.UpdateProductNumState()
+    local short_scope <close> = lock_trade_log()
+
+    if table.size(Trademgr.change_product_num_state) == 0 then
+        return
+    end
+
+    local del_trade_ids = {}
+    for trade_id, change_data in pairs(Trademgr.change_product_num_state) do
+        Database.updatetradeproduct(context.addr_db_game, trade_id, change_data, false)
+        if change_data.state and change_data.state == TradeDef.StateType.CLOSE then
+            table.insert(del_trade_ids, trade_id)
+        end
+    end
+    Trademgr.change_product_num_state = {}
+    if table.size(del_trade_ids) > 0 then
+        Database.RedisDelProductData(context.addr_db_redis, del_trade_ids)
+    end
+end
+
+function Trademgr.AddTradeLog()
+    local short_scope <close> = lock_trade_log()
+
+    if table.size(Trademgr.add_trade_logs) == 0 then
+        return
+    end
+
+    for _, trade_log in pairs(Trademgr.add_trade_logs) do
+        Database.addtradelog(context.addr_db_game, Trademgr.now_log_id, trade_log)
+        Trademgr.now_log_id = Trademgr.now_log_id + 1
+        -- 写入redis
+    end
+    for _, trade_log in pairs(Trademgr.add_trade_logs) do
+        context.send_user(trade_log.seller_uid, "Trade.OnTradeTakeDownMail", trade_log)
+    end
+    Trademgr.add_trade_logs = {}
 end
 
 function Trademgr.GetPlayerTradeLog()
@@ -331,7 +420,7 @@ function Trademgr.GetPlayerTradeLog()
 end
 
 function Trademgr.AddTradeProduct(req_data)
-    if Trademgr.now_trade_id <= 0 then
+    if not Trademgr.load_finish or Trademgr.now_trade_id <= 0 then
         return 0
     end
     local product_data = req_data.product_data
@@ -343,13 +432,14 @@ function Trademgr.AddTradeProduct(req_data)
         return 0
     end
 
-    local scope <close> = lock_trade()
+    local scope <close> = lock_trade_data()
 
     Trademgr.now_trade_id = Trademgr.now_trade_id + 1
     Trademgr.product_endts[ret_id] = product_data.end_ts
     Trademgr.product_list[ret_id] = {
         trade_id = ret_id,
         config_id = product_data.config_id,
+        seller_uid = product_data.seller_uid,
         end_ts = product_data.end_ts,
         single_price = product_data.trade_data.single_price,
         sale_num = product_data.trade_data.sale_num,
@@ -367,18 +457,8 @@ function Trademgr.AddTradeProduct(req_data)
     local record_data = Trademgr.trade_record_infos[product_data.item_data.common_info.config_id]
     if not datetime.is_same_day(record_data.update_ts, now_ts) then
         -- 设置昨日售价和销量,清空今日售价和销量
-        record_data.yes_sale_num = 0
-        record_data.yes_sale_total_price = 0
-        record_data.yes_average_price = 0
-        if datetime.past_day(record_data.update_ts, now_ts) == 1 then
-            record_data.yes_sale_num = record_data.sale_num
-            record_data.yes_sale_total_price = record_data.sale_total_price
-            record_data.yes_average_price = record_data.sale_total_price / record_data.sale_num
-        end
-        record_data.sale_num = 0
-        record_data.sale_total_price = 0
+        Trademgr.UpdateSaleNum(record_data, now_ts)
     end
-    record_data.update_ts = now_ts
 
     if not record_data.price_to_num[product_data.trade_data.single_price] then
         local new_price_data = TradeDef.newPriceAndNum()
@@ -401,6 +481,181 @@ function Trademgr.AddTradeProduct(req_data)
     Database.RedisSetProductData(context.addr_db_redis, product_data)
 
     return product_data.trade_id
+end
+
+function Trademgr.GetTradeRecordInfo(config_id)
+    if not Trademgr.load_finish then
+        return nil
+    end
+
+    local scope <close> = lock_trade_data()
+
+    if not Trademgr.trade_record_infos[config_id] then
+        return nil
+    end
+    return Trademgr.trade_record_infos[config_id]
+end
+
+function Trademgr.BuyTradeProduct(buyer_uid, config_id, buy_num, buy_max_price, lock_coin_num)
+    if not Trademgr.load_finish then
+        return ErrorCode.TradeProductNotExist
+    end
+    
+    local scope <close> = lock_trade_data()
+
+    if not Trademgr.trade_record_infos[config_id] then
+        return ErrorCode.TradeProductNotExist
+    end
+    local record_info = Trademgr.trade_record_infos[config_id]
+    if record_info.min_price > buy_max_price then
+        return ErrorCode.TradePriceTooHigh
+    end
+    if table.size(record_info.price_to_num) <= 0 or record_info.sale_num <= 0 then
+        return ErrorCode.TradeProductNumZero
+    end
+    -- 将当前价格price_to_num进行从低到高排序
+    local price_list = {}
+    for price, _ in pairs(record_info.price_to_num) do
+        table.insert(price_list, price)
+    end
+    table.sort(price_list)
+    
+    -- 从低到高遍历价格, 凑足buy_num数量, 单价不高于buy_max_price, 总价不高于lock_coin_num
+    local remain_coin = lock_coin_num
+    local total_real_buy_num = 0
+    local buy_list = {}
+    for _, price in pairs(price_list) do
+        if price > buy_max_price or total_real_buy_num >= buy_num then
+            break
+        end
+        local price_data = record_info.price_to_num[price]
+        if price_data.now_num > 0 then
+            local can_buy_num = math.min(price_data.now_num, math.floor(remain_coin / price))
+            can_buy_num = math.min(can_buy_num, buy_num - total_real_buy_num)
+            if can_buy_num > 0 then
+                for _, trade_id in pairs(price_data.trade_id_list) do
+                    local product_data = Trademgr.product_list[trade_id]
+                    if product_data and product_data.now_num > 0 then
+                        local cur_num = math.min(can_buy_num, product_data.now_num)
+                        table.insert(buy_list, {
+                            trade_id = trade_id,
+                            seller_uid = product_data.seller_uid,
+                            buyer_uid = buyer_uid,
+                            price = price,
+                            num = cur_num,
+                        })
+                        total_real_buy_num = total_real_buy_num + cur_num
+                        remain_coin = remain_coin - price * cur_num
+                        can_buy_num = can_buy_num - cur_num
+                    end
+                    if can_buy_num <= 0 then
+                        break
+                    end
+                end
+            else
+                break
+            end
+        end
+    end
+
+    if remain_coin < 0 or total_real_buy_num > buy_num or table.size(buy_list) <= 0 then
+        return ErrorCode.TradeBuyError
+    end
+
+    local function change_trade_record(product_data, buy_data, now_ts)
+        local short_scope <close> = lock_trade_log()
+
+        -- 添加交易变更数据到Trademgr.change_product_num_state
+        local change_data = {
+            trade_id = product_data.trade_id,
+            sale_num = product_data.sale_num,
+            now_num = product_data.now_num,
+        }
+        if product_data.state == TradeDef.StateType.CLOSE then
+            change_data.state = TradeDef.StateType.CLOSE
+        end
+        Trademgr.change_product_num_state[product_data.trade_id] = change_data
+
+        -- 添加交易日志到Trademgr.trade_logs
+        local trade_log = TradeDef.newTradeLogData()
+        trade_log.trade_id = product_data.trade_id
+        trade_log.config_id = product_data.config_id
+        trade_log.deal_num = buy_data.num
+        trade_log.deal_price = buy_data.price
+        trade_log.seller_uid = product_data.seller_uid
+        trade_log.buyer_uid = buyer_uid
+        trade_log.trade_ts = now_ts
+        trade_log.trade_tax = 0
+        table.insert(Trademgr.add_trade_logs, trade_log)
+    end
+    -- 根据buy_list修改Trademgr.product_list, Trademgr.product_list和record_info数据
+    local now_ts = moon.time()
+    local is_min_price_sold_out = false
+    for _, buy_data in pairs(buy_list) do
+        local product_data = Trademgr.product_list[buy_data.trade_id]
+        if product_data then
+            product_data.sale_num = product_data.sale_num + buy_data.num
+            product_data.now_num = product_data.now_num - buy_data.num
+            if product_data.now_num <= 0 then
+                product_data.state = TradeDef.StateType.CLOSE
+            end
+
+            change_trade_record(product_data, buy_data, now_ts)
+
+            record_info.sale_num = record_info.sale_num + buy_data.num
+            record_info.sale_total_price = record_info.sale_total_price + buy_data.price * buy_data.num
+            record_info.last_deal_price = buy_data.price
+            local price_data = record_info.price_to_num[buy_data.price]
+            if price_data then
+                price_data.now_num = price_data.now_num - buy_data.num
+                if price_data.now_num == 0 then
+                    is_min_price_sold_out = true
+                    record_info.min_price = 0
+                    record_info.min_price_num = 0
+                    record_info.price_to_num[buy_data.price] = nil
+                else
+                    is_min_price_sold_out = false
+                    record_info.min_price = price_data.price
+                    record_info.min_price_num = price_data.now_num
+                    if product_data.state == TradeDef.StateType.CLOSE then
+                        for idx, trade_id in pairs(price_data.trade_id_list) do
+                            if trade_id == buy_data.trade_id then
+                                table.remove(price_data.trade_id_list, idx)
+                                break
+                            end
+                        end
+                    end
+                end
+            end
+
+            if product_data.state == TradeDef.StateType.CLOSE then
+                Trademgr.product_endts[buy_data.trade_id] = nil
+                Trademgr.product_list[buy_data.trade_id] = nil
+            end
+        end
+    end
+    -- 修改交易行商品分类表
+    if is_min_price_sold_out then
+        for price, price_data in pairs(record_info.price_to_num) do
+            if record_info.min_price == 0 or record_info.min_price > price then
+                record_info.min_price = price
+                record_info.min_price_num = price_data.now_num
+            end
+        end
+    end
+    local item_conf = GameCfg.Item[config_id]
+    if item_conf and item_conf.type1 and item_conf.type2
+        and item_conf.type3 and item_conf.type4 and item_conf.type5 then
+        Database.updatetraderecord(context.addr_db_game, record_info, item_conf.type1, item_conf.type2,
+            item_conf.type3, item_conf.type4, item_conf.type5)
+    end
+
+    local res = {
+        total_real_buy_num = total_real_buy_num,
+        remain_coin = remain_coin,
+        buy_list = buy_list,
+    }
+    return ErrorCode.None, res
 end
 
 function Trademgr.AddAuctionProduct(req_data)

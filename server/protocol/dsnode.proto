@@ -10,6 +10,8 @@ message PBGameChangeRoleInfo
     int32 roleid   = 1;
     int32 add_role_exp  = 2;    //角色经验变化
     PBItemData magic_item   = 3;	//法器
+    map<int32, PBItemData> digrams_cards	= 4;	//八卦牌
+    PBItemData space_ring	= 5;	//空间戒指
 }
 
 // DS结算数据
