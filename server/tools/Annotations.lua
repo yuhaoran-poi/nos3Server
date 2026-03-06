@@ -2852,11 +2852,21 @@
 ---@class PBTradeProductBaseData
 ---@field public trade_id integer @交易id
 ---@field public seller_uid integer @卖家id
----@field public item_data PBItemData @商品信息
+---@field public config_id integer @道具的配置id
+---@field public total_num integer @上架道具的总数量
 ---@field public beg_ts integer @商品上架时间
 ---@field public end_ts integer @商品下架时间
 ---@field public state integer
 ---@field public trade_data PBTradeData @交易数据
+
+
+---@class PBAuctionProductBaseData
+---@field public trade_id integer @交易id
+---@field public seller_uid integer @卖家id
+---@field public item_data PBItemData @商品信息
+---@field public beg_ts integer @商品上架时间
+---@field public end_ts integer @商品下架时间
+---@field public state integer
 ---@field public auction_data PBAuctionData @拍卖数据
 
 
@@ -2919,6 +2929,8 @@
 
 ---@class PBSelfTradeInfo
 ---@field public box_capacity integer @交易行货架数
+---@field public can_onsale_cnt integer @当前可上架次数
+---@field public update_ts integer @上架次数刷新时间
 ---@field public trade_ids integer[]
 ---@field public log_ids integer[]
 
@@ -2926,7 +2938,7 @@
 ---@class PBSelfTradeData
 ---@field public simple_info PBSelfTradeInfo
 ---@field public product_list table<integer, PBTradeProductBaseData>
----@field public log_list table<integer, PBTradeLogData>
+---@field public log_list PBTradeLogData[]
 
 
 ---@class PBGetTradeInfoReqCmd
@@ -2988,7 +3000,7 @@
 ---@field public code integer @服务器返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public uid integer
----@field public search_products table<integer, PBTradeProductBaseData> @搜索到的商品信息 key为trade_id
+---@field public search_products table<integer, PBAuctionProductBaseData> @搜索到的商品信息 key为trade_id
 
 
 ---@class PBTradeSaleReqCmd
@@ -3019,6 +3031,18 @@
 ---@field public error string @错误信息
 ---@field public buy_num integer
 ---@field public buy_total_price integer
+
+
+---@class PBTradeTakeOffProductReqCmd
+---@field public uid integer
+---@field public trade_id integer
+
+
+---@class PBTradeTakeOffProductRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public trade_id integer
 
 
 ---@class PBAuctionSaleReqCmd
@@ -3521,10 +3545,12 @@
 ---@field ImmediatelyEmailTemplateConfig ImmediatelyEmailTemplateConfig_cfg[]
 ---@field Init Init_cfg[]
 ---@field Item Item_cfg[]
+---@field ItemSkin ItemSkin_cfg[]
 ---@field LightConvert LightConvert_cfg[]
 ---@field LightInfo LightInfo_cfg[]
 ---@field MagicItem MagicItem_cfg[]
 ---@field MagicItemUpLv MagicItemUpLv_cfg[]
+---@field MissionBox MissionBox_cfg[]
 ---@field PropCompose PropCompose_cfg[]
 ---@field RandomComposite RandomComposite_cfg[]
 ---@field RankConfig RankConfig_cfg[]
@@ -3535,6 +3561,7 @@
 ---@field Skin Skin_cfg[]
 ---@field SpaceRingUpLv SpaceRingUpLv_cfg[]
 ---@field StoreConfig StoreConfig_cfg[]
+---@field TransactionConfig TransactionConfig_cfg[]
 ---@field TriggerEmailTemplateConfig TriggerEmailTemplateConfig_cfg[]
 ---@field UniqueItem UniqueItem_cfg[]
 ---@field UpLvCostIDMapping UpLvCostIDMapping_cfg[]

@@ -116,6 +116,10 @@ local function run(node_conf)
         end
         ---服务器启动次数+1
         data.boot_times = data.boot_times + 1
+        ---限制启动次数不超过UUID模块允许的最大值
+        if data.boot_times > 1023 then
+            data.boot_times = 1
+        end
         moon.env("SERVER_START_TIMES", tostring(data.boot_times))
         ---初始化唯一ID生成器
         uuid.init(1, tonumber(arg[1]), data.boot_times)

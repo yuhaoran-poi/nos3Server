@@ -510,6 +510,20 @@ local ErrorCode = {
     SearchIdsOverflow = 2107,
     --- 搜索参数无效
     SearchParamsInvalid = 2108,
+    --- 交易行商品不存在
+    TradeProductNotExist = 2109,
+    --- 交易行价格过高
+    TradePriceTooHigh = 2110,
+    --- 交易行商品数量为0
+    TradeProductNumZero = 2111,
+    --- 交易行购买商品错误
+    TradeBuyError = 2112,
+    --- 交易行下架商品错误
+    TradeTakeOffError = 2113,
+    --- 道具不允许交易
+    TradeItemNotAllowed = 2114,
+    --- 交易次数不足
+    TradeCntNotEnough = 2115,
 }
 
 return ErrorCode

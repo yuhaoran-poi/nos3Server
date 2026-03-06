@@ -2,7 +2,7 @@
 if _G["__init__"] then
     local arg = ...
     return {
-        thread = 10,
+        thread = 11,
         enable_stdout = true,
         logfile = string.format("log/manager-%s-%s.log", arg[1], os.date("%Y-%m-%d-%H-%M-%S")),
         loglevel = "DEBUG",
@@ -178,6 +178,13 @@ local function run(node_conf)
             threadid = 8,
             websocket = false,
         },
+        {
+            unique = true,
+            name = "trademgr",
+            file = "manager/service_trademgr.lua",
+            threadid = 11,
+            websocket = false,
+        },
     }
 
     local function Start()
@@ -191,6 +198,7 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("friendmgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("mailmgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("shopmgr"), "Init"))
+        assert(moon.call("lua", moon.queryservice("trademgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("nodemgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("usermgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("teammgr"), "Start"))
@@ -200,6 +208,7 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("friendmgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("mailmgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("shopmgr"), "Start"))
+        assert(moon.call("lua", moon.queryservice("trademgr"), "Start"))
         local data = db.loadserverdata(moon.queryservice("db_server"))
         if not data then
             data = { boot_times = 0 }

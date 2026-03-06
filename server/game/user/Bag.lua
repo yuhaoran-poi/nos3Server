@@ -398,6 +398,8 @@ function Bag.RollBackWithChange(change_logs)
             end
         end
     end
+
+    change_logs = {}
 end
 
 -- function Bag.SaveAndLog(bagTypes, change_logs, change_reason)
@@ -1544,6 +1546,18 @@ function Bag.GetItemCount(config_id, bagType)
     end
 end
 
+function Bag.GetCoinCount(coin_id)
+    local coinsdata = scripts.UserModel.GetCoinsData()
+    if not coinsdata then
+        return 0
+    end
+
+    if coinsdata.coins[coin_id] and coinsdata.coins[coin_id].coin_count ~= 0 then
+        return coinsdata.coins[coin_id].coin_count
+    end
+    return 0
+end
+
 function Bag.GetItemPosNum(config_id, bagType)
     if not Bag.dataMap[config_id] then
         return 0
@@ -2015,7 +2029,7 @@ function Bag.DealCoins(coins, change_log)
     
     for coinid, coin in pairs(coins) do
         if coin.coin_count < 0 and not coinsdata.coins[coinid] then
-            Bag.RollBackWithChange(change_log)
+            -- Bag.RollBackWithChange(change_log)
             return ErrorCode.CoinNotExist
         end
 

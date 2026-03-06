@@ -20,12 +20,23 @@ message PBTradeProductBaseData
 {
 	int64 trade_id		= 1;	//交易id
 	int64 seller_uid	= 2;	//卖家id
+	int32 config_id		= 3;	//道具的配置id
+	int32 total_num		= 4;	//上架道具的总数量
+	int64 beg_ts		= 5;	//商品上架时间
+	int64 end_ts		= 6;	//商品下架时间
+	int32 state			= 7;
+	PBTradeData trade_data = 8;	//交易数据
+}
+
+message PBAuctionProductBaseData
+{
+	int64 trade_id		= 1;	//交易id
+	int64 seller_uid	= 2;	//卖家id
 	PBItemData item_data = 3;	//商品信息
 	int64 beg_ts		= 4;	//商品上架时间
 	int64 end_ts		= 5;	//商品下架时间
 	int32 state			= 6;
-	PBTradeData trade_data = 7;	//交易数据
-	PBAuctionData auction_data = 8;	//拍卖数据
+	PBAuctionData auction_data = 7;	//拍卖数据
 }
 
 message PBTradeLogData
@@ -94,15 +105,17 @@ message PBTradeRecordInfo
 message PBSelfTradeInfo
 {
 	int32 box_capacity	= 1;	//交易行货架数
-	repeated int64 trade_ids	= 2;
-	repeated int64 log_ids	= 3;
+	int32 can_onsale_cnt	= 2;	//当前可上架次数
+	int64 update_ts			= 3;	//上架次数刷新时间
+	repeated int64 trade_ids	= 4;
+	repeated int64 log_ids	= 5;
 }
 
 message PBSelfTradeData
 {
 	PBSelfTradeInfo simple_info	= 1;
 	map<int64, PBTradeProductBaseData> product_list	= 2;
-	map<int64, PBTradeLogData> log_list	= 3;
+	repeated PBTradeLogData log_list	= 3;
 }
 
 // 客户端请求自己的交易行数据
@@ -176,7 +189,7 @@ message PBSearchAuctionProductRspCmd
 	int32 code = 1; // 服务器返回,0成功,其他失败
     string error = 2; // 错误信息
     int64 uid	= 3;
-	map<int64, PBTradeProductBaseData>	search_products = 4;	//搜索到的商品信息 key为trade_id
+	map<int64, PBAuctionProductBaseData>	search_products = 4;	//搜索到的商品信息 key为trade_id
 }
 
 // 上架交易行商品
@@ -213,6 +226,21 @@ message PBTradeBuyRspCmd
     string error = 2; // 错误信息
 	int32 buy_num	= 3;
 	int32 buy_total_price	= 4;
+}
+
+// 下架交易行商品
+message PBTradeTakeOffProductReqCmd
+{
+	int64 uid	= 1;
+	int64 trade_id	= 2;
+}
+
+message PBTradeTakeOffProductRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+	int64 uid	= 3;
+	int64 trade_id	= 4;
 }
 
 // 上架拍卖行商品

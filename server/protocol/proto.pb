@@ -2802,7 +2802,7 @@ master_uid (R	masterUid
 
 master_uid (R	masterUid
 team_id (RteamIdbproto3
-ê'
+í*
 trade.proto
 item.proto"d
 PBTradeData!
@@ -2814,18 +2814,27 @@ item.proto"d
 startPrice!
 buyout_price (RbuyoutPrice
 	cur_price (RcurPrice
-	buyer_uid (RbuyerUid"†
+	buyer_uid (RbuyerUid"˝
 PBTradeProductBaseData
+trade_id (RtradeId
+
+seller_uid (R	sellerUid
+	config_id (RconfigId
+	total_num (RtotalNum
+beg_ts (RbegTs
+end_ts (RendTs
+state (Rstate+
+
+trade_data (2.PBTradeDataR	tradeData"ı
+PBAuctionProductBaseData
 trade_id (RtradeId
 
 seller_uid (R	sellerUid(
 	item_data (2.PBItemDataRitemData
 beg_ts (RbegTs
 end_ts (RendTs
-state (Rstate+
-
-trade_data (2.PBTradeDataR	tradeData1
-auction_data (2.PBAuctionDataRauctionData"™
+state (Rstate1
+auction_data (2.PBAuctionDataRauctionData"™
 PBTradeLogData
 log_id (RlogId
 trade_id (RtradeId
@@ -2885,22 +2894,21 @@ yesSaleNum/
 priceToNumM
 PriceToNumEntry
 key (Rkey$
-value (2.PBPriceAndNumRvalue:8"j
+value (2.PBPriceAndNumRvalue:8"≠
 PBSelfTradeInfo!
-box_capacity (RboxCapacity
-	trade_ids (RtradeIds
-log_ids (RlogIds"Í
+box_capacity (RboxCapacity$
+can_onsale_cnt (RcanOnsaleCnt
+	update_ts (RupdateTs
+	trade_ids (RtradeIds
+log_ids (RlogIds"è
 PBSelfTradeData1
 simple_info (2.PBSelfTradeInfoR
 simpleInfoD
-product_list (2!.PBSelfTradeData.ProductListEntryRproductList8
-log_list (2.PBSelfTradeData.LogListEntryRlogListW
+product_list (2!.PBSelfTradeData.ProductListEntryRproductList*
+log_list (2.PBTradeLogDataRlogListW
 ProductListEntry
 key (Rkey-
-value (2.PBTradeProductBaseDataRvalue:8K
-LogListEntry
-key (Rkey%
-value (2.PBTradeLogDataRvalue:8"(
+value (2.PBTradeProductBaseDataRvalue:8"(
 PBGetTradeInfoReqCmd
 uid (Ruid"å
 PBGetTradeInfoRspCmd
@@ -2964,15 +2972,15 @@ condition5+
 custom_conditions (RcustomConditions
 	sort_type	 (RsortType
 	start_idx
- (RstartIdx"í
+ (RstartIdx"î
 PBSearchAuctionProductRspCmd
 code (Rcode
 error (	Rerror
 uid (RuidZ
-search_products (21.PBSearchAuctionProductRspCmd.SearchProductsEntryRsearchProductsZ
+search_products (21.PBSearchAuctionProductRspCmd.SearchProductsEntryRsearchProducts\
 SearchProductsEntry
-key (Rkey-
-value (2.PBTradeProductBaseDataRvalue:8"´
+key (Rkey/
+value (2.PBAuctionProductBaseDataRvalue:8"´
 PBTradeSaleReqCmd
 uid (Ruid
 	config_id (RconfigId
@@ -2994,7 +3002,15 @@ condition5+
 code (Rcode
 error (	Rerror
 buy_num (RbuyNum&
-buy_total_price (RbuyTotalPrice"À
+buy_total_price (RbuyTotalPrice"J
+PBTradeTakeOffProductReqCmd
+uid (Ruid
+trade_id (RtradeId"t
+PBTradeTakeOffProductRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+trade_id (RtradeId"À
 PBAuctionSaleReqCmd
 uid (Ruid
 	config_id (RconfigId

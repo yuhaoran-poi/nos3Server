@@ -35,6 +35,27 @@ local defaultPBAuctionData = {
     buyer_uid = 0,
 }
 
+local defaultPBTradeProductBaseData = {
+    trade_id = 0,
+    seller_uid = 0,
+    config_id = 0,
+    total_num = 0,
+    beg_ts = 0,
+    end_ts = 0,
+    state = TradeDef.StateType.UNKNOWN,
+    trade_data = LuaExt.const(table.copy(defaultPBTradeData)),
+}
+
+local defaultPBAuctionProductBaseData = {
+    trade_id = 0,
+    seller_uid = 0,
+    item_data = {},
+    beg_ts = 0,
+    end_ts = 0,
+    state = TradeDef.StateType.UNKNOWN,
+    auction_data = LuaExt.const(table.copy(defaultPBAuctionData)),
+}
+
 local defaultPBTradeLogData = {
     log_id = 0,
     trade_id = 0,
@@ -61,6 +82,8 @@ local defaultPBAuctionLogData = {
 
 local defaultPBSelfTradeInfo = {
     box_capacity = 0,
+    can_onsale_cnt = 0,
+    update_ts = 0,
     trade_ids = {},
     log_ids = {},
 }
@@ -112,6 +135,16 @@ end
 ---@return PBAuctionData
 function TradeDef.newAuctionData()
     return LuaExt.const(table.copy(defaultPBAuctionData))
+end
+
+---@return PBTradeProductBaseData
+function TradeDef.newTradeProductBaseData()
+    return LuaExt.const(table.copy(defaultPBTradeProductBaseData))
+end
+
+---@return PBAuctionProductBaseData
+function TradeDef.newAuctionProductBaseData()
+    return LuaExt.const(table.copy(defaultPBAuctionProductBaseData))
 end
 
 ---@return PBTradeLogData
