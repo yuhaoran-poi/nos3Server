@@ -34,6 +34,7 @@ function Bag.Init()
     bagTypes[BagDef.BagType.Cangku] = 1
     bagTypes[BagDef.BagType.Consume] = 1
     bagTypes[BagDef.BagType.Booty] = 1
+    bagTypes[BagDef.BagType.Tool] = 1
 
     local baginfos = Bag.LoadBags(bagTypes)
     if baginfos then
@@ -46,6 +47,8 @@ function Bag.Init()
         bagdata[BagDef.BagType.Cangku].bag_item_type = ItemDefine.ItemBagType.ALL
         bagdata[BagDef.BagType.Consume].bag_item_type = ItemDefine.ItemBagType.CONSUME
         bagdata[BagDef.BagType.Booty].bag_item_type = ItemDefine.ItemBagType.ALL
+        bagdata[BagDef.BagType.Tool].bag_item_type = ItemDefine.ItemBagType.TOOL
+
         local cangku_cfg = GameCfg.WarehouseExpansion[1]
         if cangku_cfg then
             bagdata[BagDef.BagType.Cangku].capacity = cangku_cfg.warehouse_grids
@@ -57,6 +60,10 @@ function Bag.Init()
         local booty_cfg = GameCfg.BootyBackpackExpansion[1]
         if booty_cfg then
             bagdata[BagDef.BagType.Booty].capacity = booty_cfg.booty_backpack_grids
+        end
+        local tool_cfg = GameCfg.ToolBackpackExpansion[1]
+        if tool_cfg then
+            bagdata[BagDef.BagType.Tool].capacity = tool_cfg.grids
         end
         scripts.UserModel.SetBagData(bagdata)
     end
@@ -227,7 +234,8 @@ function Bag.AddCapacity(bagType, add_capacity_id)
 
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
-        and bagType ~= BagDef.BagType.Booty then
+        and bagType ~= BagDef.BagType.Booty
+        and bagType ~= BagDef.BagType.Tool then
         return ErrorCode.BagNotExist
     end
 
@@ -949,7 +957,8 @@ function Bag.SortOut(bagType)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
-        and bagType ~= BagDef.BagType.Booty then
+        and bagType ~= BagDef.BagType.Booty
+        and bagType ~= BagDef.BagType.Tool then
         return ErrorCode.BagNotExist
     end
 
@@ -1468,7 +1477,8 @@ function Bag.SyncBagInfo(bagType, sync_baginfo, change_log)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
-        and bagType ~= BagDef.BagType.Booty then
+        and bagType ~= BagDef.BagType.Booty
+        and bagType ~= BagDef.BagType.Tool then
         moon.error("Bag.SyncBagInfo bagType error: ", bagType)
         return ErrorCode.BagNotExist
     end
@@ -1588,7 +1598,8 @@ function Bag.CheckItemsEnough(bagType, del_items, del_unique_items)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
-        and bagType ~= BagDef.BagType.Booty then
+        and bagType ~= BagDef.BagType.Booty
+        and bagType ~= BagDef.BagType.Tool then
         return ErrorCode.BagNotExist
     end
 
@@ -1659,7 +1670,8 @@ function Bag.CheckItemsEnoughPos(bagType, del_items)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
-        and bagType ~= BagDef.BagType.Booty then
+        and bagType ~= BagDef.BagType.Booty
+        and bagType ~= BagDef.BagType.Tool then
         return ErrorCode.BagNotExist
     end
 
@@ -1749,7 +1761,8 @@ function Bag.CheckEmptyEnough(bagType, add_items, use_pos_num)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
-        and bagType ~= BagDef.BagType.Booty then
+        and bagType ~= BagDef.BagType.Booty
+        and bagType ~= BagDef.BagType.Tool then
         return ErrorCode.BagNotExist
     end
 
@@ -1807,7 +1820,8 @@ function Bag.TryEmptyEnough(bagType, add_items, use_pos_num)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
-        and bagType ~= BagDef.BagType.Booty then
+        and bagType ~= BagDef.BagType.Booty
+        and bagType ~= BagDef.BagType.Tool then
         moon.error("Bag.TryEmptyEnough error bagType", bagType)
         return ErrorCode.BagNotExist
     end
@@ -1871,7 +1885,8 @@ function Bag.DelItems(bagType, del_items, del_unique_items, change_log)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
-        and bagType ~= BagDef.BagType.Booty then
+        and bagType ~= BagDef.BagType.Booty
+        and bagType ~= BagDef.BagType.Tool then
         return ErrorCode.BagNotExist
     end
 
@@ -1915,7 +1930,8 @@ function Bag.DelItemsPos(bagType, del_items, change_log)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
-        and bagType ~= BagDef.BagType.Booty then
+        and bagType ~= BagDef.BagType.Booty
+        and bagType ~= BagDef.BagType.Tool then
         return ErrorCode.BagNotExist
     end
 
@@ -1955,7 +1971,8 @@ function Bag.AddItems(bagType, stack_item_datas, unstack_item_datas, change_log)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
-        and bagType ~= BagDef.BagType.Booty then
+        and bagType ~= BagDef.BagType.Booty
+        and bagType ~= BagDef.BagType.Tool then
         return ErrorCode.BagNotExist
     end
 
@@ -1988,7 +2005,8 @@ function Bag.AddItems(bagType, stack_item_datas, unstack_item_datas, change_log)
             err_code = Bag.AddDiagramsCard(bagType, baginfo, item_data, change_log[bagType])
         elseif item_small_type == ItemDefine.EItemSmallType.MagicItem then
             err_code = Bag.AddMagicItem(bagType, baginfo, item_data, change_log[bagType])
-        elseif item_small_type == ItemDefine.EItemSmallType.DurabItem then
+        elseif item_small_type == ItemDefine.EItemSmallType.DurabItem
+            or item_small_type == ItemDefine.EItemSmallType.Tool then
             err_code = Bag.AddDurabItem(bagType, baginfo, item_data, change_log[bagType])
         elseif item_small_type == ItemDefine.EItemSmallType.Antique then
             err_code = Bag.AddAntique(bagType, baginfo, item_data, change_log[bagType])
@@ -2061,13 +2079,15 @@ function Bag.StackItems(srcBagType, srcPos, destBagType, destPos, change_log)
     -- 参数校验
     if srcBagType ~= BagDef.BagType.Cangku
         and srcBagType ~= BagDef.BagType.Consume
-        and srcBagType ~= BagDef.BagType.Booty then
+        and srcBagType ~= BagDef.BagType.Booty
+        and srcBagType ~= BagDef.BagType.Tool then
         return ErrorCode.BagNotExist
     end
 
     if destBagType ~= BagDef.BagType.Cangku
         and destBagType ~= BagDef.BagType.Consume
-        and destBagType ~= BagDef.BagType.Booty then
+        and destBagType ~= BagDef.BagType.Booty
+        and destBagType ~= BagDef.BagType.Tool then
         return ErrorCode.BagNotExist
     end
 
@@ -2153,13 +2173,15 @@ function Bag.SplitItem(srcBagType, srcPos, destBagType, destPos, split_count, ch
 
     if srcBagType ~= BagDef.BagType.Cangku
         and srcBagType ~= BagDef.BagType.Consume
-        and srcBagType ~= BagDef.BagType.Booty then
+        and srcBagType ~= BagDef.BagType.Booty
+        and srcBagType ~= BagDef.BagType.Tool then
         return ErrorCode.BagNotExist
     end
 
     if destBagType ~= BagDef.BagType.Cangku
         and destBagType ~= BagDef.BagType.Consume
-        and destBagType ~= BagDef.BagType.Booty then
+        and destBagType ~= BagDef.BagType.Booty
+        and destBagType ~= BagDef.BagType.Tool then
         return ErrorCode.BagNotExist
     end
 
@@ -2229,13 +2251,15 @@ function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos, change_log)
     -- 参数校验
     if srcBagType ~= BagDef.BagType.Cangku
         and srcBagType ~= BagDef.BagType.Consume
-        and srcBagType ~= BagDef.BagType.Booty then
+        and srcBagType ~= BagDef.BagType.Booty
+        and srcBagType ~= BagDef.BagType.Tool then
         return ErrorCode.BagNotExist
     end
 
     if destBagType ~= BagDef.BagType.Cangku
         and destBagType ~= BagDef.BagType.Consume
-        and destBagType ~= BagDef.BagType.Booty then
+        and destBagType ~= BagDef.BagType.Booty
+        and destBagType ~= BagDef.BagType.Tool then
         return ErrorCode.BagNotExist
     end
 
@@ -2419,7 +2443,8 @@ function Bag.GetBagdata(bags_name)
     for _, bag_name in pairs(bags_name) do
         if bag_name ~= BagDef.BagType.Cangku
             and bag_name ~= BagDef.BagType.Consume
-            and bag_name ~= BagDef.BagType.Booty then
+            and bag_name ~= BagDef.BagType.Booty
+            and bag_name ~= BagDef.BagType.Tool then
             return { errcode = ErrorCode.BagNotExist }
         end
 
@@ -2441,7 +2466,8 @@ function Bag.GetBagCapacity(bags_name)
     for _, bag_name in pairs(bags_name) do
         if bag_name == BagDef.BagType.Cangku
             or bag_name == BagDef.BagType.Consume
-            or bag_name == BagDef.BagType.Booty then
+            or bag_name == BagDef.BagType.Booty
+            or bag_name == BagDef.BagType.Tool then
             capacitys[bag_name] = bagdata[bag_name].capacity
         end
     end

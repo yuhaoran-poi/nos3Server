@@ -668,6 +668,36 @@ function Room.GameSettle(settle_info)
         end
     end
 
+    if settle_info.tool_bag then
+        -- 同步工具品背包
+        local sync_baginfo = {
+            capacity = 0,
+            items = {}
+        }
+        local capacitys = scripts.Bag.GetBagCapacity({ BagDef.BagType.Tool })
+        if capacitys and capacitys[BagDef.BagType.Tool] then
+            sync_baginfo.capacity = capacitys[BagDef.BagType.Tool]
+        end
+        for pos, itemdata in pairs(settle_info.tool_bag.items) do
+            if itemdata and itemdata.common_info and itemdata.common_info.config_id then
+                local itype = ItemDefine.GetItemType(itemdata.common_info.config_id)
+                local item_type = 0
+                local item_cfg = GameCfg.Item[itemdata.common_info.config_id]
+                if item_cfg then
+                    item_type = item_cfg.type1
+                end
+                sync_baginfo.items[pos] = ItemDef.newItemDataFromData(itemdata, itype, item_type)
+            end
+        end
+
+        local errcode = scripts.Bag.SyncBagInfo(BagDef.BagType.Tool, sync_baginfo, bag_change_log)
+        if errcode ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            moon.error(string.format("GameSettle SyncBagInfo err:\n%s", json.pretty_encode(sync_baginfo)))
+            return
+        end
+    end
+
     if table.size(bag_change_log) > 0 then
         scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.BattleSettle)
     end
@@ -769,6 +799,13 @@ function Room.GameReturnItems(return_info)
     local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
     if mail_ret ~= ErrorCode.None then
         moon.error(string.format("GameReturnItems mail_ret err:\n%s", json.pretty_encode(item_datas)))
+    end
+end
+
+function Room.SyncRoleInfo(role_info)
+    if context.roomid then
+        clusterd.send(3999, "roommgr", "Roommgr.MemberChangeRoleInfo",
+        { roomid = context.roomid, uid = context.uid, role_info = role_info })
     end
 end
 

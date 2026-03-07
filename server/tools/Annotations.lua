@@ -302,6 +302,7 @@
 ---@field public game_role_change PBGameChangeRoleInfo[] @角色信息变更
 ---@field public consume_bag PBBag @消耗品背包
 ---@field public booty_bag PBBag @战利品背包
+---@field public tool_bag PBBag @工具品背包
 ---@field public grade_id integer
 ---@field public change_score integer @段位积分
 ---@field public reward_boxs PBItemSimple[] @获得的奖励宝箱
@@ -3561,6 +3562,7 @@
 ---@field Skin Skin_cfg[]
 ---@field SpaceRingUpLv SpaceRingUpLv_cfg[]
 ---@field StoreConfig StoreConfig_cfg[]
+---@field ToolBackpackExpansion ToolBackpackExpansion_cfg[]
 ---@field TransactionConfig TransactionConfig_cfg[]
 ---@field TriggerEmailTemplateConfig TriggerEmailTemplateConfig_cfg[]
 ---@field UniqueItem UniqueItem_cfg[]

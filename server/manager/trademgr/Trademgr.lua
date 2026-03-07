@@ -114,11 +114,12 @@ function Trademgr.Start()
 
             local item_conf = GameCfg.Item[new_record_data.trade_config_id]
             if item_conf
-                and (trade_record.condition1 ~= item_conf.type1
-                    or trade_record.condition2 ~= item_conf.type2
-                    or trade_record.condition3 ~= item_conf.type3
-                    or trade_record.condition4 ~= item_conf.type4
-                    or trade_record.condition5 ~= item_conf.type5) then
+                and table.size(item_conf.market) >= 5
+                and (trade_record.condition1 ~= item_conf.market[1]
+                    or trade_record.condition2 ~= item_conf.market[2]
+                    or trade_record.condition3 ~= item_conf.market[3]
+                    or trade_record.condition4 ~= item_conf.market[4]
+                    or trade_record.condition5 ~= item_conf.market[5]) then
                 need_mod_record[new_record_data.trade_config_id] = 1
             end
         end
@@ -224,10 +225,11 @@ function Trademgr.Start()
     for config_id, _ in pairs(need_mod_record) do
         local item_conf = GameCfg.Item[config_id]
         local record_data = Trademgr.trade_record_infos[config_id]
-        if record_data and item_conf and item_conf.type1 and item_conf.type2
-            and item_conf.type3 and item_conf.type4 and item_conf.type5 then
-            Database.updatetraderecord(context.addr_db_game, record_data, item_conf.type1, item_conf.type2,
-                item_conf.type3, item_conf.type4, item_conf.type5)
+        if record_data and item_conf and table.size(item_conf.market) >= 5
+            and item_conf.market[1] and item_conf.market[2] and item_conf.market[3]
+            and item_conf.market[4] and item_conf.market[5] then
+            Database.updatetraderecord(context.addr_db_game, record_data, item_conf.market[1], item_conf.market[2],
+                item_conf.market[3], item_conf.market[4], item_conf.market[5])
         end
     end
 
@@ -358,10 +360,11 @@ function Trademgr.UpdateChangeTradeRecords()
     for config_id, _ in pairs(Trademgr.change_record_ids) do
         local item_conf = GameCfg.Item[config_id]
         local record_data = Trademgr.trade_record_infos[config_id]
-        if record_data and item_conf and item_conf.type1 and item_conf.type2
-            and item_conf.type3 and item_conf.type4 and item_conf.type5 then
-            Database.updatetraderecord(context.addr_db_game, record_data, item_conf.type1, item_conf.type2,
-                item_conf.type3, item_conf.type4, item_conf.type5)
+        if record_data and item_conf and table.size(item_conf.market) >= 5
+            and item_conf.market[1] and item_conf.market[2] and item_conf.market[3]
+            and item_conf.market[4] and item_conf.market[5] then
+            Database.updatetraderecord(context.addr_db_game, record_data, item_conf.market[1], item_conf.market[2],
+                item_conf.market[3], item_conf.market[4], item_conf.market[5])
         end
     end
     Trademgr.change_record_ids = {}
@@ -696,10 +699,11 @@ function Trademgr.BuyTradeProduct(buyer_uid, config_id, buy_num, buy_max_price, 
         end
     end
     local item_conf = GameCfg.Item[config_id]
-    if item_conf and item_conf.type1 and item_conf.type2
-        and item_conf.type3 and item_conf.type4 and item_conf.type5 then
-        Database.updatetraderecord(context.addr_db_game, record_info, item_conf.type1, item_conf.type2,
-            item_conf.type3, item_conf.type4, item_conf.type5)
+    if item_conf and table.size(item_conf.market) >= 5
+        and item_conf.market[1] and item_conf.market[2] and item_conf.market[3]
+        and item_conf.market[4] and item_conf.market[5] then
+        Database.updatetraderecord(context.addr_db_game, record_info, item_conf.market[1], item_conf.market[2],
+            item_conf.market[3], item_conf.market[4], item_conf.market[5])
     end
 
     local res = {

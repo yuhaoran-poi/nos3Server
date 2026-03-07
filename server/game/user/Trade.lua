@@ -429,12 +429,27 @@ function Trade.PBTradeSaleReqCmd(req)
     local sale_data = {
         uid = context.uid,
         product_data = product_data,
-        condition1 = item_conf.type1,
-        condition2 = item_conf.type2,
-        condition3 = item_conf.type3,
-        condition4 = item_conf.type4,
-        condition5 = item_conf.type5,
+        condition1 = 0,
+        condition2 = 0,
+        condition3 = 0,
+        condition4 = 0,
+        condition5 = 0,
     }
+    if table.size(item_conf.market) >= 1 then
+        sale_data.condition1 = item_conf.market[1]
+    end
+    if table.size(item_conf.market) >= 2 then
+        sale_data.condition2 = item_conf.market[2]
+    end
+    if table.size(item_conf.market) >= 3 then
+        sale_data.condition3 = item_conf.market[3]
+    end
+    if table.size(item_conf.market) >= 4 then
+        sale_data.condition4 = item_conf.market[4]
+    end
+    if table.size(item_conf.market) >= 5 then
+        sale_data.condition5 = item_conf.market[5]
+    end
     local res, err = clusterd.call(3999, "trademgr", "Trademgr.AddTradeProduct", sale_data)
     if err then
         moon.error("Trade.PBTradeSaleReqCmd Trademgr.AddTradeProduct err:%s", err)
@@ -545,13 +560,28 @@ function Trade.PBAuctionSaleReqCmd(req)
     local sale_data = {
         uid = context.uid,
         product_data = product_data,
-        condition1 = item_conf.type1,
-        condition2 = item_conf.type2,
-        condition3 = item_conf.type3,
-        condition4 = item_conf.type4,
-        condition5 = item_conf.type5,
+        condition1 = 0,
+        condition2 = 0,
+        condition3 = 0,
+        condition4 = 0,
+        condition5 = 0,
         custome_condition = {},
     }
+    if table.size(item_conf.market) >= 1 then
+        sale_data.condition1 = item_conf.market[1]
+    end
+    if table.size(item_conf.market) >= 2 then
+        sale_data.condition2 = item_conf.market[2]
+    end
+    if table.size(item_conf.market) >= 3 then
+        sale_data.condition3 = item_conf.market[3]
+    end
+    if table.size(item_conf.market) >= 4 then
+        sale_data.condition4 = item_conf.market[4]
+    end
+    if table.size(item_conf.market) >= 5 then
+        sale_data.condition5 = item_conf.market[5]
+    end
 
     local res, err = clusterd.call(3999, "trademgr", "Trademgr.AddAuctionProduct", sale_data)
     if err then

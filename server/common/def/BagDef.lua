@@ -5,6 +5,7 @@ local BagDef = {
         Cangku = "Cangku",
         Consume = "Consume",
         Booty = "Booty",
+        Tool = "Tool",
         Coins = "Coins"
     },
     -- LogType = {
@@ -23,9 +24,10 @@ local BagDef = {
 }
 
 local defaultPBBags = {
-    [BagDef.BagType.Cangku] = { bag_item_type = 1, capacity = 1, items = {} },
-    [BagDef.BagType.Consume] = { bag_item_type = 2, capacity = 1, items = {} },
-    [BagDef.BagType.Booty] = { bag_item_type = 3, capacity = 1, items = {} },
+    [BagDef.BagType.Cangku] = { bag_item_type = 0, capacity = 1, items = {} },
+    [BagDef.BagType.Consume] = { bag_item_type = 0, capacity = 1, items = {} },
+    [BagDef.BagType.Booty] = { bag_item_type = 0, capacity = 1, items = {} },
+    [BagDef.BagType.Tool] = { bag_item_type = 0, capacity = 1, items = {} },
 }
 
 local defaultPBUserCoins = {

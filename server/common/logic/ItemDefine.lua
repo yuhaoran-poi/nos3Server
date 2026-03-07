@@ -32,6 +32,7 @@ local ItemDefine = {
     Gift = { start = 354000, End = 363999 },
     SkinTryCard = { start = 364000, End = 379999 },
     DurabItem = { start = 500000, End = 500999 },
+    Tool = { start = 501000, End = 501999 },
     MagicItem = { start = 600000, End = 624999 },
     Antique = { start = 625000, End = 629999 },
     HumanDiagrams = { start = 630000, End = 639999 },
@@ -59,14 +60,15 @@ local ItemDefine = {
         StackSpaceRing = 16,
         Gift = 17,
         DurabItem = 18,
-        MagicItem = 19,
-        Antique = 20,
-        HumanDiagrams = 21,
-        GhostDiagrams = 22,
-        RoleSkin = 23,
-        GhostSkin = 24,
-        SpaceRing = 25,
-        SkinCard = 26,
+        Tool = 19,
+        MagicItem = 20,
+        Antique = 21,
+        HumanDiagrams = 22,
+        GhostDiagrams = 23,
+        RoleSkin = 24,
+        GhostSkin = 25,
+        SpaceRing = 26,
+        SkinCard = 27,
         Other = 255,
     },
 
@@ -82,6 +84,7 @@ local ItemDefine = {
     ItemBagType = {
         ALL = 1,
         CONSUME = 2,
+        TOOL = 3,
     },
 }
 
@@ -126,6 +129,8 @@ function ItemDefine.GetItemType(nConfigId)
         return ItemDefine.EItemSmallType.SkinTryCard
     elseif nConfigId >= ItemDefine.DurabItem.start and nConfigId <= ItemDefine.DurabItem.End then
         return ItemDefine.EItemSmallType.DurabItem
+    elseif nConfigId >= ItemDefine.Tool.start and nConfigId <= ItemDefine.Tool.End then
+        return ItemDefine.EItemSmallType.Tool
     elseif nConfigId >= ItemDefine.MagicItem.start and nConfigId <= ItemDefine.MagicItem.End then
         return ItemDefine.EItemSmallType.MagicItem
     elseif nConfigId >= ItemDefine.Antique.start and nConfigId <= ItemDefine.Antique.End then
@@ -176,6 +181,8 @@ function ItemDefine.GetItemBagType(nConfigId)
     if (nConfigId >= ItemDefine.PlayItem.start and nConfigId <= ItemDefine.PlayItem.End)
         or (nConfigId >= ItemDefine.DurabItem.start and nConfigId <= ItemDefine.DurabItem.End) then
         return ItemDefine.ItemBagType.CONSUME
+    elseif nConfigId >= ItemDefine.Tool.start and nConfigId <= ItemDefine.Tool.End then
+        return ItemDefine.ItemBagType.TOOL
     end
 
     return ItemDefine.ItemBagType.ALL

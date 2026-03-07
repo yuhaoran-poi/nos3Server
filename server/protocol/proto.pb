@@ -1180,7 +1180,7 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-·!
+Ú!
 dsnode.proto
 item.proto
 user.proto	bag.proto
@@ -1197,7 +1197,7 @@ magic_item (2.PBItemDataR	magicItemL
 space_ring (2.PBItemDataR	spaceRingL
 DigramsCardsEntry
 key (Rkey!
-value (2.PBItemDataRvalue:8"Û
+value (2.PBItemDataRvalue:8"þ
 PBGameSettle
 settle_data (	R
 settleData-
@@ -1205,10 +1205,11 @@ settleData-
 game_role_change (2.PBGameChangeRoleInfoRgameRoleChange'
 consume_bag (2.PBBagR
 consumeBag#
-	booty_bag (2.PBBagRbootyBag
-grade_id (RgradeId!
-change_score (RchangeScore.
-reward_boxs (2.PBItemSimpleR
+	booty_bag (2.PBBagRbootyBag!
+tool_bag (2.PBBagRtoolBag
+grade_id (RgradeId!
+change_score (RchangeScore.
+reward_boxs	 (2.PBItemSimpleR
 rewardBoxs"=
 PBEnterCityReqCmd
 uid (Ruid

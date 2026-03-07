@@ -187,7 +187,8 @@ function ItemImage.AddItemImage(config_id, change_image_ids, use_item)
             return ErrorCode.ItemImageExist
         end
     elseif item_type == ItemDefine.EItemSmallType.PlayItem
-        or item_type == ItemDefine.EItemSmallType.DurabItem then
+        or item_type == ItemDefine.EItemSmallType.DurabItem
+        or item_type == ItemDefine.EItemSmallType.Tool then
         if not itemImages.item_image[config_id] then
             local itemImage_info = ItemDef.newImage()
             itemImage_info.config_id = config_id

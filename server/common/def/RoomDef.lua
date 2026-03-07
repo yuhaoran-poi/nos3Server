@@ -10,6 +10,7 @@ local RoomDef = {
         PlayerApply = 6, -- 有玩家申请加入
         GameStart = 7,   -- 游戏开始
         GameStartFailed = 8, -- 游戏开始失败
+        PlayerChangeRoleInfo = 9, -- 玩家变更出战角色
     }
 }
 

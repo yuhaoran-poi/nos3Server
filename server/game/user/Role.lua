@@ -246,6 +246,9 @@ function Role.SetRoleBattle(roleid, sync_client)
         local update_user_attr = {}
         update_user_attr[ProtoEnum.UserAttrType.cur_show_role] = show_role
         scripts.User.SetUserAttr(update_user_attr, sync_client)
+
+        -- 同步给房间其他人
+        scripts.Room.SyncRoleInfo(role_info)
     end
 end
 
@@ -906,6 +909,7 @@ function Role.PBRoleWearEquipReqCmd(req)
         return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
             { code = err_code, error = "更换装备失败", uid = context.uid }, req.msg_context.stub_id)
     end
+    item_data.common_info.trade_cnt = 0
 
     if takeoff_item_data then
         local takeoff_items = {}
