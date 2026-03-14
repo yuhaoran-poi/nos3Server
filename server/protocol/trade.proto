@@ -109,6 +109,7 @@ message PBSelfTradeInfo
 	int64 update_ts			= 3;	//上架次数刷新时间
 	repeated int64 trade_ids	= 4;
 	repeated int64 log_ids	= 5;
+	map<int32, int64> focus_id_ts	= 6;	//关注id-关注时间
 }
 
 message PBSelfTradeData
@@ -241,6 +242,21 @@ message PBTradeTakeOffProductRspCmd
     string error = 2; // 错误信息
 	int64 uid	= 3;
 	int64 trade_id	= 4;
+}
+
+message PBTradeChangeFocusIdReqCmd
+{
+	int64 uid	= 1;
+	int32 focus_op	= 2;	//0--取消 1--关注
+	int32 focus_id	= 3;
+}
+
+message PBTradeChangeFocusIdRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+	int64 uid	= 3;
+	map<int32, int64> focus_id_ts	= 4;
 }
 
 // 上架拍卖行商品

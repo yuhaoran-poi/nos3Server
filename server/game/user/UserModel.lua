@@ -272,4 +272,16 @@ function UserModel.SetGrades(grades)
     DBData.grades = grades
 end
 
+---@return PBBillData ? nil
+function UserModel.GetBills()
+    if DBData and DBData.bills then
+        return DBData.bills
+    end
+    return nil
+end
+
+function UserModel.SetBills(bills)
+    DBData.bills = bills
+end
+
 return UserModel

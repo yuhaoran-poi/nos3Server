@@ -2565,7 +2565,9 @@ function Bag.PBBagGetDataReqCmd(req)
         uid = context.uid,
         bag_datas = {},
     }
+    moon.warn(string.format("req.msg.bags_name = %s", json.pretty_encode(req.msg.bags_name)))
     local ret = Bag.GetBagdata(req.msg.bags_name)
+    moon.warn(string.format("ret = %s", json.pretty_encode(ret)))
     if ret.errcode ~= ErrorCode.None or table.size(ret.bag_datas) <= 0 then
         res.code = ret.errcode
         return context.S2C(context.net_id, CmdCode["PBBagGetDataRspCmd"], res, req.msg_context.stub_id)
@@ -3187,6 +3189,155 @@ function Bag.PBAntiqueShowReqCmd(req)
         showcase_idx = req.msg.showcase_idx,
         operate_type = req.msg.operate_type,
         pos = req.msg.pos,
+    }, req.msg_context.stub_id)
+end
+
+function Bag.PBItemSellNpcReqCmd(req)
+    -- 参数验证
+    if not req.msg.sell_items
+        or table.size(req.msg.sell_items) <= 0 then
+        return context.S2C(context.net_id, CmdCode.PBItemSellNpcRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = req.msg.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local cost_items = {}
+    local get_items_cfg = {}
+    for pos, item_simple in pairs(req.msg.sell_items) do
+        if item_simple.uniqid == 0 then
+            local item_cfg = GameCfg.Item[item_simple.config_id]
+            if item_cfg and table.size(item_cfg.sell_value) > 0 then
+                for id, cnt in pairs(item_cfg.sell_value) do
+                    if not get_items_cfg[id] then
+                        get_items_cfg[id] = cnt * item_simple.item_count
+                    else
+                        get_items_cfg[id] = get_items_cfg[id] + (cnt * item_simple.item_count)
+                    end
+                end
+            else
+                return context.S2C(context.net_id, CmdCode.PBItemSellNpcRspCmd, {
+                    code = ErrorCode.ItemNotSell,
+                    error = "道具不能出售",
+                    uid = req.msg.uid,
+                }, req.msg_context.stub_id)
+            end
+        else
+            local uniqitem_cfg = GameCfg.UniqueItem[item_simple.config_id]
+            if uniqitem_cfg and table.size(uniqitem_cfg.sell_value) > 0 then
+                for id, cnt in pairs(uniqitem_cfg.sell_value) do
+                    if not get_items_cfg[id] then
+                        get_items_cfg[id] = cnt * item_simple.item_count
+                    else
+                        get_items_cfg[id] = get_items_cfg[id] + (cnt * item_simple.item_count)
+                    end
+                end
+            else
+                return context.S2C(context.net_id, CmdCode.PBItemSellNpcRspCmd, {
+                    code = ErrorCode.ItemNotSell,
+                    error = "道具不能出售",
+                    uid = req.msg.uid,
+                }, req.msg_context.stub_id)
+            end
+        end
+        cost_items[pos] = {
+            config_id = item_simple.config_id,
+            uniqid = item_simple.uniqid,
+            item_count = -item_simple.item_count,
+        }
+    end
+
+    if table.size(cost_items) <= 0 then
+        return context.S2C(context.net_id, CmdCode.PBItemSellNpcRspCmd, {
+            code = ErrorCode.ConfigError,
+            error = "出售配置错误",
+            uid = req.msg.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    if Bag.CheckItemsEnoughPos(BagDef.BagType.Cangku, cost_items) ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBItemSellNpcRspCmd, {
+            code = ErrorCode.ItemNotEnough,
+            error = "道具不足",
+            uid = req.msg.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local add_items = {}
+    local add_coins = {}
+    ItemDefine.GetItemsFromCfg(get_items_cfg, 1, false, add_items, add_coins)
+    if table.size(add_items) + table.size(add_coins) <= 0 then
+        return context.S2C(context.net_id, CmdCode.PBItemSellNpcRspCmd, {
+            code = ErrorCode.ConfigError,
+            error = "出售配置错误",
+            uid = req.msg.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    if table.size(add_items) > 0 then
+        if Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items, 0) ~= ErrorCode.None then
+            return context.S2C(context.net_id, CmdCode.PBItemSellNpcRspCmd, {
+                code = ErrorCode.BagFull,
+                error = "背包已满",
+                uid = req.msg.uid,
+            }, req.msg_context.stub_id)
+        end
+    end
+
+    local stack_items, unstack_items, deal_coins = {}, {}, {}
+    local ok = ItemDefine.GetItemDataFromIdCount(add_items, add_coins, stack_items, unstack_items, deal_coins)
+    if not ok then
+        return context.S2C(context.net_id, CmdCode.PBItemSellNpcRspCmd, {
+            code = ErrorCode.ConfigError,
+            error = "出售配置错误",
+            uid = req.msg.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local change_log = {}
+    local err_code = ErrorCode.None
+    err_code = Bag.DelItemsPos(BagDef.BagType.Cangku, cost_items, change_log)
+    if err_code ~= ErrorCode.None then
+        Bag.RollBackWithChange(change_log)
+        return context.S2C(context.net_id, CmdCode.PBItemSellNpcRspCmd, {
+            code = err_code,
+            error = "出售失败",
+            uid = req.msg.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    if table.size(stack_items) + table.size(unstack_items) > 0 then
+        err_code = Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, change_log)
+        if err_code ~= ErrorCode.None then
+            Bag.RollBackWithChange(change_log)
+            return context.S2C(context.net_id, CmdCode.PBItemSellNpcRspCmd, {
+                code = err_code,
+                error = "出售失败",
+                uid = req.msg.uid,
+            }, req.msg_context.stub_id)
+        end
+    end
+
+    if table.size(deal_coins) > 0 then
+        err_code = Bag.DealCoins(deal_coins, change_log)
+        if err_code ~= ErrorCode.None then
+            Bag.RollBackWithChange(change_log)
+            return context.S2C(context.net_id, CmdCode.PBItemSellNpcRspCmd, {
+                code = err_code,
+                error = "出售失败",
+                uid = req.msg.uid,
+            }, req.msg_context.stub_id)
+        end
+    end
+
+    -- 数据存储更新
+    Bag.SaveAndLog(change_log, ItemDef.ChangeReason.ItemSellNpc)
+
+    return context.S2C(context.net_id, CmdCode.PBItemSellNpcRspCmd, {
+        code = ErrorCode.None,
+        error = "出售成功",
+        uid = req.msg.uid,
     }, req.msg_context.stub_id)
 end
 

@@ -215,6 +215,7 @@ message PBUserImage
 	map<int32, PBImage> ghost_diagrams_image	= 4;	//鬼宠八卦牌图鉴	有key则执行覆盖
 	map<int32, PBSkinImage> skin_image			= 5;	//皮肤动作表情图鉴	有key则执行覆盖
 	map<int32, PBImage> space_ring_image	= 6;	//空间戒指图鉴		有key则执行覆盖
+	map<int32, int32>	item_wear_skin		= 7;	//道具皮肤佩戴
 }
 
 // 古董展柜

@@ -905,4 +905,48 @@ function Trade.PBTradeTakeOffProductReqCmd(req)
     }, req.msg_context.stub_id)
 end
 
+function Trade.PBTradeChangeFocusIdReqCmd(req)
+    -- 参数验证
+    if not req.msg.focus_op
+        or not req.msg.focus_id then
+        return context.S2C(context.net_id, CmdCode.PBTradeChangeFocusIdRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local player_trade_data = scripts.UserModel.GetTradeData()
+    if not player_trade_data then
+        return context.S2C(context.net_id, CmdCode.PBTradeChangeFocusIdRspCmd,
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    if req.msg.focus_op == 0 then
+        player_trade_data.simple_info.focus_id_ts[req.msg.focus_id] = nil
+    else
+        local max_focus_num = 0
+        local trade_cfg = GameCfg.TransactionConfig[1]
+        if trade_cfg and trade_cfg.collection_num and trade_cfg.collection_num > max_focus_num then
+            max_focus_num = trade_cfg.collection_num
+        end
+        if table.size(player_trade_data.simple_info.focus_id_ts) >= max_focus_num then
+            return context.S2C(context.net_id, CmdCode.PBTradeChangeFocusIdRspCmd, {
+                code = ErrorCode.FocusIdOverflow,
+                error = "关注商品数量超过最大数量",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
+        end
+        player_trade_data.simple_info.focus_id_ts[req.msg.focus_id] = moon.time()
+    end
+    Trade.SaveTradeInfoNow()
+
+    return context.S2C(context.net_id, CmdCode.PBTradeChangeFocusIdRspCmd, {
+        code = ErrorCode.None,
+        error = "更改关注商品",
+        uid = context.uid,
+        focus_id_ts = player_trade_data.simple_info.focus_id_ts,
+    }, req.msg_context.stub_id)
+end
+
 return Trade

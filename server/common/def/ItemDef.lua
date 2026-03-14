@@ -33,7 +33,8 @@ local ItemDef = {
         BattleSettle = 29,       --战斗结算
         BattleRunAway = 30,      --战斗逃跑
         GradeReward = 31,        --段位奖励
-
+        Bill = 32,               --玩家充值
+        ModNickName = 33,        --修改昵称
         -- WearEquipment = 25,      --装备道具
         -- TakeOffEquipment = 26,   --脱下道具
         -- WearSkin = 27,           --装备皮肤
@@ -166,6 +167,7 @@ local defaultPBUserImage = {
     ghost_diagrams_image = {},
     skin_image = {},
     space_ring_image = {},
+    item_wear_skin = {},
 }
 
 local defaultPBAntique = {

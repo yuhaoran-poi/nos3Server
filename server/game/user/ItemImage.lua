@@ -95,7 +95,8 @@ function ItemImage.SaveAndLog(config_ids)
                 update_msg.update_images.ghost_diagrams_image[config_id] = itemImages.ghost_diagrams_image[config_id]
             end
         elseif item_type == ItemDefine.EItemSmallType.RoleSkin
-            or item_type == ItemDefine.EItemSmallType.GhostSkin then
+            or item_type == ItemDefine.EItemSmallType.GhostSkin
+            or item_type == ItemDefine.EItemSmallType.ItemSkin then
             if not update_msg.update_images.skin_image then
                 update_msg.update_images.skin_image = {}
             end
@@ -166,7 +167,8 @@ function ItemImage.AddItemImage(config_id, change_image_ids, use_item)
             return ErrorCode.ItemImageExist
         end
     elseif (item_type == ItemDefine.EItemSmallType.RoleSkin
-            or item_type == ItemDefine.EItemSmallType.GhostSkin) and use_item then
+            or item_type == ItemDefine.EItemSmallType.GhostSkin
+            or item_type == ItemDefine.EItemSmallType.ItemSkin) and use_item then
         if not itemImages.skin_image[config_id] or itemImages.skin_image[config_id].valid_ts ~= 0 then
             local itemImage_info = ItemDef.newSkinImage()
             itemImage_info.config_id = config_id
@@ -213,7 +215,8 @@ function ItemImage.AddItemImageValidtime(config_id, change_image_ids, use_item, 
 
     local item_type = ItemDefine.GetItemType(config_id)
     if (item_type == ItemDefine.EItemSmallType.RoleSkin
-            or item_type == ItemDefine.EItemSmallType.GhostSkin) and use_item then
+            or item_type == ItemDefine.EItemSmallType.GhostSkin
+            or item_type == ItemDefine.EItemSmallType.ItemSkin) and use_item then
         if itemImages.skin_image[config_id] and itemImages.skin_image[config_id].valid_ts == 0 then
             return ErrorCode.ItemImageExist
         else
@@ -254,7 +257,8 @@ function ItemImage.GetImage(config_id)
     elseif item_type == ItemDefine.EItemSmallType.GhostDiagrams then
         return itemImages.ghost_diagrams_image[config_id], item_type
     elseif item_type == ItemDefine.EItemSmallType.RoleSkin
-        or item_type == ItemDefine.EItemSmallType.GhostSkin then
+        or item_type == ItemDefine.EItemSmallType.GhostSkin
+        or item_type == ItemDefine.EItemSmallType.ItemSkin then
         return itemImages.skin_image[config_id], item_type
     elseif item_type == ItemDefine.EItemSmallType.SpaceRing then
         return itemImages.space_ring_image[config_id], item_type
@@ -286,7 +290,8 @@ function ItemImage.CheckImageValid(config_id)
         end
         return true
     elseif item_type == ItemDefine.EItemSmallType.RoleSkin
-        or item_type == ItemDefine.EItemSmallType.GhostSkin then
+        or item_type == ItemDefine.EItemSmallType.GhostSkin
+        or item_type == ItemDefine.EItemSmallType.ItemSkin then
         if not itemImages.skin_image[config_id] then
             return false
         end
@@ -633,6 +638,29 @@ function ItemImage.UseItemAddImage(item_cfg, msg_data, change_image_ids)
     end
 
     return err_code
+end
+
+function ItemImage.ItemChangeSkin(item_config_id, skin_id)
+    local item_images = scripts.UserModel.GetItemImages()
+    if not item_images then
+        return ErrorCode.ServerInternalError
+    end
+    if not item_images[item_config_id] then
+        return ErrorCode.ItemNotExist
+    end
+    if skin_id > 0 then
+        if not ItemImage.CheckImageValid(skin_id) then
+            return ErrorCode.ItemNotExist
+        end
+        local item_skin_cfg = GameCfg.ItemSkin[skin_id]
+        if not item_skin_cfg or item_skin_cfg.belong ~= item_config_id then
+            return ErrorCode.SkinNotMatch
+        end
+    end
+    item_images.item_wear_skin[item_config_id] = skin_id
+
+    ItemImage.SaveItemImagesNow()
+    return ErrorCode.None
 end
 
 function ItemImage.PBImageGetDataReqCmd(req)

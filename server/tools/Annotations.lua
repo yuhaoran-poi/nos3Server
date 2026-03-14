@@ -197,6 +197,71 @@
 ---@field public pos integer @道具所在格子号
 
 
+---@class PBItemSellNpcReqCmd
+---@field public uid integer
+---@field public sell_items table<integer, PBItemSimple>
+
+
+---@class PBItemSellNpcRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public sell_items table<integer, PBItemSimple>
+
+
+---@class PBBillData
+---@field public day_bill_amount integer
+---@field public week_bill_amount integer
+---@field public month_bill_amount integer
+---@field public year_bill_amount integer
+---@field public total_bill_amount integer
+---@field public update_ts integer
+---@field public on_order_id integer
+
+
+---@class PBGetBillsReqCmd
+---@field public uid integer
+
+
+---@class PBGetBillsRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public bills_data PBBillData
+
+
+---@class PBApplyBillOrderReqCmd
+---@field public uid integer
+---@field public bill_id integer
+---@field public bill_num integer
+
+
+---@class PBApplyBillOrderRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public on_order_id integer
+
+
+---@class PBCheckBillOrderReqCmd
+---@field public uid integer
+---@field public on_order_id integer
+
+
+---@class PBCheckBillOrderRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public on_order_id integer
+---@field public order_state integer
+
+
+---@class PBBillDoneSyncCmd
+---@field public bill_id integer
+---@field public bill_num integer
+---@field public bill_amount integer
+
+
 ---@class PBChatMsgInfo
 ---@field public channel_type integer @频道类型
 ---@field public uid integer @发送者uid
@@ -1860,6 +1925,7 @@
 ---@field public ghost_diagrams_image table<integer, PBImage> @鬼宠八卦牌图鉴	有key则执行覆盖
 ---@field public skin_image table<integer, PBSkinImage> @皮肤动作表情图鉴	有key则执行覆盖
 ---@field public space_ring_image table<integer, PBImage> @空间戒指图鉴		有key则执行覆盖
+---@field public item_wear_skin table<integer, integer> @道具皮肤佩戴
 
 
 ---@class PBAntiqueShowcaseData
@@ -2934,6 +3000,7 @@
 ---@field public update_ts integer @上架次数刷新时间
 ---@field public trade_ids integer[]
 ---@field public log_ids integer[]
+---@field public focus_id_ts table<integer, integer> @关注id-关注时间
 
 
 ---@class PBSelfTradeData
@@ -3044,6 +3111,19 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public trade_id integer
+
+
+---@class PBTradeChangeFocusIdReqCmd
+---@field public uid integer
+---@field public focus_op integer @0--取消 1--关注
+---@field public focus_id integer
+
+
+---@class PBTradeChangeFocusIdRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public focus_id_ts table<integer, integer>
 
 
 ---@class PBAuctionSaleReqCmd
@@ -3354,6 +3434,20 @@
 ---@field public roomid integer
 
 
+---@class PBItemChangeSkinReqCmd
+---@field public uid integer
+---@field public item_config_id integer
+---@field public skin_id integer
+
+
+---@class PBItemChangeSkinRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public item_config_id integer
+---@field public skin_id integer
+
+
 
 
 
@@ -3393,6 +3487,7 @@
 ---@field Achievement Achievement
 ---@field AntiqueShowcase AntiqueShowcase
 ---@field Bag Bag
+---@field Bill Bill
 ---@field ChatProxy ChatProxy
 ---@field City City
 ---@field Friend Friend
@@ -3458,6 +3553,10 @@
 ---@field ChatMgr ChatMgr
 
 
+
+
+---@class billmgr_scripts
+---@field Billmgr Billmgr
 
 
 ---@class citymgr_scripts
@@ -3557,6 +3656,7 @@
 ---@field RankConfig RankConfig_cfg[]
 ---@field RankLevel RankLevel_cfg[]
 ---@field RankRewardPool RankRewardPool_cfg[]
+---@field RechargeStoreConfig RechargeStoreConfig_cfg[]
 ---@field RoleLvAward RoleLvAward_cfg[]
 ---@field RoleUpLv RoleUpLv_cfg[]
 ---@field Skin Skin_cfg[]
@@ -3564,6 +3664,8 @@
 ---@field StoreConfig StoreConfig_cfg[]
 ---@field ToolBackpackExpansion ToolBackpackExpansion_cfg[]
 ---@field TransactionConfig TransactionConfig_cfg[]
+---@field TreasureChest TreasureChest_cfg[]
+---@field TreasureChestRewards TreasureChestRewards_cfg[]
 ---@field TriggerEmailTemplateConfig TriggerEmailTemplateConfig_cfg[]
 ---@field UniqueItem UniqueItem_cfg[]
 ---@field UpLvCostIDMapping UpLvCostIDMapping_cfg[]

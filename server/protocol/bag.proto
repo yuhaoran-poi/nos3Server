@@ -156,3 +156,17 @@ message PBAntiqueShowRspCmd
 	int32 operate_type = 7;			// 1 -- 展示 0 -- 取消展示
 	int32 pos			= 8;		// 道具所在格子号
 }
+
+message PBItemSellNpcReqCmd
+{
+    int64 uid       = 1;
+    map<int32, PBItemSimple> sell_items = 2;
+}
+
+message PBItemSellNpcRspCmd
+{
+    int32 code		= 1; 			// 服务器验证返回,0成功,其他失败
+	string error	= 2; 			// 错误信息
+    int64 uid       = 3;
+    map<int32, PBItemSimple> sell_items = 4;
+}

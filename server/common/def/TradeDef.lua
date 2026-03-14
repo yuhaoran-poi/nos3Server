@@ -86,6 +86,7 @@ local defaultPBSelfTradeInfo = {
     update_ts = 0,
     trade_ids = {},
     log_ids = {},
+    focus_id_ts = {},
 }
 
 local defaultPBSelfTradeData = {

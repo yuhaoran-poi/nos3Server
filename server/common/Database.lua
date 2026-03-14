@@ -1177,9 +1177,9 @@ function _M.getmaxtradeid(addr)
 end
 
 function _M.addtradeproduct(addr, product_data, condition1, condition2, condition3, condition4, condition5)
-    local item_data_str = jencode(product_data.item_data)
-    local _, pbdata = protocol.encodewithname("PBItemData", product_data.item_data)
-    local pbvalue = crypt.base64encode(pbdata)
+    -- local item_data_str = jencode(product_data.item_data)
+    -- local _, pbdata = protocol.encodewithname("PBItemData", product_data.item_data)
+    -- local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.trade_product (trade_id, config_id, total_num, seller_uid, beg_ts, end_ts,
         single_price, sale_num, now_num, condition1, condition2,
@@ -2148,6 +2148,107 @@ function _M.savegradeinfo(addr, uid, data)
     ]], uid, pbvalue, data_str, pbvalue, data_str)
 
     return moon.send("lua", addr, cmd)
+end
+
+-- 充值数据
+function _M.loadbillinfo(addr, uid)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.bills WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBBillData", pbdata)
+        return tmp_data
+    end
+    moon.error("loadgradeinfo failed", uid, err)
+    return nil
+end
+
+function _M.savebillinfo(addr, uid, data)
+    assert(data)
+
+    local data_str = jencode(data)
+    local _, pbdata = protocol.encodewithname("PBBillData", data)
+    local pbvalue = crypt.base64encode(pbdata)
+    local cmd = string.format([[
+        INSERT INTO mgame.bills (uid, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
+
+    return moon.send("lua", addr, cmd)
+end
+
+function _M.getmaxorderid(addr)
+    local res, err = moon.call("lua", addr, "SELECT MAX(order_id) as max_order_id FROM mgame.bill_order;")
+    if err then
+        error("getmaxbillorderid failed:" .. tostring(err))
+        return -1
+    end
+    if res and res[1] then
+        return tonumber(res[1].max_order_id) or 0
+    end
+    return 0
+end
+
+function _M.addbillorder(addr, order_info)
+    assert(order_info)
+
+    local cmd = string.format([[
+        INSERT INTO mgame.bill_order (orderid, transid, steamid, uid, bill_id, bill_num,
+        bill_amount, create_ts, is_sanbox, state)
+        VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d);
+    ]], order_info.orderid, order_info.transid, order_info.steamid, order_info.uid, order_info.bill_id,
+        order_info.bill_num, order_info.bill_amount, order_info.create_ts, order_info.is_sanbox, order_info.state)
+
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("addbillorder err = %s", json.pretty_encode(err)))
+        return 0
+    else
+        if res then
+            moon.debug(string.format("addbillorder res = %s", json.pretty_encode(res)))
+            return res.insert_id
+        end
+    end
+end
+
+function _M.updatebillorderstate(addr, orderid, before_state, update_state, need_ret)
+    local cmd = string.format([[
+        UPDATE mgame.bill_order SET update_ts = %d, state = %d WHERE orderid = %d and state = %d;
+    ]], moon.time(), update_state, orderid, before_state)
+    
+    if need_ret then
+        local res, err = moon.call("lua", addr, cmd)
+        if err then
+            moon.error(string.format("updatebillorderstate err = %s", json.pretty_encode(err)))
+            return 0
+        else
+            if res then
+                moon.debug(string.format("updatebillorderstate res = %s", json.pretty_encode(res)))
+                return res.affected_rows
+            end
+        end
+        return 0
+    else
+        moon.send("lua", addr, cmd)
+    end
+
+    return 0
+end
+
+function _M.loadbillorder(addr, orderid)
+    local cmd = string.format([[
+        SELECT orderid, transid, steamid, uid, bill_id, bill_num,
+        bill_amount, create_ts, is_sanbox, state FROM mgame.bill_order WHERE orderid = %d;
+    ]], orderid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res == 1 then
+        return res[1]
+    end
+    moon.error("loadbillorder failed", orderid, err)
+    return nil
 end
 
 return _M

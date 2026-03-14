@@ -56,7 +56,7 @@ login_data (2.PBDSLoginDataR	loginData"f
 error (	Rerror
 dsid (Rdsid
 net_id (RnetIdbproto3
-˛,
+Ö.
 
 item.proto"@
 PBCoin
@@ -205,7 +205,7 @@ star_level (R	starLevel
 star_fail_cnt (RstarFailCnt"E
 PBSkinImage
 	config_id (RconfigId
-valid_ts (RvalidTs"ù
+valid_ts (RvalidTs"§
 PBUserImage:
 
 item_image (2.PBUserImage.ItemImageEntryR	itemImageJ
@@ -214,7 +214,8 @@ item_image (2.PBUserImage.ItemImageEntryR	itemImageJ
 ghost_diagrams_image (2$.PBUserImage.GhostDiagramsImageEntryRghostDiagramsImage:
 
 skin_image (2.PBUserImage.SkinImageEntryR	skinImageJ
-space_ring_image (2 .PBUserImage.SpaceRingImageEntryRspaceRingImageF
+space_ring_image (2 .PBUserImage.SpaceRingImageEntryRspaceRingImageD
+item_wear_skin (2.PBUserImage.ItemWearSkinEntryRitemWearSkinF
 ItemImageEntry
 key (Rkey
 value (2.PBImageRvalue:8K
@@ -232,7 +233,10 @@ skin_image (2.PBUserImage.SkinImageEntryR	skinImageJ
 value (2.PBSkinImageRvalue:8K
 SpaceRingImageEntry
 key (Rkey
-value (2.PBImageRvalue:8"˚
+value (2.PBImageRvalue:8?
+ItemWearSkinEntry
+key (Rkey
+value (Rvalue:8"˚
 PBAntiqueShowcaseData
 showcase_id (R
 showcaseId
@@ -268,7 +272,7 @@ image_data (2.PBUserImageR	imageData"I
 AntiqueShowcaseListEntry
 key (Rkey,
 value (2.PBAntiqueShowcaseDataRvalue:8bproto3
-Ω
+›
 	bag.proto
 item.proto"∑
 PBBag"
@@ -384,7 +388,67 @@ showcaseId!
 showcaseId!
 showcase_idx (RshowcaseIdx!
 operate_type (RoperateType
-pos (Rposbproto3
+pos (Rpos"∏
+PBItemSellNpcReqCmd
+uid (RuidB
+
+sell_items (2#.PBItemSellNpcReqCmd.SellItemsEntryR	sellItemsK
+SellItemsEntry
+key (Rkey#
+value (2.PBItemSimpleRvalue:8"‚
+PBItemSellNpcRspCmd
+code (Rcode
+error (	Rerror
+uid (RuidB
+
+sell_items (2#.PBItemSellNpcRspCmd.SellItemsEntryR	sellItemsK
+SellItemsEntry
+key (Rkey#
+value (2.PBItemSimpleRvalue:8bproto3
+˙
+
+Bill.proto"ù
+
+PBBillData&
+day_bill_amount (RdayBillAmount(
+week_bill_amount (RweekBillAmount*
+month_bill_amount (RmonthBillAmount(
+year_bill_amount (RyearBillAmount*
+total_bill_amount (RtotalBillAmount
+	update_ts (RupdateTs
+on_order_id (R	onOrderId"$
+PBGetBillsReqCmd
+uid (Ruid"z
+PBGetBillsRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid*
+
+bills_data (2.PBBillDataR	billsData"^
+PBApplyBillOrderReqCmd
+uid (Ruid
+bill_id (RbillId
+bill_num (RbillNum"t
+PBApplyBillOrderRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+on_order_id (R	onOrderId"J
+PBCheckBillOrderReqCmd
+uid (Ruid
+on_order_id (R	onOrderId"ï
+PBCheckBillOrderRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+on_order_id (R	onOrderId
+order_state (R
+orderState"h
+PBBillDoneSyncCmd
+bill_id (RbillId
+bill_num (RbillNum
+bill_amount (R
+billAmountbproto3
 ò
 
 chat.proto"Ã
@@ -866,7 +930,7 @@ now_sys_ts (RnowSysTs>
 uid (Ruid+
 
 grade_data (2.PBGradeDataR	gradeDatabproto3
-£/
+§1
 
 user.proto
 item.proto	bag.proto
@@ -1113,7 +1177,17 @@ useItemCnt"D
 code (Rcode
 error (	Rerror
 uid (Ruid
-roomid (Rroomidbproto3
+roomid (Rroomid"i
+PBItemChangeSkinReqCmd
+uid (Ruid$
+item_config_id (RitemConfigId
+skin_id (RskinId"ì
+PBItemChangeSkinRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid$
+item_config_id (RitemConfigId
+skin_id (RskinIdbproto3
 ¨
 
 gods.proto"9
@@ -2803,7 +2877,7 @@ master_uid (R	masterUid
 
 master_uid (R	masterUid
 team_id (RteamIdbproto3
-í*
+‹-
 trade.proto
 item.proto"d
 PBTradeData!
@@ -2895,13 +2969,17 @@ yesSaleNum/
 priceToNumM
 PriceToNumEntry
 key (Rkey$
-value (2.PBPriceAndNumRvalue:8"≠
+value (2.PBPriceAndNumRvalue:8"¨
 PBSelfTradeInfo!
 box_capacity (RboxCapacity$
 can_onsale_cnt (RcanOnsaleCnt
 	update_ts (RupdateTs
 	trade_ids (RtradeIds
-log_ids (RlogIds"è
+log_ids (RlogIds?
+focus_id_ts (2.PBSelfTradeInfo.FocusIdTsEntryR	focusIdTs<
+FocusIdTsEntry
+key (Rkey
+value (Rvalue:8"è
 PBSelfTradeData1
 simple_info (2.PBSelfTradeInfoR
 simpleInfoD
@@ -3011,7 +3089,19 @@ condition5+
 code (Rcode
 error (	Rerror
 uid (Ruid
-trade_id (RtradeId"À
+trade_id (RtradeId"d
+PBTradeChangeFocusIdReqCmd
+uid (Ruid
+focus_op (RfocusOp
+focus_id (RfocusId"‚
+PBTradeChangeFocusIdRspCmd
+code (Rcode
+error (	Rerror
+uid (RuidJ
+focus_id_ts (2*.PBTradeChangeFocusIdRspCmd.FocusIdTsEntryR	focusIdTs<
+FocusIdTsEntry
+key (Rkey
+value (Rvalue:8"À
 PBAuctionSaleReqCmd
 uid (Ruid
 	config_id (RconfigId

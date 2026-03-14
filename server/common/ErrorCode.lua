@@ -39,6 +39,8 @@ local ErrorCode = {
     DecomposeFailed = 309,
     --- 道具图鉴已存在
     ItemImageExist = 310,
+    ---道具不能出售
+    ItemNotSell = 311,
 
     ---宝物相关错误码
     ---没有拥有该宝物
@@ -524,6 +526,26 @@ local ErrorCode = {
     TradeItemNotAllowed = 2114,
     --- 交易次数不足
     TradeCntNotEnough = 2115,
+    --- 关注商品数量超过最大数量
+    FocusIdOverflow = 2116,
+
+    --充值系统相关错误码
+    --- 充值ID错误
+    BillIdInvalid = 2151,
+    --- 充值订单已存在
+    OnOrder = 2152,
+    --- 获取充值订单ID失败
+    GetOrderIdFailed = 2153,
+    --- 获取SteamID失败
+    GetSteamIdFailed = 2154,
+    --- 解析充值订单失败
+    OrderParsingFailed = 2155,
+    --- 添加充值订单失败
+    AddOrderFailed = 2156,
+    --- 创建充值订单失败
+    CreateOrderFailed = 2157,
+    --- 充值订单不存在
+    OrderNotFound = 2158,
 }
 
 return ErrorCode

@@ -39,7 +39,8 @@ local ItemDefine = {
     GhostDiagrams = { start = 640000, End = 649999 },
     SpaceRing = { start = 650000, End = 659999 },
     GhostSkin = { start = 1070000, End = 1119999 },
-    RoleSkin = { start = 1132000, End = 1351999 },
+    RoleSkin = { start = 1132000, End = 1301999 },
+    ItemSkin = { start = 1302000, End = 1311999 },
 
     EItemSmallType = {
         Coin = 1,
@@ -69,6 +70,7 @@ local ItemDefine = {
         GhostSkin = 25,
         SpaceRing = 26,
         SkinCard = 27,
+        ItemSkin = 28,
         Other = 255,
     },
 
@@ -145,6 +147,8 @@ function ItemDefine.GetItemType(nConfigId)
         return ItemDefine.EItemSmallType.GhostSkin
     elseif nConfigId >= ItemDefine.SpaceRing.start and nConfigId <= ItemDefine.SpaceRing.End then
         return ItemDefine.EItemSmallType.SpaceRing
+    elseif nConfigId >= ItemDefine.ItemSkin.start and nConfigId <= ItemDefine.ItemSkin.End then
+        return ItemDefine.EItemSmallType.ItemSkin
     else
         moon.error("GetItemType - unknown config_id:", nConfigId)
         return ItemDefine.EItemSmallType.Other
@@ -160,6 +164,8 @@ function ItemDefine.GetItemPosType(nConfigId)
         return ItemDefine.EItemBigType.StackItem
     elseif nItemType == ItemDefine.EItemSmallType.DurabItem then
         return ItemDefine.EItemBigType.UnStackItem
+    elseif nItemType == ItemDefine.EItemSmallType.Tool then
+        return ItemDefine.EItemBigType.UnStackItem
     elseif nItemType >= ItemDefine.EItemSmallType.MagicItem
         and nItemType <= ItemDefine.EItemSmallType.GhostDiagrams then
         return ItemDefine.EItemBigType.UniqueItem
@@ -171,6 +177,8 @@ function ItemDefine.GetItemPosType(nConfigId)
     elseif nItemType == ItemDefine.EItemSmallType.SkinCard
         or nItemType == ItemDefine.EItemSmallType.SkinTryCard then
         return ItemDefine.EItemBigType.StackItem
+    elseif nItemType == ItemDefine.EItemSmallType.ItemSkin then
+        return ItemDefine.EItemBigType.Skin
     else
         moon.error("GetItemPosType - unknown config_id:", nConfigId)
         return ItemDefine.EItemBigType.Other

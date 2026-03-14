@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+message PBBillData
+{
+    int32 day_bill_amount   = 1;
+    int32 week_bill_amount  = 2;
+    int32 month_bill_amount = 3;
+    int32 year_bill_amount  = 4;
+    int32 total_bill_amount = 5;
+    int64 update_ts         = 6;
+    int64 on_order_id       = 7;
+}
+
+message PBGetBillsReqCmd
+{
+    int64 uid		= 1;
+}
+
+message PBGetBillsRspCmd
+{
+    int32 code      = 1; // 服务器验证返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int64 uid       = 3;
+    PBBillData bills_data   = 4;
+}
+
+message PBApplyBillOrderReqCmd
+{
+    int64 uid   = 1;
+    int32 bill_id   = 2;
+    int32 bill_num  = 3;
+}
+
+message PBApplyBillOrderRspCmd
+{
+    int32 code      = 1; // 服务器验证返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int64 uid       = 3;
+    int64 on_order_id   = 4;
+}
+
+message PBCheckBillOrderReqCmd
+{
+    int64 uid   = 1;
+    int64 on_order_id   = 2; 
+}
+
+message PBCheckBillOrderRspCmd
+{
+    int32 code      = 1; // 服务器验证返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int64 uid       = 3;
+    int64 on_order_id   = 4;
+    int32 order_state   = 5;
+}
+
+message PBBillDoneSyncCmd
+{
+    int32 bill_id   = 1;
+    int32 bill_num  = 2;
+    int32 bill_amount   = 3;
+}

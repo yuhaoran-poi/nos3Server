@@ -223,7 +223,10 @@ function User.QueryUserAttr(fields)
 end
 
 function User.SetUserAttr(user_attr, sync_client)
+    moon.warn(string.format("user_attr res = %s", json.pretty_encode(user_attr)))
+    moon.warn("sync_client = ", sync_client)
     if not user_attr or type(user_attr) ~= "table" or table.size(user_attr) <= 0 then
+        moon.error("user_attr is nil or not table or size <= 0")
         return false
     end
 
@@ -257,6 +260,7 @@ function User.SetUserAttr(user_attr, sync_client)
         local msg_data = {
             attr = t
         }
+        moon.warn(string.format("msg_data res = %s", json.pretty_encode(msg_data)))
         context.S2C(context.net_id, CmdCode["PBUserAttrSyncCmd"], msg_data, 0)
     end
 end
@@ -2254,6 +2258,7 @@ function User.PBModNickNameReqCmd(req)
     end
 
     local nick_info = Database.RedisGetNick(context.addr_db_redis, req.msg.nick_name)
+    moon.warn(string.format("nick_info res = %s", json.pretty_encode(nick_info)))
     if nick_info and table.size(nick_info) > 0 then
         return context.S2C(context.net_id, CmdCode.PBModNickNameRspCmd, {
             code = ErrorCode.NicknameAlreadyExist,
@@ -2267,6 +2272,7 @@ function User.PBModNickNameReqCmd(req)
         ProtoEnum.UserAttrType.nick_name,
     }
     local user_attr = User.GetOnlineUserAttr(nickname_fields)
+    moon.warn(string.format("user_attr res = %s", json.pretty_encode(user_attr)))
     if not user_attr[ProtoEnum.UserAttrType.nick_name]
         or user_attr[ProtoEnum.UserAttrType.nick_name] == "" then
         -- 修复调用SetUserAttr的方式，创建一个包含属性和值的表
@@ -2296,7 +2302,7 @@ function User.PBModNickNameReqCmd(req)
         end
 
         local cost_items = {}
-        cost_items[req.msg.cost_id] = {
+        cost_items[init_cfg.named_item] = {
             id = init_cfg.named_item,
             count = -1,
             pos = 0,
@@ -2324,10 +2330,13 @@ function User.PBModNickNameReqCmd(req)
                     nick_name = old_nick_name,
                 }, req.msg_context.stub_id)
             end
+            scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.ModNickName)
         end
 
         Database.RedisDelNick(context.addr_db_redis, old_nick_name)
-        User.SetUserAttr(nickname_fields, req.msg.nick_name)
+        local update_user_attr = {}
+        update_user_attr[ProtoEnum.UserAttrType.nick_name] = req.msg.nick_name
+        User.SetUserAttr(update_user_attr, true)
         Database.RedisSetNick(context.addr_db_redis, req.msg.nick_name, context.uid)
     end
 
@@ -2746,6 +2755,38 @@ function User.PBRefuseReturnRoomReqCmd(req)
         error = "",
         uid = context.uid,
         roomid = req.msg.roomid or 0,
+    }, req.msg_context.stub_id)
+end
+
+function User.PBItemChangeSkinReqCmd(req)
+    -- 参数验证
+    if not req.msg.item_config_id or not req.msg.skin_id then
+        return context.S2C(context.net_id, CmdCode.PBItemChangeSkinRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            item_config_id = req.msg.item_config_id or 0,
+            skin_id = req.msg.skin_id or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    local err_code = scripts.ItemImage.ItemChangeSkin(req.msg.item_config_id, req.msg.skin_id)
+    if err_code ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBItemChangeSkinRspCmd, {
+            code = err_code,
+            error = "更换皮肤失败",
+            uid = context.uid,
+            item_config_id = req.msg.item_config_id or 0,
+            skin_id = req.msg.skin_id or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    return context.S2C(context.net_id, CmdCode.PBItemChangeSkinRspCmd, {
+        code = ErrorCode.None,
+        error = "",
+        uid = context.uid,
+        item_config_id = req.msg.item_config_id or 0,
+        skin_id = req.msg.skin_id or 0,
     }, req.msg_context.stub_id)
 end
 
