@@ -2181,7 +2181,7 @@ function _M.savebillinfo(addr, uid, data)
 end
 
 function _M.getmaxorderid(addr)
-    local res, err = moon.call("lua", addr, "SELECT MAX(order_id) as max_order_id FROM mgame.bill_order;")
+    local res, err = moon.call("lua", addr, "SELECT MAX(orderid) as max_order_id FROM mgame.bill_order;")
     if err then
         error("getmaxbillorderid failed:" .. tostring(err))
         return -1
