@@ -210,6 +210,18 @@ function UserModel.SetTradeData(trade_data)
     DBData.trade_data = trade_data
 end
 
+---@return PBSelfAuctionData ? nil
+function UserModel.GetAuctionData()
+    if DBData and DBData.auction_data then
+        return DBData.auction_data
+    end
+    return nil
+end
+
+function UserModel.SetAuctionData(auction_data)
+    DBData.auction_data = auction_data
+end
+
 ---@return PBShopPlayerData ? nil
 function UserModel.GetShopData()
     if DBData and DBData.shops then

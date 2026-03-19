@@ -306,11 +306,13 @@ function Mail.RecvImmediateMail(config_id, items_simple, item_datas, coins)
     Mail.CheckExpireMail()
     local mails = scripts.UserModel.GetMails()
     if not mails then
+        moon.error("Mail.RecvImmediateMail GetMails failed")
         return false
     end
 
     local mail_common_config = GameCfg.ImmediatelyEmailTemplateConfig[config_id]
     if not mail_common_config or not mail_common_config.is_active then
+        moon.error("Mail.RecvImmediateMail config_id not active", config_id)
         return false
     end
 
@@ -340,6 +342,7 @@ function Mail.RecvImmediateMail(config_id, items_simple, item_datas, coins)
         Mail.SaveMailsNow()
     end
 
+    moon.debug("Mail.RecvImmediateMail AddMail success", new_mail_info.simple_data.mail_id)
     return true
 end
 

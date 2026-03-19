@@ -1667,25 +1667,38 @@ end
 
 -- 根据pos检测道具是否足够
 function Bag.CheckItemsEnoughPos(bagType, del_items)
+    moon.debug("Bag.CheckItemsEnoughPos bagType=", bagType)
+    moon.debug(string.format("Bag.CheckItemsEnoughPos del_items=%s", json.pretty_encode(del_items)))
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
         and bagType ~= BagDef.BagType.Booty
         and bagType ~= BagDef.BagType.Tool then
+        moon.error("return 1")
         return ErrorCode.BagNotExist
     end
 
     local bagdata = scripts.UserModel.GetBagData()
     if not bagdata or not bagdata[bagType] then
+        moon.error("return 2")
         return ErrorCode.BagNotExist
     end
     local baginfo = bagdata[bagType]
 
     for pos, item in pairs(del_items) do
         if item.item_count >= 0 then
+            moon.error("return 3")
             return ErrorCode.ParamInvalid
         end
 
+        moon.debug(string.format("Bag.CheckItemsEnoughPos pos=%d baginfo.items[pos]=%s", pos,
+            json.pretty_encode(baginfo.items[pos])))
+        moon.debug("Bag.CheckItemsEnoughPos del_items.uniqid", del_items.uniqid)
+        moon.debug("Bag.CheckItemsEnoughPos baginfo.items[pos]", baginfo.items[pos])
+        moon.debug("Bag.CheckItemsEnoughPos baginfo.items[pos].common_info.config_id",
+            baginfo.items[pos].common_info.config_id)
+        moon.debug("Bag.CheckItemsEnoughPos baginfo.items[pos].common_info.item_count",
+            baginfo.items[pos].common_info.item_count)
         if del_items.uniqid == 0 then
             if not baginfo.items[pos]
                 or baginfo.items[pos].common_info.config_id ~= item.config_id

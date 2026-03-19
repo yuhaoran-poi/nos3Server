@@ -20,6 +20,144 @@
 ---@field public activity_datas PBActivityData[]
 
 
+---@class PBAuctionData
+---@field public start_price integer @起拍价格
+---@field public buyout_price integer @一口价
+---@field public cur_price integer @当前价格
+---@field public buyer_uid integer @当前买家id
+
+
+---@class PBAuctionProductBaseData
+---@field public auction_id integer @交易id
+---@field public seller_uid integer @卖家id
+---@field public config_id integer @道具配置id
+---@field public uniqid integer @道具唯一id
+---@field public item_data PBItemData @商品信息
+---@field public beg_ts integer @商品上架时间
+---@field public end_ts integer @商品下架时间
+---@field public delay_cnt integer
+---@field public state integer
+---@field public auction_data PBAuctionData @拍卖数据
+
+
+---@class PBAuctionLogData
+---@field public log_id integer
+---@field public auction_id integer
+---@field public config_id integer
+---@field public uniqid integer
+---@field public item_data PBItemData @商品信息
+---@field public deal_price integer @成交价
+---@field public seller_uid integer @卖家id
+---@field public buyer_uid integer @买家id
+---@field public auction_ts integer @交易时间
+---@field public auction_tax integer @交易税
+---@field public send_seller_mail integer @是否已发送邮件
+---@field public send_buyer_mail integer @是否已发送邮件
+
+
+---@class PBSelfAuctionInfo
+---@field public box_capacity integer @交易行货架数
+---@field public can_onsale_cnt integer @当前可上架次数
+---@field public update_ts integer @上架次数刷新时间
+---@field public auction_ids integer[]
+---@field public log_ids integer[]
+---@field public focus_auctionid_ts table<integer, integer> @关注id-关注时间
+
+
+---@class PBSelfAuctionData
+---@field public simple_info PBSelfAuctionInfo
+---@field public product_list table<integer, PBAuctionProductBaseData>
+---@field public log_list PBAuctionLogData[]
+
+
+---@class PBGetAuctionInfoReqCmd
+---@field public uid integer
+
+
+---@class PBGetAuctionInfoRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public self_auction_info PBSelfAuctionData @自己的交易行数据
+
+
+---@class PBSearchAuctionProductReqCmd
+---@field public uid integer
+---@field public config_ids integer[] @搜索的道具配置id,可以为空
+---@field public condition1 integer @条件1
+---@field public condition2 integer @条件2
+---@field public condition3 integer @条件3
+---@field public condition4 integer @条件4
+---@field public condition5 integer @条件5
+---@field public custom_conditions1 integer[] @自定义条件组1
+---@field public custom_condition2 integer @自定义条件2
+---@field public sort_type integer @排序类型
+---@field public start_idx integer @起始序号
+
+
+---@class PBSearchAuctionProductRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public search_products PBAuctionProductBaseData[] @搜索到的商品信息 key为auction_id
+
+
+---@class PBAuctionSaleReqCmd
+---@field public uid integer
+---@field public config_id integer
+---@field public uniqid integer
+---@field public pos integer
+---@field public start_price integer @起拍价格
+---@field public buyout_price integer @一口价
+---@field public sale_ts integer
+
+
+---@class PBAuctionSaleRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public auction_id integer @交易号
+
+
+---@class PBAuctionBuyReqCmd
+---@field public uid integer
+---@field public auction_id integer
+---@field public uniqid integer
+---@field public buy_price integer
+
+
+---@class PBAuctionBuyRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public real_buy_price integer
+
+
+---@class PBAuctionTakeOffProductReqCmd
+---@field public uid integer
+---@field public auction_id integer
+
+
+---@class PBAuctionTakeOffProductRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public auction_id integer
+
+
+---@class PBAuctionChangeFocusIdReqCmd
+---@field public uid integer
+---@field public focus_op integer @0--取消 1--关注
+---@field public focus_id integer
+
+
+---@class PBAuctionChangeFocusIdRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public focus_id_ts table<integer, integer>
+
+
 ---@class PBUserLoginData
 ---@field public uid integer
 ---@field public steam_id integer
@@ -2909,13 +3047,6 @@
 ---@field public now_num integer @现有数量
 
 
----@class PBAuctionData
----@field public start_price integer @起拍价格
----@field public buyout_price integer @一口价
----@field public cur_price integer @当前价格
----@field public buyer_uid integer @当前买家id
-
-
 ---@class PBTradeProductBaseData
 ---@field public trade_id integer @交易id
 ---@field public seller_uid integer @卖家id
@@ -2925,16 +3056,6 @@
 ---@field public end_ts integer @商品下架时间
 ---@field public state integer
 ---@field public trade_data PBTradeData @交易数据
-
-
----@class PBAuctionProductBaseData
----@field public trade_id integer @交易id
----@field public seller_uid integer @卖家id
----@field public item_data PBItemData @商品信息
----@field public beg_ts integer @商品上架时间
----@field public end_ts integer @商品下架时间
----@field public state integer
----@field public auction_data PBAuctionData @拍卖数据
 
 
 ---@class PBTradeLogData
@@ -2948,17 +3069,6 @@
 ---@field public trade_ts integer @交易时间
 ---@field public trade_tax integer @交易税
 ---@field public send_mail integer @是否已发送邮件
-
-
----@class PBAuctionLogData
----@field public log_id integer
----@field public auction_id integer
----@field public item_data PBItemData @商品信息
----@field public deal_price integer @成交价
----@field public seller_uid integer @卖家id
----@field public buyer_uid integer @买家id
----@field public trade_ts integer @交易时间
----@field public trade_tax integer @交易税
 
 
 ---@class PBTradeSearchSimpleData
@@ -3051,26 +3161,6 @@
 ---@field public trade_record PBTradeRecordInfo
 
 
----@class PBSearchAuctionProductReqCmd
----@field public uid integer
----@field public config_ids integer[] @搜索的道具配置id,可以为空
----@field public condition1 integer @条件1
----@field public condition2 integer @条件2
----@field public condition3 integer @条件3
----@field public condition4 integer @条件4
----@field public condition5 integer @条件5
----@field public custom_conditions integer[] @自定义条件
----@field public sort_type integer @排序类型
----@field public start_idx integer @起始序号
-
-
----@class PBSearchAuctionProductRspCmd
----@field public code integer @服务器返回,0成功,其他失败
----@field public error string @错误信息
----@field public uid integer
----@field public search_products table<integer, PBAuctionProductBaseData> @搜索到的商品信息 key为trade_id
-
-
 ---@class PBTradeSaleReqCmd
 ---@field public uid integer
 ---@field public config_id integer
@@ -3097,6 +3187,7 @@
 ---@class PBTradeBuyRspCmd
 ---@field public code integer @服务器返回,0成功,其他失败
 ---@field public error string @错误信息
+---@field public uid integer
 ---@field public buy_num integer
 ---@field public buy_total_price integer
 
@@ -3124,23 +3215,6 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public focus_id_ts table<integer, integer>
-
-
----@class PBAuctionSaleReqCmd
----@field public uid integer
----@field public config_id integer
----@field public uniqid integer
----@field public pos integer
----@field public start_price integer @起拍价格
----@field public buyout_price integer @一口价
----@field public sale_ts integer
-
-
----@class PBAuctionSaleRspCmd
----@field public code integer @服务器返回,0成功,其他失败
----@field public error string @错误信息
----@field public uid integer
----@field public trade_id integer @交易号
 
 
 ---@class PBBuffData
@@ -3486,6 +3560,7 @@
 ---@class user_scripts
 ---@field Achievement Achievement
 ---@field AntiqueShowcase AntiqueShowcase
+---@field Auction Auction
 ---@field Bag Bag
 ---@field Bill Bill
 ---@field ChatProxy ChatProxy
@@ -3553,6 +3628,10 @@
 ---@field ChatMgr ChatMgr
 
 
+
+
+---@class auction_scripts
+---@field Auctionmgr Auctionmgr
 
 
 ---@class billmgr_scripts

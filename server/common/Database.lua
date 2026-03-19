@@ -5,6 +5,7 @@ local uuid = require("uuid")
 local protocol = require("common.protocol_pb")
 local crypt = require("crypt")
 local TradeDef = require("common.def.TradeDef")
+local AuctionDef = require("common.def.AuctionDef")
 
 ---@type sqlclient
 local pgsql = require("sqldriver")
@@ -1197,7 +1198,7 @@ function _M.addtradeproduct(addr, product_data, condition1, condition2, conditio
     else
         if res then
             moon.debug(string.format("addtradeproduct res = %s", json.pretty_encode(res)))
-            return res.insert_id
+            return res.affected_rows
         end
     end
 end
@@ -1395,7 +1396,7 @@ function _M.updatetradeproduct(addr, trade_id, where_data, update_data, need_ret
         return 0
     end
 
-    local where_str = string.format("WHERE trade_id = %d", trade_id)
+    local where_str = string.format("trade_id = %d", trade_id)
 
     local where_fields = {}
     if where_data then
@@ -1452,18 +1453,60 @@ function _M.updatetradeproduct(addr, trade_id, where_data, update_data, need_ret
     end
 end
 
-function _M.addauctionproduct(addr, product_data, condition1, condition2, condition3, condition4, condition5, custome_condition)
+function _M.loadauctioninfo(addr, uid)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.auctions WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBSelfAuctionInfo", pbdata)
+        return tmp_data
+    end
+    print("loadauctioninfo failed", uid, err)
+    return nil
+end
+
+function _M.saveauctioninfo(addr, uid, data)
+    assert(data)
+
+    local data_str = jencode(data)
+    local _, pbdata = protocol.encodewithname("PBSelfAuctionInfo", data)
+    local pbvalue = crypt.base64encode(pbdata)
+    local cmd = string.format([[
+        INSERT INTO mgame.trades (uid, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
+
+    return moon.send("lua", addr, cmd)
+end
+
+function _M.getmaxauctionid(addr)
+    local res, err = moon.call("lua", addr, "SELECT MAX(auction_id) as max_auction_id FROM mgame.auction_product;")
+    if err then
+        error("getmaxauctionid failed:" .. tostring(err))
+        return -1
+    end
+    if res and res[1] then
+        return tonumber(res[1].max_auction_id) or 0
+    end
+    return 0
+end
+
+function _M.addauctionproduct(addr, product_data, condition1, condition2, condition3, condition4, condition5,
+                              custom_conditions1, custom_conditions2)
     local item_data_str = jencode(product_data.item_data)
     local _, pbdata = protocol.encodewithname("PBItemData", product_data.item_data)
     local pbvalue = crypt.base64encode(pbdata)
-    local custome_condition_str = jencode(custome_condition)
+    local custome_condition_str = jencode(custom_conditions1)
     local cmd = string.format([[
-        INSERT INTO mgame.auction_product (trade_id, config_id, uniqid, seller_uid, beg_ts, end_ts, item_data, item_data_json, start_price, buyout_price, cur_price, buyer_uid, condition1, condition2, condition3, condition4, condition5, custome_condition, state) VALUES (%d, %d, %d, %d, %d, %d, '%s', '%s', %d, %d, %d, %d, %d, %d, %d, %d, %d, '%s', %d);]],
-        product_data.trade_id, product_data.item_data.common_info.config_id, product_data.item_data.common_info.uniqid,
-        product_data.seller_uid, product_data.beg_ts, product_data.end_ts, pbvalue, item_data_str,
+        INSERT INTO mgame.auction_product (auction_id, config_id, uniqid, seller_uid, beg_ts, end_ts, delay_cnt, item_data, item_data_json, start_price, buyout_price, cur_price, buyer_uid, condition1, condition2, condition3, condition4, condition5, custom_conditions1, custom_conditions2, state) VALUES (%d, %d, %d, %d, %d, %d, %d, '%s', '%s', %d, %d, %d, %d, %d, %d, %d, %d, %d, '%s', %d, %d);]],
+        product_data.auction_id, product_data.item_data.common_info.config_id, product_data.item_data.common_info.uniqid,
+        product_data.seller_uid, product_data.beg_ts, product_data.delay_cnt, product_data.end_ts, pbvalue, item_data_str,
         product_data.auction_data.start_price, product_data.auction_data.buyout_price,
         product_data.auction_data.cur_price, product_data.auction_data.buyer_uid, condition1, condition2, condition3,
-        condition4, condition5, custome_condition_str, product_data.state)
+        condition4, condition5, custome_condition_str, custom_conditions2, product_data.state)
         
     local res, err = moon.call("lua", addr, cmd)
     if err then
@@ -1472,17 +1515,189 @@ function _M.addauctionproduct(addr, product_data, condition1, condition2, condit
     else
         if res then
             moon.debug(string.format("addauctionproduct res = %s", json.pretty_encode(res)))
-            return res.insert_id
+            return res.affected_rows
         end
+    end
+end
+
+function _M.getauctionwithids(addr, state_type, ids, sort_describe, start_idx, num)
+    local where_str = "config_id IN ("
+    for i = 1, #ids do
+        where_str = where_str .. ids[i]
+        if i < #ids then
+            where_str = where_str .. ","
+        end
+    end
+    where_str = "state = " .. state_type .. " AND " .. where_str .. ")"
+
+    local cmd = string.format([[
+        SELECT auction_id, config_id, uniqid, seller_uid, beg_ts, end_ts, delay_cnt, item_data, start_price, buyout_price, cur_price, buyer_uid FROM mgame.auction_product WHERE %s ORDER BY %s LIMIT %d OFFSET %d;
+    ]], where_str, sort_describe, num, start_idx)
+    moon.debug(cmd)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("getauctionwithids err = %s", json.pretty_encode(err)))
+        return nil
+    end
+    if res and #res > 0 then
+        local auction_products = {}
+        for i = 1, #res do
+            local pbdata = crypt.base64decode(res[i].item_data)
+            local _, item_data = protocol.decodewithname("PBItemData", pbdata)
+
+            local product = AuctionDef.newAuctionProductBaseData()
+            product.auction_id = res[i].auction_id
+            product.seller_uid = res[i].seller_uid
+            product.config_id = res[i].config_id
+            product.uniqid = res[i].uniqid
+            product.item_data = item_data
+            product.beg_ts = res[i].beg_ts
+            product.end_ts = res[i].end_ts
+            product.delay_cnt = res[i].delay_cnt
+            product.auction_data.start_price = res[i].start_price
+            product.auction_data.buyout_price = res[i].buyout_price
+            product.auction_data.cur_price = res[i].cur_price
+            product.auction_data.buyer_uid = res[i].buyer_uid
+            table.insert(auction_products, product)
+        end
+        return auction_products
+    end
+    moon.error("getauctionwithids failed", where_str, err)
+    return nil
+end
+
+function _M.getauctionwithconditions(addr, state_type, condition1, condition2, condition3, condition4, condition5,
+                                     custome_conditions1, custome_condition2, sort_describe, start_idx, num)
+    local where_str = "state = " .. state_type
+    if condition1 > 0 then
+        where_str = where_str .. " AND " .. string.format("condition1=%d", condition1)
+    end
+    if condition2 > 0 then
+        where_str = where_str .. " AND " .. string.format("condition2=%d", condition2)
+    end
+    if condition3 > 0 then
+        where_str = where_str .. " AND " .. string.format("condition3 = %d", condition3)
+    end
+    if condition4 > 0 then
+        where_str = where_str .. " AND " .. string.format("condition4 = %d", condition4)
+    end
+    if condition5 > 0 then
+        where_str = where_str .. " AND " .. string.format("condition5 = %d", condition5)
+    end
+    if table.size(custome_conditions1) > 0 then
+        local custom_conditions1_str = string.format("JSON_CONTAINS(json_field, '%s') > 0",
+            table.concat(custome_conditions1, ","))
+        where_str = where_str .. " AND " .. custom_conditions1_str
+    end
+    if custome_condition2 > 0 then
+        where_str = where_str .. " AND " .. string.format("custome_condition2 = %d", custome_condition2)
+    end
+
+    local cmd = string.format([[
+        SELECT auction_id, config_id, uniqid, seller_uid, delay_cnt, beg_ts, end_ts, item_data, start_price, buyout_price, cur_price, buyer_uid FROM mgame.auction_product WHERE %s ORDER BY %s LIMIT %d OFFSET %d;
+    ]], where_str, sort_describe, num, start_idx)
+    moon.debug(cmd)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("getauctionwithconditions err = %s", json.pretty_encode(err)))
+        return nil
+    end
+    moon.debug(string.format("getauctionwithconditions res = %s", json.pretty_encode(res)))
+    if res and #res > 0 then
+        local auction_products = {}
+        for i = 1, #res do
+            local product = AuctionDef.newAuctionProductBaseData()
+            product.auction_id = res[i].auction_id
+            product.seller_uid = res[i].seller_uid
+            product.config_id = res[i].config_id
+            product.uniqid = res[i].uniqid
+            local item_data = protocol.decodewithname("PBItemData", crypt.base64decode(res[i].item_data))
+            product.item_data = item_data
+            product.beg_ts = res[i].beg_ts
+            product.end_ts = res[i].end_ts
+            product.delay_cnt = res[i].delay_cnt
+            product.auction_data.start_price = res[i].start_price
+            product.auction_data.buyout_price = res[i].buyout_price
+            product.auction_data.cur_price = res[i].cur_price
+            product.auction_data.buyer_uid = res[i].buyer_uid
+            table.insert(auction_products, product)
+        end
+        return auction_products
+    end
+    moon.error("getauctionwithconditions failed", where_str, err)
+    return nil
+end
+
+function _M.updateauctionproduct(addr, auction_id, where_data, update_data, need_ret)
+    if not update_data or type(update_data) ~= "table" then
+        moon.error("updateauctionproduct: update_data should be a table")
+        return 0
+    end
+
+    local where_str = string.format("auction_id = %d", auction_id)
+
+    local where_fields = {}
+    if where_data then
+        for field, value in pairs(where_data) do
+            if field == "state" then
+                -- 数值型字段
+                table.insert(where_fields, string.format("%s = %d", field, value))
+            else
+                -- 对于未知字段，可以选择忽略或报错
+                moon.error("updateauctionproduct: unknown field '%s', skipping", field)
+                return 0
+            end
+        end
+    end
+    if #where_fields > 0 then
+        where_str = where_str .. " AND " .. table.concat(where_fields, " AND ")
+    end
+
+    local update_fields = {}
+    for field, value in pairs(update_data) do
+        if field == "beg_ts" or field == "end_ts" or field == "delay_cnt" or field == "cur_price"
+            or field == "buyer_uid" or field == "state" or field == "condition1" or field == "condition2"
+            or field == "condition3" or field == "condition4" or field == "condition5" then
+            -- 数值型字段
+            table.insert(update_fields, string.format("%s = %d", field, value))
+        else
+            -- 对于未知字段，可以选择忽略或报错
+            moon.error("updatetradeproduct: unknown field '%s', skipping", field)
+        end
+    end
+    if #update_fields == 0 then
+        moon.error("updatetradeproduct: no valid fields to update")
+        return 0
+    end
+
+    local cmd = string.format([[
+        UPDATE mgame.auction_product SET %s WHERE %s;
+    ]], table.concat(update_fields, ", "), where_str)
+    if need_ret then
+        local res, err = moon.call("lua", addr, cmd)
+        if err then
+            moon.error(string.format("updatetradeproduct err = %s", json.pretty_encode(err)))
+            return 0
+        else
+            if res then
+                moon.debug(string.format("updatetradeproduct res = %s", json.pretty_encode(res)))
+                return res.affected_rows
+            end
+        end
+        return 0
+    else
+        moon.send("lua", addr, cmd)
+        return 0
     end
 end
 
 function _M.updatetraderecord(addr, record_data, condition1, condition2, condition3, condition4, condition5)
     assert(record_data)
+    moon.debug(string.format("updatetraderecord: %s", json.pretty_encode(record_data)))
 
     local cmd = string.format([[
         INSERT INTO mgame.trade_record (trade_config_id, sale_num, sale_total_price, last_deal_price, update_ts, yes_sale_num, yes_sale_total_price, yes_average_price, min_price, min_price_num, condition1, condition2, condition3, condition4, condition5)
-        VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)
+        VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)
         ON DUPLICATE KEY UPDATE sale_num = %d, sale_total_price = %d, last_deal_price = %d, update_ts = %d, yes_sale_num = %d, yes_sale_total_price = %d, yes_average_price = %d, min_price = %d, min_price_num = %d, condition1 = %d, condition2 = %d, condition3 = %d, condition4 = %d, condition5 = %d;
     ]], record_data.trade_config_id, record_data.sale_num, record_data.sale_total_price, record_data.last_deal_price,
         record_data.update_ts, record_data.yes_sale_num, record_data.yes_sale_total_price, record_data.yes_average_price,
@@ -1490,6 +1705,7 @@ function _M.updatetraderecord(addr, record_data, condition1, condition2, conditi
         record_data.sale_num, record_data.sale_total_price, record_data.last_deal_price, record_data.update_ts, record_data.yes_sale_num,
         record_data.yes_sale_total_price, record_data.yes_average_price, record_data.min_price,
         record_data.min_price_num, condition1, condition2, condition3, condition4, condition5)
+    moon.debug(cmd)
 
     return moon.send("lua", addr, cmd)
 end
@@ -1507,6 +1723,7 @@ function _M.gettraderecordwithids(addr, ids, sort_describe)
     local cmd = string.format([[
         SELECT trade_config_id, last_deal_price, yes_average_price, min_price, min_price_num FROM mgame.trade_record WHERE %s ORDER BY %s;
     ]], where_str, sort_describe)
+    moon.debug(cmd)
     local res, err = moon.call("lua", addr, cmd)
     if err then
         moon.error(string.format("gettraderecordwithids err = %s", json.pretty_encode(err)))
@@ -1565,13 +1782,15 @@ function _M.gettraderecordswithconditions(addr, condition1, condition2, conditio
     end
 
     local cmd = string.format([[
-        SELECT trade_config_id, last_deal_price, yes_average_price, min_price, min_price_num FROM mgame.trade_record WHERE %s ORDER BY %s LIMIT %d OFFSET %d;
+        SELECT trade_config_id, last_deal_price, yes_average_price, min_price, min_price_num FROM mgame.trade_record %s ORDER BY %s LIMIT %d OFFSET %d;
     ]], where_str, sort_describe, num, start_idx)
+    moon.debug(cmd)
     local res, err = moon.call("lua", addr, cmd)
     if err then
         moon.error(string.format("gettraderecordswithconditions err = %s", json.pretty_encode(err)))
         return nil
     end
+    moon.debug(string.format("gettraderecordswithconditions res = %s", json.pretty_encode(res)))
     if res and #res > 0 then
         local trade_records = {}
         for i = 1, #res do
@@ -1747,11 +1966,23 @@ function _M.gettradelognomail(addr, uid)
     return nil
 end
 
+function _M.getmaxauctionlogid(addr)
+    local res, err = moon.call("lua", addr, "SELECT MAX(log_id) as max_log_id FROM mgame.auction_log;")
+    if err then
+        error("getmaxauctionlogid failed:" .. tostring(err))
+        return -1
+    end
+    if res and res[1] then
+        return tonumber(res[1].max_log_id) or 0
+    end
+    return 0
+end
+
 function _M.loadplayerauctionlog(addr, uid)
     local cmd = string.format([[
-        SELECT log_id, auction_id, deal_price, seller_uid, buyer_uid, trade_ts, trade_tax,
-        item_data FROM mgame.auction_log WHERE (seller_uid = %d OR buyer_uid = %d)
-        ORDER BY trade_ts DESC LIMIT 100;
+        SELECT log_id, auction_id, config_id, uniqid, item_data, deal_price, seller_uid, buyer_uid, auction_ts,
+        auction_tax, send_seller_mail, send_buyer_mail FROM mgame.trade_log WHERE (seller_uid = %d OR buyer_uid = %d)
+        ORDER BY auction_ts DESC LIMIT 100;
     ]], uid, uid)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
@@ -1763,12 +1994,16 @@ function _M.loadplayerauctionlog(addr, uid)
             local auction_log = TradeDef.newAuctionLogData()
             auction_log.log_id = res[i].log_id
             auction_log.auction_id = res[i].auction_id
+            auction_log.config_id = res[i].config_id
+            auction_log.uniqid = res[i].uniqid
+            auction_log.item_data = item_data
             auction_log.deal_price = res[i].deal_price
             auction_log.seller_uid = res[i].seller_uid
             auction_log.buyer_uid = res[i].buyer_uid
-            auction_log.trade_ts = res[i].trade_ts
-            auction_log.trade_tax = res[i].trade_tax
-            auction_log.item_data = item_data
+            auction_log.auction_ts = res[i].auction_ts
+            auction_log.auction_tax = res[i].auction_tax
+            auction_log.send_seller_mail = res[i].send_seller_mail
+            auction_log.send_buyer_mail = res[i].send_buyer_mail
             auction_logs[auction_log.auction_id] = auction_log
         end
         return auction_logs
@@ -1783,40 +2018,62 @@ function _M.addauctionlog(addr, auction_log)
     local pbvalue = crypt.base64encode(pbdata)
 
     local cmd = string.format([[
-        INSERT INTO mgame.auction_log (auction_id, deal_price, seller_uid, buyer_uid, trade_ts,
-        trade_tax, item_data, item_data_json)
-        VALUES (%d, %d, %d, %d, %d, %d, '%s', '%s');
-    ]], auction_log.auction_id, auction_log.deal_price, auction_log.seller_uid, auction_log.buyer_uid, auction_log.trade_ts, auction_log.trade_tax, pbvalue, item_data_str)
+        INSERT INTO mgame.trade_log (log_id, auction_id, config_id, uniqid, item_data, item_data_json,
+        deal_price, seller_uid, buyer_uid, auction_ts, auction_tax, send_seller_mail, send_buyer_mail)
+        VALUES (%d, %d, %d, %d, '%s', '%s', %d, %d, %d, %d, %d, %d, %d);
+    ]], auction_log.log_id, auction_log.auction_id, auction_log.config_id, auction_log.uniqid, pbvalue,
+        item_data_str, auction_log.deal_price, auction_log.seller_uid, auction_log.buyer_uid,
+        auction_log.auction_ts, auction_log.auction_tax, auction_log.send_seller_mail, auction_log.send_buyer_mail)
 
     return moon.send("lua", addr, cmd)
 end
 
 function _M.getauctionlog(addr, log_id)
     local cmd = string.format([[
-        SELECT log_id, auction_id, deal_price, seller_uid, buyer_uid, trade_ts, trade_tax,
-        item_data FROM mgame.auction_log WHERE log_id = %d;
+        SELECT log_id, auction_id, config_id, uniqid, item_data, deal_price, seller_uid, buyer_uid, auction_ts,
+        auction_tax, send_seller_mail, send_buyer_mail FROM mgame.trade_log WHERE log_id = %d;
     ]], log_id)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].item_data)
         local _, item_data = protocol.decodewithname("PBItemData", pbdata)
+
         local auction_log = TradeDef.newAuctionLogData()
         auction_log.log_id = res[1].log_id
         auction_log.auction_id = res[1].auction_id
+        auction_log.config_id = res[1].config_id
+        auction_log.uniqid = res[1].uniqid
+        auction_log.item_data = item_data
         auction_log.deal_price = res[1].deal_price
         auction_log.seller_uid = res[1].seller_uid
         auction_log.buyer_uid = res[1].buyer_uid
-        auction_log.trade_ts = res[1].trade_ts
-        auction_log.trade_tax = res[1].trade_tax
-        auction_log.item_data = item_data
+        auction_log.auction_ts = res[1].auction_ts
+        auction_log.auction_tax = res[1].auction_tax
+        auction_log.send_seller_mail = res[1].send_seller_mail
+        auction_log.send_buyer_mail = res[1].send_buyer_mail
         return auction_log
     end
     moon.error("getauctionlog failed", log_id, err)
     return nil
 end
 
+function _M.updateauctionlog(addr, log_id, send_seller_mail, send_buyer_mail)
+    if send_seller_mail then
+        local cmd = string.format([[
+        UPDATE mgame.trade_log SET send_seller_mail = %d WHERE log_id = %d;
+        ]], send_seller_mail, log_id)
+        return moon.send("lua", addr, cmd)
+    end
+    if send_buyer_mail then
+        local cmd = string.format([[
+        UPDATE mgame.trade_log SET send_buyer_mail = %d WHERE log_id = %d;
+        ]], send_buyer_mail, log_id)
+        return moon.send("lua", addr, cmd)
+    end
+end
+
 -- 交易行数据前缀常量
-local PRODUCT_DATA = "product_data"
+local PRODUCT_DATA = "trade_product_data"
 
 function _M.RedisGetProductData(addr_db_redis, product_ids)
     local res, err = redis_call(addr_db_redis, "HMGET", PRODUCT_DATA, table.unpack(product_ids))
@@ -1844,6 +2101,37 @@ end
 
 function _M.RedisDelProductData(addr_db_redis, product_ids)
     redis_send(addr_db_redis, "HDEL", PRODUCT_DATA, table.unpack(product_ids))
+end
+
+-- 拍卖行数据前缀常量
+local AUCTION_PRODUCT_DATA = "auction_product_data"
+
+function _M.RedisGetAuctionProductData(addr_db_redis, product_ids)
+    local res, err = redis_call(addr_db_redis, "HMGET", AUCTION_PRODUCT_DATA, table.unpack(product_ids))
+    if err then
+        moon.error("RedisGetAuctionProductData failed:" .. tostring(err))
+        return {}
+    end
+    local product_datas = {}
+    if res and #res > 0 then
+        moon.warn(string.format("RedisGetAuctionProductData res = %s", json.pretty_encode(res)))
+        for i = 1, #res do
+            product_datas[product_ids[i]] = json.decode(res[i] or "null")
+        end
+    end
+
+    return product_datas
+end
+
+function _M.RedisSetAuctionProductData(addr_db_redis, product_data)
+    local tmp = {}
+    table.insert(tmp, product_data.auction_id)
+    table.insert(tmp, json.encode(product_data))
+    redis_send(addr_db_redis, "HSET", AUCTION_PRODUCT_DATA, table.unpack(tmp))
+end
+
+function _M.RedisDelAuctionProductData(addr_db_redis, product_ids)
+    redis_send(addr_db_redis, "HDEL", AUCTION_PRODUCT_DATA, table.unpack(product_ids))
 end
 
 -- 商店数据
@@ -2209,7 +2497,7 @@ function _M.addbillorder(addr, order_info)
     else
         if res then
             moon.debug(string.format("addbillorder res = %s", json.pretty_encode(res)))
-            return res.insert_id
+            return res.affected_rows
         end
     end
 end
@@ -2249,6 +2537,64 @@ function _M.loadbillorder(addr, orderid)
     end
     moon.error("loadbillorder failed", orderid, err)
     return nil
+end
+
+local AUCTION_WAIT_MAIL_KEY = "auction_wait_mail"
+
+function _M.RedisGetAuctionWaitMail(addr_db_redis, uid, auction_id, price)
+    local key_str = tostring(auction_id) .. "_" .. tostring(price)
+    local res, err = redis_call(addr_db_redis, "HGET", AUCTION_WAIT_MAIL_KEY .. uid, key_str)
+    if err then
+        error("RedisGetAuctionWaitMail failed:" .. tostring(err))
+        return nil
+    end
+    if res then
+        return json.decode(res)
+    end
+    return nil
+end
+
+function _M.RedisDelAuctionWaitMail(addr_db_redis, uid, auction_id, price)
+    local key_str = tostring(auction_id) .. "_" .. tostring(price)
+    redis_send(addr_db_redis, "HDEL", AUCTION_WAIT_MAIL_KEY .. uid, key_str)
+end
+
+function _M.RedisGetAllAuctionWaitMails(addr_db_redis, uid)
+    local res, err = redis_call(addr_db_redis, "HGETALL", AUCTION_WAIT_MAIL_KEY .. uid)
+    if err then
+        error("RedisGetAllAuctionWaitMails failed:" .. tostring(err))
+        return {}
+    end
+    local mails = {}
+    if res and #res > 0 then
+        for i = 1, #res, 2 do
+            local mail_id = res[i]
+            local mail_data = json.decode(res[i + 1])
+            if mail_id and mail_data then
+                mails[tonumber(mail_id)] = mail_data
+            end
+        end
+    end
+    return mails
+end
+
+function _M.RedisDelAllAuctionWaitMails(addr_db_redis, uid)
+    redis_send(addr_db_redis, "DEL", AUCTION_WAIT_MAIL_KEY .. uid)
+end
+
+function _M.RedisSetAuctionWaitMail(addr_db_redis, wait_data)
+    local key_str = tostring(wait_data.auction_id) .. "_" .. tostring(wait_data.price)
+    local tmp = {}
+    table.insert(tmp, key_str)
+    table.insert(tmp, json.encode(wait_data))
+    local res, err = redis_call(addr_db_redis, "HSET", AUCTION_WAIT_MAIL_KEY .. wait_data.uid, table.unpack(tmp))
+    if err then
+        moon.error(string.format("RedisSetAuctionWaitMail failed = %s, wait_data = %s",
+            json.pretty_encode(err), json.pretty_encode(wait_data)))
+        return nil
+    end
+    moon.debug(string.format("RedisSetAuctionWaitMail res = %s", res))
+    return res
 end
 
 return _M

@@ -528,6 +528,8 @@ local ErrorCode = {
     TradeCntNotEnough = 2115,
     --- 关注商品数量超过最大数量
     FocusIdOverflow = 2116,
+    --- 购买价格过低
+    BuyPriceTooLow = 2117,
 
     --充值系统相关错误码
     --- 充值ID错误

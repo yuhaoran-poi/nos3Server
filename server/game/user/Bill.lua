@@ -440,8 +440,8 @@ function Bill.PBApplyBillOrderReqCmd(req)
             is_sandbox = 0,
             state = BillDef.orderStatus.WAIT,
         }
-        local ret_id = Database.addbillorder(context.addr_db_user, order_info)
-        if ret_id <= 0 then
+        local ret_rows = Database.addbillorder(context.addr_db_user, order_info)
+        if ret_rows <= 0 then
             return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
                 code = ErrorCode.AddOrderFailed,
                 error = "添加订单失败",
@@ -449,7 +449,7 @@ function Bill.PBApplyBillOrderReqCmd(req)
             }, req.msg_context.stub_id)
         end
 
-        bills.on_order_id = ret_id
+        bills.on_order_id = order_info.orderid
         Bill.on_order_info = order_info
         clusterd.send(3999, "billmgr", "Billmgr.AddBill", order_info)
         Bill.SaveBillsNow()
@@ -458,7 +458,7 @@ function Bill.PBApplyBillOrderReqCmd(req)
             code = ErrorCode.None,
             error = "",
             uid = context.uid,
-            on_order_id = ret_id,
+            on_order_id = order_info.orderid,
         }, req.msg_context.stub_id)
     else
         return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {

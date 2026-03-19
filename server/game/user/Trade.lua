@@ -18,7 +18,6 @@ local scripts = context.scripts
 
 local MAX_SALE_CAPACITY = 50
 local MAX_SEARCH_IDS_COUNT = 100
-local TRADE_COIN_ID = 1
 local TRADE_LOG_MAX_COUNT = 100
 
 ---@class Trade
@@ -129,6 +128,7 @@ function Trade.SearchTradeRecordWithIds(ids, sort_type, start_idx)
     if not trade_records then
         return ErrorCode.SearchProductFailed
     end
+    moon.debug(string.format("SearchTradeRecordWithIds: %s", json.pretty_encode(trade_records)))
     if table.size(trade_records) == 0 then
         return ErrorCode.SearchProductNone
     end
@@ -178,6 +178,7 @@ end
 
 function Trade.OnTradeLogSaleMail(trade_log, need_save)
     if trade_log.send_mail ~= 0 then
+        moon.error(string.format("OnTradeLogSaleMail trade_log.send_mail not 0 trade_log = %s", json.pretty_encode(trade_log)))
         return
     end
 
@@ -188,6 +189,7 @@ function Trade.OnTradeLogSaleMail(trade_log, need_save)
     end
     local player_trade_data = scripts.UserModel.GetTradeData()
     if not player_trade_data then
+        moon.error("OnTradeLogSaleMail not found player_trade_data")
         return
     end
 
@@ -250,6 +252,7 @@ function Trade.DealOfflineTradeLogSale()
         return
     end
     for _, trade_log in pairs(trade_logs) do
+        moon.warn(string.format("DealOfflineTradeLogSale trade_log = %s", json.pretty_encode(trade_log)))
         Trade.OnTradeLogSaleMail(trade_log, false)
     end
 end
@@ -268,6 +271,7 @@ function Trade.DealOfflineTradeTakeDown()
     end
 
     for _, trade_product in pairs(trade_products) do
+        moon.warn(string.format("DealOfflineTradeTakeDown trade_product = %s", json.pretty_encode(trade_product)))
         Trade.OnTradeTakeDownMail(trade_product, TradeDef.StateType.TAKE_DOWNING, false)
     end
 end
@@ -372,10 +376,10 @@ function Trade.PBTradeSaleReqCmd(req)
 
     local bag_change_log = {}
     local trade_cost_items = {}
-    trade_cost_items[item_data.common_info.config_id] = {
-        id = item_data.common_info.config_id,
-        count = -req.msg.sale_num,
-        pos = req.msg.pos,
+    trade_cost_items[req.msg.pos] = {
+        config_id = item_data.common_info.config_id,
+        uniqid = 0,
+        item_count = -req.msg.sale_num,
     }
     -- 扣除上架费用
     local trade_cost_coins = {}
@@ -389,18 +393,18 @@ function Trade.PBTradeSaleReqCmd(req)
     trade_cost_coins[trade_cfg.service_charge_type].coin_count = trade_cost_coins[trade_cfg.service_charge_type]
         .coin_count - trade_rate_coin_count
     
-    local err_code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, trade_cost_items, {})
+    local err_code = scripts.Bag.CheckItemsEnoughPos(BagDef.BagType.Cangku, trade_cost_items)
     if err_code ~= ErrorCode.None then
         return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
-            { code = ErrorCode.ItemNotEnough, error = "物品数量不足", uid = context.uid }, req.msg_context.stub_id)
+            { code = err_code, error = "物品数量不足", uid = context.uid }, req.msg_context.stub_id)
     end
     err_code = scripts.Bag.CheckCoinsEnough(trade_cost_coins)
     if err_code ~= ErrorCode.None then
         return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
             { code = err_code, error = "上架费用不足", uid = context.uid }, req.msg_context.stub_id)
     end
-
-    err_code = scripts.Bag.DelItems(BagDef.BagType.Cangku, trade_cost_items, {}, bag_change_log)
+    
+    err_code = scripts.Bag.DelItemsPos(BagDef.BagType.Cangku, trade_cost_items, bag_change_log)
     if err_code ~= ErrorCode.None then
         scripts.Bag.RollBackWithChange(bag_change_log)
         return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
@@ -659,7 +663,7 @@ function Trade.PBSearchTradeProductReqCmd(req)
             code = ErrorCode.None,
             error = "搜索商品成功",
             uid = context.uid,
-            trade_records = trade_records,
+            search_products = trade_records,
         }, req.msg_context.stub_id)
     else
         if not req.msg.condition1 and not req.msg.condition2 and not req.msg.condition3
@@ -686,7 +690,7 @@ function Trade.PBSearchTradeProductReqCmd(req)
             code = ErrorCode.None,
             error = "搜索商品成功",
             uid = context.uid,
-            trade_records = trade_records,
+            search_products = trade_records,
         }, req.msg_context.stub_id)
     end
 end
@@ -718,30 +722,31 @@ function Trade.PBGetSingleTradeRecordReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local record = {
-        trade_sim_data = TradeDef.newTradeSearchSimpleData(),
-        price_to_num = {},
-    }
-    record.trade_sim_data.config_id = res.trade_config_id
-    record.trade_sim_data.min_price = res.min_price
-    record.trade_sim_data.last_deal_price = res.last_deal_price
-    record.trade_sim_data.yes_average_price = res.yes_average_price
-    record.trade_sim_data.min_price_num = res.min_price_num
-    if res.price_to_num and table.size(res.price_to_num) > 0 then
-        for price, price_num_data in pairs(res.price_to_num) do
-            local price_and_num = {
-                price = price,
-                now_num = price_num_data.now_num,
-            }
-            record.price_to_num[price] = price_and_num
-        end
-    end
+    moon.debug(string.format("Trade.PBGetSingleTradeRecordReqCmd res:%s", json.pretty_encode(res)))
+    -- local record = {
+    --     trade_sim_data = TradeDef.newTradeSearchSimpleData(),
+    --     price_to_num = {},
+    -- }
+    -- record.trade_sim_data.config_id = res.trade_config_id
+    -- record.trade_sim_data.min_price = res.min_price
+    -- record.trade_sim_data.last_deal_price = res.last_deal_price
+    -- record.trade_sim_data.yes_average_price = res.yes_average_price
+    -- record.trade_sim_data.min_price_num = res.min_price_num
+    -- if res.price_to_num and table.size(res.price_to_num) > 0 then
+    --     for price, price_num_data in pairs(res.price_to_num) do
+    --         local price_and_num = {
+    --             price = price,
+    --             now_num = price_num_data.now_num,
+    --         }
+    --         record.price_to_num[price] = price_and_num
+    --     end
+    -- end
 
     return context.S2C(context.net_id, CmdCode.PBGetSingleTradeRecordRspCmd, {
         code = ErrorCode.None,
         error = "搜索商品成功",
         uid = context.uid,
-        trade_record = record,
+        trade_record = res,
     }, req.msg_context.stub_id)
 end
 
@@ -812,6 +817,7 @@ function Trade.PBTradeBuyReqCmd(req)
             uid = context.uid,
         }, req.msg_context.stub_id)
     end
+    moon.debug(string.format("Trade.PBTradeBuyReqCmd Trademgr.BuyTradeProduct res:%s", json.pretty_encode(res)))
     if res.code ~= ErrorCode.None then
         scripts.Bag.RollBackWithChange(bag_change_logs)
         return context.S2C(context.net_id, CmdCode.PBTradeBuyRspCmd, {
@@ -821,13 +827,14 @@ function Trade.PBTradeBuyReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    if res.remain_coin and res.remain_coin > 0 then
+    if res.data.remain_coin and res.data.remain_coin > 0 then
         scripts.Bag.RollBackWithChange(bag_change_logs)
         -- 重新扣除正确的金额
         bag_change_logs = {}
-        cost_coins[TRADE_COIN_ID].coin_count = -(lock_coin_count - res.remain_coin)
+        cost_coins[trade_cfg.order_currency].coin_count = -(lock_coin_count - res.data.remain_coin)
         err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_logs)
         if err_code_coins ~= ErrorCode.None then
+            moon.error("Trade.PBTradeBuyReqCmd DealCoins err", err_code_coins)
             scripts.Bag.RollBackWithChange(bag_change_logs)
             return err_code_coins
         end
@@ -836,15 +843,16 @@ function Trade.PBTradeBuyReqCmd(req)
     -- 计算获得资源发送邮件
     local item_simple_data = ItemDef.newItemSimple()
     item_simple_data.config_id = req.msg.config_id
-    item_simple_data.item_count = res.total_real_buy_num
+    item_simple_data.item_count = res.data.total_real_buy_num
     local attach_items_simple = {}
     attach_items_simple[req.msg.config_id] = item_simple_data
     
     local mail_ret = scripts.Mail.RecvImmediateMail(trade_cfg.shipments_email, attach_items_simple, {}, {})
-    if mail_ret ~= ErrorCode.None then
+    if not mail_ret then
+        moon.error("Trade.PBTradeBuyReqCmd RecvImmediateMail err")
         scripts.Bag.RollBackWithChange(bag_change_logs)
         return context.S2C(context.net_id, CmdCode.PBTradeBuyRspCmd, {
-            code = mail_ret,
+            code = ErrorCode.MailConfigError,
             error = "购买商品邮件出错",
             uid = context.uid,
         }, req.msg_context.stub_id)
@@ -852,12 +860,20 @@ function Trade.PBTradeBuyReqCmd(req)
 
     scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.TradeBuy)
 
+    local msg_ret = {
+        code = ErrorCode.None,
+        error = "购买商品成功",
+        uid = context.uid,
+        buy_num = res.data.total_real_buy_num,
+        buy_total_price = lock_coin_count - res.data.remain_coin,
+    }
+    moon.debug(string.format("Trade.PBTradeBuyReqCmd msg_ret:%s", json.pretty_encode(msg_ret)))
     return context.S2C(context.net_id, CmdCode.PBTradeBuyRspCmd, {
         code = ErrorCode.None,
         error = "购买商品成功",
         uid = context.uid,
-        buy_num = res.total_real_buy_num,
-        buy_total_price = lock_coin_count - res.remain_coin,
+        buy_num = res.data.total_real_buy_num,
+        buy_total_price = lock_coin_count - res.data.remain_coin,
     }, req.msg_context.stub_id)
 end
 
@@ -876,9 +892,17 @@ function Trade.PBTradeTakeOffProductReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBTradeTakeOffProductRspCmd,
             { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
     end
+    if not player_trade_data.product_list[req.msg.trade_id] then
+        return context.S2C(context.net_id, CmdCode.PBTradeTakeOffProductRspCmd, {
+            code = ErrorCode.TradeProductNotExist,
+            error = "商品不存在",
+            uid = context.uid,
+            trade_id = req.msg.trade_id,
+        }, req.msg_context.stub_id)
+    end
 
     local res, err = clusterd.call(3999, "trademgr", "Trademgr.TakeOffProduct", context.uid, req.msg.trade_id)
-    if err or not res then
+    if err or res ~= ErrorCode.None then
         moon.error(string.format("Trade.PBTradeTakeOffProductReqCmd Trademgr.TakeOffProduct err:%s", err))
         return context.S2C(context.net_id, CmdCode.PBTradeTakeOffProductRspCmd, {
             code = ErrorCode.TradeTakeOffError,
