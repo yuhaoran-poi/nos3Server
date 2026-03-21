@@ -17,6 +17,8 @@ local AuctionDef = {
         [6] = "cur_price DESC",
         [7] = "buyout_price ASC",
         [8] = "buyout_price DESC",
+        [9] = "auction_id ASC",
+        [10] = "auction_id DESC",
     },
 }
 

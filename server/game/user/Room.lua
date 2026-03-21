@@ -617,7 +617,7 @@ function Room.GameSettle(settle_info)
                     table.insert(item_datas, item_data)
                 end
                 local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
-                if mail_ret ~= ErrorCode.None then
+                if not mail_ret then
                     moon.error(string.format("GameSettle RecvImmediateMail err:\n%s", json.pretty_encode(item_datas)))
                     return
                 end
@@ -761,7 +761,7 @@ function Room.GameSettle(settle_info)
                     table.insert(item_datas, item_data)
                 end
                 local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
-                if mail_ret ~= ErrorCode.None then
+                if not mail_ret then
                     moon.error(string.format("GameSettle RecvImmediateMail err:\n%s", json.pretty_encode(item_datas)))
                     return
                 end
@@ -797,7 +797,7 @@ function Room.GameReturnItems(return_info)
     end
 
     local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
-    if mail_ret ~= ErrorCode.None then
+    if not mail_ret then
         moon.error(string.format("GameReturnItems mail_ret err:\n%s", json.pretty_encode(item_datas)))
     end
 end

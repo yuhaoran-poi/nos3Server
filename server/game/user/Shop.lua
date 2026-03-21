@@ -503,7 +503,7 @@ function Shop.PBShopBuyReqCmd(req)
             table.insert(item_datas, item_data)
         end
         local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
-        if mail_ret ~= ErrorCode.None then
+        if not mail_ret then
             rsp_msg.code = ErrorCode.ShopMailSendFailed
             rsp_msg.error = "发送邮件失败"
 

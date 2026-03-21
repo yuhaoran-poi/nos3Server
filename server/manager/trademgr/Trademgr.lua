@@ -186,6 +186,9 @@ function Trademgr.Start()
                         need_mod_record[record_data.trade_config_id] = 1
                     end
                     Trademgr.product_endts[trade_product.trade_id] = trade_product.end_ts
+                    if Trademgr.min_endts == 0 or Trademgr.min_endts > trade_product.end_ts then
+                        Trademgr.min_endts = trade_product.end_ts
+                    end
                     Trademgr.product_list[trade_product.trade_id] = {
                         trade_id = trade_product.trade_id,
                         config_id = trade_product.config_id,
@@ -358,16 +361,18 @@ function Trademgr.CheckEndts()
                     Trademgr.ChangeTradeRecord(product_simple_data)
                     Trademgr.product_list[trade_id] = nil
                 end
-                -- 从redis中删除商品
-                Database.RedisDelProductData(context.addr_db_redis, trade_id)
             else
                 if Trademgr.min_endts < now_ts or Trademgr.min_endts > end_ts then
                     Trademgr.min_endts = end_ts
                 end
             end
         end
-        for _, trade_id in pairs(remove_trade_ids) do
-            Trademgr.product_endts[trade_id] = nil
+        if table.size(remove_trade_ids) > 0 then
+            -- 从redis中删除商品
+            Database.RedisDelProductData(context.addr_db_redis, remove_trade_ids)
+            for _, trade_id in pairs(remove_trade_ids) do
+                Trademgr.product_endts[trade_id] = nil
+            end
         end
     end
 end
@@ -439,7 +444,6 @@ function Trademgr.TakeDownProduct()
                 for _, trade_id in pairs(del_trade_ids) do
                     Trademgr.take_down_trade_ids[trade_id] = nil
                 end
-                Database.RedisDelProductData(context.addr_db_redis, del_trade_ids)
             end
             for _, trade_product in pairs(take_down_products) do
                 -- 通知卖家商品已下架
@@ -706,7 +710,7 @@ function Trademgr.BuyTradeProduct(buyer_uid, config_id, buy_num, buy_max_price, 
                 Trademgr.product_endts[buy_data.trade_id] = nil
                 Trademgr.product_list[buy_data.trade_id] = nil
                 -- 从redis中删除商品
-                Database.RedisDelProductData(context.addr_db_redis, buy_data.trade_id)
+                Database.RedisDelProductData(context.addr_db_redis, { buy_data.trade_id })
             else
                 -- 修改redis中的商品
                 Database.RedisSetProductData(context.addr_db_redis, product_data)
@@ -743,16 +747,20 @@ function Trademgr.UserDealTradeLog(log_id)
     Database.updatetradelog(context.addr_db_game, log_id, 1)
 end
 
-function Trademgr.TakeOffProduct(trade_id)
+function Trademgr.TakeOffProduct(uid, trade_id)
     local scope <close> = lock_trade_data()
 
     if Trademgr.product_list[trade_id] then
+        moon.debug(string.format("TakeOffProduct trade_id=%d", trade_id))
         local product_simple_data = Trademgr.product_list[trade_id]
+        if product_simple_data.seller_uid ~= uid then
+            return ErrorCode.TradeProductNotSeller
+        end
         Trademgr.ChangeTradeRecord(product_simple_data)
         Trademgr.product_list[trade_id] = nil
         Trademgr.product_endts[trade_id] = nil
         -- 从redis中删除商品
-        Database.RedisDelProductData(context.addr_db_redis, trade_id)
+        Database.RedisDelProductData(context.addr_db_redis, {trade_id})
 
         local trade_products = Database.gettradeproductwithids(context.addr_db_game, { trade_id })
         if trade_products and #trade_products == 1 then

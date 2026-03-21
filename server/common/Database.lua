@@ -1254,11 +1254,13 @@ function _M.gettradeproductwithids(addr, trade_ids)
     local cmd = string.format([[
         SELECT trade_id, config_id, total_num, seller_uid, beg_ts, end_ts, single_price, sale_num, now_num, state FROM mgame.trade_product WHERE %s;
     ]], where_str)
+    moon.debug(string.format("gettradeproductwithids cmd = %s", cmd))
     local res, err = moon.call("lua", addr, cmd)
     if err then
         moon.error(string.format("gettradeproductwithids err = %s", json.pretty_encode(err)))
         return nil
     end
+    moon.debug(string.format("gettradeproductwithids res = %s", json.pretty_encode(res)))
     if res and #res > 0 then
         local ret = {}
         for i = 1, #res do
@@ -1628,6 +1630,41 @@ function _M.getauctionwithconditions(addr, state_type, condition1, condition2, c
     return nil
 end
 
+function _M.getauctionproductwithnum(addr, start_auction_id, state, num)
+    local cmd = string.format([[
+        SELECT auction_id, config_id, uniqid, seller_uid, delay_cnt, beg_ts, end_ts, item_data, start_price, buyout_price, cur_price, buyer_uid WHERE auction_id >= %d AND state = %d ORDER BY trade_id LIMIT %d;
+    ]], start_auction_id, state, num)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("getauctionproductwithnum err = %s", json.pretty_encode(err)))
+        return nil
+    end
+    moon.debug(string.format("getauctionproductwithnum res = %s", json.pretty_encode(res)))
+    if res and #res > 0 then
+        local auction_products = {}
+        for i = 1, #res do
+            local product = AuctionDef.newAuctionProductBaseData()
+            product.auction_id = res[i].auction_id
+            product.seller_uid = res[i].seller_uid
+            product.config_id = res[i].config_id
+            product.uniqid = res[i].uniqid
+            local item_data = protocol.decodewithname("PBItemData", crypt.base64decode(res[i].item_data))
+            product.item_data = item_data
+            product.beg_ts = res[i].beg_ts
+            product.end_ts = res[i].end_ts
+            product.delay_cnt = res[i].delay_cnt
+            product.auction_data.start_price = res[i].start_price
+            product.auction_data.buyout_price = res[i].buyout_price
+            product.auction_data.cur_price = res[i].cur_price
+            product.auction_data.buyer_uid = res[i].buyer_uid
+            table.insert(auction_products, product)
+        end
+        return auction_products
+    end
+    moon.error("getauctionproductwithnum failed", start_auction_id, state, err)
+    return nil
+end
+
 function _M.updateauctionproduct(addr, auction_id, where_data, update_data, need_ret)
     if not update_data or type(update_data) ~= "table" then
         moon.error("updateauctionproduct: update_data should be a table")
@@ -1941,7 +1978,7 @@ end
 function _M.gettradelognomail(addr, uid)
     local cmd = string.format([[
         SELECT log_id, trade_id, config_id, deal_num, deal_price, seller_uid, buyer_uid, trade_ts,
-        trade_tax, send_mail FROM mgame.trade_log WHERE seller_uid = %d;
+        trade_tax, send_mail FROM mgame.trade_log WHERE seller_uid = %d AND send_mail = 0;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
@@ -1981,7 +2018,7 @@ end
 function _M.loadplayerauctionlog(addr, uid)
     local cmd = string.format([[
         SELECT log_id, auction_id, config_id, uniqid, item_data, deal_price, seller_uid, buyer_uid, auction_ts,
-        auction_tax, send_seller_mail, send_buyer_mail FROM mgame.trade_log WHERE (seller_uid = %d OR buyer_uid = %d)
+        auction_tax, send_seller_mail, send_buyer_mail FROM mgame.auction_log WHERE (seller_uid = %d OR buyer_uid = %d)
         ORDER BY auction_ts DESC LIMIT 100;
     ]], uid, uid)
     local res, err = moon.call("lua", addr, cmd)
@@ -2018,7 +2055,7 @@ function _M.addauctionlog(addr, auction_log)
     local pbvalue = crypt.base64encode(pbdata)
 
     local cmd = string.format([[
-        INSERT INTO mgame.trade_log (log_id, auction_id, config_id, uniqid, item_data, item_data_json,
+        INSERT INTO mgame.auction_log (log_id, auction_id, config_id, uniqid, item_data, item_data_json,
         deal_price, seller_uid, buyer_uid, auction_ts, auction_tax, send_seller_mail, send_buyer_mail)
         VALUES (%d, %d, %d, %d, '%s', '%s', %d, %d, %d, %d, %d, %d, %d);
     ]], auction_log.log_id, auction_log.auction_id, auction_log.config_id, auction_log.uniqid, pbvalue,
@@ -2031,7 +2068,7 @@ end
 function _M.getauctionlog(addr, log_id)
     local cmd = string.format([[
         SELECT log_id, auction_id, config_id, uniqid, item_data, deal_price, seller_uid, buyer_uid, auction_ts,
-        auction_tax, send_seller_mail, send_buyer_mail FROM mgame.trade_log WHERE log_id = %d;
+        auction_tax, send_seller_mail, send_buyer_mail FROM mgame.auction_log WHERE log_id = %d;
     ]], log_id)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
@@ -2057,16 +2094,51 @@ function _M.getauctionlog(addr, log_id)
     return nil
 end
 
+function _M.getgetauctionlognomail(addr, uid)
+    local cmd = string.format([[
+        SELECT log_id, auction_id, config_id, uniqid, item_data, deal_price, seller_uid, buyer_uid, auction_ts,
+        auction_tax, send_seller_mail, send_buyer_mail FROM mgame.auction_log WHERE
+        (seller_uid = %d AND send_seller_mail = 0) OR (buyer_uid = %d AND send_buyer_mail = 0);
+    ]], uid, uid)
+
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local auction_logs = {}
+        for i = 1, #res do
+            local pbdata = crypt.base64decode(res[i].item_data)
+            local _, item_data = protocol.decodewithname("PBItemData", pbdata)
+
+            local auction_log = TradeDef.newAuctionLogData()
+            auction_log.log_id = res[i].log_id
+            auction_log.auction_id = res[i].auction_id
+            auction_log.config_id = res[i].config_id
+            auction_log.uniqid = res[i].uniqid
+            auction_log.item_data = item_data
+            auction_log.deal_price = res[i].deal_price
+            auction_log.seller_uid = res[i].seller_uid
+            auction_log.buyer_uid = res[i].buyer_uid
+            auction_log.auction_ts = res[i].auction_ts
+            auction_log.auction_tax = res[i].auction_tax
+            auction_log.send_seller_mail = res[i].send_seller_mail
+            auction_log.send_buyer_mail = res[i].send_buyer_mail
+            auction_logs[auction_log.auction_id] = auction_log
+        end
+        return auction_logs
+    end
+    moon.error("getauctionlognomail failed", uid, err)
+    return nil
+end
+
 function _M.updateauctionlog(addr, log_id, send_seller_mail, send_buyer_mail)
     if send_seller_mail then
         local cmd = string.format([[
-        UPDATE mgame.trade_log SET send_seller_mail = %d WHERE log_id = %d;
+        UPDATE mgame.auction_log SET send_seller_mail = %d WHERE log_id = %d;
         ]], send_seller_mail, log_id)
         return moon.send("lua", addr, cmd)
     end
     if send_buyer_mail then
         local cmd = string.format([[
-        UPDATE mgame.trade_log SET send_buyer_mail = %d WHERE log_id = %d;
+        UPDATE mgame.auction_log SET send_buyer_mail = %d WHERE log_id = %d;
         ]], send_buyer_mail, log_id)
         return moon.send("lua", addr, cmd)
     end
@@ -2568,10 +2640,10 @@ function _M.RedisGetAllAuctionWaitMails(addr_db_redis, uid)
     local mails = {}
     if res and #res > 0 then
         for i = 1, #res, 2 do
-            local mail_id = res[i]
+            local key_str = res[i]
             local mail_data = json.decode(res[i + 1])
-            if mail_id and mail_data then
-                mails[tonumber(mail_id)] = mail_data
+            if key_str and mail_data then
+                mails[key_str] = mail_data
             end
         end
     end

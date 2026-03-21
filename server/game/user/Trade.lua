@@ -160,7 +160,7 @@ function Trade.OnTradeTakeDownMail(trade_product, now_state, positive)
     if positive then
         -- 主动下架
         local mail_ret = scripts.Mail.RecvImmediateMail(trade_cfg.unsell_email, attach_items_simple, {}, {})
-        if mail_ret ~= ErrorCode.None then
+        if not mail_ret then
             moon.error(string.format("OnTradeTakeDownMail mail_ret false trade_product = %s",
                 json.pretty_encode(trade_product)))
             return
@@ -168,7 +168,7 @@ function Trade.OnTradeTakeDownMail(trade_product, now_state, positive)
     else
         -- 过期下架
         local mail_ret = scripts.Mail.RecvImmediateMail(trade_cfg.expire_email, attach_items_simple, {}, {})
-        if mail_ret ~= ErrorCode.None then
+        if not mail_ret then
             moon.error(string.format("OnTradeTakeDownMail mail_ret false trade_product = %s",
                 json.pretty_encode(trade_product)))
             return
@@ -200,7 +200,7 @@ function Trade.OnTradeLogSaleMail(trade_log, need_save)
     }
     -- 发送邮件
     local mail_ret = scripts.Mail.RecvImmediateMail(trade_cfg.sell_email, {}, {}, add_coins)
-    if mail_ret ~= ErrorCode.None then
+    if not mail_ret then
         moon.error(string.format("OnTradeLogSaleMail mail_ret false trade_log = %s", json.pretty_encode(trade_log)))
         return
     end
@@ -214,9 +214,9 @@ function Trade.OnTradeLogSaleMail(trade_log, need_save)
             local now_num = player_trade_data.product_list[trade_log.trade_id].trade_data.now_num
             if now_num - trade_log.deal_num <= 0 then
                 player_trade_data.product_list[trade_log.trade_id] = nil
-                for _, trade_id in pairs(player_trade_data.simple_info.trade_ids) do
+                for idx, trade_id in pairs(player_trade_data.simple_info.trade_ids) do
                     if trade_id == trade_log.trade_id then
-                        table.remove(player_trade_data.simple_info.trade_ids, trade_id)
+                        table.remove(player_trade_data.simple_info.trade_ids, idx)
                         break
                     end
                 end
@@ -469,6 +469,7 @@ function Trade.PBTradeSaleReqCmd(req)
 
         product_data.trade_id = res
         player_trade_data.product_list[product_data.trade_id] = product_data
+        player_trade_data.simple_info.can_onsale_cnt = player_trade_data.simple_info.can_onsale_cnt - 1
         table.insert(player_trade_data.simple_info.trade_ids, product_data.trade_id)
     end
 
@@ -913,9 +914,9 @@ function Trade.PBTradeTakeOffProductReqCmd(req)
     end
 
     player_trade_data.product_list[req.msg.trade_id] = nil
-    for _, trade_id in pairs(player_trade_data.simple_info.trade_ids) do
+    for idx, trade_id in ipairs(player_trade_data.simple_info.trade_ids) do
         if trade_id == req.msg.trade_id then
-            table.remove(player_trade_data.simple_info.trade_ids, trade_id)
+            table.remove(player_trade_data.simple_info.trade_ids, idx)
             break
         end
     end

@@ -19,5 +19,6 @@ return {
 [2000014] = { id=2000014,icon=4,type=4,title=2004,content=5005,signature=9002,validity_period=2592000,read_validity_period=604800,is_active=true },
 [2000015] = { id=2000015,icon=4,type=4,title=2005,content=5006,signature=9002,validity_period=2592000,read_validity_period=604800,is_active=true },
 [2000016] = { id=2000016,icon=4,type=4,title=2006,content=5007,signature=9002,validity_period=2592000,read_validity_period=604800,is_active=true },
-[2000017] = { id=2000017,icon=4,type=4,title=2007,content=5008,signature=9002,validity_period=2592000,read_validity_period=604800,is_active=true }
+[2000017] = { id=2000017,icon=4,type=4,title=2007,content=5008,signature=9002,validity_period=2592000,read_validity_period=604800,is_active=true },
+[2000018] = { id=2000018,icon=4,type=4,title=2008,content=5009,signature=9002,validity_period=2592000,read_validity_period=604800,is_active=true }
 }

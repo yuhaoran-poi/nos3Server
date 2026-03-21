@@ -530,6 +530,8 @@ local ErrorCode = {
     FocusIdOverflow = 2116,
     --- 购买价格过低
     BuyPriceTooLow = 2117,
+    --- 交易行商品不是卖家
+    TradeProductNotSeller = 2118,
 
     --充值系统相关错误码
     --- 充值ID错误

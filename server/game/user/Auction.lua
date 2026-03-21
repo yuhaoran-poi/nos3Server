@@ -51,38 +51,39 @@ function Auction.Start()
     -- end
 
     -- Auction.CheckData()
-    -- Auction.DealOfflineAuctionLogSale()
+    -- Auction.DealOfflineAuctionLog()
     -- Auction.DealOfflineAuctionTakeDown()
+    -- Auction.DealOfflineAuctionFailMail()
 
     -- Auction.SaveAuctionInfoNow()
 end
 
--- function Auction.CheckData()
---     local player_auction_data = scripts.UserModel.GetAuctionData()
---     if not player_auction_data then
---         return false
---     end
+function Auction.CheckData()
+    local player_auction_data = scripts.UserModel.GetAuctionData()
+    if not player_auction_data then
+        return false
+    end
 
---     if player_auction_data.simple_info.auction_ids and table.size(player_auction_data.simple_info.auction_ids) > 0 then
---         local new_product_datas = Database.RedisGetProductData(context.addr_db_redis, player_auction_data.simple_info
---             .auction_ids)
---         if new_product_datas then
---             player_auction_data.simple_info.auction_ids = {}
---             for _, product_data in pairs(new_product_datas) do
---                 player_auction_data.product_list[product_data.auction_id] = product_data
---                 table.insert(player_auction_data.simple_info.auction_ids, product_data.auction_id)
---             end
---         end
---     end
+    if player_auction_data.simple_info.auction_ids and table.size(player_auction_data.simple_info.auction_ids) > 0 then
+        local new_product_datas = Database.RedisGetAuctionProductData(context.addr_db_redis,
+            player_auction_data.simple_info.auction_ids)
+        if new_product_datas then
+            player_auction_data.simple_info.auction_ids = {}
+            for _, product_data in pairs(new_product_datas) do
+                player_auction_data.product_list[product_data.auction_id] = product_data
+                table.insert(player_auction_data.simple_info.auction_ids, product_data.auction_id)
+            end
+        end
+    end
 
---     local auction_logs = Database.loadplayerauctionlog(context.addr_db_user, context.uid)
---     if not auction_logs then
---         return false
---     end
---     player_auction_data.log_list = auction_logs
+    local auction_logs = Database.loadplayerauctionlog(context.addr_db_user, context.uid)
+    if not auction_logs then
+        return false
+    end
+    player_auction_data.log_list = auction_logs
 
---     return true
--- end
+    return true
+end
 
 function Auction.SaveAuctionInfoNow()
     local player_auction_data = scripts.UserModel.GetAuctionData()
@@ -138,6 +139,32 @@ function Auction.SearchAuctionWithIds(state_type, ids, sort_type, start_idx, sel
     return ErrorCode.None, auction_products
 end
 
+function Auction.OnAuctionFailMail(wait_data)
+    local auction_cfg = GameCfg.TransactionConfig[2]
+    if not auction_cfg or not auction_cfg.failed_email then
+        moon.error("OnAuctionFailMail auction_cfg.failed_email not found")
+        return
+    end
+
+    local player_auction_data = scripts.UserModel.GetAuctionData()
+    if not player_auction_data then
+        return
+    end
+
+    local add_coins = {}
+    add_coins[auction_cfg.order_currency] = {
+        coin_id = auction_cfg.order_currency,
+        coin_count = wait_data.price
+    }
+    local mail_ret = scripts.Mail.RecvImmediateMail(auction_cfg.failed_email, {}, {}, add_coins)
+    if not mail_ret then
+        moon.error(string.format("OnAuctionFailMail mail_ret false wait_data = %s", json.pretty_encode(wait_data)))
+        return
+    end
+
+    Database.RedisDelAuctionWaitMail(context.addr_db_redis, context.uid, wait_data.auction_id, wait_data.price)
+end
+
 function Auction.OnAuctionTakeDownMail(auction_product, now_state, positive)
     local auction_cfg = GameCfg.TransactionConfig[2]
     if not auction_cfg or not auction_cfg.unsell_email or not auction_cfg.expire_email then
@@ -153,24 +180,21 @@ function Auction.OnAuctionTakeDownMail(auction_product, now_state, positive)
     end
 
     -- 发送邮件
-    local item_simple_data = ItemDef.newItemSimple()
-    item_simple_data.config_id = auction_product.config_id
-    item_simple_data.item_count = auction_product.total_num
-    local attach_items_simple = {}
-    attach_items_simple[auction_product.config_id] = item_simple_data
+    local items_data = {}
+    table.insert(items_data, auction_product.item_data)
     
     if positive then
         -- 主动下架
-        local mail_ret = scripts.Mail.RecvImmediateMail(auction_cfg.unsell_email, attach_items_simple, {}, {})
-        if mail_ret ~= ErrorCode.None then
+        local mail_ret = scripts.Mail.RecvImmediateMail(auction_cfg.unsell_email, {}, items_data, {})
+        if not mail_ret then
             moon.error(string.format("OnAuctionTakeDownMail mail_ret false auction_product = %s",
                 json.pretty_encode(auction_product)))
             return
         end
     else
         -- 过期下架
-        local mail_ret = scripts.Mail.RecvImmediateMail(auction_cfg.expire_email, attach_items_simple, {}, {})
-        if mail_ret ~= ErrorCode.None then
+        local mail_ret = scripts.Mail.RecvImmediateMail(auction_cfg.expire_email, {}, items_data, {})
+        if not mail_ret then
             moon.error(string.format("OnAuctionTakeDownMail mail_ret false auction_product = %s",
                 json.pretty_encode(auction_product)))
             return
@@ -200,7 +224,7 @@ function Auction.OnAuctionLogSaleMail(auction_log, need_save)
     }
     -- 发送邮件
     local mail_ret = scripts.Mail.RecvImmediateMail(auction_cfg.sell_email, {}, {}, add_coins)
-    if mail_ret ~= ErrorCode.None then
+    if not mail_ret then
         moon.error(string.format("OnAuctionLogSaleMail mail_ret false auction_log = %s", json.pretty_encode(auction_log)))
         return
     end
@@ -212,9 +236,9 @@ function Auction.OnAuctionLogSaleMail(auction_log, need_save)
     if need_save then
         if player_auction_data.product_list[auction_log.auction_id] then
             player_auction_data.product_list[auction_log.auction_id] = nil
-            for _, auction_id in pairs(player_auction_data.simple_info.auction_ids) do
+            for idx, auction_id in pairs(player_auction_data.simple_info.auction_ids) do
                 if auction_id == auction_log.auction_id then
-                    table.remove(player_auction_data.simple_info.auction_ids, auction_id)
+                    table.remove(player_auction_data.simple_info.auction_ids, idx)
                     break
                 end
             end
@@ -247,7 +271,7 @@ function Auction.OnAuctionLogBuyMail(auction_log)
     table.insert(items_data, auction_log.item_data)
     -- 发送邮件
     local mail_ret = scripts.Mail.RecvImmediateMail(auction_cfg.shipments_email, {}, items_data, {})
-    if mail_ret ~= ErrorCode.None then
+    if not mail_ret then
         moon.error(string.format("OnAuctionLogBuyMail mail_ret false auction_log = %s", json.pretty_encode(auction_log)))
         return
     end
@@ -263,13 +287,18 @@ function Auction.OnAuctionLogBuyMail(auction_log)
     Auction.SaveAuctionInfoNow()
 end
 
-function Auction.DealOfflineAuctionLogSale()
-    local auction_logs = Database.getauctionlognomail(context.addr_db_user, context.uid)
+function Auction.DealOfflineAuctionLog()
+    local auction_logs = Database.getgetauctionlognomail(context.addr_db_user, context.uid)
     if not auction_logs or table.size(auction_logs) == 0 then
         return
     end
     for _, auction_log in pairs(auction_logs) do
-        Auction.OnAuctionLogSaleMail(auction_log, false)
+        if auction_log.send_seller_mail == 0 then
+            Auction.OnAuctionLogSaleMail(auction_log, false)
+        end
+        if auction_log.send_buyer_mail == 0 then
+            Auction.OnAuctionLogBuyMail(auction_log)
+        end
     end
 end
 
@@ -288,6 +317,13 @@ function Auction.DealOfflineAuctionTakeDown()
 
     for _, auction_product in pairs(auction_products) do
         Auction.OnAuctionTakeDownMail(auction_product, AuctionDef.StateType.TAKE_DOWNING, false)
+    end
+end
+
+function Auction.DealOfflineAuctionFailMail()
+    local fail_mails = Database.RedisGetAllAuctionWaitMails(context.addr_db_redis, context.uid)
+    for key_str, wait_data in pairs(fail_mails) do
+        Auction.OnAuctionFailMail(wait_data)
     end
 end
 
@@ -734,9 +770,9 @@ function Auction.PBAuctionTakeOffProductReqCmd(req)
     end
 
     player_auction_data.product_list[req.msg.auction_id] = nil
-    for _, auction_id in pairs(player_auction_data.simple_info.auction_ids) do
+    for idx, auction_id in pairs(player_auction_data.simple_info.auction_ids) do
         if auction_id == req.msg.auction_id then
-            table.remove(player_auction_data.simple_info.auction_ids, auction_id)
+            table.remove(player_auction_data.simple_info.auction_ids, idx)
             break
         end
     end
@@ -768,21 +804,21 @@ function Auction.PBAuctionChangeFocusIdReqCmd(req)
     end
 
     if req.msg.focus_op == 0 then
-        player_auction_data.simple_info.focus_id_ts[req.msg.focus_id] = nil
+        player_auction_data.simple_info.focus_auctionid_ts[req.msg.focus_id] = nil
     else
         local max_focus_num = 0
         local auction_cfg = GameCfg.TransactionConfig[2]
         if auction_cfg and auction_cfg.collection_num and auction_cfg.collection_num > max_focus_num then
             max_focus_num = auction_cfg.collection_num
         end
-        if table.size(player_auction_data.simple_info.focus_id_ts) >= max_focus_num then
+        if table.size(player_auction_data.simple_info.focus_auctionid_ts) >= max_focus_num then
             return context.S2C(context.net_id, CmdCode.PBAuctionChangeFocusIdRspCmd, {
                 code = ErrorCode.FocusIdOverflow,
                 error = "关注商品数量超过最大数量",
                 uid = context.uid,
             }, req.msg_context.stub_id)
         end
-        player_auction_data.simple_info.focus_id_ts[req.msg.focus_id] = moon.time()
+        player_auction_data.simple_info.focus_auctionid_ts[req.msg.focus_id] = moon.time()
     end
     Auction.SaveAuctionInfoNow()
 
@@ -790,7 +826,7 @@ function Auction.PBAuctionChangeFocusIdReqCmd(req)
         code = ErrorCode.None,
         error = "更改关注商品",
         uid = context.uid,
-        focus_id_ts = player_auction_data.simple_info.focus_id_ts,
+        focus_id_ts = player_auction_data.simple_info.focus_auctionid_ts,
     }, req.msg_context.stub_id)
 end
 
