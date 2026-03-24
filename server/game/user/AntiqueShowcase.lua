@@ -210,36 +210,46 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
 
     local rsp_is_fake = 0
     local rsp_price = 0
-    local price_change = 0
+    -- 价格的降平升
+    local price_probability = 0
 
     if is_succ == 0 then
         rsp_is_fake = 1
         rsp_price = 0
     else
+        -- 获得随机该古董的降平升的权重池
+        local random_pool = {}
+        for probability_id, weight in pairs(a_cfg.priceprobability) do
+            random_pool[probability_id] = weight
+        end
+
+        -- 通过随机一次升降平拿到价格变化率
+        local g_r_e_code, random_probability_id = scripts.Bag.RandomWeightedIndex(random_pool)
+        if g_r_e_code ~= ErrorCode.None then
+            return g_r_e_code, "鉴定失败"
+        end
+
+        price_probability = random_probability_id or 0
+
         local a_p_t_cfgmap = GameCfg.AntiquePriceTagChangeRate
         if not a_p_t_cfgmap or next(a_p_t_cfgmap) == nil then
             return ErrorCode.ConfigError, "配置错误"
         end
 
-        -- 找到与品质相同的配置
-        local random_vec = {}
+        -- 找到与品质和价格变化率相同的配置
+        local tar_config_id = 0
         for config_id, cfg in pairs(a_p_t_cfgmap) do
-            if cfg.type == item_data.special_info.antique_item.quality then
-                table.insert(random_vec, config_id)
+            if cfg.type == item_data.special_info.antique_item.quality and cfg.pricechange == price_probability then
+                tar_config_id = config_id
+                break
             end
         end
 
-        local g_r_e_code, random_config_id = scripts.Bag.GetRandomElement(random_vec)
-        if g_r_e_code ~= ErrorCode.None then
-            return g_r_e_code, "鉴定失败"
-        end
-
-        local a_p_t_cfg = GameCfg.AntiquePriceTagChangeRate[random_config_id]
+        local a_p_t_cfg = GameCfg.AntiquePriceTagChangeRate[tar_config_id]
         if not a_p_t_cfg then
             return ErrorCode.ConfigError, "配置错误"
         end
-        price_change = a_p_t_cfg.pricechange
-        
+
         -- 获取价格变化率
         local r_v_code, price_rate_val = scripts.Bag.RandomValue(a_p_t_cfg.lowlimit, a_p_t_cfg.upperlimit)
         if r_v_code ~= ErrorCode.None then
@@ -293,7 +303,7 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
             val = tag_val,
         }
         table.insert(item_data.special_info.antique_item.tags, new_tag)
-        table.insert(item_data.special_info.antique_item.identify_histroy, price_change)
+        table.insert(item_data.special_info.antique_item.identify_histroy, price_probability)
     end
 
     item_data.special_info.antique_item.remain_identify_num = rsp_remain_identify_num
@@ -309,9 +319,9 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
     end
 
     if is_succ == 1 then
-        return ErrorCode.None, "鉴定完成 古董为真品", price_change
+        return ErrorCode.None, "鉴定完成 古董为真品", price_probability
     elseif is_succ ==0 then
-        return ErrorCode.None, "鉴定完成 古董为赝品", price_change
+        return ErrorCode.None, "鉴定完成 古董为赝品", price_probability
     end
 end
 
