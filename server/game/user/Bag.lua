@@ -3181,13 +3181,14 @@ function Bag.RandomWeightedIndex(weightMap)
 end
 
 function Bag.PBAntiqueIdentifyReqCmd(req)
-    local err_code, error = scripts.AntiqueShowcase.IdentifyAntique(req.msg.config_id, req.msg.uniqid, req.msg.pos)
+    local err_code, error, price_change = scripts.AntiqueShowcase.IdentifyAntique(req.msg.config_id, req.msg.uniqid, req.msg.pos)
     return context.S2C(context.net_id, CmdCode.PBAntiqueIdentifyRspCmd, {
         code = err_code,
         error = error,
         config_id = req.msg.config_id,
         uniqid = req.msg.uniqid,
         pos = req.msg.pos,
+        price_change = price_change,
     }, req.msg_context.stub_id)
 end
 

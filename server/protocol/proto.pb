@@ -417,7 +417,7 @@ login_data (2.PBDSLoginDataR	loginData"f
 error (	Rerror
 dsid (Rdsid
 net_id (RnetIdbproto3
-Ý
+€
 	bag.proto
 item.proto"·
 PBBag"
@@ -509,13 +509,14 @@ item_count (R	itemCount
 PBAntiqueIdentifyReqCmd
 	config_id (RconfigId
 uniqid (Runiqid
-pos (Rpos"Š
+pos (Rpos"­
 PBAntiqueIdentifyRspCmd
 code (Rcode
 error (	Rerror
 	config_id (RconfigId
 uniqid (Runiqid
-pos (Rpos"Ä
+pos (Rpos!
+price_change (RpriceChange"Ä
 PBAntiqueShowReqCmd
 	config_id (RconfigId
 uniq_id (RuniqId

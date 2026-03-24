@@ -133,6 +133,7 @@ message PBAntiqueIdentifyRspCmd
 	int32 config_id 	= 3;
 	int64 uniqid 		= 4;
 	int32 pos			= 5;	// 道具所在格子号
+    int32 price_change  = 6;    // 价格变动 1-降 2-平 3-升
 }
 
 message PBAntiqueShowReqCmd

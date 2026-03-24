@@ -210,6 +210,7 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
 
     local rsp_is_fake = 0
     local rsp_price = 0
+    local price_change = 0
 
     if is_succ == 0 then
         rsp_is_fake = 1
@@ -237,7 +238,8 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
         if not a_p_t_cfg then
             return ErrorCode.ConfigError, "配置错误"
         end
-
+        price_change = a_p_t_cfg.pricechange
+        
         -- 获取价格变化率
         local r_v_code, price_rate_val = scripts.Bag.RandomValue(a_p_t_cfg.lowlimit, a_p_t_cfg.upperlimit)
         if r_v_code ~= ErrorCode.None then
@@ -291,12 +293,12 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
             val = tag_val,
         }
         table.insert(item_data.special_info.antique_item.tags, new_tag)
+        table.insert(item_data.special_info.antique_item.identify_histroy, price_change)
     end
 
     item_data.special_info.antique_item.remain_identify_num = rsp_remain_identify_num
     item_data.special_info.antique_item.is_fake = rsp_is_fake
-    item_data.special_info.antique_item.price.coin_count = rsp_price
-    table.insert(item_data.special_info.antique_item.identify_histroy, rsp_is_fake)
+    item_data.special_info.antique_item.price.coin_count = rsp_price 
 
     if not change_logs[BagDef.BagType.Cangku] then
         change_logs[BagDef.BagType.Cangku] = {}
@@ -307,9 +309,9 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
     end
 
     if is_succ == 1 then
-        return ErrorCode.None, "鉴定完成 古董为真品"
+        return ErrorCode.None, "鉴定完成 古董为真品", price_change
     elseif is_succ ==0 then
-        return ErrorCode.None, "鉴定完成 古董为赝品"
+        return ErrorCode.None, "鉴定完成 古董为赝品", price_change
     end
 end
 
