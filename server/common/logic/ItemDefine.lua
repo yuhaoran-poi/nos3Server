@@ -38,7 +38,11 @@ local ItemDefine = {
     HumanDiagrams = { start = 630000, End = 639999 },
     GhostDiagrams = { start = 640000, End = 649999 },
     SpaceRing = { start = 650000, End = 659999 },
+    HeadSkin = { start = 1015000, End = 1015499 },
+    HeadFrameSkin = { start = 1015500, End = 1015999 },
+    TitleSkin = { start = 1016600, End = 1016999 },
     GhostSkin = { start = 1070000, End = 1119999 },
+    TreasureChest = { start = 1120000, End = 1129999 },
     RoleSkin = { start = 1132000, End = 1301999 },
     ItemSkin = { start = 1302000, End = 1311999 },
 
@@ -71,6 +75,10 @@ local ItemDefine = {
         SpaceRing = 26,
         SkinCard = 27,
         ItemSkin = 28,
+        HeadSkin = 29,
+        HeadFrameSkin = 30,
+        TitleSkin = 31,
+        TreasureChest = 32,
         Other = 255,
     },
 
@@ -80,6 +88,7 @@ local ItemDefine = {
         UnStackItem = 3,
         UniqueItem = 4,
         Skin = 5,
+        TreasureChest = 6,
         Other = 255,
     },
 
@@ -149,6 +158,14 @@ function ItemDefine.GetItemType(nConfigId)
         return ItemDefine.EItemSmallType.SpaceRing
     elseif nConfigId >= ItemDefine.ItemSkin.start and nConfigId <= ItemDefine.ItemSkin.End then
         return ItemDefine.EItemSmallType.ItemSkin
+    elseif nConfigId >= ItemDefine.HeadSkin.start and nConfigId <= ItemDefine.HeadSkin.End then
+        return ItemDefine.EItemSmallType.HeadSkin
+    elseif nConfigId >= ItemDefine.HeadFrameSkin.start and nConfigId <= ItemDefine.HeadFrameSkin.End then
+        return ItemDefine.EItemSmallType.HeadFrameSkin
+    elseif nConfigId >= ItemDefine.TitleSkin.start and nConfigId <= ItemDefine.TitleSkin.End then
+        return ItemDefine.EItemSmallType.TitleSkin
+    elseif nConfigId >= ItemDefine.TreasureChest.start and nConfigId <= ItemDefine.TreasureChest.End then
+        return ItemDefine.EItemSmallType.TreasureChest
     else
         moon.error("GetItemType - unknown config_id:", nConfigId)
         return ItemDefine.EItemSmallType.Other
@@ -179,6 +196,14 @@ function ItemDefine.GetItemPosType(nConfigId)
         return ItemDefine.EItemBigType.StackItem
     elseif nItemType == ItemDefine.EItemSmallType.ItemSkin then
         return ItemDefine.EItemBigType.Skin
+    elseif nItemType == ItemDefine.EItemSmallType.HeadSkin then
+        return ItemDefine.EItemBigType.Skin
+    elseif nItemType == ItemDefine.EItemSmallType.HeadFrameSkin then
+        return ItemDefine.EItemBigType.Skin
+    elseif nItemType == ItemDefine.EItemSmallType.TitleSkin then
+        return ItemDefine.EItemBigType.Skin
+    elseif nItemType == ItemDefine.EItemSmallType.TreasureChest then
+        return ItemDefine.EItemBigType.TreasureChest
     else
         moon.error("GetItemPosType - unknown config_id:", nConfigId)
         return ItemDefine.EItemBigType.Other

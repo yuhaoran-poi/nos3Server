@@ -38,6 +38,7 @@ local ItemDef = {
         TradeBuy = 34,           --交易行购买
         AuctionBuy = 35,         --拍卖行购买
         AuctionSale = 36,        --拍卖行出售
+        TreasureOpen = 37,       --开宝箱
         -- WearEquipment = 25,      --装备道具
         -- TakeOffEquipment = 26,   --脱下道具
         -- WearSkin = 27,           --装备皮肤

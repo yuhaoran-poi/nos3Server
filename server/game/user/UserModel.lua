@@ -296,4 +296,16 @@ function UserModel.SetBills(bills)
     DBData.bills = bills
 end
 
+---@return PBTreasurePlayerData ? nil
+function UserModel.GetTreasureData()
+    if DBData and DBData.treasure then
+        return DBData.treasure
+    end
+    return nil
+end
+
+function UserModel.SetTreasureData(treasure_data)
+    DBData.treasure = treasure_data
+end
+
 return UserModel

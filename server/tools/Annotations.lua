@@ -2978,6 +2978,18 @@
 ---@field public buy_id_num PBShopSelectBuy[]
 
 
+---@class PBTreasureSingle
+---@field public config_id integer @宝箱id
+---@field public now_count integer @当前宝箱数量
+---@field public open_count integer @已经开启次数
+---@field public no_guarantee_cnt integer @未触发保底次数(触发后归零)
+---@field public already_guarantee_cnt integer @保底已生效次数
+
+
+---@class PBTreasurePlayerData
+---@field public treasure_list table<integer, PBTreasureSingle>
+
+
 ---@class PBTeamInfo
 ---@field public team_id integer
 ---@field public master_id integer @队长id
@@ -3521,6 +3533,56 @@
 ---@field public uid integer
 ---@field public item_config_id integer
 ---@field public skin_id integer
+
+
+---@class PBHeadAndFrameChangeHeadReqCmd
+---@field public uid integer
+---@field public head_icon_id integer
+---@field public head_frame_id integer
+
+
+---@class PBHeadAndFrameChangeHeadRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public head_icon_id integer
+---@field public head_frame_id integer
+
+
+---@class PBTitleChangeHeadReqCmd
+---@field public uid integer
+---@field public title_id integer
+
+
+---@class PBTitleChangeHeadRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public title_id integer
+
+
+---@class PBGetTreasureInfoReqCmd
+---@field public uid integer
+
+
+---@class PBGetTreasureInfoRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public treasure_datas PBTreasurePlayerData
+
+
+---@class PBOpenTreasureReqCmd
+---@field public uid integer
+---@field public open_treasure_id integer
+---@field public open_count integer
+
+
+---@class PBOpenTreasureRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public treasure_data PBTreasureSingle
 
 
 

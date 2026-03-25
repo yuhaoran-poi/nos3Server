@@ -96,7 +96,10 @@ function ItemImage.SaveAndLog(config_ids)
             end
         elseif item_type == ItemDefine.EItemSmallType.RoleSkin
             or item_type == ItemDefine.EItemSmallType.GhostSkin
-            or item_type == ItemDefine.EItemSmallType.ItemSkin then
+            or item_type == ItemDefine.EItemSmallType.ItemSkin
+            or item_type == ItemDefine.EItemSmallType.HeadSkin
+            or item_type == ItemDefine.EItemSmallType.HeadFrameSkin
+            or item_type == ItemDefine.EItemSmallType.TitleSkin then
             if not update_msg.update_images.skin_image then
                 update_msg.update_images.skin_image = {}
             end
@@ -168,7 +171,10 @@ function ItemImage.AddItemImage(config_id, change_image_ids, use_item)
         end
     elseif (item_type == ItemDefine.EItemSmallType.RoleSkin
             or item_type == ItemDefine.EItemSmallType.GhostSkin
-            or item_type == ItemDefine.EItemSmallType.ItemSkin) and use_item then
+            or item_type == ItemDefine.EItemSmallType.ItemSkin
+            or item_type == ItemDefine.EItemSmallType.HeadSkin
+            or item_type == ItemDefine.EItemSmallType.HeadFrameSkin
+            or item_type == ItemDefine.EItemSmallType.TitleSkin) and use_item then
         if not itemImages.skin_image[config_id] or itemImages.skin_image[config_id].valid_ts ~= 0 then
             local itemImage_info = ItemDef.newSkinImage()
             itemImage_info.config_id = config_id
@@ -216,7 +222,10 @@ function ItemImage.AddItemImageValidtime(config_id, change_image_ids, use_item, 
     local item_type = ItemDefine.GetItemType(config_id)
     if (item_type == ItemDefine.EItemSmallType.RoleSkin
             or item_type == ItemDefine.EItemSmallType.GhostSkin
-            or item_type == ItemDefine.EItemSmallType.ItemSkin) and use_item then
+            or item_type == ItemDefine.EItemSmallType.ItemSkin
+            or item_type == ItemDefine.EItemSmallType.HeadSkin
+            or item_type == ItemDefine.EItemSmallType.HeadFrameSkin
+            or item_type == ItemDefine.EItemSmallType.TitleSkin) and use_item then
         if itemImages.skin_image[config_id] and itemImages.skin_image[config_id].valid_ts == 0 then
             return ErrorCode.ItemImageExist
         else
@@ -258,7 +267,10 @@ function ItemImage.GetImage(config_id)
         return itemImages.ghost_diagrams_image[config_id], item_type
     elseif item_type == ItemDefine.EItemSmallType.RoleSkin
         or item_type == ItemDefine.EItemSmallType.GhostSkin
-        or item_type == ItemDefine.EItemSmallType.ItemSkin then
+        or item_type == ItemDefine.EItemSmallType.ItemSkin
+        or item_type == ItemDefine.EItemSmallType.HeadSkin
+        or item_type == ItemDefine.EItemSmallType.HeadFrameSkin
+        or item_type == ItemDefine.EItemSmallType.TitleSkin then
         return itemImages.skin_image[config_id], item_type
     elseif item_type == ItemDefine.EItemSmallType.SpaceRing then
         return itemImages.space_ring_image[config_id], item_type
@@ -291,7 +303,10 @@ function ItemImage.CheckImageValid(config_id)
         return true
     elseif item_type == ItemDefine.EItemSmallType.RoleSkin
         or item_type == ItemDefine.EItemSmallType.GhostSkin
-        or item_type == ItemDefine.EItemSmallType.ItemSkin then
+        or item_type == ItemDefine.EItemSmallType.ItemSkin
+        or item_type == ItemDefine.EItemSmallType.HeadSkin
+        or item_type == ItemDefine.EItemSmallType.HeadFrameSkin
+        or item_type == ItemDefine.EItemSmallType.TitleSkin then
         if not itemImages.skin_image[config_id] then
             return false
         end
@@ -634,7 +649,7 @@ function ItemImage.UseItemAddImage(item_cfg, msg_data, change_image_ids)
             item_cfg.skin_time * msg_data.use_item_cnt)
         return err_code
     elseif item_cfg.use_type == 3 then
-        -- 头像框
+
     end
 
     return err_code

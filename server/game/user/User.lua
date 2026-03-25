@@ -2790,4 +2790,134 @@ function User.PBItemChangeSkinReqCmd(req)
     }, req.msg_context.stub_id)
 end
 
+function User.PBHeadAndFrameChangeHeadReqCmd(req)
+    if not req.msg.head_icon_id or not req.msg.head_frame_id then
+        return context.S2C(context.net_id, CmdCode["PBHeadAndFrameChangeHeadRspCmd"], {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            head_icon_id = req.msg.head_icon_id or 0,
+            head_frame_id = req.msg.head_frame_id or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    if req.msg.head_icon_id > 0 then
+        if not scripts.ItemImage.CheckImageValid(req.msg.head_icon_id) then
+            return context.S2C(context.net_id, CmdCode["PBHeadAndFrameChangeHeadRspCmd"], {
+                code = ErrorCode.ItemNotExist,
+                error = "头像皮肤不存在或已过期",
+                uid = context.uid,
+                head_icon_id = req.msg.head_icon_id or 0,
+                head_frame_id = req.msg.head_frame_id or 0,
+            }, req.msg_context.stub_id)
+        end
+    end
+    if req.msg.head_frame_id > 0 then
+        if not scripts.ItemImage.CheckImageValid(req.msg.head_frame_id) then
+            return context.S2C(context.net_id, CmdCode["PBHeadAndFrameChangeHeadRspCmd"], {
+                code = ErrorCode.ItemNotExist,
+                error = "头像框皮肤不存在或已过期",
+                uid = context.uid,
+                head_icon_id = req.msg.head_icon_id or 0,
+                head_frame_id = req.msg.head_frame_id or 0,
+            }, req.msg_context.stub_id)
+        end
+    end
+
+    local update_user_attr = {}
+    update_user_attr[ProtoEnum.UserAttrType.head_icon] = req.msg.head_icon_id
+    update_user_attr[ProtoEnum.UserAttrType.head_frame] = req.msg.head_frame_id
+    User.SetUserAttr(update_user_attr, true)
+
+    return context.S2C(context.net_id, CmdCode["PBHeadAndFrameChangeHeadRspCmd"], {
+        code = ErrorCode.None,
+        error = "更换成功",
+        uid = context.uid,
+        head_icon_id = req.msg.head_icon_id,
+        head_frame_id = req.msg.head_frame_id,
+    }, req.msg_context.stub_id)
+end
+
+function User.PBTitleChangeHeadReqCmd(req)
+    if not req.msg.title_id then
+        return context.S2C(context.net_id, CmdCode["PBTitleChangeHeadRspCmd"], {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            title_id = req.msg.title_id or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    if req.msg.title_id > 0 then
+        if not scripts.ItemImage.CheckImageValid(req.msg.title_id) then
+            return context.S2C(context.net_id, CmdCode["PBTitleChangeHeadRspCmd"], {
+                code = ErrorCode.ItemNotExist,
+                error = "称号皮肤不存在或已过期",
+                uid = context.uid,
+                title_id = req.msg.title_id,
+            }, req.msg_context.stub_id)
+        end
+    end
+
+    local update_user_attr = {}
+    update_user_attr[ProtoEnum.UserAttrType.title] = req.msg.title_id
+    User.SetUserAttr(update_user_attr, true)
+
+    return context.S2C(context.net_id, CmdCode["PBTitleChangeHeadRspCmd"], {
+        code = ErrorCode.None,
+        error = "更换成功",
+        uid = context.uid,
+        title_id = req.msg.title_id,
+    }, req.msg_context.stub_id)
+end
+
+function User.PBGetTreasureListReqCmd(req)
+    if not req.msg.uid then
+        return context.S2C(context.net_id, CmdCode.PBGetTreasureListRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local treasures = scripts.Shop.GetTreasureDatas()
+
+    return context.S2C(context.net_id, CmdCode.PBGetTreasureListRspCmd, {
+        code = ErrorCode.None,
+        error = "获取宝箱列表成功",
+        uid = context.uid,
+        treasure_datas = treasures,
+    }, req.msg_context.stub_id)
+end
+
+function User.PBOOpenTreasureReqCmd(req)
+    if not req.msg.uid
+        or not req.msg.open_treasure_id
+        or not req.msg.open_count then
+        return context.S2C(context.net_id, CmdCode.PBOpenTreasureRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local err_code = scripts.Shop.OpenTreasure(req.msg.open_treasure_id, req.msg.open_count)
+    local treasure_data = scripts.Shop.GetTreasureData(req.msg.open_treasure_id)
+    if err_code ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBOpenTreasureRspCmd, {
+            code = err_code,
+            error = "打开宝箱失败",
+            uid = context.uid,
+            treasure_data = treasure_data,
+        }, req.msg_context.stub_id)
+    end
+
+    return context.S2C(context.net_id, CmdCode.PBOpenTreasureRspCmd, {
+        code = err_code,
+        error = "打开宝箱成功",
+        uid = context.uid,
+        treasure_data = treasure_data,
+    }, req.msg_context.stub_id)
+end
+
 return User

@@ -1349,6 +1349,80 @@ static int Lpb_field(lua_State *L) {
     return lpb_pushfield(L, t, lpb_field(L, 2, t));
 }
 
+// 在Lpb_field函数之后添加Lpb_has_field函数
+static int Lpb_has_field(lua_State *L)
+{
+    lpb_State *LS = lpb_lstate(L);
+    const pb_Type *t = lpb_type(L, LS, lpb_checkslice(L, 1));
+    luaL_checktype(L, 2, LUA_TTABLE); // 消息表
+    const pb_Field *f = lpb_field(L, 3, t);
+
+    if (f == NULL)
+    {
+        lua_pushnil(L);
+        lua_pushstring(L, "field not found");
+        return 2;
+    }
+
+    // 检查字段是否存在于消息表中
+    if (lua53_getfield(L, 2, (const char *)f->name) == LUA_TNIL)
+    {
+        lua_pop(L, 1);
+        lua_pushboolean(L, 0); // 字段不存在，返回false
+        return 1;
+    }
+
+    // 字段存在，检查其值是否为默认值
+    int is_default = 0;
+    lpb_Value v;
+
+    switch (f->type_id)
+    {
+    case PB_Tbool:
+        is_default = (lua_toboolean(L, -1) == 0);
+        break;
+    case PB_Tdouble:
+    case PB_Tfloat:
+        v.lnum = lua_tonumber(L, -1);
+        is_default = (v.lnum == 0.0);
+        break;
+    case PB_Tint32:
+    case PB_Tuint32:
+    case PB_Tsint32:
+    case PB_Tfixed32:
+    case PB_Tsfixed32:
+    case PB_Tint64:
+    case PB_Tuint64:
+    case PB_Tsint64:
+    case PB_Tfixed64:
+    case PB_Tsfixed64:
+    case PB_Tenum:
+    {
+        int isint;
+        v.u64 = lpb_tointegerx(L, -1, &isint);
+        is_default = (isint && v.u64 == 0);
+    }
+    break;
+    case PB_Tbytes:
+    case PB_Tstring:
+    {
+        pb_Slice s = lpb_toslice(L, -1);
+        is_default = (pb_len(s) == 0);
+    }
+    break;
+    case PB_Tmessage:
+        // 对于消息类型，只要存在就认为不是默认值
+        is_default = 0;
+        break;
+    default:
+        is_default = 0; // 未知类型，默认认为不是默认值
+    }
+
+    lua_pop(L, 1);
+    lua_pushboolean(L, !is_default); // 返回true表示字段被显式设置（非默认值）
+    return 1;
+}
+
 static int Lpb_enum(lua_State *L) {
     lpb_State *LS = lpb_lstate(L);
     const pb_Type *t = lpb_type(L, LS, lpb_checkslice(L, 1));
@@ -2126,6 +2200,7 @@ LUALIB_API int luaopen_pb(lua_State *L) {
         ENTRY(fields),
         ENTRY(type),
         ENTRY(field),
+        ENTRY(has_field), // 添加新函数
         ENTRY(typefmt),
         ENTRY(enum),
         ENTRY(defaults),
@@ -2140,8 +2215,7 @@ LUALIB_API int luaopen_pb(lua_State *L) {
         ENTRY(pack),
         ENTRY(unpack),
 #undef  ENTRY
-        { NULL, NULL }
-    };
+        {NULL, NULL}};
     luaL_Reg meta[] = {
         { "__gc", Lpb_delete },
         { "setdefault", Lpb_state },

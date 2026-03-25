@@ -1076,11 +1076,131 @@ now_sys_ts (RnowSysTs>
 uid (Ruid+
 
 grade_data (2.PBGradeDataR	gradeDatabproto3
-¤1
+Ð
+
+shop.proto"Ù
+PBShopBuySingle
+
+product_id (R	productId
+product_num (R
+productNumD
+single_price (2!.PBShopBuySingle.SinglePriceEntryRsinglePriceA
+total_price (2 .PBShopBuySingle.TotalPriceEntryR
+totalPrice>
+SinglePriceEntry
+key (Rkey
+value (Rvalue:8=
+TotalPriceEntry
+key (Rkey
+value (Rvalue:8"–
+PBShopBuyLog
+order_id (RorderId
+	buyer_uid (RbuyerUid
+buy_ts (RbuyTsH
+log_total_price (2 .PBShopBuyLog.LogTotalPriceEntryRlogTotalPrice+
+buy_data (2.PBShopBuySingleRbuyData@
+LogTotalPriceEntry
+key (Rkey
+value (Rvalue:8"°
+PBShopPlayerData
+uid (Ruid"
+last_check_ts (RlastCheckTs"
+self_order_id (RselfOrderIdO
+buy_product_list (2%.PBShopPlayerData.BuyProductListEntryRbuyProductListC
+buy_car_data (2!.PBShopPlayerData.BuyCarDataEntryR
+buyCarData*
+	shop_logs (2.PBShopBuyLogRshopLogsA
+BuyProductListEntry
+key (Rkey
+value (Rvalue:8=
+BuyCarDataEntry
+key (Rkey
+value (Rvalue:8"'
+PBGetShopDataReqCmd
+uid (Ruid"¿
+PBGetShopDataRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+
+now_sys_ts (RnowSysTs;
+shop_player_data (2.PBShopPlayerDataRshopPlayerDataO
+shop_server_buy (2'.PBGetShopDataRspCmd.ShopServerBuyEntryRshopServerBuy@
+ShopServerBuyEntry
+key (Rkey
+value (Rvalue:8"i
+PBShopAddBuyCarReqCmd
+uid (Ruid
+
+product_id (R	productId
+product_num (R
+productNum"ú
+PBShopAddBuyCarRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+
+now_sys_ts (RnowSysTsH
+buy_car_data (2&.PBShopAddBuyCarRspCmd.BuyCarDataEntryR
+buyCarData=
+BuyCarDataEntry
+key (Rkey
+value (Rvalue:8"º
+PBShopDelBuyCarReqCmd
+uid (RuidN
+product_id_num (2(.PBShopDelBuyCarReqCmd.ProductIdNumEntryRproductIdNum?
+ProductIdNumEntry
+key (Rkey
+value (Rvalue:8"ú
+PBShopDelBuyCarRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+
+now_sys_ts (RnowSysTsH
+buy_car_data (2&.PBShopDelBuyCarRspCmd.BuyCarDataEntryR
+buyCarData=
+BuyCarDataEntry
+key (Rkey
+value (Rvalue:8"p
+PBShopSelectBuy
+
+product_id (R	productId
+product_num (R
+productNum
+
+price_type (R	priceType"n
+PBShopBuyReqCmd
+uid (Ruid
+with_car (RwithCar.
+
+buy_id_num (2.PBShopSelectBuyRbuyIdNum"›
+PBShopBuyRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+
+now_sys_ts (RnowSysTs.
+
+buy_id_num (2.PBShopSelectBuyRbuyIdNum"É
+PBTreasureSingle
+	config_id (RconfigId
+	now_count (RnowCount
+
+open_count (R	openCount(
+no_guarantee_cnt (RnoGuaranteeCnt2
+already_guarantee_cnt (RalreadyGuaranteeCnt"¸
+PBTreasurePlayerDataL
+treasure_list (2'.PBTreasurePlayerData.TreasureListEntryRtreasureListR
+TreasureListEntry
+key (Rkey'
+value (2.PBTreasureSingleRvalue:8bproto3
+Ì8
 
 user.proto
 item.proto	bag.proto
-role.protoghost.protograde.proto"Ÿ
+role.protoghost.protograde.proto
+shop.proto"Ÿ
 
 PBBuffData
 buff_id (RbuffId
@@ -1333,7 +1453,44 @@ useItemCnt"D
 error (	Rerror
 uid (Ruid$
 item_config_id (RitemConfigId
-skin_id (RskinIdbproto3
+skin_id (RskinId"x
+PBHeadAndFrameChangeHeadReqCmd
+uid (Ruid 
+head_icon_id (R
+headIconId"
+head_frame_id (RheadFrameId"¢
+PBHeadAndFrameChangeHeadRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid 
+head_icon_id (R
+headIconId"
+head_frame_id (RheadFrameId"F
+PBTitleChangeHeadReqCmd
+uid (Ruid
+title_id (RtitleId"p
+PBTitleChangeHeadRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+title_id (RtitleId"+
+PBGetTreasureInfoReqCmd
+uid (Ruid"“
+PBGetTreasureInfoRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid<
+treasure_datas (2.PBTreasurePlayerDataRtreasureDatas"q
+PBOpenTreasureReqCmd
+uid (Ruid(
+open_treasure_id (RopenTreasureId
+
+open_count (R	openCount"Š
+PBOpenTreasureRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid6
+treasure_data (2.PBTreasureSingleRtreasureDatabproto3
 ¬
 
 gods.proto"9
@@ -2864,113 +3021,6 @@ ds_address (	R	dsAddress
 error (	Rerror(
 	room_data (2.PBRoomInfoRroomData4
 member_datas (2.PBRoomMemberInfoRmemberDatasbproto3
-É
-
-shop.proto"Ù
-PBShopBuySingle
-
-product_id (R	productId
-product_num (R
-productNumD
-single_price (2!.PBShopBuySingle.SinglePriceEntryRsinglePriceA
-total_price (2 .PBShopBuySingle.TotalPriceEntryR
-totalPrice>
-SinglePriceEntry
-key (Rkey
-value (Rvalue:8=
-TotalPriceEntry
-key (Rkey
-value (Rvalue:8"–
-PBShopBuyLog
-order_id (RorderId
-	buyer_uid (RbuyerUid
-buy_ts (RbuyTsH
-log_total_price (2 .PBShopBuyLog.LogTotalPriceEntryRlogTotalPrice+
-buy_data (2.PBShopBuySingleRbuyData@
-LogTotalPriceEntry
-key (Rkey
-value (Rvalue:8"°
-PBShopPlayerData
-uid (Ruid"
-last_check_ts (RlastCheckTs"
-self_order_id (RselfOrderIdO
-buy_product_list (2%.PBShopPlayerData.BuyProductListEntryRbuyProductListC
-buy_car_data (2!.PBShopPlayerData.BuyCarDataEntryR
-buyCarData*
-	shop_logs (2.PBShopBuyLogRshopLogsA
-BuyProductListEntry
-key (Rkey
-value (Rvalue:8=
-BuyCarDataEntry
-key (Rkey
-value (Rvalue:8"'
-PBGetShopDataReqCmd
-uid (Ruid"¿
-PBGetShopDataRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-
-now_sys_ts (RnowSysTs;
-shop_player_data (2.PBShopPlayerDataRshopPlayerDataO
-shop_server_buy (2'.PBGetShopDataRspCmd.ShopServerBuyEntryRshopServerBuy@
-ShopServerBuyEntry
-key (Rkey
-value (Rvalue:8"i
-PBShopAddBuyCarReqCmd
-uid (Ruid
-
-product_id (R	productId
-product_num (R
-productNum"ú
-PBShopAddBuyCarRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-
-now_sys_ts (RnowSysTsH
-buy_car_data (2&.PBShopAddBuyCarRspCmd.BuyCarDataEntryR
-buyCarData=
-BuyCarDataEntry
-key (Rkey
-value (Rvalue:8"º
-PBShopDelBuyCarReqCmd
-uid (RuidN
-product_id_num (2(.PBShopDelBuyCarReqCmd.ProductIdNumEntryRproductIdNum?
-ProductIdNumEntry
-key (Rkey
-value (Rvalue:8"ú
-PBShopDelBuyCarRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-
-now_sys_ts (RnowSysTsH
-buy_car_data (2&.PBShopDelBuyCarRspCmd.BuyCarDataEntryR
-buyCarData=
-BuyCarDataEntry
-key (Rkey
-value (Rvalue:8"p
-PBShopSelectBuy
-
-product_id (R	productId
-product_num (R
-productNum
-
-price_type (R	priceType"n
-PBShopBuyReqCmd
-uid (Ruid
-with_car (RwithCar.
-
-buy_id_num (2.PBShopSelectBuyRbuyIdNum"›
-PBShopBuyRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-
-now_sys_ts (RnowSysTs.
-
-buy_id_num (2.PBShopSelectBuyRbuyIdNumbproto3
 Ž
 
 team.proto

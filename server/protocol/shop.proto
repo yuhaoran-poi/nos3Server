@@ -101,3 +101,17 @@ message PBShopBuyRspCmd
 	//map<int32, int32> buy_id_num	= 5;	//购物车数据
 	repeated PBShopSelectBuy buy_id_num	= 5;
 }
+
+message PBTreasureSingle
+{
+	int32 config_id	= 1;				// 宝箱id
+	int32 now_count	= 2;				// 当前宝箱数量
+	int32 open_count	= 3;			// 已经开启次数
+	int32 no_guarantee_cnt	= 4;		// 未触发保底次数(触发后归零)
+	int32 already_guarantee_cnt	= 5;	// 保底已生效次数
+}
+
+message PBTreasurePlayerData
+{
+	map<int32, PBTreasureSingle> treasure_list	= 1;
+}

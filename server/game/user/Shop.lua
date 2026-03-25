@@ -11,6 +11,8 @@ local RoleDef = require("common.def.RoleDef")
 local ItemDefine = require("common.logic.ItemDefine")
 local BagDef = require("common.def.BagDef")
 local ItemDef = require("common.def.ItemDef")
+local TreasureDef = require("common.def.TreasureDef")
+local CommonCfgDef = require("common.def.CommonCfgDef")
 local json = require("json")
 
 ---@type user_context
@@ -21,10 +23,13 @@ local scripts = context.scripts
 local Shop = {}
 
 function Shop.Init()
-    --加载商城数据
-    local shop_data = Shop.LoadShopInfo()
+    --加载商城,宝箱数据
+    local shop_data, treasure_data = Shop.LoadShopInfo()
     if shop_data then
         scripts.UserModel.SetShopData(shop_data)
+    end
+    if treasure_data then
+        scripts.UserModel.SetTreasureData(treasure_data)
     end
 
     local shops = scripts.UserModel.GetShopData()
@@ -33,6 +38,11 @@ function Shop.Init()
         shops.uid = context.uid
         shops.last_check_ts = moon.time()
         scripts.UserModel.SetShopData(shops)
+    end
+    local treasures = scripts.UserModel.GetTreasureData()
+    if not treasures then
+        treasures = TreasureDef.newTreasurePlayerData()
+        scripts.UserModel.SetTreasureData(treasures)
     end
 end
 
@@ -50,14 +60,18 @@ function Shop.SaveShopsNow()
     if not shops then
         return false
     end
+    local treasures = scripts.UserModel.GetTreasureData()
+    if not treasures then
+        return false
+    end
 
-    local success = Database.saveshopinfo(context.addr_db_user, context.uid, shops)
+    local success = Database.saveshopinfo(context.addr_db_user, context.uid, shops, treasures)
     return success
 end
 
 function Shop.LoadShopInfo()
-    local trade_info = Database.loadshopinfo(context.addr_db_user, context.uid)
-    return trade_info
+    local shop_info, treasure_info = Database.loadshopinfo(context.addr_db_user, context.uid)
+    return shop_info, treasure_info
 end
 
 function Shop.CheckShopBuyData()
@@ -311,6 +325,7 @@ function Shop.PBShopBuyReqCmd(req)
     local server_product_list = {}
     local person_product_list = {}
     local buy_data = {}
+    local add_treasure_list = {}
     for _, selecbuy in pairs(product_id_num) do
         local product_cfg = GameCfg.ExchangeStoreWaresConfig[selecbuy.product_id]
         if not product_cfg then
@@ -379,6 +394,15 @@ function Shop.PBShopBuyReqCmd(req)
         end
 
         table.insert(buy_data, buy_single)
+
+        if table.size(product_cfg.treasurechest) > 0 then
+            for t_id, t_cnt in pairs(product_cfg.treasurechest) do
+                if not add_treasure_list[t_id] then
+                    add_treasure_list[t_id] = 0
+                end
+                add_treasure_list[t_id] = add_treasure_list[t_id] + t_cnt * selecbuy.product_num
+            end
+        end
     end
 
     -- 检测角色是否可以获得
@@ -557,10 +581,15 @@ function Shop.PBShopBuyReqCmd(req)
         scripts.Role.SaveAndLog(change_roles)
     end
 
+    -- 添加宝箱
+    for t_id, t_cnt in pairs(add_treasure_list) do
+        Shop.AddTreasure(t_id, t_cnt)
+    end
+
     -- 保存购物数据并添加购物日志
     for id, num in pairs(product_id_num) do
         if not shops.buy_product_list[id] then
-            shops.buy_product_list[id] = 0  
+            shops.buy_product_list[id] = 0
         end
         shops.buy_product_list[id] = shops.buy_product_list[id] + num
 
@@ -590,6 +619,232 @@ function Shop.PBShopBuyReqCmd(req)
     clusterd.send(3999, "shopmgr", "Shopmgr.AddShopLog", new_log)
 
     return context.S2C(context.net_id, CmdCode.PBShopBuyRspCmd, rsp_msg, req.msg_context.stub_id)
+end
+
+function Shop.GetTreasureDatas()
+    local treasures = scripts.UserModel.GetTreasureData()
+    if not treasures then
+        return {}
+    end
+
+    return treasures
+end
+
+function Shop.GetTreasureData(config_id)
+    local treasures = scripts.UserModel.GetTreasureData()
+    if not treasures or not treasures.treasure_list[config_id] then
+        return {}
+    end
+
+    return treasures.treasure_list[config_id]
+end
+
+function Shop.AddTreasure(config_id, num)
+    local treasures = scripts.UserModel.GetTreasureData()
+    if not treasures then
+        return false
+    end
+    local item_type = ItemDefine.GetItemPosType(config_id)
+    if item_type ~= ItemDefine.EItemBigType.TreasureChest then
+        return false
+    end
+
+    if not treasures.treasure_list[config_id] then
+        local new_treasure = TreasureDef.newTreasureSingle()
+        new_treasure.config_id = config_id
+        new_treasure.now_count = num
+        treasures.treasure_list[config_id] = new_treasure
+    else
+        treasures.treasure_list[config_id].now_count = treasures.treasure_list[config_id].now_count + num
+    end
+    scripts.UserModel.SetTreasureData(treasures)
+end
+
+function Shop.OpenTreasure(config_id, num)
+    local treasures = scripts.UserModel.GetTreasureData()
+    if not treasures then
+        return ErrorCode.ServerInternalError
+    end
+    -- 执行开宝箱逻辑
+    local item_type = ItemDefine.GetItemPosType(config_id)
+    if item_type ~= ItemDefine.EItemBigType.TreasureChest then
+        return ErrorCode.ParamInvalid
+    end
+
+    local treasure_cfg = GameCfg.TreasureChest[config_id]
+    if not treasure_cfg then
+        return ErrorCode.ConfigError
+    end
+    local mail_id_cfg = CommonCfgDef.getConf("TreasureBoxEmail")
+    if not mail_id_cfg then
+        moon.error("CommonCfgDef.getConf TreasureBoxEmail err")
+        return ErrorCode.ConfigError
+    end
+
+    local now_ts = moon.time()
+    if treasure_cfg.period_validity > 0 and now_ts < treasure_cfg.period_validity then
+        return ErrorCode.TreasureOutTime
+    end
+
+    local treasure_data = treasures.treasure_list[config_id]
+    if not treasure_data then
+        treasure_data = TreasureDef.newTreasureSingle()
+        treasure_data.config_id = config_id
+        treasures.treasure_list[config_id] = treasure_data
+    end
+
+    if treasure_cfg.type == TreasureDef.ChestType.CONSUME then
+        if treasure_data.now_count < num then
+            return ErrorCode.TreasureNotEnough
+        end
+    end
+
+    local cost_items = {}
+    local cost_coins = {}
+    -- 计算消耗资源
+    ItemDefine.GetItemsFromCfg(treasure_cfg.open_consume, num, true, cost_items, cost_coins)
+    -- 检查资源是否足够
+    local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    if err_code_items ~= ErrorCode.None then
+        return err_code_items
+    end
+    local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
+    if err_code_coins ~= ErrorCode.None then
+        return err_code_coins
+    end
+
+    local trigger_cnt = 0
+    local add_list = {}
+    for i = 1, num do
+        local is_guarantee = false
+        local cur_yu = (treasure_data.no_guarantee_cnt + i) % treasure_cfg.guarantee_trigger
+        local cur_zheng = math.floor((treasure_data.no_guarantee_cnt + i) / treasure_cfg.guarantee_trigger)
+        if treasure_cfg.guarantee_times < 0 then
+            if cur_yu == 0 then
+                is_guarantee = true
+            end
+        elseif treasure_cfg.guarantee_times > 0 then
+            if treasure_data.already_guarantee_cnt + cur_zheng <= treasure_cfg.guarantee_times
+                and cur_yu == 0 then
+                is_guarantee = true
+            end
+        end
+
+        local pool_id = 0
+        if is_guarantee then
+            pool_id = treasure_cfg.guarantee_item
+        else
+            -- 随机品质
+            local rand_quality = scripts.Item.RangeTags(treasure_cfg.quality_weight)
+            -- 随机类型
+            local rand_class = scripts.Item.RangeTags(treasure_cfg.class_weight)
+            pool_id = rand_class * 10 + rand_quality
+        end
+
+        local reward_cfg = GameCfg.TreasureChestRewards[pool_id]
+        if not reward_cfg then
+            return ErrorCode.ConfigError
+        end
+        -- 随机奖品id
+        local rand_id = scripts.Item.RangeTags(reward_cfg.item_weight)
+        -- 随机奖品数量
+        local rand_num = scripts.Item.RangeTags(reward_cfg.item_num)
+        if not add_list[rand_id] then
+            add_list[rand_id] = rand_num
+        else
+            add_list[rand_id] = add_list[rand_id] + rand_num
+        end
+
+        if is_guarantee then
+            trigger_cnt = trigger_cnt + 1
+        end
+    end
+
+    local add_items, add_coins = {}, {}
+    ItemDefine.GetItemsFromCfg(add_list, 1, false, add_items, add_coins)
+    if table.size(add_items) + table.size(add_coins) <= 0 then
+        return ErrorCode.ConfigError
+    end
+    local use_mail = false
+    if table.size(add_items) > 0 then
+        local ret_code = scripts.Bag.TryEmptyEnough(BagDef.BagType.Cangku, add_items, 0)
+        if ret_code ~= ErrorCode.None then
+            if ret_code == ErrorCode.BagFull then
+                use_mail = true
+            else
+                return ret_code
+            end
+        end
+    end
+
+    local stack_items, unstack_items, deal_coins = {}, {}, {}
+    local ok = ItemDefine.GetItemDataFromIdCount(add_items, add_coins, stack_items, unstack_items, deal_coins)
+    if not ok then
+        return ErrorCode.ConfigError
+    end
+
+    local bag_change_log = {}
+    -- 扣除道具消耗
+    if table.size(cost_items) > 0 then
+        local err_code_items = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, bag_change_log)
+        if err_code_items ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return err_code_items
+        end
+    end
+    if table.size(cost_coins) > 0 then
+        local err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_log)
+        if err_code_coins ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return err_code_coins
+        end
+    end
+    
+    if not use_mail then
+        if table.size(stack_items) + table.size(unstack_items) > 0 then
+            local err_code_items = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
+            if err_code_items ~= ErrorCode.None then
+                scripts.Bag.RollBackWithChange(bag_change_log)
+                return err_code_items
+            end
+        end
+    else
+        -- 发送邮件
+        local item_datas = {}
+        for _, item_data in pairs(stack_items) do
+            table.insert(item_datas, item_data)
+        end
+        for _, item_data in pairs(unstack_items) do
+            table.insert(item_datas, item_data)
+        end
+        local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
+        if not mail_ret then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return ErrorCode.TreasureMailSendFailed
+        end
+    end
+    -- 添加货币
+    if table.size(deal_coins) > 0 then
+        local err_code_coins = scripts.Bag.DealCoins(deal_coins, bag_change_log)
+        if err_code_coins ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return err_code_coins
+        end
+    end
+
+    if treasure_cfg.type == TreasureDef.ChestType.CONSUME then
+        treasure_data.now_count = treasure_data.now_count - num
+    end
+    treasure_data.open_count = treasure_data.open_count + num
+    treasure_data.no_guarantee_cnt = treasure_data.no_guarantee_cnt + num -
+        (treasure_cfg.guarantee_trigger * trigger_cnt)
+    treasure_data.already_guarantee_cnt = treasure_data.already_guarantee_cnt + trigger_cnt
+    treasures.treasure_list[config_id] = treasure_data
+
+    Shop.SaveShopsNow()
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.TreasureOpen)
+
+    return ErrorCode.None
 end
 
 return Shop

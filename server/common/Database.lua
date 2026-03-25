@@ -2209,29 +2209,34 @@ end
 -- 商店数据
 function _M.loadshopinfo(addr, uid)
     local cmd = string.format([[
-        SELECT value, json FROM mgame.shops WHERE uid = %d;
+        SELECT value, json, treasure_value, treasure_json FROM mgame.shops WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
         local _, tmp_data = protocol.decodewithname("PBShopPlayerData", pbdata)
-        return tmp_data
+        local treasure_pbdata = crypt.base64decode(res[1].treasure_value)
+        local _, treasure_data = protocol.decodewithname("PBTreasurePlayerData", treasure_pbdata)
+        return tmp_data, treasure_data
     end
     moon.error("loadshopinfo failed", uid, err)
-    return nil
+    return nil, nil
 end
 
-function _M.saveshopinfo(addr, uid, data)
+function _M.saveshopinfo(addr, uid, data, treasure_data)
     assert(data)
 
     local data_str = jencode(data)
     local _, pbdata = protocol.encodewithname("PBShopPlayerData", data)
     local pbvalue = crypt.base64encode(pbdata)
+    local treasure_data_str = jencode(treasure_data)
+    local _, pbdata = protocol.encodewithname("PBTreasurePlayerData", treasure_data)
+    local treasurevalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
-        INSERT INTO mgame.shops (uid, value, json)
-        VALUES (%d, '%s', '%s')
-        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], uid, pbvalue, data_str, pbvalue, data_str)
+        INSERT INTO mgame.shops (uid, value, json, treasure_value, treasure_json)
+        VALUES (%d, '%s', '%s', '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s', treasure_value = '%s', treasure_json = '%s';
+    ]], uid, pbvalue, data_str, treasurevalue, treasure_data_str, pbvalue, data_str, treasurevalue, treasure_data_str)
 
     return moon.send("lua", addr, cmd)
 end

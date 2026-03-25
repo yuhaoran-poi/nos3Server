@@ -4,6 +4,8 @@ import "bag.proto";
 import "role.proto";
 import "ghost.proto";
 import "grade.proto";
+import "shop.proto";
+
 
 //----------------------------------新增协议----------------------------------//
 // 账户buff加成
@@ -385,4 +387,64 @@ message PBItemChangeSkinRspCmd
 	int64 uid		= 3;
 	int32 item_config_id	= 4;
 	int32 skin_id			= 5;
+}
+
+// 给玩家更换头像和头像框
+message PBHeadAndFrameChangeHeadReqCmd
+{
+	int64 uid	= 1;
+	int32 head_icon_id	= 2;
+	int32 head_frame_id	= 3;
+}
+
+message PBHeadAndFrameChangeHeadRspCmd
+{
+	int32   code    = 1; // 服务器验证返回,0成功,其他失败
+    string  error   = 2; // 错误信息
+	int64 uid		= 3;
+	int32 head_icon_id	= 4;
+	int32 head_frame_id	= 5;
+}
+
+// 给玩家换称号
+message PBTitleChangeHeadReqCmd
+{
+	int64 uid	= 1;
+	int32 title_id	= 2;
+}
+
+message PBTitleChangeHeadRspCmd
+{
+	int32   code    = 1; // 服务器验证返回,0成功,其他失败
+    string  error   = 2; // 错误信息
+	int64 uid		= 3;
+	int32 title_id	= 4;
+}
+
+message PBGetTreasureInfoReqCmd
+{
+	int64 uid	= 1;
+}
+
+message PBGetTreasureInfoRspCmd
+{
+	int32   code    = 1; // 服务器验证返回,0成功,其他失败
+    string  error   = 2; // 错误信息
+	int64 uid		= 3;
+	PBTreasurePlayerData treasure_datas	= 4;
+}
+
+message PBOpenTreasureReqCmd
+{
+	int64 uid	= 1;
+	int32 open_treasure_id	= 2;
+	int32 open_count	= 3;
+}
+
+message PBOpenTreasureRspCmd
+{
+	int32   code    = 1; // 服务器验证返回,0成功,其他失败
+    string  error   = 2; // 错误信息
+	int64 uid	= 3;
+	PBTreasureSingle treasure_data	= 4;
 }
