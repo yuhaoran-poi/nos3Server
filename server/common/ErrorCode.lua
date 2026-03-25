@@ -76,6 +76,12 @@ local ErrorCode = {
     ShopMailSendFailed = 513,
     ---购买次数超过限购
     ShopBuyLimitExceed = 514,
+    ---宝箱超时
+    TreasureOutTime = 515,
+    ---宝箱不足
+    TreasureNotEnough = 516,
+    ---宝箱发送邮件失败
+    TreasureMailSendFailed = 517,
 
     ---奖励已经领取过
     DailyTaskReceived = 701,
