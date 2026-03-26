@@ -12,6 +12,7 @@ local httpc = require("moon.http.client")
 local BillDef = require("common.def.BillDef")
 local ItemDef = require("common.def.ItemDef")
 local ProtoEnum = require("tools.ProtoEnum")
+local serverconf = require("serverconf")
 
 ---@type user_context
 local context = ...
@@ -312,8 +313,8 @@ end
 
 function Bill.QueryOrder(orderid, transid)
     local order_form = {
-        key = steamsdk_conf.order_key,
-        appid = steamsdk_conf.appId,
+        key = serverconf.STEAM_CONF.order_key,
+        appid = serverconf.STEAM_CONF.appId,
         orderid = orderid,
         transid = transid,
     }
@@ -322,7 +323,7 @@ function Bill.QueryOrder(orderid, transid)
         table.insert(param_tbl, string.format("%s=%s", escape(k), escape(v)))
     end
     local param_str = table.concat(param_tbl, "&")
-    local get_url = steamsdk_conf.query_order_url .. "?" .. param_str
+    local get_url = serverconf.STEAM_CONF.query_order_url .. "?" .. param_str
     local response = httpc.get(get_url)
     print_r(response)
     local json_success, rsp_data = pcall(json.decode, response.body or "")
@@ -405,19 +406,19 @@ function Bill.PBApplyBillOrderReqCmd(req)
     local amount = req.msg.bill_num * bill_cfg.price
 
     local order_form = {
-        key = steamsdk_conf.order_key,
+        key = serverconf.STEAM_CONF.order_key,
         orderid = res,
         steamid = steamid,
-        appid = steamsdk_conf.appId,
+        appid = serverconf.STEAM_CONF.appId,
         itemcount = req.msg.bill_num,
-        language = steamsdk_conf.language,
-        currency = steamsdk_conf.currency,
+        language = serverconf.STEAM_CONF.language,
+        currency = serverconf.STEAM_CONF.currency,
         ['itemid[0]'] = req.msg.bill_id,
         ['qty[0]'] = req.msg.bill_num,
         ['amount[0]'] = amount,
         ['description[0]'] = steamsdk_conf.description,
     }
-    local response = httpc.post(steamsdk_conf.create_order_url, order_form)
+    local response = httpc.post(serverconf.STEAM_CONF.create_order_url, order_form)
     print_r(response)
     local json_success, rsp_data = pcall(json.decode, response.body or "")
     if not json_success then
