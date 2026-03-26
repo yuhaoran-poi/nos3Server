@@ -51,8 +51,10 @@ function Trade.Start()
     end
 
     Trade.CheckData()
-    Trade.DealOfflineTradeLogSale()
-    Trade.DealOfflineTradeTakeDown()
+    if not TradeDef.GM_UID[context.uid] then
+        Trade.DealOfflineTradeLogSale()
+        Trade.DealOfflineTradeTakeDown()
+    end
 
     Trade.SaveTradeInfoNow()
 end
@@ -143,6 +145,11 @@ function Trade.OnTradeTakeDownMail(trade_product, now_state, positive)
         return
     end
 
+    if TradeDef.GM_UID[context.uid] then
+        -- GM不用处理下架
+        return
+    end
+
     local ret = Database.updatetradeproduct(context.addr_db_user, trade_product.trade_id,
         { state = now_state }, { state = TradeDef.StateType.TAKE_DOWNED }, true)
     if ret ~= 1 then
@@ -178,7 +185,13 @@ end
 
 function Trade.OnTradeLogSaleMail(trade_log, need_save)
     if trade_log.send_mail ~= 0 then
-        moon.error(string.format("OnTradeLogSaleMail trade_log.send_mail not 0 trade_log = %s", json.pretty_encode(trade_log)))
+        moon.error(string.format("OnTradeLogSaleMail trade_log.send_mail not 0 trade_log = %s",
+        json.pretty_encode(trade_log)))
+        return
+    end
+    
+    if TradeDef.GM_UID[trade_log.uid] then
+        -- GM不用发送邮件
         return
     end
 
@@ -326,6 +339,11 @@ function Trade.PBTradeSaleReqCmd(req)
     end
     Trade.CheckOnSaleCnt(player_trade_data)
 
+    local is_gm = false
+    if TradeDef.GM_UID[context.uid] then
+        is_gm = true
+    end
+
     local item_conf = GameCfg.Item[req.msg.config_id]
     if not item_conf then
         return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
@@ -346,12 +364,14 @@ function Trade.PBTradeSaleReqCmd(req)
             { code = ErrorCode.ConfigError, error = "交易上架费用配置不存在", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    if player_trade_data.simple_info.box_capacity + 1 > MAX_SALE_CAPACITY then
+    if player_trade_data.simple_info.box_capacity + 1 > MAX_SALE_CAPACITY
+        and not is_gm then
         return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
             { code = ErrorCode.TradeCapacityNotEnough, error = "交易容量不足", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    if player_trade_data.simple_info.can_onsale_cnt <= 0 then
+    if player_trade_data.simple_info.can_onsale_cnt <= 0
+        and not is_gm then
         return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
             { code = ErrorCode.TradeCntNotEnough, error = "交易次数不足", uid = context.uid }, req.msg_context.stub_id)
     end
@@ -364,14 +384,16 @@ function Trade.PBTradeSaleReqCmd(req)
             { code = ErrorCode.ItemNotExist, error = "物品不存在", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    if item_data.common_info.item_count < req.msg.sale_num then
+    if item_data.common_info.item_count < req.msg.sale_num
+        and not is_gm then
         return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
             { code = ErrorCode.ItemNotEnough, error = "物品数量不足", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    if item_data.common_info.trade_cnt == 0 then
+    if item_data.common_info.trade_cnt == 0
+        and not is_gm then
         return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
-            { code = ErrorCode.TradeCapacityNotEnough, error = "交易次数不足", uid = context.uid }, req.msg_context.stub_id)
+            { code = ErrorCode.TradeCntNotEnough, error = "交易次数不足", uid = context.uid }, req.msg_context.stub_id)
     end
 
     local bag_change_log = {}
@@ -393,28 +415,31 @@ function Trade.PBTradeSaleReqCmd(req)
     trade_cost_coins[trade_cfg.service_charge_type].coin_count = trade_cost_coins[trade_cfg.service_charge_type]
         .coin_count - trade_rate_coin_count
     
-    local err_code = scripts.Bag.CheckItemsEnoughPos(BagDef.BagType.Cangku, trade_cost_items)
-    if err_code ~= ErrorCode.None then
-        return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
-            { code = err_code, error = "物品数量不足", uid = context.uid }, req.msg_context.stub_id)
-    end
-    err_code = scripts.Bag.CheckCoinsEnough(trade_cost_coins)
-    if err_code ~= ErrorCode.None then
-        return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
-            { code = err_code, error = "上架费用不足", uid = context.uid }, req.msg_context.stub_id)
-    end
-    
-    err_code = scripts.Bag.DelItemsPos(BagDef.BagType.Cangku, trade_cost_items, bag_change_log)
-    if err_code ~= ErrorCode.None then
-        scripts.Bag.RollBackWithChange(bag_change_log)
-        return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
-            { code = err_code, error = "物品数量不足", uid = context.uid }, req.msg_context.stub_id)
-    end
-    err_code = scripts.Bag.DealCoins(trade_cost_coins, bag_change_log)
-    if err_code ~= ErrorCode.None then
-        scripts.Bag.RollBackWithChange(bag_change_log)
-        return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
-            { code = err_code, error = "上架费用不足", uid = context.uid }, req.msg_context.stub_id)
+    local err_code = ErrorCode.None
+    if not is_gm then
+        err_code = scripts.Bag.CheckItemsEnoughPos(BagDef.BagType.Cangku, trade_cost_items)
+        if err_code ~= ErrorCode.None then
+            return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
+                { code = err_code, error = "物品数量不足", uid = context.uid }, req.msg_context.stub_id)
+        end
+        err_code = scripts.Bag.CheckCoinsEnough(trade_cost_coins)
+        if err_code ~= ErrorCode.None then
+            return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
+                { code = err_code, error = "上架费用不足", uid = context.uid }, req.msg_context.stub_id)
+        end
+
+        err_code = scripts.Bag.DelItemsPos(BagDef.BagType.Cangku, trade_cost_items, bag_change_log)
+        if err_code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
+                { code = err_code, error = "物品数量不足", uid = context.uid }, req.msg_context.stub_id)
+        end
+        err_code = scripts.Bag.DealCoins(trade_cost_coins, bag_change_log)
+        if err_code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
+                { code = err_code, error = "上架费用不足", uid = context.uid }, req.msg_context.stub_id)
+        end
     end
 
     -- item_data.common_info.item_count = req.msg.sale_num
@@ -457,12 +482,16 @@ function Trade.PBTradeSaleReqCmd(req)
     local res, err = clusterd.call(3999, "trademgr", "Trademgr.AddTradeProduct", sale_data)
     if err then
         moon.error("Trade.PBTradeSaleReqCmd Trademgr.AddTradeProduct err:%s", err)
-        scripts.Bag.RollBackWithChange(bag_change_log)
+        if not is_gm then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+        end
         return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
             { code = ErrorCode.SaleProductErr, error = "寄售商品出错", uid = context.uid }, req.msg_context.stub_id)
     else
         if res <= 0 then
-            scripts.Bag.RollBackWithChange(bag_change_log)
+            if not is_gm then
+                scripts.Bag.RollBackWithChange(bag_change_log)
+            end
             return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
                 { code = ErrorCode.SaleProductErr, error = "寄售商品出错", uid = context.uid }, req.msg_context.stub_id)
         end
@@ -473,148 +502,12 @@ function Trade.PBTradeSaleReqCmd(req)
         table.insert(player_trade_data.simple_info.trade_ids, product_data.trade_id)
     end
 
-    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.TradeSale)
+    if not is_gm then
+        scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.TradeSale)
+    end
     Trade.SaveTradeInfoNow()
 
     return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
-        { code = ErrorCode.None, error = "寄售商品成功", uid = context.uid, trade_id = product_data.trade_id },
-        req.msg_context.stub_id)
-end
-
-function Trade.PBAuctionSaleReqCmd(req)
-    -- 参数验证
-    if not req.msg.config_id
-        or not req.msg.uniqid
-        or not req.msg.pos
-        or not req.msg.start_price
-        or not req.msg.buyout_price
-        or not req.msg.sale_ts then
-        return context.S2C(context.net_id, CmdCode.PBAuctionSaleRspCmd, {
-            code = ErrorCode.ParamInvalid,
-            error = "无效请求参数",
-            uid = context.uid,
-        }, req.msg_context.stub_id)
-    end
-
-    local player_trade_data = scripts.UserModel.GetTradeData()
-    if not player_trade_data then
-        return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
-            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
-    end
-
-    local item_conf = GameCfg.Item[req.msg.config_id]
-    if not item_conf then
-        return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
-            { code = ErrorCode.ConfigError, error = "物品配置不存在", uid = context.uid }, req.msg_context.stub_id)
-    end
-
-    if player_trade_data.simple_info.box_capacity + 1 > MAX_SALE_CAPACITY then
-        return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
-            { code = ErrorCode.TradeCapacityNotEnough, error = "交易容量不足", uid = context.uid }, req.msg_context.stub_id)
-    end
-
-    local errcode, item_data = scripts.Bag.GetOneItemData(BagDef.BagType.Cangku, req.msg.pos)
-    if errcode ~= ErrorCode.None
-        or not item_data
-        or item_data.common_info.config_id ~= req.msg.config_id
-        or item_data.common_info.uniqid ~= req.msg.uniqid then
-        return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
-            { code = ErrorCode.ItemNotExist, error = "物品不存在", uid = context.uid }, req.msg_context.stub_id)
-    end
-
-    if item_data.common_info.trade_cnt == 0 then
-        return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
-            { code = ErrorCode.TradeCapacityNotEnough, error = "交易次数不足", uid = context.uid }, req.msg_context.stub_id)
-    end
-
-    local auction_unique_items = {}
-    auction_unique_items[item_data.common_info.uniqid] = {
-        config_id = item_data.common_info.config_id,
-        uniqid = item_data.common_info.uniqid,
-        pos = req.msg.pos,
-    }
-    -- 扣除道具消耗
-    local trade_cost = {}
-    local change_log = {}
-    local err_code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, trade_cost, auction_unique_items)
-    if err_code ~= ErrorCode.None then
-        return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
-            { code = ErrorCode.ItemNotEnough, error = "物品数量不足", uid = context.uid }, req.msg_context.stub_id)
-    end
-    err_code = scripts.Bag.DelItems(BagDef.BagType.Cangku, trade_cost, auction_unique_items, change_log)
-    if err_code ~= ErrorCode.None then
-        scripts.Bag.RollBackWithChange(change_log)
-        return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
-            { code = err_code, error = "物品数量不足", uid = context.uid }, req.msg_context.stub_id)
-    end
-
-    local product_data = {
-        trade_id = 1,
-        seller_uid = context.uid,
-        item_data = item_data,
-        beg_ts = moon.time(),
-        end_ts = moon.time() + req.msg.sale_ts,
-        state = TradeDef.StateType.ON_SALE,
-        auction_data = TradeDef.newAuctionData(),
-    }
-    product_data.auction_data.start_price = req.msg.start_price
-    product_data.auction_data.buyout_price = req.msg.buyout_price
-    product_data.auction_data.cur_price = req.msg.start_price
-    product_data.auction_data.buyer_uid = 0
-
-    local sale_data = {
-        uid = context.uid,
-        product_data = product_data,
-        condition1 = 0,
-        condition2 = 0,
-        condition3 = 0,
-        condition4 = 0,
-        condition5 = 0,
-        custome_condition = {},
-    }
-    if table.size(item_conf.market) >= 1 then
-        sale_data.condition1 = item_conf.market[1]
-    end
-    if table.size(item_conf.market) >= 2 then
-        sale_data.condition2 = item_conf.market[2]
-    end
-    if table.size(item_conf.market) >= 3 then
-        sale_data.condition3 = item_conf.market[3]
-    end
-    if table.size(item_conf.market) >= 4 then
-        sale_data.condition4 = item_conf.market[4]
-    end
-    if table.size(item_conf.market) >= 5 then
-        sale_data.condition5 = item_conf.market[5]
-    end
-
-    local res, err = clusterd.call(3999, "trademgr", "Trademgr.AddAuctionProduct", sale_data)
-    if err then
-        moon.error("Trade.PBTradeSaleReqCmd Trademgr.AddAuctionProduct err:%s", err)
-        scripts.Bag.RollBackWithChange(change_log)
-        return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
-            { code = ErrorCode.SaleProductErr, error = "寄售商品出错", uid = context.uid }, req.msg_context.stub_id)
-    else
-        if res <= 0 then
-            scripts.Bag.RollBackWithChange(change_log)
-            return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
-                { code = ErrorCode.SaleProductErr, error = "寄售商品出错", uid = context.uid }, req.msg_context.stub_id)
-        end
-
-        product_data.trade_id = res
-        player_trade_data.product_list[product_data.trade_id] = product_data
-        table.insert(player_trade_data.simple_info.trade_ids, product_data.trade_id)
-    end
-
-    -- local save_bags = {}
-    -- for bagType, _ in pairs(change_log) do
-    --     save_bags[bagType] = 1
-    -- end
-    -- scripts.Bag.SaveAndLog(save_bags, change_log)
-    scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.TradeSale)
-    scripts.UserModel.SetTradeData(player_trade_data)
-
-    return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
         { code = ErrorCode.None, error = "寄售商品成功", uid = context.uid, trade_id = product_data.trade_id },
         req.msg_context.stub_id)
 end
@@ -841,22 +734,29 @@ function Trade.PBTradeBuyReqCmd(req)
         end
     end
 
-    -- 计算获得资源发送邮件
-    local item_simple_data = ItemDef.newItemSimple()
-    item_simple_data.config_id = req.msg.config_id
-    item_simple_data.item_count = res.data.total_real_buy_num
-    local attach_items_simple = {}
-    attach_items_simple[req.msg.config_id] = item_simple_data
-    
-    local mail_ret = scripts.Mail.RecvImmediateMail(trade_cfg.shipments_email, attach_items_simple, {}, {})
-    if not mail_ret then
-        moon.error("Trade.PBTradeBuyReqCmd RecvImmediateMail err")
-        scripts.Bag.RollBackWithChange(bag_change_logs)
-        return context.S2C(context.net_id, CmdCode.PBTradeBuyRspCmd, {
-            code = ErrorCode.MailConfigError,
-            error = "购买商品邮件出错",
-            uid = context.uid,
-        }, req.msg_context.stub_id)
+    local is_gm = false
+    if TradeDef.GM_UID[context.uid] then
+        is_gm = true
+    end
+
+    if not is_gm then
+        -- 计算获得资源发送邮件
+        local item_simple_data = ItemDef.newItemSimple()
+        item_simple_data.config_id = req.msg.config_id
+        item_simple_data.item_count = res.data.total_real_buy_num
+        local attach_items_simple = {}
+        attach_items_simple[req.msg.config_id] = item_simple_data
+
+        local mail_ret = scripts.Mail.RecvImmediateMail(trade_cfg.shipments_email, attach_items_simple, {}, {})
+        if not mail_ret then
+            moon.error("Trade.PBTradeBuyReqCmd RecvImmediateMail err")
+            scripts.Bag.RollBackWithChange(bag_change_logs)
+            return context.S2C(context.net_id, CmdCode.PBTradeBuyRspCmd, {
+                code = ErrorCode.MailConfigError,
+                error = "购买商品邮件出错",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
+        end
     end
 
     scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.TradeBuy)

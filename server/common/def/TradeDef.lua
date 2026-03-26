@@ -20,6 +20,11 @@ local TradeDef = {
         [9] = "min_price_num ASC",
         [10] = "min_price_num DESC",
     },
+    GM_UID = {
+        [10011] = 1,
+        [20011] = 1,
+        [30011] = 1,
+    }
 }
 
 local defaultPBTradeData = {

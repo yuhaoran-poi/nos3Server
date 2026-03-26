@@ -595,19 +595,24 @@ orderState"h
 bill_num (RbillNum
 bill_amount (R
 billAmountbproto3
-˜
+ê
 
-chat.proto"Ì
+chat.proto"ž
 PBChatMsgInfo!
 channel_type (RchannelType
 uid (Ruid
-name (	Rname
-msg_content (	R
+name (	Rname
+	head_icon (RheadIcon
+
+head_frame (R	headFrame
+title (Rtitle
+msg_content (	R
 msgContent
 
-msg_attach (R	msgAttach
-	send_time (RsendTime
-to_uid (RtoUid"ˆ
+msg_attach (R	msgAttach
+	send_time	 (RsendTime
+to_uid
+ (RtoUid"ˆ
 PBChatReqCmd!
 channel_type (RchannelType
 msg_content (	R
@@ -1195,7 +1200,7 @@ open_count (R	openCount(
 TreasureListEntry
 key (Rkey'
 value (2.PBTreasureSingleRvalue:8bproto3
-Ì8
+Í7
 
 user.proto
 item.proto	bag.proto
@@ -1453,27 +1458,21 @@ useItemCnt"D
 error (	Rerror
 uid (Ruid$
 item_config_id (RitemConfigId
-skin_id (RskinId"x
-PBHeadAndFrameChangeHeadReqCmd
+skin_id (RskinId"•
+ PBHeadFrameTitleChangeHeadReqCmd
 uid (Ruid 
 head_icon_id (R
 headIconId"
-head_frame_id (RheadFrameId"¢
-PBHeadAndFrameChangeHeadRspCmd
+head_frame_id (RheadFrameId
+title_id (RtitleId"¿
+ PBHeadFrameTitleChangeHeadRspCmd
 code (Rcode
 error (	Rerror
 uid (Ruid 
 head_icon_id (R
 headIconId"
-head_frame_id (RheadFrameId"F
-PBTitleChangeHeadReqCmd
-uid (Ruid
-title_id (RtitleId"p
-PBTitleChangeHeadRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-title_id (RtitleId"+
+head_frame_id (RheadFrameId
+title_id (RtitleId"+
 PBGetTreasureInfoReqCmd
 uid (Ruid"“
 PBGetTreasureInfoRspCmd

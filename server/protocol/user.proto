@@ -390,35 +390,22 @@ message PBItemChangeSkinRspCmd
 }
 
 // 给玩家更换头像和头像框
-message PBHeadAndFrameChangeHeadReqCmd
+message PBHeadFrameTitleChangeHeadReqCmd
 {
 	int64 uid	= 1;
 	int32 head_icon_id	= 2;
 	int32 head_frame_id	= 3;
+	int32 title_id		= 4;
 }
 
-message PBHeadAndFrameChangeHeadRspCmd
+message PBHeadFrameTitleChangeHeadRspCmd
 {
 	int32   code    = 1; // 服务器验证返回,0成功,其他失败
     string  error   = 2; // 错误信息
 	int64 uid		= 3;
 	int32 head_icon_id	= 4;
 	int32 head_frame_id	= 5;
-}
-
-// 给玩家换称号
-message PBTitleChangeHeadReqCmd
-{
-	int64 uid	= 1;
-	int32 title_id	= 2;
-}
-
-message PBTitleChangeHeadRspCmd
-{
-	int32   code    = 1; // 服务器验证返回,0成功,其他失败
-    string  error   = 2; // 错误信息
-	int64 uid		= 3;
-	int32 title_id	= 4;
+	int32 title_id		= 6;
 }
 
 message PBGetTreasureInfoReqCmd

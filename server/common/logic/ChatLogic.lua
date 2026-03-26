@@ -156,6 +156,9 @@ function ChatLogic.SendMsgToSystemChannel(msg_content, msg_attach)
         channel_type = ChatEnum.EChannelType.CHANNEL_TYPE_SYSTEM, -- 系统频道类型
         uid = 0, -- 系统消息的发送者UID
         name = "系统", -- 系统消息的发送者名称
+        head_icon_id = 0, -- 系统消息的发送者头像ID
+        head_frame_id = 0, -- 系统消息的发送者头框ID
+        title = 0, -- 系统消息的发送者称号ID
         msg_content = msg_content, -- 消息内容
         msg_attach = msg_attach, -- 消息附加
         send_time = moon.time(), -- 发送时间

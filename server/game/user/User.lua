@@ -2790,36 +2790,51 @@ function User.PBItemChangeSkinReqCmd(req)
     }, req.msg_context.stub_id)
 end
 
-function User.PBHeadAndFrameChangeHeadReqCmd(req)
-    if not req.msg.head_icon_id or not req.msg.head_frame_id then
-        return context.S2C(context.net_id, CmdCode["PBHeadAndFrameChangeHeadRspCmd"], {
+function User.PBHeadFrameTitleChangeHeadReqCmd(req)
+    if not req.msg.head_icon_id or not req.msg.head_frame_id or not req.msg.title_id then
+        return context.S2C(context.net_id, CmdCode["PBHeadFrameTitleChangeHeadRspCmd"], {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
             uid = context.uid,
             head_icon_id = req.msg.head_icon_id or 0,
             head_frame_id = req.msg.head_frame_id or 0,
+            title_id = req.msg.title_id or 0,
         }, req.msg_context.stub_id)
     end
 
     if req.msg.head_icon_id > 0 then
         if not scripts.ItemImage.CheckImageValid(req.msg.head_icon_id) then
-            return context.S2C(context.net_id, CmdCode["PBHeadAndFrameChangeHeadRspCmd"], {
+            return context.S2C(context.net_id, CmdCode["PBHeadFrameTitleChangeHeadRspCmd"], {
                 code = ErrorCode.ItemNotExist,
                 error = "头像皮肤不存在或已过期",
                 uid = context.uid,
                 head_icon_id = req.msg.head_icon_id or 0,
                 head_frame_id = req.msg.head_frame_id or 0,
+                title_id = req.msg.title_id or 0,
             }, req.msg_context.stub_id)
         end
     end
     if req.msg.head_frame_id > 0 then
         if not scripts.ItemImage.CheckImageValid(req.msg.head_frame_id) then
-            return context.S2C(context.net_id, CmdCode["PBHeadAndFrameChangeHeadRspCmd"], {
+            return context.S2C(context.net_id, CmdCode["PBHeadFrameTitleChangeHeadRspCmd"], {
                 code = ErrorCode.ItemNotExist,
                 error = "头像框皮肤不存在或已过期",
                 uid = context.uid,
                 head_icon_id = req.msg.head_icon_id or 0,
                 head_frame_id = req.msg.head_frame_id or 0,
+                title_id = req.msg.title_id or 0,
+            }, req.msg_context.stub_id)
+        end
+    end
+    if req.msg.title_id > 0 then
+        if not scripts.ItemImage.CheckImageValid(req.msg.title_id) then
+            return context.S2C(context.net_id, CmdCode["PBHeadFrameTitleChangeHeadRspCmd"], {
+                code = ErrorCode.ItemNotExist,
+                error = "称号皮肤不存在或已过期",
+                uid = context.uid,
+                head_icon_id = req.msg.head_icon_id or 0,
+                head_frame_id = req.msg.head_frame_id or 0,
+                title_id = req.msg.title_id or 0,
             }, req.msg_context.stub_id)
         end
     end
@@ -2827,46 +2842,15 @@ function User.PBHeadAndFrameChangeHeadReqCmd(req)
     local update_user_attr = {}
     update_user_attr[ProtoEnum.UserAttrType.head_icon] = req.msg.head_icon_id
     update_user_attr[ProtoEnum.UserAttrType.head_frame] = req.msg.head_frame_id
+    update_user_attr[ProtoEnum.UserAttrType.title] = req.msg.title_id
     User.SetUserAttr(update_user_attr, true)
 
-    return context.S2C(context.net_id, CmdCode["PBHeadAndFrameChangeHeadRspCmd"], {
+    return context.S2C(context.net_id, CmdCode["PBHeadFrameTitleChangeHeadRspCmd"], {
         code = ErrorCode.None,
         error = "更换成功",
         uid = context.uid,
         head_icon_id = req.msg.head_icon_id,
         head_frame_id = req.msg.head_frame_id,
-    }, req.msg_context.stub_id)
-end
-
-function User.PBTitleChangeHeadReqCmd(req)
-    if not req.msg.title_id then
-        return context.S2C(context.net_id, CmdCode["PBTitleChangeHeadRspCmd"], {
-            code = ErrorCode.ParamInvalid,
-            error = "无效请求参数",
-            uid = context.uid,
-            title_id = req.msg.title_id or 0,
-        }, req.msg_context.stub_id)
-    end
-
-    if req.msg.title_id > 0 then
-        if not scripts.ItemImage.CheckImageValid(req.msg.title_id) then
-            return context.S2C(context.net_id, CmdCode["PBTitleChangeHeadRspCmd"], {
-                code = ErrorCode.ItemNotExist,
-                error = "称号皮肤不存在或已过期",
-                uid = context.uid,
-                title_id = req.msg.title_id,
-            }, req.msg_context.stub_id)
-        end
-    end
-
-    local update_user_attr = {}
-    update_user_attr[ProtoEnum.UserAttrType.title] = req.msg.title_id
-    User.SetUserAttr(update_user_attr, true)
-
-    return context.S2C(context.net_id, CmdCode["PBTitleChangeHeadRspCmd"], {
-        code = ErrorCode.None,
-        error = "更换成功",
-        uid = context.uid,
         title_id = req.msg.title_id,
     }, req.msg_context.stub_id)
 end

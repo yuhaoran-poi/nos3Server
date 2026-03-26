@@ -405,6 +405,9 @@
 ---@field public channel_type integer @频道类型
 ---@field public uid integer @发送者uid
 ---@field public name string @发送者昵称
+---@field public head_icon integer
+---@field public head_frame integer
+---@field public title integer
 ---@field public msg_content string @消息内容
 ---@field public msg_attach string @消息附加
 ---@field public send_time integer @发送时间
@@ -3535,29 +3538,19 @@
 ---@field public skin_id integer
 
 
----@class PBHeadAndFrameChangeHeadReqCmd
+---@class PBHeadFrameTitleChangeHeadReqCmd
 ---@field public uid integer
 ---@field public head_icon_id integer
 ---@field public head_frame_id integer
-
-
----@class PBHeadAndFrameChangeHeadRspCmd
----@field public code integer @服务器验证返回,0成功,其他失败
----@field public error string @错误信息
----@field public uid integer
----@field public head_icon_id integer
----@field public head_frame_id integer
-
-
----@class PBTitleChangeHeadReqCmd
----@field public uid integer
 ---@field public title_id integer
 
 
----@class PBTitleChangeHeadRspCmd
+---@class PBHeadFrameTitleChangeHeadRspCmd
 ---@field public code integer @服务器验证返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public uid integer
+---@field public head_icon_id integer
+---@field public head_frame_id integer
 ---@field public title_id integer
 
 
