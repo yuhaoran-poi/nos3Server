@@ -2715,27 +2715,25 @@ redTeamNum"
 #PBSelectionState_LRS_SelectionGhost#
 PBSelectionState_LRS_SetupGhost)
 %PBSelectionState_SH_Ghost_Select_Skinbproto3
-ù
-mission.proto"•
+Ä
+mission.proto"õ
 PBConditionData
-cond_id (RcondId
-	cond_type (RcondType
-cond_target (R
-condTarget
-progress (Rprogress
-is_complete (R
-isComplete"Ë
+cond_id (RcondId
+
+target_cnt (R	targetCnt
+now_cnt (RnowCnt
+is_complete (R
+isComplete
+params (Rparams"’
 PBMissionData
 
 mission_id (R	missionId!
-mission_type (RmissionType
-is_complete (R
-isComplete
-is_get (RisGet
-beg_ts (RbegTs
-end_ts (RendTs/
+mission_type (RmissionType#
+mission_state (RmissionState
+beg_ts (RbegTs
+end_ts (RendTs/
 
-cond_datas (2.PBConditionDataR	condDatas"é
+cond_datas (2.PBConditionDataR	condDatas"é
 PBUpdateMissionSeverSyncCmd
 uid (Ruid
 cond_id (RcondId

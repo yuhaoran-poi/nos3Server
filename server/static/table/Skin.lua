@@ -16,5 +16,14 @@ return {
 [1162002] = { id=1162002,type=4,color=5,belong=1000002 },
 [1172002] = { id=1172002,type=5,color=1,belong=1000002 },
 [1182000] = { id=1182000,type=6,color=2,belong=1000002 },
-[1192003] = { id=1192003,type=7,color=3,belong=1000002 }
+[1192003] = { id=1192003,type=7,color=3,belong=1000002 },
+[1015000] = { id=1015000,type=19,color=2,belong=0 },
+[1015001] = { id=1015001,type=19,color=3,belong=0 },
+[1015002] = { id=1015002,type=19,color=4,belong=0 },
+[1015500] = { id=1015500,type=20,color=2,belong=0 },
+[1015501] = { id=1015501,type=20,color=3,belong=0 },
+[1015502] = { id=1015502,type=20,color=4,belong=0 },
+[1016600] = { id=1016600,type=21,color=3,belong=0 },
+[1016601] = { id=1016601,type=21,color=4,belong=0 },
+[1016602] = { id=1016602,type=21,color=5,belong=0 }
 }

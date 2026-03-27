@@ -3,21 +3,20 @@ syntax = "proto3";
 message PBConditionData
 {
 	int32 cond_id		= 1;
-	int32 cond_type		= 2;
-	int32 cond_target	= 3;
-	int32 progress		= 4;
-	int32 is_complete	= 5;
+	int32 target_cnt	= 2;
+	int32 now_cnt		= 3;
+	int32 is_complete	= 4;
+	repeated int32 params	= 5;
 }
 
 message PBMissionData
 {
     int32 mission_id	= 1;
     int32 mission_type	= 2;
-	int32 is_complete	= 3;
-	int32 is_get		= 4;
-	int64 beg_ts		= 5;
-	int64 end_ts		= 6;
-	repeated PBConditionData cond_datas = 7;
+	int32 mission_state	= 3;
+	int64 beg_ts		= 4;
+	int64 end_ts		= 5;
+	repeated PBConditionData cond_datas = 6;
 }
 
 // 更新任务进度

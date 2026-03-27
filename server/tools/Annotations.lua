@@ -2312,17 +2312,16 @@
 
 ---@class PBConditionData
 ---@field public cond_id integer
----@field public cond_type integer
----@field public cond_target integer
----@field public progress integer
+---@field public target_cnt integer
+---@field public now_cnt integer
 ---@field public is_complete integer
+---@field public params integer[]
 
 
 ---@class PBMissionData
 ---@field public mission_id integer
 ---@field public mission_type integer
----@field public is_complete integer
----@field public is_get integer
+---@field public mission_state integer
 ---@field public beg_ts integer
 ---@field public end_ts integer
 ---@field public cond_datas PBConditionData[]
@@ -3746,6 +3745,7 @@
 
 ---@class static_conf
 ---@field AccountBuffConfig AccountBuffConfig_cfg[]
+---@field AchievementMissionConfig AchievementMissionConfig_cfg[]
 ---@field AllTag AllTag_cfg[]
 ---@field AllTagPool AllTagPool_cfg[]
 ---@field AntiqueItem AntiqueItem_cfg[]
@@ -3761,6 +3761,7 @@
 ---@field Coin Coin_cfg[]
 ---@field CommonConfig CommonConfig_cfg[]
 ---@field Composite Composite_cfg[]
+---@field ConditionPool ConditionPool_cfg[]
 ---@field ConsumablesBackpackExpansion ConsumablesBackpackExpansion_cfg[]
 ---@field EquipmentTagPool EquipmentTagPool_cfg[]
 ---@field ExchangeStoreWaresConfig ExchangeStoreWaresConfig_cfg[]
@@ -3783,9 +3784,11 @@
 ---@field ItemSkin ItemSkin_cfg[]
 ---@field LightConvert LightConvert_cfg[]
 ---@field LightInfo LightInfo_cfg[]
+---@field LinearMissionConfig LinearMissionConfig_cfg[]
 ---@field MagicItem MagicItem_cfg[]
 ---@field MagicItemUpLv MagicItemUpLv_cfg[]
 ---@field MissionBox MissionBox_cfg[]
+---@field PeriodMissionConfig PeriodMissionConfig_cfg[]
 ---@field PropCompose PropCompose_cfg[]
 ---@field RandomComposite RandomComposite_cfg[]
 ---@field RankConfig RankConfig_cfg[]

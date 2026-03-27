@@ -43,6 +43,13 @@ function ItemImage.Start(isnew)
     end
     
     if isnew then
+        local init_cfg = GameCfg.Init[1]
+        if init_cfg then
+            for _, init_add_id in pairs(init_cfg.collection) do
+                ItemImage.AddItemImage(init_add_id, {}, true)
+            end
+        end
+
         ItemImage.SaveItemImagesNow()
     end
 end
