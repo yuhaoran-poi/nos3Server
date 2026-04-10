@@ -17,15 +17,29 @@ message PBGameChangeRoleInfo
 // DS结算数据
 message PBGameSettle
 {
-    string settle_data = 1;//结算展示信息
+    string settle_data = 1;//战报详情
     int32 account_experience = 2;//账户经验值
     repeated PBGameChangeRoleInfo game_role_change = 3;//角色信息变更
     PBBag consume_bag   = 4;//消耗品背包
     PBBag booty_bag     = 5;//战利品背包
     PBBag tool_bag      = 6;//工具品背包
-    int32 grade_id      = 7;
+    int32 grade_id      = 7;//段位
     int32 change_score  = 8;//段位积分
     repeated PBItemSimple reward_boxs   = 9;//获得的奖励宝箱
+    map<int32, int32> game_missions  = 10;   // 局内完成任务
+
+    message PBInGameKillMonster
+    {
+        int32 monster_id    = 1;
+        int32 monster_type  = 2;
+        int32 kill_cnt      = 3;
+    }
+    repeated PBInGameKillMonster kill_monsters  = 11;   // 局内击杀怪物
+    int32 chapter_id    = 12;    // 章节id
+    int32 difficulty    = 13;    // 难度
+    repeated int32 battle_god_ids   = 14;    //参战神明id
+    int64 booty_value   = 15;   // 战利品总价值
+    string settle_simple_data = 16;//战报简述
 }
 
 // 玩家进入主城

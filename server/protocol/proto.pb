@@ -1563,7 +1563,7 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-Ú!
+Ñ%
 dsnode.proto
 item.proto
 user.proto	bag.proto
@@ -1580,7 +1580,7 @@ magic_item (2.PBItemDataR	magicItemL
 space_ring (2.PBItemDataR	spaceRingL
 DigramsCardsEntry
 key (Rkey!
-value (2.PBItemDataRvalue:8"þ
+value (2.PBItemDataRvalue:8"õ
 PBGameSettle
 settle_data (	R
 settleData-
@@ -1593,7 +1593,27 @@ consumeBag#
 grade_id (RgradeId!
 change_score (RchangeScore.
 reward_boxs	 (2.PBItemSimpleR
-rewardBoxs"=
+rewardBoxsD
+game_missions
+ (2.PBGameSettle.GameMissionsEntryRgameMissionsF
+kill_monsters (2!.PBGameSettle.PBInGameKillMonsterRkillMonsters
+
+chapter_id (R	chapterId
+
+difficulty (R
+difficulty$
+battle_god_ids (RbattleGodIds
+booty_value (R
+bootyValue,
+settle_simple_data (	RsettleSimpleData?
+GameMissionsEntry
+key (Rkey
+value (Rvalue:8r
+PBInGameKillMonster
+
+monster_id (R	monsterId!
+monster_type (RmonsterType
+kill_cnt (RkillCnt"=
 PBEnterCityReqCmd
 uid (Ruid
 cityid (Rcityid"=

@@ -1203,7 +1203,7 @@ function Mission.AchivementMissionComplete(mission_info, complete_ids, change_lo
         if achievement_cfg and achievement_cfg.type then
             -- 触发完成任务条件
             scripts.UserModel.SetMissionInfo(mission_info)
-            Mission.TriggerCondition(MissionDef.EConditionIds.OUT_TASK_CNT, { achievement_cfg.type, mission_id }, 1)
+            Mission.TriggerCondition(MissionDef.EConditionIds.ACHIEVEMENT_CNT, { achievement_cfg.type, mission_id }, 1)
             mission_info = scripts.UserModel.GetMissionInfo()
         end
     end

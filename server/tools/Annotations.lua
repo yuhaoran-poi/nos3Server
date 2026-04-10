@@ -504,16 +504,29 @@
 ---@field public space_ring PBItemData @空间戒指
 
 
+---@class PBInGameKillMonster
+---@field public monster_id integer
+---@field public monster_type integer
+---@field public kill_cnt integer
+
+
 ---@class PBGameSettle
----@field public settle_data string @结算展示信息
+---@field public settle_data string @战报详情
 ---@field public account_experience integer @账户经验值
 ---@field public game_role_change PBGameChangeRoleInfo[] @角色信息变更
 ---@field public consume_bag PBBag @消耗品背包
 ---@field public booty_bag PBBag @战利品背包
 ---@field public tool_bag PBBag @工具品背包
----@field public grade_id integer
+---@field public grade_id integer @段位
 ---@field public change_score integer @段位积分
 ---@field public reward_boxs PBItemSimple[] @获得的奖励宝箱
+---@field public game_missions table<integer, integer> @局内完成任务
+---@field public kill_monsters PBInGameKillMonster[] @局内击杀怪物
+---@field public chapter_id integer @章节id
+---@field public difficulty integer @难度
+---@field public battle_god_ids integer[] @参战神明id
+---@field public booty_value integer @战利品总价值
+---@field public settle_simple_data string @战报简述
 
 
 ---@class PBEnterCityReqCmd
