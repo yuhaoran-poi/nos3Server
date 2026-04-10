@@ -1,7 +1,7 @@
 ---@class Item_cfg
 ---@field public id integer @普通道具，可堆叠，可消耗
 ---@field public bound_id integer @对应的可交易（非绑）ID
----@field public type1 integer @资源大类型 0.其他 1.真经
+---@field public type1 integer @资源大类型 0.其他 1.真经 （对应交易行一级分类 id）
 ---@field public type2 integer @品质 1.白 2.蓝 3.紫 4.金 5.红
 ---@field public type3 integer @属性 0.无 1.金 2.水 3.木 4.火 5.土
 ---@field public type4 integer @自定义类型1 0.无

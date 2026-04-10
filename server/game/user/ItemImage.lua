@@ -9,6 +9,7 @@ local BagDef = require("common.def.BagDef")
 local ItemDef = require("common.def.ItemDef")
 local ItemDefine = require("common.logic.ItemDefine")
 local CommonCfgDef = require("common.def.CommonCfgDef")
+local MissionDef = require("common.def.MissionDef")
 
 ---@type user_context
 local context = ...
@@ -74,7 +75,7 @@ function ItemImage.SaveAndLog(config_ids)
     if not itemImages then
         return false
     end
-    
+
     local update_msg = {
         update_images = {},
     }
@@ -131,6 +132,32 @@ function ItemImage.SaveAndLog(config_ids)
     context.S2C(context.net_id, CmdCode["PBImageUpdateSyncCmd"], update_msg, 0)
 
     ItemImage.SaveItemImagesNow()
+end
+
+function ItemImage.GetSkinTypeCnt(itemImages)
+    if not itemImages then
+        itemImages = scripts.UserModel.GetItemImages()
+        if not itemImages then
+            return 0, 0
+        end
+    end
+
+    if not itemImages.skin_image then
+        return 0, 0
+    end
+
+    local role_cnt, item_cnt = 0, 0
+    for config_id, skin in pairs(itemImages.skin_image) do
+        if skin.valid_ts == 0 then
+            local item_type = ItemDefine.GetItemType(config_id)
+            if item_type == ItemDefine.EItemSmallType.RoleSkin then
+                role_cnt = role_cnt + 1
+            elseif item_type == ItemDefine.EItemSmallType.ItemSkin then
+                item_cnt = item_cnt + 1
+            end
+        end
+    end
+    return role_cnt, item_cnt
 end
 
 -- map<int32, PBImage> item_image				= 1;	//道具图鉴	有key则执行覆盖
@@ -217,6 +244,17 @@ function ItemImage.AddItemImage(config_id, change_image_ids, use_item)
         return ErrorCode.ItemNotExist
     end
 
+    if item_type == ItemDefine.EItemSmallType.RoleSkin then
+        -- 触发角色皮肤数量
+        local now_cnt, _ = ItemImage.GetSkinTypeCnt(itemImages)
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.UNLOCK_ROLE_SKIN_CNT, {}, now_cnt)
+        -- 触发指定皮肤解锁
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.UNLOCK_ROLE_SKIN, { config_id }, 1)
+    elseif item_type == ItemDefine.EItemSmallType.ItemSkin then
+        -- 触发道具皮肤数量
+        local _, now_cnt = ItemImage.GetSkinTypeCnt(itemImages)
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.UNLOCK_ITEM_SKIN_CNT, {}, now_cnt)
+    end
     return ErrorCode.None
 end
 

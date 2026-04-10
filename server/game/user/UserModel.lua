@@ -308,4 +308,16 @@ function UserModel.SetTreasureData(treasure_data)
     DBData.treasure = treasure_data
 end
 
+---@return PBPlayerMissionInfo ? nil
+function UserModel.GetMissionInfo()
+    if DBData and DBData.mission_info then
+        return DBData.mission_info
+    end
+    return nil
+end
+
+function UserModel.SetMissionInfo(mission_info)
+    DBData.mission_info = mission_info
+end
+
 return UserModel

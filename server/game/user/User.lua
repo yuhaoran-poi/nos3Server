@@ -1,4 +1,5 @@
 local moon = require("moon")
+local datetime = require("moon.datetime")
 local common = require("common")
 local clusterd = require("cluster")
 local json = require "json"
@@ -17,6 +18,7 @@ local CommonCfgDef = require("common.def.CommonCfgDef")
 local ItemDefine = require("common.logic.ItemDefine")
 local ItemDef = require("common.def.ItemDef")
 local ChatLogic = require("common.logic.ChatLogic")
+local MissionDef = require("common.def.MissionDef")
 
 ---@type user_context
 local context = ...
@@ -102,18 +104,13 @@ function User.Load(req)
             -- data.user_attr.nick_name = data.name or data.authkey
             data.user_attr.account_create_time = moon.time()
         end
-        data.user_attr.online_time = moon.time()
+        -- data.user_attr.online_time = moon.time()
         data.user_attr.is_online = UserAttrDef.ONLINE_STATE.ONLINE
 
         scripts.UserModel.Create(data)
         context.uid = req.uid
         context.net_id = req.net_id
         -- moon.warn(string.format("User.Load context.net_id = %d", context.net_id))
-
-        ---初始化自己数据
-        context.batch_invoke_throw("Init", isnew)
-        ---初始化互相引用的数据
-        context.batch_invoke_throw("Start", isnew)
 
         if isnew then
             ---根据初始化表进行user_attr初始化
@@ -130,6 +127,10 @@ function User.Load(req)
             user_attr.title = init_cfg.title
         end
 
+        ---初始化自己数据
+        context.batch_invoke_throw("Init", isnew)
+        ---初始化互相引用的数据
+        context.batch_invoke_throw("Start", isnew)
         -- ---加载道具图鉴数据
         -- local image_res = scripts.ItemImage.Start()
         -- if image_res.code ~= ErrorCode.None then
@@ -282,6 +283,32 @@ function User.GetOnlineUserAttr(fields)
     return user_attr
 end
 
+function User.GetLastOnlineTime()
+    local db_user_attr = scripts.UserModel.GetUserAttr()
+    if not db_user_attr then
+        return -1
+    end
+
+    if db_user_attr.online_time then
+        return db_user_attr.online_time
+    else
+        return 0
+    end
+end
+
+function User.GetNowLevel()
+    local db_user_attr = scripts.UserModel.GetUserAttr()
+    if not db_user_attr then
+        return -1
+    end
+
+    if db_user_attr.account_level then
+        return db_user_attr.account_level
+    else
+        return 0
+    end
+end
+
 function User.GetUserSimpleData()
     local simple_data = User.GetOnlineUserAttr(simple_fields)
 
@@ -325,9 +352,14 @@ function User.GetUserDetails()
     local role_data = scripts.Role.GetRoleInfo(details_data.cur_show_role.config_id)
     local ghost_data = scripts.Ghost.GetGhostInfo(details_data.cur_show_ghost.config_id)
     local grade_show_infos = scripts.Grade.GetGradeShowInfos()
-
-    return { user_attr = details_data, role_data = role_data, ghost_data = ghost_data, grade_show_infos =
-    grade_show_infos }
+    local res = scripts.Bag.GetBagdata({ BagDef.BagType.Consume })
+    return {
+        user_attr = details_data,
+        role_data = role_data,
+        ghost_data = ghost_data,
+        grade_show_infos = grade_show_infos,
+        consume_bag_data = res.bag_datas[BagDef.BagType.Consume] or {},
+    }
 end
 
 function User.Login(req)
@@ -347,6 +379,7 @@ function User.Logout()
 end
 
 function User.InitCheckData()
+    -- scripts.Mission.CheckNewMissions()
     User.CheckAccountLevel()
     User.NotifyGameSettle()
     User.NotifyGameReturnItems()
@@ -570,6 +603,7 @@ function User.AddAccountExp(add_exp)
     if query_res.user_attr[ProtoEnum.UserAttrType.account_level] then
         now_level = query_res.user_attr[ProtoEnum.UserAttrType.account_level]
     end
+    local old_level = now_level
     local now_exp = 0
     if query_res.user_attr[ProtoEnum.UserAttrType.account_exp] then
         now_exp = query_res.user_attr[ProtoEnum.UserAttrType.account_exp]
@@ -600,6 +634,11 @@ function User.AddAccountExp(add_exp)
                 now_level = i
             end
         end
+    end
+    local new_level = now_level
+    if new_level > old_level then
+        -- 触发账户等级
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ACCOUNT_LEVEL, {}, new_level)
     end
 
     local update_user_attr = {}
@@ -659,9 +698,33 @@ function User.PBPingCmd(req)
     }
     context.S2C(context.net_id, CmdCode.PBPongCmd, ret, req.msg_context.stub_id)
 
-    local update_user_attr = {}
-    update_user_attr[ProtoEnum.UserAttrType.online_time] = moon.time()
-    User.SetUserAttr(update_user_attr, false)
+    local last_online_time = User.GetLastOnlineTime()
+    if last_online_time < 0 then
+        return
+    end
+
+    local now_ts = moon.time()
+    local add_time = now_ts - last_online_time
+    if add_time >= 60 * 2 then
+        add_time = 60
+    end
+    local change_day = false
+    if not datetime.is_same_day(last_online_time, now_ts) then
+        change_day = true
+    end
+
+    if change_day or add_time >= 60 then
+        if change_day then
+            -- 触发签到
+            scripts.Mission.TriggerCondition(MissionDef.EConditionIds.SIGN_CNT, {}, 1)
+        end
+        -- 触发在线时间累计
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ONLINE_TIME, {}, add_time)
+
+        local update_user_attr = {}
+        update_user_attr[ProtoEnum.UserAttrType.online_time] = now_ts
+        User.SetUserAttr(update_user_attr, false)
+    end
 end
 
 -- function User.SimpleSetShowRole(role_info)
@@ -751,6 +814,12 @@ local function LightRoleEquipment(msg)
             moon.error("LightRoleEquipment LightMagicItem Fail:", msg.roleid)
         end
 
+        -- 触发开光装备次数
+        local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+        if uniqitem_cfg then
+            scripts.Mission.TriggerCondition(MissionDef.EConditionIds.LIGHT_EQP_CNT,
+                { uniqitem_cfg.type1, uniqitem_cfg.type2 }, 1)
+        end
         return ErrorCode.None, item_data
     elseif role_info.space_ring
         and role_info.space_ring.common_info
@@ -793,6 +862,12 @@ local function LightRoleEquipment(msg)
             moon.error("LightRoleEquipment LightSpaceRing Fail:", msg.roleid)
         end
 
+        -- 触发开光装备次数
+        local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+        if uniqitem_cfg then
+            scripts.Mission.TriggerCondition(MissionDef.EConditionIds.LIGHT_EQP_CNT,
+                { uniqitem_cfg.type1, uniqitem_cfg.type2 }, 1)
+        end
         return ErrorCode.None, item_data
     else
         local slot = 0
@@ -854,6 +929,12 @@ local function LightRoleEquipment(msg)
             moon.error("LightRoleEquipment LightDiagramsCard Fail:", msg.roleid)
         end
 
+        -- 触发开光装备次数
+        local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+        if uniqitem_cfg then
+            scripts.Mission.TriggerCondition(MissionDef.EConditionIds.LIGHT_EQP_CNT,
+                { uniqitem_cfg.type1, uniqitem_cfg.type2 }, 1)
+        end
         return ErrorCode.None, item_data
     end
 end
@@ -989,6 +1070,12 @@ local function LightBagItem(msg)
         scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.BagLight)
     end
 
+    -- 触发开光装备次数
+    local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+    if uniqitem_cfg then
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.LIGHT_EQP_CNT,
+            { uniqitem_cfg.type1, uniqitem_cfg.type2 }, 1)
+    end
     return ErrorCode.None, item_data
 end
 
@@ -1601,6 +1688,7 @@ function User.PBGetOtherDetailReqCmd(req)
             role_data = res.role_data,
             ghost_data = res.ghost_data,
             grade_show_infos = res.grade_show_infos,
+            consume_bag = res.consume_bag_data,
         }, req.msg_context.stub_id)
     else
         return context.S2C(context.net_id, CmdCode.PBGetOtherDetailRspCmd, {
@@ -1779,7 +1867,7 @@ end
 --     -- 读取皮肤礼包表
 -- end
 
-function User.Composite(composite_cfg, add_roles, add_items)
+function User.Composite(composite_cfg, add_roles, add_items, com_item_list)
     local random_rate = math.random(1, 10000)
     if random_rate > composite_cfg.rate then
         return { code = ErrorCode.CompositeFail, error = "合成失败" }
@@ -1814,6 +1902,7 @@ function User.Composite(composite_cfg, add_roles, add_items)
                             }
                         end
                         add_items[id].count = add_items[id].count + composite_cfg.item_id[id]
+                        table.insert(com_item_list, id)
                     end
                 end
 
@@ -1837,6 +1926,7 @@ function User.Composite(composite_cfg, add_roles, add_items)
                 }
             end
             add_items[composite_cfg.item_id].count = add_items[composite_cfg.item_id].count + composite_cfg.num
+            table.insert(com_item_list, composite_cfg.item_id)
         end
     end
 
@@ -1901,8 +1991,9 @@ function User.PBSureCompositeReqCmd(req)
 
     local add_roles = {}
     local add_items = {}
+    local com_item_list = {}
     for i = 1, req.msg.composite_cnt do
-        local composite_ret = User.Composite(composite_cfg, add_roles, add_items)
+        local composite_ret = User.Composite(composite_cfg, add_roles, add_items, com_item_list)
         if composite_ret.code ~= ErrorCode.None
             and composite_ret.code ~= ErrorCode.CompositeFail then
             rsp_msg.code = composite_ret.code
@@ -1997,6 +2088,37 @@ function User.PBSureCompositeReqCmd(req)
     
     if table.size(change_roles) > 0 then
         scripts.Role.SaveAndLog(change_roles)
+    end
+
+    -- 触发制作道具次数
+    local target_prop_cnt = {}
+    for _, item_id in pairs(com_item_list) do
+        local prop = 0
+        local item_cfg = GameCfg.Item[item_id]
+        if item_cfg and item_cfg.type2 then
+            prop = item_cfg.type2
+        else
+            local uniqitem_cfg = GameCfg.UniqueItem[item_id]
+            if uniqitem_cfg and uniqitem_cfg.type2 then
+                prop = uniqitem_cfg.type2
+            end
+        end
+        if prop > 0 then
+            if not target_prop_cnt[prop] then
+                target_prop_cnt[prop] = 0
+            end
+            target_prop_cnt[prop] = target_prop_cnt[prop] + 1
+        end
+    end
+    if table.size(add_roles) > 0 then
+        if not target_prop_cnt[5] then
+            target_prop_cnt[5] = 0
+        end
+        target_prop_cnt[5] = target_prop_cnt[5] + table.size(add_roles)
+    end
+    for prop, cnt in pairs(target_prop_cnt) do
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.MAKE_ITEM_CNT,
+            { composite_cfg.show_ui, composite_cfg.id, prop }, cnt)
     end
 end
 
@@ -2241,6 +2363,13 @@ function User.PBInlayTabooWordReqCmd(req)
         scripts.Role.SaveAndLog(change_roles)
     elseif table.size(change_ghosts) > 0 then
         scripts.Ghost.SaveAndLog(change_ghosts)
+    end
+
+    -- 触发镶嵌讳字次数
+    local item_cfg = GameCfg.Item[req.msg.tabooword_id]
+    if item_cfg and item_cfg.type2 then
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.INLAY_TABOO_WORD_CNT,
+            { req.msg.tabooword_id, item_cfg.type2 }, 1)
     end
 end
 
@@ -2696,6 +2825,8 @@ function User.PBUseItemReqCmd(req)
     if table.size(update_user_attr) > 0 then
         User.SetUserAttr(update_user_attr, true)
     end
+
+    
 end
 
 function User.PBRefuseReturnRoomReqCmd(req)
@@ -2855,9 +2986,9 @@ function User.PBHeadFrameTitleChangeHeadReqCmd(req)
     }, req.msg_context.stub_id)
 end
 
-function User.PBGetTreasureListReqCmd(req)
+function User.PBGetTreasureInfoReqCmd(req)
     if not req.msg.uid then
-        return context.S2C(context.net_id, CmdCode.PBGetTreasureListRspCmd, {
+        return context.S2C(context.net_id, CmdCode.PBGetTreasureInfoRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
             uid = context.uid,
@@ -2866,15 +2997,15 @@ function User.PBGetTreasureListReqCmd(req)
 
     local treasures = scripts.Shop.GetTreasureDatas()
 
-    return context.S2C(context.net_id, CmdCode.PBGetTreasureListRspCmd, {
+    return context.S2C(context.net_id, CmdCode.PBGetTreasureInfoRspCmd, {
         code = ErrorCode.None,
-        error = "获取宝箱列表成功",
+        error = "获取宝箱信息成功",
         uid = context.uid,
         treasure_datas = treasures,
     }, req.msg_context.stub_id)
 end
 
-function User.PBOOpenTreasureReqCmd(req)
+function User.PBOpenTreasureReqCmd(req)
     if not req.msg.uid
         or not req.msg.open_treasure_id
         or not req.msg.open_count then
@@ -2885,7 +3016,7 @@ function User.PBOOpenTreasureReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local err_code = scripts.Shop.OpenTreasure(req.msg.open_treasure_id, req.msg.open_count)
+    local err_code, re_list = scripts.Shop.OpenTreasure(req.msg.open_treasure_id, req.msg.open_count)
     local treasure_data = scripts.Shop.GetTreasureData(req.msg.open_treasure_id)
     if err_code ~= ErrorCode.None then
         return context.S2C(context.net_id, CmdCode.PBOpenTreasureRspCmd, {
@@ -2896,11 +3027,22 @@ function User.PBOOpenTreasureReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
+    local add_items = {}
+    if re_list and table.size(re_list) > 0 then
+        for _, re in pairs(re_list) do
+            local new_item_simple = ItemDef.newItemSimple()
+            new_item_simple.config_id = re.id
+            new_item_simple.item_count = re.count
+            table.insert(add_items, new_item_simple)
+        end
+    end
+
     return context.S2C(context.net_id, CmdCode.PBOpenTreasureRspCmd, {
         code = err_code,
         error = "打开宝箱成功",
         uid = context.uid,
         treasure_data = treasure_data,
+        add_items = add_items,
     }, req.msg_context.stub_id)
 end
 

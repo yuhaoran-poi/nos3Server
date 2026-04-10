@@ -1,0 +1,1749 @@
+local moon = require "moon"
+local datetime = require("moon.datetime")
+local common = require "common"
+local clusterd = require("cluster")
+local json = require("json")
+local GameCfg = common.GameCfg
+local ErrorCode = common.ErrorCode
+local CmdCode = common.CmdCode
+local Database = common.Database
+local MissionDef = require("common.def.MissionDef")
+local ItemDefine = require("common.logic.ItemDefine")
+local BagDef = require("common.def.BagDef")
+local ItemDef = require("common.def.ItemDef")
+local CommonCfgDef = require("common.def.CommonCfgDef")
+local ProtoEnum = require("tools.ProtoEnum")
+local MissionLogic = require("common.logic.MissionLogic")
+
+---@type user_context
+local context = ...
+local scripts = context.scripts
+
+---@class Mission
+local Mission = {}
+
+function Mission.Init()
+    --加载任务数据
+    -- local player_mission_info = Mission.LoadMissionInfo()
+    -- if player_mission_info then
+    --     scripts.UserModel.SetMissionInfo(player_mission_info)
+    -- end
+
+    -- local mission_info = scripts.UserModel.GetMissionInfo()
+    -- if not mission_info then
+    --     mission_info = MissionDef.newPlayerMissionInfo()
+    --     scripts.UserModel.SetMissionInfo(mission_info)
+    -- end
+end
+
+function Mission.Start()
+    -- local mission_info = scripts.UserModel.GetMissionInfo()
+    -- if not mission_info then
+    --     return
+    -- end
+
+    -- Mission.SaveMissionsNow()
+end
+
+function Mission.SaveMissionsNow()
+    local mission_info = scripts.UserModel.GetMissionInfo()
+    if not mission_info then
+        return false
+    end
+
+    local success = Database.savemissioninfo(context.addr_db_user, context.uid, mission_info.linear_info, mission_info.period_info, mission_info.achivement_info)
+    return success
+end
+
+function Mission.LoadMissionInfo()
+    local player_mission_info = Database.loadmissioninfo(context.addr_db_user, context.uid)
+    return player_mission_info
+end
+
+function Mission.SaveAndSync(change_log)
+    local mission_info = scripts.UserModel.GetMissionInfo()
+    if not mission_info then
+        return
+    end
+
+    if not change_log then
+        return
+    end
+
+    local update_msg = {
+        update_mission_datas = {},
+        update_complete_ids = {},
+        update_period_info = {},
+    }
+    if change_log.achivements then
+        for mission_id, mission_state in pairs(change_log.achivements) do
+            if mission_state == MissionDef.ETaskState.COMPLETE then
+                update_msg.update_complete_ids[mission_id] = mission_state
+            elseif mission_state == MissionDef.ETaskState.NO_COMPLETE then
+                update_msg.update_mission_datas[mission_id] = mission_info.achivement_info.now_mission_datas[mission_id]
+            end
+        end
+    end
+    if change_log.linears then
+        for mission_id, mission_state in pairs(change_log.linears) do
+            if mission_state == MissionDef.ETaskState.COMPLETE then
+                update_msg.update_complete_ids[mission_id] = mission_state
+            elseif mission_state == MissionDef.ETaskState.NO_COMPLETE then
+                update_msg.update_mission_datas[mission_id] = mission_info.linear_info.now_mission_datas[mission_id]
+            end
+        end
+    end
+    if change_log.periods_all_change then
+        update_msg.update_period_info = mission_info.period_info
+    else
+        for mission_id, mission_state in pairs(change_log.periods) do
+            if mission_state == MissionDef.ETaskState.COMPLETE then
+                update_msg.update_complete_ids[mission_id] = mission_state
+            elseif mission_state == MissionDef.ETaskState.NO_COMPLETE then
+                if mission_info.period_info.now_day_mission_datas[mission_id] then
+                    update_msg.update_mission_datas[mission_id] = mission_info.period_info.now_day_mission_datas
+                        [mission_id]
+                elseif mission_info.period_info.now_week_mission_datas[mission_id] then
+                    update_msg.update_mission_datas[mission_id] = mission_info.period_info.now_week_mission_datas
+                        [mission_id]
+                elseif mission_info.period_info.now_month_mission_datas[mission_id] then
+                    update_msg.update_mission_datas[mission_id] = mission_info.period_info.now_month_mission_datas
+                        [mission_id]
+                end
+            end
+        end
+    end
+
+    context.S2C(context.net_id, CmdCode.PBUpdateMissionSyncCmd, update_msg, 0)
+
+    scripts.UserModel.SetMissionInfo(mission_info)
+
+    Mission.SaveMissionsNow()
+end
+
+function Mission.newLinearMission(mission_info, linear_cfg, now_ts, new_complete_ids, change_log)
+    local new_mission_data = MissionDef.newMissionData()
+    new_mission_data.mission_id = linear_cfg.id
+    new_mission_data.mission_type = linear_cfg.type
+    new_mission_data.mission_state = MissionDef.ETaskState.NO_COMPLETE
+    new_mission_data.beg_ts = linear_cfg.start_time
+    new_mission_data.end_ts = linear_cfg.end_time
+    if linear_cfg.target1 > 0 then
+        local new_cond_data = MissionDef.newConditionData()
+        new_cond_data.cond_id = linear_cfg.target1
+        new_cond_data.target_value = linear_cfg.target1_data
+        new_cond_data.now_value = 0
+        new_cond_data.is_complete = 0
+        if linear_cfg.target1_param1 then
+            table.insert(new_cond_data.params, linear_cfg.target1_param1)
+        end
+        if linear_cfg.target1_param2 then
+            table.insert(new_cond_data.params, linear_cfg.target1_param2)
+        end
+        if linear_cfg.target1_arr and table.size(linear_cfg.target1_arr) > 0 then
+            new_cond_data.arr_params = linear_cfg.target1_arr
+        end
+        table.insert(new_mission_data.cond_datas, new_cond_data)
+    end
+    if linear_cfg.target2 > 0 then
+        local new_cond_data = MissionDef.newConditionData()
+        new_cond_data.cond_id = linear_cfg.target2
+        new_cond_data.target_value = linear_cfg.target2_data
+        new_cond_data.now_value = 0
+        new_cond_data.is_complete = 0
+        if linear_cfg.target2_param1 then
+            table.insert(new_cond_data.params, linear_cfg.target2_param1)
+        end
+        if linear_cfg.target2_param2 then
+            table.insert(new_cond_data.params, linear_cfg.target2_param2)
+        end
+        if linear_cfg.target2_arr and table.size(linear_cfg.target2_arr) > 0 then
+            new_cond_data.arr_params = linear_cfg.target2_arr
+        end
+        table.insert(new_mission_data.cond_datas, new_cond_data)
+    end
+
+    if new_mission_data.beg_ts ~= 0 and now_ts < new_mission_data.beg_ts then
+        mission_info.linear_info.wait_beg_mission_datas[linear_cfg.id] = new_mission_data
+    else
+        Mission.CheckNewMissionCond(new_mission_data)
+        if new_mission_data.mission_state == MissionDef.ETaskState.COMPLETE then
+            mission_info.linear_info.complete_ids[linear_cfg.id] = MissionDef.ETaskState.COMPLETE
+            table.insert(new_complete_ids, linear_cfg.id)
+            if change_log and change_log.linears then
+                change_log.linears[linear_cfg.id] = MissionDef.ETaskState.COMPLETE
+            end
+        else
+            mission_info.linear_info.now_mission_datas[linear_cfg.id] = new_mission_data
+            if change_log and change_log.linears then
+                change_log.linears[linear_cfg.id] = MissionDef.ETaskState.NO_COMPLETE
+            end
+        end
+    end
+end
+
+function Mission.newPeriodMission(mission_info, period_cfg, now_ts, new_complete_ids)
+    local new_mission_data = MissionDef.newMissionData()
+    new_mission_data.mission_id = period_cfg.id
+    new_mission_data.mission_type = period_cfg.cyclical_date
+    new_mission_data.mission_state = MissionDef.ETaskState.NO_COMPLETE
+    new_mission_data.beg_ts = now_ts
+    if period_cfg.cyclical_date == 1 then
+        new_mission_data.end_ts = now_ts + (24 * 60 * 60)
+    elseif period_cfg.cyclical_date == 2 then
+        new_mission_data.end_ts = now_ts + (7 * 24 * 60 * 60)
+    elseif period_cfg.cyclical_date == 3 then
+        new_mission_data.end_ts = now_ts + (31 * 24 * 60 * 60)
+    end
+
+    if period_cfg.target1 > 0 then
+        local new_cond_data = MissionDef.newConditionData()
+        new_cond_data.cond_id = period_cfg.target1
+        new_cond_data.target_value = period_cfg.target1_data
+        new_cond_data.now_value = 0
+        new_cond_data.is_complete = 0
+        if period_cfg.target1_param1 then
+            table.insert(new_cond_data.params, period_cfg.target1_param1)
+        end
+        if period_cfg.target1_param2 then
+            table.insert(new_cond_data.params, period_cfg.target1_param2)
+        end
+        if period_cfg.target1_arr and table.size(period_cfg.target1_arr) > 0 then
+            new_cond_data.arr_params = period_cfg.target1_arr
+        end
+        table.insert(new_mission_data.cond_datas, new_cond_data)
+    end
+    if period_cfg.target2 > 0 then
+        local new_cond_data = MissionDef.newConditionData()
+        new_cond_data.cond_id = period_cfg.target2
+        new_cond_data.target_value = period_cfg.target2_data
+        new_cond_data.now_value = 0
+        new_cond_data.is_complete = 0
+        if period_cfg.target2_param1 then
+            table.insert(new_cond_data.params, period_cfg.target2_param1)
+        end
+        if period_cfg.target2_param2 then
+            table.insert(new_cond_data.params, period_cfg.target2_param2)
+        end
+        if period_cfg.target2_arr and table.size(period_cfg.target2_arr) > 0 then
+            new_cond_data.arr_params = period_cfg.target2_arr
+        end
+        table.insert(new_mission_data.cond_datas, new_cond_data)
+    end
+
+    Mission.CheckNewMissionCond(new_mission_data)
+    if period_cfg.cyclical_date == 1 then
+        if new_mission_data.mission_state == MissionDef.ETaskState.COMPLETE then
+            mission_info.period_info.complete_day_ids[period_cfg.id] = MissionDef.ETaskState.COMPLETE
+            table.insert(new_complete_ids, period_cfg.id)
+        else
+            mission_info.period_info.now_day_mission_datas[period_cfg.id] = new_mission_data
+        end
+    elseif period_cfg.cyclical_date == 2 then
+        if new_mission_data.mission_state == MissionDef.ETaskState.COMPLETE then
+            mission_info.period_info.complete_week_ids[period_cfg.id] = MissionDef.ETaskState.COMPLETE
+            table.insert(new_complete_ids, period_cfg.id)
+        else
+            mission_info.period_info.now_week_mission_datas[period_cfg.id] = new_mission_data
+        end
+    elseif period_cfg.cyclical_date == 3 then
+        if new_mission_data.mission_state == MissionDef.ETaskState.COMPLETE then
+            mission_info.period_info.complete_month_ids[period_cfg.id] = MissionDef.ETaskState.COMPLETE
+            table.insert(new_complete_ids, period_cfg.id)
+        else
+            mission_info.period_info.now_month_mission_datas[period_cfg.id] = new_mission_data
+        end
+    end
+end
+
+function Mission.newAchivementMission(mission_info, achivement_cfg, now_ts, new_complete_ids)
+    local new_mission_data = MissionDef.newMissionData()
+    new_mission_data.mission_id = achivement_cfg.id
+    new_mission_data.mission_type = achivement_cfg.type
+    new_mission_data.mission_state = MissionDef.ETaskState.NO_COMPLETE
+    new_mission_data.beg_ts = now_ts
+    new_mission_data.end_ts = now_ts
+    if achivement_cfg.target1 > 0 then
+        local new_cond_data = MissionDef.newConditionData()
+        new_cond_data.cond_id = achivement_cfg.target1
+        new_cond_data.target_value = achivement_cfg.target1_data
+        new_cond_data.now_value = 0
+        new_cond_data.is_complete = 0
+        if achivement_cfg.target1_param1 then
+            table.insert(new_cond_data.params, achivement_cfg.target1_param1)
+        end
+        if achivement_cfg.target1_param2 then
+            table.insert(new_cond_data.params, achivement_cfg.target1_param2)
+        end
+        if achivement_cfg.target1_arr and table.size(achivement_cfg.target1_arr) > 0 then
+            new_cond_data.arr_params = achivement_cfg.target1_arr
+        end
+        table.insert(new_mission_data.cond_datas, new_cond_data)
+    end
+    if achivement_cfg.target2 > 0 then
+        local new_cond_data = MissionDef.newConditionData()
+        new_cond_data.cond_id = achivement_cfg.target2
+        new_cond_data.target_value = achivement_cfg.target2_data
+        new_cond_data.now_value = 0
+        new_cond_data.is_complete = 0
+        if achivement_cfg.target2_param1 then
+            table.insert(new_cond_data.params, achivement_cfg.target2_param1)
+        end
+        if achivement_cfg.target2_param2 then
+            table.insert(new_cond_data.params, achivement_cfg.target2_param2)
+        end
+        if achivement_cfg.target2_arr and table.size(achivement_cfg.target2_arr) > 0 then
+            new_cond_data.arr_params = achivement_cfg.target2_arr
+        end
+        table.insert(new_mission_data.cond_datas, new_cond_data)
+    end
+
+    Mission.CheckNewMissionCond(new_mission_data)
+    if new_mission_data.mission_state == MissionDef.ETaskState.COMPLETE then
+        mission_info.linear_info.complete_ids[achivement_cfg.id] = MissionDef.ETaskState.COMPLETE
+        table.insert(new_complete_ids, achivement_cfg.id)
+    else
+        mission_info.linear_info.now_mission_datas[achivement_cfg.id] = new_mission_data
+    end
+end
+
+function Mission.CheckNewMissions()
+    local mission_info = scripts.UserModel.GetMissionInfo()
+    if not mission_info then
+        return
+    end
+
+    local now_ts = moon.time()
+
+    local new_complete_achivement_ids = {}
+    Mission.CheckAchivementInfo(mission_info, now_ts, new_complete_achivement_ids)
+    if table.size(new_complete_achivement_ids) > 0 then
+        Mission.AchivementMissionComplete(mission_info, now_ts, new_complete_achivement_ids)
+    end
+    Mission.makeAchivementMap(mission_info)
+
+    local new_complete_linear_ids = {}
+    Mission.CheckLinearInfo(mission_info, now_ts, new_complete_linear_ids)
+    if table.size(new_complete_linear_ids) > 0 then
+        Mission.LinearMissionComplete(mission_info, new_complete_linear_ids)
+    end
+    Mission.makeLinearMap(mission_info)
+
+    local new_complete_period_ids = {}
+    Mission.CheckPeriodInfo(mission_info, now_ts, new_complete_period_ids)
+    if table.size(new_complete_period_ids) > 0 then
+        Mission.PeriodMissionComplete(mission_info, new_complete_period_ids)
+    end
+    Mission.makePeriodMap(mission_info)
+
+    Mission.SaveMissionsNow()
+end
+
+function Mission.CheckLinearInfo(mission_info, now_ts, new_complete_linear_ids)
+    mission_info.linear_info.last_check_ts = now_ts
+
+    -- 清理已过期线性任务
+    for mission_id, mission_data in pairs(mission_info.linear_info.now_mission_datas) do
+        if mission_data.end_ts ~= 0 and now_ts >= mission_data.end_ts then
+            mission_info.linear_info.now_mission_datas[mission_id] = nil
+        end
+    end
+
+    -- 检查新线性任务
+    local linear_cfgs = GameCfg.LinearMissionConfig
+    if linear_cfgs and table.size(linear_cfgs) > 0 then
+        for _, linear_cfg in pairs(linear_cfgs) do
+            local need_new_mission = false
+            if linear_cfg.unlock_level <= scripts.User.GetNowLevel()
+                and (linear_cfg.start_time == 0 or now_ts >= linear_cfg.start_time)
+                and (linear_cfg.end_time == 0 or now_ts < linear_cfg.end_time)
+                and not mission_info.linear_info.now_mission_datas[linear_cfg.id]
+                and not mission_info.linear_info.complete_ids[linear_cfg.id] then
+                need_new_mission = true
+                for _, need_complete_id in pairs(linear_cfg.front_mission) do
+                    if not mission_info.linear_info.complete_ids[need_complete_id]
+                        and not mission_info.achivement_info.complete_ids[need_complete_id] then
+                        need_new_mission = false
+                        break
+                    end
+                end
+            end
+
+            if need_new_mission then
+                Mission.newLinearMission(mission_info, linear_cfg, now_ts, new_complete_linear_ids)
+            end
+        end
+    end
+end
+
+function Mission.makeLinearMap(mission_info)
+    Mission.linear_cond_map = {}
+    for mission_id, mission_data in pairs(mission_info.linear_info.now_mission_datas) do
+        for _, cond_data in pairs(mission_data.cond_datas) do
+            if cond_data.is_complete == 0 then
+                if not Mission.linear_cond_map[cond_data.cond_id] then
+                    Mission.linear_cond_map[cond_data.cond_id] = {}
+                end
+                if not Mission.linear_cond_map[cond_data.cond_id][mission_id] then
+                    Mission.linear_cond_map[cond_data.cond_id][mission_id] = mission_data
+                end
+            end
+        end
+    end
+end
+
+function Mission.CheckPeriodInfo(mission_info, now_ts, new_complete_period_ids)
+    -- 尝试清理周期任务
+    local day_fresh, week_fresh, month_fresh = false, false, false
+    if not datetime.is_same_day(mission_info.period_info.last_update_ts, now_ts) then
+        day_fresh = true
+
+        mission_info.period_info.now_day_mission_datas = {}
+        local delete_complete_ids = {}
+        for mission_id, _ in pairs(mission_info.period_info.complete_day_ids) do
+            local period_cfg = GameCfg.PeriodMissionConfig[mission_id]
+            if period_cfg then
+                if period_cfg.is_loop == 1 then
+                    table.insert(delete_complete_ids, mission_id)
+                end
+            end
+        end
+        for _, mission_id in pairs(delete_complete_ids) do
+            mission_info.period_info.complete_day_ids[mission_id] = nil
+        end
+    end
+    if not datetime.is_same_week(mission_info.period_info.last_update_ts, now_ts) then
+        week_fresh = true
+
+        mission_info.period_info.now_week_mission_datas = {}
+        local delete_complete_ids = {}
+        for mission_id, _ in pairs(mission_info.period_info.complete_week_ids) do
+            local period_cfg = GameCfg.PeriodMissionConfig[mission_id]
+            if period_cfg then
+                if period_cfg.is_loop == 1 then
+                    table.insert(delete_complete_ids, mission_id)
+                end
+            end
+        end
+        for _, mission_id in pairs(delete_complete_ids) do
+            mission_info.period_info.complete_week_ids[mission_id] = nil
+        end
+    end
+    if not datetime.is_same_month(mission_info.period_info.last_update_ts, now_ts) then
+        month_fresh = true
+
+        mission_info.period_info.now_month_mission_datas = {}
+        local delete_complete_ids = {}
+        for mission_id, _ in pairs(mission_info.period_info.complete_month_ids) do
+            local period_cfg = GameCfg.PeriodMissionConfig[mission_id]
+            if period_cfg then
+                if period_cfg.is_loop == 1 then
+                    table.insert(delete_complete_ids, mission_id)
+                end
+            end
+        end
+        for _, mission_id in pairs(delete_complete_ids) do
+            mission_info.period_info.complete_month_ids[mission_id] = nil
+        end
+    end
+
+    if not day_fresh and not week_fresh and not month_fresh then
+        return false
+    end
+    mission_info.period_info.last_update_ts = now_ts
+
+    -- 检查新周期任务
+    local period_cfgs = GameCfg.PeriodMissionConfig
+    if period_cfgs and table.size(period_cfgs) > 0 then
+        local random_day_ids, random_week_ids, random_month_ids = {}, {}, {}
+        for _, period_cfg in pairs(period_cfgs) do
+            if (period_cfg.cyclical_date == 1 and day_fresh)
+                and period_cfg.unlock_level <= scripts.User.GetNowLevel()
+                and (period_cfg.start_time == 0 or now_ts >= period_cfg.start_time)
+                and (period_cfg.end_time == 0 or now_ts < period_cfg.end_time)
+                and not mission_info.period_info.now_day_mission_datas[period_cfg.id]
+                and not mission_info.period_info.complete_day_ids[period_cfg.id] then
+                local need_new_mission = true
+                for _, need_complete_id in pairs(period_cfg.front_mission) do
+                    if not mission_info.linear_info.complete_ids[need_complete_id]
+                        and not mission_info.achivement_info.complete_ids[need_complete_id] then
+                        need_new_mission = false
+                        break
+                    end
+                end
+
+                if need_new_mission then
+                    if period_cfg.cyclical_type == 1 then
+                        Mission.newPeriodMission(mission_info, period_cfg, now_ts, new_complete_period_ids)
+                    else
+                        random_day_ids[period_cfg.id] = period_cfg.weight
+                    end
+                end
+            elseif (period_cfg.cyclical_date == 2 and week_fresh)
+                and period_cfg.unlock_level <= scripts.User.GetNowLevel()
+                and (period_cfg.start_time == 0 or now_ts >= period_cfg.start_time)
+                and (period_cfg.end_time == 0 or now_ts < period_cfg.end_time)
+                and not mission_info.period_info.now_week_mission_datas[period_cfg.id]
+                and not mission_info.period_info.complete_week_ids[period_cfg.id] then
+                local need_new_mission = true
+                for _, need_complete_id in pairs(period_cfg.front_mission) do
+                    if not mission_info.linear_info.complete_ids[need_complete_id]
+                        and not mission_info.achivement_info.complete_ids[need_complete_id] then
+                        need_new_mission = false
+                        break
+                    end
+                end
+
+                if need_new_mission then
+                    if period_cfg.cyclical_type == 1 then
+                        Mission.newPeriodMission(mission_info, period_cfg, now_ts, new_complete_period_ids)
+                    else
+                        random_week_ids[period_cfg.id] = period_cfg.weight
+                    end
+                end
+            elseif (period_cfg.cyclical_date == 3 and month_fresh)
+                and period_cfg.unlock_level <= scripts.User.GetNowLevel()
+                and (period_cfg.start_time == 0 or now_ts >= period_cfg.start_time)
+                and (period_cfg.end_time == 0 or now_ts < period_cfg.end_time)
+                and not mission_info.period_info.now_month_mission_datas[period_cfg.id]
+                and not mission_info.period_info.complete_month_ids[period_cfg.id] then
+                local need_new_mission = true
+                for _, need_complete_id in pairs(period_cfg.front_mission) do
+                    if not mission_info.linear_info.complete_ids[need_complete_id]
+                        and not mission_info.achivement_info.complete_ids[need_complete_id] then
+                        need_new_mission = false
+                        break
+                    end
+                end
+
+                if need_new_mission then
+                    if period_cfg.cyclical_type == 1 then
+                        Mission.newPeriodMission(mission_info, period_cfg, now_ts, new_complete_period_ids)
+                    else
+                        random_month_ids[period_cfg.id] = period_cfg.weight
+                    end
+                end
+            end
+        end
+
+        if table.size(random_day_ids) > 0 then
+            local daily_cfg = CommonCfgDef.getConf("DailyTaskCount")
+            if not daily_cfg or not daily_cfg.value then
+                moon.error("CommonCfgDef.getConf DailyTaskCount err")
+            else
+                if table.size(random_day_ids) > daily_cfg.value then
+                    for i = 1, daily_cfg.value do
+                        local random_id = scripts.Item.RangeTags(random_day_ids)
+                        if random_id > 0 then
+                            local period_cfg = GameCfg.PeriodMissionConfig[random_id]
+                            if period_cfg then
+                                Mission.newPeriodMission(mission_info, period_cfg, now_ts, new_complete_period_ids)
+                            end
+                            random_day_ids[random_id] = nil
+                        end
+                    end
+                else
+                    for id, _ in pairs(random_day_ids) do
+                        local period_cfg = GameCfg.PeriodMissionConfig[id]
+                        if period_cfg then
+                            Mission.newPeriodMission(mission_info, period_cfg, now_ts, new_complete_period_ids)
+                        end
+                    end
+                end
+            end
+        end
+
+        if table.size(random_week_ids) > 0 then
+            local week_cfg = CommonCfgDef.getConf("WeeklyTaskCount")
+            if not week_cfg or not week_cfg.value then
+                moon.error("CommonCfgDef.getConf WeeklyTaskCount err")
+            else
+                if table.size(random_week_ids) > week_cfg.value then
+                    for i = 1, week_cfg.value do
+                        local random_id = scripts.Item.RangeTags(random_week_ids)
+                        if random_id > 0 then
+                            local period_cfg = GameCfg.PeriodMissionConfig[random_id]
+                            if period_cfg then
+                                Mission.newPeriodMission(mission_info, period_cfg, now_ts, new_complete_period_ids)
+                            end
+                            random_week_ids[random_id] = nil
+                        end
+                    end
+                else
+                    for id, _ in pairs(random_week_ids) do
+                        local period_cfg = GameCfg.PeriodMissionConfig[id]
+                        if period_cfg then
+                            Mission.newPeriodMission(mission_info, period_cfg, now_ts, new_complete_period_ids)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return true
+end
+
+function Mission.makePeriodMap(mission_info)
+    Mission.period_cond_map = {}
+    for mission_id, mission_data in pairs(mission_info.period_info.now_day_mission_datas) do
+        for _, cond_data in pairs(mission_data.cond_datas) do
+            if cond_data.is_complete == 0 then
+                if not Mission.period_cond_map[cond_data.cond_id] then
+                    Mission.period_cond_map[cond_data.cond_id] = {}
+                end
+                if not Mission.period_cond_map[cond_data.cond_id][mission_id] then
+                    Mission.period_cond_map[cond_data.cond_id][mission_id] = mission_data
+                end
+            end
+        end
+    end
+    for mission_id, mission_data in pairs(mission_info.period_info.now_week_mission_datas) do
+        for _, cond_data in pairs(mission_data.cond_datas) do
+            if cond_data.is_complete == 0 then
+                if not Mission.period_cond_map[cond_data.cond_id] then
+                    Mission.period_cond_map[cond_data.cond_id] = {}
+                end
+                if not Mission.period_cond_map[cond_data.cond_id][mission_id] then
+                    Mission.period_cond_map[cond_data.cond_id][mission_id] = mission_data
+                end
+            end
+        end
+    end
+    for mission_id, mission_data in pairs(mission_info.period_info.now_month_mission_datas) do
+        for _, cond_data in pairs(mission_data.cond_datas) do
+            if cond_data.is_complete == 0 then
+                if not Mission.period_cond_map[cond_data.cond_id] then
+                    Mission.period_cond_map[cond_data.cond_id] = {}
+                end
+                if not Mission.period_cond_map[cond_data.cond_id][mission_id] then
+                    Mission.period_cond_map[cond_data.cond_id][mission_id] = mission_data
+                end
+            end
+        end
+    end
+end
+
+function Mission.CheckAchivementInfo(mission_info, now_ts, new_complete_achivement_ids)
+    -- 检查新成就任务
+    local achivement_cfgs = GameCfg.AchievementMissionConfig
+    if achivement_cfgs and table.size(achivement_cfgs) > 0 then
+        for _, achivement_cfg in pairs(achivement_cfgs) do
+            if not mission_info.achivement_info.now_mission_datas[achivement_cfg.id]
+                and not mission_info.achivement_info.complete_ids[achivement_cfg.id] then
+                Mission.newAchivementMission(mission_info, achivement_cfg, now_ts, new_complete_achivement_ids)
+            end
+        end
+    end
+end
+
+function Mission.makeAchivementMap(mission_info)
+    Mission.achivement_cond_map = {}
+    for mission_id, mission_data in pairs(mission_info.achivement_info.now_mission_datas) do
+        for _, cond_data in pairs(mission_data.cond_datas) do
+            if cond_data.is_complete == 0 then
+                if not Mission.achivement_cond_map[cond_data.cond_id] then
+                    Mission.achivement_cond_map[cond_data.cond_id] = {}
+                end
+                if not Mission.achivement_cond_map[cond_data.cond_id][mission_id] then
+                    Mission.achivement_cond_map[cond_data.cond_id][mission_id] = mission_data
+                end
+            end
+        end
+    end
+end
+
+function Mission.TriggerCondition(condition_id, params, change_cnt)
+end
+
+function Mission.TriggerConditionbak(condition_id, params, change_cnt)
+    local mission_info = scripts.UserModel.GetMissionInfo()
+    if not mission_info then
+        return
+    end
+
+    local change_log = {
+        linears = {},
+        periods = {},
+        achivements = {},
+        periods_all_change = false,
+    }
+    local now_ts = moon.time()
+
+    local new_complete_achivement_ids = {}
+    if Mission.achivement_cond_map and Mission.achivement_cond_map[condition_id] then
+        local change_tasks = MissionLogic.CheckTask(condition_id, params, change_cnt,
+            Mission.achivement_cond_map[condition_id])
+        if table.size(change_tasks) > 0 then
+            for _, mission_id in pairs(change_tasks) do
+                local mission_data = mission_info.achivement_info.now_mission_datas[mission_id]
+                if mission_data then
+                    local mission_complete = true
+                    for _, cond_data in pairs(mission_data.cond_datas) do
+                        if cond_data.is_complete == 0 then
+                            mission_complete = false
+                            break
+                        end
+                    end
+                    if mission_complete then
+                        mission_data.mission_state = MissionDef.ETaskState.COMPLETE
+
+                        mission_info.achivement_info.complete_ids[mission_id] = MissionDef.ETaskState.COMPLETE
+                        mission_info.achivement_info.now_mission_datas[mission_id] = nil
+                        if Mission.achivement_cond_map[condition_id]
+                            and Mission.achivement_cond_map[condition_id][mission_id] then
+                            Mission.achivement_cond_map[condition_id][mission_id] = nil
+                        end
+                        table.insert(new_complete_achivement_ids, mission_id)
+                        change_log.achivements[mission_id] = MissionDef.ETaskState.COMPLETE
+                    else
+                        change_log.achivements[mission_id] = MissionDef.ETaskState.NO_COMPLETE
+                    end
+                end
+            end
+        end
+    end
+    if table.size(new_complete_achivement_ids) > 0 then
+        Mission.AchivementMissionComplete(mission_info, new_complete_achivement_ids, change_log)
+    end
+    
+    -- 检查未开始的线性任务
+    local new_complete_linear_ids = {}
+    if mission_info.linear_info.last_check_ts + 60 < now_ts then
+        for mission_id, mission_data in pairs(mission_info.linear_info.wait_beg_mission_datas) do
+            if (mission_data.beg_ts == 0 or now_ts >= mission_data.beg_ts)
+             and (mission_data.end_ts == 0 or now_ts < mission_data.end_ts) then
+                Mission.CheckNewMissionCond(mission_data)
+                if mission_data.mission_state == MissionDef.ETaskState.COMPLETE then
+                    mission_info.linear_info.complete_ids[mission_id] = MissionDef.ETaskState.COMPLETE
+                    table.insert(new_complete_linear_ids, mission_id)
+                    change_log.linears[mission_id] = MissionDef.ETaskState.COMPLETE
+                else
+                    mission_info.linear_info.now_mission_datas[mission_id] = mission_data
+                    change_log.linears[mission_id] = MissionDef.ETaskState.NO_COMPLETE
+                end
+                mission_info.linear_info.now_mission_datas[mission_id] = mission_data
+                mission_info.linear_info.wait_beg_mission_datas[mission_id] = nil
+                for _, cond_data in pairs(mission_data.cond_datas) do
+                    if cond_data.is_complete == 0 then
+                        if not Mission.linear_cond_map[cond_data.cond_id] then
+                            Mission.linear_cond_map[cond_data.cond_id] = {}
+                        end
+                        if not Mission.linear_cond_map[cond_data.cond_id][mission_id] then
+                            Mission.linear_cond_map[cond_data.cond_id][mission_id] = mission_data
+                        end
+                    end
+                end
+            elseif mission_data.end_ts ~= 0 and now_ts >= mission_data.end_ts then
+                mission_info.linear_info.wait_beg_mission_datas[mission_id] = nil
+                change_log.linears[mission_id] = MissionDef.ETaskState.NO_PROGRESS
+            end
+        end
+
+        mission_info.linear_info.last_check_ts = now_ts
+    end
+    -- 检查线性任务
+    if Mission.linear_cond_map and Mission.linear_cond_map[condition_id] then
+        local change_tasks = MissionLogic.CheckTask(condition_id, params, change_cnt,
+            Mission.linear_cond_map[condition_id])
+        if table.size(change_tasks) > 0 then
+            for _, mission_id in pairs(change_tasks) do
+                local mission_data = mission_info.linear_info.now_mission_datas[mission_id]
+                if mission_data then
+                    local mission_complete = true
+                    for _, cond_data in pairs(mission_data.cond_datas) do
+                        if cond_data.is_complete == 0 then
+                            mission_complete = false
+                            break
+                        end
+                    end
+                    if mission_complete then
+                        mission_data.mission_state = MissionDef.ETaskState.COMPLETE
+
+                        mission_info.linear_info.complete_ids[mission_id] = MissionDef.ETaskState.COMPLETE
+                        mission_info.linear_info.now_mission_datas[mission_id] = nil
+                        if Mission.linear_cond_map[condition_id]
+                            and Mission.linear_cond_map[condition_id][mission_id] then
+                            Mission.linear_cond_map[condition_id][mission_id] = nil
+                        end
+                        table.insert(new_complete_linear_ids, mission_id)
+                        change_log.linears[mission_id] = MissionDef.ETaskState.COMPLETE
+                    else
+                        change_log.linears[mission_id] = MissionDef.ETaskState.NO_COMPLETE
+                    end
+                end
+            end
+        end
+    end
+    if table.size(new_complete_linear_ids) > 0 then
+        Mission.LinearMissionComplete(mission_info, new_complete_linear_ids, change_log)
+    end
+
+    -- 检查周期是否刷新
+    local new_complete_period_ids = {}
+    if Mission.CheckPeriodInfo(mission_info, now_ts, new_complete_period_ids) then
+        Mission.makePeriodMap(mission_info)
+        change_log.periods_all_change = true
+    end
+    -- 检查周期任务
+    if Mission.period_cond_map and Mission.period_cond_map[condition_id] then
+        local change_tasks = MissionLogic.CheckTask(condition_id, params, change_cnt,
+            Mission.period_cond_map[condition_id])
+        if table.size(change_tasks) > 0 then
+            for _, mission_id in pairs(change_tasks) do
+                if mission_info.period_info.now_day_mission_datas[mission_id] then
+                    local mission_data = mission_info.period_info.now_day_mission_datas[mission_id]
+                    if mission_data then
+                        local mission_complete = true
+                        for _, cond_data in pairs(mission_data.cond_datas) do
+                            if cond_data.is_complete == 0 then
+                                mission_complete = false
+                                break
+                            end
+                        end
+                        if mission_complete then
+                            mission_data.mission_state = MissionDef.ETaskState.COMPLETE
+
+                            mission_info.period_info.complete_day_ids[mission_id] = MissionDef.ETaskState.COMPLETE
+                            mission_info.period_info.now_day_mission_datas[mission_id] = nil
+                            if Mission.period_cond_map[condition_id]
+                                and Mission.period_cond_map[condition_id][mission_id] then
+                                Mission.period_cond_map[condition_id][mission_id] = nil
+                            end
+                            table.insert(new_complete_period_ids, mission_id)
+                            change_log.periods[mission_id] = MissionDef.ETaskState.COMPLETE
+                        else
+                            change_log.periods[mission_id] = MissionDef.ETaskState.NO_COMPLETE
+                        end
+                    end
+                elseif mission_info.period_info.now_week_mission_datas[mission_id] then
+                    local mission_data = mission_info.period_info.now_week_mission_datas[mission_id]
+                    if mission_data then
+                        local mission_complete = true
+                        for _, cond_data in pairs(mission_data.cond_datas) do
+                            if cond_data.is_complete == 0 then
+                                mission_complete = false
+                                break
+                            end
+                        end
+                        if mission_complete then
+                            mission_data.mission_state = MissionDef.ETaskState.COMPLETE
+
+                            mission_info.period_info.complete_week_ids[mission_id] = MissionDef.ETaskState.COMPLETE
+                            mission_info.period_info.now_week_mission_datas[mission_id] = nil
+                            if Mission.period_cond_map[condition_id]
+                                and Mission.period_cond_map[condition_id][mission_id] then
+                                Mission.period_cond_map[condition_id][mission_id] = nil
+                            end
+                            table.insert(new_complete_period_ids, mission_id)
+                            change_log.periods[mission_id] = MissionDef.ETaskState.COMPLETE
+                        else
+                            change_log.periods[mission_id] = MissionDef.ETaskState.NO_COMPLETE
+                        end
+                    end
+                elseif mission_info.period_info.now_month_mission_datas[mission_id] then
+                    local mission_data = mission_info.period_info.now_month_mission_datas[mission_id]
+                    if mission_data then
+                        local mission_complete = true
+                        for _, cond_data in pairs(mission_data.cond_datas) do
+                            if cond_data.is_complete == 0 then
+                                mission_complete = false
+                                break
+                            end
+                        end
+                        if mission_complete then
+                            mission_data.mission_state = MissionDef.ETaskState.COMPLETE
+
+                            mission_info.period_info.complete_month_ids[mission_id] = MissionDef.ETaskState.COMPLETE
+                            mission_info.period_info.now_month_mission_datas[mission_id] = nil
+                            if Mission.period_cond_map[condition_id]
+                                and Mission.period_cond_map[condition_id][mission_id] then
+                                Mission.period_cond_map[condition_id][mission_id] = nil
+                            end
+                            table.insert(new_complete_period_ids, mission_id)
+                            change_log.periods[mission_id] = MissionDef.ETaskState.COMPLETE
+                        else
+                            change_log.periods[mission_id] = MissionDef.ETaskState.NO_COMPLETE
+                        end
+                    end
+                end
+            end
+        end
+    end
+    if table.size(new_complete_period_ids) > 0 then
+        Mission.PeriodMissionComplete(mission_info, new_complete_period_ids, change_log)
+    end
+
+    Mission.SaveAndSync(change_log)
+end
+
+function Mission.TriggerConditionSingleMission(condition_id, params, change_cnt, mission_data)
+    local is_change = MissionLogic.CheckSingleTask(condition_id, params, change_cnt, mission_data)
+    if is_change then
+        local mission_complete = true
+        for _, cond_data in pairs(mission_data.cond_datas) do
+            if cond_data.is_complete == 0 then
+                mission_complete = false
+                break
+            end
+        end
+        if mission_complete then
+            mission_data.mission_state = MissionDef.ETaskState.COMPLETE
+        end
+    end
+end
+
+function Mission.CheckNewMissionCond(new_mission_data)
+    for _, cond_data in pairs(new_mission_data.cond_datas) do
+        if cond_data.cond_id == MissionDef.EConditionIds.ACCOUNT_LEVEL then
+            Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.ACCOUNT_LEVEL, {},
+                scripts.User.GetNowLevel(), new_mission_data)
+        elseif cond_data.cond_id == MissionDef.EConditionIds.UNLOCK_ROLE_SKIN_CNT then
+            local now_cnt, _ = scripts.ItemImage.GetSkinTypeCnt()
+            Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.UNLOCK_ROLE_SKIN_CNT, {}, now_cnt,
+                new_mission_data)
+        elseif cond_data.cond_id == MissionDef.EConditionIds.UNLOCK_ROLE_SKIN then
+            if table.size(cond_data.params) >= 1 then
+                local skin_id = cond_data.params[1]
+                local item_image, item_type = scripts.ItemImage.GetImage(skin_id)
+                if item_image
+                    and item_type == ItemDefine.EItemSmallType.RoleSkin
+                    and item_image.valid_ts == 0 then
+                    Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.UNLOCK_ROLE_SKIN, { skin_id },
+                        1, new_mission_data)
+                end
+            end
+        elseif cond_data.cond_id == MissionDef.EConditionIds.UNLOCK_ROLE_CNT then
+            Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.UNLOCK_ROLE_CNT, {},
+                scripts.Role.GetRoleCnt(), new_mission_data)
+        elseif cond_data.cond_id == MissionDef.EConditionIds.UNLOCK_ROLE then
+            if table.size(cond_data.params) >= 1 then
+                local roleid = cond_data.params[1]
+                local role_info = scripts.Role.GetRoleInfo(roleid)
+                if role_info then
+                    Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.UNLOCK_ROLE, roleid, 1,
+                        new_mission_data)
+                end
+            end
+        elseif cond_data.cond_id == MissionDef.EConditionIds.GET_TREASURE_CNT then
+            if table.size(cond_data.params) >= 1 then
+                local treasure_id = cond_data.params[1]
+                if treasure_id == 0 then
+                    local total_get_count = scripts.Shop.GetTreasureTotalCnt()
+                    Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.GET_TREASURE_CNT, { 0 },
+                        total_get_count, new_mission_data)
+                else
+                    local treasure_data = scripts.Shop.GetTreasureData(treasure_id)
+                    if treasure_data and treasure_data.get_count and treasure_data.get_count > 0 then
+                        Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.GET_TREASURE_CNT, { treasure_id },
+                            treasure_data.get_count, new_mission_data)
+                    end
+                end
+            end
+        elseif cond_data.cond_id == MissionDef.EConditionIds.OPEN_TREASURE_CNT then
+            if table.size(cond_data.params) >= 1 then
+                local treasure_id = cond_data.params[1]
+                if treasure_id == 0 then
+                    local total_open_count = scripts.Shop.GetTreasureTotalOpenCnt()
+                    Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.OPEN_TREASURE_CNT, { 0 },
+                        total_open_count, new_mission_data)
+                else
+                    local treasure_data = scripts.Shop.GetTreasureData(treasure_id)
+                    if treasure_data and treasure_data.open_count and treasure_data.open_count > 0 then
+                        Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.OPEN_TREASURE_CNT, { treasure_id },
+                            treasure_data.open_count, new_mission_data)
+                    end
+                end
+            end
+        elseif cond_data.cond_id == MissionDef.EConditionIds.ROLE_STAR_CNT then
+            if table.size(cond_data.params) >= 1 then
+                local num = scripts.Role.GetStarMoreThanNum(0, cond_data.params[1])
+                Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.ROLE_STAR_CNT, { cond_data.params[1] },
+                    num, new_mission_data)
+            end
+        elseif cond_data.cond_id == MissionDef.EConditionIds.ROLE_LEVEL_CNT then
+            if table.size(cond_data.params) >= 1 then
+                local up_exp_cfg = GameCfg.RoleUpLv[cond_data.params[1]]
+                if up_exp_cfg and up_exp_cfg.allexp then
+                    local roleid_exps = scripts.Role.GetSingleExpMoreThanIds(up_exp_cfg.allexp)
+                    Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.ROLE_LEVEL_CNT,
+                        { cond_data.params[1] }, table.size(roleid_exps), new_mission_data)
+                end
+            end
+        elseif cond_data.cond_id == MissionDef.EConditionIds.ROLE_STAR then
+            if table.size(cond_data.params) >= 1 then
+                if cond_data.params[1] == 0 then
+                    local max_star, cur_roleid = scripts.Role.GetMaxStarRoleid()
+                    if cur_roleid > 0 then
+                        Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.ROLE_STAR, { cur_roleid },
+                            max_star, new_mission_data)
+                    end
+                else
+                    local role_info = scripts.Role.GetRoleInfo(cond_data.params[1])
+                    if role_info then
+                        Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.ROLE_STAR, { cond_data.params[1] },
+                            role_info.star_level, new_mission_data)
+                    end
+                end
+            end
+        elseif cond_data.cond_id == MissionDef.EConditionIds.ROLE_LEVEL then
+            if table.size(cond_data.params) >= 1 then
+                if cond_data.params[1] == 0 then
+                    local max_exp, cur_roleid = scripts.Role.GetMaxExpRoleid()
+                    if cur_roleid > 0 then
+                        local up_exp_cfgs = GameCfg.RoleUpLv
+                        if up_exp_cfgs and table.size(up_exp_cfgs) > 0 then
+                            local max_lv = 0
+                            for id, up_exp_cfg in pairs(up_exp_cfgs) do
+                                if up_exp_cfg.exp <= max_exp then
+                                    max_lv = id
+                                else
+                                    break
+                                end
+                            end
+                            Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.ROLE_LEVEL, { cur_roleid },
+                                max_lv, new_mission_data)
+                        end
+                    end
+                else
+                    local role_info = scripts.Role.GetRoleInfo(cond_data.params[1])
+                    if role_info then
+                        local up_exp_cfgs = GameCfg.RoleUpLv
+                        if up_exp_cfgs and table.size(up_exp_cfgs) > 0 then
+                            local max_lv = 0
+                            for id, up_exp_cfg in pairs(up_exp_cfgs) do
+                                if up_exp_cfg.exp <= role_info.exp then
+                                    max_lv = id
+                                else
+                                    break
+                                end
+                            end
+                            Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.ROLE_LEVEL,
+                                { cond_data.params[1] },
+                                max_lv, new_mission_data)
+                        end
+                    end
+                end
+            end
+        elseif cond_data.cond_id == MissionDef.EConditionIds.ROLE_UNLOCK_SKILL_CNT then
+            if table.size(cond_data.params) >= 1 then
+                if cond_data.params[1] == 0 then
+                    local max_skill_num, cur_roleid = scripts.Role.GetMaxSkillNum()
+                    if cur_roleid > 0 then
+                        Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.ROLE_UNLOCK_SKILL_CNT,
+                            { cur_roleid },
+                            max_skill_num, new_mission_data)
+                    end
+                else
+                    local role_info = scripts.Role.GetRoleInfo(cond_data.params[1])
+                    if role_info then
+                        local num = table.size(role_info.main_skill) + table.size(role_info.minor_skill1) +
+                            table.size(role_info.minor_skill2) + table.size(role_info.passive_skill)
+                        Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.ROLE_UNLOCK_SKILL_CNT,
+                            { cond_data.params[1] }, num, new_mission_data)
+                    end
+                end
+            end
+        elseif cond_data.cond_id == MissionDef.EConditionIds.ROLE_UNLOCK_SKILL then
+            if table.size(cond_data.params) >= 2 then
+                local target_role_id = cond_data.params[1]
+                local target_skill_id = cond_data.params[1]
+                local role_info = scripts.Role.GetRoleInfo(target_role_id)
+                if role_info then
+                    local is_unlock = false
+                    for skill_id, _ in pairs(role_info.main_skill) do
+                        if skill_id == target_skill_id then
+                            is_unlock = true
+                            break
+                        end
+                    end
+                    if not is_unlock then
+                        for skill_id, _ in pairs(role_info.minor_skill1) do
+                            if skill_id == target_skill_id then
+                                is_unlock = true
+                                break
+                            end
+                        end
+                    end
+                    if not is_unlock then
+                        for skill_id, _ in pairs(role_info.minor_skill2) do
+                            if skill_id == target_skill_id then
+                                is_unlock = true
+                                break
+                            end
+                        end
+                    end
+                    if not is_unlock then
+                        for skill_id, _ in pairs(role_info.passive_skill) do
+                            if skill_id == target_skill_id then
+                                is_unlock = true
+                                break
+                            end
+                        end
+                    end
+                    if is_unlock then
+                        Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.ROLE_UNLOCK_SKILL,
+                            { target_role_id, target_skill_id }, 1, new_mission_data)
+                    end
+                end
+            end
+        elseif cond_data.cond_id == MissionDef.EConditionIds.UNLOCK_GOD_CNT then
+            local gods_images = scripts.Gods.GetGodsImages()
+            if gods_images then
+                Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.UNLOCK_GOD_CNT, {},
+                    table.size(gods_images), new_mission_data)
+            end
+        elseif cond_data.cond_id == MissionDef.EConditionIds.UNLOCK_GOD then
+            if table.size(cond_data.params) >= 1 then
+                local gods_images = scripts.Gods.GetGodsImages()
+                if gods_images and gods_images[cond_data.params[1]] then
+                    Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.UNLOCK_GOD, { cond_data.params[1] }, 1,
+                        new_mission_data)
+                end
+            end
+        elseif cond_data.cond_id == MissionDef.EConditionIds.GOD_LEVEL then
+            if table.size(cond_data.params) >= 1 then
+                if cond_data.params[1] == 0 then
+                    local max_level, cur_god_id = scripts.Gods.GetMaxLevelGodid()
+                    if cur_god_id > 0 then
+                        Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.GOD_LEVEL, { cur_god_id },
+                            max_level, new_mission_data)
+                    end
+                else
+                    local gods_images = scripts.Gods.GetGodsImages()
+                    if gods_images and gods_images[cond_data.params[1]] then
+                        Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.GOD_LEVEL, { cond_data.params[1] },
+                            gods_images[cond_data.params[1]].lv, new_mission_data)
+                    end
+                end
+            end
+        elseif cond_data.cond_id == MissionDef.EConditionIds.UNLOCK_ITEM_SKIN_CNT then
+            local _, now_cnt = scripts.ItemImage.GetSkinTypeCnt()
+            Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.UNLOCK_ITEM_SKIN_CNT, {}, now_cnt,
+                new_mission_data)
+        elseif cond_data.cond_id == MissionDef.EConditionIds.TOTAL_RECHARGE_CNT then
+            Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.TOTAL_RECHARGE_CNT, {},
+                scripts.Bill.GetTotalAmount(), new_mission_data)
+        else
+            moon.error("Mission.CheckNewMissionCond: cond_id not found: " .. cond_data.cond_id)
+        end
+    end
+end
+
+function Mission.LinearMissionComplete(mission_info, complete_ids, change_log)
+    local linear_cfgs = GameCfg.LinearMissionConfig
+    if not linear_cfgs or table.size(linear_cfgs) == 0 then
+        return
+    end
+
+    -- 检查是否有可以新开启的任务
+    local now_ts = moon.time()
+    local new_complete_ids = {}
+    for _, mission_id in pairs(complete_ids) do
+        local linear_cfg = linear_cfgs[mission_id]
+        if linear_cfg and linear_cfg.type then
+            -- 触发完成任务条件
+            scripts.UserModel.SetMissionInfo(mission_info)
+            Mission.TriggerCondition(MissionDef.EConditionIds.OUT_TASK_CNT, { linear_cfg.type, mission_id }, 1)
+            mission_info = scripts.UserModel.GetMissionInfo()
+        end
+
+        if linear_cfg and linear_cfg.back_mission > 0 then
+            local new_linear_cfg = linear_cfgs[linear_cfg.back_mission]
+            if new_linear_cfg
+                and new_linear_cfg.unlock_level <= scripts.User.GetNowLevel()
+                and (new_linear_cfg.start_time == 0 or now_ts >= new_linear_cfg.start_time)
+                and (new_linear_cfg.end_time == 0 or now_ts < new_linear_cfg.end_time)
+                and not mission_info.linear_info.now_mission_datas[new_linear_cfg.id]
+                and not mission_info.linear_info.complete_ids[new_linear_cfg.id] then
+                local can_new_mission = true
+                for _, need_complete_id in pairs(new_linear_cfg.front_mission) do
+                    if not mission_info.linear_info.complete_ids[need_complete_id]
+                        and not mission_info.achivement_info.complete_ids[need_complete_id] then
+                        can_new_mission = false
+                        break
+                    end
+                end
+                if can_new_mission then
+                    Mission.newLinearMission(mission_info, new_linear_cfg, now_ts, new_complete_ids, change_log)
+                end
+            end
+        end
+    end
+    if table.size(new_complete_ids) > 0 then
+        Mission.LinearMissionComplete(mission_info, new_complete_ids)
+    end
+end
+
+function Mission.PeriodMissionComplete(mission_info, complete_ids, change_log)
+    local period_cfgs = GameCfg.PeriodMissionConfig
+    if not period_cfgs or table.size(period_cfgs) == 0 then
+        return
+    end
+
+    for _, mission_id in pairs(complete_ids) do
+        local period_cfg = period_cfgs[mission_id]
+        if period_cfg and period_cfg.type then
+            -- 触发完成任务条件
+            scripts.UserModel.SetMissionInfo(mission_info)
+            Mission.TriggerCondition(MissionDef.EConditionIds.OUT_TASK_CNT, { period_cfg.type, mission_id }, 1)
+            mission_info = scripts.UserModel.GetMissionInfo()
+        end
+    end
+end
+
+function Mission.AchivementMissionComplete(mission_info, complete_ids, change_log)
+    local achievement_cfgs = GameCfg.AchievementMissionConfig
+    if not achievement_cfgs or table.size(achievement_cfgs) == 0 then
+        return
+    end
+
+    for _, mission_id in pairs(complete_ids) do
+        local achievement_cfg = achievement_cfgs[mission_id]
+        if achievement_cfg and achievement_cfg.type then
+            -- 触发完成任务条件
+            scripts.UserModel.SetMissionInfo(mission_info)
+            Mission.TriggerCondition(MissionDef.EConditionIds.OUT_TASK_CNT, { achievement_cfg.type, mission_id }, 1)
+            mission_info = scripts.UserModel.GetMissionInfo()
+        end
+    end
+end
+
+function Mission.ReplaceMission(mission_info, old_mission_id)
+    if not mission_info.period_info.now_day_mission_datas
+        or not mission_info.period_info.now_day_mission_datas[old_mission_id] then
+        return ErrorCode.MissionNotFound
+    end
+
+    local period_cfgs = GameCfg.PeriodMissionConfig
+    if not period_cfgs or table.size(period_cfgs) == 0 then
+        return ErrorCode.ConfigError
+    end
+    local old_period_cfg = period_cfgs[old_mission_id]
+    if not old_period_cfg or old_period_cfg.is_refresh ~= 2 then
+        return ErrorCode.MissionNotRefresh
+    end
+
+    local now_ts = moon.time()
+    local random_ids = {}
+    for _, period_cfg in pairs(period_cfgs) do
+        if (period_cfg.cyclical_date == 1 and period_cfg.is_refresh == 2)
+            and period_cfg.unlock_level <= scripts.User.GetNowLevel()
+            and (period_cfg.start_time == 0 or now_ts >= period_cfg.start_time)
+            and (period_cfg.end_time == 0 or now_ts < period_cfg.end_time)
+            and not mission_info.period_info.now_day_mission_datas[period_cfg.id]
+            and not mission_info.period_info.complete_day_ids[period_cfg.id] then
+            local can_new_mission = true
+            for _, need_complete_id in pairs(period_cfg.front_mission) do
+                if not mission_info.linear_info.complete_ids[need_complete_id]
+                    and not mission_info.achivement_info.complete_ids[need_complete_id] then
+                    can_new_mission = false
+                    break
+                end
+            end
+            if can_new_mission then
+                random_ids[period_cfg.id] = period_cfg.weight
+            end
+        end
+    end
+    if table.size(random_ids) <= 0 then
+        return ErrorCode.NoMissionCanReplace
+    end
+
+    local replace_id = 0
+    if table.size(random_ids) > 1 then
+        replace_id = scripts.Item.RangeTags(random_ids)
+    else
+        replace_id = random_ids[1]
+    end
+    if replace_id <= 0 or not GameCfg.PeriodMissionConfig[replace_id] then
+        return ErrorCode.ConfigError
+    end
+
+    mission_info.period_info.now_day_mission_datas[old_mission_id] = nil
+    local new_complete_period_ids = {}
+    local new_period_cfg = GameCfg.PeriodMissionConfig[replace_id]
+    if new_period_cfg then
+        Mission.newPeriodMission(mission_info, new_period_cfg, now_ts, new_complete_period_ids)
+    end
+    if table.size(new_complete_period_ids) > 0 then
+        Mission.PeriodMissionComplete(mission_info, new_complete_period_ids)
+    end
+
+    return ErrorCode.None, replace_id
+end
+
+function Mission.DelOverTimeLinearMission(mission_info)
+    local linear_cfgs = GameCfg.LinearMissionConfig
+    if not linear_cfgs or table.size(linear_cfgs) == 0 then
+        return
+    end
+    if not mission_info.linear_info.now_mission_datas
+        or table.size(mission_info.linear_info.now_mission_datas) <= 0 then
+        return
+    end
+
+    local del_ids = {}
+    local now_ts = moon.time()
+    for mission_id, _ in pairs(mission_info.linear_info.now_mission_datas) do
+        if linear_cfgs[mission_id]
+            and linear_cfgs[mission_id].end_time ~= 0
+            and now_ts > linear_cfgs[mission_id].end_time then
+            table.insert(del_ids, mission_id)
+        end
+    end
+    if table.size(del_ids) > 0 then
+        for _, mission_id in pairs(del_ids) do
+            mission_info.linear_info.now_mission_datas[mission_id] = nil
+        end
+        Mission.SaveMissionsNow()
+    end
+end
+
+function Mission.GetLinearMissionReward(mission_info, linear_ids)
+    if not mission_info.linear_info.complete_ids
+        or table.size(mission_info.linear_info.complete_ids) <= 0 then
+        return ErrorCode.MissionNotFound
+    end
+
+    local now_ts = moon.time()
+    local add_list = {}
+    local add_vitality = 0
+    for _, mission_id in pairs(linear_ids) do
+        local mission_state = mission_info.linear_info.complete_ids[mission_id]
+        if not mission_state then
+            return ErrorCode.MissionNotFound
+        end
+        if mission_state ~= MissionDef.EMissionStateIds.COMPLETE then
+            return ErrorCode.MissionAlreadyGetReward
+        end
+        local linear_cfg = GameCfg.LinearMissionConfig[mission_id]
+        if not linear_cfg or not linear_cfg.rewards then
+            return ErrorCode.ConfigError
+        end
+        if linear_cfg.end_time and now_ts > linear_cfg.end_time then
+            return ErrorCode.MissionOverTime
+        end
+        for re_id, re_cnt in pairs(linear_cfg.rewards) do
+            if not add_list[re_id] then
+                add_list[re_id] = re_cnt
+            else
+                add_list[re_id] = add_list[re_id] + re_cnt
+            end
+        end
+        if linear_cfg.vitality > 0 then
+            add_vitality = add_vitality + linear_cfg.vitality
+        end
+    end
+
+    -- 整理道具奖励
+    local add_items, add_coins = {}, {}
+    ItemDefine.GetItemsFromCfg(add_list, 1, false, add_items, add_coins)
+    if table.size(add_items) + table.size(add_coins) <= 0 then
+        moon.error(string.format("ItemDefine.GetItemsFromCfg config error add_list=%s", json.pretty_encode(add_list)))
+        return ErrorCode.ConfigError
+    end
+    if table.size(add_items) > 0 then
+        local ret_code = scripts.Bag.TryEmptyEnough(BagDef.BagType.Cangku, add_items, 0)
+        if ret_code ~= ErrorCode.None then
+            return ret_code
+        end
+    end
+
+    local stack_items, unstack_items, deal_coins = {}, {}, {}
+    local ok = ItemDefine.GetItemDataFromIdCount(add_items, add_coins, stack_items, unstack_items, deal_coins)
+    if not ok then
+        moon.error(string.format("ItemDefine.GetItemDataFromIdCount config error add_items=%s",
+            json.pretty_encode(add_items)))
+        moon.error(string.format("ItemDefine.GetItemDataFromIdCount config error add_coins=%s",
+            json.pretty_encode(add_coins)))
+        return ErrorCode.ConfigError
+    end
+
+    local bag_change_log = {}
+    if table.size(stack_items) + table.size(unstack_items) > 0 then
+        local err_code_items = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
+        if err_code_items ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return err_code_items
+        end
+    end
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.TakeMissionReward)
+
+    -- 触发添加活跃度
+    Mission.TriggerCondition(MissionDef.EConditionIds.ACTIVITY_CNT, {}, add_vitality)
+
+    return ErrorCode.None
+end
+
+function Mission.GetAchievementMissionReward(mission_info, achievement_ids)
+    if not mission_info.achivement_info.complete_ids
+        or table.size(mission_info.achivement_info.complete_ids) <= 0 then
+        return ErrorCode.MissionNotFound
+    end
+
+    local now_ts = moon.time()
+    local add_list = {}
+    local add_vitality = 0
+    for _, mission_id in pairs(achievement_ids) do
+        local mission_state = mission_info.achivement_info.complete_ids[mission_id]
+        if not mission_state then
+            return ErrorCode.MissionNotFound
+        end
+        if mission_state ~= MissionDef.EMissionStateIds.COMPLETE then
+            return ErrorCode.MissionAlreadyGetReward
+        end
+        local achievement_cfg = GameCfg.AchievementMissionConfig[mission_id]
+        if not achievement_cfg or not achievement_cfg.rewards then
+            return ErrorCode.ConfigError
+        end
+        for re_id, re_cnt in pairs(achievement_cfg.rewards) do
+            if not add_list[re_id] then
+                add_list[re_id] = re_cnt
+            else
+                add_list[re_id] = add_list[re_id] + re_cnt
+            end
+        end
+        if achievement_cfg.vitality > 0 then
+            add_vitality = add_vitality + achievement_cfg.vitality
+        end
+    end
+
+    -- 整理道具奖励
+    local add_items, add_coins = {}, {}
+    ItemDefine.GetItemsFromCfg(add_list, 1, false, add_items, add_coins)
+    if table.size(add_items) + table.size(add_coins) <= 0 then
+        moon.error(string.format("ItemDefine.GetItemsFromCfg config error add_list=%s", json.pretty_encode(add_list)))
+        return ErrorCode.ConfigError
+    end
+    if table.size(add_items) > 0 then
+        local ret_code = scripts.Bag.TryEmptyEnough(BagDef.BagType.Cangku, add_items, 0)
+        if ret_code ~= ErrorCode.None then
+            return ret_code
+        end
+    end
+
+    local stack_items, unstack_items, deal_coins = {}, {}, {}
+    local ok = ItemDefine.GetItemDataFromIdCount(add_items, add_coins, stack_items, unstack_items, deal_coins)
+    if not ok then
+        moon.error(string.format("ItemDefine.GetItemDataFromIdCount config error add_items=%s",
+            json.pretty_encode(add_items)))
+        moon.error(string.format("ItemDefine.GetItemDataFromIdCount config error add_coins=%s",
+            json.pretty_encode(add_coins)))
+        return ErrorCode.ConfigError
+    end
+
+    local bag_change_log = {}
+    if table.size(stack_items) + table.size(unstack_items) > 0 then
+        local err_code_items = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
+        if err_code_items ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return err_code_items
+        end
+    end
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.TakeMissionReward)
+
+    -- 触发添加活跃度
+    Mission.TriggerCondition(MissionDef.EConditionIds.ACTIVITY_CNT, {}, add_vitality)
+
+    return ErrorCode.None
+end
+
+function Mission.GetPeriodMissionReward(mission_info, period_ids)
+    if not mission_info.period_info.complete_day_ids
+        or not mission_info.period_info.complete_week_ids
+        or not mission_info.period_info.complete_month_ids
+        or (table.size(mission_info.period_info.complete_day_ids) <= 0
+            and table.size(mission_info.period_info.complete_week_ids) <= 0
+            and table.size(mission_info.period_info.complete_month_ids) <= 0) then
+        return ErrorCode.MissionNotFound
+    end
+
+    local now_ts = moon.time()
+    local add_list = {}
+    local add_vitality = 0
+    for _, mission_id in pairs(period_ids) do
+        local mission_state = MissionDef.EMissionStateIds.NO_PROGRESS
+        if mission_info.period_info.complete_day_ids[mission_id] then
+            mission_state = mission_info.period_info.complete_day_ids[mission_id]
+        elseif mission_info.period_info.complete_week_ids[mission_id] then
+            mission_state = mission_info.period_info.complete_week_ids[mission_id]
+        elseif mission_info.period_info.complete_month_ids[mission_id] then
+            mission_state = mission_info.period_info.complete_month_ids[mission_id]
+        end
+
+        if mission_state ~= MissionDef.EMissionStateIds.COMPLETE then
+            return ErrorCode.MissionAlreadyGetReward
+        end
+        local linear_cfg = GameCfg.LinearMissionConfig[mission_id]
+        if not linear_cfg or not linear_cfg.rewards then
+            return ErrorCode.ConfigError
+        end
+        if linear_cfg.end_time and now_ts > linear_cfg.end_time then
+            return ErrorCode.MissionOverTime
+        end
+        for re_id, re_cnt in pairs(linear_cfg.rewards) do
+            if not add_list[re_id] then
+                add_list[re_id] = re_cnt
+            else
+                add_list[re_id] = add_list[re_id] + re_cnt
+            end
+        end
+        if linear_cfg.vitality > 0 then
+            add_vitality = add_vitality + linear_cfg.vitality
+        end
+    end
+
+    -- 整理道具奖励
+    local add_items, add_coins = {}, {}
+    ItemDefine.GetItemsFromCfg(add_list, 1, false, add_items, add_coins)
+    if table.size(add_items) + table.size(add_coins) <= 0 then
+        moon.error(string.format("ItemDefine.GetItemsFromCfg config error add_list=%s", json.pretty_encode(add_list)))
+        return ErrorCode.ConfigError
+    end
+    if table.size(add_items) > 0 then
+        local ret_code = scripts.Bag.TryEmptyEnough(BagDef.BagType.Cangku, add_items, 0)
+        if ret_code ~= ErrorCode.None then
+            return ret_code
+        end
+    end
+
+    local stack_items, unstack_items, deal_coins = {}, {}, {}
+    local ok = ItemDefine.GetItemDataFromIdCount(add_items, add_coins, stack_items, unstack_items, deal_coins)
+    if not ok then
+        moon.error(string.format("ItemDefine.GetItemDataFromIdCount config error add_items=%s",
+            json.pretty_encode(add_items)))
+        moon.error(string.format("ItemDefine.GetItemDataFromIdCount config error add_coins=%s",
+            json.pretty_encode(add_coins)))
+        return ErrorCode.ConfigError
+    end
+
+    local bag_change_log = {}
+    if table.size(stack_items) + table.size(unstack_items) > 0 then
+        local err_code_items = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
+        if err_code_items ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return err_code_items
+        end
+    end
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.TakeMissionReward)
+
+    -- 触发添加活跃度
+    Mission.TriggerCondition(MissionDef.EConditionIds.ACTIVITY_CNT, {}, add_vitality)
+
+    return ErrorCode.None
+end
+
+function Mission.PBGetPlayerMissionInfoReqCmd(req)
+    if not req.msg.uid then
+        return context.S2C(context.net_id, CmdCode.PBGetPlayerMissionInfoRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local mission_info = scripts.UserModel.GetMissionInfo()
+    if not mission_info then
+        return context.S2C(context.net_id, CmdCode.PBGetPlayerMissionInfoRspCmd, {
+            code = ErrorCode.ServerInternalError,
+            error = "获取玩家任务信息失败",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    Mission.DelOverTimeLinearMission(mission_info)
+
+    local now_ts = moon.time()
+    local new_complete_period_ids = {}
+    if Mission.CheckPeriodInfo(mission_info, now_ts, new_complete_period_ids) then
+        if table.size(new_complete_period_ids) > 0 then
+            Mission.PeriodMissionComplete(mission_info, new_complete_period_ids)
+        end
+        Mission.makePeriodMap(mission_info)
+        Mission.SaveMissionsNow()
+    end
+
+    return context.S2C(context.net_id, CmdCode.PBGetPlayerMissionInfoRspCmd, {
+        code = ErrorCode.None,
+        error = "获取玩家任务信息成功",
+        uid = context.uid,
+        player_mission_info = mission_info,
+    }, req.msg_context.stub_id)
+end
+
+function Mission.PBGetMissionRewardReqCmd(req)
+    if not req.msg.uid
+        or { not req.msg.linear_ids and not req.msg.period_ids and not req.msg.achievement_ids } then
+        return context.S2C(context.net_id, CmdCode.PBGetMissionRewardRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local mission_info = scripts.UserModel.GetMissionInfo()
+    if not mission_info then
+        return context.S2C(context.net_id, CmdCode.PBGetMissionRewardRspCmd, {
+            code = ErrorCode.ServerInternalError,
+            error = "获取玩家任务信息失败",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local linear_ids = req.msg.linear_ids or {}
+    local period_ids = req.msg.period_ids or {}
+    local achievement_ids = req.msg.achievement_ids or {}
+    if table.size(linear_ids) > 0 then
+        if table.size(period_ids) > 0 or table.size(achievement_ids) > 0 then
+            return context.S2C(context.net_id, CmdCode.PBGetMissionRewardRspCmd, {
+                code = ErrorCode.MissionManyType,
+                error = "无效请求参数",
+                uid = context.uid,
+                linear_ids = linear_ids,
+                period_ids = period_ids,
+                achievement_ids = achievement_ids,
+            }, req.msg_context.stub_id)
+        end
+    elseif table.size(period_ids) > 0 then
+        if table.size(linear_ids) > 0 or table.size(achievement_ids) > 0 then
+            return context.S2C(context.net_id, CmdCode.PBGetMissionRewardRspCmd, {
+                code = ErrorCode.MissionManyType,
+                error = "无效请求参数",
+                uid = context.uid,
+                linear_ids = linear_ids,
+                period_ids = period_ids,
+                achievement_ids = achievement_ids,
+            }, req.msg_context.stub_id)
+        end
+    elseif table.size(achievement_ids) > 0 then
+        if table.size(linear_ids) > 0 or table.size(period_ids) > 0 then
+            return context.S2C(context.net_id, CmdCode.PBGetMissionRewardRspCmd, {
+                code = ErrorCode.MissionManyType,
+                error = "无效请求参数",
+                uid = context.uid,
+                linear_ids = linear_ids,
+                period_ids = period_ids,
+                achievement_ids = achievement_ids,
+            }, req.msg_context.stub_id)
+        end
+    end
+
+    local change_log = {
+        linears = {},
+        periods = {},
+        achievements = {},
+        periods_all_change = false
+    }
+    local now_ts = moon.time()
+    local new_complete_period_ids = {}
+    if Mission.CheckPeriodInfo(mission_info, now_ts, new_complete_period_ids) then
+        if table.size(new_complete_period_ids) > 0 then
+            Mission.PeriodMissionComplete(mission_info, new_complete_period_ids)
+        end
+        Mission.makePeriodMap(mission_info)
+        change_log.periods_all_change = true
+    end
+
+    local ret_code = ErrorCode.None
+    if table.size(linear_ids) > 0 then
+        ret_code = Mission.GetLinearMissionReward(mission_info, linear_ids)
+        if ret_code == ErrorCode.None then
+            for _, mission_id in pairs(linear_ids) do
+                mission_info.linear_info.complete_ids[mission_id] = MissionDef.ETaskState.GET_REWARD
+                change_log.linears[mission_id] = MissionDef.ETaskState.GET_REWARD
+            end
+        end
+    end
+    if table.size(period_ids) > 0 then
+        ret_code = Mission.GetPeriodMissionReward(mission_info, period_ids)
+    end
+    if table.size(achievement_ids) > 0 then
+        ret_code = Mission.GetAchievementMissionReward(mission_info, achievement_ids)
+    end
+
+    if ret_code ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBGetMissionRewardRspCmd, {
+            code = ret_code,
+            error = "获取任务奖励失败",
+            uid = context.uid,
+            linear_ids = linear_ids,
+            period_ids = period_ids,
+            achievement_ids = achievement_ids,
+        }, req.msg_context.stub_id)
+    end
+
+    Mission.SaveAndSync(change_log)
+
+    return context.S2C(context.net_id, CmdCode.PBGetMissionRewardRspCmd, {
+        code = ErrorCode.None,
+        error = "获取任务奖励成功",
+        uid = context.uid,
+        linear_ids = linear_ids,
+        period_ids = period_ids,
+        achievement_ids = achievement_ids,
+    }, req.msg_context.stub_id)
+end
+
+function Mission.PBRrefreshMissionReqCmd(req)
+    if not req.msg.uid
+        or not req.msg.old_mission_id then
+        return context.S2C(context.net_id, CmdCode.PBRrefreshMissionRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local mission_info = scripts.UserModel.GetMissionInfo()
+    if not mission_info then
+        return context.S2C(context.net_id, CmdCode.PBGetMissionRewardRspCmd, {
+            code = ErrorCode.ServerInternalError,
+            error = "获取玩家任务信息失败",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    Mission.DelOverTimeLinearMission(mission_info)
+
+    local now_ts = moon.time()
+    local new_complete_period_ids = {}
+    if Mission.CheckPeriodInfo(mission_info, now_ts, new_complete_period_ids) then
+        if table.size(new_complete_period_ids) > 0 then
+            Mission.PeriodMissionComplete(mission_info, new_complete_period_ids)
+        end
+        Mission.makePeriodMap(mission_info)
+        Mission.SaveMissionsNow()
+    end
+
+    local ret_code, replace_id = Mission.ReplaceMission(mission_info, req.msg.old_mission_id)
+    if ret_code ~= ErrorCode.None or not replace_id then
+        return context.S2C(context.net_id, CmdCode.PBRrefreshMissionRspCmd, {
+            code = ret_code,
+            error = "刷新任务失败",
+            uid = context.uid,
+            old_mission_id = req.msg.old_mission_id,
+        }, req.msg_context.stub_id)
+    end
+
+    local new_mission_data = mission_info.period_info.now_day_mission_datas[replace_id]
+    local change_log = {
+        periods = {},
+    }
+    if new_mission_data then
+        change_log.periods[replace_id] = MissionDef.ETaskState.NO_COMPLETE
+    else
+        change_log.periods[replace_id] = MissionDef.ETaskState.COMPLETE
+    end
+    Mission.SaveAndSync(change_log)
+
+    return context.S2C(context.net_id, CmdCode.PBRrefreshMissionRspCmd, {
+        code = ErrorCode.None,
+        error = "刷新任务成功",
+        uid = context.uid,
+        new_mission_data = new_mission_data,
+        new_complete_id = replace_id,
+    }, req.msg_context.stub_id)
+end
+
+return Mission

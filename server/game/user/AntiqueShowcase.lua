@@ -8,7 +8,8 @@ local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
 local Database = common.Database
 local BagDef = require("common.def.BagDef")
-local ItemDef = require("common.def.ItemDef")
+local ItemDef         = require("common.def.ItemDef")
+local MissionDef = require("common.def.MissionDef")
 local ItemDefine = require("common.logic.ItemDefine")
 
 ---@type user_context
@@ -171,12 +172,12 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
     ItemDefine.GetItemsFromCfg(a_cfg.identifycost, 1, true, cost_items, cost_coins)
 
     -- 检测道具是否足够
-    local err_code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    err_code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
     if err_code ~= ErrorCode.None then
         return err_code, "道具不足"
     end
 
-    local err_code = scripts.Bag.CheckCoinsEnough(cost_coins)
+    err_code = scripts.Bag.CheckCoinsEnough(cost_coins)
     if err_code ~= ErrorCode.None then
         return err_code, "金币不足"
     end
@@ -193,7 +194,7 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
 
     -- 扣除金币消耗
     if table.size(cost_coins) > 0 then
-        local err_code = scripts.Bag.DealCoins(cost_coins, change_logs)
+        err_code = scripts.Bag.DealCoins(cost_coins, change_logs)
         if err_code ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(change_logs)
             return err_code, "金币不足"
@@ -318,6 +319,8 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
         scripts.Bag.SaveAndLog(change_logs, ItemDef.ChangeReason.AntiqueIdentify)
     end
 
+    -- 触发鉴定古董次数
+    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.APPRAISE_ANTIQUE_CNT, { a_cfg.quality }, 1)
     if is_succ == 1 then
         return ErrorCode.None, "鉴定完成 古董为真品", price_probability
     elseif is_succ ==0 then
@@ -439,6 +442,10 @@ function AntiqueShowcase.AntiqueShow(config_id, uniq_id, showcase_id, showcase_i
     if table.size(bag_change_log) > 0 then
         scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.AntiqueShow)
     end
+
+    -- 触发展示古董数量
+    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.SHOW_ANTIQUE_CNT, { showcase_id },
+        table.size(tar_showcase.antique_show_list))
 
     return ErrorCode.None, "操作成功"
 end

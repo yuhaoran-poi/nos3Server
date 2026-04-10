@@ -236,6 +236,7 @@
 
 
 ---@class PBBagUpdateSyncCmd
+---@field public change_reason integer
 ---@field public update_items table<string, PBBag> @有key则执行PBBag同步
 ---@field public update_coins table<integer, PBCoin> @有key则执行PBCoin同步
 
@@ -2312,10 +2313,11 @@
 
 ---@class PBConditionData
 ---@field public cond_id integer
----@field public target_cnt integer
----@field public now_cnt integer
+---@field public target_value integer
+---@field public now_value integer
 ---@field public is_complete integer
 ---@field public params integer[]
+---@field public arr_params integer[]
 
 
 ---@class PBMissionData
@@ -2327,15 +2329,78 @@
 ---@field public cond_datas PBConditionData[]
 
 
----@class PBUpdateMissionSeverSyncCmd
+---@class PBLinearMissionInfo
+---@field public last_check_ts integer
+---@field public now_mission_datas table<integer, PBMissionData>
+---@field public complete_ids table<integer, integer>
+---@field public wait_beg_mission_datas table<integer, PBMissionData>
+
+
+---@class PBPeriodMissionInfo
+---@field public last_update_ts integer
+---@field public now_day_mission_datas table<integer, PBMissionData>
+---@field public complete_day_ids table<integer, integer>
+---@field public now_week_mission_datas table<integer, PBMissionData>
+---@field public complete_week_ids table<integer, integer>
+---@field public now_month_mission_datas table<integer, PBMissionData>
+---@field public complete_month_ids table<integer, integer>
+
+
+---@class PBAchivementMissionInfo
+---@field public now_mission_datas table<integer, PBMissionData>
+---@field public complete_ids table<integer, integer>
+
+
+---@class PBPlayerMissionInfo
+---@field public linear_info PBLinearMissionInfo
+---@field public period_info PBPeriodMissionInfo
+---@field public achivement_info PBAchivementMissionInfo
+
+
+---@class PBUpdateMissionSyncCmd
+---@field public update_mission_datas table<integer, PBMissionData>
+---@field public update_complete_ids table<integer, integer>
+---@field public update_period_info PBPeriodMissionInfo
+
+
+---@class PBGetPlayerMissionInfoReqCmd
 ---@field public uid integer
----@field public cond_id integer
----@field public cond_type integer
----@field public update_progress integer
 
 
----@class PBUpdateMissionClientSyncCmd
----@field public update_mission_datas PBMissionData[] @好友数据
+---@class PBGetPlayerMissionInfoRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public player_mission_info PBPlayerMissionInfo
+
+
+---@class PBGetMissionRewardReqCmd
+---@field public uid integer
+---@field public linear_ids integer[]
+---@field public period_ids integer[]
+---@field public achivement_ids integer[]
+
+
+---@class PBGetMissionRewardRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public linear_ids integer[]
+---@field public period_ids integer[]
+---@field public achivement_ids integer[]
+
+
+---@class PBRrefreshMissionReqCmd
+---@field public uid integer
+---@field public old_mission_id integer
+
+
+---@class PBRrefreshMissionRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public new_mission_data PBMissionData
+---@field public new_complete_id integer
 
 
 ---@class PBRankData
@@ -2986,10 +3051,13 @@
 ---@field public open_count integer @已经开启次数
 ---@field public no_guarantee_cnt integer @未触发保底次数(触发后归零)
 ---@field public already_guarantee_cnt integer @保底已生效次数
+---@field public get_count integer @获得宝箱次数
 
 
 ---@class PBTreasurePlayerData
 ---@field public treasure_list table<integer, PBTreasureSingle>
+---@field public total_get_count integer
+---@field public total_open_count integer
 
 
 ---@class PBTeamInfo
@@ -3422,6 +3490,7 @@
 ---@field public role_data PBRoleData @角色数据
 ---@field public ghost_data PBGhostData @鬼宠数据
 ---@field public grade_show_infos table<integer, PBGradeShowInfo> @段位信息
+---@field public consume_bag PBBag @消耗品背包
 
 
 ---@class PBUseSkinGiftReqCmd
@@ -3575,6 +3644,7 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public treasure_data PBTreasureSingle
+---@field public add_items PBItemSimple[]
 
 
 
@@ -3630,6 +3700,7 @@
 ---@field ItemImage ItemImage
 ---@field Mail Mail
 ---@field MatchProxy MatchProxy
+---@field Mission Mission
 ---@field NewBag NewBag
 ---@field Role Role
 ---@field Room Room
@@ -3752,6 +3823,7 @@
 ---@field AntiquePriceTagChangeRate AntiquePriceTagChangeRate_cfg[]
 ---@field AntiqueSlot AntiqueSlot_cfg[]
 ---@field AntiqueTagPool AntiqueTagPool_cfg[]
+---@field AweItem AweItem_cfg[]
 ---@field AweItemUpLv AweItemUpLv_cfg[]
 ---@field BaGuaBrand BaGuaBrand_cfg[]
 ---@field BaGuaBrandUpLv BaGuaBrandUpLv_cfg[]
@@ -3795,6 +3867,7 @@
 ---@field RankLevel RankLevel_cfg[]
 ---@field RankRewardPool RankRewardPool_cfg[]
 ---@field RechargeStoreConfig RechargeStoreConfig_cfg[]
+---@field ReplaceableDailyMissionConfig ReplaceableDailyMissionConfig_cfg[]
 ---@field RoleLvAward RoleLvAward_cfg[]
 ---@field RoleUpLv RoleUpLv_cfg[]
 ---@field Skin Skin_cfg[]

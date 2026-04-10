@@ -13,6 +13,7 @@ local BillDef = require("common.def.BillDef")
 local ItemDef = require("common.def.ItemDef")
 local ProtoEnum = require("tools.ProtoEnum")
 local serverconf = require("serverconf")
+local MissionDef = require("common.def.MissionDef")
 
 ---@type user_context
 local context = ...
@@ -68,6 +69,15 @@ function Bill.LoadBills()
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local bills_data = Database.loadbillinfo(context.addr_db_user, context.uid)
     return bills_data
+end
+
+function Bill.GetTotalAmount()
+    local bills = scripts.UserModel.GetBills()
+    if not bills or not bills.total_bill_amount then
+        return 0
+    end
+
+    return bills.total_bill_amount
 end
 
 function Bill.DealOnOrder()
@@ -185,6 +195,10 @@ function Bill.AddBillAmount(bills, order_info, bill_cfg)
         bills.year_bill_amount = bills.year_bill_amount + amount_record
     end
     bills.total_bill_amount = bills.total_bill_amount + amount_record
+    -- 触发充值金额
+    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.RECHARGE_CNT, {}, amount_record)
+    -- 触发累计充值金额
+    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.TOTAL_RECHARGE_CNT, {}, bills.total_bill_amount)
 
     context.S2C(context.net_id, CmdCode.PBBillDoneSyncCmd, {
         bill_id = Bill.on_order_info.bill_id,

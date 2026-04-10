@@ -109,9 +109,12 @@ message PBTreasureSingle
 	int32 open_count	= 3;			// 已经开启次数
 	int32 no_guarantee_cnt	= 4;		// 未触发保底次数(触发后归零)
 	int32 already_guarantee_cnt	= 5;	// 保底已生效次数
+	int32 get_count	= 6;				// 获得宝箱次数
 }
 
 message PBTreasurePlayerData
 {
 	map<int32, PBTreasureSingle> treasure_list	= 1;
+	int32 total_get_count	= 2;
+	int32 total_open_count	= 3;
 }

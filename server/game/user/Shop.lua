@@ -13,6 +13,7 @@ local BagDef = require("common.def.BagDef")
 local ItemDef = require("common.def.ItemDef")
 local TreasureDef = require("common.def.TreasureDef")
 local CommonCfgDef = require("common.def.CommonCfgDef")
+local MissionDef = require("common.def.MissionDef")
 local json = require("json")
 
 ---@type user_context
@@ -585,6 +586,9 @@ function Shop.PBShopBuyReqCmd(req)
     for t_id, t_cnt in pairs(add_treasure_list) do
         Shop.AddTreasure(t_id, t_cnt)
     end
+    -- 触发获得宝箱数量
+    local total_get_count = Shop.GetTreasureTotalCnt()
+    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.GET_TREASURE_CNT, { 0 }, total_get_count)
 
     -- 保存购物数据并添加购物日志
     for id, num in pairs(product_id_num) do
@@ -639,6 +643,24 @@ function Shop.GetTreasureData(config_id)
     return treasures.treasure_list[config_id]
 end
 
+function Shop.GetTreasureTotalCnt()
+    local treasures = scripts.UserModel.GetTreasureData()
+    if not treasures then
+        return 0
+    end
+
+    return treasures.total_get_count
+end
+
+function Shop.GetTreasureTotalOpenCnt()
+    local treasures = scripts.UserModel.GetTreasureData()
+    if not treasures then
+        return 0
+    end
+
+    return treasures.total_open_count
+end
+
 function Shop.AddTreasure(config_id, num)
     local treasures = scripts.UserModel.GetTreasureData()
     if not treasures then
@@ -654,9 +676,15 @@ function Shop.AddTreasure(config_id, num)
         new_treasure.config_id = config_id
         new_treasure.now_count = num
         treasures.treasure_list[config_id] = new_treasure
+        treasures.treasure_list[config_id].get_count = num
     else
         treasures.treasure_list[config_id].now_count = treasures.treasure_list[config_id].now_count + num
+        treasures.treasure_list[config_id].get_count = treasures.treasure_list[config_id].get_count + num
     end
+    treasures.total_get_count = treasures.total_get_count + num
+    -- 触发获得宝箱数量
+    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.GET_TREASURE_CNT, { config_id },
+        treasures.treasure_list[config_id].get_count)
     scripts.UserModel.SetTreasureData(treasures)
 end
 
@@ -673,6 +701,7 @@ function Shop.OpenTreasure(config_id, num)
 
     local treasure_cfg = GameCfg.TreasureChest[config_id]
     if not treasure_cfg then
+        moon.error(string.format("GameCfg.TreasureChest config error config_id=%d", config_id))
         return ErrorCode.ConfigError
     end
     local mail_id_cfg = CommonCfgDef.getConf("TreasureBoxEmail")
@@ -682,7 +711,8 @@ function Shop.OpenTreasure(config_id, num)
     end
 
     local now_ts = moon.time()
-    if treasure_cfg.period_validity > 0 and now_ts < treasure_cfg.period_validity then
+    if (treasure_cfg.start_time > 0 and now_ts < treasure_cfg.start_time)
+        or (treasure_cfg.end_time > 0 and now_ts > treasure_cfg.end_time) then
         return ErrorCode.TreasureOutTime
     end
 
@@ -714,7 +744,7 @@ function Shop.OpenTreasure(config_id, num)
     end
 
     local trigger_cnt = 0
-    local add_list = {}
+    local add_list, re_list = {}, {}
     for i = 1, num do
         local is_guarantee = false
         local cur_yu = (treasure_data.no_guarantee_cnt + i) % treasure_cfg.guarantee_trigger
@@ -743,17 +773,26 @@ function Shop.OpenTreasure(config_id, num)
 
         local reward_cfg = GameCfg.TreasureChestRewards[pool_id]
         if not reward_cfg then
+            moon.error(string.format("GameCfg.TreasureChestRewards config error pool_id=%d", pool_id))
             return ErrorCode.ConfigError
         end
         -- 随机奖品id
         local rand_id = scripts.Item.RangeTags(reward_cfg.item_weight)
         -- 随机奖品数量
-        local rand_num = scripts.Item.RangeTags(reward_cfg.item_num)
+        local rand_num = 0
+        if reward_cfg.item_num[rand_id] then
+            rand_num = reward_cfg.item_num[rand_id]
+        end
+        if rand_num == 0 then
+            moon.error(string.format("GameCfg.TreasureChestRewards reward_cfg.item_num error rand_id=%d", rand_id))
+            return ErrorCode.ConfigError
+        end
         if not add_list[rand_id] then
             add_list[rand_id] = rand_num
         else
             add_list[rand_id] = add_list[rand_id] + rand_num
         end
+        table.insert(re_list, {id = rand_id, count = rand_num})
 
         if is_guarantee then
             trigger_cnt = trigger_cnt + 1
@@ -763,6 +802,7 @@ function Shop.OpenTreasure(config_id, num)
     local add_items, add_coins = {}, {}
     ItemDefine.GetItemsFromCfg(add_list, 1, false, add_items, add_coins)
     if table.size(add_items) + table.size(add_coins) <= 0 then
+        moon.error(string.format("ItemDefine.GetItemsFromCfg config error add_list=%s", json.pretty_encode(add_list)))
         return ErrorCode.ConfigError
     end
     local use_mail = false
@@ -780,6 +820,8 @@ function Shop.OpenTreasure(config_id, num)
     local stack_items, unstack_items, deal_coins = {}, {}, {}
     local ok = ItemDefine.GetItemDataFromIdCount(add_items, add_coins, stack_items, unstack_items, deal_coins)
     if not ok then
+        moon.error(string.format("ItemDefine.GetItemDataFromIdCount config error add_items=%s", json.pretty_encode(add_items)))
+        moon.error(string.format("ItemDefine.GetItemDataFromIdCount config error add_coins=%s", json.pretty_encode(add_coins)))
         return ErrorCode.ConfigError
     end
 
@@ -840,11 +882,16 @@ function Shop.OpenTreasure(config_id, num)
         (treasure_cfg.guarantee_trigger * trigger_cnt)
     treasure_data.already_guarantee_cnt = treasure_data.already_guarantee_cnt + trigger_cnt
     treasures.treasure_list[config_id] = treasure_data
+    treasures.total_open_count = treasures.total_open_count + num
+
+    -- 触发获得宝箱数量
+    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.OPEN_TREASURE_CNT, { config_id }, treasure_data.open_count)
+    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.OPEN_TREASURE_CNT, { 0 }, treasures.total_open_count)
 
     Shop.SaveShopsNow()
     scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.TreasureOpen)
 
-    return ErrorCode.None
+    return ErrorCode.None, re_list
 end
 
 return Shop

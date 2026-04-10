@@ -3,10 +3,11 @@ syntax = "proto3";
 message PBConditionData
 {
 	int32 cond_id		= 1;
-	int32 target_cnt	= 2;
-	int32 now_cnt		= 3;
+	int32 target_value	= 2;
+	int32 now_value		= 3;
 	int32 is_complete	= 4;
 	repeated int32 params	= 5;
+	repeated int32 arr_params	= 6;
 }
 
 message PBMissionData
@@ -19,23 +20,91 @@ message PBMissionData
 	repeated PBConditionData cond_datas = 6;
 }
 
-// 更新任务进度
-message PBUpdateMissionSeverSyncCmd
+message PBLinearMissionInfo
 {
-    // 协议数据
-    int64 uid				= 1;
-	int32 cond_id			= 2;
-	int32 cond_type			= 3;
-	int32 update_progress	= 4;
+	int64 last_check_ts = 1;
+	map<int32, PBMissionData> now_mission_datas	= 2;
+	map<int32, int32> complete_ids	= 3;
+	map<int32, PBMissionData> wait_beg_mission_datas	= 4;
+}
+
+message PBPeriodMissionInfo
+{
+	int64 last_update_ts	= 1;
+	map<int32, PBMissionData> now_day_mission_datas	= 2;
+	map<int32, int32> complete_day_ids	= 3;
+	map<int32, PBMissionData> now_week_mission_datas	= 4;
+	map<int32, int32> complete_week_ids	= 5;
+	map<int32, PBMissionData> now_month_mission_datas	= 6;
+	map<int32, int32> complete_month_ids	= 7;
+}
+
+message PBAchivementMissionInfo
+{
+	map<int32, PBMissionData> now_mission_datas	= 1;
+	map<int32, int32> complete_ids	= 2;
+}
+
+message PBPlayerMissionInfo
+{
+	PBLinearMissionInfo linear_info	= 1;
+	PBPeriodMissionInfo period_info	= 2;
+	PBAchivementMissionInfo achivement_info	= 3;
 }
 
 // 更新任务进度 通知玩家
-message PBUpdateMissionClientSyncCmd
+message PBUpdateMissionSyncCmd
 {
-    repeated PBMissionData update_mission_datas	= 1; //好友数据
+    map<int32, PBMissionData> update_mission_datas	= 1;
+	map<int32, int32> update_complete_ids	= 2;
+	PBPeriodMissionInfo update_period_info	= 3;
 }
 
+message PBGetPlayerMissionInfoReqCmd
+{
+	int64 uid	= 1;
+}
 
+message PBGetPlayerMissionInfoRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid				= 3;
+	PBPlayerMissionInfo	player_mission_info	= 4;
+}
 
+message PBGetMissionRewardReqCmd
+{
+	int64 uid	= 1;
+	repeated int32 linear_ids	= 2;
+	repeated int32 period_ids	= 3;
+	repeated int32 achivement_ids	= 4;
+}
 
+message PBGetMissionRewardRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid				= 3;
+	repeated int32 linear_ids	= 4;
+	repeated int32 period_ids	= 5;
+	repeated int32 achivement_ids	= 6;
+}
 
+message PBRrefreshMissionReqCmd
+{
+	int64 uid	= 1;
+	int32 old_mission_id	= 2;
+}
+
+message PBRrefreshMissionRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid				= 3;
+	PBMissionData new_mission_data	= 4;
+	int32 new_complete_id	= 5;
+}

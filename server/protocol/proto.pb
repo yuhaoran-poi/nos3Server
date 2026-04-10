@@ -417,7 +417,7 @@ login_data (2.PBDSLoginDataR	loginData"f
 error (	Rerror
 dsid (Rdsid
 net_id (RnetIdbproto3
-€
+¥
 	bag.proto
 item.proto"·
 PBBag"
@@ -451,10 +451,11 @@ ItemsEntry
 error (	Rerror
 uid (Ruid+
 
-coin_datas (2.PBUserCoinsR	coinDatas"·
-PBBagUpdateSyncCmdG
-update_items (2$.PBBagUpdateSyncCmd.UpdateItemsEntryRupdateItemsG
-update_coins (2$.PBBagUpdateSyncCmd.UpdateCoinsEntryRupdateCoinsF
+coin_datas (2.PBUserCoinsR	coinDatas"Ü
+PBBagUpdateSyncCmd#
+change_reason (RchangeReasonG
+update_items (2$.PBBagUpdateSyncCmd.UpdateItemsEntryRupdateItemsG
+update_coins (2$.PBBagUpdateSyncCmd.UpdateCoinsEntryRupdateCoinsF
 UpdateItemsEntry
 key (	Rkey
 value (2.PBBagRvalue:8G
@@ -1081,7 +1082,7 @@ now_sys_ts (RnowSysTs>
 uid (Ruid+
 
 grade_data (2.PBGradeDataR	gradeDatabproto3
-Ð
+¿
 
 shop.proto"Ù
 PBShopBuySingle
@@ -1187,20 +1188,23 @@ buy_id_num (2.PBShopSelectBuyRbuyIdNum"›
 
 now_sys_ts (RnowSysTs.
 
-buy_id_num (2.PBShopSelectBuyRbuyIdNum"É
+buy_id_num (2.PBShopSelectBuyRbuyIdNum"æ
 PBTreasureSingle
 	config_id (RconfigId
 	now_count (RnowCount
 
 open_count (R	openCount(
 no_guarantee_cnt (RnoGuaranteeCnt2
-already_guarantee_cnt (RalreadyGuaranteeCnt"¸
+already_guarantee_cnt (RalreadyGuaranteeCnt
+	get_count (RgetCount"Š
 PBTreasurePlayerDataL
-treasure_list (2'.PBTreasurePlayerData.TreasureListEntryRtreasureListR
+treasure_list (2'.PBTreasurePlayerData.TreasureListEntryRtreasureList&
+total_get_count (RtotalGetCount(
+total_open_count (RtotalOpenCountR
 TreasureListEntry
 key (Rkey'
 value (2.PBTreasureSingleRvalue:8bproto3
-Í7
+¢8
 
 user.proto
 item.proto	bag.proto
@@ -1357,7 +1361,7 @@ cost_items (2.PBItemSimpleR	costItems"I
 info (2.PBUserAttrRinfo"G
 PBGetOtherDetailReqCmd
 uid (Ruid
-	quest_uid (RquestUid"•
+	quest_uid (RquestUid"¾
 PBGetOtherDetailRspCmd
 code (Rcode
 error (	Rerror
@@ -1367,7 +1371,9 @@ cost_items (2.PBItemSimpleR	costItems"I
 	role_data (2.PBRoleDataRroleData+
 
 ghost_data (2.PBGhostDataR	ghostDataU
-grade_show_infos (2+.PBGetOtherDetailRspCmd.GradeShowInfosEntryRgradeShowInfosS
+grade_show_infos (2+.PBGetOtherDetailRspCmd.GradeShowInfosEntryRgradeShowInfos'
+consume_bag	 (2.PBBagR
+consumeBagS
 GradeShowInfosEntry
 key (Rkey&
 value (2.PBGradeShowInfoRvalue:8"@
@@ -1484,12 +1490,13 @@ headIconId"
 uid (Ruid(
 open_treasure_id (RopenTreasureId
 
-open_count (R	openCount"Š
+open_count (R	openCount"¶
 PBOpenTreasureRspCmd
 code (Rcode
 error (	Rerror
 uid (Ruid6
-treasure_data (2.PBTreasureSingleRtreasureDatabproto3
+treasure_data (2.PBTreasureSingleRtreasureData*
+	add_items (2.PBItemSimpleRaddItemsbproto3
 ¬
 
 gods.proto"9
@@ -2715,16 +2722,17 @@ redTeamNum"
 #PBSelectionState_LRS_SelectionGhost#
 PBSelectionState_LRS_SetupGhost)
 %PBSelectionState_SH_Ghost_Select_Skinbproto3
-€
-mission.proto"›
+¹
+mission.proto"Â
 PBConditionData
-cond_id (RcondId
-
-target_cnt (R	targetCnt
-now_cnt (RnowCnt
+cond_id (RcondId!
+target_value (RtargetValue
+	now_value (RnowValue
 is_complete (R
 isComplete
-params (Rparams"Õ
+params (Rparams
+
+arr_params (R	arrParams"Õ
 PBMissionData
 
 mission_id (R	missionId!
@@ -2733,14 +2741,104 @@ mission_id (R	missionId!
 beg_ts (RbegTs
 end_ts (RendTs/
 
-cond_datas (2.PBConditionDataR	condDatas"Ž
-PBUpdateMissionSeverSyncCmd
-uid (Ruid
-cond_id (RcondId
-	cond_type (RcondType'
-update_progress (RupdateProgress"`
-PBUpdateMissionClientSyncCmd@
-update_mission_datas (2.PBMissionDataRupdateMissionDatasbproto3
+cond_datas (2.PBConditionDataR	condDatas"ª
+PBLinearMissionInfo"
+last_check_ts (RlastCheckTsU
+now_mission_datas (2).PBLinearMissionInfo.NowMissionDatasEntryRnowMissionDatasH
+complete_ids (2%.PBLinearMissionInfo.CompleteIdsEntryRcompleteIdsb
+wait_beg_mission_datas (2-.PBLinearMissionInfo.WaitBegMissionDatasEntryRwaitBegMissionDatasR
+NowMissionDatasEntry
+key (Rkey$
+value (2.PBMissionDataRvalue:8>
+CompleteIdsEntry
+key (Rkey
+value (Rvalue:8V
+WaitBegMissionDatasEntry
+key (Rkey$
+value (2.PBMissionDataRvalue:8"À
+PBPeriodMissionInfo$
+last_update_ts (RlastUpdateTs_
+now_day_mission_datas (2,.PBPeriodMissionInfo.NowDayMissionDatasEntryRnowDayMissionDatasR
+complete_day_ids (2(.PBPeriodMissionInfo.CompleteDayIdsEntryRcompleteDayIdsb
+now_week_mission_datas (2-.PBPeriodMissionInfo.NowWeekMissionDatasEntryRnowWeekMissionDatasU
+complete_week_ids (2).PBPeriodMissionInfo.CompleteWeekIdsEntryRcompleteWeekIdse
+now_month_mission_datas (2..PBPeriodMissionInfo.NowMonthMissionDatasEntryRnowMonthMissionDatasX
+complete_month_ids (2*.PBPeriodMissionInfo.CompleteMonthIdsEntryRcompleteMonthIdsU
+NowDayMissionDatasEntry
+key (Rkey$
+value (2.PBMissionDataRvalue:8A
+CompleteDayIdsEntry
+key (Rkey
+value (Rvalue:8V
+NowWeekMissionDatasEntry
+key (Rkey$
+value (2.PBMissionDataRvalue:8B
+CompleteWeekIdsEntry
+key (Rkey
+value (Rvalue:8W
+NowMonthMissionDatasEntry
+key (Rkey$
+value (2.PBMissionDataRvalue:8C
+CompleteMonthIdsEntry
+key (Rkey
+value (Rvalue:8"Ö
+PBAchivementMissionInfoY
+now_mission_datas (2-.PBAchivementMissionInfo.NowMissionDatasEntryRnowMissionDatasL
+complete_ids (2).PBAchivementMissionInfo.CompleteIdsEntryRcompleteIdsR
+NowMissionDatasEntry
+key (Rkey$
+value (2.PBMissionDataRvalue:8>
+CompleteIdsEntry
+key (Rkey
+value (Rvalue:8"Æ
+PBPlayerMissionInfo5
+linear_info (2.PBLinearMissionInfoR
+linearInfo5
+period_info (2.PBPeriodMissionInfoR
+periodInfoA
+achivement_info (2.PBAchivementMissionInfoRachivementInfo"¼
+PBUpdateMissionSyncCmda
+update_mission_datas (2/.PBUpdateMissionSyncCmd.UpdateMissionDatasEntryRupdateMissionDatas^
+update_complete_ids (2..PBUpdateMissionSyncCmd.UpdateCompleteIdsEntryRupdateCompleteIdsB
+update_period_info (2.PBPeriodMissionInfoRupdatePeriodInfoU
+UpdateMissionDatasEntry
+key (Rkey$
+value (2.PBMissionDataRvalue:8D
+UpdateCompleteIdsEntry
+key (Rkey
+value (Rvalue:8"0
+PBGetPlayerMissionInfoReqCmd
+uid (Ruid" 
+PBGetPlayerMissionInfoRspCmd
+code (Rcode
+error (	Rerror
+uid (RuidD
+player_mission_info (2.PBPlayerMissionInfoRplayerMissionInfo"‘
+PBGetMissionRewardReqCmd
+uid (Ruid
+
+linear_ids (R	linearIds
+
+period_ids (R	periodIds%
+achivement_ids (RachivementIds"»
+PBGetMissionRewardRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+
+linear_ids (R	linearIds
+
+period_ids (R	periodIds%
+achivement_ids (RachivementIds"Q
+PBRrefreshMissionReqCmd
+uid (Ruid$
+old_mission_id (RoldMissionId"·
+PBRrefreshMissionRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid8
+new_mission_data (2.PBMissionDataRnewMissionData&
+new_complete_id (RnewCompleteIdbproto3
 Ù
 
 rank.proto"a

@@ -33,5 +33,6 @@ return {
 [27] = { id=27,name="TreasureBoxEmail",value=2000020,items={} },
 [28] = { id=28,name="PeriodTimeLine",value=18000,items={} },
 [29] = { id=29,name="DailyTaskCount",value=3,items={} },
-[30] = { id=30,name="WeeklyTaskCount",value=3,items={} }
+[30] = { id=30,name="WeeklyTaskCount",value=3,items={} },
+[31] = { id=31,name="ReplaceableDailyMission",value=5,items={} }
 }

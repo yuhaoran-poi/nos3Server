@@ -13,10 +13,13 @@ local defaultPBTreasureSingle = {
     open_count = 0,
     no_guarantee_cnt = 0,
     already_guarantee_cnt = 0,
+    get_count = 0,
 }
 
 local defaultPBTreasurePlayerData = {
     treasure_list = {},
+    total_get_count = 0,
+    total_open_count = 0,
 }
 
 ---@return PBTreasureSingle

@@ -43,8 +43,9 @@ message PBBagGetCoinsRspCmd
 
 message PBBagUpdateSyncCmd
 {
-    map<string, PBBag> update_items = 1;    // 有key则执行PBBag同步
-    map<int32, PBCoin> update_coins = 2;    // 有key则执行PBCoin同步
+    int32 change_reason = 1;
+    map<string, PBBag> update_items = 2;    // 有key则执行PBBag同步
+    map<int32, PBCoin> update_coins = 3;    // 有key则执行PBCoin同步
 }
 
 // 客户端请求堆叠,拆分,移动道具

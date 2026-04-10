@@ -556,6 +556,20 @@ local ErrorCode = {
     CreateOrderFailed = 2157,
     --- 充值订单不存在
     OrderNotFound = 2158,
+
+    --任务系统相关错误码
+    --- 任务不存在
+    MissionNotFound = 2201,
+    --- 任务不是刷新任务
+    MissionNotRefresh = 2202,
+    --- 没有任务可以替换
+    NoMissionCanReplace = 2203,
+    --- 任务奖励已领取
+    MissionAlreadyGetReward = 2204,
+    --- 任务超时
+    MissionOverTime = 2205,
+    --- 任务类型太多
+    MissionManyType = 2206,
 }
 
 return ErrorCode

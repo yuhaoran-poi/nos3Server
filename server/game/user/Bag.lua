@@ -10,6 +10,7 @@ local Database = common.Database
 local BagDef = require("common.def.BagDef")
 local ItemDef = require("common.def.ItemDef")
 local ItemDefine = require("common.logic.ItemDefine")
+local MissionDef = require("common.def.MissionDef")
 
 ---@type user_context
 local context = ...
@@ -643,6 +644,7 @@ function Bag.SaveAndLog(change_logs, change_reason,
     -- 修改dataMap
     -- 将变更记录作为PBBagUpdateSyncCmd发送
     local update_msg = {
+        change_reason = change_reason,
         update_items = {},
         update_coins = {},
     }
@@ -916,6 +918,39 @@ function Bag.SaveAndLog(change_logs, change_reason,
     if change_reason ~= ItemDef.ChangeReason.BagMove
         and change_reason ~= ItemDef.ChangeReason.SortOutItems then
         scripts.Item.SendLog(write_log_datas)
+
+        -- 触发道具任务
+        for _, write_log in pairs(write_log_datas) do
+            if write_log.new_num > write_log.old_num then
+                local param1 = 0
+                local item_cfg = GameCfg.Item[write_log.config_id]
+                if item_cfg then
+                    param1 = item_cfg.type1
+                end
+                if param1 == 0 then
+                    local uniq_cfg = GameCfg.UniqueItem[write_log.config_id]
+                    if uniq_cfg then
+                        param1 = uniq_cfg.type1
+                    end
+                end
+                scripts.Mission.TriggerCondition(MissionDef.EConditionIds.GET_ITEM_CNT,
+                    { param1, write_log.config_id, change_reason }, write_log.new_num - write_log.old_num)
+            elseif write_log.new_num < write_log.old_num then
+                local param1 = 0
+                local item_cfg = GameCfg.Item[write_log.config_id]
+                if item_cfg then
+                    param1 = item_cfg.type1
+                end
+                if param1 == 0 then
+                    local uniq_cfg = GameCfg.UniqueItem[write_log.config_id]
+                    if uniq_cfg then
+                        param1 = uniq_cfg.type1
+                    end
+                end
+                scripts.Mission.TriggerCondition(MissionDef.EConditionIds.CONSUME_ITEM_CNT,
+                    { param1, write_log.config_id, change_reason }, write_log.old_num - write_log.new_num)
+            end
+        end
     end
 
     return success
@@ -1637,6 +1672,7 @@ function Bag.CheckItemsEnough(bagType, del_items, del_unique_items)
     end
 
     --检测扣除的道具是否足够
+    local need_bound_items = {} -- 暂存转换的非绑道具
     for itemid, item in pairs(del_items) do
         if item.count >= 0 then
             return ErrorCode.ParamInvalid
@@ -1656,8 +1692,49 @@ function Bag.CheckItemsEnough(bagType, del_items, del_unique_items)
         else
             local count = Bag.GetItemCount(itemid, bagType)
 
-            if count + remaining < 0 then
-                return ErrorCode.ItemNotEnough
+            local item_cfg = GameCfg.Item[itemid]
+            if item_cfg and item_cfg.bound_id ~= 0 then
+                if count + remaining < 0 then
+                    -- 尝试用非绑道具补足
+                    local bound_count = Bag.GetItemCount(item_cfg.bound_id, bagType)
+                    if count + bound_count + remaining < 0 then
+                        return ErrorCode.ItemNotEnough
+                    else
+                        -- 修改绑定道具消耗数量
+                        item.count = -count
+                        if not need_bound_items[item_cfg.bound_id] then
+                            need_bound_items[item_cfg.bound_id] = {
+                                id = item_cfg.bound_id,
+                                count = count + remaining,
+                                pos = 0
+                            }
+                        else
+                            need_bound_items[item_cfg.bound_id].count = need_bound_items[item_cfg.bound_id].count + count +
+                                remaining
+                        end
+                    end
+                end
+            else
+                if count + remaining < 0 then
+                    return ErrorCode.ItemNotEnough
+                end
+            end
+        end
+    end
+    for bound_id, bound_item in pairs(need_bound_items) do
+        local need_count = bound_item.count
+        if del_items[bound_id] then
+            need_count = need_count + del_items[bound_id].count
+        end
+
+        local count = Bag.GetItemCount(bound_id, bagType)
+        if count + need_count < 0 then
+            return ErrorCode.ItemNotEnough
+        else
+            if del_items[bound_id] then
+                del_items[bound_id].count = need_count
+            else
+                del_items[bound_id] = bound_item
             end
         end
     end
@@ -2536,7 +2613,7 @@ function Bag.InlayTabooWord(taboo_word_id, inlay_type, uniqid)
         count = -1,
         pos = 0,
     }
-    local err_code = Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    err_code = Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
     if err_code ~= ErrorCode.None then
         return ErrorCode.ItemNotEnough
     end

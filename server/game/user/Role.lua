@@ -12,6 +12,7 @@ local ProtoEnum = require("tools.ProtoEnum")
 local ItemDefine = require("common.logic.ItemDefine")
 local ItemDef = require("common.def.ItemDef")
 local CommonCfgDef = require("common.def.CommonCfgDef")
+local MissionDef = require("common.def.MissionDef")
 
 ---@type user_context
 local context = ...
@@ -163,6 +164,45 @@ function Role.CheckAddRoles(roleids)
     return ErrorCode.None
 end
 
+function Role.GetSkillNum(role_info, skillids)
+    local num = table.size(role_info.main_skill) + table.size(role_info.minor_skill1) +
+        table.size(role_info.minor_skill2) + table.size(role_info.passive_skill)
+
+    -- 触发角色解锁技能数量
+    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_UNLOCK_SKILL_CNT, { role_info.config_id }, num)
+    for _, skillid in pairs(skillids) do
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_UNLOCK_SKILL, { role_info.config_id, skillid }, 1)
+    end
+end
+
+function Role.GetMaxSkillNum()
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list then
+        return 0, 0
+    end
+
+    local max_skill_num, cur_roleid = 0, 0
+    for roleid, role_info in pairs(roles.role_list) do
+        local num = table.size(role_info.main_skill) + table.size(role_info.minor_skill1) +
+            table.size(role_info.minor_skill2) + table.size(role_info.passive_skill)
+        if num > max_skill_num then
+            max_skill_num = num
+            cur_roleid = roleid
+        end
+    end
+
+    return max_skill_num, cur_roleid
+end
+
+function Role.GetRoleCnt()
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list then
+        return 0
+    end
+
+    return table.size(roles.role_list)
+end
+
 function Role.AddRole(roleid)
     local roles = scripts.UserModel.GetRoles()
     if not roles then
@@ -178,6 +218,7 @@ function Role.AddRole(roleid)
         return ErrorCode.RoleExist
     end
 
+    local skillids = {}
     local role_info = RoleDef.newRoleData()
     role_info.config_id = roleid
     role_info.cur_main_skill_id = role_cfg.init_main_skill
@@ -189,6 +230,7 @@ function Role.AddRole(roleid)
             skill_info.star = 0
         end
         role_info.main_skill[skillid] = skill_info
+        table.insert(skillids, skillid)
     end
     role_info.cur_minor_skill1_id = role_cfg.init_q_skill
     for _, skillid in pairs(role_cfg.q_skill) do
@@ -199,6 +241,7 @@ function Role.AddRole(roleid)
             skill_info.star = 0
         end
         role_info.minor_skill1[skillid] = skill_info
+        table.insert(skillids, skillid)
     end
     role_info.cur_minor_skill2_id = role_cfg.init_e_skill
     for _, skillid in pairs(role_cfg.e_skill) do
@@ -219,9 +262,17 @@ function Role.AddRole(roleid)
             skill_info.star = 0
         end
         role_info.passive_skill[skillid] = skill_info
+        table.insert(skillids, skillid)
     end
 
     roles.role_list[roleid] = role_info
+
+    Role.GetSkillNum(role_info, skillids)
+    -- 触发角色数量
+    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.UNLOCK_ROLE_CNT, {}, table.size(roles.role_list))
+    -- 触发指定角色解锁
+    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.UNLOCK_ROLE, { roleid }, 1)
+
     return ErrorCode.None
 end
 
@@ -573,6 +624,58 @@ function Role.InlayTabooWord(roleid, taboo_word_id, inlay_type, uniqid)
     -- scripts.Role.SaveAndLog(change_roles)
 end
 
+function Role.GetLvMoreThanNum(target_role_id, target_lv_exps)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list then
+        return
+    end
+
+    for _, lv_exp in pairs(target_lv_exps) do
+        local num = 0
+        for roleid, role_info in pairs(roles.role_list) do
+            if roleid ~= target_role_id and role_info.exp >= lv_exp.exp then
+                num = num + 1
+            end
+        end
+        -- 触发角色达到指定等级的数量
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_LEVEL_CNT, { lv_exp.lv }, num + 1)
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_LEVEL, { target_role_id }, lv_exp.lv)
+    end
+end
+
+function Role.GetSingleExpMoreThanIds(target_exp)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list then
+        return {}
+    end
+
+    local roleid_exps = {}
+    for roleid, role_info in pairs(roles.role_list) do
+        if role_info.exp >= target_exp then
+            roleid_exps[roleid] = role_info.exp
+        end
+    end
+
+    return roleid_exps
+end
+
+function Role.GetMaxExpRoleid()
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list then
+        return 0, 0
+    end
+
+    local max_exp, cur_roleid = 0, 0
+    for roleid, role_info in pairs(roles.role_list) do
+        if role_info.exp > max_exp then
+            max_exp = role_info.exp
+            cur_roleid = roleid
+        end
+    end
+
+    return max_exp, cur_roleid
+end
+
 function Role.UpLv(roleid, add_exp)
     local roles = scripts.UserModel.GetRoles()
     if not roles or not roles.role_list or not roles.role_list[roleid] then
@@ -587,6 +690,7 @@ function Role.UpLv(roleid, add_exp)
 
     local exps = {}
     local remain_exp = add_exp
+    local new_lv_exp = {}
     for _, cfg in pairs(up_exp_cfgs) do
         if cfg.allexp > role_info.exp then
             if role_info.exp + add_exp >= cfg.allexp then
@@ -596,6 +700,9 @@ function Role.UpLv(roleid, add_exp)
                 end
                 exps[cfg.cost] = exps[cfg.cost] + canAdd
                 remain_exp = remain_exp - canAdd
+
+                table.insert(new_lv_exp, {lv = cfg.id, exp = cfg.allexp})
+                break
             else
                 if not exps[cfg.cost] then
                     exps[cfg.cost] = 0
@@ -655,6 +762,10 @@ function Role.UpLv(roleid, add_exp)
         end
     end
 
+    if table.size(new_lv_exp) > 0 then
+        Role.GetLvMoreThanNum(roleid, new_lv_exp)
+    end
+
     return ErrorCode.None, change_log
 end
 
@@ -676,11 +787,26 @@ function Role.GameAddExp(roleid, add_exp)
     if role_info.exp + add_exp >= last_lv_exp then
         return ErrorCode.RoleMaxExp
     end
-    local add_exp = math.min(add_exp, last_lv_exp - role_info.exp)
+    add_exp = math.min(add_exp, last_lv_exp - role_info.exp)
+
+    local new_lv_exp = {}
+    for _, cfg in pairs(up_exp_cfgs) do
+        if cfg.allexp > role_info.exp then
+            if role_info.exp + add_exp >= cfg.allexp then
+                table.insert(new_lv_exp, {lv = cfg.id, exp = cfg.allexp})
+            else
+                break
+            end
+        end
+    end
 
     -- 增加经验
     local new_exp = role_info.exp + add_exp
     role_info.exp = new_exp
+
+    if table.size(new_lv_exp) > 0 then
+        Role.GetLvMoreThanNum(roleid, new_lv_exp)
+    end
 
     return ErrorCode.None, new_exp
 end
@@ -752,9 +878,61 @@ function Role.UpExp(roleid, exp_cnt)
     end
 
     local role_info = roles.role_list[roleid]
+    local new_lv_exp = {}
+
+    local up_exp_cfgs = GameCfg.RoleUpLv
+    if up_exp_cfgs then
+        for _, cfg in pairs(up_exp_cfgs) do
+            if cfg.allexp > role_info.exp then
+                if role_info.exp + exp_cnt >= cfg.allexp then
+                    table.insert(new_lv_exp, { lv = cfg.id, exp = cfg.allexp })
+                else
+                    break
+                end
+            end
+        end
+    end
+
+    -- 增加经验
     role_info.exp = role_info.exp + exp_cnt
 
+    if table.size(new_lv_exp) > 0 then
+        Role.GetLvMoreThanNum(roleid, new_lv_exp)
+    end
+
     return ErrorCode.None
+end
+
+function Role.GetStarMoreThanNum(target_role_id, target_star)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list then
+        return 0
+    end
+
+    local num = 0
+    for roleid, role_info in pairs(roles.role_list) do
+        if roleid ~= target_role_id and role_info.star_level >= target_star then
+            num = num + 1
+        end
+    end
+    return num
+end
+
+function Role.GetMaxStarRoleid()
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list then
+        return 0, 0
+    end
+
+    local max_star, cur_roleid = 0, 0
+    for roleid, role_info in pairs(roles.role_list) do
+        if role_info.star_level > max_star then
+            max_star = role_info.star_level
+            cur_roleid = roleid
+        end
+    end
+
+    return max_star, cur_roleid
 end
 
 function Role.UpStar(roleid)
@@ -833,6 +1011,12 @@ function Role.UpStar(roleid)
         -- 增加星星
         role_info.star_level = role_info.star_level + 1
         role_info.star_fail_cnt = 0
+
+        -- 触发角色达到星级的数量
+        local num = Role.GetStarMoreThanNum(roleid, role_info.star_level)
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_STAR_CNT, { role_info.star_level }, num + 1)
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_STAR, { roleid }, role_info.star_level)
+
         return ErrorCode.None, change_log
     end
 end
@@ -938,6 +1122,31 @@ function Role.PBRoleWearEquipReqCmd(req)
     local change_roles = {}
     change_roles[req.msg.roleid] = "WearEquipment"
     Role.SaveAndLog(change_roles)
+
+    if item_small_type == ItemDefine.EItemSmallType.MagicItem then
+        local cur_uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+        if cur_uniqitem_cfg and cur_uniqitem_cfg.type2 then
+            -- 触发角色装备法器的数量
+            scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_EQUIP_MAGIC_ITEM_CNT,
+                { role_info.config_id, cur_uniqitem_cfg.type2 }, 1)
+        end
+    elseif item_small_type == ItemDefine.EItemSmallType.HumanDiagrams then
+        local cur_uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+        if cur_uniqitem_cfg and cur_uniqitem_cfg.type2 then
+            local cur_num = 0
+            for _, digrams_card in pairs(role_info.digrams_cards) do
+                local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+                if uniqitem_cfg
+                    and uniqitem_cfg.type2
+                    and uniqitem_cfg.type2 == cur_uniqitem_cfg.type2 then
+                    cur_num = cur_num + 1
+                end
+            end
+            -- 触发角色装备八卦牌的数量
+            scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_EQUIP_DIAGRAMS_CNT,
+                { role_info.config_id, cur_uniqitem_cfg.type2 }, cur_num + 1)
+        end
+    end
 
     local rsp_msg = {
         code = ErrorCode.None,
@@ -1739,6 +1948,7 @@ function Role.PBRoleSkillCompositeReqCmd(req)
 
     if table.size(change_roles) > 0 then
         scripts.Role.SaveAndLog(change_roles)
+        Role.GetSkillNum(role_info, { req.msg.composite_id })
     end
 end
 

@@ -10,6 +10,7 @@ local ProtoEnum = require("tools.ProtoEnum")
 local GodsDef = require("common.def.GodsDef")
 local BagDef = require("common.def.BagDef")
 local ItemDef = require("common.def.ItemDef")
+local MissionDef = require("common.def.MissionDef")
 local ItemDefine = require("common.logic.ItemDefine")
 
 ---@type user_context
@@ -121,6 +122,31 @@ function Gods.GetBattleGods()
     return res
 end
 
+function Gods.GetGodsImages()
+    local gods = scripts.UserModel.GetGods()
+    if not gods then
+        return nil
+    end
+
+    return gods.gods_image
+end
+
+function Gods.GetMaxLevelGodid()
+    local gods = scripts.UserModel.GetGods()
+    if not gods or not gods.gods_image then
+        return 0, 0
+    end
+
+    local max_level, cur_god_id = 0, 0
+    for god_id, god_image in pairs(gods.gods_image) do
+        if god_image.lv > max_level then
+            max_level = god_image.lv
+            cur_god_id = god_id
+        end
+    end
+    return max_level, cur_god_id
+end
+
 function Gods.PBGodsGetInfoReqCmd(req)
     local gods = scripts.UserModel.GetGods()
     if not gods then
@@ -196,10 +222,6 @@ function Gods.PBGodsUnlockReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local god_image = GodsDef.newGodImage()
-    god_image.config_id = god_cfg.id
-    gods.gods_image[god_cfg.id] = god_image
-
     -- 扣除消耗
     local change_log = {}
     local err_code_del = ErrorCode.None
@@ -226,9 +248,18 @@ function Gods.PBGodsUnlockReqCmd(req)
         end
     end
 
+    local god_image = GodsDef.newGodImage()
+    god_image.config_id = god_cfg.id
+    gods.gods_image[god_cfg.id] = god_image
+
     -- 保存数据
     scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.GodsUnlock)
     Gods.SaveAndLog({ [god_cfg.id] = 1 }, nil)
+
+    -- 触发解锁神明总数
+    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.UNLOCK_GOD_CNT, {}, table.size(gods.gods_image))
+    -- 触发解锁指定神明
+    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.UNLOCK_GOD, { god_cfg.id }, 1)
 
     return context.S2C(context.net_id, CmdCode.PBGodsUnlockRspCmd, {
         code = ErrorCode.None,
@@ -295,8 +326,6 @@ function Gods.PBGodsUpLvReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    gods.gods_image[req.msg.god_id].lv = now_lv + 1
-
     -- 扣除消耗
     local change_log = {}
     local err_code_del = ErrorCode.None
@@ -323,9 +352,14 @@ function Gods.PBGodsUpLvReqCmd(req)
         end
     end
 
+    gods.gods_image[req.msg.god_id].lv = now_lv + 1
+
     -- 保存数据
     scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.GodsUpLv)
     Gods.SaveAndLog({ [req.msg.god_id] = 1 }, nil)
+
+    -- 触发神明等级
+    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.GOD_LEVEL, { req.msg.god_id }, now_lv + 1)
 
     return context.S2C(context.net_id, CmdCode.PBGodsUpLvRspCmd, {
         code = ErrorCode.None,
