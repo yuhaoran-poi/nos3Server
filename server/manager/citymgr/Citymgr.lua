@@ -1,6 +1,7 @@
 local moon = require("moon")
 local socket = require("moon.socket")
 local common = require("common")
+local cluster = require("cluster")
 local CmdCode = common.CmdCode
 local GameCfg = common.GameCfg --游戏配置
 local Database = common.Database
@@ -401,6 +402,46 @@ function Citymgr.ApplyLoginToCity(uid)
     end
 end
 
+function Citymgr.GetCityidFromUid(uids)
+    if not uids or table.size(uids) == 0 then
+        return {}
+    end
+
+    local uid_cityid = {}
+    for _, uid in pairs(uids) do
+        local cityid = context.uid_cityid[uid]
+        if cityid then
+            uid_cityid[uid] = cityid
+        end
+    end
+
+    return uid_cityid
+end
+
+function Citymgr.ApplySwitchCity(uid, cityid)
+    local function findNowCity()
+        local scope <close> = lock_run()
+
+        local now_city = context.citys[cityid]
+        if now_city.now_num >= max_num then
+            return { code = ErrorCode.CityFull, error = "主城已满", cityid = cityid }
+        end
+
+        now_city.pre_enter_num = now_city.pre_enter_num + 1
+        return {
+            code = ErrorCode.None,
+            error = "允许加入",
+            cityid = cityid,
+            region = now_city.region,
+            ds_address = now_city.ds_address,
+            ds_ip = now_city.ds_ip,
+        }
+    end
+
+    local res = findNowCity()
+    return res
+end
+
 function Citymgr.PlayerEnterCity(req)
     local function enterCity()
         local scope <close> = lock_run()
@@ -425,6 +466,8 @@ function Citymgr.PlayerEnterCity(req)
             moon.error(string.format("JoinNearbyChannel uid:%d, cityid:%d, code:%d, error:%s", req.uid, req.cityid,
                 chat_ret.code, chat_ret.error))
         end
+        -- 通知Roommgr玩家进入了主城
+        cluster.send(3999, "roommgr", "Roommgr.NotifyPlayerSwitchCity", { uid = req.uid, cityid = req.cityid })
     end
     return res
 end
@@ -455,6 +498,8 @@ function Citymgr.PlayerExitCity(req)
             moon.error(string.format("LeaveNearbyChannel uid:%d, cityid:%d, code:%d, error:%s", req.uid, req.cityid,
                 chat_ret.code, chat_ret.error))
         end
+        -- 通知Roommgr玩家进入了主城
+        cluster.send(3999, "roommgr", "Roommgr.NotifyPlayerSwitchCity", { uid = req.uid, cityid = 0 })
     end
     return res
 end

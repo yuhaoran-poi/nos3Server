@@ -16,12 +16,12 @@ local scripts = context.scripts
 local City = {}
 
 function City.PBApplyLoginCityReqCmd(req)
-    if context.cityid then
-        return context.S2C(context.net_id, CmdCode["PBApplyLoginCityRspCmd"], {
-            code = ErrorCode.CityAlreadyInCity,
-            error = "你已在主城中",
-        }, req.msg_context.stub_id)
-    end
+    -- if context.cityid then
+    --     return context.S2C(context.net_id, CmdCode["PBApplyLoginCityRspCmd"], {
+    --         code = ErrorCode.CityAlreadyInCity,
+    --         error = "你已在主城中",
+    --     }, req.msg_context.stub_id)
+    -- end
 
     local res, err = clusterd.call(3999, "citymgr", "Citymgr.ApplyLoginToCity", {
         msg = req.msg,
@@ -35,6 +35,29 @@ function City.PBApplyLoginCityReqCmd(req)
     end
 
     return context.S2C(context.net_id, CmdCode["PBApplyLoginCityRspCmd"], res, req.msg_context.stub_id)
+end
+
+function City.PBApplySwitchCityReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid or not req.msg.cityid then
+        return context.S2C(context.net_id, CmdCode.PBApplySwitchCityRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            cityid = req.msg.cityid or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    local res, err = clusterd.call(3999, "citymgr", "Citymgr.ApplySwitchCity", req.msg.uid, req.msg.cityid)
+    if err then
+        moon.error(string.format("City.PBApplySwitchCityReqCmd err:%s", err))
+        return context.S2C(context.net_id, CmdCode.PBApplySwitchCityRspCmd, {
+            code = ErrorCode.ServerInternalError,
+            error = "system error",
+            cityid = req.msg.cityid or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    return context.S2C(context.net_id, CmdCode.PBApplySwitchCityRspCmd, res, req.msg_context.stub_id)
 end
 
 function City.OnDsDestory(res)

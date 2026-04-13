@@ -465,6 +465,20 @@
 ---@field public cityid integer
 
 
+---@class PBApplySwitchCityReqCmd
+---@field public uid integer
+---@field public cityid integer
+
+
+---@class PBApplySwitchCityRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public cityid integer
+---@field public region string
+---@field public ds_address string
+---@field public ds_ip string
+
+
 ---@class PBMessagePack
 ---@field public net_id integer
 ---@field public broadcast integer
@@ -2687,6 +2701,7 @@
 ---@field public seat_idx integer
 ---@field public is_ready integer @0未准备 1已准备 2暂离
 ---@field public mem_info PBUserAttr
+---@field public cityid integer
 
 
 ---@class PBRoomInfo
@@ -3171,7 +3186,7 @@
 ---@field public config_id integer @道具的配置id
 ---@field public min_price integer @当前最低价
 ---@field public last_deal_price integer @最近成交价
----@field public yes_average_price integer @昨日成交平均价
+---@field public yes_average_price number @昨日成交平均价
 ---@field public min_price_num integer @最低价数量
 
 
@@ -3311,6 +3326,17 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public focus_id_ts table<integer, integer>
+
+
+---@class PBTradeGetAllYesAveragePriceReqCmd
+---@field public uid integer
+
+
+---@class PBTradeGetAllYesAveragePriceRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public yes_average_price table<integer, number>
 
 
 ---@class PBBuffData

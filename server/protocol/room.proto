@@ -32,6 +32,7 @@ message PBRoomMemberInfo
     int32 seat_idx      = 1;
     int32 is_ready      = 2;    // 0未准备 1已准备 2暂离
     PBUserAttr mem_info   = 3;
+    int32 cityid        = 4;
 }
 
 message PBRoomInfo

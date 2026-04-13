@@ -1881,6 +1881,27 @@ function _M.gettraderecordseq(addr, start_config_id, num)
     return nil
 end
 
+function _M.gettraderecordaveragepriceseq(addr, start_config_id, num)
+    local cmd = string.format([[
+        SELECT trade_config_id, yes_average_price FROM mgame.trade_record WHERE trade_config_id > %d ORDER BY trade_config_id ASC LIMIT %d;
+    ]], start_config_id, num)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("gettraderecordaveragepriceseq err = %s", json.pretty_encode(err)))
+        return nil
+    end
+    if res and #res > 0 then
+        local ret = {}
+        for i = 1, #res do
+            local record = {}
+            record[res[i].trade_config_id] = res[i].yes_average_price
+        end
+        return ret
+    end
+    moon.error("gettraderecordaveragepriceseq failed", start_config_id, num, err)
+    return nil
+end
+
 -- function _M.RedisAddCompletelogid(addr_db_redis, uid, log_id)
 --     local redis_key = string.format("trade:completed:log_ids:%d", uid)
 --     redis_send(addr_db_redis, "SADD", redis_key, log_id)

@@ -221,6 +221,8 @@ local ErrorCode = {
     CityVerifyFailed = 1104,
     --- 主城已连接
     CityAlreadyConnected = 1105,
+    --- 主城已满
+    CityFull = 1106,
 
     ---用户相关错误码
     --- 昵称已存在

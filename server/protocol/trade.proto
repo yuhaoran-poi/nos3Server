@@ -38,7 +38,7 @@ message PBTradeSearchSimpleData
 	int32 config_id	= 1;	//道具的配置id
 	int32 min_price	= 2;	//当前最低价
 	int32 last_deal_price	= 3;	//最近成交价
-	int32 yes_average_price = 4;	//昨日成交平均价
+	float yes_average_price = 4;	//昨日成交平均价
 	int32 min_price_num		= 5;	//最低价数量
 }
 
@@ -203,4 +203,17 @@ message PBTradeChangeFocusIdRspCmd
     string error = 2; // 错误信息
 	int64 uid	= 3;
 	map<int32, int64> focus_id_ts	= 4;
+}
+
+message PBTradeGetAllYesAveragePriceReqCmd
+{
+	int64 uid	= 1;
+}
+
+message PBTradeGetAllYesAveragePriceRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+	int64 uid	= 3;
+	map<int32, float> yes_average_price	= 4;
 }

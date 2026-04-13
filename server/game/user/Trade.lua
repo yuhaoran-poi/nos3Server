@@ -874,4 +874,42 @@ function Trade.PBTradeChangeFocusIdReqCmd(req)
     }, req.msg_context.stub_id)
 end
 
+function Trade.PBTradeGetAllYesAveragePriceReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid then
+        return context.S2C(context.net_id, CmdCode.PBTradeGetAllYesAveragePriceRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local start_config_id = 0
+    local id_price_list = {}
+    while true do
+        local records = Database.gettraderecordaveragepriceseq(context.addr_db_user, start_config_id, 1000)
+        if not records or table.size(records) <= 0 then
+            moon.error("Trademgr.Start gettraderecordaveragepriceseq failed", start_config_id, 1000)
+            break
+        end
+        for id, price in pairs(records) do
+            if id > start_config_id then
+                start_config_id = id
+            end
+            id_price_list[id] = price
+        end
+
+        if table.size(records) < 1000 then
+            break
+        end
+    end
+
+    return context.S2C(context.net_id, CmdCode.PBTradeGetAllYesAveragePriceRspCmd, {
+        code = ErrorCode.None,
+        error = "获取所有商品平均价格成功",
+        uid = context.uid,
+        yes_average_price = id_price_list,
+    }, req.msg_context.stub_id)
+end
+
 return Trade

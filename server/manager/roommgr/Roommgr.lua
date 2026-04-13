@@ -1,6 +1,7 @@
 local moon = require("moon")
 local socket = require("moon.socket")
 local common = require("common")
+local cluster = require("cluster")
 local CmdCode = common.CmdCode
 local GameCfg = common.GameCfg --游戏配置
 local Database = common.Database
@@ -287,7 +288,16 @@ function Roommgr.CreateRoom(req)
     room.room_data.master_id = req.msg.uid
     room.master_id = req.msg.uid
     room.master_name = req.self_info.nick_name
-    table.insert(room.players, { is_ready = 1, mem_info = req.self_info })
+
+    local uid_cityid, err = cluster.call(3999, "citymgr", "Citymgr.GetCityidFromUid", { req.msg.uid })
+    if err then
+        moon.error(string.format("GetCityidFromUid uid:%d, error:%s", req.msg.uid, err))
+    end
+    if uid_cityid and uid_cityid[req.msg.uid] then
+        table.insert(room.players, { is_ready = 1, mem_info = req.self_info, cityid = uid_cityid[req.msg.uid] })
+    else
+        table.insert(room.players, { is_ready = 1, mem_info = req.self_info, cityid = 0 })
+    end
     -- moon.info(string.format("Roommgr.CreateRoom mem_info:\n%s", json.pretty_encode(room.players[1].mem_info)))
     
     -- 创建房间聊天频道
@@ -495,7 +505,16 @@ function Roommgr.DealApply(req)
         end
 
         -- 添加玩家到房间
-        table.insert(room.players, { is_ready = 0, mem_info = apply_data.apply_info })
+        local uid_cityid, err = cluster.call(3999, "citymgr", "Citymgr.GetCityidFromUid", { apply_data.apply_info.uid })
+        if err then
+            moon.error(string.format("GetCityidFromUid uid:%d, error:%s", apply_data.apply_info.uid, err))
+        end
+        local apply_cityid = 0
+        if uid_cityid and uid_cityid[apply_data.apply_info.uid] then
+            apply_cityid = uid_cityid[apply_data.apply_info.uid]
+        end
+        table.insert(room.players, { is_ready = 0, mem_info = apply_data.apply_info, cityid = apply_cityid })
+        
         moon.debug(string.format("Roommgr.DealApply uid:%d, roomid:%d", req.deal_uid, req.roomid))
         context.uid_roomid[req.deal_uid] = req.roomid
 
@@ -528,6 +547,7 @@ function Roommgr.DealApply(req)
             roomid = room.room_data.roomid,
             sync_type = RoomDef.SyncType.PlayerEnter,
             sync_info = {
+                master_id = room.master_id,
                 players = {},
             }
         }
@@ -535,6 +555,7 @@ function Roommgr.DealApply(req)
             seat_idx = #room.players,
             is_ready = 0,
             mem_info = apply_data.apply_info,
+            cityid = apply_cityid,
         })
         context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
     else
@@ -579,7 +600,15 @@ function Roommgr.EnterRoom(req)
     end
 
     -- 添加玩家到房间
-    table.insert(room.players, { is_ready = 0, mem_info = req.mem_info })
+    local uid_cityid, err = cluster.call(3999, "citymgr", "Citymgr.GetCityidFromUid", { req.mem_info.uid })
+    if err then
+        moon.error(string.format("GetCityidFromUid uid:%d, error:%s", req.mem_info.uid, err))
+    end
+    local mem_cityid = 0
+    if uid_cityid and uid_cityid[req.mem_info.uid] then
+        mem_cityid = uid_cityid[req.mem_info.uid]
+    end
+    table.insert(room.players, { is_ready = 0, mem_info = req.mem_info, cityid = mem_cityid })
     moon.debug(string.format("Roommgr.EnterRoom uid:%d, roomid:%d", req.msg.uid, req.msg.roomid))
     context.uid_roomid[req.msg.uid] = req.msg.roomid
     moon.debug(string.format("Roommgr.EnterRoom context.uid_roomid=%s", json.pretty_encode(context.uid_roomid)))
@@ -605,6 +634,7 @@ function Roommgr.EnterRoom(req)
         roomid = room.room_data.roomid,
         sync_type = RoomDef.SyncType.PlayerEnter,
         sync_info = {
+            master_id = room.master_id,
             players = {},
         }
     }
@@ -612,6 +642,7 @@ function Roommgr.EnterRoom(req)
         seat_idx = #room.players,
         is_ready = 0,
         mem_info = req.mem_info,
+        cityid = mem_cityid,
     })
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
@@ -702,7 +733,8 @@ function Roommgr.ReturnRoom(req)
         table.insert(res.member_datas, {
             seat_idx = i,
             is_ready = member.is_ready,
-            mem_info = member.mem_info
+            mem_info = member.mem_info,
+            cityid = member.cityid,
         })
     end
 
@@ -1118,7 +1150,15 @@ function Roommgr.DealInvite(req)
             return { code = ErrorCode.RoomFull, error = "房间已满" }
         end
         -- 添加玩家到房间
-        table.insert(room.players, { is_ready = 0, mem_info = req.invite_info })
+        local uid_cityid, err = cluster.call(3999, "citymgr", "Citymgr.GetCityidFromUid", { req.invite_info.uid })
+        if err then
+            moon.error(string.format("GetCityidFromUid uid:%d, error:%s", req.invite_info.uid, err))
+        end
+        local invite_cityid = 0
+        if uid_cityid and uid_cityid[req.invite_info.uid] then
+            invite_cityid = uid_cityid[req.invite_info.uid]
+        end
+        table.insert(room.players, { is_ready = 0, mem_info = req.invite_info, cityid = invite_cityid })
         moon.debug(string.format("Roommgr.DealInvite uid:%d, roomid:%d", req.msg.uid, req.msg.roomid))
         context.uid_roomid[req.msg.uid] = req.msg.roomid
 
@@ -1143,6 +1183,7 @@ function Roommgr.DealInvite(req)
             roomid = room.room_data.roomid,
             sync_type = RoomDef.SyncType.PlayerEnter,
             sync_info = {
+                master_id = room.master_id,
                 players = {},
             }
         }
@@ -1150,6 +1191,7 @@ function Roommgr.DealInvite(req)
             seat_idx = #room.players,
             is_ready = 0,
             mem_info = req.invite_info,
+            cityid = invite_cityid,
         })
         context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
     else
@@ -1251,7 +1293,8 @@ function Roommgr.GetRoomInfo(req)
         table.insert(res.member_datas, {
             seat_idx = i,
             is_ready = member.is_ready,
-            mem_info = member.mem_info
+            mem_info = member.mem_info,
+            cityid = member.cityid,
         })
     end
     --moon.info(string.format("Roommgr.GetRoomInfo res:\n%s", json.pretty_encode(res)))
@@ -1579,6 +1622,61 @@ function Roommgr.MemberChangeRoleInfo(msg)
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
     return { code = ErrorCode.None }
+end
+
+function Roommgr.NotifyPlayerSwitchCity(uid, cityid)
+    local roomid = context.uid_roomid[uid]
+    if not roomid then
+        return
+    end
+    local room = context.rooms[roomid]
+    if not room then
+        moon.debug(string.format("Roommgr.NotifyPlayerSwitchCity room not found, uid:%d, roomid:%d", uid, roomid))
+        context.uid_roomid[uid] = nil
+        return
+    end
+
+    -- 验证玩家是否在房间内
+    local member_index = nil
+    for i, member in pairs(room.players) do
+        if member.mem_info.uid == uid then
+            member_index = i
+            break
+        end
+    end
+    if not member_index then
+        moon.debug(string.format("Roommgr.NotifyPlayerSwitchCity member not found, uid:%d, roomid:%d", uid, roomid))
+        context.uid_roomid[uid] = nil
+        return
+    end
+
+    -- 更新主城id
+    room.players[member_index].cityid = cityid
+
+    -- 广播状态更新--排除返回者本人
+    local notify_uids = {}
+    for _, player in pairs(room.players) do
+        if player.mem_info.uid ~= uid then
+            table.insert(notify_uids, player.mem_info.uid)
+        end
+    end
+    if #notify_uids > 0 then
+        local sync_msg = {
+            roomid = room.room_data.roomid,
+            sync_type = RoomDef.SyncType.PlayerSwitchCity,
+            sync_info = {
+                players = {},
+            }
+        }
+        table.insert(sync_msg.sync_info.players, {
+            seat_idx = member_index,
+            mem_info = {
+                uid = uid
+            },
+            cityid = cityid,
+        })
+        context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
+    end
 end
 
 function Roommgr.Start()

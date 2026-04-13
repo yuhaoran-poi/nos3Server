@@ -647,7 +647,7 @@ worldIndex*Ð
 CHANNEL_TYPE_PRIVATE
 CHANNEL_TYPE_SYSTEM
 CHANNEL_TYPE_ROOMbproto3
-¯
+ž
 
 city.proto"*
 PBApplyLoginCityReqCmd
@@ -662,7 +662,18 @@ ds_address (	R	dsAddress
 ds_ip (	RdsIp"D
 PBNotifyDsDestorySyncCmd
 uid (Ruid
-cityid (Rcityidbproto3
+cityid (Rcityid"C
+PBApplySwitchCityReqCmd
+uid (Ruid
+cityid (Rcityid"§
+PBApplySwitchCityRspCmd
+code (Rcode
+error (	Rerror
+cityid (Rcityid
+region (	Rregion
+
+ds_address (	R	dsAddress
+ds_ip (	RdsIpbproto3
 
 common.proto"“
 PBMessagePack
@@ -1563,7 +1574,7 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-Ñ%
+Ä%
 dsnode.proto
 item.proto
 user.proto	bag.proto
@@ -1580,7 +1591,12 @@ magic_item (2.PBItemDataR	magicItemL
 space_ring (2.PBItemDataR	spaceRingL
 DigramsCardsEntry
 key (Rkey!
-value (2.PBItemDataRvalue:8"õ
+value (2.PBItemDataRvalue:8"r
+PBInGameKillMonster
+
+monster_id (R	monsterId!
+monster_type (RmonsterType
+kill_cnt (RkillCnt"ô
 PBGameSettle
 settle_data (	R
 settleData-
@@ -1595,8 +1611,8 @@ consumeBag#
 reward_boxs	 (2.PBItemSimpleR
 rewardBoxsD
 game_missions
- (2.PBGameSettle.GameMissionsEntryRgameMissionsF
-kill_monsters (2!.PBGameSettle.PBInGameKillMonsterRkillMonsters
+ (2.PBGameSettle.GameMissionsEntryRgameMissions9
+kill_monsters (2.PBInGameKillMonsterRkillMonsters
 
 chapter_id (R	chapterId
 
@@ -1608,12 +1624,7 @@ bootyValue,
 settle_simple_data (	RsettleSimpleData?
 GameMissionsEntry
 key (Rkey
-value (Rvalue:8r
-PBInGameKillMonster
-
-monster_id (R	monsterId!
-monster_type (RmonsterType
-kill_cnt (RkillCnt"=
+value (Rvalue:8"=
 PBEnterCityReqCmd
 uid (Ruid
 cityid (Rcityid"=
@@ -2883,7 +2894,7 @@ PBRankInfo
 uid (Ruid(
 	rank_info (2.PBRankInfoRrankInfo(
 	self_data (2.PBRankDataRselfDatabproto3
-½+
+Ö+
 
 room.proto
 user.proto"­
@@ -2901,11 +2912,12 @@ masterName
 	needcheck (R	needcheck
 needpwd	 (Rneedpwd
 describe
- (	Rdescribe"p
+ (	Rdescribe"ˆ
 PBRoomMemberInfo
 seat_idx (RseatIdx
 is_ready (RisReady&
-mem_info (2.PBUserAttrRmemInfo"¡
+mem_info (2.PBUserAttrRmemInfo
+cityid (Rcityid"¡
 
 PBRoomInfo
 roomid (Rroomid
@@ -3188,7 +3200,7 @@ master_uid (R	masterUid
 
 master_uid (R	masterUid
 team_id (RteamIdbproto3
-§!
+ì#
 trade.proto"d
 PBTradeData!
 single_price (RsinglePrice
@@ -3223,7 +3235,7 @@ seller_uid (R	sellerUid
 	config_id (RconfigId
 	min_price (RminPrice&
 last_deal_price (RlastDealPrice*
-yes_average_price (RyesAveragePrice"
+yes_average_price (RyesAveragePrice"
 min_price_num (RminPriceNum"Ï
 PBTradeSearchData>
 trade_sim_data (2.PBTradeSearchSimpleDataRtradeSimData=
@@ -3354,7 +3366,17 @@ condition5
 focus_id_ts (2*.PBTradeChangeFocusIdRspCmd.FocusIdTsEntryR	focusIdTs<
 FocusIdTsEntry
 key (Rkey
-value (Rvalue:8bproto3
+value (Rvalue:8"6
+"PBTradeGetAllYesAveragePriceReqCmd
+uid (Ruid"Š
+"PBTradeGetAllYesAveragePriceRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruidd
+yes_average_price (28.PBTradeGetAllYesAveragePriceRspCmd.YesAveragePriceEntryRyesAveragePriceB
+YesAveragePriceEntry
+key (Rkey
+value (Rvalue:8bproto3
 ä
 google/protobuf/any.protogoogle.protobuf"6
 Any
