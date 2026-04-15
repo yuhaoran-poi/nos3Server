@@ -3899,6 +3899,7 @@
 ---@field MagicItem MagicItem_cfg[]
 ---@field MagicItemUpLv MagicItemUpLv_cfg[]
 ---@field MissionBox MissionBox_cfg[]
+---@field OnlyOneItem OnlyOneItem_cfg[]
 ---@field PeriodMissionConfig PeriodMissionConfig_cfg[]
 ---@field PropCompose PropCompose_cfg[]
 ---@field RandomComposite RandomComposite_cfg[]
