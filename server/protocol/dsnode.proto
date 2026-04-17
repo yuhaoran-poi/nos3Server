@@ -9,9 +9,9 @@ message PBGameChangeRoleInfo
 {
     int32 roleid   = 1;
     int32 add_role_exp  = 2;    //角色经验变化
-    PBItemData magic_item   = 3;	//法器
-    map<int32, PBItemData> digrams_cards	= 4;	//八卦牌
-    PBItemData space_ring	= 5;	//空间戒指
+    map<int64, int32> magic_item_durability   = 3;	//法器耐久值
+    map<int64, int32> digrams_cards_durability	= 4;	//八卦牌耐久值
+    map<int64, int32> space_ring_durability	= 5;	//空间戒指耐久值
 }
 
 message PBInGameKillMonster

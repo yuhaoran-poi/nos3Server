@@ -60,6 +60,27 @@ function City.PBApplySwitchCityReqCmd(req)
     return context.S2C(context.net_id, CmdCode.PBApplySwitchCityRspCmd, res, req.msg_context.stub_id)
 end
 
+function City.PBGetAllCityPlayersReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid then
+        return context.S2C(context.net_id, CmdCode.PBGetAllCityPlayersRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+        }, req.msg_context.stub_id)
+    end
+
+    local res, err = clusterd.call(3999, "citymgr", "Citymgr.GetAllCityNum")
+    if err then
+        moon.error(string.format("City.PBGetAllCityPlayersRspCmd err:%s", err))
+        return context.S2C(context.net_id, CmdCode.PBGetAllCityPlayersRspCmd, {
+            code = ErrorCode.ServerInternalError,
+            error = "system error",
+        }, req.msg_context.stub_id)
+    end
+
+    return context.S2C(context.net_id, CmdCode.PBGetAllCityPlayersRspCmd, res, req.msg_context.stub_id)
+end
+
 function City.OnDsDestory(res)
     -- 通知玩家主城链接断开
     context.S2C(context.net_id, CmdCode.PBNotifyDsDestorySyncCmd, {

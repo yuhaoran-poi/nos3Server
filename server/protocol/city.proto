@@ -39,3 +39,16 @@ message PBApplySwitchCityRspCmd
     string ds_address   = 5;
     string ds_ip        = 6;
 }
+
+// 客户端请求现有的全部主城及人数
+message PBGetAllCityPlayersReqCmd
+{
+    int64 uid		= 1;
+}
+
+message PBGetAllCityPlayersRspCmd
+{
+    int32 code      = 1; // 服务器验证返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    map<int32, int32> city_num_list = 3;
+}

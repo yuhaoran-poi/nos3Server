@@ -1679,6 +1679,16 @@ function Roommgr.NotifyPlayerSwitchCity(uid, cityid)
     end
 end
 
+function Roommgr.NotifyPlayersSwitchCity(uids_cityids)
+    if not uids_cityids or table.size(uids_cityids) <= 0 then
+        return
+    end
+
+    for uid, cityid in pairs(uids_cityids) do
+        Roommgr.NotifyPlayerSwitchCity(uid, cityid)
+    end
+end
+
 function Roommgr.Start()
     return true
 end

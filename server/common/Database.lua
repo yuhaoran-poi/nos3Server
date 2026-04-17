@@ -1893,8 +1893,7 @@ function _M.gettraderecordaveragepriceseq(addr, start_config_id, num)
     if res and #res > 0 then
         local ret = {}
         for i = 1, #res do
-            local record = {}
-            record[res[i].trade_config_id] = res[i].yes_average_price
+            ret[res[i].trade_config_id] = res[i].yes_average_price
         end
         return ret
     end

@@ -518,6 +518,16 @@
 ---@field public ds_ip string
 
 
+---@class PBGetAllCityPlayersReqCmd
+---@field public uid integer
+
+
+---@class PBGetAllCityPlayersRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public city_num_list table<integer, integer>
+
+
 ---@class PBMessagePack
 ---@field public net_id integer
 ---@field public broadcast integer
@@ -552,9 +562,9 @@
 ---@class PBGameChangeRoleInfo
 ---@field public roleid integer
 ---@field public add_role_exp integer @角色经验变化
----@field public magic_item PBItemData @法器
----@field public digrams_cards table<integer, PBItemData> @八卦牌
----@field public space_ring PBItemData @空间戒指
+---@field public magic_item_durability table<integer, integer> @法器耐久值
+---@field public digrams_cards_durability table<integer, integer> @八卦牌耐久值
+---@field public space_ring_durability table<integer, integer> @空间戒指耐久值
 
 
 ---@class PBInGameKillMonster

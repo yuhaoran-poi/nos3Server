@@ -159,6 +159,7 @@ function Bag.Start(isnew)
         bagTypes[BagDef.BagType.Cangku] = 1
         bagTypes[BagDef.BagType.Consume] = 1
         bagTypes[BagDef.BagType.Booty] = 1
+        bagTypes[BagDef.BagType.Tool] = 1
         Bag.SaveBagsNow(bagTypes)
         Bag.SaveCoinsNow()
     end
@@ -283,6 +284,8 @@ function Bag.AddCapacity(bagType, add_capacity_id)
         end
         cost = bag_cfg.booty_backpack_cost
         after_capacity = bag_cfg.booty_backpack_grids
+    else
+        return ErrorCode.ParamInvalid
     end
 
     -- 计算消耗资源
@@ -2471,6 +2474,41 @@ function Bag.GetUniqItemData(bagType, uniqid)
     return ErrorCode.ItemNotExist, 0
 end
 
+function Bag.GetUniqItemDurability(bagType, uniqid)
+    -- 获取数据副本
+    if uniqid <= 0 then
+        return ErrorCode.ItemNotExist, 0
+    end
+
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata then
+        return ErrorCode.BagNotExist, 0
+    end
+
+    local baginfo = bagdata[bagType]
+    for pos, itemdata in pairs(baginfo.items) do
+        if itemdata.common_info.uniqid == uniqid then
+            local item_small_type = ItemDefine.GetItemType(itemdata.common_info.config_id)
+            if item_small_type == ItemDefine.EItemSmallType.DurabItem then
+                return ErrorCode.None, itemdata.special_info.durab_item.cur_durability
+            elseif item_small_type == ItemDefine.EItemSmallType.MagicItem then
+                return ErrorCode.None, itemdata.special_info.magic_item.cur_durability
+            elseif item_small_type == ItemDefine.EItemSmallType.HumanDiagrams
+                or item_small_type == ItemDefine.EItemSmallType.GhostDiagrams then
+                return ErrorCode.None, itemdata.special_info.diagrams_item.cur_durability
+            elseif item_small_type == ItemDefine.EItemSmallType.Antique then
+                return ErrorCode.None, itemdata.special_info.antique_item.cur_durability
+            elseif item_small_type == ItemDefine.EItemSmallType.SpaceRing then
+                return ErrorCode.None, itemdata.special_info.space_ring.cur_durability
+            else
+                return ErrorCode.None, 0
+            end
+        end
+    end
+
+    return ErrorCode.ItemNotExist, 0
+end
+
 ---@return integer, PBItemData ? nil
 function Bag.MutOneItemData(bagType, pos)
     local bagdata = scripts.UserModel.GetBagData()
@@ -2562,7 +2600,11 @@ function Bag.GetBagCapacity(bags_name)
             or bag_name == BagDef.BagType.Consume
             or bag_name == BagDef.BagType.Booty
             or bag_name == BagDef.BagType.Tool then
-            capacitys[bag_name] = bagdata[bag_name].capacity
+            if bagdata[bag_name] then
+                capacitys[bag_name] = bagdata[bag_name].capacity
+            else
+                return nil
+            end
         end
     end
 
@@ -3026,11 +3068,18 @@ function Bag.PBDecomposeReqCmd(req)
                 end
                 decompose_cfg = cfg.decompose
             else
+                local err_code, cur_durability = Bag.GetUniqItemDurability(BagDef.BagType.Cangku, value.uniqid)
+                if err_code ~= ErrorCode.None then
+                    return err_code
+                end
                 local cfg = GameCfg.UniqueItem[value.config_id]
                 if not cfg or table.size(cfg.decompose) <= 0 then
                     return ErrorCode.ForbidDecompose
                 end
-                decompose_cfg = cfg.decompose
+                local coef = cur_durability / cfg.durability
+                for c_id, c_num in pairs(cfg.decompose) do
+                    decompose_cfg[c_id] = math.floor(c_num * coef)
+                end
             end
 
             -- 分解后获得的道具列表
@@ -3319,13 +3368,22 @@ function Bag.PBItemSellNpcReqCmd(req)
                 }, req.msg_context.stub_id)
             end
         else
+            local err_code, cur_durability = Bag.GetUniqItemDurability(BagDef.BagType.Cangku, item_simple.uniqid)
+            if err_code ~= ErrorCode.None then
+                return context.S2C(context.net_id, CmdCode.PBItemSellNpcRspCmd, {
+                    code = err_code,
+                    error = "道具不存在",
+                    uid = req.msg.uid,
+                }, req.msg_context.stub_id)
+            end
             local uniqitem_cfg = GameCfg.UniqueItem[item_simple.config_id]
             if uniqitem_cfg and table.size(uniqitem_cfg.sell_value) > 0 then
+                local coef = cur_durability / uniqitem_cfg.durability
                 for id, cnt in pairs(uniqitem_cfg.sell_value) do
                     if not get_items_cfg[id] then
-                        get_items_cfg[id] = cnt * item_simple.item_count
+                        get_items_cfg[id] = math.floor(cnt * item_simple.item_count * coef)
                     else
-                        get_items_cfg[id] = get_items_cfg[id] + (cnt * item_simple.item_count)
+                        get_items_cfg[id] = get_items_cfg[id] + math.floor(cnt * item_simple.item_count * coef)
                     end
                 end
             else

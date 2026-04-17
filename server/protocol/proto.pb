@@ -675,7 +675,7 @@ worldIndex*–
 CHANNEL_TYPE_PRIVATE
 CHANNEL_TYPE_SYSTEM
 CHANNEL_TYPE_ROOMbproto3
-û
+¶
 
 city.proto"*
 PBApplyLoginCityReqCmd
@@ -701,7 +701,16 @@ ds_address (	R	dsAddress
 region (	Rregion
 
 ds_address (	R	dsAddress
-ds_ip (	RdsIpbproto3
+ds_ip (	RdsIp"-
+PBGetAllCityPlayersReqCmd
+uid (Ruid"÷
+PBGetAllCityPlayersRspCmd
+code (Rcode
+error (	RerrorO
+city_num_list (2+.PBGetAllCityPlayersRspCmd.CityNumListEntryRcityNumList>
+CityNumListEntry
+key (Rkey
+value (Rvalue:8bproto3
 ç
 common.proto"ì
 PBMessagePack
@@ -1602,24 +1611,28 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-ƒ%
+‡'
 dsnode.proto
 item.proto
 user.proto	bag.proto
 role.proto
-gods.proto"ƒ
+gods.proto"‡
 PBGameChangeRoleInfo
 roleid (Rroleid 
 add_role_exp (R
-addRoleExp*
-
-magic_item (2.PBItemDataR	magicItemL
-digrams_cards (2'.PBGameChangeRoleInfo.DigramsCardsEntryRdigramsCards*
-
-space_ring (2.PBItemDataR	spaceRingL
-DigramsCardsEntry
-key (Rkey!
-value (2.PBItemDataRvalue:8"r
+addRoleExpb
+magic_item_durability (2..PBGameChangeRoleInfo.MagicItemDurabilityEntryRmagicItemDurabilityk
+digrams_cards_durability (21.PBGameChangeRoleInfo.DigramsCardsDurabilityEntryRdigramsCardsDurabilityb
+space_ring_durability (2..PBGameChangeRoleInfo.SpaceRingDurabilityEntryRspaceRingDurabilityF
+MagicItemDurabilityEntry
+key (Rkey
+value (Rvalue:8I
+DigramsCardsDurabilityEntry
+key (Rkey
+value (Rvalue:8F
+SpaceRingDurabilityEntry
+key (Rkey
+value (Rvalue:8"r
 PBInGameKillMonster
 
 monster_id (R	monsterId!

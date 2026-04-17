@@ -305,6 +305,8 @@ function Citymgr.DestroyCity(cityid)
     for uid, _ in pairs(city.players) do
         context.uid_cityid[uid] = nil
         table.insert(notify_uids, uid)
+
+        cluster.send(3999, "roommgr", "Roommgr.NotifyPlayerSwitchCity", { uid = uid, cityid = 0 })
     end
     context.send_users(notify_uids, {}, "City.OnDsDestory", { cityid = cityid })
     context.citys[cityid] = nil
@@ -442,6 +444,14 @@ function Citymgr.ApplySwitchCity(uid, cityid)
     return res
 end
 
+function Citymgr.GetAllCityNum()
+    local res = {}
+    for cityid, city_info in pairs(context.citys) do
+        res[cityid] = city_info.now_num
+    end
+    return res
+end
+
 function Citymgr.PlayerEnterCity(req)
     local function enterCity()
         local scope <close> = lock_run()
@@ -498,7 +508,7 @@ function Citymgr.PlayerExitCity(req)
             moon.error(string.format("LeaveNearbyChannel uid:%d, cityid:%d, code:%d, error:%s", req.uid, req.cityid,
                 chat_ret.code, chat_ret.error))
         end
-        -- 通知Roommgr玩家进入了主城
+        -- 通知Roommgr玩家切换了主城
         cluster.send(3999, "roommgr", "Roommgr.NotifyPlayerSwitchCity", { uid = req.uid, cityid = 0 })
     end
     return res

@@ -15,6 +15,7 @@ local BagDef = require("common.def.BagDef")
 local ItemDef = require("common.def.ItemDef")
 local ItemDefine = require("common.logic.ItemDefine")
 local CommonCfgDef = require("common.def.CommonCfgDef")
+local MissionDef = require("common.def.MissionDef")
 
 ---@type user_context
 local context = ...
@@ -67,6 +68,8 @@ function Room.PBCreateRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
     if res.code == ErrorCode.None then
+        ---@class user_context
+        ---@field roomid integer|nil
         context.roomid = res.roomid
         -- 加入队伍频道
         local chat_ret = ChatLogic.JoinRoomChannel(context.roomid, context.uid)
@@ -722,6 +725,7 @@ function Room.GameSettle(settle_info)
         if table.size(change_roles) > 0 then
             scripts.Role.SaveAndLog(change_roles)
         end
+        -- 修改装备耐久度
     end
 
     if settle_info.grade_id and settle_info.change_score then
@@ -730,56 +734,96 @@ function Room.GameSettle(settle_info)
     end
 
     if settle_info.reward_boxs and table.size(settle_info.reward_boxs) > 0 then
-        local box_list = {}
+        -- 按照宝箱处理
         for _, item_simple in pairs(settle_info.reward_boxs) do
-            local item_id = item_simple.config_id
-            if not box_list[item_id] then
-                box_list[item_id] = {
-                    id = item_id,
-                    count = 0,
-                    pos = 0,
-                }
-            end
-            box_list[item_id].count = box_list[item_id].count + item_simple.item_count
+            scripts.Shop.AddTreasure(item_simple.config_id, item_simple.item_count)
         end
-        if table.size(box_list) > 0 then
-            local stack_items, unstack_items, deal_coins = {}, {}, {}
-            local ok = ItemDefine.GetItemDataFromIdCount(box_list, {}, stack_items, unstack_items, deal_coins)
-            if not ok then
-                moon.error(string.format("GameSettle GetItemDataFromIdCount err:\n%s", json.pretty_encode(box_list)))
-                return
-            end
 
-            local bag_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, box_list, 0)
-            if bag_code ~= ErrorCode.None then
-                -- 仓库已满 发送邮件
-                local item_datas = {}
-                for _, item_data in pairs(stack_items) do
-                    table.insert(item_datas, item_data)
-                end
-                for _, item_data in pairs(unstack_items) do
-                    table.insert(item_datas, item_data)
-                end
-                local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
-                if not mail_ret then
-                    moon.error(string.format("GameSettle RecvImmediateMail err:\n%s", json.pretty_encode(item_datas)))
-                    return
-                end
-            else
-                -- 添加道具
-                if table.size(stack_items) + table.size(unstack_items) > 0 then
-                    bag_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
-                    if bag_code ~= ErrorCode.None then
-                        scripts.Bag.RollBackWithChange(bag_change_log)
-                        moon.error(string.format("GameSettle AddItems stack_items err:\n%s",
-                            json.pretty_encode(stack_items)))
-                        moon.error(string.format("GameSettle AddItems unstack_items err:\n%s",
-                            json.pretty_encode(unstack_items)))
-                        return
-                    end
-                end
-            end
+        -- local box_list = {}
+        -- for _, item_simple in pairs(settle_info.reward_boxs) do
+        --     local item_id = item_simple.config_id
+        --     if not box_list[item_id] then
+        --         box_list[item_id] = {
+        --             id = item_id,
+        --             count = 0,
+        --             pos = 0,
+        --         }
+        --     end
+        --     box_list[item_id].count = box_list[item_id].count + item_simple.item_count
+        -- end
+        -- if table.size(box_list) > 0 then
+        --     local stack_items, unstack_items, deal_coins = {}, {}, {}
+        --     local ok = ItemDefine.GetItemDataFromIdCount(box_list, {}, stack_items, unstack_items, deal_coins)
+        --     if not ok then
+        --         moon.error(string.format("GameSettle GetItemDataFromIdCount err:\n%s", json.pretty_encode(box_list)))
+        --         return
+        --     end
+
+        --     local bag_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, box_list, 0)
+        --     if bag_code ~= ErrorCode.None then
+        --         -- 仓库已满 发送邮件
+        --         local item_datas = {}
+        --         for _, item_data in pairs(stack_items) do
+        --             table.insert(item_datas, item_data)
+        --         end
+        --         for _, item_data in pairs(unstack_items) do
+        --             table.insert(item_datas, item_data)
+        --         end
+        --         local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
+        --         if not mail_ret then
+        --             moon.error(string.format("GameSettle RecvImmediateMail err:\n%s", json.pretty_encode(item_datas)))
+        --             return
+        --         end
+        --     else
+        --         -- 添加道具
+        --         if table.size(stack_items) + table.size(unstack_items) > 0 then
+        --             bag_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
+        --             if bag_code ~= ErrorCode.None then
+        --                 scripts.Bag.RollBackWithChange(bag_change_log)
+        --                 moon.error(string.format("GameSettle AddItems stack_items err:\n%s",
+        --                     json.pretty_encode(stack_items)))
+        --                 moon.error(string.format("GameSettle AddItems unstack_items err:\n%s",
+        --                     json.pretty_encode(unstack_items)))
+        --                 return
+        --             end
+        --         end
+        --     end
+        -- end
+    end
+
+    if settle_info.game_missions and table.size(settle_info.game_missions) > 0 then
+        -- 局内完成任务
+        for mission_id, complete_cnt in pairs(settle_info.game_missions) do
+            scripts.Mission.TriggerCondition(MissionDef.EConditionIds.IN_TASK_CNT, { mission_id }, complete_cnt)
         end
+    end
+
+    if settle_info.kill_monsters and table.size(settle_info.kill_monsters) > 0 then
+        -- 击杀怪物
+        for _, kill_monster in pairs(settle_info.kill_monsters) do
+            scripts.Mission.TriggerCondition(MissionDef.EConditionIds.KILL_MONSTER_CNT,
+                { kill_monster.monster_type, kill_monster.monster_id }, kill_monster.kill_cnt)
+        end
+    end
+
+    if settle_info.chapter_id and settle_info.difficulty then
+        -- 完成章节难度
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.BATTLE_CHAPTER_CNT,
+            { settle_info.chapter_id, settle_info.difficulty }, 1)
+    end
+
+    if settle_info.battle_god_ids and table.size(settle_info.battle_god_ids) > 0 then
+        -- 参战神明
+        for _, god_id in pairs(settle_info.battle_god_ids) do
+            scripts.Mission.TriggerCondition(MissionDef.EConditionIds.GOD_ENTER_BATTLE_CNT, { god_id }, 1)
+        end
+    end
+
+    if settle_info.booty_value and settle_info.booty_value > 0
+        and settle_info.chapter_id and settle_info.difficulty then
+        -- 增加战利品价值
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.GET_BOOTY_VALUE_CNT,
+            { settle_info.chapter_id, settle_info.difficulty }, settle_info.booty_value)
     end
 end
 
