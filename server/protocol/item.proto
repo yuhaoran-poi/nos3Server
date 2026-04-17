@@ -80,13 +80,6 @@ message PBSpaceRing
 	repeated PBTag	ability_tag	= 6;	//能力词条
 }
 
-// 镇山之宝
-message PBAweItem
-{
-	int32	idx				= 1;
-	int32	up_lv_fail_cnt	= 2;		// 当前等级升级失败次数
-}
-
 // 古董
 message PBAntique
 {
@@ -114,9 +107,8 @@ message PBItemSpecial
 	PBDurabItem	durab_item	= 1;
 	PBMagicItem magic_item	= 2;
 	PBDiagramsCard	diagrams_item	= 3;
-	PBAweItem	awe_item	= 4;
-	PBAntique	antique_item		= 5;
-	PBSpaceRing space_ring	= 6;
+	PBAntique	antique_item		= 4;
+	PBSpaceRing space_ring	= 5;
 }
 
 message PBItemData

@@ -13,7 +13,7 @@ activityId
 error (	Rerror
 uid (Ruid6
 activity_datas (2.PBActivityDataRactivityDatasbproto3
-….
+š-
 
 item.proto"@
 PBCoin
@@ -66,10 +66,7 @@ abilityTag"Ü
 	light_cnt (RlightCnt
 tags (2.PBTagRtags'
 ability_tag (2.PBTagR
-abilityTag"B
-	PBAweItem
-idx (Ridx#
-up_lv_fail_cnt (RupLvFailCnt"Ô
+abilityTag"Ô
 	PBAntique
 quality (Rquality
 price (2.PBCoinRprice.
@@ -83,19 +80,17 @@ abilityTag"B
 
 item_count (R	itemCount
 	item_type (RitemType
-	trade_cnt (RtradeCnt"¢
+	trade_cnt (RtradeCnt"û
 PBItemSpecial+
 
 durab_item (2.PBDurabItemR	durabItem+
 
 magic_item (2.PBMagicItemR	magicItem4
-diagrams_item (2.PBDiagramsCardRdiagramsItem%
-awe_item (2
-.PBAweItemRaweItem-
-antique_item (2
+diagrams_item (2.PBDiagramsCardRdiagramsItem-
+antique_item (2
 .PBAntiqueRantiqueItem+
 
-space_ring (2.PBSpaceRingR	spaceRing"¦
+space_ring (2.PBSpaceRingR	spaceRing"¦
 
 PBItemData
 itype (Ritype.
@@ -417,6 +412,39 @@ login_data (2.PBDSLoginDataR	loginData"f
 error (	Rerror
 dsid (Rdsid
 net_id (RnetIdbproto3
+µ
+aweitem.proto"¤
+	PBAweItem
+	config_id (RconfigId
+up_level (RupLevel
+
+star_level (R	starLevel
+buff_id (RbuffId'
+star_lv_fail_cnt (RstarLvFailCnt"ž
+PBUserAweItemsA
+awe_item_map (2.PBUserAweItems.AweItemMapEntryR
+aweItemMapI
+AweItemMapEntry
+key (Rkey 
+value (2
+.PBAweItemRvalue:8"+
+PBAweItemsGetInfoReqCmd
+uid (Ruid"Š
+PBAweItemsGetInfoRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid3
+awe_item_info (2.PBUserAweItemsRaweItemInfo"H
+PBAweItemsSyncCmd3
+awe_item_info (2.PBUserAweItemsRaweItemInfo"G
+PBAweItemUpLvReqCmd
+uid (Ruid
+awe_item_id (R	aweItemId"†
+PBAweItemUpLvRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid3
+awe_item_info (2.PBUserAweItemsRaweItemInfobproto3
 ¥
 	bag.proto
 item.proto"·

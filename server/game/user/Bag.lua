@@ -1869,6 +1869,10 @@ function Bag.CheckEmptyEnough(bagType, add_items, use_pos_num)
 
     -- 计算背包空间是否足够
     for itemid, item in pairs(add_items) do
+        if itemid >=ItemDefine.AweItem.start and itemid <= ItemDefine.AweItem.End then
+            break
+        end
+
         if item.count < 0 then
             return ErrorCode.ParamInvalid
         end

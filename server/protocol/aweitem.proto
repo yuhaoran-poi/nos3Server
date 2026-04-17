@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+// 镇山之宝
+message PBAweItem
+{
+	int32		config_id							= 1;		// 配置id
+	int32		up_level							= 2;		// 等级
+	int32		star_level							= 3;		// 星级
+	int32		buff_id								= 4;		// 加成效果id
+	int32		star_lv_fail_cnt					= 5;		// 当前星级升星失败次数
+}
+
+// 玩家的镇山之宝数据结构
+message	PBUserAweItems
+{
+	map<int32, PBAweItem> awe_item_map = 1;
+}
+
+message PBAweItemsGetInfoReqCmd
+{
+	int64 uid		= 1;
+}
+
+message PBAweItemsGetInfoRspCmd
+{
+	int32 code 						= 1;		// 服务器验证返回,0成功,其他失败
+	string error					= 2;		// 错误信息
+	int64 uid						= 3;
+	PBUserAweItems awe_item_info 	= 4;	
+}
+
+message PBAweItemsSyncCmd
+{
+	PBUserAweItems awe_item_info	= 1;
+}
+
+message PBAweItemUpLvReqCmd
+{
+	// 协议数据
+    int64 uid				= 1;
+	int32 awe_item_id		= 2;
+}
+
+message PBAweItemUpLvRspCmd
+{
+	int32 code        				= 1; 	// 服务器验证返回,0成功,其他失败
+    string error      				= 2; 	// 错误信息
+	int64 uid						= 3;
+	PBUserAweItems awe_item_info	= 4;
+}

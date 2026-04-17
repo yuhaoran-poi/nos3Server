@@ -40,6 +40,7 @@ local ItemDefine = {
     SpaceRing = { start = 650000, End = 659999 },
     HeadSkin = { start = 1015000, End = 1015499 },
     HeadFrameSkin = { start = 1015500, End = 1015999 },
+    AweItem = { start = 1016000, End = 1016499 },
     TitleSkin = { start = 1016600, End = 1016999 },
     GhostSkin = { start = 1070000, End = 1119999 },
     TreasureChest = { start = 1120000, End = 1129999 },
@@ -289,6 +290,10 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
             if not item.id or not item.count or item.count == 0 then
                 return false
             end
+            if item.id >=ItemDefine.AweItem.start and item.id <= ItemDefine.AweItem.End then
+                return true
+            end
+
             local item_big_type = ItemDefine.GetItemPosType(item.id)
             if item_big_type == ItemDefine.EItemBigType.Coin then
                 if not stack_coins[item.id] then

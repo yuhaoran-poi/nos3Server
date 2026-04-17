@@ -2741,4 +2741,33 @@ function _M.savemissioninfo(addr, uid, linear_data, period_data, achv_data)
     return moon.send("lua", addr, cmd)
 end
 
+function _M.loaduseraweitem(addr, uid)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.aweitems WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBUserAweItems", pbdata)
+        return tmp_data
+    end
+    print("loaduseraweitem failed", uid, err)
+    return nil
+end
+
+function _M.saveuseraweitem(addr, uid, data)
+    assert(data)
+
+    local data_str = jencode(data)
+    local _, pbdata = protocol.encodewithname("PBUserAweItems", data)
+    local pbvalue = crypt.base64encode(pbdata)
+    local cmd = string.format([[
+        INSERT INTO mgame.aweitems (uid, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
+
+    return moon.send("lua", addr, cmd)
+end
+
 return _M

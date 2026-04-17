@@ -572,6 +572,14 @@ local ErrorCode = {
     MissionOverTime = 2205,
     --- 任务类型太多
     MissionManyType = 2206,
+
+    --镇山之宝系统相关错误码
+    --- 镇山之宝已解锁
+    AweItemAlreadyUnlock = 2251,
+    --- 镇山之宝未解锁
+    AweItemNotUnlock = 2252,
+    --- 镇山之宝已到最大等级
+    AweItemUpLvMax = 2253,
 }
 
 return ErrorCode

@@ -40,6 +40,11 @@ local ItemDef = {
         AuctionSale = 36,        --拍卖行出售
         TreasureOpen = 37,       --开宝箱
         TakeMissionReward = 38,  --领取任务奖励
+        AweItemUpLv = 39,        --镇山之宝升级
+        AweItemUpStar = 40,      --镇山之宝升星
+        AweItemUnlock = 41,      --镇山之宝解锁
+        AntiqueIdentify = 42,       -- 古董鉴定
+        AntiqueShow = 43,           -- 古董展示
         -- WearEquipment = 25,      --装备道具
         -- TakeOffEquipment = 26,   --脱下道具
         -- WearSkin = 27,           --装备皮肤
@@ -55,8 +60,7 @@ local ItemDef = {
         -- UpLv = 37,               --升级
         -- UpStar = 38,             --升级星数
         -- InlayTabooWord = 39,     --镶嵌讳字
-        AntiqueIdentify = 40,       -- 古董鉴定
-        AntiqueShow = 41,           -- 古董展示
+        
     },
     TabooWordInlay = {
         RoleType = 1000,
@@ -194,6 +198,16 @@ local defaultAntiqueShowcaseS = {
     antique_showcase_list = {},
 }
 
+local defaultPBAweItem = {
+    id = 0,
+    up_level = 0,
+    up_star = 0,
+    bonus_attribute = {},
+    buff_id = {},
+    up_lv_fail_cnt = 0,
+    star_lv_fail_cnt = 0,
+}
+
 --- @return PBCoin
 function ItemDef.newCoin()
     return LuaExt.const(table.copy(defaultPBCoin))
@@ -272,6 +286,11 @@ end
 --- @return PBAntiqueShowcaseDataS
 function ItemDef.newAntiqueShowcaseS()
     return LuaExt.const(table.copy(defaultAntiqueShowcaseS))
+end
+
+--- @return PBAweItem
+function ItemDef.newAweItem()
+    return LuaExt.const(table.copy(defaultPBAweItem))
 end
 
 --- @return PBItemData

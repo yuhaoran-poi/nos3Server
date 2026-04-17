@@ -320,4 +320,16 @@ function UserModel.SetMissionInfo(mission_info)
     DBData.mission_info = mission_info
 end
 
+---@return PBUserAweItems ? nil
+function UserModel.GetAweItems()
+    if DBData and DBData.aweitems then
+        return DBData.aweitems
+    end
+    return nil
+end
+
+function UserModel.SetAweItems(aweitems)
+    DBData.aweitems = aweitems
+end
+
 return UserModel

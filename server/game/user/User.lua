@@ -1524,6 +1524,10 @@ function User.PBClientItemUpStarReqCmd(req)
     elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.config_id
         and req.msg.config_id <= GhostDef.GhostDefine.GhostID.End then
         err_code, change_log = scripts.Ghost.UpStar(req.msg.config_id)
+    elseif ItemDefine.AweItem.start <= req.msg.config_id
+        and req.msg.config_id <= ItemDefine.AweItem.End then
+        -- 镇山之宝升星
+        err_code, change_log = scripts.AweItem.UpStar(req.msg.config_id)
     else
         -- 图鉴升星
         err_code, change_log = scripts.ItemImage.UpStarImage(req.msg.config_id)
@@ -1560,6 +1564,10 @@ function User.PBClientItemUpStarReqCmd(req)
             elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.config_id
                 and req.msg.config_id <= GhostDef.GhostDefine.GhostID.End then
                 scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.ImageUpStar, 0, req.msg.config_id)
+            elseif ItemDefine.AweItem.start <= req.msg.config_id
+                and req.msg.config_id <= ItemDefine.AweItem.End then
+                -- 镇山之宝升星
+                scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.AweItemUpStar, req.msg.config_id)
             else
                 scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.ImageUpStar, 0, 0, 0, req.msg.config_id)
             end
@@ -1963,6 +1971,7 @@ function User.PBSureCompositeReqCmd(req)
         error = "",
         uid = context.uid,
         composite_id = req.msg.composite_id or 0,
+        composite_cnt = req.msg.composite_cnt or 0,
     }
     local composite_cfg = GameCfg.Composite[req.msg.composite_id]
     if not composite_cfg
@@ -2073,6 +2082,14 @@ function User.PBSureCompositeReqCmd(req)
         end
 
         change_roles[req.msg.roleid] = "AddRole"
+    end
+
+    if table.size(add_items) > 0 and table.size(stack_items) + table.size(unstack_items) == 0 then
+        rsp_msg.code = User.SpecialComposite(add_items)
+        if rsp_msg.code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
     end
     
     -- 执行完成回复
@@ -2617,13 +2634,18 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log)
     return err_code
 end
 
-function User.AddAccountBuff(item_cfg, msg_data)
+function User.AddAccountBuff(item_cfg, msg_data, buff_id)
     local err_code = ErrorCode.ItemTypeMismatch
-    if not item_cfg.buff_type or not item_cfg.buff_count then
+    local buff_cfg
+    if buff_id and item_cfg == nil and msg_data == nil then
+        buff_cfg = GameCfg.AccountBuffConfig[buff_id]
+    elseif item_cfg.buff_type and item_cfg.buff_count then
+        buff_cfg = GameCfg.AccountBuffConfig[item_cfg.buff_type]
+    else
         err_code = ErrorCode.ConfigError
         return err_code
     end
-    local buff_cfg = GameCfg.AccountBuffConfig[item_cfg.buff_type]
+
     if not buff_cfg then
         err_code = ErrorCode.ConfigError
         return err_code
@@ -2646,6 +2668,9 @@ function User.AddAccountBuff(item_cfg, msg_data)
                     else
                         old_buff_data.end_ts = old_buff_data.end_ts + (item_cfg.buff_count * msg_data.use_item_cnt)
                     end
+                elseif buff_cfg.period_type == 3 then
+                    -- 赛季结束时间
+                    old_buff_data.end_ts = now_ts
                 else
                     err_code = ErrorCode.ConfigError
                     return err_code
@@ -2661,6 +2686,9 @@ function User.AddAccountBuff(item_cfg, msg_data)
                     new_buff_data.surplus_cnt = item_cfg.buff_count * msg_data.use_item_cnt
                 elseif buff_cfg.period_type == 2 then
                     new_buff_data.end_ts = now_ts + (item_cfg.buff_count * msg_data.use_item_cnt)
+                elseif buff_cfg.period_type == 3 then
+                    -- 赛季结束时间
+                    new_buff_data.end_ts = now_ts + 86400
                 else
                     err_code = ErrorCode.ConfigError
                     return err_code
@@ -2678,6 +2706,9 @@ function User.AddAccountBuff(item_cfg, msg_data)
                 new_buff_data.surplus_cnt = item_cfg.buff_count * msg_data.use_item_cnt
             elseif buff_cfg.period_type == 2 then
                 new_buff_data.end_ts = now_ts + (item_cfg.buff_count * msg_data.use_item_cnt)
+            elseif buff_cfg.period_type == 3 then
+                -- 赛季结束时间
+                new_buff_data.end_ts = now_ts + 86400
             else
                 err_code = ErrorCode.ConfigError
                 return err_code
@@ -3044,6 +3075,25 @@ function User.PBOpenTreasureReqCmd(req)
         treasure_data = treasure_data,
         add_items = add_items,
     }, req.msg_context.stub_id)
+end
+
+function User.SpecialComposite(add_items)
+    if not add_items then
+        return ErrorCode.ParamInvalid
+    end
+
+    -- AweItem的id
+    local err_code = ErrorCode.None
+    for _, item in pairs(add_items) do
+        if not item.id or not item.count or item.count == 0 then
+            return ErrorCode.ParamInvalid
+        end
+        if item.id >=ItemDefine.AweItem.start and item.id <= ItemDefine.AweItem.End then
+            err_code = scripts.AweItem.AweItemUnlock(item.id)
+        end
+    end
+
+    return err_code
 end
 
 return User

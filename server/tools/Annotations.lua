@@ -202,6 +202,45 @@
 ---@field public net_id integer @DS网络id
 
 
+---@class PBAweItem
+---@field public config_id integer @配置id
+---@field public up_level integer @等级
+---@field public star_level integer @星级
+---@field public buff_id integer @加成效果id
+---@field public star_lv_fail_cnt integer @当前星级升星失败次数
+
+
+---@class PBUserAweItems
+---@field public awe_item_map table<integer, PBAweItem>
+
+
+---@class PBAweItemsGetInfoReqCmd
+---@field public uid integer
+
+
+---@class PBAweItemsGetInfoRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public awe_item_info PBUserAweItems
+
+
+---@class PBAweItemsSyncCmd
+---@field public awe_item_info PBUserAweItems
+
+
+---@class PBAweItemUpLvReqCmd
+---@field public uid integer
+---@field public awe_item_id integer
+
+
+---@class PBAweItemUpLvRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public awe_item_info PBUserAweItems
+
+
 ---@class PBBag
 ---@field public bag_item_type integer
 ---@field public capacity integer
@@ -1985,11 +2024,6 @@
 ---@field public ability_tag PBTag[] @能力词条
 
 
----@class PBAweItem
----@field public idx integer
----@field public up_lv_fail_cnt integer @当前等级升级失败次数
-
-
 ---@class PBAntique
 ---@field public quality integer @品质
 ---@field public price PBCoin @价格
@@ -2011,7 +2045,6 @@
 ---@field public durab_item PBDurabItem
 ---@field public magic_item PBMagicItem
 ---@field public diagrams_item PBDiagramsCard
----@field public awe_item PBAweItem
 ---@field public antique_item PBAntique
 ---@field public space_ring PBSpaceRing
 
@@ -3725,6 +3758,7 @@
 ---@field Achievement Achievement
 ---@field AntiqueShowcase AntiqueShowcase
 ---@field Auction Auction
+---@field AweItem AweItem
 ---@field Bag Bag
 ---@field Bill Bill
 ---@field ChatProxy ChatProxy
