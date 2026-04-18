@@ -569,17 +569,27 @@ function Role.InlayTabooWord(roleid, taboo_word_id, inlay_type, uniqid)
     if not uniqitem_cfg or not item_cfg then
         return ErrorCode.ConfigError
     end
-    if inlay_type == 1 then
-        if item_cfg.type4 ~= ItemDef.TabooWordInlay.RoleType then
-            return ErrorCode.InlayTypeNotMatch
+    -- if inlay_type == 1 then
+    --     if item_cfg.type4 ~= ItemDef.TabooWordInlay.RoleType then
+    --         return ErrorCode.InlayTypeNotMatch
+    --     end
+    -- elseif inlay_type == 2 then
+    --     if uniqitem_cfg.type4 ~= item_cfg.type4 then
+    --         return ErrorCode.InlayTypeNotMatch
+    --     end
+    --     if uniqitem_cfg.type5 ~= item_cfg.type5 then
+    --         return ErrorCode.InlayTypeNotMatch
+    --     end
+    -- end
+    local is_match = false
+    for _, inlay in pairs(uniqitem_cfg.text_type) do
+        if inlay == item_cfg.type4 then
+            is_match = true
+            break
         end
-    elseif inlay_type == 2 then
-        if uniqitem_cfg.type4 ~= item_cfg.type4 then
-            return ErrorCode.InlayTypeNotMatch
-        end
-        if uniqitem_cfg.type5 ~= item_cfg.type5 then
-            return ErrorCode.InlayTypeNotMatch
-        end
+    end
+    if not is_match then
+        return ErrorCode.InlayTypeNotMatch
     end
 
     -- 扣除道具消耗
