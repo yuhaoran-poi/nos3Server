@@ -257,7 +257,7 @@ function Citymgr.CheckCityRun()
             Citymgr.DestroyCity(cityid)
         end
 
-        if #canEnterRoom + table.size(context.waitds_citys) < 1 then
+        if #canEnterRoom + table.size(context.waitds_citys) < 2 then
             moon.info("CheckCityRun #canEnterRoom = %d, table.size(context.waitds_citys) = %d", #canEnterRoom,
                 table.size(context.waitds_citys))
             Citymgr.CreateCity()
@@ -449,6 +449,7 @@ function Citymgr.GetAllCityNum()
     for cityid, city_info in pairs(context.citys) do
         res[cityid] = city_info.now_num
     end
+    moon.info(string.format("GetAllCityNum res:\n%s", json.pretty_encode(res)))
     return res
 end
 
