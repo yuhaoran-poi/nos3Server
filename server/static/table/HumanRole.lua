@@ -2,7 +2,7 @@
 ---@field public id integer @灵探角色id 1000000 ~ 1001000
 ---@field public lv integer @最大等级
 ---@field public star integer @最大星级
----@field public magic_slot_type integer @法器槽类型 101-剑 102-拂尘 103-伞 104-鞭 105-弹弓 106-双枪 107-关刀 108-长枪 109-弓箭 110-刀 111-扇子 112-重剑
+---@field public magic_slot_type integer @法器槽类型 101-剑 102-拂尘 103-伞 104-鞭 105-弹弓 106-双枪 107-关刀 108-长枪 109-弓箭 110-刀 111-扇子 112-重剑 113-拳套
 ---@field public default_faqi integer @默认装备法器id
 ---@field public book_slot_num integer @真经最大学习数量
 ---@field public book_study integer @正在学习的真经最大数量
@@ -24,5 +24,6 @@ return {
 [1000001] = { id=1000001,lv=50,star=10,magic_slot_type=103,default_faqi=601000,book_slot_num=999,book_study=5,bagua_slot_num=8,skin_slot_num=7,action_slot_type={15},action_slot_num=8,init_passive_skill=2000200,passive_skill={2000200},init_main_skill=2000260,main_skill={2000260},init_q_skill=2000250,q_skill={2000250,2000251,2000252},init_e_skill=2000253,e_skill={2000253,2000254,2000255},disable_match=0 },
 [1000002] = { id=1000002,lv=50,star=10,magic_slot_type=104,default_faqi=601500,book_slot_num=999,book_study=5,bagua_slot_num=8,skin_slot_num=7,action_slot_type={15},action_slot_num=8,init_passive_skill=2000300,passive_skill={2000300},init_main_skill=2000360,main_skill={2000360},init_q_skill=2000350,q_skill={2000350,2000351,2000352},init_e_skill=2000353,e_skill={2000353,2000354,2000355},disable_match=0 },
 [1000003] = { id=1000003,lv=50,star=10,magic_slot_type=107,default_faqi=603000,book_slot_num=999,book_study=5,bagua_slot_num=8,skin_slot_num=7,action_slot_type={15},action_slot_num=8,init_passive_skill=2000000,passive_skill={2000000},init_main_skill=2000060,main_skill={2000060},init_q_skill=2000050,q_skill={2000052,2000051,2000050},init_e_skill=2000053,e_skill={2000055,2000054,2000053},disable_match=0 },
-[1000004] = { id=1000004,lv=50,star=10,magic_slot_type=101,default_faqi=600000,book_slot_num=999,book_study=5,bagua_slot_num=8,skin_slot_num=7,action_slot_type={15},action_slot_num=8,init_passive_skill=2000100,passive_skill={2000100},init_main_skill=2000160,main_skill={2000160},init_q_skill=2000150,q_skill={2000150,2000151,2000152},init_e_skill=2000153,e_skill={2000153,2000155,2000154},disable_match=0 }
+[1000004] = { id=1000004,lv=50,star=10,magic_slot_type=101,default_faqi=600000,book_slot_num=999,book_study=5,bagua_slot_num=8,skin_slot_num=7,action_slot_type={15},action_slot_num=8,init_passive_skill=2000100,passive_skill={2000100},init_main_skill=2000160,main_skill={2000160},init_q_skill=2000150,q_skill={2000150,2000151,2000152},init_e_skill=2000153,e_skill={2000153,2000155,2000154},disable_match=0 },
+[1000005] = { id=1000005,lv=50,star=10,magic_slot_type=113,default_faqi=606001,book_slot_num=999,book_study=5,bagua_slot_num=8,skin_slot_num=7,action_slot_type={15},action_slot_num=8,init_passive_skill=2000500,passive_skill={2000500},init_main_skill=2000560,main_skill={2000560},init_q_skill=2000550,q_skill={2000550,2000551,2000552},init_e_skill=2000553,e_skill={2000553,2000554,2000555},disable_match=0 }
 }
