@@ -1105,7 +1105,7 @@ function _M.get_last_system_mail_id(addr)
     return 0
 end
 
--- 好友离线数据前缀常量
+-- 系统邮件数据前缀常量
 local SYSTEM_MAIL_INFO = "system_mail_info"
 
 function _M.RedisGetSystemMailsInfo(addr_db_redis, mail_ids)
@@ -2767,6 +2767,74 @@ function _M.saveuseraweitem(addr, uid, data)
     ]], uid, pbvalue, data_str, pbvalue, data_str)
 
     return moon.send("lua", addr, cmd)
+end
+
+-- 简略战报数据前缀常量
+local BATTLE_REPORT_SIMPLE_INFO = "battle_report_simple"
+
+function _M.RedisGetBattleReportSimple(addr_db_redis, report_ids)
+    local res, err = redis_call(addr_db_redis, "HMGET", BATTLE_REPORT_SIMPLE_INFO, table.unpack(report_ids))
+    if err then
+        error("RedisGetBattleReportSimple failed:" .. tostring(err))
+        return {}
+    end
+    local report_infos = {}
+    if res and #res > 0 then
+        moon.warn(string.format("RedisGetBattleReportSimple res = %s", json.pretty_encode(res)))
+        for i = 1, #res do
+            report_infos[report_ids[i]] = res[i] or nil
+        end
+    end
+
+    return report_infos
+end
+
+function _M.RedisSetBattleReportSimple(addr_db_redis, report_id, report_info)
+    local tmp = {}
+    table.insert(tmp, report_id)
+    table.insert(tmp, report_info)
+    redis_send(addr_db_redis, "HSET", BATTLE_REPORT_SIMPLE_INFO, table.unpack(tmp))
+end
+
+function _M.RedisDelBattleReportSimple(addr_db_redis, report_id)
+    redis_send(addr_db_redis, "HDEL", BATTLE_REPORT_SIMPLE_INFO, report_id)
+end
+
+function _M.addbattlereport(addr, report_id, uid, start_ts, report_data)
+    assert(report_id and uid and start_ts and report_data)
+
+    local cmd = string.format([[
+        INSERT INTO mgame.battle_report (report_id, uid, start_ts, report_data)
+        VALUES (%d, %d, %d, '%s');
+    ]], report_id, uid, start_ts, report_data)
+
+    return moon.send("lua", addr, cmd)
+end
+
+function _M.getbattlereports(addr, uid, start_idx, end_idx)
+    -- start_idx: 起始索引（从0开始）
+    -- end_idx: 结束索引
+    -- 实际查询数量 = end_idx - start_idx + 1
+    local limit_num = end_idx - start_idx + 1
+
+    local cmd = string.format([[
+        SELECT report_id, uid, start_ts, report_data FROM mgame.battle_report
+        WHERE uid = %d ORDER BY start_ts DESC LIMIT %d OFFSET %d;]],
+        uid, limit_num, start_idx)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        error("getbattlereports failed:" .. tostring(err))
+        return {}
+    end
+    local report_infos = {}
+    if res and #res > 0 then
+        for i = 1, #res do
+            report_infos[res[i].report_id] = res[i]
+        end
+    else
+        moon.error("getbattlereports failed", uid, err)
+    end
+    return report_infos
 end
 
 return _M

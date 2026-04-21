@@ -17,6 +17,8 @@ local ItemDefine = require("common.logic.ItemDefine")
 local CommonCfgDef = require("common.def.CommonCfgDef")
 local MissionDef = require("common.def.MissionDef")
 
+local MAX_REPORT_SIZE = 6
+
 ---@type user_context
 local context = ...
 local scripts = context.scripts
@@ -577,6 +579,26 @@ function Room.PBCheckReturnRoomReqCmd(req)
     return context.S2C(context.net_id, CmdCode["PBCheckReturnRoomRspCmd"], res, req.msg_context.stub_id)
 end
 
+-- 纯 Lua 按位与运算
+local function band(v1, v2)
+    local result = 0
+    local multiplier = 1
+    for _ = 1, 32 do
+        if (v1 % 2 == 1) and (v2 % 2 == 1) then
+            result = result + multiplier
+        end
+        v1 = math.floor(v1 / 2)
+        v2 = math.floor(v2 / 2)
+        multiplier = multiplier * 2
+    end
+    return result
+end
+local function generate_battle_report_id(uid, timestamp)
+    local ts_high = math.floor(timestamp * (2 ^ 32))
+    local uid_low = band(uid, 0xFFFFFFFF)
+    return ts_high + uid_low
+end
+
 function Room.GameSettle(settle_info)
     moon.info(string.format("Room.GameSettle settle_info:\n%s", json.pretty_encode(settle_info)))
     -- 游戏结算
@@ -711,21 +733,62 @@ function Room.GameSettle(settle_info)
     end
 
     if settle_info.game_role_change and table.size(settle_info.game_role_change) > 0 then
-        -- 增加角色经验
         local change_roles = {}
-        for _, role_exp in pairs(settle_info.game_role_change) do
-            if role_exp.roleid and role_exp.roleid > 0
-                and role_exp.add_role_exp and role_exp.add_role_exp > 0 then
-                local err, new_exp = scripts.Role.GameAddExp(role_exp.roleid, role_exp.add_role_exp)
-                if err == ErrorCode.None then
-                    change_roles[role_exp.roleid] = "UpLv"
+        for _, role_change in pairs(settle_info.game_role_change) do
+            if role_change.roleid and role_change.roleid > 0 then
+                -- 增加角色经验
+                if role_change.add_role_exp and role_change.add_role_exp > 0 then
+                    local err, new_exp = scripts.Role.GameAddExp(role_change.roleid, role_change.add_role_exp)
+                    if err == ErrorCode.None then
+                        change_roles[role_change.roleid] = "UpLv"
+                    end
+                end
+
+                -- 修改装备耐久度
+                local role_info = scripts.Role.GetRoleInfo(role_change.roleid)
+                if role_info and role_change.magic_item_durability
+                    and table.size(role_change.magic_item_durability) > 0 then
+                    for uniqid, cur_durability in pairs(role_change.magic_item_durability) do
+                        if role_info.magic_item.common_info.uniqid == uniqid then
+                            role_info.magic_item.special_info.magic_item.cur_durability = cur_durability
+                            if not change_roles[role_change.roleid] then
+                                change_roles[role_change.roleid] = "ModCurDurability"
+                            end
+                            break
+                        end
+                    end
+                end
+                if role_info and role_change.digrams_cards_durability
+                    and table.size(role_change.digrams_cards_durability) > 0 then
+                    for uniqid, cur_durability in pairs(role_change.digrams_cards_durability) do
+                        for _, card in pairs(role_info.digrams_cards) do
+                            if card.common_info.uniqid == uniqid then
+                                card.special_info.diagrams_item.cur_durability = cur_durability
+                                if not change_roles[role_change.roleid] then
+                                    change_roles[role_change.roleid] = "ModCurDurability"
+                                end
+                                break
+                            end
+                        end
+                    end
+                end
+                if role_info and role_change.space_ring_durability
+                    and table.size(role_change.space_ring_durability) > 0 then
+                    for uniqid, cur_durability in pairs(role_change.space_ring_durability) do
+                        if role_info.space_ring.common_info.uniqid == uniqid then
+                            role_info.space_ring.special_info.space_ring.cur_durability = cur_durability
+                            if not change_roles[role_change.roleid] then
+                                change_roles[role_change.roleid] = "ModCurDurability"
+                            end
+                            break
+                        end
+                    end
                 end
             end
         end
         if table.size(change_roles) > 0 then
             scripts.Role.SaveAndLog(change_roles)
         end
-        -- 修改装备耐久度
     end
 
     if settle_info.grade_id and settle_info.change_score then
@@ -824,6 +887,34 @@ function Room.GameSettle(settle_info)
         -- 增加战利品价值
         scripts.Mission.TriggerCondition(MissionDef.EConditionIds.GET_BOOTY_VALUE_CNT,
             { settle_info.chapter_id, settle_info.difficulty }, settle_info.booty_value)
+    end
+
+    local report_id = 0
+    if settle_info.start_game_ts then
+        report_id = generate_battle_report_id(context.uid, settle_info.start_game_ts)
+    end
+    if settle_info.settle_data and report_id > 0 then
+        -- 保存详细战报
+    end
+    if settle_info.settle_simple_data and report_id > 0 then
+        local user_attr = scripts.User.GetOnlineUserAttr({ ProtoEnum.UserAttrType.battle_report_ids })
+        if not user_attr[ProtoEnum.UserAttrType.battle_report_ids]
+            or table.size(user_attr[ProtoEnum.UserAttrType.battle_report_ids]) then
+            user_attr[ProtoEnum.UserAttrType.battle_report_ids] = {}
+            table.insert(user_attr[ProtoEnum.UserAttrType.battle_report_ids], report_id)
+        else
+            if table.size(user_attr[ProtoEnum.UserAttrType.battle_report_ids]) >= MAX_REPORT_SIZE then
+                -- 删除最早的简略战报
+                local first_report_id = user_attr[ProtoEnum.UserAttrType.battle_report_ids][1]
+                clusterd.send(3999, "battlereportmgr", "BattleReportmgr.DeleteSimpleReport", first_report_id)
+                table.remove(user_attr[ProtoEnum.UserAttrType.battle_report_ids], 1)
+            end
+            table.insert(user_attr[ProtoEnum.UserAttrType.battle_report_ids], report_id)
+        end
+        scripts.User.SetUserAttr(user_attr, false)
+        -- 保存简略战报
+        clusterd.send(3999, "battlereportmgr", "BattleReportmgr.SaveSimpleReport", report_id,
+        settle_info.settle_simple_data)
     end
 end
 

@@ -590,6 +590,7 @@
 ---@field public battle_god_ids integer[] @参战神明id
 ---@field public booty_value integer @战利品总价值
 ---@field public settle_simple_data string @战报简述
+---@field public start_game_ts integer @游戏开始时间戳(秒级)
 
 
 ---@class PBEnterCityReqCmd
@@ -3416,6 +3417,7 @@
 ---@field public chat_ban_time integer @禁言时间(结束时间)
 ---@field public last_chat_time integer @上次发言时间
 ---@field public buff_datas table<integer, PBBuffData> @账户加成数据
+---@field public battle_report_ids integer[] @战报id
 
 
 ---@class PBClientGetUsrSimInfoReqCmd
@@ -3729,6 +3731,31 @@
 ---@field public add_items PBItemSimple[]
 
 
+---@class PBGetBattleReportSimpleReqCmd
+---@field public uid integer
+---@field public battle_report_ids integer[] @战报id
+
+
+---@class PBGetBattleReportSimpleRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public battle_report_infos table<integer, string>
+
+
+---@class PBGetBattleReportDetailReqCmd
+---@field public uid integer
+---@field public start_idx integer
+---@field public end_idx integer
+
+
+---@class PBGetBattleReportDetailRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public battle_report_infos table<integer, string>
+
+
 
 
 
@@ -3841,6 +3868,10 @@
 
 ---@class auction_scripts
 ---@field Auctionmgr Auctionmgr
+
+
+---@class battlereportmgr_scripts
+---@field BattleReportmgr BattleReportmgr
 
 
 ---@class billmgr_scripts

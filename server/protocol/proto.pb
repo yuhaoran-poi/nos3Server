@@ -1252,7 +1252,7 @@ open_count (R	openCount(
 TreasureListEntry
 key (Rkey'
 value (2.PBTreasureSingleRvalue:8bproto3
-¢8
+¬>
 
 user.proto
 item.proto	bag.proto
@@ -1267,7 +1267,7 @@ buffEffect
 periodType
 end_ts (RendTs
 surplus_cnt (R
-surplusCnt"è
+surplusCnt"”
 
 PBUserAttr
 uid (Ruid!
@@ -1302,7 +1302,8 @@ onlineTime&
 chat_ban_time (RchatBanTime$
 last_chat_time (RlastChatTime9
 
-buff_datas (2.PBUserAttr.BuffDatasEntryR	buffDatasI
+buff_datas (2.PBUserAttr.BuffDatasEntryR	buffDatas*
+battle_report_ids (RbattleReportIdsI
 BuffDatasEntry
 key (Rkey!
 value (2.PBBuffDataRvalue:8"/
@@ -1544,7 +1545,30 @@ open_count (R	openCount"¶
 error (	Rerror
 uid (Ruid6
 treasure_data (2.PBTreasureSingleRtreasureData*
-	add_items (2.PBItemSimpleRaddItemsbproto3
+	add_items (2.PBItemSimpleRaddItems"]
+PBGetBattleReportSimpleReqCmd
+uid (Ruid*
+battle_report_ids (RbattleReportIds"ˆ
+PBGetBattleReportSimpleRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruide
+battle_report_infos (25.PBGetBattleReportSimpleRspCmd.BattleReportInfosEntryRbattleReportInfosD
+BattleReportInfosEntry
+key (Rkey
+value (	Rvalue:8"g
+PBGetBattleReportDetailReqCmd
+uid (Ruid
+	start_idx (RstartIdx
+end_idx (RendIdx"ˆ
+PBGetBattleReportDetailRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruide
+battle_report_infos (25.PBGetBattleReportDetailRspCmd.BattleReportInfosEntryRbattleReportInfosD
+BattleReportInfosEntry
+key (Rkey
+value (	Rvalue:8bproto3
 ¬
 
 gods.proto"9
@@ -1611,7 +1635,7 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-à'
+„(
 dsnode.proto
 item.proto
 user.proto	bag.proto
@@ -1637,7 +1661,7 @@ addRoleExpb
 
 monster_id (R	monsterId!
 monster_type (RmonsterType
-kill_cnt (RkillCnt"ô
+kill_cnt (RkillCnt"˜
 PBGameSettle
 settle_data (	R
 settleData-
@@ -1662,7 +1686,8 @@ difficulty$
 battle_god_ids (RbattleGodIds
 booty_value (R
 bootyValue,
-settle_simple_data (	RsettleSimpleData?
+settle_simple_data (	RsettleSimpleData"
+start_game_ts (RstartGameTs?
 GameMissionsEntry
 key (Rkey
 value (Rvalue:8"=

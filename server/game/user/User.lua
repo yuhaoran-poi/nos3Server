@@ -42,6 +42,7 @@ local simple_fields = {
     ProtoEnum.UserAttrType.title,
     ProtoEnum.UserAttrType.player_flag,
     ProtoEnum.UserAttrType.is_online,
+    ProtoEnum.UserAttrType.battle_report_ids,
 }
 
 local function hasSimpleAttr(user_attr)  
@@ -2352,7 +2353,7 @@ function User.PBInlayTabooWordReqCmd(req)
         end
     else
         rsp_msg.code = ErrorCode.InlayTypeInvalid
-        rsp_msg.error = "镶嵌类型错误"
+        rsp_msg.error = "镶嵌类型错误" 
     end
 
     if rsp_msg.code ~= ErrorCode.None or not bag_change_log then
@@ -3094,6 +3095,62 @@ function User.SpecialComposite(add_items)
     end
 
     return err_code
+end
+
+function User.PBGetBattleReportSimpleReqCmd(req)
+    if not req.msg.uid
+        or not req.msg.battle_report_ids
+        or table.size(req.msg.battle_report_ids) == 0 then
+        return context.S2C(context.net_id, CmdCode.PBGetBattleReportSimpleRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local report_infos = Database.RedisGetBattleReportSimple(context.addr_db_redis, req.msg.battle_report_ids)
+    if not report_infos or table.size(report_infos) == 0 then
+        return context.S2C(context.net_id, CmdCode.PBGetBattleReportSimpleRspCmd, {
+            code = ErrorCode.ReportNotExist,
+            error = "战报不存在",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    return context.S2C(context.net_id, CmdCode.PBGetBattleReportSimpleRspCmd, {
+        code = ErrorCode.None,
+        error = "获取战报成功",
+        uid = context.uid,
+        battle_report_infos = report_infos,
+    }, req.msg_context.stub_id)
+end
+
+function User.PBGetBattleReportDetailReqCmd(req)
+    if not req.msg.uid
+        or not req.msg.start_idx
+        or not req.msg.end_idx then
+        return context.S2C(context.net_id, CmdCode.PBGetBattleReportDetailRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local report_infos = Database.getbattlereports(context.addr_db_user, context.uid, req.msg.start_idx, req.msg.end_idx)
+    if not report_infos or table.size(report_infos) == 0 then
+        return context.S2C(context.net_id, CmdCode.PBGetBattleReportDetailRspCmd, {
+            code = ErrorCode.ReportNotExist,
+            error = "战报不存在",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    return context.S2C(context.net_id, CmdCode.PBGetBattleReportDetailRspCmd, {
+        code = ErrorCode.None,
+        error = "获取战报成功",
+        uid = context.uid,
+        battle_report_infos = report_infos,
+    }, req.msg_context.stub_id)
 end
 
 return User

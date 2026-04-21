@@ -51,6 +51,7 @@ message PBUserAttr
 	int64 last_chat_time = 24; // 上次发言时间
 	// 账户加成相关
 	map<int32, PBBuffData> buff_datas	= 25;	// 账户加成数据
+	repeated int64	battle_report_ids	= 26;	// 战报id
 }
 
 // 客户端请求简略数据
@@ -422,6 +423,7 @@ message PBGetTreasureInfoRspCmd
 	PBTreasurePlayerData treasure_datas	= 4;
 }
 
+// 开启宝箱
 message PBOpenTreasureReqCmd
 {
 	int64 uid	= 1;
@@ -436,4 +438,35 @@ message PBOpenTreasureRspCmd
 	int64 uid	= 3;
 	PBTreasureSingle treasure_data	= 4;
 	repeated PBItemSimple add_items	= 5;
+}
+
+// 按战报id获取简略战报
+message PBGetBattleReportSimpleReqCmd
+{
+	int64 uid	= 1;
+	repeated int64	battle_report_ids	= 2;	// 战报id
+}
+
+message PBGetBattleReportSimpleRspCmd
+{
+	int32   code    = 1; // 服务器验证返回,0成功,其他失败
+    string  error   = 2; // 错误信息
+	int64 uid	= 3;
+	map<int64, string>	battle_report_infos	= 4;
+}
+
+// 按开始时间倒序查询自己的详细战报
+message PBGetBattleReportDetailReqCmd
+{
+	int64 uid	= 1;
+	int32 start_idx	= 2;
+	int32 end_idx	= 3;
+}
+
+message PBGetBattleReportDetailRspCmd
+{
+	int32   code    = 1; // 服务器验证返回,0成功,其他失败
+    string  error   = 2; // 错误信息
+	int64 uid	= 3;
+	map<int64, string>	battle_report_infos	= 4;
 }

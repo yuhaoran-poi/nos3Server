@@ -40,6 +40,7 @@ message PBGameSettle
     repeated int32 battle_god_ids   = 14;    //参战神明id
     int64 booty_value   = 15;   // 战利品总价值
     string settle_simple_data = 16;//战报简述
+    int64 start_game_ts = 17;   // 游戏开始时间戳(秒级)
 }
 
 // 玩家进入主城
