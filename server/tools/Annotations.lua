@@ -1173,7 +1173,7 @@
 
 ---@class PBGradeInfo
 ---@field public season_id integer
----@field public grade_datas table<integer, PBGradeData>
+---@field public grade_data PBGradeData
 
 
 ---@class PBGradeShowData
@@ -1183,7 +1183,7 @@
 
 ---@class PBGradeShowInfo
 ---@field public season_id integer
----@field public grade_show_datas table<integer, PBGradeShowData>
+---@field public grade_show_data PBGradeShowData
 
 
 ---@class PBGradePlayerData
@@ -2180,6 +2180,18 @@
 
 ---@class PBAntiqueShowcaseUpdateSyncCmd
 ---@field public antique_showcase_list table<integer, PBAntiqueShowcaseData>
+
+
+---@class PBImageUnLockReqCmd
+---@field public uid integer
+---@field public item_config_id integer
+
+
+---@class PBImageUnLockRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public item_config_id integer
 
 
 ---@class PBMailSimpleData
@@ -3964,6 +3976,7 @@
 ---@field GodSlot GodSlot_cfg[]
 ---@field HumanRole HumanRole_cfg[]
 ---@field HumanSkill HumanSkill_cfg[]
+---@field IllustratedGuide IllustratedGuide_cfg[]
 ---@field ImmediatelyEmailTemplateConfig ImmediatelyEmailTemplateConfig_cfg[]
 ---@field Init Init_cfg[]
 ---@field Item Item_cfg[]

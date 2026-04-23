@@ -11,7 +11,8 @@ message PBGradeData
 message PBGradeInfo
 {
 	int32 season_id	= 1;
-	map<int32, PBGradeData> grade_datas	= 2;
+	//map<int32, PBGradeData> grade_datas	= 2;
+	PBGradeData grade_data	= 2;
 }
 
 message PBGradeShowData
@@ -23,7 +24,7 @@ message PBGradeShowData
 message PBGradeShowInfo
 {
 	int32 season_id	= 1;
-	map<int32, PBGradeShowData> grade_show_datas	= 2;
+	PBGradeShowData grade_show_data	= 2;
 }
 
 message PBGradePlayerData

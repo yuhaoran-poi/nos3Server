@@ -2118,18 +2118,17 @@ function Bag.AddItems(bagType, stack_item_datas, unstack_item_datas, change_log)
         end
     end
 
-    -- 判断图鉴是否需要更新
-    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    local change_image_ids = {}
-    for pos, old_itemdata in pairs(change_log[bagType]) do
-        if table.size(old_itemdata) <= 0 then
-            scripts.ItemImage.AddItemImage(baginfo.items[pos].common_info.config_id, change_image_ids, true)
-        end
-    end
-    -- 发送图鉴更新消息
-    if table.size(change_image_ids) > 0 then
-        scripts.ItemImage.SaveAndLog(change_image_ids)
-    end
+    -- -- 判断图鉴是否需要更新
+    -- local change_image_ids = {}
+    -- for pos, old_itemdata in pairs(change_log[bagType]) do
+    --     if table.size(old_itemdata) <= 0 then
+    --         scripts.ItemImage.AddItemImage(baginfo.items[pos].common_info.config_id, change_image_ids, true)
+    --     end
+    -- end
+    -- -- 发送图鉴更新消息
+    -- if table.size(change_image_ids) > 0 then
+    --     scripts.ItemImage.SaveAndLog(change_image_ids)
+    -- end
 
     return ErrorCode.None
 end

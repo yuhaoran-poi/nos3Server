@@ -960,6 +960,24 @@ function Role.UpStar(roleid)
         return ErrorCode.ItemMaxStar
     end
 
+    local up_exp_cfgs = GameCfg.RoleUpLv
+    if not up_exp_cfgs then
+        return ErrorCode.ConfigError
+    end
+    local max_star = 0
+    for _, up_exp_cfg in pairs(up_exp_cfgs) do
+        if up_exp_cfg.allexp <= role_info.exp then
+            if up_exp_cfg.max_star > max_star then
+                max_star = up_exp_cfg.max_star
+            end
+        else
+            break
+        end
+    end
+    if role_info.star_level + 1 > max_star then
+        return ErrorCode.ItemMaxStar
+    end
+
     local cost_key = "cost" .. (role_info.star_level + 1)
     if not star_cfg[cost_key] then
         return ErrorCode.ConfigError

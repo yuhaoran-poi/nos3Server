@@ -65,12 +65,8 @@ end
 function Grade.GetGradeShowInfo(grade_info)
     local grade_show_info = GradeDef.newGradeShowInfo()
     grade_show_info.season_id = grade_info.season_id
-    for grade_id, grade_data in pairs(grade_info.grade_datas) do
-        local grade_show_data = GradeDef.newGradeShowData()
-        grade_show_data.grade_id = grade_id
-        grade_show_data.now_grade_score = grade_data.now_grade_score
-        grade_show_info.grade_show_datas[grade_id] = grade_show_data
-    end
+    grade_show_info.grade_show_data.grade_id = grade_info.grade_data.grade_id
+    grade_show_info.grade_show_data.now_grade_score = grade_info.grade_data.now_grade_score
 
     return grade_show_info
 end
@@ -105,27 +101,25 @@ function Grade.ChangeScore(grade_id, change_score)
         Grades.grade_infos[Grades.cur_season_id] = grade_info
     end
     
-    local grade_data = grade_info.grade_datas[grade_id]
-    if not grade_data then
-        grade_data = GradeDef.newGradeData()
-        grade_data.grade_id = grade_id
-        grade_info.grade_datas[grade_id] = grade_data
+    if not grade_info.grade_data then
+        grade_info.grade_data = GradeDef.newGradeData()
+        grade_info.grade_data.grade_id = grade_id
     end
 
     local grade_cfg = GameCfg.RankConfig[grade_id]
     if not grade_cfg then
         return
     end
-    if grade_data.now_grade_score + change_score < 0 then
-        grade_data.now_grade_score = 0
-    elseif grade_data.now_grade_score + change_score > grade_cfg.maxexp then
-        grade_data.now_grade_score = grade_cfg.maxexp
+    if grade_info.grade_data.now_grade_score + change_score < 0 then
+        grade_info.grade_data.now_grade_score = 0
+    elseif grade_info.grade_data.now_grade_score + change_score > grade_cfg.maxexp then
+        grade_info.grade_data.now_grade_score = grade_cfg.maxexp
     else
-        grade_data.now_grade_score = grade_data.now_grade_score + change_score
+        grade_info.grade_data.now_grade_score = grade_info.grade_data.now_grade_score + change_score
     end
 
-    if grade_data.now_grade_score > grade_data.highest_grade_score then
-        grade_data.highest_grade_score = grade_data.now_grade_score
+    if grade_info.grade_data.now_grade_score > grade_info.grade_data.highest_grade_score then
+        grade_info.grade_data.highest_grade_score = grade_info.grade_data.now_grade_score
     end
 
     Grades.grade_infos[Grades.cur_season_id] = grade_info
@@ -179,7 +173,7 @@ function Grade.PBGetGradeRewardReqCmd(req)
             { code = ErrorCode.GradeNoData, error = "段位数据不存在", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    local grade_data = grade_info.grade_datas[req.msg.grade_id]
+    local grade_data = grade_info.grade_data
     if not grade_data then
         return context.S2C(context.net_id, CmdCode["PBGetGradeRewardRspCmd"],
             { code = ErrorCode.GradeUnlock, error = "段位未解锁", uid = context.uid }, req.msg_context.stub_id)

@@ -12,7 +12,7 @@ local defaultPBGradeData = {
 
 local defaultPBGradeInfo = {
     season_id = 0,
-    grade_datas = {},
+    grade_data = LuaExt.const(table.copy(defaultPBGradeData)),
 }
 
 local defaultPBGradeShowData = {
@@ -22,7 +22,7 @@ local defaultPBGradeShowData = {
 
 local defaultPBGradeShowInfo = {
     season_id = 0,
-    grade_show_datas = {},
+    grade_show_data = LuaExt.const(table.copy(defaultPBGradeShowData)),
 }
 
 local defaultPBGradePlayerData = {

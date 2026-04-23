@@ -694,7 +694,8 @@ function ItemImage.UseItemAddImage(item_cfg, msg_data, change_image_ids)
             item_cfg.skin_time * msg_data.use_item_cnt)
         return err_code
     elseif item_cfg.use_type == 3 then
-
+        moon.error("UseItemAddImage: use_type = 3")
+        return ErrorCode.ConfigError
     end
 
     return err_code
@@ -726,7 +727,8 @@ end
 function ItemImage.PBImageGetDataReqCmd(req)
     local itemImages = scripts.UserModel.GetItemImages()
     if not itemImages then
-        return context.S2C(context.net_id, CmdCode["PBImageGetDataRspCmd"], {code = ErrorCode.ServerInternalError, error = "服务器内部错误"}, req.msg_context.stub_id)
+        return context.S2C(context.net_id, CmdCode["PBImageGetDataRspCmd"],
+            { code = ErrorCode.ServerInternalError, error = "服务器内部错误" }, req.msg_context.stub_id)
     end
 
     local res = {
@@ -736,6 +738,103 @@ function ItemImage.PBImageGetDataReqCmd(req)
         image_data = itemImages,
     }
     return context.S2C(context.net_id, CmdCode["PBImageGetDataRspCmd"], res, req.msg_context.stub_id)
+end
+
+function ItemImage.PBImageUnLockReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid or not req.msg.item_config_id then
+        return context.S2C(context.net_id, CmdCode.PBImageUnLockRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+        }, req.msg_context.stub_id)
+    end
+
+    local itemImages = scripts.UserModel.GetItemImages()
+    if not itemImages then
+        return context.S2C(context.net_id, CmdCode.PBImageUnLockRspCmd,
+            { code = ErrorCode.ServerInternalError, error = "服务器内部错误" }, req.msg_context.stub_id)
+    end
+
+    local unlock_cfg = GameCfg.IllustratedGuide[req.msg.item_config_id]
+    if not unlock_cfg then
+        return context.S2C(context.net_id, CmdCode.PBImageUnLockRspCmd, {
+            code = ErrorCode.ItemNotExist,
+            error = "物品不存在",
+            uid = req.msg.uid,
+            item_config_id = req.msg.item_config_id,
+        }, req.msg_context.stub_id)
+    end
+
+    -- 计算消耗资源
+    local cost_items = {}
+    local cost_coins = {}
+    ItemDefine.GetItemsFromCfg(unlock_cfg.unlock_cost, 1, true, cost_items, cost_coins)
+
+    -- 检查资源是否足够
+    if table.size(cost_items) > 0 then
+        local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+        if err_code_items ~= ErrorCode.None then
+            return context.S2C(context.net_id, CmdCode.PBImageUnLockRspCmd, {
+                code = err_code_items,
+                error = "物品不足",
+                uid = req.msg.uid,
+                item_config_id = req.msg.item_config_id,
+            }, req.msg_context.stub_id)
+        end
+    end
+    if table.size(cost_coins) > 0 then
+        local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
+        if err_code_coins ~= ErrorCode.None then
+            return context.S2C(context.net_id, CmdCode.PBImageUnLockRspCmd, {
+                code = err_code_coins,
+                error = "货币不足",
+                uid = req.msg.uid,
+                item_config_id = req.msg.item_config_id,
+            }, req.msg_context.stub_id)
+        end
+    end
+
+    local change_image_ids = {}
+    local unlock_err_code = ItemImage.AddItemImage(req.msg.item_config_id, change_image_ids, true)
+    if unlock_err_code ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBImageUnLockRspCmd, {
+            code = unlock_err_code,
+            error = "解锁失败",
+            uid = req.msg.uid,
+            item_config_id = req.msg.item_config_id,
+        }, req.msg_context.stub_id)
+    end
+
+    -- 扣除消耗
+    local bag_change_log = {}
+    local err_code_del = ErrorCode.None
+    if table.size(cost_items) > 0 then
+        err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, bag_change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return err_code_del
+        end
+    end
+    if table.size(cost_coins) > 0 then
+        err_code_del = scripts.Bag.DealCoins(cost_coins, bag_change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return err_code_del
+        end
+    end
+
+    -- 保存数据
+    scripts.Bag.SaveAndLog(bag_change_log)
+    if table.size(change_image_ids) > 0 then
+        ItemImage.SaveAndLog(change_image_ids)
+    end
+
+    return context.S2C(context.net_id, CmdCode.PBImageUnLockRspCmd, {
+        code = ErrorCode.None,
+        error = "",
+        uid = req.msg.uid,
+        item_config_id = req.msg.item_config_id,
+    }, req.msg_context.stub_id)
 end
 
 return ItemImage
