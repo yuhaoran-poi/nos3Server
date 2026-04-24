@@ -1086,7 +1086,7 @@ takeoffIdx"e
 uid (Ruid&
 ghost_config_id (RghostConfigId
 skin (Rskinbproto3
-Ê	
+À	
 grade.proto"§
 PBGradeData
 grade_id (RgradeId&
@@ -1121,10 +1121,9 @@ gradeInfosK
 uid (Ruid
 
 now_sys_ts (RnowSysTs>
-grade_player_data (2.PBGradePlayerDataRgradePlayerData"b
+grade_player_data (2.PBGradePlayerDataRgradePlayerData"G
 PBGetGradeRewardReqCmd
-uid (Ruid
-grade_id (RgradeId
+uid (Ruid
 	level_ids (RlevelIds"Å
 PBGetGradeRewardRspCmd
 code (Rcode

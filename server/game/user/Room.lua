@@ -793,7 +793,7 @@ function Room.GameSettle(settle_info)
 
     if settle_info.grade_id and settle_info.change_score then
         -- 变更段位积分
-        scripts.Grade.ChangeScore(settle_info.grade_id, settle_info.change_score)
+        scripts.Grade.ChangeScore(settle_info.change_score)
     end
 
     if settle_info.reward_boxs and table.size(settle_info.reward_boxs) > 0 then
@@ -895,6 +895,8 @@ function Room.GameSettle(settle_info)
     end
     if settle_info.settle_data and report_id > 0 then
         -- 保存详细战报
+        clusterd.send(3999, "battlereportmgr", "BattleReportmgr.SaveDetailReport", context.uid, report_id,
+            settle_info.start_game_ts, settle_info.settle_data)
     end
     if settle_info.settle_simple_data and report_id > 0 then
         local user_attr = scripts.User.GetOnlineUserAttr({ ProtoEnum.UserAttrType.battle_report_ids })

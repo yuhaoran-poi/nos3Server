@@ -1205,7 +1205,6 @@
 
 ---@class PBGetGradeRewardReqCmd
 ---@field public uid integer
----@field public grade_id integer
 ---@field public level_ids integer[]
 
 
@@ -3991,7 +3990,6 @@
 ---@field PeriodMissionConfig PeriodMissionConfig_cfg[]
 ---@field PropCompose PropCompose_cfg[]
 ---@field RandomComposite RandomComposite_cfg[]
----@field RankConfig RankConfig_cfg[]
 ---@field RankLevel RankLevel_cfg[]
 ---@field RankRewardPool RankRewardPool_cfg[]
 ---@field RechargeStoreConfig RechargeStoreConfig_cfg[]

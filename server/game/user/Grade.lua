@@ -88,9 +88,14 @@ function Grade.GetGradeShowInfos()
     return grade_show_infos
 end
 
-function Grade.ChangeScore(grade_id, change_score)
+function Grade.ChangeScore(change_score)
     local Grades = scripts.UserModel.GetGrades()
     if not Grades or not Grades.grade_infos then
+        return
+    end
+
+    local rank_level_cfgs = GameCfg.RankLevel
+    if not rank_level_cfgs or table.size(rank_level_cfgs) == 0 then
         return
     end
 
@@ -100,26 +105,32 @@ function Grade.ChangeScore(grade_id, change_score)
         grade_info.season_id = Grades.cur_season_id
         Grades.grade_infos[Grades.cur_season_id] = grade_info
     end
-    
+
     if not grade_info.grade_data then
         grade_info.grade_data = GradeDef.newGradeData()
-        grade_info.grade_data.grade_id = grade_id
     end
 
-    local grade_cfg = GameCfg.RankConfig[grade_id]
-    if not grade_cfg then
-        return
-    end
-    if grade_info.grade_data.now_grade_score + change_score < 0 then
-        grade_info.grade_data.now_grade_score = 0
-    elseif grade_info.grade_data.now_grade_score + change_score > grade_cfg.maxexp then
-        grade_info.grade_data.now_grade_score = grade_cfg.maxexp
-    else
+    if change_score < 0 then
+        local old_score = grade_info.grade_data.now_grade_score
+        local new_score = old_score + change_score
+        if new_score < 0 then
+            new_score = 0
+        end
+
+        for id, rank_level_cfg in pairs(rank_level_cfgs) do
+            if rank_level_cfg.exp > old_score then
+                break
+            end
+            if rank_level_cfg.exp > new_score
+                and rank_level_cfg.exp <= old_score then
+                if rank_level_cfg.lock == 1 then
+                    new_score = rank_level_cfg.exp
+                end
+            end
+        end
+        grade_info.grade_data.now_grade_score = new_score
+    elseif change_score > 0 then
         grade_info.grade_data.now_grade_score = grade_info.grade_data.now_grade_score + change_score
-    end
-
-    if grade_info.grade_data.now_grade_score > grade_info.grade_data.highest_grade_score then
-        grade_info.grade_data.highest_grade_score = grade_info.grade_data.now_grade_score
     end
 
     Grades.grade_infos[Grades.cur_season_id] = grade_info
@@ -151,8 +162,7 @@ end
 
 function Grade.PBGetGradeRewardReqCmd(req)
     -- 参数验证
-    if not req.msg.grade_id
-        or not req.msg.level_ids
+    if not req.msg.level_ids
         or table.size(req.msg.level_ids) == 0 then
         return context.S2C(context.net_id, CmdCode.PBShopAddBuyCarRspCmd, {
             code = ErrorCode.ParamInvalid,
@@ -179,11 +189,11 @@ function Grade.PBGetGradeRewardReqCmd(req)
             { code = ErrorCode.GradeUnlock, error = "段位未解锁", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    local grade_cfg = GameCfg.RankConfig[req.msg.grade_id]
-    if not grade_cfg or not grade_cfg.exp_type or not grade_cfg.reward_type then
-        return context.S2C(context.net_id, CmdCode["PBGetGradeRewardRspCmd"],
-            { code = ErrorCode.ConfigError, error = "段位配置不存在", uid = context.uid }, req.msg_context.stub_id)
-    end
+    -- local grade_cfg = GameCfg.RankConfig[req.msg.grade_id]
+    -- if not grade_cfg or not grade_cfg.exp_type or not grade_cfg.reward_type then
+    --     return context.S2C(context.net_id, CmdCode["PBGetGradeRewardRspCmd"],
+    --         { code = ErrorCode.ConfigError, error = "段位配置不存在", uid = context.uid }, req.msg_context.stub_id)
+    -- end
 
     local add_items = {}
     for _, level_id in pairs(req.msg.level_ids) do
@@ -192,25 +202,23 @@ function Grade.PBGetGradeRewardReqCmd(req)
                 { code = ErrorCode.GradeRewardAlreadyGet, error = "段位奖励已领取", uid = context.uid, grade_data = grade_data },
                 req.msg_context.stub_id)
         end
-        if level_id > grade_cfg.maxlv then
-            return context.S2C(context.net_id, CmdCode["PBGetGradeRewardRspCmd"],
-                { code = ErrorCode.ParamInvalid, error = "段位等级超出范围", uid = context.uid }, req.msg_context.stub_id)
-        end
+        -- if level_id > grade_cfg.maxlv then
+        --     return context.S2C(context.net_id, CmdCode["PBGetGradeRewardRspCmd"],
+        --         { code = ErrorCode.ParamInvalid, error = "段位等级超出范围", uid = context.uid }, req.msg_context.stub_id)
+        -- end
 
         local grade_level_cfg = GameCfg.RankLevel[level_id]
-        if not grade_level_cfg
-            or not grade_level_cfg[grade_cfg.exp_type]
-            or not grade_level_cfg[grade_cfg.reward_type] then
+        if not grade_level_cfg then
             return context.S2C(context.net_id, CmdCode["PBGetGradeRewardRspCmd"],
                 { code = ErrorCode.ConfigError, error = "段位等级配置不存在", uid = context.uid }, req.msg_context.stub_id)
         end
-        if grade_data.highest_grade_score < grade_level_cfg[grade_cfg.exp_type] then
+        if grade_data.highest_grade_score < grade_level_cfg.exp then
             return context.S2C(context.net_id, CmdCode["PBGetGradeRewardRspCmd"],
                 { code = ErrorCode.GradeScoreNotEnough, error = "段位未到等级", uid = context.uid, grade_data = grade_data },
                 req.msg_context.stub_id)
         end
 
-        local grade_reward_cfg = GameCfg.RankRewardPool[grade_level_cfg[grade_cfg.reward_type]]
+        local grade_reward_cfg = GameCfg.RankRewardPool[grade_level_cfg.reward]
         if not grade_reward_cfg then
             return context.S2C(context.net_id, CmdCode["PBGetGradeRewardRspCmd"],
                 { code = ErrorCode.ConfigError, error = "段位奖励配置不存在", uid = context.uid }, req.msg_context.stub_id)

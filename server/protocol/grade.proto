@@ -52,7 +52,7 @@ message PBGetGradeDataRspCmd
 message PBGetGradeRewardReqCmd
 {
 	int64 uid	= 1;
-	int32 grade_id	= 2;
+	//int32 grade_id	= 2;
 	repeated int32 level_ids	= 3;
 }
 
