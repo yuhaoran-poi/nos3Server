@@ -591,16 +591,16 @@ function Shop.PBShopBuyReqCmd(req)
     scripts.Mission.TriggerCondition(MissionDef.EConditionIds.GET_TREASURE_CNT, { 0 }, total_get_count)
 
     -- 保存购物数据并添加购物日志
-    for id, num in pairs(product_id_num) do
-        if not shops.buy_product_list[id] then
-            shops.buy_product_list[id] = 0
+    for _, selecbuy in pairs(product_id_num) do
+        if not shops.buy_product_list[selecbuy.product_id] then
+            shops.buy_product_list[selecbuy.product_id] = 0
         end
-        shops.buy_product_list[id] = shops.buy_product_list[id] + num
+        shops.buy_product_list[selecbuy.product_id] = shops.buy_product_list[selecbuy.product_id] + selecbuy.product_num
 
         if req.msg.with_car ~= 0 then
-            shops.buy_car_data[id] = shops.buy_car_data[id] - num
-            if shops.buy_car_data[id] == 0 then
-                shops.buy_car_data[id] = nil
+            shops.buy_car_data[selecbuy.product_id] = shops.buy_car_data[selecbuy.product_id] - selecbuy.product_num
+            if shops.buy_car_data[selecbuy.product_id] == 0 then
+                shops.buy_car_data[selecbuy.product_id] = nil
             end
         end
     end

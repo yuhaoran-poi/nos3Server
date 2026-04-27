@@ -565,6 +565,9 @@
 ---@field public magic_item_durability table<integer, integer> @法器耐久值
 ---@field public digrams_cards_durability table<integer, integer> @八卦牌耐久值
 ---@field public space_ring_durability table<integer, integer> @空间戒指耐久值
+---@field public magic_item_exp table<integer, integer> @法器增加经验
+---@field public digrams_cards_exp table<integer, integer> @八卦牌增加经验
+---@field public space_ring_exp table<integer, integer> @空间戒指增加经验
 
 
 ---@class PBInGameKillMonster
@@ -776,6 +779,17 @@
 ---@field public dsid integer
 ---@field public quest_uid integer
 ---@field public antique_showcase_data PBAntiqueShowcaseDataS @古董展示柜数据
+
+
+---@class PBDsGetAllYesAveragePriceReqCmd
+---@field public dsid integer
+
+
+---@class PBDsGetAllYesAveragePriceRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public dsid integer
+---@field public yes_average_price table<integer, number>
 
 
 ---@class PBFriendData

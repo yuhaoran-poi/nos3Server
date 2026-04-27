@@ -1284,25 +1284,28 @@ function Role.PBRoleWearSkinReqCmd(req)
     end
 
     for idx, skin_id in pairs(req.msg.skins) do
-        local is_valid = scripts.ItemImage.CheckImageValid(skin_id)
-        if not is_valid then
-            return context.S2C(context.net_id, CmdCode["PBRoleWearSkinRspCmd"],
-                { code = ErrorCode.ItemNotExist, error = "皮肤不存在", uid = context.uid }, req.msg_context.stub_id)
-        end
-        local skin_cfg = GameCfg.Skin[skin_id]
-        if not skin_cfg then
-            return context.S2C(context.net_id, CmdCode["PBRoleWearSkinRspCmd"],
-                { code = ErrorCode.ConfigError, error = "配置错误", uid = context.uid }, req.msg_context.stub_id)
-        end
-        if skin_cfg.belong ~= req.msg.roleid then
-            return context.S2C(context.net_id, CmdCode["PBRoleWearSkinRspCmd"],
-                { code = ErrorCode.SkinNotMatch, error = "皮肤不匹配", uid = context.uid }, req.msg_context.stub_id)
+        if skin_id > 0 then
+            local is_valid = scripts.ItemImage.CheckImageValid(skin_id)
+            if not is_valid then
+                return context.S2C(context.net_id, CmdCode["PBRoleWearSkinRspCmd"],
+                    { code = ErrorCode.ItemNotExist, error = "皮肤不存在", uid = context.uid }, req.msg_context.stub_id)
+            end
+            local skin_cfg = GameCfg.Skin[skin_id]
+            if not skin_cfg then
+                return context.S2C(context.net_id, CmdCode["PBRoleWearSkinRspCmd"],
+                    { code = ErrorCode.ConfigError, error = "配置错误", uid = context.uid }, req.msg_context.stub_id)
+            end
+            if skin_cfg.belong ~= req.msg.roleid then
+                return context.S2C(context.net_id, CmdCode["PBRoleWearSkinRspCmd"],
+                    { code = ErrorCode.SkinNotMatch, error = "皮肤不匹配", uid = context.uid }, req.msg_context.stub_id)
+            end
         end
     end
 
-    for idx, skin_id in pairs(req.msg.skins) do
-        role_info.skins[idx] = skin_id
-    end
+    -- for idx, skin_id in pairs(req.msg.skins) do
+    --     role_info.skins[idx] = skin_id
+    -- end
+    role_info.skins = req.msg.skins
 
     context.S2C(context.net_id, CmdCode["PBRoleWearSkinRspCmd"],
         { code = ErrorCode.None, error = "", uid = context.uid }, req.msg_context.stub_id)

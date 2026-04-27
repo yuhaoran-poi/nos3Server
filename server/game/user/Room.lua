@@ -734,6 +734,7 @@ function Room.GameSettle(settle_info)
 
     if settle_info.game_role_change and table.size(settle_info.game_role_change) > 0 then
         local change_roles = {}
+        local change_image_ids = {}
         for _, role_change in pairs(settle_info.game_role_change) do
             if role_change.roleid and role_change.roleid > 0 then
                 -- 增加角色经验
@@ -784,10 +785,39 @@ function Room.GameSettle(settle_info)
                         end
                     end
                 end
+
+                -- 增加装备经验
+                if role_info and role_change.magic_item_exp
+                    and table.size(role_change.magic_item_exp) > 0 then
+                    for config_id, add_exp in pairs(role_change.magic_item_exp) do
+                        if add_exp > 0 and scripts.ItemImage.UpExp(config_id, add_exp) == ErrorCode.None then
+                            table.insert(change_image_ids, config_id)
+                        end
+                    end
+                end
+                if role_info and role_change.digrams_cards_exp
+                    and table.size(role_change.digrams_cards_exp) > 0 then
+                    for config_id, add_exp in pairs(role_change.digrams_cards_exp) do
+                        if add_exp > 0 and scripts.ItemImage.UpExp(config_id, add_exp) == ErrorCode.None then
+                            table.insert(change_image_ids, config_id)
+                        end
+                    end
+                end
+                if role_info and role_change.space_ring_exp
+                    and table.size(role_change.space_ring_exp) > 0 then
+                    for config_id, add_exp in pairs(role_change.space_ring_exp) do
+                        if add_exp > 0 and scripts.ItemImage.UpExp(config_id, add_exp) == ErrorCode.None then
+                            table.insert(change_image_ids, config_id)
+                        end
+                    end
+                end
             end
         end
         if table.size(change_roles) > 0 then
             scripts.Role.SaveAndLog(change_roles)
+        end
+        if table.size(change_image_ids) > 0 then
+            scripts.ItemImage.SaveAndLog(change_image_ids)
         end
     end
 

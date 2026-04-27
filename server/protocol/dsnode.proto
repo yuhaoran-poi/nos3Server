@@ -12,6 +12,9 @@ message PBGameChangeRoleInfo
     map<int64, int32> magic_item_durability   = 3;	//法器耐久值
     map<int64, int32> digrams_cards_durability	= 4;	//八卦牌耐久值
     map<int64, int32> space_ring_durability	= 5;	//空间戒指耐久值
+    map<int32, int32> magic_item_exp    = 6;    //法器增加经验
+    map<int32, int32> digrams_cards_exp = 7;    //八卦牌增加经验
+    map<int32, int32> space_ring_exp = 8;       //空间戒指增加经验
 }
 
 message PBInGameKillMonster
@@ -277,4 +280,18 @@ message PBGetDsUserAntiqueRspCmd
     int32 dsid			= 3;
 	int64 quest_uid		= 4;
     PBAntiqueShowcaseDataS antique_showcase_data = 5;	// 古董展示柜数据
+}
+
+// 获取交易行均价
+message PBDsGetAllYesAveragePriceReqCmd
+{
+	int32 dsid		= 1;
+}
+
+message PBDsGetAllYesAveragePriceRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+	int32 dsid			= 3;
+	map<int32, float> yes_average_price	= 4;
 }

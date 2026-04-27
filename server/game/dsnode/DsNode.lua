@@ -698,4 +698,44 @@ function DsNode.PBGetDsUserAntiqueReqCmd(req)
     end
 end
 
+function DsNode.PBDsGetAllYesAveragePriceReqCmd(req)
+    if not req.msg.dsid then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "no cityid"
+        }
+        return context.S2D(context.net_id, CmdCode.PBDsGetAllYesAveragePriceRspCmd, ret, req.msg_context.stub_id)
+    end
+
+    local start_config_id = 0
+    local id_price_list = {}
+    while true do
+        local records = Database.gettraderecordaveragepriceseq(context.addr_db_user, start_config_id, 1000)
+        if not records or table.size(records) <= 0 then
+            moon.error("Trademgr.Start gettraderecordaveragepriceseq failed", start_config_id, 1000)
+            break
+        end
+        for id, price in pairs(records) do
+            if id > start_config_id then
+                start_config_id = id
+            end
+            id_price_list[id] = price
+        end
+
+        if table.size(records) < 1000 then
+            break
+        end
+    end
+
+    --moon.warn(string.format("GetImagesInfo res = %s", json.pretty_encode(res)))
+
+    local ret = {
+        code = ErrorCode.None,
+        error = "",
+        dsid = context.dsid,
+        id_price_list = id_price_list,
+    }
+    return context.S2D(context.net_id, CmdCode.PBDsGetAllYesAveragePriceRspCmd, ret, req.msg_context.stub_id)
+end
+
 return DsNode

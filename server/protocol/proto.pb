@@ -1636,19 +1636,22 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-Ñ(
+Ä.
 dsnode.proto
 item.proto
 user.proto	bag.proto
 role.proto
-gods.proto"‡
+gods.proto"ú
 PBGameChangeRoleInfo
 roleid (Rroleid 
 add_role_exp (R
 addRoleExpb
 magic_item_durability (2..PBGameChangeRoleInfo.MagicItemDurabilityEntryRmagicItemDurabilityk
 digrams_cards_durability (21.PBGameChangeRoleInfo.DigramsCardsDurabilityEntryRdigramsCardsDurabilityb
-space_ring_durability (2..PBGameChangeRoleInfo.SpaceRingDurabilityEntryRspaceRingDurabilityF
+space_ring_durability (2..PBGameChangeRoleInfo.SpaceRingDurabilityEntryRspaceRingDurabilityM
+magic_item_exp (2'.PBGameChangeRoleInfo.MagicItemExpEntryRmagicItemExpV
+digrams_cards_exp (2*.PBGameChangeRoleInfo.DigramsCardsExpEntryRdigramsCardsExpM
+space_ring_exp (2'.PBGameChangeRoleInfo.SpaceRingExpEntryRspaceRingExpF
 MagicItemDurabilityEntry
 key (Rkey
 value (Rvalue:8I
@@ -1657,6 +1660,15 @@ addRoleExpb
 value (Rvalue:8F
 SpaceRingDurabilityEntry
 key (Rkey
+value (Rvalue:8?
+MagicItemExpEntry
+key (Rkey
+value (Rvalue:8B
+DigramsCardsExpEntry
+key (Rkey
+value (Rvalue:8?
+SpaceRingExpEntry
+key (Rkey
 value (Rvalue:8"r
 PBInGameKillMonster
 
@@ -1829,7 +1841,17 @@ belong_uid (R	belongUid.
 error (	Rerror
 dsid (Rdsid
 	quest_uid (RquestUidK
-antique_showcase_data (2.PBAntiqueShowcaseDataSRantiqueShowcaseDatabproto3
+antique_showcase_data (2.PBAntiqueShowcaseDataSRantiqueShowcaseData"5
+PBDsGetAllYesAveragePriceReqCmd
+dsid (Rdsid"Ü
+PBDsGetAllYesAveragePriceRspCmd
+code (Rcode
+error (	Rerror
+dsid (Rdsida
+yes_average_price (25.PBDsGetAllYesAveragePriceRspCmd.YesAveragePriceEntryRyesAveragePriceB
+YesAveragePriceEntry
+key (Rkey
+value (Rvalue:8bproto3
 Å
 friend.proto
 user.proto"6
