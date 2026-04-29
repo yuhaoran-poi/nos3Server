@@ -168,6 +168,25 @@ function Gods.CheckGodBlockBurnIncense(gods)
     end
 end
 
+function Gods.SeasonChange()
+    local gods = scripts.UserModel.GetGods()
+    if not gods or not gods.gods_image or not gods.gods_block then
+        return false
+    end
+
+    for _, god_image in pairs(gods.gods_image) do
+        god_image.lv = 0
+    end
+    for _, god_block in pairs(gods.gods_block) do
+        god_block.burn_incense_id = 0
+        god_block.burn_incense_val = 0
+        god_block.burn_end_ts = 0
+    end
+    Gods.SaveGodsNow()
+
+    return true
+end
+
 function Gods.PBGodsGetInfoReqCmd(req)
     local gods = scripts.UserModel.GetGods()
     if not gods then
