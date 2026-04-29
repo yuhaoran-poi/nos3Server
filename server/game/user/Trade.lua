@@ -190,7 +190,7 @@ function Trade.OnTradeLogSaleMail(trade_log, need_save)
         return
     end
     
-    if TradeDef.GM_UID[trade_log.uid] then
+    if TradeDef.GM_UID[trade_log.seller_uid] then
         -- GM不用发送邮件
         return
     end

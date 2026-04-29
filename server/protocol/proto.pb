@@ -1570,17 +1570,20 @@ open_count (R	openCount"∂
 BattleReportInfosEntry
 key (Rkey
 value (	Rvalue:8bproto3
-¨
+™
 
 gods.proto"9
 
 PBGodImage
 	config_id (RconfigId
-lv (Rlv"5
+lv (Rlv"ß
 
 PBGodBlock
 idx (Ridx
-god_id (RgodId"ò
+god_id (RgodId&
+burn_incense_id (RburnIncenseId(
+burn_incense_val (RburnIncenseVal
+burn_end_ts (R	burnEndTs"ò
 
 PBUserGods9
 
@@ -1632,6 +1635,16 @@ unlock_idx (R	unlockIdx"
 	block_idx (RblockIdx
 god_id (RgodId"Å
 PBGodsWearOrTakeoffRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid(
+	god_block (2.PBGodBlockRgodBlock"á
+PBGodsBurnIncenseReqCmd
+uid (Ruid
+	block_idx (RblockIdx
+god_id (RgodId&
+burn_incense_id (RburnIncenseId"
+PBGodsBurnIncenseRspCmd
 code (Rcode
 error (	Rerror
 uid (Ruid(

@@ -9,7 +9,10 @@ message PBGodImage
 message PBGodBlock
 {
 	int32 idx	= 1;
-	int32 god_id	= 3;
+	int32 god_id	= 2;
+	int32 burn_incense_id	= 3;
+	int32 burn_incense_val	= 4;
+	int64 burn_end_ts	= 5;
 }
 
 message PBUserGods
@@ -91,6 +94,23 @@ message PBGodsWearOrTakeoffReqCmd
 }
 
 message PBGodsWearOrTakeoffRspCmd
+{
+	int32 code        = 1; // 服务器验证返回,0成功,其他失败
+    string error      = 2; // 错误信息
+	int64 uid				= 3;
+	PBGodBlock god_block	= 4;
+}
+
+// 神龛上香
+message PBGodsBurnIncenseReqCmd
+{
+	int64 uid		= 1;
+	int32 block_idx	= 2;
+	int32 god_id	= 3;
+	int32 burn_incense_id	= 4;
+}
+
+message PBGodsBurnIncenseRspCmd
 {
 	int32 code        = 1; // 服务器验证返回,0成功,其他失败
     string error      = 2; // 错误信息

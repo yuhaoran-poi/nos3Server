@@ -42,11 +42,15 @@ function Gods.Start(isnew)
 
     if isnew then
         -- 初始化Gods
+        local default_god_id = 0
         for _, god in pairs(GameCfg.GodList) do
             if god.default_unlock == 1 then
                 local god_image = GodsDef.newGodImage()
                 god_image.config_id = god.id
                 gods.gods_image[god.id] = god_image
+                if default_god_id == 0 then
+                    default_god_id = god.id
+                end
             end
         end
         for _, block in pairs(GameCfg.GodSlot) do
@@ -54,6 +58,7 @@ function Gods.Start(isnew)
                 local god_block = GodsDef.newGodBlock()
                 god_block.idx = block.id
                 gods.gods_block[block.id] = god_block
+                gods.gods_block[block.id].god_id = default_god_id
             end
         end
 
@@ -110,6 +115,7 @@ function Gods.GetBattleGods()
     if not gods then
         return nil
     end
+    Gods.CheckGodBlockBurnIncense(gods)
 
     local res = GodsDef.newUserGods()
     for _, block in pairs(gods.gods_block) do
@@ -147,6 +153,21 @@ function Gods.GetMaxLevelGodid()
     return max_level, cur_god_id
 end
 
+function Gods.CheckGodBlockBurnIncense(gods)
+    if not gods.gods_block then
+        return
+    end
+
+    local now_ts = moon.time()
+    for _, god_block in pairs(gods.gods_block) do
+        if god_block.burn_end_ts > 0 and god_block.burn_end_ts <= now_ts then
+            god_block.burn_incense_id = 0
+            god_block.burn_incense_val = 0
+            god_block.burn_end_ts = 0
+        end
+    end
+end
+
 function Gods.PBGodsGetInfoReqCmd(req)
     local gods = scripts.UserModel.GetGods()
     if not gods then
@@ -154,6 +175,7 @@ function Gods.PBGodsGetInfoReqCmd(req)
             { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid },
             req.msg_context.stub_id)
     end
+    Gods.CheckGodBlockBurnIncense(gods)
 
     local rsp_msg = {
         code = ErrorCode.None,
@@ -302,6 +324,14 @@ function Gods.PBGodsUpLvReqCmd(req)
             uid = context.uid,
         }, req.msg_context.stub_id)
     end
+    local cur_season_score = scripts.Grade.GetCurSeasonScore()
+    if cur_season_score < level_cfg.unlock_rank then
+        return context.S2C(context.net_id, CmdCode.PBGodsUpLvRspCmd, {
+            code = ErrorCode.GodUnlockRankNotEnough,
+            error = "段位不足",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
 
     -- 计算消耗资源
     local cost_items = {}
@@ -406,25 +436,35 @@ function Gods.PBGodsBlockUnlockReqCmd(req)
     table.insert(query_user_attr, ProtoEnum.UserAttrType.account_level)
     local query_res = scripts.User.QueryUserAttr(query_user_attr)
     if query_res.user_attr[ProtoEnum.UserAttrType.account_level]
-        and query_res.user_attr[ProtoEnum.UserAttrType.account_level] < block_cfg.unlock_godnum then
+        and query_res.user_attr[ProtoEnum.UserAttrType.account_level] < block_cfg.unlock_level then
         return context.S2C(context.net_id, CmdCode.PBGodsBlockUnlockRspCmd, {
             code = ErrorCode.GodBlockUnlockLevelNotEnough,
             error = "解锁等级不足",
             uid = context.uid,
         }, req.msg_context.stub_id)
     end
-    if table.size(gods.gods_image) < block_cfg.unlock_godnum then
-        return context.S2C(context.net_id, CmdCode.PBGodsBlockUnlockRspCmd, {
-            code = ErrorCode.GodBlockUnlockGodNumNotEnough,
-            error = "解锁神明数量不足",
-            uid = context.uid,
-        }, req.msg_context.stub_id)
-    end
+    -- if table.size(gods.gods_image) < block_cfg.unlock_godnum then
+    --     return context.S2C(context.net_id, CmdCode.PBGodsBlockUnlockRspCmd, {
+    --         code = ErrorCode.GodBlockUnlockGodNumNotEnough,
+    --         error = "解锁神明数量不足",
+    --         uid = context.uid,
+    --     }, req.msg_context.stub_id)
+    -- end
+    -- local cur_season_score = scripts.Grade.GetCurSeasonScore()
+    -- if cur_season_score < block_cfg.unlock_level then
+    --     return context.S2C(context.net_id, CmdCode.PBGodsBlockUnlockRspCmd, {
+    --         code = ErrorCode.GodBlockUnlockLevelNotEnough,
+    --         error = "解锁等级不足",
+    --         uid = context.uid,
+    --     }, req.msg_context.stub_id)
+    -- end
+
+
 
     -- 计算消耗资源
     local cost_items = {}
     local cost_coins = {}
-    ItemDefine.GetItemsFromCfg(block_cfg.cost, 1, true, cost_items, cost_coins)
+    ItemDefine.GetItemsFromCfg(block_cfg.unlock_cost, 1, true, cost_items, cost_coins)
 
     -- 检查资源是否足够
     local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
@@ -503,6 +543,7 @@ function Gods.PBGodsWearOrTakeoffReqCmd(req)
             { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid },
             req.msg_context.stub_id)
     end
+    Gods.CheckGodBlockBurnIncense(gods)
     if not gods.gods_block[req.msg.block_idx] then
         return context.S2C(context.net_id, CmdCode.PBGodsWearOrTakeoffRspCmd, {
             code = ErrorCode.GodBlockNotUnlock,
@@ -519,11 +560,150 @@ function Gods.PBGodsWearOrTakeoffReqCmd(req)
     end
 
     gods.gods_block[req.msg.block_idx].god_id = req.msg.god_id
+    -- 清除上香数据
+    gods.gods_block[req.msg.block_idx].burn_incense_id = 0
+    gods.gods_block[req.msg.block_idx].burn_incense_val = 0
+    gods.gods_block[req.msg.block_idx].burn_end_ts = 0
 
     -- 保存数据
     Gods.SaveAndLog(nil, { [req.msg.block_idx] = 1 })
 
     return context.S2C(context.net_id, CmdCode.PBGodsWearOrTakeoffRspCmd, {
+        code = ErrorCode.None,
+        error = "",
+        uid = context.uid,
+        god_block = gods.gods_block[req.msg.block_idx],
+    }, req.msg_context.stub_id)
+end
+
+function Gods.PBGodsBurnIncenseReqCmd(req)
+    -- 参数验证
+    if not req.msg.block_idx
+        or not req.msg.god_id
+        or not req.msg.burn_incense_id then
+        return context.S2C(context.net_id, CmdCode.PBGodsBurnIncenseRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local gods = scripts.UserModel.GetGods()
+    if not gods then
+        return context.S2C(context.net_id, CmdCode.PBGodsBurnIncenseRspCmd,
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid },
+            req.msg_context.stub_id)
+    end
+    Gods.CheckGodBlockBurnIncense(gods)
+
+    if not gods.gods_block[req.msg.block_idx]
+        or gods.gods_block[req.msg.block_idx].god_id ~= req.msg.god_id then
+        return context.S2C(context.net_id, CmdCode.PBGodsBurnIncenseRspCmd, {
+            code = ErrorCode.GodBlockNotUnlock,
+            error = "未解锁",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+    local god_block_cfg = GameCfg.GodSlot[req.msg.block_idx]
+    if not god_block_cfg then
+        return context.S2C(context.net_id, CmdCode.PBGodsBurnIncenseRspCmd, {
+            code = ErrorCode.ConfigError,
+            error = "配置错误",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local god_cfg = GameCfg.GodList[req.msg.god_id]
+    if not god_cfg or not god_cfg.pool or not god_cfg.pool[req.msg.burn_incense_id] then
+        return context.S2C(context.net_id, CmdCode.PBGodsBurnIncenseRspCmd, {
+            code = ErrorCode.ConfigError,
+            error = "配置错误",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+    local cur_god_image = gods.gods_image[req.msg.god_id]
+    if not cur_god_image then
+        return context.S2C(context.net_id, CmdCode.PBGodsBurnIncenseRspCmd, {
+            code = ErrorCode.GodNotUnlock,
+            error = "未解锁",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+    if cur_god_image < god_cfg.pool[req.msg.burn_incense_id] then
+        return context.S2C(context.net_id, CmdCode.PBGodsBurnIncenseRspCmd, {
+            code = ErrorCode.GodLevelNotEnough,
+            error = "神明等级不足",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+    
+    local tag_cfg = GameCfg.AllTag[req.msg.burn_incense_id]
+    if not tag_cfg then
+        return context.S2C(context.net_id, CmdCode.PBGodsBurnIncenseRspCmd, {
+            code = ErrorCode.ConfigError,
+            error = "配置错误",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+    local rand_val = math.random(tag_cfg.min, tag_cfg.max)
+
+    -- 计算消耗资源
+    local cost_items = {}
+    local cost_coins = {}
+    ItemDefine.GetItemsFromCfg(god_block_cfg.incense_cost, 1, true, cost_items, cost_coins)
+    -- 检查资源是否足够
+    local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    if err_code_items ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBGodsBlockUnlockRspCmd, {
+            code = ErrorCode.ItemNotExist,
+            error = "消耗不足",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+    local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
+    if err_code_coins ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBGodsBlockUnlockRspCmd, {
+            code = ErrorCode.CoinNotExist,
+            error = "消耗不足",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    gods.gods_block[req.msg.block_idx].burn_incense_id = req.msg.burn_incense_id
+    gods.gods_block[req.msg.block_idx].burn_incense_val = rand_val
+    gods.gods_block[req.msg.block_idx].burn_end_ts = moon.time() + god_block_cfg.incense_time
+
+    -- 扣除消耗
+    local change_log = {}
+    local err_code_del = ErrorCode.None
+    if table.size(cost_items) > 0 then
+        err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(change_log)
+            return context.S2C(context.net_id, CmdCode.PBGodsBlockUnlockRspCmd, {
+                code = ErrorCode.ItemNotExist,
+                error = "消耗不足",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
+        end
+    end
+    if table.size(cost_coins) > 0 then
+        err_code_del = scripts.Bag.DealCoins(cost_coins, change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(change_log)
+            return context.S2C(context.net_id, CmdCode.PBGodsBlockUnlockRspCmd, {
+                code = ErrorCode.CoinNotExist,
+                error = "消耗不足",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
+        end
+    end
+
+    -- 保存数据
+    scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.GodsBurnIncense)
+    Gods.SaveAndLog(nil, { [req.msg.block_idx] = 1 })
+
+    return context.S2C(context.net_id, CmdCode.PBGodsBurnIncenseRspCmd, {
         code = ErrorCode.None,
         error = "",
         uid = context.uid,

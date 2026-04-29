@@ -10,6 +10,9 @@ local defaultPBGodImage = {
 local defaultPBGodBlock = {
     idx = 0,
     god_id = 0,
+    burn_incense_id = 0,
+    burn_incense_val = 0,
+    burn_end_ts = 0,
 }
 
 local defaultPBUserGods = {

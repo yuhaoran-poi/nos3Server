@@ -492,6 +492,10 @@ local ErrorCode = {
     GodBlockUnlockLevelNotEnough = 2005,
     --- 神龛解锁神明数量不足
     GodBlockUnlockGodNumNotEnough = 2006,
+    --- 神明解锁段位不足
+    GodUnlockRankNotEnough = 2007,
+    --- 神明等级不足
+    GodLevelNotEnough = 2008,
 
     --段位系统相关错误码
     --- 段位数据不存在
@@ -580,6 +584,10 @@ local ErrorCode = {
     AweItemNotUnlock = 2252,
     --- 镇山之宝已到最大等级
     AweItemUpLvMax = 2253,
+
+    -- 战报系统相关错误码
+    --- 战报不存在
+    ReportNotExist = 2301,
 }
 
 return ErrorCode

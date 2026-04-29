@@ -76,15 +76,5 @@ return {
 [1016006] = { id=1016006,type1=0,type2=5,type3=0,type4=0,type5=0,buff={3,4,5,6,7} },
 [1016007] = { id=1016007,type1=0,type2=5,type3=0,type4=0,type5=0,buff={3,4,5,6,7} },
 [1016008] = { id=1016008,type1=0,type2=5,type3=0,type4=0,type5=0,buff={3,4,5,6,7} },
-[1016009] = { id=1016009,type1=0,type2=5,type3=0,type4=0,type5=0,buff={3,4,5,6,7} },
-[1016500] = { id=1016500,type1=0,type2=5,type3=0,type4=0,type5=0,buff={} },
-[1016501] = { id=1016501,type1=0,type2=5,type3=0,type4=0,type5=0,buff={} },
-[1016502] = { id=1016502,type1=0,type2=5,type3=0,type4=0,type5=0,buff={} },
-[1016503] = { id=1016503,type1=0,type2=5,type3=0,type4=0,type5=0,buff={} },
-[1016504] = { id=1016504,type1=0,type2=5,type3=0,type4=0,type5=0,buff={} },
-[1016505] = { id=1016505,type1=0,type2=5,type3=0,type4=0,type5=0,buff={} },
-[1016506] = { id=1016506,type1=0,type2=5,type3=0,type4=0,type5=0,buff={} },
-[1016507] = { id=1016507,type1=0,type2=5,type3=0,type4=0,type5=0,buff={} },
-[1016508] = { id=1016508,type1=0,type2=5,type3=0,type4=0,type5=0,buff={} },
-[1016509] = { id=1016509,type1=0,type2=5,type3=0,type4=0,type5=0,buff={} }
+[1016009] = { id=1016009,type1=0,type2=5,type3=0,type4=0,type5=0,buff={3,4,5,6,7} }
 }

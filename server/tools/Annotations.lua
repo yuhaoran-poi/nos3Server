@@ -1102,6 +1102,9 @@
 ---@class PBGodBlock
 ---@field public idx integer
 ---@field public god_id integer
+---@field public burn_incense_id integer
+---@field public burn_incense_val integer
+---@field public burn_end_ts integer
 
 
 ---@class PBUserGods
@@ -1167,6 +1170,20 @@
 
 
 ---@class PBGodsWearOrTakeoffRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public god_block PBGodBlock
+
+
+---@class PBGodsBurnIncenseReqCmd
+---@field public uid integer
+---@field public block_idx integer
+---@field public god_id integer
+---@field public burn_incense_id integer
+
+
+---@class PBGodsBurnIncenseRspCmd
 ---@field public code integer @服务器验证返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public uid integer
