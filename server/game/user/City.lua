@@ -78,7 +78,11 @@ function City.PBGetAllCityPlayersReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    return context.S2C(context.net_id, CmdCode.PBGetAllCityPlayersRspCmd, res, req.msg_context.stub_id)
+    return context.S2C(context.net_id, CmdCode.PBGetAllCityPlayersRspCmd, {
+        code = ErrorCode.None,
+        error = "success",
+        city_num_list = res,
+    }, req.msg_context.stub_id)
 end
 
 function City.OnDsDestory(res)
