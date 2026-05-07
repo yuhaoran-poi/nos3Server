@@ -2837,4 +2837,34 @@ function _M.getbattlereports(addr, uid, start_idx, end_idx)
     return report_infos
 end
 
+-- 赛季通行证
+function _M.loadseasonpassinfo(addr, uid)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.seasonpass WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBSeasonPassPlayerData", pbdata)
+        return tmp_data
+    end
+    moon.error("loadseasonpassinfo failed", uid, err)
+    return nil
+end
+
+function _M.saveseasonpassinfo(addr, uid, data)
+    assert(data)
+
+    local data_str = jencode(data)
+    local _, pbdata = protocol.encodewithname("PBSeasonPassPlayerData", data)
+    local pbvalue = crypt.base64encode(pbdata)
+    local cmd = string.format([[
+        INSERT INTO mgame.bills (uid, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
+
+    return moon.send("lua", addr, cmd)
+end
+
 return _M

@@ -332,4 +332,16 @@ function UserModel.SetAweItems(aweitems)
     DBData.aweitems = aweitems
 end
 
+---@return PBSeasonPassPlayerData ? nil
+function UserModel.GetSeasonPass()
+    if DBData and DBData.season_pass then
+        return DBData.season_pass
+    end
+    return nil
+end
+
+function UserModel.SetSeasonPass(season_pass_data)
+    DBData.season_pass = season_pass_data
+end
+
 return UserModel

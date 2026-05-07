@@ -2142,6 +2142,11 @@ function Bag.DealCoins(coins, change_log)
     end
     
     for coinid, coin in pairs(coins) do
+        local coin_cfg = GameCfg.Coin[coinid]
+        if not coin_cfg then
+            return ErrorCode.CoinNotExist
+        end
+
         if coin.coin_count < 0 and not coinsdata.coins[coinid] then
             -- Bag.RollBackWithChange(change_log)
             return ErrorCode.CoinNotExist
@@ -2158,7 +2163,11 @@ function Bag.DealCoins(coins, change_log)
         -- Bag.AddLog(change_log[BagDef.BagType.Coins], coinid, ItemDef.LogType.ChangeNum, coinid, 0, coinsdata.coins[coinid].coin_count)
         Bag.AddLog(change_log[BagDef.BagType.Coins], coinid, coinsdata.coins[coinid])
 
-        coinsdata.coins[coinid].coin_count = coinsdata.coins[coinid].coin_count + coin.coin_count
+        if coinsdata.coins[coinid].coin_count + coin.coin_count > coin_cfg.max_num then
+            coinsdata.coins[coinid].coin_count = coin_cfg.max_num
+        else
+            coinsdata.coins[coinid].coin_count = coinsdata.coins[coinid].coin_count + coin.coin_count
+        end
     end
 
     return ErrorCode.None
