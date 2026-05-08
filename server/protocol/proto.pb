@@ -3250,6 +3250,43 @@ ds_address (	R	dsAddress
 error (	Rerror(
 	room_data (2.PBRoomInfoRroomData4
 member_datas (2.PBRoomMemberInfoRmemberDatasbproto3
+»
+seasonpass.proto"l
+PBSeasonPassData
+pass_id (RpassId
+	cost_coin (RcostCoin"
+get_reward_id (RgetRewardId"Û
+PBSeasonPassPlayerData
+uid (RuidX
+season_pass_infos (2,.PBSeasonPassPlayerData.SeasonPassInfosEntryRseasonPassInfosU
+SeasonPassInfosEntry
+key (Rkey'
+value (2.PBSeasonPassDataRvalue:8"/
+PBGetSeasonPassPlayerReqCmd
+uid (Ruid"ž
+PBGetSeasonPassPlayerRspCmd
+code (Rcode
+error (	Rerror
+uid (RuidC
+season_pass_datas (2.PBSeasonPassPlayerDataRseasonPassDatas"R
+PBUnlockSeasonPassReqCmd
+uid (Ruid$
+unlock_pass_id (RunlockPassId"“
+PBUnlockSeasonPassRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid;
+season_pass_data (2.PBSeasonPassDataRseasonPassData"~
+PBGetSeasonPassRewardReqCmd
+uid (Ruid
+pass_id (RpassId
+page_id (RpageId
+	reward_id (RrewardId"–
+PBGetSeasonPassRewardRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid;
+season_pass_data (2.PBSeasonPassDataRseasonPassDatabproto3
 Ž
 
 team.proto

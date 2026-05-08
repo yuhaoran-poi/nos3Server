@@ -12,7 +12,7 @@ return {
 [4] = { id=4,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
 [5] = { id=5,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
 [6] = { id=6,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
-[7] = { id=7,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[7] = { id=7,max_num=1000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
 [8] = { id=8,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
 [9] = { id=9,max_num=500,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
 [10] = { id=10,max_num=3,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },

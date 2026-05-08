@@ -588,6 +588,16 @@ local ErrorCode = {
     -- 战报系统相关错误码
     --- 战报不存在
     ReportNotExist = 2301,
+
+    -- 赛季通行证相关错误码
+    --- 未解锁赛季通行证
+    NotUnlockSeasonPass = 2351,
+    --- 已解锁赛季通行证
+    AlreadyUnlockSeasonPass = 2352,
+    --- 未到解锁时间
+    NotTimeUnlockSeaonPass = 2353,
+    --- 已领取奖励
+    AlreadyGetReward = 2354,
 }
 
 return ErrorCode

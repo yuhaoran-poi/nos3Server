@@ -3075,6 +3075,54 @@
 ---@field public member_datas PBRoomMemberInfo[]
 
 
+---@class PBSeasonPassData
+---@field public pass_id integer
+---@field public cost_coin integer
+---@field public get_reward_id integer[]
+
+
+---@class PBSeasonPassPlayerData
+---@field public uid integer
+---@field public season_pass_infos table<integer, PBSeasonPassData>
+
+
+---@class PBGetSeasonPassPlayerReqCmd
+---@field public uid integer
+
+
+---@class PBGetSeasonPassPlayerRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public season_pass_datas PBSeasonPassPlayerData
+
+
+---@class PBUnlockSeasonPassReqCmd
+---@field public uid integer
+---@field public unlock_pass_id integer
+
+
+---@class PBUnlockSeasonPassRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public season_pass_data PBSeasonPassData
+
+
+---@class PBGetSeasonPassRewardReqCmd
+---@field public uid integer
+---@field public pass_id integer
+---@field public page_id integer
+---@field public reward_id integer
+
+
+---@class PBGetSeasonPassRewardRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public season_pass_data PBSeasonPassData
+
+
 ---@class PBShopBuySingle
 ---@field public product_id integer
 ---@field public product_num integer
@@ -3856,6 +3904,7 @@
 ---@field NewBag NewBag
 ---@field Role Role
 ---@field Room Room
+---@field SeasonPass SeasonPass
 ---@field Shop Shop
 ---@field Team Team
 ---@field Trade Trade
@@ -4027,6 +4076,9 @@
 ---@field ReplaceableDailyMissionConfig ReplaceableDailyMissionConfig_cfg[]
 ---@field RoleLvAward RoleLvAward_cfg[]
 ---@field RoleUpLv RoleUpLv_cfg[]
+---@field SeasonPassShop SeasonPassShop_cfg[]
+---@field SeasonPassShopItem SeasonPassShopItem_cfg[]
+---@field SeasonPassShopItemGroup SeasonPassShopItemGroup_cfg[]
 ---@field Skin Skin_cfg[]
 ---@field SpaceRingUpLv SpaceRingUpLv_cfg[]
 ---@field StoreConfig StoreConfig_cfg[]

@@ -2859,7 +2859,7 @@ function _M.saveseasonpassinfo(addr, uid, data)
     local _, pbdata = protocol.encodewithname("PBSeasonPassPlayerData", data)
     local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
-        INSERT INTO mgame.bills (uid, value, json)
+        INSERT INTO mgame.seasonpass (uid, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
     ]], uid, pbvalue, data_str, pbvalue, data_str)

@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+message PBSeasonPassData
+{
+    int32 pass_id   = 1;
+    int32 cost_coin = 2;
+    repeated int32 get_reward_id    = 3;
+}
+
+message PBSeasonPassPlayerData
+{
+    int64 uid   = 1;
+    map<int32, PBSeasonPassData> season_pass_infos  = 2;
+}
+
+message PBGetSeasonPassPlayerReqCmd
+{
+    int64 uid		= 1;
+}
+
+message PBGetSeasonPassPlayerRspCmd
+{
+    int32 code      = 1; // 服务器验证返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int64 uid       = 3;
+    PBSeasonPassPlayerData season_pass_datas   = 4;
+}
+
+message PBUnlockSeasonPassReqCmd
+{
+    int64 uid		= 1;
+    int32 unlock_pass_id    = 2;
+}
+
+message PBUnlockSeasonPassRspCmd
+{
+    int32 code      = 1; // 服务器验证返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int64 uid       = 3;
+    PBSeasonPassData season_pass_data   = 4;
+}
+
+message PBGetSeasonPassRewardReqCmd
+{
+    int64 uid		= 1;
+    int32 pass_id   = 2;
+    int32 page_id   = 3;
+    int32 reward_id = 4;
+}
+
+message PBGetSeasonPassRewardRspCmd
+{
+    int32 code      = 1; // 服务器验证返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int64 uid       = 3;
+    PBSeasonPassData season_pass_data   = 4;
+}
