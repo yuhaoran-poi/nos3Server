@@ -386,6 +386,8 @@ function Trade.PBTradeSaleReqCmd(req)
 
     if item_data.common_info.item_count < req.msg.sale_num
         and not is_gm then
+        moon.error(string.format("Trade.PBTradeSaleRspCmd item_data:%s", json.pretty_encode(item_data)))
+        moon.error(string.format("Trade.PBTradeSaleRspCmd req.msg:%s", json.pretty_encode(req.msg)))
         return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
             { code = ErrorCode.ItemNotEnough, error = "物品数量不足", uid = context.uid }, req.msg_context.stub_id)
     end
