@@ -408,26 +408,61 @@ function Auction.PBAuctionSaleReqCmd(req)
             { code = ErrorCode.TradeCntNotEnough, error = "交易次数不足", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    local errcode, pos, item_data = scripts.Bag.GetUniqItemData(BagDef.BagType.Cangku, req.msg.uniqid)
+    -- if item_type == ItemDefine.EItemSmallType.SkinCard then
+    --     local errcode, item_data = scripts.Bag.GetOneItemData(BagDef.BagType.Cangku, req.msg.pos)
+    --     if errcode ~= ErrorCode.None
+    --         or not item_data
+    --         or item_data.common_info.config_id ~= req.msg.config_id
+    --         or item_data.common_info.item_count < 1
+    --         or req.msg.uniqid ~= 0 then
+    --         return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
+    --             { code = ErrorCode.ItemNotExist, error = "物品不存在", uid = context.uid }, req.msg_context.stub_id)
+    --     end
+
+    --     if item_data.common_info.trade_cnt == 0 then
+    --         return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
+    --             { code = ErrorCode.TradeCntNotEnough, error = "交易次数不足", uid = context.uid }, req.msg_context.stub_id)
+    --     end
+    -- else
+    --     local errcode, pos, item_data = scripts.Bag.GetUniqItemData(BagDef.BagType.Cangku, req.msg.uniqid)
+    --     if errcode ~= ErrorCode.None
+    --         or pos ~= req.msg.pos
+    --         or not item_data
+    --         or item_data.common_info.config_id ~= req.msg.config_id then
+    --         return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
+    --             { code = ErrorCode.ItemNotExist, error = "物品不存在", uid = context.uid }, req.msg_context.stub_id)
+    --     end
+
+    --     if item_data.common_info.trade_cnt == 0 then
+    --         return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
+    --             { code = ErrorCode.TradeCntNotEnough, error = "交易次数不足", uid = context.uid }, req.msg_context.stub_id)
+    --     end
+    -- end
+
+    local errcode, item_data = scripts.Bag.GetOneItemData(BagDef.BagType.Cangku, req.msg.pos)
     if errcode ~= ErrorCode.None
-        or pos ~= req.msg.pos
         or not item_data
-        or item_data.common_info.config_id ~= req.msg.config_id then
+        or item_data.common_info.config_id ~= req.msg.config_id
+        or item_data.common_info.uniqid ~= req.msg.uniqid
+        or item_data.common_info.item_count < 1 then
         return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
             { code = ErrorCode.ItemNotExist, error = "物品不存在", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    if item_data.common_info.trade_cnt == 0 then
-        return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
-            { code = ErrorCode.TradeCntNotEnough, error = "交易次数不足", uid = context.uid }, req.msg_context.stub_id)
+    local item_type = ItemDefine.GetItemType(req.msg.config_id)
+    if item_type ~= ItemDefine.EItemSmallType.SkinCard then
+        if item_data.common_info.trade_cnt == 0 then
+            return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
+                { code = ErrorCode.TradeCntNotEnough, error = "交易次数不足", uid = context.uid }, req.msg_context.stub_id)
+        end
     end
 
     local bag_change_log = {}
     local auction_cost_items = {}
     auction_cost_items[req.msg.pos] = {
         config_id = item_data.common_info.config_id,
-        uniqid = req.msg.uniqid,
-        item_count = -req.msg.sale_num,
+        uniqid = item_data.common_info.uniqid,
+        item_count = -1,
     }
     -- 扣除上架费用
     local auction_cost_coins = {}
@@ -504,7 +539,7 @@ function Auction.PBAuctionSaleReqCmd(req)
     if table.size(uniqitem_conf.market) >= 5 then
         sale_data.condition5 = uniqitem_conf.market[5]
     end
-    if item_data.special_info then
+    if item_type ~= ItemDefine.EItemSmallType.SkinCard and item_data.special_info then
         if item_data.special_info.magic_item then
             if table.size(item_data.special_info.magic_item.tags) > 0 then
                 for _, tag in pairs(item_data.special_info.magic_item.tags) do
@@ -534,6 +569,7 @@ function Auction.PBAuctionSaleReqCmd(req)
             end
         end
     end
+    
     local res, err = clusterd.call(3999, "auctionmgr", "Auctionmgr.AddAuctionProduct", sale_data)
     if err then
         moon.error("Auction.PBAuctionSaleReqCmd Auctionmgr.AddAuctionProduct err:%s", err)
