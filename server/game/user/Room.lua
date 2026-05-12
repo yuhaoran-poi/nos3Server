@@ -750,7 +750,8 @@ function Room.GameSettle(settle_info)
                 if role_info and role_change.magic_item_durability
                     and table.size(role_change.magic_item_durability) > 0 then
                     for uniqid, cur_durability in pairs(role_change.magic_item_durability) do
-                        if role_info.magic_item.common_info.uniqid == uniqid then
+                        if role_info.magic_item and role_info.magic_item.common_info
+                            and role_info.magic_item.common_info.uniqid == uniqid then
                             role_info.magic_item.special_info.magic_item.cur_durability = cur_durability
                             if not change_roles[role_change.roleid] then
                                 change_roles[role_change.roleid] = "ModCurDurability"
@@ -763,7 +764,7 @@ function Room.GameSettle(settle_info)
                     and table.size(role_change.digrams_cards_durability) > 0 then
                     for uniqid, cur_durability in pairs(role_change.digrams_cards_durability) do
                         for _, card in pairs(role_info.digrams_cards) do
-                            if card.common_info.uniqid == uniqid then
+                            if card.common_info and card.common_info.uniqid == uniqid then
                                 card.special_info.diagrams_item.cur_durability = cur_durability
                                 if not change_roles[role_change.roleid] then
                                     change_roles[role_change.roleid] = "ModCurDurability"
