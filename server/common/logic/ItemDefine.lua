@@ -22,6 +22,7 @@ local ItemDefine = {
     PlayItem = { start = 40000, End = 40999 },
     GrowthItem = { start = 41000, End = 50999 },
     StackMagicItem = { start = 51000, End = 75999 },
+    StackAntique = { start = 77000, End = 82000 },     -- 鉴定前的可堆叠古董
     GhostSkillBook = { start = 95000, End = 95999 },
     HumanStackDiagrams = { start = 96000, End = 105999 },
     GhostStackDiagrams = { start = 106000, End = 115999 },
@@ -80,6 +81,7 @@ local ItemDefine = {
         HeadFrameSkin = 30,
         TitleSkin = 31,
         TreasureChest = 32,
+        StackAntique = 33,        -- 鉴定前的可堆叠古董
         Other = 255,
     },
 
@@ -121,6 +123,8 @@ function ItemDefine.GetItemType(nConfigId)
         return ItemDefine.EItemSmallType.GrowthItem
     elseif nConfigId >= ItemDefine.StackMagicItem.start and nConfigId <= ItemDefine.StackMagicItem.End then
         return ItemDefine.EItemSmallType.StackMagicItem
+    elseif nConfigId >= ItemDefine.StackAntique.start and nConfigId <= ItemDefine.StackAntique.End then
+        return ItemDefine.EItemSmallType.StackAntique
     elseif nConfigId >= ItemDefine.GhostSkillBook.start and nConfigId <= ItemDefine.GhostSkillBook.End then
         return ItemDefine.EItemSmallType.GhostSkillBook
     elseif nConfigId >= ItemDefine.HumanStackDiagrams.start and nConfigId <= ItemDefine.HumanStackDiagrams.End then
@@ -180,6 +184,8 @@ function ItemDefine.GetItemPosType(nConfigId)
     elseif nItemType >= ItemDefine.EItemSmallType.Piece
         and nItemType <= ItemDefine.EItemSmallType.Gift then
         return ItemDefine.EItemBigType.StackItem
+    elseif nItemType == ItemDefine.EItemSmallType.StackAntique then
+        return ItemDefine.EItemBigType.StackItem    -- 鉴定前的可堆叠古董属于可堆叠物品
     elseif nItemType == ItemDefine.EItemSmallType.DurabItem then
         return ItemDefine.EItemBigType.UnStackItem
     elseif nItemType == ItemDefine.EItemSmallType.Tool then
@@ -341,7 +347,7 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                         new_item.common_info.trade_cnt = item.trade_cnt
                     end
                     new_item.special_info.durab_item = ItemDef.newDurabItem()
-                    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+                    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                     if item.special_info and item.special_info.durab_item then
                         if item.special_info.durab_item.cur_durability then
                             new_item.special_info.durab_item.cur_durability = item.special_info.durab_item

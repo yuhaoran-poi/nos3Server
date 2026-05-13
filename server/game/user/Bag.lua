@@ -2791,12 +2791,14 @@ function Bag.GetSpecialItemFromCommonItem(srcBagType, srcPos, item_id)
     if not convert_config_id then
         return ErrorCode.ConfigError
     end
+
     local item_type = ItemDefine.GetItemType(convert_config_id)
     local small_types = ItemDefine.EItemSmallType
     if item_type ~= small_types.MagicItem
         and item_type ~= small_types.HumanDiagrams
         and item_type ~= small_types.GhostDiagrams
-        and item_type ~= small_types.SpaceRing then
+        and item_type ~= small_types.SpaceRing
+        and item_type ~= small_types.Antique then
         return ErrorCode.ItemTypeMismatch
     end
 

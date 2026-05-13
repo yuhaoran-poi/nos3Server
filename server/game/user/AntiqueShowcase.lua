@@ -140,13 +140,8 @@ end
 -- 鉴定古董
 function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
     -- 参数检查
-    if not config_id or not uniqid or config_id <= 0 or uniqid <= 0 or bag_pos <= 0 then
+    if not config_id or config_id <= 0 or bag_pos <= 0 then
         return ErrorCode.ParamInvalid, "无效请求参数"
-    end
-
-    local u_i_cfg = GameCfg.UniqueItem[config_id]
-    if not u_i_cfg then
-        return ErrorCode.ItemNotExist, "道具不存在"
     end
 
     local err_code, item_data = scripts.Bag.MutOneItemData(BagDef.BagType.Cangku, bag_pos)
@@ -154,14 +149,60 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
         return err_code, "未拥有古董"
     end
 
-    -- 古董不存在或剩余可鉴定次数不足或是赝品
-    if item_data.special_info.antique_item.remain_identify_num <= 0 or item_data.special_info.antique_item.is_fake == 1 then
-        return ErrorCode.IdentifyInvalid, "古董剩余可鉴定次数不足或是赝品"
+    -- 检查是否为可堆叠古董（鉴定前）
+    local is_stack_antique = item_data.itype == ItemDefine.EItemSmallType.StackAntique
+
+    -- 如果是可堆叠古董，需要先转换为唯一古董
+    if is_stack_antique then
+        -- 使用 GetSpecialItemFromCommonItem 方法转换为唯一古董
+        local change_log
+        err_code, change_log = scripts.Bag.GetSpecialItemFromCommonItem(BagDef.BagType.Cangku, bag_pos, config_id)
+        if err_code ~= ErrorCode.None then
+            return err_code, "转换古董失败"
+        end
+
+        -- 从 change_log 中获取新位置
+        for bag_type, logs in pairs(change_log) do
+            for pos, old_item in pairs(logs) do
+                if table.size(old_item) == 0 then
+                    bag_pos = pos
+                    break
+                end
+            end
+        end
+
+        -- 获取转换后的古董数据
+        err_code, item_data = scripts.Bag.MutOneItemData(BagDef.BagType.Cangku, bag_pos)
+        if err_code ~= ErrorCode.None or not item_data then
+            return err_code, "获取转换后的古董失败"
+        end
+    else
+        -- 已鉴定的古董需要检查唯一性
+        if not uniqid or uniqid <= 0 then
+            return ErrorCode.ParamInvalid, "无效请求参数"
+        end
+
+        local u_i_cfg = GameCfg.UniqueItem[config_id]
+        if not u_i_cfg then
+            return ErrorCode.ItemNotExist, "道具不存在"
+        end
+
+        -- 古董不存在或剩余可鉴定次数不足或是赝品
+        if item_data.special_info.antique_item.remain_identify_num <= 0 or item_data.special_info.antique_item.is_fake == 1 then
+            return ErrorCode.IdentifyInvalid, "古董剩余可鉴定次数不足或是赝品"
+        end
     end
 
     local old_item_data = table.copy(item_data)
 
-    local a_cfg = GameCfg.AntiqueItem[config_id]
+    local a_cfg
+    if(is_stack_antique) then
+        local convert_config_id = GameCfg.LightConvert[config_id].getid
+        a_cfg = GameCfg.AntiqueItem[convert_config_id]
+    else
+        a_cfg = GameCfg.AntiqueItem[config_id]
+    end
+
     if not a_cfg then
         return ErrorCode.ItemNotExist, "道具不存在"
     end
@@ -185,7 +226,7 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
     local change_logs = {}
     -- 扣除道具消耗
     if table.size(cost_items) > 0 then
-        local err_code = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_logs)
+        err_code = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_logs)
         if err_code ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(change_logs)
             return err_code, "道具不足"
@@ -216,7 +257,6 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
 
     if is_succ == 0 then
         rsp_is_fake = 1
-        rsp_price = 0
     else
         -- 获得随机该古董的降平升的权重池
         local random_pool = {}
@@ -239,9 +279,9 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
 
         -- 找到与品质和价格变化率相同的配置
         local tar_config_id = 0
-        for config_id, cfg in pairs(a_p_t_cfgmap) do
+        for cid, cfg in pairs(a_p_t_cfgmap) do
             if cfg.type == item_data.special_info.antique_item.quality and cfg.pricechange == price_probability then
-                tar_config_id = config_id
+                tar_config_id = cid
                 break
             end
         end
@@ -309,7 +349,7 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
 
     item_data.special_info.antique_item.remain_identify_num = rsp_remain_identify_num
     item_data.special_info.antique_item.is_fake = rsp_is_fake
-    item_data.special_info.antique_item.price.coin_count = rsp_price 
+    item_data.special_info.antique_item.price.coin_count = rsp_price
 
     if not change_logs[BagDef.BagType.Cangku] then
         change_logs[BagDef.BagType.Cangku] = {}
@@ -376,6 +416,21 @@ function AntiqueShowcase.AntiqueShow(config_id, uniq_id, showcase_id, showcase_i
         local err_code, item_data = scripts.Bag.MutOneItemData(BagDef.BagType.Cangku, bag_pos)
         if err_code ~= ErrorCode.None or not item_data then
             return err_code, "古董不存在"
+        end
+
+        -- 检查是否为可堆叠古董（未鉴定的古董）
+        if item_data.itype == ItemDefine.EItemSmallType.StackAntique then
+            return ErrorCode.IdentifyInvalid, "未鉴定的古董不能展示"
+        end
+
+        -- 检查唯一古董是否已鉴定（至少鉴定过一次）
+        if item_data.special_info and item_data.special_info.antique_item then
+            local antique_item = item_data.special_info.antique_item
+            -- 未鉴定的古董：剩余鉴定次数等于初始次数（说明从未鉴定过）
+            local antique_cfg = GameCfg.AntiqueItem[config_id]
+            if antique_cfg and antique_item.remain_identify_num == antique_cfg.identifynum then
+                return ErrorCode.IdentifyInvalid, "未鉴定的古董不能展示"
+            end
         end
 
         local old_item_data = table.copy(item_data)
