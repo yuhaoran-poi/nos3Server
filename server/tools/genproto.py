@@ -14,9 +14,11 @@ import make_annotations
 
 cmdcode_template = '''\
 --- Automatically generated,do not modify.
+--- Proto version: %s
 
 local M={
 %s
+    CrC = "%s",
 }
 
 local forward = {
@@ -267,7 +269,7 @@ def get_proto_message_names(directory):
             package_name = file_desc.package
             for desc in file_desc.message_type:
                 full_message_name = '.'.join(filter(None, [package_name, desc.name]))
-                if package_name=='google.protobuf' or full_message_name == 'PBPacketCmd' or full_message_name == 'PBClientLoginReqCmd':
+                if package_name=='google.protobuf' or full_message_name == 'PBPacketCmd' or full_message_name == 'PBClientLoginReqCmd' or full_message_name == 'PBClientLoginRspCmd' or full_message_name == 'PBDSLoginReqCmd' or full_message_name == 'PBDSLoginRspCmd':
                   sys_message[full_message_name] = desc.name
                 else:
                   custom_message[full_message_name] = desc.name 
@@ -279,16 +281,30 @@ def gen_id_dict(sys_message,custom_message,version_crc,all_message):
   # 初始化一个新的字典用于存储ID
   sys_id_dict = {}
   custom_id_dict = {}
-  # 自定义ID起始值（这里设置为1） 
-  sys_id_dict['PBPacketCmd'] = 1 
-  current_id = 2
+
+  # 固定登录相关消息ID（这些ID不会因为proto修改而变化）
+  FIXED_LOGIN_CMD_ID = {
+      'PBClientLoginReqCmd': 2,
+      'PBClientLoginRspCmd': 3,
+      'PBDSLoginReqCmd': 4,
+      'PBDSLoginRspCmd': 5,
+  }
+
+  # 自定义ID起始值（这里设置为1）
+  sys_id_dict['PBPacketCmd'] = 1
+  current_id = 6
   # 生成系统协议（消息以Message结尾,或者为Packet）
   for key in sorted(sys_message.keys()):
-     name = sys_message[key]
-     if name != 'PBPacketCmd':
-       sys_id_dict[key] = current_id
-       current_id = current_id + 1
-  
+      name = sys_message[key]
+      if name == 'PBPacketCmd':
+          sys_id_dict[key] = 1
+      elif name in FIXED_LOGIN_CMD_ID:
+          sys_id_dict[key] = FIXED_LOGIN_CMD_ID[name]
+          print(f"Fixed ID for {name}: {FIXED_LOGIN_CMD_ID[name]}")
+      else:
+          sys_id_dict[key] = current_id
+          current_id = current_id + 1
+
   #生成用户自定义协议
   current_id = 100
   order_list = list[str]()
@@ -340,7 +356,7 @@ def gen_id_dict(sys_message,custom_message,version_crc,all_message):
   cmdcode_out_file="../common/CmdCode.lua"
   with open(cmdcode_out_file, "w", encoding='utf-8') as fobj:
       fobj.write(cmdcode_template % (
-          lua_cmdcode_content, forward_content))
+          version_crc, lua_cmdcode_content, version_crc, forward_content))
   h_version_content = "TEXT(\"" + str(version_crc) + "\");"
  
   h_cmdcode_out_file= CommonNetUE + "\\CmdCode.h"

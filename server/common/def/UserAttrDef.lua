@@ -88,6 +88,7 @@ local defaultPBUserAttr = {
     chat_ban_time = 0,                                                   --禁言时间
     last_chat_time = 0,                                                  --最后一次发言时间
     buff_datas = {},                                                     --账户加成数据
+    battle_report_ids = {},                                            --战斗报告ID列表
 }
 
 ---@return PBBuffData

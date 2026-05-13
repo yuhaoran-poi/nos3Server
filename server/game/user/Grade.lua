@@ -143,6 +143,25 @@ function Grade.ChangeScore(change_score)
     scripts.User.SetUserAttr(update_user_attr, true)
 end
 
+function Grade.GetCurSeasonScore()
+    local Grades = scripts.UserModel.GetGrades()
+    if not Grades or not Grades.grade_infos then
+        return 0
+    end
+
+    local grade_info = Grades.grade_infos[Grades.cur_season_id]
+    if not grade_info then
+        return 0
+    end
+
+    local grade_data = grade_info.grade_data
+    if not grade_data then
+        return 0
+    end
+
+    return grade_data.now_grade_score
+end
+
 function Grade.PBGetGradeDataReqCmd(req)
     local Grades = scripts.UserModel.GetGrades()
     if not Grades or not Grades.grade_infos then

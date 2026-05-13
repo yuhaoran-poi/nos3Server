@@ -208,6 +208,7 @@ message PBUserImage
 	map<int32, PBSkinImage> skin_image			= 5;	//皮肤动作表情图鉴	有key则执行覆盖
 	map<int32, PBImage> space_ring_image	= 6;	//空间戒指图鉴		有key则执行覆盖
 	map<int32, int32>	item_wear_skin		= 7;	//道具皮肤佩戴
+	map<int32, int64>	composite_formula	= 8;	//合成配方
 }
 
 // 古董展柜
@@ -272,4 +273,18 @@ message PBImageUnLockRspCmd
     string  error   = 2; // 错误信息
     int64   uid     = 3;
 	int32 item_config_id	= 4;
+}
+
+message PBFormulaUnLockReqCmd
+{
+	int64 uid		= 1;
+	int32 formula_id	= 2;
+}
+
+message PBFormulaUnLockRspCmd
+{
+	int32   code    = 1; // 服务器验证返回,0成功,其他失败
+    string  error   = 2; // 错误信息
+    int64   uid     = 3;
+	int32	formula_id	= 4;
 }

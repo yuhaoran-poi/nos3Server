@@ -515,6 +515,9 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                             if item.special_info.space_ring.ability_tag then
                                 new_item.special_info.space_ring.ability_tag = item.special_info.space_ring.ability_tag
                             end
+                        else
+                            new_item.special_info.space_ring.cur_durability = uniqitem_cfg.durability
+                            new_item.special_info.space_ring.strong_value = uniqitem_cfg.sturdy
                         end
                         table.insert(unstack_items, new_item)
 

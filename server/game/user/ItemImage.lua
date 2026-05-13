@@ -70,7 +70,7 @@ function ItemImage.LoadItemImages()
     return itemImageinfos
 end
 
-function ItemImage.SaveAndLog(config_ids)
+function ItemImage.SaveAndLog(config_ids, composite_formula_ids)
     local itemImages = scripts.UserModel.GetItemImages()
     if not itemImages then
         return false
@@ -126,6 +126,14 @@ function ItemImage.SaveAndLog(config_ids)
                 end
                 update_msg.update_images.item_image[config_id] = itemImages.item_image[config_id]
             end
+        end
+    end
+    for _, cid in pairs(composite_formula_ids) do
+        if itemImages.composite_formula[cid] then
+            if not update_msg.update_images.composite_formula then
+                update_msg.update_images.composite_formula = {}
+            end
+            update_msg.update_images.composite_formula[cid] = itemImages.composite_formula[cid]
         end
     end
 
@@ -702,11 +710,11 @@ function ItemImage.UseItemAddImage(item_cfg, msg_data, change_image_ids)
 end
 
 function ItemImage.ItemChangeSkin(item_config_id, skin_id)
-    local item_images = scripts.UserModel.GetItemImages()
-    if not item_images then
+    local itemImages = scripts.UserModel.GetItemImages()
+    if not itemImages then
         return ErrorCode.ServerInternalError
     end
-    if not item_images[item_config_id] then
+    if not itemImages.item_image[item_config_id] then
         return ErrorCode.ItemNotExist
     end
     if skin_id > 0 then
@@ -718,9 +726,34 @@ function ItemImage.ItemChangeSkin(item_config_id, skin_id)
             return ErrorCode.SkinNotMatch
         end
     end
-    item_images.item_wear_skin[item_config_id] = skin_id
+    itemImages.item_wear_skin[item_config_id] = skin_id
 
     ItemImage.SaveItemImagesNow()
+    return ErrorCode.None
+end
+
+function ItemImage.GetCompositeFormula(formula_id)
+    local item_images = scripts.UserModel.GetItemImages()
+    if not item_images then
+        return nil
+    end
+    if not item_images.composite_formula[formula_id] then
+        return nil
+    end
+
+    return item_images.composite_formula[formula_id]
+end
+
+function ItemImage.UnlockCompositeFormula(formula_id)
+    local item_images = scripts.UserModel.GetItemImages()
+    if not item_images then
+        return ErrorCode.ServerInternalError
+    end
+    if item_images.composite_formula[formula_id] then
+        return ErrorCode.FormulaAlreadyUnlock
+    end
+
+    item_images.composite_formula[formula_id] = moon.time()
     return ErrorCode.None
 end
 
@@ -812,19 +845,29 @@ function ItemImage.PBImageUnLockReqCmd(req)
         err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, bag_change_log)
         if err_code_del ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(bag_change_log)
-            return err_code_del
+            return context.S2C(context.net_id, CmdCode.PBImageUnLockRspCmd, {
+                code = err_code_del,
+                error = "物品不足",
+                uid = req.msg.uid,
+                item_config_id = req.msg.item_config_id,
+            }, req.msg_context.stub_id)
         end
     end
     if table.size(cost_coins) > 0 then
         err_code_del = scripts.Bag.DealCoins(cost_coins, bag_change_log)
         if err_code_del ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(bag_change_log)
-            return err_code_del
+            return context.S2C(context.net_id, CmdCode.PBImageUnLockRspCmd, {
+                code = err_code_del,
+                error = "货币不足",
+                uid = req.msg.uid,
+                item_config_id = req.msg.item_config_id,
+            }, req.msg_context.stub_id)
         end
     end
 
     -- 保存数据
-    scripts.Bag.SaveAndLog(bag_change_log)
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.ImageUnlock)
     if table.size(change_image_ids) > 0 then
         ItemImage.SaveAndLog(change_image_ids)
     end
@@ -834,6 +877,120 @@ function ItemImage.PBImageUnLockReqCmd(req)
         error = "",
         uid = req.msg.uid,
         item_config_id = req.msg.item_config_id,
+    }, req.msg_context.stub_id)
+end
+
+function ItemImage.PBFormulaUnLockReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid or not req.msg.formula_id then
+        return context.S2C(context.net_id, CmdCode.PBFormulaUnLockRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+        }, req.msg_context.stub_id)
+    end
+
+    local itemImages = scripts.UserModel.GetItemImages()
+    if not itemImages then
+        return context.S2C(context.net_id, CmdCode.PBFormulaUnLockRspCmd,
+            { code = ErrorCode.ServerInternalError, error = "服务器内部错误" }, req.msg_context.stub_id)
+    end
+
+    local unlock_cfg = GameCfg.Composite[req.msg.formula_id]
+    if not unlock_cfg then
+        return context.S2C(context.net_id, CmdCode.PBFormulaUnLockRspCmd, {
+            code = ErrorCode.ConfigError,
+            error = "配方不存在",
+            uid = req.msg.uid,
+            formula_id = req.msg.formula_id,
+        }, req.msg_context.stub_id)
+    end
+
+    local formula_ts = ItemImage.GetCompositeFormula(req.msg.formula_id)
+    if formula_ts and formula_ts > 0 then
+        return context.S2C(context.net_id, CmdCode.PBFormulaUnLockRspCmd, {
+            code = ErrorCode.FormulaAlreadyUnlock,
+            error = "配方已解锁",
+            uid = req.msg.uid,
+            formula_id = req.msg.formula_id,
+        }, req.msg_context.stub_id)
+    end
+
+    -- 计算消耗资源
+    local cost_items = {}
+    local cost_coins = {}
+    ItemDefine.GetItemsFromCfg(unlock_cfg.unlock_cost, 1, true, cost_items, cost_coins)
+
+    -- 检查资源是否足够
+    if table.size(cost_items) > 0 then
+        local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+        if err_code_items ~= ErrorCode.None then
+            return context.S2C(context.net_id, CmdCode.PBFormulaUnLockRspCmd, {
+                code = err_code_items,
+                error = "物品不足",
+                uid = req.msg.uid,
+                formula_id = req.msg.formula_id,
+            }, req.msg_context.stub_id)
+        end
+    end
+    if table.size(cost_coins) > 0 then
+        local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
+        if err_code_coins ~= ErrorCode.None then
+            return context.S2C(context.net_id, CmdCode.PBFormulaUnLockRspCmd, {
+                code = err_code_coins,
+                error = "货币不足",
+                uid = req.msg.uid,
+                formula_id = req.msg.formula_id,
+            }, req.msg_context.stub_id)
+        end
+    end
+
+    local unlock_err_code = ItemImage.UnlockCompositeFormula(req.msg.formula_id)
+    if unlock_err_code ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBFormulaUnLockRspCmd, {
+            code = unlock_err_code,
+            error = "解锁失败",
+            uid = req.msg.uid,
+            formula_id = req.msg.formula_id,
+        }, req.msg_context.stub_id)
+    end
+
+    -- 扣除消耗
+    local bag_change_log = {}
+    local err_code_del = ErrorCode.None
+    if table.size(cost_items) > 0 then
+        err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, bag_change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode.PBFormulaUnLockRspCmd, {
+                code = err_code_del,
+                error = "物品不足",
+                uid = req.msg.uid,
+                formula_id = req.msg.formula_id,
+            }, req.msg_context.stub_id)
+        end
+    end
+    if table.size(cost_coins) > 0 then
+        err_code_del = scripts.Bag.DealCoins(cost_coins, bag_change_log)
+        if err_code_del ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode.PBFormulaUnLockRspCmd, {
+                code = err_code_del,
+                error = "货币不足",
+                uid = req.msg.uid,
+                formula_id = req.msg.formula_id,
+            }, req.msg_context.stub_id)
+        end
+    end
+
+    -- 保存数据
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.FormulaUnlock)
+    ItemImage.SaveAndLog({}, {req.msg.formula_id})
+
+    return context.S2C(context.net_id, CmdCode.PBFormulaUnLockRspCmd, {
+        code = ErrorCode.None,
+        error = "",
+        uid = req.msg.uid,
+        formula_id = req.msg.formula_id,
     }, req.msg_context.stub_id)
 end
 

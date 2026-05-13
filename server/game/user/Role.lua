@@ -13,6 +13,7 @@ local ItemDefine = require("common.logic.ItemDefine")
 local ItemDef = require("common.def.ItemDef")
 local CommonCfgDef = require("common.def.CommonCfgDef")
 local MissionDef = require("common.def.MissionDef")
+local ItemDefine = require("common.logic.ItemDefine")
 
 ---@type user_context
 local context = ...
@@ -263,6 +264,62 @@ function Role.AddRole(roleid)
         end
         role_info.passive_skill[skillid] = skill_info
         table.insert(skillids, skillid)
+    end
+    -- 初始化法器
+    local init_magic_item_id = role_cfg.Initial_equipment1
+    local magic_item_cfg = GameCfg.UniqueItem[init_magic_item_id]
+    if init_magic_item_id
+        and magic_item_cfg
+        and ItemDefine.GetItemType(init_magic_item_id) == ItemDefine.EItemSmallType.MagicItem then
+        local new_item_data = ItemDef.newItemData()
+        new_item_data.itype = ItemDefine.EItemSmallType.MagicItem
+        new_item_data.common_info.config_id = init_magic_item_id
+        new_item_data.common_info.uniqid = uuid.next()
+        new_item_data.common_info.item_count = 1
+        new_item_data.common_info.item_type = magic_item_cfg.type1
+        new_item_data.common_info.trade_cnt = -1
+        new_item_data.special_info.magic_item = ItemDef.newMagicItem()
+        new_item_data.special_info.magic_item.cur_durability = magic_item_cfg.durability
+        new_item_data.special_info.magic_item.strong_value = magic_item_cfg.sturdy
+        role_info.magic_item = new_item_data
+    end
+    -- 初始化八卦牌
+    if role_cfg.Initial_equipment2 and table.size(role_cfg.Initial_equipment2) > 0 then
+        for equip_idx, diagrams_id in pairs(role_cfg.Initial_equipment2) do
+            local diagrams_item_cfg = GameCfg.UniqueItem[diagrams_id]
+            if diagrams_item_cfg
+                and ItemDefine.GetItemType(diagrams_id) == ItemDefine.EItemSmallType.HumanDiagrams then
+                local new_item_data = ItemDef.newItemData()
+                new_item_data.itype = ItemDefine.EItemSmallType.HumanDiagrams
+                new_item_data.common_info.config_id = diagrams_id
+                new_item_data.common_info.uniqid = uuid.next()
+                new_item_data.common_info.item_count = 1
+                new_item_data.common_info.item_type = diagrams_item_cfg.type1
+                new_item_data.common_info.trade_cnt = -1
+                new_item_data.special_info.diagrams_item = ItemDef.newDiagramsCard()
+                new_item_data.special_info.diagrams_item.cur_durability = diagrams_item_cfg.durability
+                new_item_data.special_info.diagrams_item.strong_value = diagrams_item_cfg.sturdy
+                role_info.digrams_cards[equip_idx] = new_item_data
+            end
+        end
+    end
+    -- 初始化空间戒指
+    local init_space_ring_id = role_cfg.Initial_equipment3
+    local space_ring_cfg = GameCfg.UniqueItem[init_space_ring_id]
+    if init_space_ring_id
+        and space_ring_cfg
+        and ItemDefine.GetItemType(init_space_ring_id) == ItemDefine.EItemSmallType.SpaceRing then
+        local new_item_data = ItemDef.newItemData()
+        new_item_data.itype = ItemDefine.EItemSmallType.SpaceRing
+        new_item_data.common_info.config_id = init_space_ring_id
+        new_item_data.common_info.uniqid = uuid.next()
+        new_item_data.common_info.item_count = 1
+        new_item_data.common_info.item_type = space_ring_cfg.type1
+        new_item_data.common_info.trade_cnt = -1
+        new_item_data.special_info.space_ring = ItemDef.newSpaceRing()
+        new_item_data.special_info.space_ring.cur_durability = space_ring_cfg.durability
+        new_item_data.special_info.space_ring.strong_value = space_ring_cfg.sturdy
+        role_info.space_ring = new_item_data
     end
 
     roles.role_list[roleid] = role_info

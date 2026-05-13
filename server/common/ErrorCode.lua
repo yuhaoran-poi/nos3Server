@@ -6,6 +6,7 @@ local ErrorCode = {
     ParamInvalid = 2,
     ConfigError = 3,
     OperationNotPermit = 4,
+    ProtoError = 5,
 
     ---没有这个装备
     EquipNotFound = 101,
@@ -444,6 +445,10 @@ local ErrorCode = {
     RoleSkillNotExist = 1715,
     --- 皮肤不匹配
     SkinNotMatch = 1716,
+    --- 合成配方已解锁
+    FormulaAlreadyUnlock = 1717,
+    --- 合成配方未解锁
+    FormulaNoUnlock = 1718,
 
     --角色相关错误码
     --- 好友申请错误码

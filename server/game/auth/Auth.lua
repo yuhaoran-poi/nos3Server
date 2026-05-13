@@ -15,6 +15,8 @@ local ErrorCode = common.ErrorCode
 local pb = require "pb"
 local traceback = debug.traceback
 
+local SERVER_PB_VERSION = CmdCode.CrC or ""
+
 local mem_player_limit = 0 --内存中最小玩家数量
 local min_online_time = 60 --seconds，logout间隔大于这个时间的,并且不在线的,user服务会被退出
 
@@ -420,6 +422,7 @@ Auth.PBClientLoginReqCmd = function(req)
         if not req then
             return { code = ErrorCode.ParamInvalid, error = "INVALID_REQUEST" }
         end
+
         ---服务器关闭时,中断所有客户端的登录请求
         if context.server_exit and not req.pull then
             return { code = ErrorCode.ServerInternalError, error = "SERVER_CLOSED" }
@@ -427,6 +430,11 @@ Auth.PBClientLoginReqCmd = function(req)
 
         req.net_id = Auth.AllocGateNetId(0)
         moon.send("lua", context.addr_gate, "Gate.BindGnId", req)
+
+        if SERVER_PB_VERSION ~= "" and req.msg.login_data.pb_version ~= SERVER_PB_VERSION then
+            moon.error("PB version mismatch: client=", req.msg.login_data.pb_version, " server=", SERVER_PB_VERSION)
+            return { code = ErrorCode.ProtoError, error = "PB_VERSION_MISMATCH" }
+        end
 
         local fd = context.openid_map[req.msg.login_data.authkey]
         if not fd then
@@ -480,6 +488,12 @@ Auth.PBDSLoginReqCmd = function(req)
         if not req then
             return { code = ErrorCode.ParamInvalid, error = "INVALID_REQUEST" }
         end
+
+        if SERVER_PB_VERSION ~= "" and req.msg.login_data.pb_version ~= SERVER_PB_VERSION then
+            moon.error("PB version mismatch: client=", req.msg.login_data.pb_version, " server=", SERVER_PB_VERSION)
+            return { code = ErrorCode.ProtoError, error = "PB_VERSION_MISMATCH" }
+        end
+        
         ---服务器关闭时,中断所有客户端的登录请求
         if context.server_exit and not req.pull then
             return { code = ErrorCode.ServerInternalError, error = "SERVER_CLOSED" }

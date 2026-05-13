@@ -949,6 +949,26 @@ function Room.GameSettle(settle_info)
         clusterd.send(3999, "battlereportmgr", "BattleReportmgr.SaveSimpleReport", report_id,
         settle_info.settle_simple_data)
     end
+
+    if settle_info.chapter_id and settle_info.difficulty then
+        -- 完成章节难度
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.BATTLE_CHAPTER_CNT,
+            { settle_info.chapter_id, settle_info.difficulty }, 1)
+    end
+
+    if settle_info.battle_god_ids and table.size(settle_info.battle_god_ids) > 0 then
+        -- 参战神明
+        for _, god_id in pairs(settle_info.battle_god_ids) do
+            scripts.Mission.TriggerCondition(MissionDef.EConditionIds.GOD_ENTER_BATTLE_CNT, { god_id }, 1)
+        end
+    end
+
+    if settle_info.booty_value and settle_info.booty_value > 0
+        and settle_info.chapter_id and settle_info.difficulty then
+        -- 增加战利品价值
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.GET_BOOTY_VALUE_CNT,
+            { settle_info.chapter_id, settle_info.difficulty }, settle_info.booty_value)
+    end
 end
 
 function Room.GameReturnItems(return_info)

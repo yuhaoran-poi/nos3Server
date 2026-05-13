@@ -13,7 +13,7 @@ activityId
 error (	Rerror
 uid (Ruid6
 activity_datas (2.PBActivityDataRactivityDatasbproto3
-‚.
+∂1
 
 item.proto"@
 PBCoin
@@ -157,7 +157,7 @@ star_level (R	starLevel
 star_fail_cnt (RstarFailCnt"E
 PBSkinImage
 	config_id (RconfigId
-valid_ts (RvalidTs"§
+valid_ts (RvalidTs"∫	
 PBUserImage:
 
 item_image (2.PBUserImage.ItemImageEntryR	itemImageJ
@@ -167,7 +167,8 @@ item_image (2.PBUserImage.ItemImageEntryR	itemImageJ
 
 skin_image (2.PBUserImage.SkinImageEntryR	skinImageJ
 space_ring_image (2 .PBUserImage.SpaceRingImageEntryRspaceRingImageD
-item_wear_skin (2.PBUserImage.ItemWearSkinEntryRitemWearSkinF
+item_wear_skin (2.PBUserImage.ItemWearSkinEntryRitemWearSkinO
+composite_formula (2".PBUserImage.CompositeFormulaEntryRcompositeFormulaF
 ItemImageEntry
 key (Rkey
 value (2.PBImageRvalue:8K
@@ -188,7 +189,10 @@ skin_image (2.PBUserImage.SkinImageEntryR	skinImageJ
 value (2.PBImageRvalue:8?
 ItemWearSkinEntry
 key (Rkey
-value (Rvalue:8"˚
+value (Rvalue:8C
+CompositeFormulaEntry
+key (Rkey
+value (Rvalue:8"˚
 PBAntiqueShowcaseData
 showcase_id (R
 showcaseId
@@ -231,7 +235,17 @@ image_data (2.PBUserImageR	imageData"I
 code (Rcode
 error (	Rerror
 uid (Ruid$
-item_config_id (RitemConfigIdbproto3
+item_config_id (RitemConfigId"H
+PBFormulaUnLockReqCmd
+uid (Ruid
+
+formula_id (R	formulaId"r
+PBFormulaUnLockRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+
+formula_id (R	formulaIdbproto3
 ∆
 auction.proto
 item.proto"ç

@@ -155,18 +155,19 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
     -- 如果是可堆叠古董，需要先转换为唯一古董
     if is_stack_antique then
         -- 使用 GetSpecialItemFromCommonItem 方法转换为唯一古董
-        local change_log
-        err_code, change_log = scripts.Bag.GetSpecialItemFromCommonItem(BagDef.BagType.Cangku, bag_pos, config_id)
-        if err_code ~= ErrorCode.None then
-            return err_code, "转换古董失败"
+        local special_err_code, change_log = scripts.Bag.GetSpecialItemFromCommonItem(BagDef.BagType.Cangku, bag_pos, config_id)
+        if special_err_code ~= ErrorCode.None then
+            return special_err_code, "转换古董失败"
         end
 
         -- 从 change_log 中获取新位置
-        for bag_type, logs in pairs(change_log) do
-            for pos, old_item in pairs(logs) do
-                if table.size(old_item) == 0 then
-                    bag_pos = pos
-                    break
+        if change_log then
+            for bag_type, logs in pairs(change_log) do
+                for pos, old_item in pairs(logs) do
+                    if table.size(old_item) == 0 then
+                        bag_pos = pos
+                        break
+                    end
                 end
             end
         end

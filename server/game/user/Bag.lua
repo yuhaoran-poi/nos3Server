@@ -1506,6 +1506,11 @@ function Bag.AddSpaceRing(bagType, baginfo, item_data, change_log)
         new_itemdata.special_info = {
             space_ring = ItemDef.newSpaceRing(),
         }
+        local item_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+        if item_cfg then
+            new_itemdata.special_info.space_ring.cur_durability = item_cfg.durability
+            new_itemdata.special_info.space_ring.strong_value = item_cfg.sturdy
+        end
     end
 
     return ErrorCode.None
@@ -2791,7 +2796,6 @@ function Bag.GetSpecialItemFromCommonItem(srcBagType, srcPos, item_id)
     if not convert_config_id then
         return ErrorCode.ConfigError
     end
-
     local item_type = ItemDefine.GetItemType(convert_config_id)
     local small_types = ItemDefine.EItemSmallType
     if item_type ~= small_types.MagicItem

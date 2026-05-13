@@ -14,7 +14,8 @@ function Client:login()
     end
     local login_msg = {
         login_data = {
-            authkey = self.username..self.index,
+            authkey = self.username .. self.index,
+            pb_version = "41146373",
         },
         is_register = false,
         password = moon.md5("123456"),

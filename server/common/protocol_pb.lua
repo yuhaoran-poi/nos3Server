@@ -22,9 +22,11 @@ local id_name = {}
 local id_bytes = {}
 
 for k, v in pairs(CmdCode) do
-    assert(not id_name[v], "msgcode repeated")
-    id_name[v] = k
-    id_bytes[v] = string.pack("<H", v)
+    if type(v) == "number" then
+        assert(not id_name[v], "msgcode repeated")
+        id_name[v] = k
+        id_bytes[v] = string.pack("<H", v)
+    end
 end
 
 local M = {}
