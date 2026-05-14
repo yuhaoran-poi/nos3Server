@@ -777,7 +777,8 @@ function Room.GameSettle(settle_info)
                 if role_info and role_change.space_ring_durability
                     and table.size(role_change.space_ring_durability) > 0 then
                     for uniqid, cur_durability in pairs(role_change.space_ring_durability) do
-                        if role_info.space_ring.common_info.uniqid == uniqid then
+                        if role_info.space_ring and role_info.space_ring.common_info
+                            and role_info.space_ring.common_info.uniqid == uniqid then
                             role_info.space_ring.special_info.space_ring.cur_durability = cur_durability
                             if not change_roles[role_change.roleid] then
                                 change_roles[role_change.roleid] = "ModCurDurability"
