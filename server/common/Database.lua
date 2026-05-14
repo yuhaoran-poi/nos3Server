@@ -1734,8 +1734,8 @@ function _M.updatetraderecord(addr, record_data, condition1, condition2, conditi
 
     local cmd = string.format([[
         INSERT INTO mgame.trade_record (trade_config_id, sale_num, sale_total_price, last_deal_price, update_ts, yes_sale_num, yes_sale_total_price, yes_average_price, min_price, min_price_num, condition1, condition2, condition3, condition4, condition5)
-        VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d)
-        ON DUPLICATE KEY UPDATE sale_num = %d, sale_total_price = %d, last_deal_price = %d, update_ts = %d, yes_sale_num = %d, yes_sale_total_price = %d, yes_average_price = %d, min_price = %d, min_price_num = %d, condition1 = %d, condition2 = %d, condition3 = %d, condition4 = %d, condition5 = %d;
+        VALUES (%d, %d, %d, %d, %d, %d, %d, %f, %d, %d, %d, %d, %d, %d, %d)
+        ON DUPLICATE KEY UPDATE sale_num = %d, sale_total_price = %d, last_deal_price = %d, update_ts = %d, yes_sale_num = %d, yes_sale_total_price = %d, yes_average_price = %f, min_price = %d, min_price_num = %d, condition1 = %d, condition2 = %d, condition3 = %d, condition4 = %d, condition5 = %d;
     ]], record_data.trade_config_id, record_data.sale_num, record_data.sale_total_price, record_data.last_deal_price,
         record_data.update_ts, record_data.yes_sale_num, record_data.yes_sale_total_price, record_data.yes_average_price,
         record_data.min_price, record_data.min_price_num, condition1, condition2, condition3, condition4, condition5,

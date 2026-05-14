@@ -60,6 +60,7 @@ local defaultPBRoleData = {
 
 local defaultPBUserRoleDatas = {
     battle_role_id = 0,
+    model_role_id = 0,
     role_list = {},
 }
 

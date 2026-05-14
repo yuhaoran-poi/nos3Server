@@ -263,6 +263,14 @@ class EmmyLuaIntelliSense:
                                attr_type_content += f"    {attr_name} = \"{attr_name}\", -- {line_tuple[5].strip('\n \t/')}\n"
                             else:
                                attr_type_content += f"    {attr_name} = \"{attr_name}\",\n"
+                        elif line_tuple[0] == "repeated" and len(line_tuple) >= 4:
+                            # 处理 repeated 类型字段
+                            attr_name = line_tuple[2]  # repeated xxx yyy = N; 字段名在索引2
+                            attr_id = line_tuple[3]    # 字段ID在索引3
+                            if line_tuple[4] is not None:
+                               attr_type_content += f"    {attr_name} = \"{attr_name}\", -- {line_tuple[4].strip('\n \t/')}\n"
+                            else:
+                               attr_type_content += f"    {attr_name} = \"{attr_name}\",\n"
                             
                     
                     attr_type_content += "}\n"

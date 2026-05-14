@@ -54,7 +54,8 @@ message PBRoleData
 message PBUserRoleDatas
 {
 	int32 battle_role_id			= 1;
-	map<int32, PBRoleData> role_list	= 2;	//	有key则覆盖
+	int32 model_role_id				= 2;
+	map<int32, PBRoleData> role_list	= 3;	//	有key则覆盖
 }
 
 // 客户端请求所有角色数据
@@ -183,6 +184,21 @@ message PBChangeBattleRoleReqCmd
 }
 
 message PBChangeBattleRoleRspCmd
+{
+    int32 code        = 1; // 服务器验证返回,0成功,其他失败
+    string error      = 2; // 错误信息
+    int64 uid         = 3;
+	int32 roleid      = 4; // 角色id
+}
+
+// 更换展示角色
+message PBChangeModelRoleReqCmd
+{
+    int64 uid		= 1;
+    int32 roleid	= 2; // 角色id
+}
+
+message PBChangeModelRoleRspCmd
 {
     int32 code        = 1; // 服务器验证返回,0成功,其他失败
     string error      = 2; // 错误信息

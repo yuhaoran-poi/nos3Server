@@ -725,15 +725,9 @@ function Trade.PBTradeBuyReqCmd(req)
 
     if res.data.remain_coin and res.data.remain_coin > 0 then
         scripts.Bag.RollBackWithChange(bag_change_logs)
-        -- 重新扣除正确的金额
+        -- 重新确定扣除的正确金额
         bag_change_logs = {}
         cost_coins[trade_cfg.order_currency].coin_count = -(lock_coin_count - res.data.remain_coin)
-        err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_logs)
-        if err_code_coins ~= ErrorCode.None then
-            moon.error("Trade.PBTradeBuyReqCmd DealCoins err", err_code_coins)
-            scripts.Bag.RollBackWithChange(bag_change_logs)
-            return err_code_coins
-        end
     end
 
     local is_gm = false
@@ -742,26 +736,74 @@ function Trade.PBTradeBuyReqCmd(req)
     end
 
     if not is_gm then
-        -- 计算获得资源发送邮件
-        local item_simple_data = ItemDef.newItemSimple()
-        item_simple_data.config_id = req.msg.config_id
-        item_simple_data.item_count = res.data.total_real_buy_num
-        local attach_items_simple = {}
-        attach_items_simple[req.msg.config_id] = item_simple_data
+        local add_list = {}
+        add_list[req.msg.config_id] = {
+            id = req.msg.config_id,
+            count = res.data.total_real_buy_num,
+            pos = 0,
+        }
+        local bag_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_list, 0)
+        if bag_code == ErrorCode.None then
+            local stack_items, unstack_items = {}, {}
+            local ok = ItemDefine.GetItemDataFromIdCount(add_list, {}, stack_items, unstack_items, cost_coins)
+            if not ok then
+                scripts.Bag.RollBackWithChange(bag_change_logs)
+                moon.error(string.format("PBTradeBuyReqCmd GetItemDataFromIdCount err:\n%s", json.pretty_encode(add_list)))
+                return
+            end
 
-        local mail_ret = scripts.Mail.RecvImmediateMail(trade_cfg.shipments_email, attach_items_simple, {}, {})
-        if not mail_ret then
-            moon.error("Trade.PBTradeBuyReqCmd RecvImmediateMail err")
-            scripts.Bag.RollBackWithChange(bag_change_logs)
-            return context.S2C(context.net_id, CmdCode.PBTradeBuyRspCmd, {
-                code = ErrorCode.MailConfigError,
-                error = "购买商品邮件出错",
-                uid = context.uid,
-            }, req.msg_context.stub_id)
+            -- 添加道具前先扣除花费
+            -- scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.TradeBuyCost)
+            err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_logs)
+            if err_code_coins ~= ErrorCode.None then
+                moon.error("Trade.PBTradeBuyReqCmd DealCoins err", err_code_coins)
+                scripts.Bag.RollBackWithChange(bag_change_logs)
+                return err_code_coins
+            end
+
+            -- 添加道具
+            if table.size(stack_items) + table.size(unstack_items) > 0 then
+                bag_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_logs)
+                if bag_code ~= ErrorCode.None then
+                    scripts.Bag.RollBackWithChange(bag_change_logs)
+                    moon.error(string.format("PBTradeBuyReqCmd AddItems stack_items err:\n%s",
+                        json.pretty_encode(stack_items)))
+                    moon.error(string.format("PBTradeBuyReqCmd AddItems unstack_items err:\n%s",
+                        json.pretty_encode(unstack_items)))
+                    return
+                end
+            end
+
+            scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.TradeBuy)
+        else
+            -- 计算获得资源发送邮件
+            local item_simple_data = ItemDef.newItemSimple()
+            item_simple_data.config_id = req.msg.config_id
+            item_simple_data.item_count = res.data.total_real_buy_num
+            local attach_items_simple = {}
+            attach_items_simple[req.msg.config_id] = item_simple_data
+
+            local mail_ret = scripts.Mail.RecvImmediateMail(trade_cfg.shipments_email, attach_items_simple, {}, {})
+            if not mail_ret then
+                moon.error("Trade.PBTradeBuyReqCmd RecvImmediateMail err")
+                scripts.Bag.RollBackWithChange(bag_change_logs)
+                return context.S2C(context.net_id, CmdCode.PBTradeBuyRspCmd, {
+                    code = ErrorCode.MailConfigError,
+                    error = "购买商品邮件出错",
+                    uid = context.uid,
+                }, req.msg_context.stub_id)
+            end
+
+            -- 扣除花费
+            err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_logs)
+            if err_code_coins ~= ErrorCode.None then
+                moon.error("Trade.PBTradeBuyReqCmd DealCoins err", err_code_coins)
+                scripts.Bag.RollBackWithChange(bag_change_logs)
+                return err_code_coins
+            end
+            scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.TradeBuy)
         end
     end
-
-    scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.TradeBuy)
 
     local msg_ret = {
         code = ErrorCode.None,

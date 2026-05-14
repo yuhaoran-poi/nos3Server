@@ -43,6 +43,7 @@ local simple_fields = {
     ProtoEnum.UserAttrType.player_flag,
     ProtoEnum.UserAttrType.is_online,
     ProtoEnum.UserAttrType.battle_report_ids,
+    ProtoEnum.UserAttrType.cur_model_role,
 }
 
 local function hasSimpleAttr(user_attr)  
@@ -328,6 +329,7 @@ function User.GetUsrRoomBriefData()
         ProtoEnum.UserAttrType.title,
         ProtoEnum.UserAttrType.player_flag,
         ProtoEnum.UserAttrType.cur_show_ghost,
+        ProtoEnum.UserAttrType.cur_model_role,
     }
     local room_member_data = User.GetOnlineUserAttr(room_member_fields)
 
@@ -348,11 +350,13 @@ function User.GetUserDetails()
         ProtoEnum.UserAttrType.title,
         ProtoEnum.UserAttrType.player_flag,
         ProtoEnum.UserAttrType.cur_show_ghost,
+        ProtoEnum.UserAttrType.cur_model_role,
     }
     local details_data = User.GetOnlineUserAttr(details_fields)
     local role_data = scripts.Role.GetRoleInfo(details_data.cur_show_role.config_id)
     local ghost_data = scripts.Ghost.GetGhostInfo(details_data.cur_show_ghost.config_id)
     local grade_show_infos = scripts.Grade.GetGradeShowInfos()
+    local model_role_data = scripts.Role.GetRoleInfo(details_data.cur_model_role.config_id)
     local res = scripts.Bag.GetBagdata({ BagDef.BagType.Consume })
     return {
         user_attr = details_data,
@@ -360,6 +364,7 @@ function User.GetUserDetails()
         ghost_data = ghost_data,
         grade_show_infos = grade_show_infos,
         consume_bag_data = res.bag_datas[BagDef.BagType.Consume] or {},
+        model_role_data = model_role_data,
     }
 end
 
@@ -1698,6 +1703,7 @@ function User.PBGetOtherDetailReqCmd(req)
             ghost_data = res.ghost_data,
             grade_show_infos = res.grade_show_infos,
             consume_bag = res.consume_bag_data,
+            model_role_data = res.model_role_data,
         }, req.msg_context.stub_id)
     else
         return context.S2C(context.net_id, CmdCode.PBGetOtherDetailRspCmd, {

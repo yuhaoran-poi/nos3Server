@@ -83,7 +83,7 @@ local UserAttrType = {
     guild_id = "guild_id",
     guild_name = "guild_name",
     grade_show_info = "grade_show_info", -- 覆盖更新
-    cur_show_role = "cur_show_role", -- 覆盖更新
+    cur_show_role = "cur_show_role", -- 覆盖更新 战斗角色
     pinch_face_data = "pinch_face_data", -- 捏脸数据	覆盖更新
     title = "title", -- 当前佩戴的称号
     player_flag = "player_flag", -- 玩家标签
@@ -95,6 +95,8 @@ local UserAttrType = {
     chat_ban_time = "chat_ban_time", -- 禁言时间(结束时间)
     last_chat_time = "last_chat_time", -- 上次发言时间
     buff_datas = "buff_datas", -- 账户加成数据
+    battle_report_ids = "battle_report_ids", -- 战报id
+    cur_model_role = "cur_model_role", -- 覆盖更新 展示角色
 }
 
 

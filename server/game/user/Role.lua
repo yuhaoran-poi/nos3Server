@@ -109,6 +109,7 @@ function Role.SaveAndLog(change_roles)
 
     local update_info = {
         battle_role_id = roles.battle_role_id,
+        model_role_id = roles.model_role_id,
         role_list = {},
     }
     if change_roles then
@@ -122,7 +123,7 @@ function Role.SaveAndLog(change_roles)
 
             update_info.role_list[roleid] = table.copy(roleinfo)
 
-            if roleid == roles.battle_role_id then
+            if roleid == roles.battle_role_id or roleid == roles.model_role_id then
                 -- 同步到玩家属性上
                 local show_role = RoleDef.newSimpleRoleData()
                 show_role.config_id = roleinfo.config_id
@@ -132,7 +133,12 @@ function Role.SaveAndLog(change_roles)
                 end
 
                 local update_user_attr = {}
-                update_user_attr[ProtoEnum.UserAttrType.cur_show_role] = show_role
+                if roleid == roles.battle_role_id then
+                    update_user_attr[ProtoEnum.UserAttrType.cur_show_role] = show_role
+                end
+                if roleid == roles.model_role_id then
+                    update_user_attr[ProtoEnum.UserAttrType.cur_model_role] = show_role
+                end
                 scripts.User.SetUserAttr(update_user_attr, true)
             end
         end
@@ -360,6 +366,33 @@ function Role.SetRoleBattle(roleid, sync_client)
     end
 end
 
+function Role.SetRoleModel(roleid, sync_client)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles then
+        return false
+    end
+
+    if roles.role_list[roleid] then
+        local role_info = roles.role_list[roleid]
+        roles.model_role_id = roleid
+
+        -- 同步到玩家属性上
+        local show_role = RoleDef.newSimpleRoleData()
+        show_role.config_id = role_info.config_id
+        show_role.skins = role_info.skins
+        if role_info.magic_item and role_info.magic_item.common_info then
+            show_role.magic_item_id = role_info.magic_item.common_info.config_id
+        end
+
+        local update_user_attr = {}
+        update_user_attr[ProtoEnum.UserAttrType.cur_model_role] = show_role
+        scripts.User.SetUserAttr(update_user_attr, sync_client)
+
+        -- 同步给房间其他人
+        -- scripts.Room.SyncRoleInfo(role_info)
+    end
+end
+
 ---@return PBRoleData ? nil
 function Role.GetRoleInfo(roleid)
     local roles = scripts.UserModel.GetRoles()
@@ -545,7 +578,7 @@ function Role.GetRoleEquipment(role_info, config_id, equip_idx)
     return item_small_type, nil
 end
 
-function Role.ChangeEquipment(battle_role_id, role_info, config_id, equip_idx, equip_item_data)
+function Role.ChangeEquipment(battle_role_id, model_role_id, role_info, config_id, equip_idx, equip_item_data)
     local item_small_type = ItemDefine.GetItemType(config_id)
     if item_small_type == ItemDefine.EItemSmallType.MagicItem then
         if equip_item_data then
@@ -556,7 +589,7 @@ function Role.ChangeEquipment(battle_role_id, role_info, config_id, equip_idx, e
         
         local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         -- 同步到玩家属性上
-        if battle_role_id == role_info.config_id then
+        if battle_role_id == role_info.config_id or model_role_id == role_info.config_id then
             local show_role = RoleDef.newSimpleRoleData()
             show_role.config_id = role_info.config_id
             show_role.skins = role_info.skins
@@ -567,7 +600,12 @@ function Role.ChangeEquipment(battle_role_id, role_info, config_id, equip_idx, e
             end
 
             local update_user_attr = {}
-            update_user_attr[ProtoEnum.UserAttrType.cur_show_role] = show_role
+            if battle_role_id == role_info.config_id then
+                update_user_attr[ProtoEnum.UserAttrType.cur_show_role] = show_role
+            end
+            if model_role_id == role_info.config_id then
+                update_user_attr[ProtoEnum.UserAttrType.cur_model_role] = show_role
+            end
             scripts.User.SetUserAttr(update_user_attr, true)
         end
     elseif item_small_type == ItemDefine.EItemSmallType.HumanDiagrams then
@@ -1193,7 +1231,7 @@ function Role.PBRoleWearEquipReqCmd(req)
     end
 
     -- 角色穿戴新装备
-    Role.ChangeEquipment(roles.battle_role_id, role_info, item_data.common_info.config_id, req.msg.equip_idx, item_data)
+    Role.ChangeEquipment(roles.battle_role_id, roles.model_role_id, role_info, item_data.common_info.config_id, req.msg.equip_idx, item_data)
 
     -- 保存数据并同步给客户端
     -- local save_bags = {}
@@ -1300,7 +1338,7 @@ function Role.PBRoleTakeOffEquipReqCmd(req)
     end
 
     -- 角色卸下新装备
-    Role.ChangeEquipment(roles.battle_role_id, role_info, req.msg.takeoff_config_id, req.msg.takeoff_idx, nil)
+    Role.ChangeEquipment(roles.battle_role_id, roles.model_role_id, role_info, req.msg.takeoff_config_id, req.msg.takeoff_idx, nil)
 
     -- 保存数据并同步给客户端
     -- local save_bags = {}
@@ -1456,6 +1494,26 @@ function Role.PBChangeBattleRoleReqCmd(req)
     return context.S2C(context.net_id, CmdCode["PBChangeBattleRoleRspCmd"],
         { code = ErrorCode.None, error = "success", uid = context.uid, roleid = req.msg.roleid }, req.msg_context.stub_id)
 end
+
+function Role.PBChangeModelRoleReqCmd(req)
+    local roles = scripts.UserModel.GetRoles()
+    if not roles then
+        return context.S2C(context.net_id, CmdCode.PBChangeModelRoleRspCmd,
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local role_info = roles.role_list[req.msg.roleid]
+    if not role_info then
+        return context.S2C(context.net_id, CmdCode.PBChangeModelRoleRspCmd,
+            { code = ErrorCode.RoleNotExist, error = "角色不存在", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    Role.SetRoleModel(req.msg.roleid, true)
+    Role.SaveRolesNow()
+    return context.S2C(context.net_id, CmdCode.PBChangeModelRoleRspCmd,
+        { code = ErrorCode.None, error = "success", uid = context.uid, roleid = req.msg.roleid }, req.msg_context.stub_id)
+end
+
 
 function Role.PBRoleSkillUpStarReqCmd(req)
     local roles = scripts.UserModel.GetRoles()

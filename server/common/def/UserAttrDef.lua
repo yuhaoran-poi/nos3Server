@@ -76,7 +76,7 @@ local defaultPBUserAttr = {
     guild_id = 0,                                                       --公会UID
     guild_name = "",                                                     --公会名称
     grade_show_info = GradeDef.newGradeShowInfo(),                       --段位
-    cur_show_role = LuaExt.const(table.copy(defaultPBSimpleRoleData)),   --当前展示的角色
+    cur_show_role = LuaExt.const(table.copy(defaultPBSimpleRoleData)),   --当前出战的角色
     pinch_face_data = LuaExt.const(table.copy(defaultPBPinchFaceData)),  --捏脸数据
     title = 0,                                                           --当前佩戴的称号
     player_flag = 0,                                                     --玩家标签
@@ -88,7 +88,8 @@ local defaultPBUserAttr = {
     chat_ban_time = 0,                                                   --禁言时间
     last_chat_time = 0,                                                  --最后一次发言时间
     buff_datas = {},                                                     --账户加成数据
-    battle_report_ids = {},                                            --战斗报告ID列表
+    battle_report_ids = {},                                              --战斗报告ID列表
+    cur_model_role = LuaExt.const(table.copy(defaultPBSimpleRoleData)),   --当前展示的角色
 }
 
 ---@return PBBuffData

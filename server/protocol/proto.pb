@@ -759,7 +759,7 @@ serverPort
 time (Rtime"
 	PBPongCmd
 time (Rtimebproto3
-ð,
+È.
 
 role.proto
 item.proto"4
@@ -836,10 +836,11 @@ SkinsEntry
 value (2.PBSkillRvalue:8>
 UpLvRewardsEntry
 key (Rkey
-value (Rvalue:8"¾
+value (Rvalue:8"â
 PBUserRoleDatas$
-battle_role_id (RbattleRoleId;
-	role_list (2.PBUserRoleDatas.RoleListEntryRroleListH
+battle_role_id (RbattleRoleId"
+model_role_id (RmodelRoleId;
+	role_list (2.PBUserRoleDatas.RoleListEntryRroleListH
 RoleListEntry
 key (Rkey!
 value (2.PBRoleDataRvalue:8"1
@@ -930,6 +931,14 @@ SkinsEntry
 uid (Ruid
 roleid (Rroleid"n
 PBChangeBattleRoleRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+roleid (Rroleid"C
+PBChangeModelRoleReqCmd
+uid (Ruid
+roleid (Rroleid"m
+PBChangeModelRoleRspCmd
 code (Rcode
 error (	Rerror
 uid (Ruid
@@ -1267,7 +1276,7 @@ open_count (R	openCount(
 TreasureListEntry
 key (Rkey'
 value (2.PBTreasureSingleRvalue:8bproto3
-¬>
+š?
 
 user.proto
 item.proto	bag.proto
@@ -1282,7 +1291,7 @@ buffEffect
 periodType
 end_ts (RendTs
 surplus_cnt (R
-surplusCnt"”
+surplusCnt"Í
 
 PBUserAttr
 uid (Ruid!
@@ -1318,7 +1327,8 @@ onlineTime&
 last_chat_time (RlastChatTime9
 
 buff_datas (2.PBUserAttr.BuffDatasEntryR	buffDatas*
-battle_report_ids (RbattleReportIdsI
+battle_report_ids (RbattleReportIds7
+cur_model_role (2.PBSimpleRoleDataRcurModelRoleI
 BuffDatasEntry
 key (Rkey!
 value (2.PBBuffDataRvalue:8"/
@@ -1425,7 +1435,7 @@ cost_items (2.PBItemSimpleR	costItems"I
 info (2.PBUserAttrRinfo"G
 PBGetOtherDetailReqCmd
 uid (Ruid
-	quest_uid (RquestUid"¾
+	quest_uid (RquestUid"ó
 PBGetOtherDetailRspCmd
 code (Rcode
 error (	Rerror
@@ -1437,7 +1447,9 @@ cost_items (2.PBItemSimpleR	costItems"I
 ghost_data (2.PBGhostDataR	ghostDataU
 grade_show_infos (2+.PBGetOtherDetailRspCmd.GradeShowInfosEntryRgradeShowInfos'
 consume_bag	 (2.PBBagR
-consumeBagS
+consumeBag3
+model_role_data
+ (2.PBRoleDataRmodelRoleDataS
 GradeShowInfosEntry
 key (Rkey&
 value (2.PBGradeShowInfoRvalue:8"@

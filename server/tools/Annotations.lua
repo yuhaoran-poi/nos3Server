@@ -2599,6 +2599,7 @@
 
 ---@class PBUserRoleDatas
 ---@field public battle_role_id integer
+---@field public model_role_id integer
 ---@field public role_list table<integer, PBRoleData> @有key则覆盖
 
 
@@ -2705,6 +2706,18 @@
 
 
 ---@class PBChangeBattleRoleRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roleid integer @角色id
+
+
+---@class PBChangeModelRoleReqCmd
+---@field public uid integer
+---@field public roleid integer @角色id
+
+
+---@class PBChangeModelRoleRspCmd
 ---@field public code integer @服务器验证返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public uid integer
@@ -3508,7 +3521,7 @@
 ---@field public guild_id integer
 ---@field public guild_name string
 ---@field public grade_show_info PBGradeShowInfo @覆盖更新
----@field public cur_show_role PBSimpleRoleData @覆盖更新
+---@field public cur_show_role PBSimpleRoleData @覆盖更新 战斗角色
 ---@field public pinch_face_data PBPinchFaceData @捏脸数据	覆盖更新
 ---@field public title integer @当前佩戴的称号
 ---@field public player_flag integer @玩家标签
@@ -3521,6 +3534,7 @@
 ---@field public last_chat_time integer @上次发言时间
 ---@field public buff_datas table<integer, PBBuffData> @账户加成数据
 ---@field public battle_report_ids integer[] @战报id
+---@field public cur_model_role PBSimpleRoleData @覆盖更新 展示角色
 
 
 ---@class PBClientGetUsrSimInfoReqCmd
@@ -3678,6 +3692,7 @@
 ---@field public ghost_data PBGhostData @鬼宠数据
 ---@field public grade_show_infos table<integer, PBGradeShowInfo> @段位信息
 ---@field public consume_bag PBBag @消耗品背包
+---@field public model_role_data PBRoleData @展示角色数据
 
 
 ---@class PBUseSkinGiftReqCmd
