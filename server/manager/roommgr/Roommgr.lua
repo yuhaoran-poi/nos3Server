@@ -1591,10 +1591,10 @@ function Roommgr.MemberChangeRoleInfo(msg)
     -- 更新角色
     moon.warn(string.format("Roommgr.MemberChangeRoleInfo role_info:\n%s", json.pretty_encode(msg.role_info)))
     local magic_item_id = 0
-    if msg.roleinfo.magic_item
-        and msg.roleinfo.magic_item.common_info
-        and msg.roleinfo.magic_item.common_info.config_id then
-        magic_item_id = msg.roleinfo.magic_item.common_info.config_id
+    if msg.role_info.magic_item
+        and msg.role_info.magic_item.common_info
+        and msg.role_info.magic_item.common_info.config_id then
+        magic_item_id = msg.role_info.magic_item.common_info.config_id
     end
     room.players[member_index].mem_info.cur_show_role = {
         roleid = msg.role_info.config_id,

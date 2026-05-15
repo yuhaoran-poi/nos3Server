@@ -189,7 +189,14 @@ local function run(node_conf)
             unique = true,
             name = "billmgr",
             file = "manager/service_billmgr.lua",
-            threadid = 12,
+            threadid = 11,
+            websocket = false,
+        },
+        {
+            unique = true,
+            name = "battlereportmgr",
+            file = "manager/service_battlereportmgr.lua",
+            threadid = 8,
             websocket = false,
         },
     }
@@ -207,6 +214,8 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("shopmgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("trademgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("billmgr"), "Init"))
+        assert(moon.call("lua", moon.queryservice("battlereportmgr"), "Init"))
+
         assert(moon.call("lua", moon.queryservice("nodemgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("usermgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("teammgr"), "Start"))
@@ -218,6 +227,8 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("shopmgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("trademgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("billmgr"), "Start"))
+        assert(moon.call("lua", moon.queryservice("battlereportmgr"), "Start"))
+
         local data = db.loadserverdata(moon.queryservice("db_server"))
         if not data then
             data = { boot_times = 0 }
