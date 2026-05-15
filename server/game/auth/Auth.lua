@@ -488,11 +488,6 @@ Auth.PBDSLoginReqCmd = function(req)
         if not req then
             return { code = ErrorCode.ParamInvalid, error = "INVALID_REQUEST" }
         end
-
-        if SERVER_PB_VERSION ~= "" and req.msg.login_data.pb_version ~= SERVER_PB_VERSION then
-            moon.error("PB version mismatch: client=", req.msg.login_data.pb_version, " server=", SERVER_PB_VERSION)
-            return { code = ErrorCode.ProtoError, error = "PB_VERSION_MISMATCH" }
-        end
         
         ---服务器关闭时,中断所有客户端的登录请求
         if context.server_exit and not req.pull then
@@ -501,6 +496,11 @@ Auth.PBDSLoginReqCmd = function(req)
 
         req.net_id = Auth.AllocGateNetId(1)
         moon.send("lua", context.addr_dgate, "DGate.BindGnId", req)
+
+        if SERVER_PB_VERSION ~= "" and req.msg.login_data.pb_version ~= SERVER_PB_VERSION then
+            moon.error("PB version mismatch: client=", req.msg.login_data.pb_version, " server=", SERVER_PB_VERSION)
+            return { code = ErrorCode.ProtoError, error = "PB_VERSION_MISMATCH" }
+        end
 
         local dsid = context.openid_map[req.msg.login_data.authkey]
         if dsid then
