@@ -47,7 +47,7 @@ function BattleReportmgr.DeleteSimpleReport(report_id)
 end
 
 function BattleReportmgr.SaveDetailReport(uid, report_id, start_ts, report_data)
-    Database.addbattlereport(context.addr_db_user, report_id, uid, start_ts, report_data)
+    Database.addbattlereport(context.addr_db_game, report_id, uid, start_ts, report_data)
 end
 
 function BattleReportmgr.Shutdown()

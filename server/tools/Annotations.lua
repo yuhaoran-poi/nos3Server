@@ -4098,6 +4098,8 @@
 ---@field PeriodMissionConfig PeriodMissionConfig_cfg[]
 ---@field PropCompose PropCompose_cfg[]
 ---@field RandomComposite RandomComposite_cfg[]
+---@field RankingListReward RankingListReward_cfg[]
+---@field RankingListRewardPool RankingListRewardPool_cfg[]
 ---@field RankLevel RankLevel_cfg[]
 ---@field RankRewardPool RankRewardPool_cfg[]
 ---@field RechargeStoreConfig RechargeStoreConfig_cfg[]
