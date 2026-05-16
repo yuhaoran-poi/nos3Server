@@ -727,7 +727,8 @@ function Trade.PBTradeBuyReqCmd(req)
         scripts.Bag.RollBackWithChange(bag_change_logs)
         -- 重新确定扣除的正确金额
         bag_change_logs = {}
-        cost_coins[trade_cfg.order_currency].coin_count = -(lock_coin_count - res.data.remain_coin)
+        cost_coins[trade_cfg.order_currency].coin_count = cost_coins[trade_cfg.order_currency].coin_count +
+            res.data.remain_coin
     end
 
     local is_gm = false
