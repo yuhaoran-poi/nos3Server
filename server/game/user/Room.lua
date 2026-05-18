@@ -289,6 +289,7 @@ end
 
 function Room.PBEnterRoomReqCmd(req)
     if context.roomid and context.roomid > 0 then
+        moon.error("PBEnterRoomReqCmd had room uid,roomid,req.msg.roomid", context.uid, context.roomid, req.msg.roomid)
         return context.S2C(context.net_id, CmdCode["PBEnterRoomRspCmd"], {
             code = ErrorCode.RoomAlreadyInRoom,
             error = "你已在房间中",

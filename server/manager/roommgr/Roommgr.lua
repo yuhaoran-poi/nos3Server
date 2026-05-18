@@ -576,11 +576,14 @@ function Roommgr.EnterRoom(req)
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local room = context.rooms[req.msg.roomid]
     if not room then
+        moon.error(string.format("Roommgr.EnterRoom roomid:%d not found", req.msg.roomid))
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
 
     -- 检查是否已在房间 
     if context.uid_roomid[req.msg.uid] then
+        moon.error(string.format("Roommgr.EnterRoom already in room uid:%d, roomid:%d, req.msg.roomid:%d", req.msg.uid,
+            context.uid_roomid[req.msg.uid], req.msg.roomid))
         return { code = ErrorCode.RoomAlreadyInRoom, error = "已在其他房间", roomid = context.uid_roomid[req.msg.uid] }
     end
 
