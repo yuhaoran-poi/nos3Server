@@ -32,6 +32,7 @@ local ItemDefine = {
     SkinCard = { start = 134000, End = 353999 },
     Gift = { start = 354000, End = 363999 },
     SkinTryCard = { start = 364000, End = 379999 },
+    TreasureBox = { start = 380000, End = 419999 },
     DurabItem = { start = 500000, End = 500999 },
     Tool = { start = 501000, End = 501999 },
     MagicItem = { start = 600000, End = 624999 },
@@ -143,6 +144,8 @@ function ItemDefine.GetItemType(nConfigId)
         return ItemDefine.EItemSmallType.Gift
     elseif nConfigId >= ItemDefine.SkinTryCard.start and nConfigId <= ItemDefine.SkinTryCard.End then
         return ItemDefine.EItemSmallType.SkinTryCard
+    elseif nConfigId >= ItemDefine.TreasureBox.start and nConfigId <= ItemDefine.TreasureBox.End then
+        return ItemDefine.EItemSmallType.TreasureChest
     elseif nConfigId >= ItemDefine.DurabItem.start and nConfigId <= ItemDefine.DurabItem.End then
         return ItemDefine.EItemSmallType.DurabItem
     elseif nConfigId >= ItemDefine.Tool.start and nConfigId <= ItemDefine.Tool.End then
