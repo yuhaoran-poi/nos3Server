@@ -1648,8 +1648,31 @@ end
 
 function User.PBGetOtherSimpleReqCmd(req)
     if context.uid ~= req.msg.uid
-        or req.msg.quest_uid == 0
-        or req.msg.uid == req.msg.quest_uid then
+        or (not req.msg.quest_uid and not req.msg.nick_name) then
+        return context.S2C(context.net_id, CmdCode.PBGetOtherSimpleRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            quest_uid = req.msg.quest_uid or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    if req.msg.nick_name and (not req.msg.quest_uid or req.msg.quest_uid == 0) then
+        local nick_info = Database.RedisGetNick(context.addr_db_redis, req.msg.nick_name)
+        moon.warn(string.format("nick_info res = %s", json.pretty_encode(nick_info)))
+        if nick_info and table.size(nick_info) > 0 then
+            req.msg.quest_uid = nick_info[req.msg.nick_name]
+        else
+            return context.S2C(context.net_id, CmdCode.PBGetOtherSimpleRspCmd, {
+                code = ErrorCode.UserNotExist,
+                error = "用户不存在",
+                uid = context.uid,
+                quest_uid = req.msg.quest_uid or 0,
+            }, req.msg_context.stub_id)
+        end
+    end
+
+    if req.msg.uid == req.msg.quest_uid then
         return context.S2C(context.net_id, CmdCode.PBGetOtherSimpleRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
