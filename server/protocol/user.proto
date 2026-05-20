@@ -221,6 +221,7 @@ message PBGetOtherSimpleReqCmd
     // 协议数据
     int64 uid		= 1;
 	int64 quest_uid	= 2;
+	string nick_name	= 3;
 }
 
 // 客户端请求他人简略信息 返回信息

@@ -1276,7 +1276,7 @@ open_count (R	openCount(
 TreasureListEntry
 key (Rkey'
 value (2.PBTreasureSingleRvalue:8bproto3
-š?
+·?
 
 user.proto
 item.proto	bag.proto
@@ -1423,10 +1423,11 @@ cost_items (2.PBItemSimpleR	costItems"I
 error (	Rerror
 uid (Ruid#
 repair_uniqid (RrepairUniqid
-pos (Rpos"G
+pos (Rpos"d
 PBGetOtherSimpleReqCmd
 uid (Ruid
-	quest_uid (RquestUid"’
+	quest_uid (RquestUid
+	nick_name (	RnickName"’
 PBGetOtherSimpleRspCmd
 code (Rcode
 error (	Rerror

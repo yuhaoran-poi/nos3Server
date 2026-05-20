@@ -3667,6 +3667,7 @@
 ---@class PBGetOtherSimpleReqCmd
 ---@field public uid integer
 ---@field public quest_uid integer
+---@field public nick_name string
 
 
 ---@class PBGetOtherSimpleRspCmd
