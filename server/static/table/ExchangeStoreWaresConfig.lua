@@ -12,11 +12,12 @@
 ---@field public default_price1 table @原价1
 ---@field public default_price2 table @原价2
 return {
-[1000000] = { id=1000000,price1={[1]=1},price2={[3]=1},prop={[1000000]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=2,quota_num=1,limited_type=1,limited_num=0,default_price1={},default_price2={} },
-[1000001] = { id=1000001,price1={[1]=2},price2={[3]=1},prop={[1000001]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=0,quota_num=0,limited_type=0,limited_num=0,default_price1={},default_price2={} },
-[1000002] = { id=1000002,price1={[1]=3},price2={[3]=1},prop={[1000002]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=0,quota_num=0,limited_type=0,limited_num=0,default_price1={},default_price2={} },
-[1000003] = { id=1000003,price1={[1]=4},price2={[3]=1},prop={[1000003]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=0,quota_num=0,limited_type=0,limited_num=0,default_price1={},default_price2={} },
-[1000004] = { id=1000004,price1={[1]=5},price2={[3]=1},prop={[1000004]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=0,quota_num=0,limited_type=0,limited_num=0,default_price1={},default_price2={} },
+[1000000] = { id=1000000,price1={[1]=1},price2={[3]=1},prop={[1000000]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=2,quota_num=1,limited_type=1,limited_num=0,default_price1={[1]=100000},default_price2={[1]=100000} },
+[1000001] = { id=1000001,price1={[1]=2},price2={[3]=1},prop={[1000001]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=2,quota_num=1,limited_type=1,limited_num=0,default_price1={[1]=100000},default_price2={[1]=100000} },
+[1000002] = { id=1000002,price1={[1]=3},price2={[3]=1},prop={[1000002]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=2,quota_num=1,limited_type=1,limited_num=0,default_price1={[1]=100000},default_price2={[1]=100000} },
+[1000003] = { id=1000003,price1={[1]=4},price2={[3]=1},prop={[1000003]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=2,quota_num=1,limited_type=1,limited_num=0,default_price1={[1]=100000},default_price2={[1]=100000} },
+[1000004] = { id=1000004,price1={[1]=5},price2={[3]=1},prop={[1000004]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=2,quota_num=1,limited_type=1,limited_num=0,default_price1={[1]=100000},default_price2={[1]=100000} },
+[1000005] = { id=1000005,price1={[1]=6},price2={[3]=1},prop={[1000005]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=2,quota_num=1,limited_type=1,limited_num=0,default_price1={[1]=100000},default_price2={[1]=100000} },
 [1] = { id=1,price1={[1]=1},price2={[3]=1},prop={[154000]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=1,quota_num=0,limited_type=1,limited_num=0,default_price1={[1]=10},default_price2={[1]=10} },
 [2] = { id=2,price1={[1]=1},price2={[3]=1},prop={[164000]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=1,quota_num=0,limited_type=1,limited_num=0,default_price1={[1]=1},default_price2={[1]=1} },
 [3] = { id=3,price1={[1]=1},price2={[3]=1},prop={[174000]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=1,quota_num=0,limited_type=1,limited_num=0,default_price1={[1]=1},default_price2={[1]=1} },
