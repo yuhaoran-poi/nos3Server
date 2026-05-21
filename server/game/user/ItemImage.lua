@@ -79,61 +79,69 @@ function ItemImage.SaveAndLog(config_ids, composite_formula_ids)
     local update_msg = {
         update_images = {},
     }
-    for _, config_id in pairs(config_ids) do
-        local item_type = ItemDefine.GetItemType(config_id)
-        if item_type == ItemDefine.EItemSmallType.MagicItem then
-            if itemImages.magic_item_image[config_id] then
-                if not update_msg.update_images.magic_item_image then
-                    update_msg.update_images.magic_item_image = {}
+    
+    if config_ids then
+        for _, config_id in pairs(config_ids) do
+            local item_type = ItemDefine.GetItemType(config_id)
+            if item_type == ItemDefine.EItemSmallType.MagicItem then
+                if itemImages.magic_item_image[config_id] then
+                    if not update_msg.update_images.magic_item_image then
+                        update_msg.update_images.magic_item_image = {}
+                    end
+                    update_msg.update_images.magic_item_image[config_id] = itemImages.magic_item_image[config_id]
                 end
-                update_msg.update_images.magic_item_image[config_id] = itemImages.magic_item_image[config_id]
-            end
-        elseif item_type == ItemDefine.EItemSmallType.HumanDiagrams then
-            if itemImages.human_diagrams_image[config_id] then
-                if not update_msg.update_images.human_diagrams_image then
-                    update_msg.update_images.human_diagrams_image = {}
+            elseif item_type == ItemDefine.EItemSmallType.HumanDiagrams then
+                if itemImages.human_diagrams_image[config_id] then
+                    if not update_msg.update_images.human_diagrams_image then
+                        update_msg.update_images.human_diagrams_image = {}
+                    end
+                    update_msg.update_images.human_diagrams_image[config_id] = itemImages.human_diagrams_image
+                    [config_id]
                 end
-                update_msg.update_images.human_diagrams_image[config_id] = itemImages.human_diagrams_image[config_id]
-            end
-        elseif item_type == ItemDefine.EItemSmallType.GhostDiagrams then
-            if itemImages.ghost_diagrams_image[config_id] then
-                if not update_msg.update_images.ghost_diagrams_image then
-                    update_msg.update_images.ghost_diagrams_image = {}
+            elseif item_type == ItemDefine.EItemSmallType.GhostDiagrams then
+                if itemImages.ghost_diagrams_image[config_id] then
+                    if not update_msg.update_images.ghost_diagrams_image then
+                        update_msg.update_images.ghost_diagrams_image = {}
+                    end
+                    update_msg.update_images.ghost_diagrams_image[config_id] = itemImages.ghost_diagrams_image
+                    [config_id]
                 end
-                update_msg.update_images.ghost_diagrams_image[config_id] = itemImages.ghost_diagrams_image[config_id]
-            end
-        elseif item_type == ItemDefine.EItemSmallType.RoleSkin
-            or item_type == ItemDefine.EItemSmallType.GhostSkin
-            or item_type == ItemDefine.EItemSmallType.ItemSkin
-            or item_type == ItemDefine.EItemSmallType.HeadSkin
-            or item_type == ItemDefine.EItemSmallType.HeadFrameSkin
-            or item_type == ItemDefine.EItemSmallType.TitleSkin then
-            if not update_msg.update_images.skin_image then
-                update_msg.update_images.skin_image = {}
-            end
-            update_msg.update_images.skin_image[config_id] = itemImages.skin_image[config_id]
-        elseif item_type == ItemDefine.EItemSmallType.SpaceRing then
-            if itemImages.space_ring_image[config_id] then
-                if not update_msg.update_images.space_ring_image then
-                    update_msg.update_images.space_ring_image = {}
+            elseif item_type == ItemDefine.EItemSmallType.RoleSkin
+                or item_type == ItemDefine.EItemSmallType.GhostSkin
+                or item_type == ItemDefine.EItemSmallType.ItemSkin
+                or item_type == ItemDefine.EItemSmallType.HeadSkin
+                or item_type == ItemDefine.EItemSmallType.HeadFrameSkin
+                or item_type == ItemDefine.EItemSmallType.TitleSkin then
+                if not update_msg.update_images.skin_image then
+                    update_msg.update_images.skin_image = {}
                 end
-                update_msg.update_images.space_ring_image[config_id] = itemImages.space_ring_image[config_id]
-            end
-        else
-            if itemImages.item_image[config_id] then
-                if not update_msg.update_images.item_image then
-                    update_msg.update_images.item_image = {}
+                update_msg.update_images.skin_image[config_id] = itemImages.skin_image[config_id]
+            elseif item_type == ItemDefine.EItemSmallType.SpaceRing then
+                if itemImages.space_ring_image[config_id] then
+                    if not update_msg.update_images.space_ring_image then
+                        update_msg.update_images.space_ring_image = {}
+                    end
+                    update_msg.update_images.space_ring_image[config_id] = itemImages.space_ring_image[config_id]
                 end
-                update_msg.update_images.item_image[config_id] = itemImages.item_image[config_id]
+            else
+                if itemImages.item_image[config_id] then
+                    if not update_msg.update_images.item_image then
+                        update_msg.update_images.item_image = {}
+                    end
+                    update_msg.update_images.item_image[config_id] = itemImages.item_image[config_id]
+                end
             end
         end
     end
-    for _, cid in pairs(composite_formula_ids) do
-        if itemImages.composite_formula[cid] then
-            if not update_msg.update_images.composite_formula then
-                update_msg.update_images.composite_formula = {}
+    
+    if composite_formula_ids then
+        for _, cid in pairs(composite_formula_ids) do
+            if itemImages.composite_formula[cid] then
+                if not update_msg.update_images.composite_formula then
+                    update_msg.update_images.composite_formula = {}
+                end
+                update_msg.update_images.composite_formula[cid] = itemImages.composite_formula[cid]
             end
-            update_msg.update_images.composite_formula[cid] = itemImages.composite_formula[cid]
         end
     end
 
