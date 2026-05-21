@@ -433,14 +433,16 @@ function Shop.PBShopBuyReqCmd(req)
     -- 计算获得资源
     local add_items, add_coins = {}, {}
     local use_mail = false
-    ItemDefine.GetItemsFromCfg(add_list, 1, false, add_items, add_coins)
-    if table.size(add_items) + table.size(add_coins) <= 0 then
-        rsp_msg.code = ErrorCode.ConfigError
-        rsp_msg.error = "配置错误"
-        moon.error(string.format("Shop.PBShopBuyReqCmd config error add_list=%s", json.pretty_encode(add_list)))
-        moon.error(string.format("Shop.PBShopBuyReqCmd config error add_items=%s", json.pretty_encode(add_items)))
-        moon.error(string.format("Shop.PBShopBuyReqCmd config error add_coins=%s", json.pretty_encode(add_coins)))
-        return context.S2C(context.net_id, CmdCode.PBShopBuyRspCmd, rsp_msg, req.msg_context.stub_id)
+    if table.size(add_list) > 0 then
+        ItemDefine.GetItemsFromCfg(add_list, 1, false, add_items, add_coins)
+        if table.size(add_items) + table.size(add_coins) <= 0 then
+            rsp_msg.code = ErrorCode.ConfigError
+            rsp_msg.error = "配置错误"
+            moon.error(string.format("Shop.PBShopBuyReqCmd config error add_list=%s", json.pretty_encode(add_list)))
+            moon.error(string.format("Shop.PBShopBuyReqCmd config error add_items=%s", json.pretty_encode(add_items)))
+            moon.error(string.format("Shop.PBShopBuyReqCmd config error add_coins=%s", json.pretty_encode(add_coins)))
+            return context.S2C(context.net_id, CmdCode.PBShopBuyRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
     end
     if table.size(add_items) > 0 then
         local ret_code = scripts.Bag.TryEmptyEnough(BagDef.BagType.Cangku, add_items, 0)
@@ -457,14 +459,16 @@ function Shop.PBShopBuyReqCmd(req)
     end
     -- 根据道具表生成item_data
     local stack_items, unstack_items, deal_coins = {}, {}, {}
-    local ok = ItemDefine.GetItemDataFromIdCount(add_items, add_coins, stack_items, unstack_items, deal_coins)
-    if not ok then
-        rsp_msg.code = ErrorCode.ConfigError
-        rsp_msg.error = "配置错误"
-        moon.error(string.format("Shop.PBShopBuyReqCmd config error add_items=%s", json.pretty_encode(add_items)))
-        moon.error(string.format("Shop.PBShopBuyReqCmd config error add_coins=%s", json.pretty_encode(add_coins)))
-        moon.error(string.format("Shop.PBShopBuyReqCmd config error stack_items=%s", json.pretty_encode(stack_items)))
-        return context.S2C(context.net_id, CmdCode.PBShopBuyRspCmd, rsp_msg, req.msg_context.stub_id)
+    if table.size(add_items) + table.size(add_coins) > 0 then
+        local ok = ItemDefine.GetItemDataFromIdCount(add_items, add_coins, stack_items, unstack_items, deal_coins)
+        if not ok then
+            rsp_msg.code = ErrorCode.ConfigError
+            rsp_msg.error = "配置错误"
+            moon.error(string.format("Shop.PBShopBuyReqCmd config error add_items=%s", json.pretty_encode(add_items)))
+            moon.error(string.format("Shop.PBShopBuyReqCmd config error add_coins=%s", json.pretty_encode(add_coins)))
+            moon.error(string.format("Shop.PBShopBuyReqCmd config error stack_items=%s", json.pretty_encode(stack_items)))
+            return context.S2C(context.net_id, CmdCode.PBShopBuyRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
     end
 
     -- 向全服管理器申请减扣商品
@@ -562,7 +566,7 @@ function Shop.PBShopBuyReqCmd(req)
             return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
         end
 
-        change_roles[req.msg.roleid] = "AddRole"
+        change_roles[roleid] = "AddRole"
     end
 
     -- 发送非全服限购商品到全服管理器记录
