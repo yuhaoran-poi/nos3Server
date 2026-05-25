@@ -344,4 +344,16 @@ function UserModel.SetSeasonPass(season_pass_data)
     DBData.season_pass = season_pass_data
 end
 
+---@return PBSeasonPlayerData ? nil
+function UserModel.GetSeasons()
+    if DBData and DBData.seasons then
+        return DBData.seasons
+    end
+    return nil
+end
+
+function UserModel.SetSeasons(season_player_data)
+    DBData.seasons = season_player_data
+end
+
 return UserModel

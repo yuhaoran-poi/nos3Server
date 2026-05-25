@@ -143,6 +143,23 @@ function Grade.ChangeScore(change_score)
     scripts.User.SetUserAttr(update_user_attr, true)
 end
 
+function Grade.SeasonChange(new_season_id)
+    local Grades = scripts.UserModel.GetGrades()
+    if not Grades or not Grades.grade_infos then
+        return
+    end
+
+    if Grades.cur_season_id == new_season_id then
+        return
+    end
+
+    Grades.cur_season_id = new_season_id
+    local grade_info = GradeDef.newGradeInfo()
+    grade_info.season_id = Grades.cur_season_id
+    Grades.grade_infos[Grades.cur_season_id] = grade_info
+    Grade.SaveGradesNow()
+end
+
 function Grade.GetCurSeasonScore()
     local Grades = scripts.UserModel.GetGrades()
     if not Grades or not Grades.grade_infos then

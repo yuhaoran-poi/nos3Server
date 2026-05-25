@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+message PBSeasonData
+{
+    int32 season_id = 1;
+    map<int32, int32> battle_num    = 2;    //不同模式的对局数量
+    map<int32, int32> battle_complete   = 3;    //不同模式的完成数量
+    int64 booty_value   = 4;   // 战利品总价值
+    int64 total_game_ts = 5;   // 累计游戏时长
+    int64 kill_monster_cnt  = 6;    // 击杀怪物数量
+    int64 season_beg_ts = 7;    // 本人赛季开始时间
+    int64 season_end_ts = 8;    // 本人赛季结束时间
+}
+
+message PBSeasonPlayerData
+{
+    int32 cur_season_id = 1;
+    map<int32, PBSeasonData> season_infos  = 2;
+}
+
+message PBGetSeasonPlayerReqCmd
+{
+    int64 uid		= 1;
+}
+
+message PBGetSeasonPlayerRspCmd
+{
+    int32 code      = 1; // 服务器验证返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int64 uid       = 3;
+    PBSeasonPlayerData season_datas   = 4;
+}

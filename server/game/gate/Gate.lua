@@ -177,4 +177,15 @@ function Gate.InvalidSystemMail(mail_id)
     return true
 end
 
+function Gate.SendSeasonChange(season_id)
+    moon.info("SendSeasonChange season_id = ", season_id)
+
+    for _, c in pairs(context.uid_map) do
+        if c and c.addr_user then
+            moon.send("lua", c.addr_user, "Season.ChangeSeason", season_id)
+        end
+    end
+    return true
+end
+
 return Gate

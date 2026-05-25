@@ -35,8 +35,8 @@
 ---@field public item_data PBItemData @商品信息
 ---@field public beg_ts integer @商品上架时间
 ---@field public end_ts integer @商品下架时间
----@field public delay_cnt integer
----@field public state integer
+---@field public delay_cnt integer @延期次数
+---@field public state integer @当前状态
 ---@field public auction_data PBAuctionData @拍卖数据
 
 
@@ -594,6 +594,8 @@
 ---@field public booty_value integer @战利品总价值
 ---@field public settle_simple_data string @战报简述
 ---@field public start_game_ts integer @游戏开始时间戳(秒级)
+---@field public end_game_ts integer @游戏结束时间戳(秒级)
+---@field public is_complete integer @完成率/通关率/撤离率
 
 
 ---@class PBEnterCityReqCmd
@@ -3101,6 +3103,33 @@
 ---@field public member_datas PBRoomMemberInfo[]
 
 
+---@class PBSeasonData
+---@field public season_id integer
+---@field public battle_num table<integer, integer> @不同模式的对局数量
+---@field public battle_complete table<integer, integer> @不同模式的完成数量
+---@field public booty_value integer @战利品总价值
+---@field public total_game_ts integer @累计游戏时长
+---@field public kill_monster_cnt integer @击杀怪物数量
+---@field public season_beg_ts integer @本人赛季开始时间
+---@field public season_end_ts integer @本人赛季结束时间
+
+
+---@class PBSeasonPlayerData
+---@field public cur_season_id integer
+---@field public season_infos table<integer, PBSeasonData>
+
+
+---@class PBGetSeasonPlayerReqCmd
+---@field public uid integer
+
+
+---@class PBGetSeasonPlayerRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public season_datas PBSeasonPlayerData
+
+
 ---@class PBSeasonPassData
 ---@field public pass_id integer
 ---@field public cost_coin integer
@@ -3933,6 +3962,7 @@
 ---@field NewBag NewBag
 ---@field Role Role
 ---@field Room Room
+---@field Season Season
 ---@field SeasonPass SeasonPass
 ---@field Shop Shop
 ---@field Team Team
@@ -4026,6 +4056,10 @@
 ---@field Roommgr Roommgr
 
 
+---@class seasonmgr_scripts
+---@field Seasonmgr Seasonmgr
+
+
 ---@class shopmgr_scripts
 ---@field Shopmgr Shopmgr
 
@@ -4107,6 +4141,7 @@
 ---@field ReplaceableDailyMissionConfig ReplaceableDailyMissionConfig_cfg[]
 ---@field RoleLvAward RoleLvAward_cfg[]
 ---@field RoleUpLv RoleUpLv_cfg[]
+---@field Season Season_cfg[]
 ---@field SeasonPassShop SeasonPassShop_cfg[]
 ---@field SeasonPassShopItem SeasonPassShopItem_cfg[]
 ---@field SeasonPassShopItemGroup SeasonPassShopItemGroup_cfg[]

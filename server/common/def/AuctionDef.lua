@@ -3,10 +3,10 @@ local LuaExt = require "common.LuaExt"
 local AuctionDef = {
     StateType = {
         UNKNOWN = 0,
-        ON_SALE = 1,
-        TAKE_DOWNING = 2,
-        CLOSE = 3,
-        TAKE_DOWNED = 4,
+        ON_SALE = 1,    -- 在售
+        TAKE_DOWNING = 2, -- 下架中
+        CLOSE = 3, -- 已关闭
+        TAKE_DOWNED = 4, -- 已下架
     },
     SortDescribe = {
         [1] = "auction_config_id ASC",

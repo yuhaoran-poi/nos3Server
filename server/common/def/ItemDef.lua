@@ -50,6 +50,7 @@ local ItemDef = {
         SeasonPassGetReward = 46, -- 获取赛季通行证奖励
         ImageUnlock = 47,         -- 图鉴解锁
         FormulaUnlock = 48,       -- 配方解锁
+        SeasonEndClear = 49,     -- 赛季结束清除
         -- WearEquipment = 25,      --装备道具
         -- TakeOffEquipment = 26,   --脱下道具
         -- WearSkin = 27,           --装备皮肤

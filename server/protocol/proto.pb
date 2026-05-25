@@ -382,14 +382,14 @@ auction_id (R	auctionId"f
 PBAuctionChangeFocusIdReqCmd
 uid (Ruid
 focus_op (RfocusOp
-focus_id (RfocusId"æ
+focus_id (RfocusId"æ
 PBAuctionChangeFocusIdRspCmd
 code (Rcode
 error (	Rerror
 uid (RuidL
 focus_id_ts (2,.PBAuctionChangeFocusIdRspCmd.FocusIdTsEntryR	focusIdTs<
 FocusIdTsEntry
-key (Rkey
+key (Rkey
 value (Rvalue:8bproto3
 Í
 
@@ -1676,7 +1676,7 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-€.
+Á.
 dsnode.proto
 item.proto
 user.proto	bag.proto
@@ -1714,7 +1714,7 @@ addRoleExpb
 
 monster_id (R	monsterId!
 monster_type (RmonsterType
-kill_cnt (RkillCnt"˜
+kill_cnt (RkillCnt"Ù
 PBGameSettle
 settle_data (	R
 settleData-
@@ -1740,7 +1740,10 @@ difficulty$
 booty_value (R
 bootyValue,
 settle_simple_data (	RsettleSimpleData"
-start_game_ts (RstartGameTs?
+start_game_ts (RstartGameTs
+end_game_ts (R	endGameTs
+is_complete (R
+isComplete?
 GameMissionsEntry
 key (Rkey
 value (Rvalue:8"=
@@ -3277,6 +3280,38 @@ ds_address (	R	dsAddress
 error (	Rerror(
 	room_data (2.PBRoomInfoRroomData4
 member_datas (2.PBRoomMemberInfoRmemberDatasbproto3
+•
+season.proto"ì
+PBSeasonData
+	season_id (RseasonId;
+
+battle_num (2.PBSeasonData.BattleNumEntryR	battleNumJ
+battle_complete (2!.PBSeasonData.BattleCompleteEntryRbattleComplete
+booty_value (R
+bootyValue"
+total_game_ts (RtotalGameTs(
+kill_monster_cnt (RkillMonsterCnt"
+season_beg_ts (RseasonBegTs"
+season_end_ts (RseasonEndTs<
+BattleNumEntry
+key (Rkey
+value (Rvalue:8A
+BattleCompleteEntry
+key (Rkey
+value (Rvalue:8"Ð
+PBSeasonPlayerData"
+cur_season_id (RcurSeasonIdG
+season_infos (2$.PBSeasonPlayerData.SeasonInfosEntryRseasonInfosM
+SeasonInfosEntry
+key (Rkey#
+value (2.PBSeasonDataRvalue:8"+
+PBGetSeasonPlayerReqCmd
+uid (Ruid"
+PBGetSeasonPlayerRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid6
+season_datas (2.PBSeasonPlayerDataRseasonDatasbproto3
 »
 seasonpass.proto"l
 PBSeasonPassData

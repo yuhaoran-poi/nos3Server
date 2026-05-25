@@ -1,9 +1,9 @@
 ---@class Coin_cfg
 ---@field public id integer @唯一ID(必须为第一列且名称为id，类型为INT)
 ---@field public max_num integer @携带上限
----@field public day_num integer @日获取上限
----@field public weak_num integer @周获取上限
----@field public year_num integer @年获取上限
+---@field public day_num integer @无效-日获取上限
+---@field public weak_num integer @无效-周获取上限
+---@field public year_num integer @无效-年获取上限
 ---@field public coin_bound integer @关联的非绑定货币id
 return {
 [1] = { id=1,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
