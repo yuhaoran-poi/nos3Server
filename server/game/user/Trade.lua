@@ -723,12 +723,20 @@ function Trade.PBTradeBuyReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
+    moon.debug(string.format("Trade.PBTradeBuyReqCmd Trademgr.BuyTradeProduct res:%s", json.pretty_encode(res)))
     if res.data.remain_coin and res.data.remain_coin > 0 then
         scripts.Bag.RollBackWithChange(bag_change_logs)
         -- 重新确定扣除的正确金额
         bag_change_logs = {}
         cost_coins[trade_cfg.order_currency].coin_count = cost_coins[trade_cfg.order_currency].coin_count +
             res.data.remain_coin
+
+        err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_logs)
+        if err_code_coins ~= ErrorCode.None then
+            moon.error("Trade.PBTradeBuyReqCmd DealCoins err", err_code_coins)
+            scripts.Bag.RollBackWithChange(bag_change_logs)
+            return err_code_coins
+        end
     end
 
     local is_gm = false
@@ -754,13 +762,12 @@ function Trade.PBTradeBuyReqCmd(req)
             end
 
             -- 添加道具前先扣除花费
-            -- scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.TradeBuyCost)
-            err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_logs)
-            if err_code_coins ~= ErrorCode.None then
-                moon.error("Trade.PBTradeBuyReqCmd DealCoins err", err_code_coins)
-                scripts.Bag.RollBackWithChange(bag_change_logs)
-                return err_code_coins
-            end
+            -- err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_logs)
+            -- if err_code_coins ~= ErrorCode.None then
+            --     moon.error("Trade.PBTradeBuyReqCmd DealCoins err", err_code_coins)
+            --     scripts.Bag.RollBackWithChange(bag_change_logs)
+            --     return err_code_coins
+            -- end
 
             -- 添加道具
             if table.size(stack_items) + table.size(unstack_items) > 0 then
@@ -796,13 +803,13 @@ function Trade.PBTradeBuyReqCmd(req)
             end
 
             -- 扣除花费
-            err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_logs)
-            if err_code_coins ~= ErrorCode.None then
-                moon.error("Trade.PBTradeBuyReqCmd DealCoins err", err_code_coins)
-                scripts.Bag.RollBackWithChange(bag_change_logs)
-                return err_code_coins
-            end
-            scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.TradeBuy)
+            -- err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_logs)
+            -- if err_code_coins ~= ErrorCode.None then
+            --     moon.error("Trade.PBTradeBuyReqCmd DealCoins err", err_code_coins)
+            --     scripts.Bag.RollBackWithChange(bag_change_logs)
+            --     return err_code_coins
+            -- end
+            -- scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.TradeBuy)
         end
     end
 
