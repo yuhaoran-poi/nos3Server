@@ -809,7 +809,7 @@ function Trade.PBTradeBuyReqCmd(req)
             --     scripts.Bag.RollBackWithChange(bag_change_logs)
             --     return err_code_coins
             -- end
-            -- scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.TradeBuy)
+            scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.TradeBuy)
         end
     end
 
