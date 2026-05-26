@@ -82,7 +82,8 @@ local ItemDefine = {
         HeadFrameSkin = 30,
         TitleSkin = 31,
         TreasureChest = 32,
-        StackAntique = 33,        -- 鉴定前的可堆叠古董
+        StackAntique = 33, -- 鉴定前的可堆叠古董
+        SkinTryCard = 34,
         Other = 255,
     },
 

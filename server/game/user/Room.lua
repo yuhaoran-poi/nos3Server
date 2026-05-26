@@ -892,13 +892,13 @@ function Room.GameSettle(settle_info)
     if settle_info.is_complete and settle_info.is_complete == 1 then
         complete_num = 1
     end
+    local battle_type = settle_info.chapter_id * 1000 + settle_info.difficulty
     local kill_monster_cnt = 0
     for _, kill_monster in pairs(settle_info.kill_monsters) do
         kill_monster_cnt = kill_monster_cnt + kill_monster.kill_cnt
     end
-    scripts.Season.AddBattleNum(settle_info.chapter_id, 1, complete_num, settle_info.booty_value,
+    scripts.Season.AddBattleNum(battle_type, 1, complete_num, settle_info.booty_value,
         settle_info.end_game_ts - settle_info.start_game_ts, kill_monster_cnt)
-    
 
     if settle_info.game_missions and table.size(settle_info.game_missions) > 0 then
         -- 局内完成任务

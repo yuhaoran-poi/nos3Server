@@ -87,18 +87,20 @@ function ChatProxy.PBChatReqCmd(req)
         return { code = ErrorCode.ChatSendInterval }
     end
 
+    moon.info(string.format("PBChatReqCmd user_attr:%s", json.encode(user_attr)))
     local PBChatMsgInfo = {
         channel_type = channel_type,
         uid = context.uid,
         name = user_attr.nick_name,
-        head_icon_id = user_attr.head_icon,
-        head_frame_id = user_attr.head_frame,
-        title_id = user_attr.title,
+        head_icon = user_attr.head_icon,
+        head_frame = user_attr.head_frame,
+        title = user_attr.title,
         msg_content = msg_content,
         msg_attach = msg_attach,
         send_time = moon.time(),
         to_uid = to_uid,
     }
+    moon.info(string.format("PBChatReqCmd PBChatMsgInfo:%s", json.encode(PBChatMsgInfo)))
     -- 检查频道类型
     if channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_PRIVATE then --私聊
         if not to_uid then
