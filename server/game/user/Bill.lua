@@ -14,6 +14,7 @@ local ItemDef = require("common.def.ItemDef")
 local ProtoEnum = require("tools.ProtoEnum")
 local serverconf = require("serverconf")
 local MissionDef = require("common.def.MissionDef")
+local Rank = require("game.user.Rank")
 
 ---@type user_context
 local context = ...
@@ -61,6 +62,8 @@ function Bill.SaveBillsNow()
         return false
     end
 
+    --发电榜更新
+    scripts.Rank.UpdateRank_Fadian(bills.week_bill_amount, bills.month_bill_amount, bills.total_bill_amount)
     local success = Database.savebillinfo(context.addr_db_user, context.uid, bills)
     return success
 end

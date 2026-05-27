@@ -650,7 +650,20 @@ function User.AddAccountExp(add_exp)
     local update_user_attr = {}
     update_user_attr[ProtoEnum.UserAttrType.account_level] = now_level
     update_user_attr[ProtoEnum.UserAttrType.account_exp] = now_exp
+    -- 角色榜更新
+    scripts.Rank.UpdateRank_Player(now_level)
     User.SetUserAttr(update_user_attr, true)
+end
+
+function User.GetAccountBuff()
+    local query_res = User.QueryUserAttr({ ProtoEnum.UserAttrType.buff_datas })
+    if query_res.code ~= ErrorCode.None then
+        moon.error("GetAccountBuff failed:", query_res.error)
+        return nil, query_res.code
+    end
+
+    local buff_datas = query_res.user_attr[ProtoEnum.UserAttrType.buff_datas] or {}
+    return buff_datas, ErrorCode.None
 end
 
 function User.GMAddAccountExp(add_exp)
@@ -2670,18 +2683,16 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log)
     return err_code
 end
 
-function User.AddAccountBuff(item_cfg, msg_data, buff_id)
+function User.AddAccountBuff(item_cfg, msg_data)
     local err_code = ErrorCode.ItemTypeMismatch
     local buff_cfg
-    if buff_id and item_cfg == nil and msg_data == nil then
-        buff_cfg = GameCfg.AccountBuffConfig[buff_id]
-    elseif item_cfg.buff_type and item_cfg.buff_count then
-        buff_cfg = GameCfg.AccountBuffConfig[item_cfg.buff_type]
-    else
+
+    if not item_cfg or not item_cfg.buff_type or not item_cfg.buff_count then
         err_code = ErrorCode.ConfigError
         return err_code
     end
 
+    buff_cfg = GameCfg.AccountBuffConfig[item_cfg.buff_type]
     if not buff_cfg then
         err_code = ErrorCode.ConfigError
         return err_code
@@ -2704,9 +2715,6 @@ function User.AddAccountBuff(item_cfg, msg_data, buff_id)
                     else
                         old_buff_data.end_ts = old_buff_data.end_ts + (item_cfg.buff_count * msg_data.use_item_cnt)
                     end
-                elseif buff_cfg.period_type == 3 then
-                    -- 赛季结束时间
-                    old_buff_data.end_ts = now_ts
                 else
                     err_code = ErrorCode.ConfigError
                     return err_code
@@ -2718,13 +2726,17 @@ function User.AddAccountBuff(item_cfg, msg_data, buff_id)
                 new_buff_data.period_type = buff_cfg.period_type
                 new_buff_data.end_ts = 0
                 new_buff_data.surplus_cnt = 0
+                new_buff_data.coefficient = 0
+                if buff_cfg.value_type == 0 then
+                    -- 万分比
+                    new_buff_data.coefficient = buff_cfg.buff_coefficient / 10000
+                else
+                    new_buff_data.coefficient = buff_cfg.buff_coefficient
+                end
                 if buff_cfg.period_type == 1 then
                     new_buff_data.surplus_cnt = item_cfg.buff_count * msg_data.use_item_cnt
                 elseif buff_cfg.period_type == 2 then
                     new_buff_data.end_ts = now_ts + (item_cfg.buff_count * msg_data.use_item_cnt)
-                elseif buff_cfg.period_type == 3 then
-                    -- 赛季结束时间
-                    new_buff_data.end_ts = now_ts + 86400
                 else
                     err_code = ErrorCode.ConfigError
                     return err_code
@@ -2738,13 +2750,17 @@ function User.AddAccountBuff(item_cfg, msg_data, buff_id)
             new_buff_data.period_type = buff_cfg.period_type
             new_buff_data.end_ts = 0
             new_buff_data.surplus_cnt = 0
+            new_buff_data.coefficient = 0
+            if buff_cfg.value_type == 0 then
+                -- 万分比
+                new_buff_data.coefficient = buff_cfg.buff_coefficient / 10000
+            else
+                new_buff_data.coefficient = buff_cfg.buff_coefficient
+            end
             if buff_cfg.period_type == 1 then
                 new_buff_data.surplus_cnt = item_cfg.buff_count * msg_data.use_item_cnt
             elseif buff_cfg.period_type == 2 then
                 new_buff_data.end_ts = now_ts + (item_cfg.buff_count * msg_data.use_item_cnt)
-            elseif buff_cfg.period_type == 3 then
-                -- 赛季结束时间
-                new_buff_data.end_ts = now_ts + 86400
             else
                 err_code = ErrorCode.ConfigError
                 return err_code

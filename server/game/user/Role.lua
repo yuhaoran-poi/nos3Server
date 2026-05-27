@@ -13,7 +13,7 @@ local ItemDefine = require("common.logic.ItemDefine")
 local ItemDef = require("common.def.ItemDef")
 local CommonCfgDef = require("common.def.CommonCfgDef")
 local MissionDef = require("common.def.MissionDef")
-local ItemDefine = require("common.logic.ItemDefine")
+
 
 ---@type user_context
 local context = ...
@@ -745,6 +745,13 @@ function Role.GetLvMoreThanNum(target_role_id, target_lv_exps)
         -- 触发角色达到指定等级的数量
         scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_LEVEL_CNT, { lv_exp.lv }, num + 1)
         scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_LEVEL, { target_role_id }, lv_exp.lv)
+    end
+
+    for roleid, role_info in pairs(roles.role_list) do
+        if roleid == target_role_id then
+            -- 角色榜更新
+            scripts.Rank.UpdateRank_Role(roleid, target_lv_exps.lv, role_info.skins)
+        end
     end
 end
 

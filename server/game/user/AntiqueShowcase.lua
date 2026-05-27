@@ -196,14 +196,17 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
 
     local old_item_data = table.copy(item_data)
 
+    local real_config_id = config_id
     local a_cfg
     if(is_stack_antique) then
         local convert_config_id = GameCfg.LightConvert[config_id].getid
-        a_cfg = GameCfg.AntiqueItem[convert_config_id]
-    else
-        a_cfg = GameCfg.AntiqueItem[config_id]
+        if not convert_config_id or convert_config_id <= 0 then
+            return ErrorCode.ItemNotExist, "道具不存在"
+        end
+        real_config_id = convert_config_id
     end
 
+    a_cfg = GameCfg.AntiqueItem[real_config_id]
     if not a_cfg then
         return ErrorCode.ItemNotExist, "道具不存在"
     end
@@ -362,6 +365,11 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
 
     -- 触发鉴定古董次数
     scripts.Mission.TriggerCondition(MissionDef.EConditionIds.APPRAISE_ANTIQUE_CNT, { a_cfg.quality }, 1)
+    if(rsp_price > 0) then
+        -- 更新古董榜
+        scripts.Rank.UpdateRank_Antique(real_config_id, rsp_price)
+    end
+
     if is_succ == 1 then
         return ErrorCode.None, "鉴定完成 古董为真品", price_probability
     elseif is_succ ==0 then
@@ -428,7 +436,6 @@ function AntiqueShowcase.AntiqueShow(config_id, uniq_id, showcase_id, showcase_i
         if item_data.special_info and item_data.special_info.antique_item then
             local antique_item = item_data.special_info.antique_item
             -- 未鉴定的古董：剩余鉴定次数等于初始次数（说明从未鉴定过）
-            local antique_cfg = GameCfg.AntiqueItem[config_id]
             if antique_cfg and antique_item.remain_identify_num == antique_cfg.identifynum then
                 return ErrorCode.IdentifyInvalid, "未鉴定的古董不能展示"
             end
@@ -441,14 +448,14 @@ function AntiqueShowcase.AntiqueShow(config_id, uniq_id, showcase_id, showcase_i
             local takeoff_items = { [aimShowAntique.common_info.uniqid] = aimShowAntique }
 
             -- 删除背包内古董
-            local err_code = scripts.Bag.DelItems(BagDef.BagType.Cangku, {}, del_unique_items, bag_change_log)
+            err_code = scripts.Bag.DelItems(BagDef.BagType.Cangku, {}, del_unique_items, bag_change_log)
             if err_code ~= ErrorCode.None then
                 scripts.Bag.RollBackWithChange(bag_change_log)
                 return err_code, "删除古董失败"
             end
 
             -- 添加被替换的古董
-            local err_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, {}, takeoff_items, bag_change_log)
+            err_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, {}, takeoff_items, bag_change_log)
             if err_code ~= ErrorCode.None then
                 scripts.Bag.RollBackWithChange(bag_change_log)
                 return err_code, "添加古董失败"
@@ -456,7 +463,7 @@ function AntiqueShowcase.AntiqueShow(config_id, uniq_id, showcase_id, showcase_i
         else
             -- 删除背包内古董
             local del_unique_items = { [uniq_id] = { config_id = config_id, uniqid = uniq_id, pos = bag_pos } }
-            local err_code = scripts.Bag.DelItems(BagDef.BagType.Cangku, {}, del_unique_items, bag_change_log)
+            err_code = scripts.Bag.DelItems(BagDef.BagType.Cangku, {}, del_unique_items, bag_change_log)
             if err_code ~= ErrorCode.None then
                 scripts.Bag.RollBackWithChange(bag_change_log)
                 return err_code, "删除古董失败"

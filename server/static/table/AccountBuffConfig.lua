@@ -1,14 +1,55 @@
 ---@class AccountBuffConfig_cfg
----@field public id integer @账户 buff id
----@field public buff_effect integer @buff的效果：（配置生效后不可更改） 1 = 结算加成_角色经验； 2 = 结算加成_账户经验； 3 = 结算加成_货币加成 1（货币 id = 1）；
----@field public buff_coefficient integer @buff的加成系数（%万分比）
+---@field public id integer @账户 buff id 10000后的表示镇山之宝buff
+---@field public buff_effect integer @buff的效果：（配置生效后不可更改） 1：结算加成_角色经验 2：结算加成_账户经验 3：结算加成_货币加成 1（货币 id = 1） 4：增加局内负重 5：交易行同时上架栏位增加 6：每日寄售总次数上限增加 7：局外基础仓库存储容量扩充 8：修复耐久度货币消耗百分比降低 9：结算时角色经验值百分比加成 10：局内死亡时耐久度损失比例降低 11：撤离失败时耐久度损失比例降低
+---@field public value_type integer @该buff的数值类型 0-百分比 1-固定数值
+---@field public buff_coefficient integer @该列表示具体数值 表示百分比时（%万分比） 表示固定数值时，填固定值
 ---@field public period_type integer @buff生效周期类型：（配置生效后不可更改） 1 = 次数生效； 2 = 时长生效（秒）； 3 = 赛季生效（镇山之宝专用）
 return {
-[1] = { id=1,buff_effect=1,buff_coefficient=20000,period_type=1 },
-[2] = { id=2,buff_effect=3,buff_coefficient=20000,period_type=2 },
-[3] = { id=3,buff_effect=3,buff_coefficient=30000,period_type=3 },
-[4] = { id=4,buff_effect=3,buff_coefficient=40000,period_type=3 },
-[5] = { id=5,buff_effect=3,buff_coefficient=50000,period_type=3 },
-[6] = { id=6,buff_effect=3,buff_coefficient=60000,period_type=3 },
-[7] = { id=7,buff_effect=3,buff_coefficient=70000,period_type=3 }
+[1] = { id=1,buff_effect=1,value_type=0,buff_coefficient=20000,period_type=1 },
+[2] = { id=2,buff_effect=3,value_type=0,buff_coefficient=20000,period_type=2 },
+[3] = { id=3,buff_effect=3,value_type=0,buff_coefficient=30000,period_type=1 },
+[4] = { id=4,buff_effect=3,value_type=0,buff_coefficient=40000,period_type=2 },
+[5] = { id=5,buff_effect=3,value_type=0,buff_coefficient=50000,period_type=1 },
+[6] = { id=6,buff_effect=3,value_type=0,buff_coefficient=60000,period_type=2 },
+[7] = { id=7,buff_effect=3,value_type=0,buff_coefficient=70000,period_type=1 },
+[10000] = { id=10000,buff_effect=4,value_type=1,buff_coefficient=5,period_type=3 },
+[10001] = { id=10001,buff_effect=4,value_type=1,buff_coefficient=10,period_type=3 },
+[10002] = { id=10002,buff_effect=4,value_type=1,buff_coefficient=15,period_type=3 },
+[10003] = { id=10003,buff_effect=4,value_type=1,buff_coefficient=20,period_type=3 },
+[10004] = { id=10004,buff_effect=4,value_type=1,buff_coefficient=35,period_type=3 },
+[10005] = { id=10005,buff_effect=5,value_type=1,buff_coefficient=1,period_type=3 },
+[10006] = { id=10006,buff_effect=5,value_type=1,buff_coefficient=2,period_type=3 },
+[10007] = { id=10007,buff_effect=5,value_type=1,buff_coefficient=3,period_type=3 },
+[10008] = { id=10008,buff_effect=5,value_type=1,buff_coefficient=4,period_type=3 },
+[10009] = { id=10009,buff_effect=5,value_type=1,buff_coefficient=6,period_type=3 },
+[10010] = { id=10010,buff_effect=6,value_type=1,buff_coefficient=5,period_type=3 },
+[10011] = { id=10011,buff_effect=6,value_type=1,buff_coefficient=10,period_type=3 },
+[10012] = { id=10012,buff_effect=6,value_type=1,buff_coefficient=15,period_type=3 },
+[10013] = { id=10013,buff_effect=6,value_type=1,buff_coefficient=20,period_type=3 },
+[10014] = { id=10014,buff_effect=6,value_type=1,buff_coefficient=35,period_type=3 },
+[10015] = { id=10015,buff_effect=7,value_type=1,buff_coefficient=10,period_type=3 },
+[10016] = { id=10016,buff_effect=7,value_type=1,buff_coefficient=20,period_type=3 },
+[10017] = { id=10017,buff_effect=7,value_type=1,buff_coefficient=30,period_type=3 },
+[10018] = { id=10018,buff_effect=7,value_type=1,buff_coefficient=40,period_type=3 },
+[10019] = { id=10019,buff_effect=7,value_type=1,buff_coefficient=60,period_type=3 },
+[10020] = { id=10020,buff_effect=8,value_type=0,buff_coefficient=500,period_type=3 },
+[10021] = { id=10021,buff_effect=8,value_type=0,buff_coefficient=1000,period_type=3 },
+[10022] = { id=10022,buff_effect=8,value_type=0,buff_coefficient=1500,period_type=3 },
+[10023] = { id=10023,buff_effect=8,value_type=0,buff_coefficient=2000,period_type=3 },
+[10024] = { id=10024,buff_effect=8,value_type=0,buff_coefficient=4000,period_type=3 },
+[10025] = { id=10025,buff_effect=9,value_type=0,buff_coefficient=500,period_type=3 },
+[10026] = { id=10026,buff_effect=9,value_type=0,buff_coefficient=1000,period_type=3 },
+[10027] = { id=10027,buff_effect=9,value_type=0,buff_coefficient=1500,period_type=3 },
+[10028] = { id=10028,buff_effect=9,value_type=0,buff_coefficient=2000,period_type=3 },
+[10029] = { id=10029,buff_effect=9,value_type=0,buff_coefficient=3500,period_type=3 },
+[10030] = { id=10030,buff_effect=10,value_type=0,buff_coefficient=400,period_type=3 },
+[10031] = { id=10031,buff_effect=10,value_type=0,buff_coefficient=800,period_type=3 },
+[10032] = { id=10032,buff_effect=10,value_type=0,buff_coefficient=1200,period_type=3 },
+[10033] = { id=10033,buff_effect=10,value_type=0,buff_coefficient=1600,period_type=3 },
+[10034] = { id=10034,buff_effect=10,value_type=0,buff_coefficient=3000,period_type=3 },
+[10035] = { id=10035,buff_effect=11,value_type=0,buff_coefficient=500,period_type=3 },
+[10036] = { id=10036,buff_effect=11,value_type=0,buff_coefficient=1000,period_type=3 },
+[10037] = { id=10037,buff_effect=11,value_type=0,buff_coefficient=1500,period_type=3 },
+[10038] = { id=10038,buff_effect=11,value_type=0,buff_coefficient=2000,period_type=3 },
+[10039] = { id=10039,buff_effect=11,value_type=0,buff_coefficient=4000,period_type=3 }
 }

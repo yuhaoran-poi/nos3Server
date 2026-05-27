@@ -738,4 +738,72 @@ function DsNode.PBDsGetAllYesAveragePriceReqCmd(req)
     return context.S2D(context.net_id, CmdCode.PBDsGetAllYesAveragePriceRspCmd, ret, req.msg_context.stub_id)
 end
 
+-- 获取玩家账户buff数据
+function DsNode.PBGetDsUserAccountBuffReqCmd(req)
+    if not req.msg.dsid or not req.msg.quest_uid then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "param error",
+            dsid = req.msg.dsid,
+            quest_uid = req.msg.quest_uid,
+        }
+        return context.S2D(context.net_id, CmdCode.PBGetDsUserAccountBuffRspCmd, ret, req.msg_context.stub_id)
+    end
+
+    local buff_datas, err = context.call_user(req.msg.quest_uid, "User.GetAccountBuff")
+    if not buff_datas then
+        moon.error("PBGetDsUserAccountBuffReqCmd failed:", err)
+        local ret = {
+            code = err or ErrorCode.ServerInternalError,
+            error = tostring(err),
+            dsid = req.msg.dsid,
+            quest_uid = req.msg.quest_uid,
+        }
+        return context.S2D(context.net_id, CmdCode.PBGetDsUserAccountBuffRspCmd, ret, req.msg_context.stub_id)
+    end
+
+    local ret = {
+        code = ErrorCode.None,
+        error = "",
+        dsid = req.msg.dsid,
+        quest_uid = req.msg.quest_uid,
+        buff_datas = buff_datas,
+    }
+    return context.S2D(context.net_id, CmdCode.PBGetDsUserAccountBuffRspCmd, ret, req.msg_context.stub_id)
+end
+
+-- 获取玩家镇山之宝数据
+function DsNode.PBGetDsUserAweItemReqCmd(req)
+    if not req.msg.dsid or not req.msg.quest_uid then
+        local ret = {
+            code = ErrorCode.CityVerifyFailed,
+            error = "param error",
+            dsid = req.msg.dsid,
+            quest_uid = req.msg.quest_uid,
+        }
+        return context.S2D(context.net_id, CmdCode.PBGetDsUserAweItemRspCmd, ret, req.msg_context.stub_id)
+    end
+
+    local res, err = context.call_user(req.msg.quest_uid, "AweItem.GetAweItemInfo")
+    if not res then
+        moon.error("PBGetDsUserAweItemReqCmd failed:", err)
+        local ret = {
+            code = err or ErrorCode.ServerInternalError,
+            error = tostring(err),
+            dsid = req.msg.dsid,
+            quest_uid = req.msg.quest_uid,
+        }
+        return context.S2D(context.net_id, CmdCode.PBGetDsUserAweItemRspCmd, ret, req.msg_context.stub_id)
+    end
+
+    local ret = {
+        code = ErrorCode.None,
+        error = "",
+        dsid = req.msg.dsid,
+        quest_uid = req.msg.quest_uid,
+        awe_items = res,
+    }
+    return context.S2D(context.net_id, CmdCode.PBGetDsUserAweItemRspCmd, ret, req.msg_context.stub_id)
+end
+
 return DsNode

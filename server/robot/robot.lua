@@ -30,6 +30,7 @@ require "robot.logic.ClientGhost"
 require "robot.logic.ClientShop"
 require "robot.logic.ClientGods"
 require "robot.logic.ClientAweItem"
+require "robot.logic.ClientRank"
 
 local all_robot = {}
 local cur_index = 1

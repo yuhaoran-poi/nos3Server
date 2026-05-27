@@ -1,9 +1,11 @@
 syntax = "proto3";
+import "common.proto";
 import "item.proto";
 import "user.proto";
 import "bag.proto";
 import "role.proto";
 import "gods.proto";
+import "aweitem.proto";
 
 message PBGameChangeRoleInfo
 {
@@ -296,4 +298,36 @@ message PBDsGetAllYesAveragePriceRspCmd
     string error = 2; // 错误信息
 	int32 dsid			= 3;
 	map<int32, float> yes_average_price	= 4;
+}
+
+// DS获取玩家账户buff数据
+message PBGetDsUserAccountBuffReqCmd
+{
+    int32 dsid		= 1;
+	int64 quest_uid	= 2;    // 请求的玩家uid
+}
+
+message PBGetDsUserAccountBuffRspCmd
+{
+    int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+    int32 dsid			= 3;
+	int64 quest_uid		= 4;
+    map<int32, PBBuffData> buff_datas = 5;    // 账户buff数据（key为buff_effect）
+}
+
+// DS获取玩家镇山之宝数据
+message PBGetDsUserAweItemReqCmd
+{
+    int32 dsid		= 1;
+	int64 quest_uid	= 2;    // 请求的玩家uid
+}
+
+message PBGetDsUserAweItemRspCmd
+{
+    int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+    int32 dsid			= 3;
+	int64 quest_uid		= 4;
+    PBUserAweItems awe_items = 5;   // 玩家镇山之宝数据
 }

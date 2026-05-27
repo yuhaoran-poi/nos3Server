@@ -9,6 +9,7 @@ local BagDef = require("common.def.BagDef")
 local ItemDefine = require("common.logic.ItemDefine")
 local CommonCfgDef = require("common.def.CommonCfgDef")
 local AweItemDef = require("common.def.AweItemDef")
+local ProtoEnum = require("tools.ProtoEnum")
 
 ---@type user_context
 local context = ...
@@ -67,7 +68,7 @@ end
 
 function AweItem.SaveAndLog()
     local aweitems = scripts.UserModel.GetAweItems()
-    if not aweitems then    
+    if not aweitems then
         return false
     end
 
@@ -75,6 +76,35 @@ function AweItem.SaveAndLog()
     context.S2C(context.net_id, CmdCode["PBAweItemsSyncCmd"], { awe_item_info = aweitems }, 0)
 
     return true
+end
+
+function AweItem.ResetAllAweItemLevel()
+    local aweitems = scripts.UserModel.GetAweItems()
+    if not aweitems then
+        return ErrorCode.SystemError
+    end
+
+    local has_changed = false
+    for config_id, aweitem in pairs(aweitems.awe_item_map) do
+        if aweitem.up_level ~= 1 then
+            aweitem.up_level = 1
+            has_changed = true
+        end
+    end
+
+    if has_changed then
+        AweItem.SaveAndLog()
+    end
+
+    return ErrorCode.None
+end
+
+function AweItem.GetAweItemsInfo()
+    local aweitems = scripts.UserModel.GetAweItems()
+    if not aweitems then
+        return nil, ErrorCode.ServerInternalError
+    end
+    return aweitems, ErrorCode.None
 end
 
 function AweItem.PBAweItemsGetInfoReqCmd(req)
@@ -213,6 +243,30 @@ function AweItem.PBAweItemUpLvReqCmd(req)
     }, req.msg_context.stub_id)
 end
 
+-- 为镇山之宝添加buff数据
+local function AddAweItemBuff(aweitem, buff_id)
+    local buff_cfg = GameCfg.AccountBuffConfig[buff_id]
+    if not buff_cfg then
+        return
+    end
+
+    aweitem.buff_data = {
+        buff_id = buff_cfg.id,
+        buff_effect = buff_cfg.buff_effect,
+        period_type = buff_cfg.period_type,
+        end_ts = 0,
+        surplus_cnt = 0,
+        coefficient = buff_cfg.value_type == 0 and (buff_cfg.buff_coefficient / 10000) or buff_cfg.buff_coefficient
+    }
+    if buff_cfg.buff_effect == ProtoEnum.AccountBuffType.Buff_TradeSlot then
+        -- 交易行同时上架栏位增加
+    elseif buff_cfg.buff_effect == ProtoEnum.AccountBuffType.Buff_AuctionLimit then
+        -- 每日寄售总次数上限增加
+    elseif buff_cfg.buff_effect == ProtoEnum.AccountBuffType.Buff_Warehouse then
+        scripts.Bag.AddCapacity(BagDef.BagType.Cangku, 0, buff_cfg.buff_coefficient)
+    end
+end
+
 function AweItem.UpStar(awe_item_id)
     local awe_cfg = GameCfg.OnlyOneItem[awe_item_id]
     if not awe_cfg then
@@ -258,7 +312,7 @@ function AweItem.UpStar(awe_item_id)
     if not cost_cfg then
         return ErrorCode.ConfigError, nil
     end
-    
+
     local rate_key = "rate" .. (now_star_level + 1)
     if not star_cfg[rate_key] then
         return ErrorCode.ConfigError, nil
@@ -267,7 +321,7 @@ function AweItem.UpStar(awe_item_id)
     if not rate_cfg then
         return ErrorCode.ConfigError, nil
     end
-        
+
     local fail_cnt_field = "star_lv_fail_cnt"
     local level_field = "star_level"
 
@@ -311,24 +365,23 @@ function AweItem.UpStar(awe_item_id)
     end
     local now_rate = rate_cfg + add_rate_cfg.value * aweitem[fail_cnt_field]
     local rand_num = math.random(1, 10000)
-    moon.error(" 1111111111111 rand_num =  " .. rand_num .. " now_rate = " .. now_rate)
+    moon.info(" 1111111111111 rand_num =  " .. rand_num .. " now_rate = " .. now_rate)
     local success = rand_num <= now_rate
-    moon.error(" 1111111111111 success = " .. tostring(success))
+    moon.info(" 1111111111111 success = " .. tostring(success))
 
     if success then
         aweitem[level_field] = now_star_level + 1
         aweitem[fail_cnt_field] = 0
-        
-        local awe_cfg = GameCfg.OnlyOneItem[awe_item_id]
-        if not awe_cfg then
+
+        local only_one_cfg = GameCfg.OnlyOneItem[awe_item_id]
+        if not only_one_cfg then
             return ErrorCode.ConfigError, nil
         end
 
-        -- 在aweitem里面添加buffid
-        for star_lv, buff_id in ipairs(awe_cfg.buff) do
+        -- 在aweitem里面添加buff数据
+        for star_lv, buff_id in ipairs(only_one_cfg.buff) do
             if star_lv == now_star_level + 1 then
-                aweitem.buff_id = buff_id
-                scripts.User.AddAccountBuff(nil, nil, buff_id)
+                AddAweItemBuff(aweitem, buff_id)
             end
         end
     else
@@ -364,17 +417,16 @@ function AweItem.AweItemUnlock(aweitem_id)
     end
 
     -- 创建新的AweItem
-    local aweitem = AweItemDef.newAweItem()
-    aweitem.config_id = aweitem_id
-    aweitem.up_level = 1
-    aweitem.star_level = 1
+    local newAweitem = AweItemDef.newAweItem()
+    newAweitem.config_id = aweitem_id
+    newAweitem.up_level = 1
+    newAweitem.star_level = 1
     for star_lv, buff_id in ipairs(awe_cfg.buff) do
         if star_lv == 1 then
-            aweitem.buff_id = buff_id
-            scripts.User.AddAccountBuff(nil, nil, buff_id)
+            AddAweItemBuff(newAweitem, buff_id)
         end
     end
-    aweitems.awe_item_map[aweitem_id] = aweitem
+    aweitems.awe_item_map[aweitem_id] = newAweitem
 
     -- 保存数据
     AweItem.SaveAndLog()

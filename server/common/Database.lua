@@ -46,6 +46,22 @@ function _M.saveserverdata(addr_db, data)
     return res
 end
 
+function _M.saveserverdata_with_key(addr_db, key, data)
+    local res, err = redis_call(addr_db, "set", key, data)
+    if res == false then
+        error("saveserverdata_with_key failed:" .. tostring(err))
+    end
+    return res
+end
+
+function _M.loadserverdata_with_key(addr_db, key)
+    local res, err = redis_call(addr_db, "get", key)
+    if res == false then
+        error("loadserverdata_with_key failed:" .. tostring(err))
+    end
+    return res
+end
+
 function _M.loadGloabalDsGnId(addr_db)
     local res, err = redis_call(addr_db, "get", "GloabalDsGnId")
     if res == false then

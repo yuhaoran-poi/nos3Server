@@ -6,8 +6,8 @@ local defaultPBAweItem = {
     config_id = 0,
     up_level = 0,
     star_level = 0,
-    buff_id = 0,
     star_lv_fail_cnt = 0,
+    buff_data = {},
 }
 
 local defaultPBAweItems = {

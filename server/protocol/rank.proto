@@ -1,41 +1,200 @@
 syntax = "proto3";
 
-message PBRankData
-{
-    int64 id			= 1; //宗门id或者玩家id
-	int32 idx			= 2;
-	int64 score			= 3;
-	string rank_data	= 4; 
+// package rank;
+
+// 排行榜类型
+enum RankType {
+    RankType_None = 0;                // 无类型
+    RankType_Duanwei_Weekly = 1;     // 周段位榜
+    RankType_Duanwei_Season = 2;     // 赛季段位榜
+    RankType_Mainline = 3;           // 主线榜
+    RankType_Fengta = 4;             // 封塔榜
+    RankType_Fadian_Total = 5;       // 发电总榜
+    RankType_Fadian_Weekly = 6;      // 发电周榜
+    RankType_Fadian_Monthly = 7;     // 发电月榜
+    RankType_Player = 8;             // 玩家榜
+    RankType_Role = 9;               // 角色榜
+    RankType_Antique = 10;           // 古董榜
+    RankType_GuildActive = 11;        // 宗门活跃榜
+    RankType_GuildMoney = 12;         // 宗门资金榜
+    RankType_GuildScore_Weekly = 13;  // 宗门周赛季积分榜
+    RankType_GuildScore_Season = 14;  // 宗门赛季积分榜
 }
 
-message PBRankInfo
-{
-    int64 rank_id		= 1;
-    int64 beg_ts		= 2;
-	int64 end_ts		= 3;
-	repeated PBRankData datas	= 4;
+// 玩家排行数据
+message PlayerRankData {
+    uint64 uid = 1;            // 玩家ID
+    string name = 2;           // 玩家名称
+    uint32 avatar = 3;         // 头像
+    uint32 avatar_frame = 4;    // 头像框
+    string guild_name = 5;      // 所属宗门名称
+    int64 value = 6;            // 排行值
+    map<string, string> extra_data = 7; // 额外数据
+    int32 rank = 8;            // 排名
+    int64 update_time = 9;      // 更新时间
+    // 出战角色和鬼怪信息
+    uint32 character_id = 10;           // 出战角色配置ID
+    repeated uint32 character_skins = 11; // 出战角色时装（数组）
+    uint32 ghost_id = 12;               // 出战鬼怪配置ID
+    uint32 ghost_skin = 13;             // 出战鬼怪时装
+    // 宗门榜宗主信息
+    string guild_leader = 14;            // 宗主名称
+    uint32 gl_char_id = 15;              // 宗主出战角色配置ID
+    repeated uint32 gl_char_skins = 16;  // 宗主出战角色时装（数组）
+    uint32 gl_ghost_id = 17;             // 宗主出战鬼怪配置ID
+    uint32 gl_ghost_skin = 18;           // 宗主出战鬼怪时装
 }
 
-// 客户端请求排行榜数据
-message PBGetRankInfoReqCmd
-{
-    // 协议数据
-    int64 uid		= 1;
-	int32 rank_id	= 2;
+// 排行榜数据
+message RankData {
+    int32 rank_id = 1;          // 排行榜ID
+    RankType rank_type = 2;     // 排行榜类型
+    bool is_flow = 3;           // 是否为流动榜
+    repeated PlayerRankData players = 4; // 玩家数据
+    int64 create_time = 5;      // 创建时间
+    int64 last_refresh_time = 6; // 上次刷新时间
 }
 
-// 客户端请求排行榜数据 返回信息
-message PBGetRankInfoRspCmd
-{
-    int32 code = 1; // 服务器返回,0成功,其他失败
-    string error = 2; // 错误信息
-    // 协议数据
-    int64 uid				= 3;
-    PBRankInfo rank_info	= 4; //排行榜数据
-	PBRankData self_data	= 5; //本榜中玩家自身数据
+// 获取排行榜请求
+message PBRankGetInfoReqCmd {
+    uint64 uid = 1;             // 玩家ID
+    RankType rank_type = 2;     // 排行榜类型
+    int32 rank_id = 3;          // 排行榜ID（流动榜需要）
 }
 
+// 获取排行榜响应
+message PBRankGetInfoRspCmd {
+    int32 code = 1;             // 错误码
+    string error = 2;            // 错误信息
+    uint64 uid = 3;             // 玩家ID
+    repeated RankData rank_data = 4; // 排行榜数据
+}
 
+// 更新段位榜请求
+message PBRankUpdateDuanweiReqCmd {
+    uint64 uid = 1;             // 玩家ID
+    uint32 duanwei = 2;         // 段位等级
+}
 
+// 更新段位榜响应
+message PBRankUpdateDuanweiRspCmd {
+    int32 code = 1;             // 错误码
+    string error = 2;            // 错误信息
+    uint64 uid = 3;             // 玩家ID
+    bool success = 4;            // 是否成功
+}
 
+// 更新主线榜请求
+message PBRankUpdateMainlineReqCmd {
+    uint64 uid = 1;             // 玩家ID
+	uint32 character_id = 2;	// 章节id
+    uint32 difficulty = 3;      // 难度
+    int64 clear_time = 4;       // 通关时间
+}
 
+// 更新主线榜响应
+message PBRankUpdateMainlineRspCmd {
+    int32 code = 1;             // 错误码
+    string error = 2;            // 错误信息
+    uint64 uid = 3;             // 玩家ID
+    bool success = 4;            // 是否成功
+}
+
+// 更新封塔榜请求
+message PBRankUpdateFengtaReqCmd {
+    uint64 uid = 1;             // 玩家ID
+	uint32 character_id = 2;	// 章节id
+    uint32 difficulty = 3;      // 难度
+    int64 clear_time = 4;       // 通关时间
+}
+
+// 更新封塔榜响应
+message PBRankUpdateFengtaRspCmd {
+    int32 code = 1;             // 错误码
+    string error = 2;            // 错误信息
+    uint64 uid = 3;             // 玩家ID
+    bool success = 4;            // 是否成功
+}
+
+// 更新发电榜请求
+message PBRankUpdateFadianReqCmd {
+    uint64 uid = 1;             	// 玩家ID
+    int64 week_bill_amount = 2;     // 周充值金额
+	int64 month_bill_amount = 3;	// 月充值金额
+	int64 total_bill_amount = 4;	// 总充值金额
+}
+
+// 更新发电榜响应
+message PBRankUpdateFadianRspCmd {
+    int32 code = 1;             // 错误码
+    string error = 2;            // 错误信息
+    uint64 uid = 3;             // 玩家ID
+    bool success = 4;            // 是否成功
+}
+
+// 更新玩家榜请求
+message PBRankUpdatePlayerReqCmd {
+    uint64 uid = 1;             // 玩家ID
+    uint32 level = 2;           // 玩家等级
+}
+
+// 更新玩家榜响应
+message PBRankUpdatePlayerRspCmd {
+    int32 code = 1;             // 错误码
+    string error = 2;            // 错误信息
+    uint64 uid = 3;             // 玩家ID
+    bool success = 4;            // 是否成功
+}
+
+// 更新角色榜请求
+message PBRankUpdateRoleReqCmd {
+    uint64 uid = 1;             // 玩家ID
+    uint32 role_id = 2;         // 角色ID
+    uint32 role_level = 3;      // 角色等级
+    uint32 role_skin = 4;       // 角色时装
+}
+
+// 更新角色榜响应
+message PBRankUpdateRoleRspCmd {
+    int32 code = 1;             // 错误码
+    string error = 2;            // 错误信息
+    uint64 uid = 3;             // 玩家ID
+    bool success = 4;            // 是否成功
+}
+
+// 更新古董榜请求
+message PBRankUpdateAntiqueReqCmd {
+    uint64 uid = 1;             // 玩家ID
+    uint32 antique_id = 2;      // 古董ID
+    int64 value = 3;            // 古董价值
+}
+
+// 更新古董榜响应
+message PBRankUpdateAntiqueRspCmd {
+    int32 code = 1;             // 错误码
+    string error = 2;            // 错误信息
+    uint64 uid = 3;             // 玩家ID
+    bool success = 4;            // 是否成功
+}
+
+// 领取排行榜奖励请求
+message PBRankGetRewardReqCmd {
+    uint64 uid = 1;             // 玩家ID
+    RankType rank_type = 2;     // 排行榜类型
+}
+
+// 排行榜奖励数据
+message RankReward {
+    uint32 item_id = 1;          // 物品ID
+    uint32 count = 2;           // 数量
+    string type = 3;             // 奖励类型
+}
+
+// 领取排行榜奖励响应
+message PBRankGetRewardRspCmd {
+    int32 code = 1;             // 错误码
+    string error = 2;            // 错误信息
+    uint64 uid = 3;             // 玩家ID
+    bool success = 4;            // 是否成功
+    repeated RankReward reward = 5; // 奖励列表
+}

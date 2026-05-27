@@ -53,3 +53,31 @@ message PBPongCmd
 {
     double time = 1;   // 用户统计服务器之间延时
 }
+
+// 账户Buff效果类型枚举
+enum AccountBuffType
+{
+    Buff_None            = 0;  // 无效果
+    Buff_RoleExp         = 1;  // 结算加成_角色经验
+    Buff_AccExp          = 2;  // 结算加成_账户经验
+    Buff_Currency1       = 3;  // 结算加成_货币加成1（货币id=1）
+    Buff_Weight          = 4;  // 增加局内负重
+    Buff_TradeSlot       = 5;  // 交易行同时上架栏位增加
+    Buff_AuctionLimit    = 6;  // 每日寄售总次数上限增加
+    Buff_Warehouse       = 7;  // 局外基础仓库存储容量扩充
+    Buff_DurabilityCost  = 8;  // 修复耐久度货币消耗百分比降低
+    Buff_RoleExpPct      = 9;  // 结算时角色经验值百分比加成
+    Buff_DeathLoss       = 10; // 局内死亡时耐久度损失比例降低
+    Buff_EvacLoss        = 11; // 撤离失败时耐久度损失比例降低
+}
+
+// 账户buff加成
+message PBBuffData
+{
+	int32 buff_id	= 1;
+	int32 buff_effect	= 2;
+	int32 period_type	= 3;
+	int64 end_ts		= 4;
+	int32 surplus_cnt	= 5;
+	double coefficient	= 6; // 数值系数，兼容浮点数
+}

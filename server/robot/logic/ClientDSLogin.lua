@@ -97,7 +97,17 @@ function Client:add_items_city_player(uid, cityid)
         item_count = 3,
         uniqid = 1100004196359
     }
-    
+    local item_8 = {
+        config_id = 77000,
+        item_count = 100,
+        uniqid = 0
+    }
+    local item_9 = {
+        config_id = 77001,
+        item_count = 100,
+        uniqid = 0
+    }
+
     -- table.insert(req_msg.simple_items, item_1)
     -- table.insert(req_msg.simple_items, item_2)
     -- table.insert(req_msg.simple_items, item_3)
@@ -105,6 +115,8 @@ function Client:add_items_city_player(uid, cityid)
     -- table.insert(req_msg.simple_items, item_5)
     table.insert(req_msg.simple_items, item_6)
     table.insert(req_msg.simple_items, item_7)
+    table.insert(req_msg.simple_items, item_8)
+    table.insert(req_msg.simple_items, item_9)
 
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     self:send("PBAddItemsCityPlayerReqCmd", req_msg, function(msg)

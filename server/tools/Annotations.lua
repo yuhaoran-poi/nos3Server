@@ -206,8 +206,8 @@
 ---@field public config_id integer @配置id
 ---@field public up_level integer @等级
 ---@field public star_level integer @星级
----@field public buff_id integer @加成效果id
 ---@field public star_lv_fail_cnt integer @当前星级升星失败次数
+---@field public buff_data PBBuffData @buff加成数据
 
 
 ---@class PBUserAweItems
@@ -559,6 +559,15 @@
 ---@field public time number @用户统计服务器之间延时
 
 
+---@class PBBuffData
+---@field public buff_id integer
+---@field public buff_effect integer
+---@field public period_type integer
+---@field public end_ts integer
+---@field public surplus_cnt integer
+---@field public coefficient number @数值系数，兼容浮点数
+
+
 ---@class PBGameChangeRoleInfo
 ---@field public roleid integer
 ---@field public add_role_exp integer @角色经验变化
@@ -792,6 +801,32 @@
 ---@field public error string @错误信息
 ---@field public dsid integer
 ---@field public yes_average_price table<integer, number>
+
+
+---@class PBGetDsUserAccountBuffReqCmd
+---@field public dsid integer
+---@field public quest_uid integer @请求的玩家uid
+
+
+---@class PBGetDsUserAccountBuffRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public dsid integer
+---@field public quest_uid integer
+---@field public buff_datas table<integer, PBBuffData> @账户buff数据（key为buff_effect）
+
+
+---@class PBGetDsUserAweItemReqCmd
+---@field public dsid integer
+---@field public quest_uid integer @请求的玩家uid
+
+
+---@class PBGetDsUserAweItemRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public dsid integer
+---@field public quest_uid integer
+---@field public awe_items PBUserAweItems @玩家镇山之宝数据
 
 
 ---@class PBFriendData
@@ -2531,31 +2566,159 @@
 ---@field public new_complete_id integer
 
 
----@class PBRankData
----@field public id integer @宗门id或者玩家id
----@field public idx integer
----@field public score integer
----@field public rank_data string
+---@class PlayerRankData
+---@field public uid integer @玩家ID
+---@field public name string @玩家名称
+---@field public avatar integer @头像
+---@field public avatar_frame integer @头像框
+---@field public guild_name string @所属宗门名称
+---@field public value integer @排行值
+---@field public extra_data table<string, string> @额外数据
+---@field public rank integer @排名
+---@field public update_time integer @更新时间
+---@field public character_id integer @出战角色配置ID
+---@field public character_skins integer[] @出战角色时装（数组）
+---@field public ghost_id integer @出战鬼怪配置ID
+---@field public ghost_skin integer @出战鬼怪时装
+---@field public guild_leader string @宗主名称
+---@field public gl_char_id integer @宗主出战角色配置ID
+---@field public gl_char_skins integer[] @宗主出战角色时装（数组）
+---@field public gl_ghost_id integer @宗主出战鬼怪配置ID
+---@field public gl_ghost_skin integer @宗主出战鬼怪时装
 
 
----@class PBRankInfo
----@field public rank_id integer
----@field public beg_ts integer
----@field public end_ts integer
----@field public datas PBRankData[]
+---@class RankData
+---@field public rank_id integer @排行榜ID
+---@field public rank_type RankType @排行榜类型
+---@field public is_flow boolean @是否为流动榜
+---@field public players PlayerRankData[] @玩家数据
+---@field public create_time integer @创建时间
+---@field public last_refresh_time integer @上次刷新时间
 
 
----@class PBGetRankInfoReqCmd
----@field public uid integer
----@field public rank_id integer
+---@class PBRankGetInfoReqCmd
+---@field public uid integer @玩家ID
+---@field public rank_type RankType @排行榜类型
+---@field public rank_id integer @排行榜ID（流动榜需要）
 
 
----@class PBGetRankInfoRspCmd
----@field public code integer @服务器返回,0成功,其他失败
+---@class PBRankGetInfoRspCmd
+---@field public code integer @错误码
 ---@field public error string @错误信息
----@field public uid integer
----@field public rank_info PBRankInfo @排行榜数据
----@field public self_data PBRankData @本榜中玩家自身数据
+---@field public uid integer @玩家ID
+---@field public rank_data RankData[] @排行榜数据
+
+
+---@class PBRankUpdateDuanweiReqCmd
+---@field public uid integer @玩家ID
+---@field public duanwei integer @段位等级
+
+
+---@class PBRankUpdateDuanweiRspCmd
+---@field public code integer @错误码
+---@field public error string @错误信息
+---@field public uid integer @玩家ID
+---@field public success boolean @是否成功
+
+
+---@class PBRankUpdateMainlineReqCmd
+---@field public uid integer @玩家ID
+---@field public character_id integer @章节id
+---@field public difficulty integer @难度
+---@field public clear_time integer @通关时间
+
+
+---@class PBRankUpdateMainlineRspCmd
+---@field public code integer @错误码
+---@field public error string @错误信息
+---@field public uid integer @玩家ID
+---@field public success boolean @是否成功
+
+
+---@class PBRankUpdateFengtaReqCmd
+---@field public uid integer @玩家ID
+---@field public character_id integer @章节id
+---@field public difficulty integer @难度
+---@field public clear_time integer @通关时间
+
+
+---@class PBRankUpdateFengtaRspCmd
+---@field public code integer @错误码
+---@field public error string @错误信息
+---@field public uid integer @玩家ID
+---@field public success boolean @是否成功
+
+
+---@class PBRankUpdateFadianReqCmd
+---@field public uid integer @玩家ID
+---@field public week_bill_amount integer @周充值金额
+---@field public month_bill_amount integer @月充值金额
+---@field public total_bill_amount integer @总充值金额
+
+
+---@class PBRankUpdateFadianRspCmd
+---@field public code integer @错误码
+---@field public error string @错误信息
+---@field public uid integer @玩家ID
+---@field public success boolean @是否成功
+
+
+---@class PBRankUpdatePlayerReqCmd
+---@field public uid integer @玩家ID
+---@field public level integer @玩家等级
+
+
+---@class PBRankUpdatePlayerRspCmd
+---@field public code integer @错误码
+---@field public error string @错误信息
+---@field public uid integer @玩家ID
+---@field public success boolean @是否成功
+
+
+---@class PBRankUpdateRoleReqCmd
+---@field public uid integer @玩家ID
+---@field public role_id integer @角色ID
+---@field public role_level integer @角色等级
+---@field public role_skin integer @角色时装
+
+
+---@class PBRankUpdateRoleRspCmd
+---@field public code integer @错误码
+---@field public error string @错误信息
+---@field public uid integer @玩家ID
+---@field public success boolean @是否成功
+
+
+---@class PBRankUpdateAntiqueReqCmd
+---@field public uid integer @玩家ID
+---@field public antique_id integer @古董ID
+---@field public value integer @古董价值
+
+
+---@class PBRankUpdateAntiqueRspCmd
+---@field public code integer @错误码
+---@field public error string @错误信息
+---@field public uid integer @玩家ID
+---@field public success boolean @是否成功
+
+
+---@class PBRankGetRewardReqCmd
+---@field public uid integer @玩家ID
+---@field public rank_type RankType @排行榜类型
+
+
+---@class RankReward
+---@field public item_id integer @物品ID
+---@field public count integer @数量
+---@field public type string @奖励类型
+
+
+---@class PBRankGetRewardRspCmd
+---@field public code integer @错误码
+---@field public error string @错误信息
+---@field public uid integer @玩家ID
+---@field public success boolean @是否成功
+---@field public reward RankReward[] @奖励列表
 
 
 ---@class PBPinchFaceData
@@ -3528,14 +3691,6 @@
 ---@field public yes_average_price table<integer, number>
 
 
----@class PBBuffData
----@field public buff_id integer
----@field public buff_effect integer
----@field public period_type integer
----@field public end_ts integer
----@field public surplus_cnt integer
-
-
 ---@class PBUserAttr
 ---@field public uid integer
 ---@field public plateform_id string
@@ -3934,6 +4089,10 @@
 ---@field Mail Mail
 
 
+---@class rank_scripts
+---@field service_rank service_rank
+
+
 ---@class room_scripts
 ---@field Aoi Aoi
 ---@field Room Room
@@ -3960,6 +4119,7 @@
 ---@field MatchProxy MatchProxy
 ---@field Mission Mission
 ---@field NewBag NewBag
+---@field Rank Rank
 ---@field Role Role
 ---@field Room Room
 ---@field Season Season

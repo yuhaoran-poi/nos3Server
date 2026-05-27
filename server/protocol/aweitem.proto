@@ -1,4 +1,5 @@
 syntax = "proto3";
+import "common.proto";
 
 // 镇山之宝
 message PBAweItem
@@ -6,8 +7,8 @@ message PBAweItem
 	int32		config_id							= 1;		// 配置id
 	int32		up_level							= 2;		// 等级
 	int32		star_level							= 3;		// 星级
-	int32		buff_id								= 4;		// 加成效果id
-	int32		star_lv_fail_cnt					= 5;		// 当前星级升星失败次数
+	int32		star_lv_fail_cnt					= 4;		// 当前星级升星失败次数
+	PBBuffData	buff_data							= 5;		// buff加成数据
 }
 
 // 玩家的镇山之宝数据结构

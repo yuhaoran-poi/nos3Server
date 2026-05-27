@@ -155,6 +155,8 @@ function ItemDefine.GetItemType(nConfigId)
         return ItemDefine.EItemSmallType.MagicItem
     elseif nConfigId >= ItemDefine.Antique.start and nConfigId <= ItemDefine.Antique.End then
         return ItemDefine.EItemSmallType.Antique
+    elseif nConfigId >= ItemDefine.AweItem.start and nConfigId <= ItemDefine.AweItem.End then
+        return ItemDefine.EItemSmallType.AweItem
     elseif nConfigId >= ItemDefine.HumanDiagrams.start and nConfigId <= ItemDefine.HumanDiagrams.End then
         return ItemDefine.EItemSmallType.HumanDiagrams
     elseif nConfigId >= ItemDefine.GhostDiagrams.start and nConfigId <= ItemDefine.GhostDiagrams.End then

@@ -229,11 +229,7 @@ function Bag.LoadCoins()
     return coininfos
 end
 
-function Bag.AddCapacity(bagType, add_capacity_id)
-    if add_capacity_id <= 1 then
-        return ErrorCode.ParamInvalid
-    end
-
+function Bag.AddCapacity(bagType, add_capacity_id, add_capacity_num)
     if bagType ~= BagDef.BagType.Cangku
         and bagType ~= BagDef.BagType.Consume
         and bagType ~= BagDef.BagType.Booty
@@ -248,75 +244,89 @@ function Bag.AddCapacity(bagType, add_capacity_id)
 
     local cost, after_capacity = {}, 0
     local baginfo = bagdata[bagType]
-    if bagType == BagDef.BagType.Cangku then
-        local bag_cfg = GameCfg.WarehouseExpansion[add_capacity_id]
-        if not bag_cfg then
+
+    -- 检查 add_capacity_id 和 add_capacity_num 只能有一个生效
+    if (add_capacity_id and add_capacity_id > 0) and (add_capacity_num and add_capacity_num > 0) then
+        return ErrorCode.ParamInvalid
+    end
+
+    if add_capacity_id and add_capacity_id > 0 then
+        -- 使用配置ID方式扩容
+        if bagType == BagDef.BagType.Cangku then
+            local bag_cfg = GameCfg.WarehouseExpansion[add_capacity_id]
+            if not bag_cfg then
+                return ErrorCode.ParamInvalid
+            end
+            if bag_cfg.warehouse_grids <= baginfo.capacity
+                or table.size(bag_cfg.warehouse_cost) <= 0 then
+                return ErrorCode.BagCapacityOverflow
+            end
+            cost = bag_cfg.warehouse_cost
+            after_capacity = bag_cfg.warehouse_grids
+        elseif bagType == BagDef.BagType.Consume then
+            local bag_cfg = GameCfg.ConsumablesBackpackExpansion[add_capacity_id]
+            if not bag_cfg then
+                return ErrorCode.ParamInvalid
+            end
+            if bag_cfg.consumables_backpack_grids <= baginfo.capacity
+                or table.size(bag_cfg.consumables_backpack_cost) <= 0 then
+                return ErrorCode.BagCapacityOverflow
+            end
+            cost = bag_cfg.consumables_backpack_cost
+            after_capacity = bag_cfg.consumables_backpack_grids
+        elseif bagType == BagDef.BagType.Booty then
+            local bag_cfg = GameCfg.BootyBackpackExpansion[add_capacity_id]
+            if not bag_cfg then
+                return ErrorCode.ParamInvalid
+            end
+            if bag_cfg.booty_backpack_grids <= baginfo.capacity
+                or table.size(bag_cfg.booty_backpack_cost) <= 0 then
+                return ErrorCode.BagCapacityOverflow
+            end
+            cost = bag_cfg.booty_backpack_cost
+            after_capacity = bag_cfg.booty_backpack_grids
+        else
             return ErrorCode.ParamInvalid
         end
-        if bag_cfg.warehouse_grids <= baginfo.capacity
-            or table.size(bag_cfg.warehouse_cost) <= 0 then
-            return ErrorCode.BagCapacityOverflow
-        end
-        cost = bag_cfg.warehouse_cost
-        after_capacity = bag_cfg.warehouse_grids
-    elseif bagType == BagDef.BagType.Consume then
-        local bag_cfg = GameCfg.ConsumablesBackpackExpansion[add_capacity_id]
-        if not bag_cfg then
-            return ErrorCode.ParamInvalid
-        end
-        if bag_cfg.consumables_backpack_grids <= baginfo.capacity
-            or table.size(bag_cfg.consumables_backpack_cost) <= 0 then
-            return ErrorCode.BagCapacityOverflow
-        end
-        cost = bag_cfg.consumables_backpack_cost
-        after_capacity = bag_cfg.consumables_backpack_grids
-    elseif bagType == BagDef.BagType.Booty then
-        local bag_cfg = GameCfg.BootyBackpackExpansion[add_capacity_id]
-        if not bag_cfg then
-            return ErrorCode.ParamInvalid
-        end
-        if not bag_cfg then
-            return ErrorCode.ParamInvalid
-        end
-        if bag_cfg.booty_backpack_grids <= baginfo.capacity
-            or table.size(bag_cfg.booty_backpack_cost) <= 0 then
-            return ErrorCode.BagCapacityOverflow
-        end
-        cost = bag_cfg.booty_backpack_cost
-        after_capacity = bag_cfg.booty_backpack_grids
+    elseif add_capacity_num and add_capacity_num > 0 then
+        -- 使用直接增加格子数量方式扩容（无消耗）
+        after_capacity = baginfo.capacity + add_capacity_num
     else
         return ErrorCode.ParamInvalid
     end
 
-    -- 计算消耗资源
-    local cost_items = {}
-    local cost_coins = {}
-    ItemDefine.GetItemsFromCfg(cost, 1, true, cost_items, cost_coins)
-    -- 检查资源是否足够
-    local err_code_items = Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
-    if err_code_items ~= ErrorCode.None then
-        return err_code_items
-    end
-    local err_code_coins = Bag.CheckCoinsEnough(cost_coins)
-    if err_code_coins ~= ErrorCode.None then
-        return err_code_coins
-    end
-    -- 扣除消耗
+    -- 计算消耗资源（仅配置ID方式需要消耗）
     local change_log = {}
     change_log[bagType] = {}
-    local err_code_del = ErrorCode.None
-    if table.size(cost_items) > 0 then
-        err_code_del = Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_log)
-        if err_code_del ~= ErrorCode.None then
-            Bag.RollBackWithChange(change_log)
-            return err_code_del
+
+    if add_capacity_id and add_capacity_id > 0 then
+        local cost_items = {}
+        local cost_coins = {}
+        ItemDefine.GetItemsFromCfg(cost, 1, true, cost_items, cost_coins)
+        -- 检查资源是否足够
+        local err_code_items = Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+        if err_code_items ~= ErrorCode.None then
+            return err_code_items
         end
-    end
-    if table.size(cost_coins) > 0 then
-        err_code_del = Bag.DealCoins(cost_coins, change_log)
-        if err_code_del ~= ErrorCode.None then
-            Bag.RollBackWithChange(change_log)
-            return err_code_del
+        local err_code_coins = Bag.CheckCoinsEnough(cost_coins)
+        if err_code_coins ~= ErrorCode.None then
+            return err_code_coins
+        end
+        -- 扣除消耗
+        local err_code_del = ErrorCode.None
+        if table.size(cost_items) > 0 then
+            err_code_del = Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_log)
+            if err_code_del ~= ErrorCode.None then
+                Bag.RollBackWithChange(change_log)
+                return err_code_del
+            end
+        end
+        if table.size(cost_coins) > 0 then
+            err_code_del = Bag.DealCoins(cost_coins, change_log)
+            if err_code_del ~= ErrorCode.None then
+                Bag.RollBackWithChange(change_log)
+                return err_code_del
+            end
         end
     end
 

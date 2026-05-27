@@ -603,6 +603,16 @@ local ErrorCode = {
     NotTimeUnlockSeaonPass = 2353,
     --- 已领取奖励
     AlreadyGetReward = 2354,
+
+    ---排行榜系统相关错误码
+    --- 排行榜奖励不存在
+    RankRewardNotExist = 2401,
+    --- 排行榜奖励已领取
+    RankRewardAlreadyGet = 2402,
+    --- 排行榜类型不存在
+    RankTypeNotExist = 2403,
+    --- 排行榜数据不存在
+    RankDataNotExist = 2404,
 }
 
 return ErrorCode

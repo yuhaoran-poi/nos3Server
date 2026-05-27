@@ -11,6 +11,7 @@ local ItemDefine = require("common.logic.ItemDefine")
 local BagDef = require("common.def.BagDef")
 local ItemDef = require("common.def.ItemDef")
 local ProtoEnum = require("tools.ProtoEnum")
+local Rank = require("game.user.Rank")
 
 ---@type user_context
 local context = ...
@@ -132,6 +133,9 @@ function Grade.ChangeScore(change_score)
     elseif change_score > 0 then
         grade_info.grade_data.now_grade_score = grade_info.grade_data.now_grade_score + change_score
     end
+
+    -- 更新段位榜
+    scripts.Rank.UpdateRank_Duanwei(grade_info.grade_data.now_grade_score)
 
     Grades.grade_infos[Grades.cur_season_id] = grade_info
     Grade.SaveGradesNow()

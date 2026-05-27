@@ -16,8 +16,15 @@ local ItemDef = require("common.def.ItemDef")
 local ItemDefine = require("common.logic.ItemDefine")
 local CommonCfgDef = require("common.def.CommonCfgDef")
 local MissionDef = require("common.def.MissionDef")
+local Rank = require("game.user.Rank")
 
 local MAX_REPORT_SIZE = 6
+local MIN_MAINLINE_CHAPTERID = 1
+local MAX_MAINLINE_CHAPTERID = 1000
+local MIN_FENGTA_CHAPTERID = 3001
+local MAX_FENGTA_CHAPTERID = 4000
+
+
 
 ---@type user_context
 local context = ...
@@ -919,6 +926,19 @@ function Room.GameSettle(settle_info)
         -- 完成章节难度
         scripts.Mission.TriggerCondition(MissionDef.EConditionIds.BATTLE_CHAPTER_CNT,
             { settle_info.chapter_id, settle_info.difficulty }, 1)
+
+        -- 检查是否为主线章节
+        local now_time = moon.time()
+        local clear_time = now_time - settle_info.start_game_ts
+        if clear_time > 0 then
+            if settle_info.chapter_id >= MIN_MAINLINE_CHAPTERID and settle_info.chapter_id <= MAX_MAINLINE_CHAPTERID then
+            -- 主线榜更新
+            scripts.Rank.UpdateRank_Mainline(settle_info.difficulty, settle_info.chapter_id, clear_time)
+            elseif settle_info.chapter_id >= MIN_FENGTA_CHAPTERID and settle_info.chapter_id <= MAX_FENGTA_CHAPTERID then
+            -- 封塔榜更新
+            scripts.Rank.UpdateRank_Fengta(settle_info.chapter_id, settle_info.difficulty, clear_time)
+            end
+        end
     end
 
     if settle_info.battle_god_ids and table.size(settle_info.battle_god_ids) > 0 then

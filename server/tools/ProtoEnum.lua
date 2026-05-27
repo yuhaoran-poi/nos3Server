@@ -10,6 +10,22 @@ local PBChannelType = {
     CHANNEL_TYPE_ROOM = 7, -- 房间
 }
 
+---@class AccountBuffType
+local AccountBuffType = {
+    Buff_None = 0, -- 无效果
+    Buff_RoleExp = 1, -- 结算加成_角色经验
+    Buff_AccExp = 2, -- 结算加成_账户经验
+    Buff_Currency1 = 3, -- 结算加成_货币加成1（货币id=1）
+    Buff_Weight = 4, -- 增加局内负重
+    Buff_TradeSlot = 5, -- 交易行同时上架栏位增加
+    Buff_AuctionLimit = 6, -- 每日寄售总次数上限增加
+    Buff_Warehouse = 7, -- 局外基础仓库存储容量扩充
+    Buff_DurabilityCost = 8, -- 修复耐久度货币消耗百分比降低
+    Buff_RoleExpPct = 9, -- 结算时角色经验值百分比加成
+    Buff_DeathLoss = 10, -- 局内死亡时耐久度损失比例降低
+    Buff_EvacLoss = 11, -- 撤离失败时耐久度损失比例降低
+}
+
 ---@class enPBGuildStatus
 local enPBGuildStatus = {
     eNone = 0,
@@ -68,6 +84,25 @@ local PBSelectionStateType = {
     PBSelectionState_SH_Ghost_Select_Skin = 8,
 }
 
+---@class RankType
+local RankType = {
+    RankType_None = 0, -- 无类型
+    RankType_Duanwei_Weekly = 1, -- 周段位榜
+    RankType_Duanwei_Season = 2, -- 赛季段位榜
+    RankType_Mainline = 3, -- 主线榜
+    RankType_Fengta = 4, -- 封塔榜
+    RankType_Fadian_Total = 5, -- 发电总榜
+    RankType_Fadian_Weekly = 6, -- 发电周榜
+    RankType_Fadian_Monthly = 7, -- 发电月榜
+    RankType_Player = 8, -- 玩家榜
+    RankType_Role = 9, -- 角色榜
+    RankType_Antique = 10, -- 古董榜
+    RankType_GuildActive = 11, -- 宗门活跃榜
+    RankType_GuildMoney = 12, -- 宗门资金榜
+    RankType_GuildScore_Weekly = 13, -- 宗门周赛季积分榜
+    RankType_GuildScore_Season = 14, -- 宗门赛季积分榜
+}
+
 ---@class UserAttrType
 local UserAttrType = {
     uid = "uid",
@@ -103,10 +138,12 @@ local UserAttrType = {
 
 return {
     PBChannelType=PBChannelType,
+    AccountBuffType=AccountBuffType,
     enPBGuildStatus=enPBGuildStatus,
     enGuildRecordType=enGuildRecordType,
     eApplyOpt=eApplyOpt,
     PBSelectionOpType=PBSelectionOpType,
     PBSelectionStateType=PBSelectionStateType,
+    RankType=RankType,
     UserAttrType=UserAttrType,
 }
