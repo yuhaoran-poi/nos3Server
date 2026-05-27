@@ -3043,7 +3043,7 @@ period_ids (R	periodIds%
 
 rank.proto"á
 PlayerRankData
-uid (Ruid
+uid (Ruid
 name (	Rname
 avatar (Ravatar!
 avatar_frame (RavatarFrame
@@ -3079,24 +3079,24 @@ gl_char_id (RglCharId"
 createTime*
 last_refresh_time (RlastRefreshTime"h
 PBRankGetInfoReqCmd
-uid (Ruid&
+uid (Ruid&
 	rank_type (2	.RankTypeRrankType
 rank_id (RrankId"y
 PBRankGetInfoRspCmd
 code (Rcode
 error (	Rerror
-uid (Ruid&
+uid (Ruid&
 	rank_data (2	.RankDataRrankData"G
 PBRankUpdateDuanweiReqCmd
-uid (Ruid
+uid (Ruid
 duanwei (Rduanwei"q
 PBRankUpdateDuanweiRspCmd
 code (Rcode
 error (	Rerror
-uid (Ruid
+uid (Ruid
 success (Rsuccess"ê
 PBRankUpdateMainlineReqCmd
-uid (Ruid!
+uid (Ruid!
 character_id (RcharacterId
 
 difficulty (R
@@ -3106,10 +3106,10 @@ clear_time (R	clearTime"r
 PBRankUpdateMainlineRspCmd
 code (Rcode
 error (	Rerror
-uid (Ruid
+uid (Ruid
 success (Rsuccess"é
 PBRankUpdateFengtaReqCmd
-uid (Ruid!
+uid (Ruid!
 character_id (RcharacterId
 
 difficulty (R
@@ -3119,28 +3119,28 @@ clear_time (R	clearTime"p
 PBRankUpdateFengtaRspCmd
 code (Rcode
 error (	Rerror
-uid (Ruid
+uid (Ruid
 success (Rsuccess"Æ
 PBRankUpdateFadianReqCmd
-uid (Ruid(
+uid (Ruid(
 week_bill_amount (RweekBillAmount*
 month_bill_amount (RmonthBillAmount*
 total_bill_amount (RtotalBillAmount"p
 PBRankUpdateFadianRspCmd
 code (Rcode
 error (	Rerror
-uid (Ruid
+uid (Ruid
 success (Rsuccess"B
 PBRankUpdatePlayerReqCmd
-uid (Ruid
+uid (Ruid
 level (Rlevel"p
 PBRankUpdatePlayerRspCmd
 code (Rcode
 error (	Rerror
-uid (Ruid
+uid (Ruid
 success (Rsuccess"
 PBRankUpdateRoleReqCmd
-uid (Ruid
+uid (Ruid
 role_id (RroleId
 
 role_level (R	roleLevel
@@ -3148,20 +3148,20 @@ role_level (R	roleLevel
 PBRankUpdateRoleRspCmd
 code (Rcode
 error (	Rerror
-uid (Ruid
+uid (Ruid
 success (Rsuccess"b
 PBRankUpdateAntiqueReqCmd
-uid (Ruid
+uid (Ruid
 
 antique_id (R	antiqueId
 value (Rvalue"q
 PBRankUpdateAntiqueRspCmd
 code (Rcode
 error (	Rerror
-uid (Ruid
+uid (Ruid
 success (Rsuccess"Q
 PBRankGetRewardReqCmd
-uid (Ruid&
+uid (Ruid&
 	rank_type (2	.RankTypeRrankType"O
 
 RankReward
@@ -3171,7 +3171,7 @@ RankReward
 PBRankGetRewardRspCmd
 code (Rcode
 error (	Rerror
-uid (Ruid
+uid (Ruid
 success (Rsuccess#
 reward (2.RankRewardRreward*à
 RankType
