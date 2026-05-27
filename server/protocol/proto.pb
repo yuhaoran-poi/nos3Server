@@ -3045,8 +3045,8 @@ rank.proto"‡
 PlayerRankData
 uid (Ruid
 name (	Rname
-avatar (Ravatar!
-avatar_frame (RavatarFrame
+avatar (Ravatar!
+avatar_frame (RavatarFrame
 
 guild_name (	R	guildName
 value (Rvalue=
@@ -3056,17 +3056,17 @@ extra_data (2.PlayerRankData.ExtraDataEntryR	extraData
 update_time	 (R
 updateTime!
 character_id
- (RcharacterId'
-character_skins (RcharacterSkins
-ghost_id (RghostId
+ (RcharacterId'
+character_skins (RcharacterSkins
+ghost_id (RghostId
 
-ghost_skin (R	ghostSkin!
+ghost_skin (R	ghostSkin!
 guild_leader (	RguildLeader
 
-gl_char_id (RglCharId"
-gl_char_skins (RglCharSkins
-gl_ghost_id (R	glGhostId"
-gl_ghost_skin (RglGhostSkin<
+gl_char_id (RglCharId"
+gl_char_skins (RglCharSkins
+gl_ghost_id (R	glGhostId"
+gl_ghost_skin (RglGhostSkin<
 ExtraDataEntry
 key (	Rkey
 value (	Rvalue:8"Ü
@@ -3089,7 +3089,7 @@ createTime*
 	rank_data (2	.RankDataRrankData"G
 PBRankUpdateDuanweiReqCmd
 uid (Ruid
-duanwei (Rduanwei"q
+duanwei (Rduanwei"q
 PBRankUpdateDuanweiRspCmd
 code (Rcode
 error (	Rerror
@@ -3097,9 +3097,9 @@ createTime*
 success (Rsuccess"
 PBRankUpdateMainlineReqCmd
 uid (Ruid!
-character_id (RcharacterId
+character_id (RcharacterId
 
-difficulty (R
+difficulty (R
 difficulty
 
 clear_time (R	clearTime"r
@@ -3110,9 +3110,9 @@ clear_time (R	clearTime"r
 success (Rsuccess"Ž
 PBRankUpdateFengtaReqCmd
 uid (Ruid!
-character_id (RcharacterId
+character_id (RcharacterId
 
-difficulty (R
+difficulty (R
 difficulty
 
 clear_time (R	clearTime"p
@@ -3133,7 +3133,7 @@ clear_time (R	clearTime"p
 success (Rsuccess"B
 PBRankUpdatePlayerReqCmd
 uid (Ruid
-level (Rlevel"p
+level (Rlevel"p
 PBRankUpdatePlayerRspCmd
 code (Rcode
 error (	Rerror
@@ -3141,10 +3141,10 @@ clear_time (R	clearTime"p
 success (Rsuccess"
 PBRankUpdateRoleReqCmd
 uid (Ruid
-role_id (RroleId
+role_id (RroleId
 
-role_level (R	roleLevel
-	role_skin (RroleSkin"n
+role_level (R	roleLevel
+	role_skin (RroleSkin"n
 PBRankUpdateRoleRspCmd
 code (Rcode
 error (	Rerror
@@ -3153,7 +3153,7 @@ role_level (R	roleLevel
 PBRankUpdateAntiqueReqCmd
 uid (Ruid
 
-antique_id (R	antiqueId
+antique_id (R	antiqueId
 value (Rvalue"q
 PBRankUpdateAntiqueRspCmd
 code (Rcode
@@ -3165,8 +3165,8 @@ antique_id (R	antiqueId
 	rank_type (2	.RankTypeRrankType"O
 
 RankReward
-item_id (RitemId
-count (Rcount
+item_id (RitemId
+count (Rcount
 type (	Rtype"’
 PBRankGetRewardRspCmd
 code (Rcode

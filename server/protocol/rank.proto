@@ -25,24 +25,24 @@ enum RankType {
 message PlayerRankData {
     int64 uid = 1;            // 玩家ID
     string name = 2;           // 玩家名称
-    uint32 avatar = 3;         // 头像
-    uint32 avatar_frame = 4;    // 头像框
+    int32 avatar = 3;         // 头像
+    int32 avatar_frame = 4;    // 头像框
     string guild_name = 5;      // 所属宗门名称
     int64 value = 6;            // 排行值
     map<string, string> extra_data = 7; // 额外数据
     int32 rank = 8;            // 排名
     int64 update_time = 9;      // 更新时间
     // 出战角色和鬼怪信息
-    uint32 character_id = 10;           // 出战角色配置ID
-    repeated uint32 character_skins = 11; // 出战角色时装（数组）
-    uint32 ghost_id = 12;               // 出战鬼怪配置ID
-    uint32 ghost_skin = 13;             // 出战鬼怪时装
+    int32 character_id = 10;           // 出战角色配置ID
+    repeated int32 character_skins = 11; // 出战角色时装（数组）
+    int32 ghost_id = 12;               // 出战鬼怪配置ID
+    int32 ghost_skin = 13;             // 出战鬼怪时装
     // 宗门榜宗主信息
     string guild_leader = 14;            // 宗主名称
-    uint32 gl_char_id = 15;              // 宗主出战角色配置ID
-    repeated uint32 gl_char_skins = 16;  // 宗主出战角色时装（数组）
-    uint32 gl_ghost_id = 17;             // 宗主出战鬼怪配置ID
-    uint32 gl_ghost_skin = 18;           // 宗主出战鬼怪时装
+    int32 gl_char_id = 15;              // 宗主出战角色配置ID
+    repeated int32 gl_char_skins = 16;  // 宗主出战角色时装（数组）
+    int32 gl_ghost_id = 17;             // 宗主出战鬼怪配置ID
+    int32 gl_ghost_skin = 18;           // 宗主出战鬼怪时装
 }
 
 // 排行榜数据
@@ -73,7 +73,7 @@ message PBRankGetInfoRspCmd {
 // 更新段位榜请求
 message PBRankUpdateDuanweiReqCmd {
     int64 uid = 1;             // 玩家ID
-    uint32 duanwei = 2;         // 段位等级
+    int32 duanwei = 2;         // 段位等级
 }
 
 // 更新段位榜响应
@@ -87,8 +87,8 @@ message PBRankUpdateDuanweiRspCmd {
 // 更新主线榜请求
 message PBRankUpdateMainlineReqCmd {
     int64 uid = 1;             // 玩家ID
-	uint32 character_id = 2;	// 章节id
-    uint32 difficulty = 3;      // 难度
+	int32 character_id = 2;	// 章节id
+    int32 difficulty = 3;      // 难度
     int64 clear_time = 4;       // 通关时间
 }
 
@@ -103,8 +103,8 @@ message PBRankUpdateMainlineRspCmd {
 // 更新封塔榜请求
 message PBRankUpdateFengtaReqCmd {
     int64 uid = 1;             // 玩家ID
-	uint32 character_id = 2;	// 章节id
-    uint32 difficulty = 3;      // 难度
+	int32 character_id = 2;	// 章节id
+    int32 difficulty = 3;      // 难度
     int64 clear_time = 4;       // 通关时间
 }
 
@@ -135,7 +135,7 @@ message PBRankUpdateFadianRspCmd {
 // 更新玩家榜请求
 message PBRankUpdatePlayerReqCmd {
     int64 uid = 1;             // 玩家ID
-    uint32 level = 2;           // 玩家等级
+    int32 level = 2;           // 玩家等级
 }
 
 // 更新玩家榜响应
@@ -149,9 +149,9 @@ message PBRankUpdatePlayerRspCmd {
 // 更新角色榜请求
 message PBRankUpdateRoleReqCmd {
     int64 uid = 1;             // 玩家ID
-    uint32 role_id = 2;         // 角色ID
-    uint32 role_level = 3;      // 角色等级
-    uint32 role_skin = 4;       // 角色时装
+    int32 role_id = 2;         // 角色ID
+    int32 role_level = 3;      // 角色等级
+    int32 role_skin = 4;       // 角色时装
 }
 
 // 更新角色榜响应
@@ -165,7 +165,7 @@ message PBRankUpdateRoleRspCmd {
 // 更新古董榜请求
 message PBRankUpdateAntiqueReqCmd {
     int64 uid = 1;             // 玩家ID
-    uint32 antique_id = 2;      // 古董ID
+    int32 antique_id = 2;      // 古董ID
     int64 value = 3;            // 古董价值
 }
 
@@ -185,8 +185,8 @@ message PBRankGetRewardReqCmd {
 
 // 排行榜奖励数据
 message RankReward {
-    uint32 item_id = 1;          // 物品ID
-    uint32 count = 2;           // 数量
+    int32 item_id = 1;          // 物品ID
+    int32 count = 2;           // 数量
     string type = 3;             // 奖励类型
 }
 
