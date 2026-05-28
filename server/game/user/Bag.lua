@@ -1475,6 +1475,10 @@ function Bag.AddMagicItem(bagType, baginfo, item_data, change_log)
         end
     end
 
+    if table.size(new_itemdata.special_info.magic_item.tags) == 0 then
+        -- 获取默认词条
+    end
+
     return ErrorCode.None
 end
 

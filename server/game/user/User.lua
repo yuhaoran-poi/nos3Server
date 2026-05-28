@@ -1030,6 +1030,7 @@ local function LightBagItem(msg)
     local light_bagid = msg.bag_name
     local light_pos = msg.pos
 
+    local is_new_item = false
     if not msg.uniqid or msg.uniqid == 0 then
         local err_code, change_log = scripts.Bag.GetSpecialItemFromCommonItem(msg.bag_name, msg.pos, msg.config_id)
         if err_code ~= ErrorCode.None or not change_log then
@@ -1050,6 +1051,7 @@ local function LightBagItem(msg)
         -- 生成新唯一道具，进行保存
         -- scripts.Bag.SaveAndLog(save_bags, change_log)
         scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.BagLight)
+        is_new_item = true
     end
 
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
@@ -1058,6 +1060,21 @@ local function LightBagItem(msg)
         or not item_data
         or (msg.uniqid ~= 0 and item_data.common_info.uniqid ~= msg.uniqid) then
         return get_err_code
+    end
+    -- 去掉默认词条
+    if is_new_item then
+        if item_data.special_info and item_data.special_info.magic_item
+            and item_data.special_info.magic_item.tags and table.size(item_data.special_info.magic_item.tags) > 0 then
+            item_data.special_info.magic_item.tags = {}
+        end
+        if item_data.special_info and item_data.special_info.diagrams_item
+            and item_data.special_info.diagrams_item.tags and table.size(item_data.special_info.diagrams_item.tags) > 0 then
+            item_data.special_info.diagrams_item.tags = {}
+        end
+        if item_data.special_info and item_data.special_info.space_ring
+            and item_data.special_info.space_ring.tags and table.size(item_data.special_info.space_ring.tags) > 0 then
+            item_data.special_info.space_ring.tags = {}
+        end
     end
 
     -- 记录旧道具数据
@@ -1415,11 +1432,12 @@ function User.PBUseItemUpLvReqCmd(req)
         err_code, up_exp_cnt, real_cost_items = scripts.Role.CheckUseItemUpLv(req.msg.target_id, up_exp_id, up_exp_total, item_exps)
     elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.target_id
         and req.msg.target_id <= GhostDef.GhostDefine.GhostID.End then
-        err_code, up_exp_cnt, real_cost_items = scripts.Ghost.CheckUseItemUpLv(req.msg.target_id, up_exp_id, up_exp_cnt)
+        err_code, up_exp_cnt, real_cost_items = scripts.Ghost.CheckUseItemUpLv(req.msg.target_id, up_exp_id, up_exp_total,
+            item_exps)
     else
         -- 图鉴升级
         err_code, up_exp_cnt, real_cost_items = scripts.ItemImage.CheckUseItemUpLv(req.msg.target_id, up_exp_id,
-        up_exp_cnt)
+            up_exp_total, item_exps)
     end
     if err_code ~= ErrorCode.None then
         return context.S2C(context.net_id, CmdCode.PBUseItemUpLvRspCmd, {
@@ -2683,16 +2701,18 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log)
     return err_code
 end
 
-function User.AddAccountBuff(item_cfg, msg_data)
+function User.AddAccountBuff(item_cfg, msg_data, buff_id)
     local err_code = ErrorCode.ItemTypeMismatch
     local buff_cfg
-
-    if not item_cfg or not item_cfg.buff_type or not item_cfg.buff_count then
+    if buff_id and item_cfg == nil and msg_data == nil then
+        buff_cfg = GameCfg.AccountBuffConfig[buff_id]
+    elseif item_cfg.buff_type and item_cfg.buff_count then
+        buff_cfg = GameCfg.AccountBuffConfig[item_cfg.buff_type]
+    else
         err_code = ErrorCode.ConfigError
         return err_code
     end
 
-    buff_cfg = GameCfg.AccountBuffConfig[item_cfg.buff_type]
     if not buff_cfg then
         err_code = ErrorCode.ConfigError
         return err_code
@@ -2715,6 +2735,9 @@ function User.AddAccountBuff(item_cfg, msg_data)
                     else
                         old_buff_data.end_ts = old_buff_data.end_ts + (item_cfg.buff_count * msg_data.use_item_cnt)
                     end
+                elseif buff_cfg.period_type == 3 then
+                    -- 赛季结束时间
+                    old_buff_data.end_ts = now_ts
                 else
                     err_code = ErrorCode.ConfigError
                     return err_code
@@ -2726,17 +2749,13 @@ function User.AddAccountBuff(item_cfg, msg_data)
                 new_buff_data.period_type = buff_cfg.period_type
                 new_buff_data.end_ts = 0
                 new_buff_data.surplus_cnt = 0
-                new_buff_data.coefficient = 0
-                if buff_cfg.value_type == 0 then
-                    -- 万分比
-                    new_buff_data.coefficient = buff_cfg.buff_coefficient / 10000
-                else
-                    new_buff_data.coefficient = buff_cfg.buff_coefficient
-                end
                 if buff_cfg.period_type == 1 then
                     new_buff_data.surplus_cnt = item_cfg.buff_count * msg_data.use_item_cnt
                 elseif buff_cfg.period_type == 2 then
                     new_buff_data.end_ts = now_ts + (item_cfg.buff_count * msg_data.use_item_cnt)
+                elseif buff_cfg.period_type == 3 then
+                    -- 赛季结束时间
+                    new_buff_data.end_ts = now_ts + 86400
                 else
                     err_code = ErrorCode.ConfigError
                     return err_code
@@ -2750,17 +2769,13 @@ function User.AddAccountBuff(item_cfg, msg_data)
             new_buff_data.period_type = buff_cfg.period_type
             new_buff_data.end_ts = 0
             new_buff_data.surplus_cnt = 0
-            new_buff_data.coefficient = 0
-            if buff_cfg.value_type == 0 then
-                -- 万分比
-                new_buff_data.coefficient = buff_cfg.buff_coefficient / 10000
-            else
-                new_buff_data.coefficient = buff_cfg.buff_coefficient
-            end
             if buff_cfg.period_type == 1 then
                 new_buff_data.surplus_cnt = item_cfg.buff_count * msg_data.use_item_cnt
             elseif buff_cfg.period_type == 2 then
                 new_buff_data.end_ts = now_ts + (item_cfg.buff_count * msg_data.use_item_cnt)
+            elseif buff_cfg.period_type == 3 then
+                -- 赛季结束时间
+                new_buff_data.end_ts = now_ts + 86400
             else
                 err_code = ErrorCode.ConfigError
                 return err_code

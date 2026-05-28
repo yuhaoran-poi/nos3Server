@@ -108,7 +108,7 @@ function Season.ChangeSeason(new_season_id)
     end
 
     -- 清空镇山之宝
-    --------------
+    scripts.AweItem.ResetAllAweItemLevel()
 
     -- 清空神明等级
     scripts.Gods.SeasonChange()

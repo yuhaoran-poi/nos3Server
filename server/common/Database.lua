@@ -1646,6 +1646,58 @@ function _M.getauctionwithconditions(addr, state_type, condition1, condition2, c
     return nil
 end
 
+function _M.getauctionproduct(addr, where_data, num)
+    local where_str = ""
+    if where_data.seller_uid then
+        where_str = string.format("seller_uid = %d", where_data.seller_uid)
+    end
+    if where_data.state then
+        if where_str ~= "" then
+            where_str = where_str .. " AND "
+        end
+        where_str = where_str .. string.format("state = %d", where_data.state)
+    end
+    if where_data.auction_id then
+        if where_str ~= "" then
+            where_str = where_str .. " AND "
+        end
+        where_str = where_str .. string.format("auction_id = %d", where_data.auction_id)
+    end
+
+    local cmd = string.format([[
+        SELECT auction_id, config_id, uniqid, seller_uid, delay_cnt, beg_ts, end_ts, item_data, start_price, buyout_price, cur_price, buyer_uid FROM mgame.auction_product WHERE %s LIMIT %d;
+    ]], where_str, num)
+    moon.debug(cmd)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("getauctionproduct err = %s", json.pretty_encode(err)))
+        return nil
+    end
+    moon.debug(string.format("getauctionproduct res = %s", json.pretty_encode(res)))
+    if res and #res > 0 then
+        local auction_products = {}
+        for i = 1, #res do
+            local product = AuctionDef.newAuctionProductBaseData()
+            product.auction_id = res[i].auction_id
+            product.seller_uid = res[i].seller_uid
+            product.config_id = res[i].config_id
+            product.uniqid = res[i].uniqid
+            local item_data = protocol.decodewithname("PBItemData", crypt.base64decode(res[i].item_data))
+            product.item_data = item_data
+            product.beg_ts = res[i].beg_ts
+            product.end_ts = res[i].end_ts
+            product.delay_cnt = res[i].delay_cnt
+            product.auction_data.start_price = res[i].start_price
+            product.auction_data.buyout_price = res[i].buyout_price
+            product.auction_data.cur_price = res[i].cur_price
+            product.auction_data.buyer_uid = res[i].buyer_uid
+            table.insert(auction_products, product)
+        end
+        return auction_products
+    end
+    return nil
+end
+
 function _M.getauctionproductwithnum(addr, start_auction_id, state, num)
     local cmd = string.format([[
         SELECT auction_id, config_id, uniqid, seller_uid, delay_cnt, beg_ts, end_ts, item_data, start_price, buyout_price, cur_price, buyer_uid WHERE auction_id >= %d AND state = %d ORDER BY trade_id LIMIT %d;

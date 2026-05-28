@@ -3,7 +3,8 @@ local moon = require("moon")
 local seri = require("seri")
 local socket = require("moon.socket")
 local common = require("common")
-local setup =  require("common.setup")
+local setup = require("common.setup")
+local json = require "json"
 local protocol = common.protocol
 local GameDef = common.GameDef
 local CmdCode = common.CmdCode
@@ -49,6 +50,7 @@ socket.on("message", function(fd, msg)
            local subname,submsg = protocol.DecodeMessagePack(MessagePack)
             --先校验协议版本号
             if subname == "PBDSLoginReqCmd" then
+                moon.debug(string.format("PBDSLoginReqCmd recv Message:\n%s", json.pretty_encode(submsg)))
                reqmsg.msg = submsg
                reqmsg.sign = context.auth_watch[fd]
                reqmsg.fd = fd
