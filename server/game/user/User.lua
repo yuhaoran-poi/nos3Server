@@ -2749,6 +2749,7 @@ function User.AddAccountBuff(item_cfg, msg_data, buff_id)
                 new_buff_data.period_type = buff_cfg.period_type
                 new_buff_data.end_ts = 0
                 new_buff_data.surplus_cnt = 0
+                new_buff_data.coefficient = buff_cfg.buff_coefficient
                 if buff_cfg.period_type == 1 then
                     new_buff_data.surplus_cnt = item_cfg.buff_count * msg_data.use_item_cnt
                 elseif buff_cfg.period_type == 2 then
@@ -2769,6 +2770,7 @@ function User.AddAccountBuff(item_cfg, msg_data, buff_id)
             new_buff_data.period_type = buff_cfg.period_type
             new_buff_data.end_ts = 0
             new_buff_data.surplus_cnt = 0
+            new_buff_data.coefficient = buff_cfg.buff_coefficient
             if buff_cfg.period_type == 1 then
                 new_buff_data.surplus_cnt = item_cfg.buff_count * msg_data.use_item_cnt
             elseif buff_cfg.period_type == 2 then

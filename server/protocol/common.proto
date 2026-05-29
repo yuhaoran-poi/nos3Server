@@ -79,5 +79,5 @@ message PBBuffData
 	int32 period_type	= 3;
 	int64 end_ts		= 4;
 	int32 surplus_cnt	= 5;
-	double coefficient	= 6; // 数值系数，兼容浮点数
+	int32 coefficient	= 6;
 }

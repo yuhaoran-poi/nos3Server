@@ -60,7 +60,7 @@ local defaultPBBuffData = {
     period_type = 0,
     end_ts = 0,
     surplus_cnt = 0,
-    coefficient = 0,--数值系数，兼容浮点数
+    coefficient = 0,
 }
 
 local defaultPBUserAttr = {

@@ -358,7 +358,7 @@
 
 ---@class PBAntiqueShowReqCmd
 ---@field public config_id integer @id
----@field public uniq_id integer @唯一id
+---@field public uniqid integer @唯一id
 ---@field public showcase_id integer @展示柜id
 ---@field public showcase_idx integer @展示柜中的具体展柜下标
 ---@field public operate_type integer @1 -- 展示 0 -- 取消展示
@@ -369,7 +369,7 @@
 ---@field public code integer @服务器验证返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public config_id integer @id
----@field public uniq_id integer @唯一id
+---@field public uniqid integer @唯一id
 ---@field public showcase_id integer @展示柜id
 ---@field public showcase_idx integer @展示柜中的具体展柜下标
 ---@field public operate_type integer @1 -- 展示 0 -- 取消展示
@@ -565,7 +565,7 @@
 ---@field public period_type integer
 ---@field public end_ts integer
 ---@field public surplus_cnt integer
----@field public coefficient number @数值系数，兼容浮点数
+---@field public coefficient integer
 
 
 ---@class PBGameChangeRoleInfo
@@ -4087,10 +4087,6 @@
 
 ---@class mail_scripts
 ---@field Mail Mail
-
-
----@class rank_scripts
----@field service_rank service_rank
 
 
 ---@class room_scripts

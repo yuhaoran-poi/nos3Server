@@ -470,7 +470,7 @@ periodType
 end_ts (RendTs
 surplus_cnt (R
 surplusCnt 
-coefficient (Rcoefficient*ü
+coefficient (Rcoefficient*ü
 AccountBuffType
 	Buff_None 
 Buff_RoleExp
@@ -518,7 +518,7 @@ aweItemMapI
 error (	Rerror
 uid (Ruid3
 awe_item_info (2.PBUserAweItemsRaweItemInfobproto3
-¥
+£
 	bag.proto
 item.proto"·
 PBBag"
@@ -618,20 +618,20 @@ item_count (R	itemCount
 	config_id (RconfigId
 uniqid (Runiqid
 pos (Rpos!
-price_change (RpriceChange"Ä
+price_change (RpriceChange"Ã
 PBAntiqueShowReqCmd
-	config_id (RconfigId
-uniq_id (RuniqId
+	config_id (RconfigId
+uniqid (Runiqid
 showcase_id (R
 showcaseId!
 showcase_idx (RshowcaseIdx!
 operate_type (RoperateType
-pos (Rpos"î
+pos (Rpos"í
 PBAntiqueShowRspCmd
 code (Rcode
 error (	Rerror
-	config_id (RconfigId
-uniq_id (RuniqId
+	config_id (RconfigId
+uniqid (Runiqid
 showcase_id (R
 showcaseId!
 showcase_idx (RshowcaseIdx!

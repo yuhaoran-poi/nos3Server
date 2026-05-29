@@ -256,7 +256,7 @@ local function AddAweItemBuff(aweitem, buff_id)
         period_type = buff_cfg.period_type,
         end_ts = 0,
         surplus_cnt = 0,
-        coefficient = buff_cfg.value_type == 0 and (buff_cfg.buff_coefficient / 10000) or buff_cfg.buff_coefficient
+        coefficient = buff_cfg.buff_coefficient
     }
     if buff_cfg.buff_effect == ProtoEnum.AccountBuffType.Buff_TradeSlot then
         -- 交易行同时上架栏位增加
