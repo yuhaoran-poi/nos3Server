@@ -330,6 +330,7 @@ function User.GetUsrRoomBriefData()
         ProtoEnum.UserAttrType.player_flag,
         ProtoEnum.UserAttrType.cur_show_ghost,
         ProtoEnum.UserAttrType.cur_model_role,
+        ProtoEnum.UserAttrType.account_exp,
     }
     local room_member_data = User.GetOnlineUserAttr(room_member_fields)
 
