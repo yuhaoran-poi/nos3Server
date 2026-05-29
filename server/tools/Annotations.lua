@@ -2077,7 +2077,7 @@
 
 ---@class PBMagicItem
 ---@field public cur_durability integer @当前耐久度
----@field public strong_value integer @耐久度上限
+---@field public strong_value integer @当前坚固值
 ---@field public tabooword_id integer @讳字id
 ---@field public light_cnt integer @开光次数
 ---@field public tags PBTag[] @随机词条id,最大10条
@@ -2086,7 +2086,7 @@
 
 ---@class PBDiagramsCard
 ---@field public cur_durability integer @当前耐久度
----@field public strong_value integer @耐久度上限
+---@field public strong_value integer @当前坚固值
 ---@field public tabooword_id integer @讳字id
 ---@field public light_cnt integer @开光次数
 ---@field public tags PBTag[] @随机词条id,最大10条
@@ -2095,7 +2095,7 @@
 
 ---@class PBSpaceRing
 ---@field public cur_durability integer @当前耐久度
----@field public strong_value integer @耐久度上限
+---@field public strong_value integer @当前坚固值
 ---@field public tabooword_id integer @讳字id
 ---@field public light_cnt integer @开光次数
 ---@field public tags PBTag[] @随机词条id,最大10条
@@ -4087,6 +4087,10 @@
 
 ---@class mail_scripts
 ---@field Mail Mail
+
+
+---@class rank_scripts
+---@field service_rank service_rank
 
 
 ---@class room_scripts

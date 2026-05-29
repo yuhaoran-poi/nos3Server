@@ -1,6 +1,6 @@
 local db_redis = {
-    [1] = {host = "127.0.0.1", port = 3379, timeout = 1000},
-    [2] = {host = "127.0.0.1", port = 3379, timeout = 1000}
+    [1] = {host = "127.0.0.1", port = 6379, timeout = 1000},
+    [2] = {host = "127.0.0.1", port = 6379, timeout = 1000}
 }
 
 ---注意:修改你的数据库名
@@ -14,8 +14,8 @@ local db_pg = {
 --     [2] = { host = "127.0.0.1", port = 3307, database = "mlog", user = "root", password = "123456", auth_plugin = "mysql_native_password", timeout = 5000, max_packet_size = 64 * 1024 * 1024, ssl = false },
 -- }
 local db_mysql = {
-    [1] = { host = "127.0.0.1", port = 3308, database = "mgame", user = "root", password = "123456", auth_plugin = "mysql_native_password", timeout = 5000, max_packet_size = 64 * 1024 * 1024, ssl = false },
-    [2] = { host = "127.0.0.1", port = 3308, database = "mlog", user = "root", password = "123456", auth_plugin = "mysql_native_password", timeout = 5000, max_packet_size = 64 * 1024 * 1024, ssl = false },
+    [1] = { host = "127.0.0.1", port = 3306, database = "mgame", user = "root", password = "root", auth_plugin = "mysql_native_password", timeout = 5000, max_packet_size = 64 * 1024 * 1024, ssl = false },
+    [2] = { host = "127.0.0.1", port = 3306, database = "mlog", user = "root", password = "root", auth_plugin = "mysql_native_password", timeout = 5000, max_packet_size = 64 * 1024 * 1024, ssl = false },
 }
 
 ---服务器相关配置
@@ -29,6 +29,14 @@ local conf = {
     STEAM_APP_KEY = "b29fb75dd1a08b2fe5ddac3d57f610ec5abebc8492d1c1d6d699ff341902d650",
     WORLD_ID = 100,
     TEST_MODE = true,
+    STEAM_CONF = {
+        order_key = "DF94964FDF6066DEA240B8ED9FCF9CDE",
+        appId = 2490960,
+        language = "zh",
+        currency = "CNY",
+        create_order_url = "https://partner.steam-api.com/ISteamMicroTxn/InitTxn/v3/",
+        query_order_url = "https://partner.steam-api.com/ISteamMicroTxn/QueryTxn/v3/",
+    }
 }
 
 ---每个区服的数据库配置

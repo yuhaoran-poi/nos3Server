@@ -287,6 +287,7 @@ function Role.AddRole(roleid)
         new_item_data.special_info.magic_item = ItemDef.newMagicItem()
         new_item_data.special_info.magic_item.cur_durability = magic_item_cfg.durability
         new_item_data.special_info.magic_item.strong_value = magic_item_cfg.sturdy
+        -- 获取默认词条
         role_info.magic_item = new_item_data
     end
     -- 初始化八卦牌
@@ -305,6 +306,7 @@ function Role.AddRole(roleid)
                 new_item_data.special_info.diagrams_item = ItemDef.newDiagramsCard()
                 new_item_data.special_info.diagrams_item.cur_durability = diagrams_item_cfg.durability
                 new_item_data.special_info.diagrams_item.strong_value = diagrams_item_cfg.sturdy
+                -- 获取默认词条
                 role_info.digrams_cards[equip_idx] = new_item_data
             end
         end
@@ -325,6 +327,7 @@ function Role.AddRole(roleid)
         new_item_data.special_info.space_ring = ItemDef.newSpaceRing()
         new_item_data.special_info.space_ring.cur_durability = space_ring_cfg.durability
         new_item_data.special_info.space_ring.strong_value = space_ring_cfg.sturdy
+        -- 获取默认词条
         role_info.space_ring = new_item_data
     end
 
