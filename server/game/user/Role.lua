@@ -288,6 +288,16 @@ function Role.AddRole(roleid)
         new_item_data.special_info.magic_item.cur_durability = magic_item_cfg.durability
         new_item_data.special_info.magic_item.strong_value = magic_item_cfg.sturdy
         -- 获取默认词条
+        local uniq_item_cfg = GameCfg.UniqueItem[init_magic_item_id]
+        if uniq_item_cfg and uniq_item_cfg.default_entry and table.size(uniq_item_cfg.default_entry) > 0 then
+            for tag_id, tag_value in pairs(uniq_item_cfg.default_entry) do
+                local new_tag = {
+                    tag_id = tag_id,
+                    val = tag_value,
+                }
+                table.insert(new_item_data.special_info.magic_item.tags, new_tag)
+            end
+        end
         role_info.magic_item = new_item_data
     end
     -- 初始化八卦牌
@@ -307,6 +317,16 @@ function Role.AddRole(roleid)
                 new_item_data.special_info.diagrams_item.cur_durability = diagrams_item_cfg.durability
                 new_item_data.special_info.diagrams_item.strong_value = diagrams_item_cfg.sturdy
                 -- 获取默认词条
+                local uniq_item_cfg = GameCfg.UniqueItem[diagrams_id]
+                if uniq_item_cfg and uniq_item_cfg.default_entry and table.size(uniq_item_cfg.default_entry) > 0 then
+                    for tag_id, tag_value in pairs(uniq_item_cfg.default_entry) do
+                        local new_tag = {
+                            tag_id = tag_id,
+                            val = tag_value,
+                        }
+                        table.insert(new_item_data.special_info.diagrams_item.tags, new_tag)
+                    end
+                end
                 role_info.digrams_cards[equip_idx] = new_item_data
             end
         end
@@ -328,6 +348,16 @@ function Role.AddRole(roleid)
         new_item_data.special_info.space_ring.cur_durability = space_ring_cfg.durability
         new_item_data.special_info.space_ring.strong_value = space_ring_cfg.sturdy
         -- 获取默认词条
+        local uniq_item_cfg = GameCfg.UniqueItem[init_space_ring_id]
+        if uniq_item_cfg and uniq_item_cfg.default_entry and table.size(uniq_item_cfg.default_entry) > 0 then
+            for tag_id, tag_value in pairs(uniq_item_cfg.default_entry) do
+                local new_tag = {
+                    tag_id = tag_id,
+                    val = tag_value,
+                }
+                table.insert(new_item_data.special_info.space_ring.tags, new_tag)
+            end
+        end
         role_info.space_ring = new_item_data
     end
 
