@@ -132,6 +132,7 @@ local UserAttrType = {
     buff_datas = "buff_datas", -- 账户加成数据
     battle_report_ids = "battle_report_ids", -- 战报id
     cur_model_role = "cur_model_role", -- 覆盖更新 展示角色
+    last_fresh_mode_ts = "last_fresh_mode_ts", -- 最后一次更新游戏模式票时间
 }
 
 

@@ -285,14 +285,14 @@ function User.GetOnlineUserAttr(fields)
     return user_attr
 end
 
-function User.GetLastOnlineTime()
+function User.GetLastFreshModeTime()
     local db_user_attr = scripts.UserModel.GetUserAttr()
     if not db_user_attr then
         return -1
     end
 
-    if db_user_attr.online_time then
-        return db_user_attr.online_time
+    if db_user_attr.last_fresh_mode_ts then
+        return db_user_attr.last_fresh_mode_ts
     else
         return 0
     end
@@ -306,6 +306,19 @@ function User.GetNowLevel()
 
     if db_user_attr.account_level then
         return db_user_attr.account_level
+    else
+        return 0
+    end
+end
+
+function User.GetLastOnlineTime()
+    local db_user_attr = scripts.UserModel.GetUserAttr()
+    if not db_user_attr then
+        return -1
+    end
+
+    if db_user_attr.online_time then
+        return db_user_attr.online_time
     else
         return 0
     end
@@ -710,6 +723,26 @@ function User.C2SPing(req)
     context.S2C(CmdCode.S2CPong, req)
 end
 
+function User.RecoverGameModeItem(recover_list)
+    local stack_items, unstack_items, deal_coins = {}, {}, {}
+    local ok = ItemDefine.GetItemDataFromIdCount(recover_list, {}, stack_items, unstack_items, deal_coins)
+    if not ok then
+        return false
+    end
+
+    local bag_change_log = {}
+    if table.size(deal_coins) > 0 then
+        local bag_err_code = scripts.Bag.DealCoins(deal_coins, bag_change_log)
+        if bag_err_code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return false
+        end
+    end
+
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.GameModeRecover)
+    return true
+end
+
 --PBPingCmd
 function User.PBPingCmd(req)
     local ret =
@@ -722,8 +755,49 @@ function User.PBPingCmd(req)
     if last_online_time < 0 then
         return
     end
+    local last_fresh_mode_ts = User.GetLastFreshModeTime()
+    if last_fresh_mode_ts < 0 then
+        return
+    end
 
     local now_ts = moon.time()
+
+    -- 恢复游戏模式货币
+    local mode_cfgs = GameCfg.GameMode
+    if mode_cfgs and table.size(mode_cfgs) > 0 then
+        local recover_list = {}
+        for _, mode_cfg in pairs(mode_cfgs) do
+            if mode_cfg.recover_num and table.size(mode_cfg.recover_num) > 0 then
+                if last_fresh_mode_ts == 0 then
+                    for recover_id, recover_cnt in pairs(mode_cfg.recover_num) do
+                        if not recover_list[recover_id] then
+                            recover_list[recover_id] = 0
+                        end
+                        recover_list[recover_id] = recover_list[recover_id] + recover_cnt
+                    end
+                else
+                    local drift_ts = mode_cfg.recover_week * 24 * 60 * 60 + mode_cfg.recover_time
+                    if not datetime.is_same_week(last_fresh_mode_ts - drift_ts, now_ts - drift_ts) then
+                        for recover_id, recover_cnt in pairs(mode_cfg.recover_num) do
+                            if not recover_list[recover_id] then
+                                recover_list[recover_id] = 0
+                            end
+                            recover_list[recover_id] = recover_list[recover_id] + recover_cnt
+                        end
+                    end
+                end
+            end
+        end
+        if table.size(recover_list) > 0 then
+            local ok = User.RecoverGameModeItem(recover_list)
+            if ok then
+                local update_user_attr = {}
+                update_user_attr[ProtoEnum.UserAttrType.last_fresh_mode_ts] = now_ts
+                User.SetUserAttr(update_user_attr, false)
+            end
+        end
+    end
+
     local add_time = now_ts - last_online_time
     if add_time >= 60 * 2 then
         add_time = 60
@@ -732,7 +806,6 @@ function User.PBPingCmd(req)
     if not datetime.is_same_day(last_online_time, now_ts) then
         change_day = true
     end
-
     if change_day or add_time >= 60 then
         if change_day then
             -- 触发签到

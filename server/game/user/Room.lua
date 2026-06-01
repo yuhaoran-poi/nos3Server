@@ -542,22 +542,107 @@ end
 
 function Room.PBStartGameRoomReqCmd(req)
     if not context.roomid or context.roomid ~= req.msg.roomid then
-        return context.S2C(context.net_id, CmdCode["PBStartGameRoomRspCmd"], {
+        return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
             code = ErrorCode.RoomNotFound,
             error = "不在目标房间内"
         }, req.msg_context.stub_id)
     end
 
-    local res, err = clusterd.call(3999, "roommgr", "Roommgr.StartGame", req.msg)
-    if err then
-        moon.error(string.format("Roommgr.StartGame err:\n%s", json.pretty_encode(err)))
-        return context.S2C(context.net_id, CmdCode["PBStartGameRoomRspCmd"], {
+    local front_res, front_err = clusterd.call(3999, "roommgr", "Roommgr.GetMasterAndChapter", req.msg.roomid)
+    if front_err then
+        moon.error(string.format("Roommgr.GetMasterAndChapter err:\n%s", json.pretty_encode(front_err)))
+        return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
             code = ErrorCode.ServerInternalError,
             error = "system error",
         }, req.msg_context.stub_id)
     end
+    if front_res.code ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+            code = front_res.code,
+            error = front_res.error,
+        }, req.msg_context.stub_id)
+    end
+    if front_res.master_id ~= context.uid then
+        return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+            code = ErrorCode.RoomPermissionDenied,
+            error = "你不是房主",
+        }, req.msg_context.stub_id)
+    end
 
-    return context.S2C(context.net_id, CmdCode["PBStartGameRoomRspCmd"], res, req.msg_context.stub_id)
+    -- 先扣除模式门票
+    local game_mode_cfgs = GameCfg.GameMode
+    if not game_mode_cfgs or table.size(game_mode_cfgs) <= 0 then
+        return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+            code = ErrorCode.ServerInternalError,
+            error = "system error",
+        }, req.msg_context.stub_id)
+    end
+    local bag_change_log = {}
+    for _, game_mode_cfg in pairs(game_mode_cfgs) do
+        if game_mode_cfg.begin_id <= front_res.chapter and game_mode_cfg.end_id >= front_res.chapter then
+            local err_code_coins = ErrorCode.None
+
+            if game_mode_cfg.cost1 and table.size(game_mode_cfg.cost1) > 0 then
+                local cost_items, cost_coins = {}, {}
+                ItemDefine.GetItemsFromCfg(game_mode_cfg.cost1, 1, true, cost_items, cost_coins)
+                err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
+                if err_code_coins == ErrorCode.None then
+                    if table.size(cost_coins) > 0 then
+                        err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_log)
+                        if err_code_coins ~= ErrorCode.None then
+                            scripts.Bag.RollBackWithChange(bag_change_log)
+                            return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+                                code = err_code_coins,
+                                error = "消耗模式门票不足",
+                            }, req.msg_context.stub_id)
+                        end
+                    end
+                end
+            end
+
+            if err_code_coins ~= ErrorCode.None
+                and game_mode_cfg.cost2 and table.size(game_mode_cfg.cost2) > 0 then
+                local cost_items, cost_coins = {}, {}
+                ItemDefine.GetItemsFromCfg(game_mode_cfg.cost2, 1, true, cost_items, cost_coins)
+                err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
+                if err_code_coins ~= ErrorCode.None then
+                    return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+                        code = err_code_coins,
+                        error = "消耗模式门票不足",
+                    }, req.msg_context.stub_id)
+                end
+                if table.size(cost_coins) > 0 then
+                    err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_log)
+                    if err_code_coins ~= ErrorCode.None then
+                        scripts.Bag.RollBackWithChange(bag_change_log)
+                        return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+                            code = err_code_coins,
+                            error = "消耗模式门票不足",
+                        }, req.msg_context.stub_id)
+                    end
+                end
+            end
+        end
+    end
+
+    local res, err = clusterd.call(3999, "roommgr", "Roommgr.StartGame", req.msg)
+    if err then
+        scripts.Bag.RollBackWithChange(bag_change_log)
+        moon.error(string.format("Roommgr.StartGame err:\n%s", json.pretty_encode(err)))
+        return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+            code = ErrorCode.ServerInternalError,
+            error = "system error",
+        }, req.msg_context.stub_id)
+    end
+    if table.size(bag_change_log) > 0 then
+        if res.code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+        else
+            scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.GameStartCost)
+        end
+    end
+
+    return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, res, req.msg_context.stub_id)
 end
 
 function Room.OnEnterDs(res)

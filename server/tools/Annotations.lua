@@ -3719,6 +3719,7 @@
 ---@field public buff_datas table<integer, PBBuffData> @账户加成数据
 ---@field public battle_report_ids integer[] @战报id
 ---@field public cur_model_role PBSimpleRoleData @覆盖更新 展示角色
+---@field public last_fresh_mode_ts integer @最后一次更新游戏模式票时间
 
 
 ---@class PBClientGetUsrSimInfoReqCmd
@@ -4269,6 +4270,7 @@
 ---@field FallBox FallBox_cfg[]
 ---@field FriendConfig FriendConfig_cfg[]
 ---@field GameChapter GameChapter_cfg[]
+---@field GameMode GameMode_cfg[]
 ---@field GamePropUpLv GamePropUpLv_cfg[]
 ---@field GhostEquipmentUpLv GhostEquipmentUpLv_cfg[]
 ---@field GhostInfo GhostInfo_cfg[]

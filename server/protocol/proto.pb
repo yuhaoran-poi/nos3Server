@@ -1301,12 +1301,12 @@ open_count (R	openCount(
 TreasureListEntry
 key (Rkey'
 value (2.PBTreasureSingleRvalue:8bproto3
-£>
+Ð>
 
 user.protocommon.proto
 item.proto	bag.proto
 role.protoghost.protograde.proto
-shop.proto"Í
+shop.proto"ú
 
 PBUserAttr
 uid (Ruid!
@@ -1332,7 +1332,7 @@ guild_name (	R	guildName8
 title (Rtitle
 player_flag (R
 playerFlag
-online_time (R
+online_time (R
 onlineTime&
 sum_online_time (RsumOnlineTime8
 cur_show_ghost (2.PBSimpleGhostDataRcurShowGhost
@@ -1343,7 +1343,8 @@ onlineTime&
 
 buff_datas (2.PBUserAttr.BuffDatasEntryR	buffDatas*
 battle_report_ids (RbattleReportIds7
-cur_model_role (2.PBSimpleRoleDataRcurModelRoleI
+cur_model_role (2.PBSimpleRoleDataRcurModelRole+
+last_fresh_mode_ts (RlastFreshModeTsI
 BuffDatasEntry
 key (Rkey!
 value (2.PBBuffDataRvalue:8"/

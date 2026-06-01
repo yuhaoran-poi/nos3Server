@@ -90,7 +90,8 @@ local defaultPBUserAttr = {
     last_chat_time = 0,                                                  --最后一次发言时间
     buff_datas = {},                                                     --账户加成数据
     battle_report_ids = {},                                              --战斗报告ID列表
-    cur_model_role = LuaExt.const(table.copy(defaultPBSimpleRoleData)),   --当前展示的角色
+    cur_model_role = LuaExt.const(table.copy(defaultPBSimpleRoleData)),  --当前展示的角色
+    last_fresh_mode_ts = 0,                                            --最后一次刷新模式的时间
 }
 
 ---@return PBBuffData
