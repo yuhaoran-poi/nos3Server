@@ -378,7 +378,7 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
 end
 
 -- 展示古董
-function AntiqueShowcase.AntiqueShow(config_id, uniq_id, showcase_id, showcase_idx, operate_type, bag_pos)
+function AntiqueShowcase.AntiqueShow(config_id, uniqid, showcase_id, showcase_idx, operate_type, bag_pos)
     -- 参数验证
     if not showcase_id or not showcase_idx or showcase_id <= 0 or showcase_idx <= 0 then
         return ErrorCode.ParamInvalid, "参数错误"
@@ -412,7 +412,7 @@ function AntiqueShowcase.AntiqueShow(config_id, uniq_id, showcase_id, showcase_i
 
     if operate_type == 1 then
         -- 展示古董
-        if not config_id or not uniq_id or config_id <= 0 or uniq_id <= 0 or not bag_pos or bag_pos <= 0 then
+        if not config_id or not uniqid or config_id <= 0 or uniqid <= 0 or not bag_pos or bag_pos <= 0 then
             return ErrorCode.ParamInvalid, "参数错误"
         end
 
@@ -444,7 +444,7 @@ function AntiqueShowcase.AntiqueShow(config_id, uniq_id, showcase_id, showcase_i
         local old_item_data = table.copy(item_data)
 
         if aimShowAntique and aimShowAntique.common_info and aimShowAntique.common_info.uniqid then
-            local del_unique_items = { [uniq_id] = { config_id = config_id, uniqid = uniq_id, pos = bag_pos } }
+            local del_unique_items = { [uniqid] = { config_id = config_id, uniqid = uniqid, pos = bag_pos } }
             local takeoff_items = { [aimShowAntique.common_info.uniqid] = aimShowAntique }
 
             -- 删除背包内古董
@@ -462,7 +462,7 @@ function AntiqueShowcase.AntiqueShow(config_id, uniq_id, showcase_id, showcase_i
             end
         else
             -- 删除背包内古董
-            local del_unique_items = { [uniq_id] = { config_id = config_id, uniqid = uniq_id, pos = bag_pos } }
+            local del_unique_items = { [uniqid] = { config_id = config_id, uniqid = uniqid, pos = bag_pos } }
             err_code = scripts.Bag.DelItems(BagDef.BagType.Cangku, {}, del_unique_items, bag_change_log)
             if err_code ~= ErrorCode.None then
                 scripts.Bag.RollBackWithChange(bag_change_log)
@@ -479,7 +479,7 @@ function AntiqueShowcase.AntiqueShow(config_id, uniq_id, showcase_id, showcase_i
         scripts.Bag.AddLog(bag_change_log[BagDef.BagType.Cangku], bag_pos, item_data)
     elseif operate_type == 0 then
         -- 取消展示古董
-        if not aimShowAntique or not aimShowAntique.common_info or aimShowAntique.common_info.uniqid ~= uniq_id then
+        if not aimShowAntique or not aimShowAntique.common_info or aimShowAntique.common_info.uniqid ~= uniqid then
             return ErrorCode.AntiqueNotInShowcase, "古董不在展示框中"
         end
 

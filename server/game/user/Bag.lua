@@ -3361,12 +3361,12 @@ function Bag.PBAntiqueIdentifyReqCmd(req)
 end
 
 function Bag.PBAntiqueShowReqCmd(req)
-    local err_code, error = scripts.AntiqueShowcase.AntiqueShow(req.msg.config_id, req.msg.uniq_id, req.msg.showcase_id, req.msg.showcase_idx, req.msg.operate_type, req.msg.pos)
+    local err_code, error = scripts.AntiqueShowcase.AntiqueShow(req.msg.config_id, req.msg.uniqid, req.msg.showcase_id, req.msg.showcase_idx, req.msg.operate_type, req.msg.pos)
     return context.S2C(context.net_id, CmdCode.PBAntiqueShowRspCmd, {
         code = err_code,
         error = error,
         config_id = req.msg.config_id,
-        uniq_id = req.msg.uniq_id,
+        uniqid = req.msg.uniqid,
         showcase_id = req.msg.showcase_id,
         showcase_idx = req.msg.showcase_idx,
         operate_type = req.msg.operate_type,
