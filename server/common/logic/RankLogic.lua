@@ -21,7 +21,7 @@ local rank_reward_data = {}
 local rank_update_queue = {}
 
 -- 批量处理间隔（秒）
-local BATCH_PROCESS_INTERVAL = 2
+local BATCH_PROCESS_INTERVAL = 10
 
 -- 是否正在处理队列
 local is_processing_queue = false
@@ -223,8 +223,9 @@ function RankLogic.RefreshRankData(rank_type)
         rank.lrt = moon.time()
     end
 
-    -- 同步到Redis
+    -- 同步到Redis（排行榜数据和奖励数据）
     RankLogic.SaveRankDataToRedis(rank_type)
+    RankLogic.SaveRankRewardToRedis(rank_type)
 
     return ErrorCode.None
 end
@@ -375,12 +376,15 @@ end
 
 -- 保存排行榜数据到Redis
 function RankLogic.SaveRankDataToRedis(rank_type)
+    moon.info(string.format("[RankLogic] SaveRankDataToRedis called: rank_type=%d", rank_type))
     if not rank_data[rank_type] then
+        moon.info(string.format("[RankLogic] SaveRankDataToRedis: no data for rank_type=%d", rank_type))
         return ErrorCode.ConfigError
     end
 
     local addr_db = moon.queryservice("db_server")
     if not addr_db or addr_db == 0 then
+        moon.info(string.format("[RankLogic] SaveRankDataToRedis: db_server not found"))
         return ErrorCode.ServerInternalError
     end
 
@@ -389,28 +393,44 @@ function RankLogic.SaveRankDataToRedis(rank_type)
     local rank_json = json.encode(rank_data[rank_type])
     local res, err = pcall(Database.saveserverdata_with_key, addr_db, rank_key, rank_json)
     if not res then
-        moon.error("Save rank data to redis failed:", err)
+        moon.error(string.format("[RankLogic] SaveRankDataToRedis failed: rank_type=%d, err=%s", rank_type, err))
+        return ErrorCode.ServerInternalError
+    end
+    moon.info(string.format("[RankLogic] SaveRankDataToRedis success: rank_type=%d, key=%s", rank_type, rank_key))
+    return ErrorCode.None
+end
+
+-- 保存奖励数据到Redis
+function RankLogic.SaveRankRewardToRedis(rank_type)
+    local addr_db = moon.queryservice("db_server")
+    if not addr_db or addr_db == 0 then
         return ErrorCode.ServerInternalError
     end
 
-    -- 保存奖励数据
     local reward_key = string.format("rank_reward:%d", rank_type)
     if rank_reward_data[rank_type] then
         local reward_json = json.encode(rank_reward_data[rank_type])
-        res, err = pcall(Database.saveserverdata_with_key, addr_db, reward_key, reward_json)
+        local res, err = pcall(Database.saveserverdata_with_key, addr_db, reward_key, reward_json)
         if not res then
             moon.error("Save rank reward data to redis failed:", err)
             return ErrorCode.ServerInternalError
         end
     else
         -- 如果没有奖励数据，删除对应的键
-        res, err = pcall(redis_call, addr_db, "del", reward_key)
+        local res, err = pcall(redis_call, addr_db, "del", reward_key)
         if not res then
             moon.error("Delete rank reward key failed:", err)
         end
     end
 
     return ErrorCode.None
+end
+
+-- 保存所有排行榜数据到Redis
+function RankLogic.SaveAllRankDataToRedis()
+    for _, rank_type in pairs(RankDef.RankType) do
+        RankLogic.SaveRankDataToRedis(rank_type)
+    end
 end
 
 -- 从Redis加载排行榜数据
@@ -435,12 +455,12 @@ function RankLogic.LoadRankDataFromRedis()
                 rank_data[rank_type] = decoded
                 loaded_rank_types[rank_type] = true
                 loaded_count = loaded_count + 1
-                print(string.format("[RankLogic] Loaded rank data for type %d", rank_type))
+                moon.info(string.format("[RankLogic] Loaded rank data for type %d", rank_type))
             else
                 moon.error(string.format("[RankLogic] Failed to decode rank data for type %d: %s", rank_type, decoded))
             end
         else
-            print(string.format("[RankLogic] No rank data found for type %d", rank_type))
+            moon.info(string.format("[RankLogic] No rank data found for type %d", rank_type))
         end
 
         -- 加载奖励数据
@@ -456,7 +476,7 @@ function RankLogic.LoadRankDataFromRedis()
         end
     end
 
-    print(string.format("[RankLogic] Loaded %d rank types from Redis", loaded_count))
+    moon.info(string.format("[RankLogic] Loaded %d rank types from Redis", loaded_count))
     return ErrorCode.None, loaded_rank_types
 end
 
@@ -554,6 +574,7 @@ function RankLogic.EnqueueRankUpdate(rank_type, uid, player_data, force)
         force = force or false,
         enqueue_time = moon.time()
     }
+    moon.info(string.format("[RankLogic] EnqueueRankUpdate: rank_type=%d, uid=%d, queue_size=%d", rank_type, uid, table.size(rank_update_queue)))
     return ErrorCode.None
 end
 
@@ -578,7 +599,7 @@ function RankLogic.ProcessRankUpdateQueue()
     is_processing_queue = false
 
     if count > 0 then
-        print(string.format("[RankLogic] Processed %d rank updates from queue", count))
+        moon.info(string.format("[RankLogic] Processed %d rank updates from queue", count))
     end
 end
 
@@ -599,13 +620,13 @@ function RankLogic.UpdatePlayerRankInternal(rank_type, uid, player_data, force)
     local existing_data = rank.ps[uid]
 
     -- 主线榜(RankType_Mainline=3)和封塔榜(RankType_Fengta=4)：只有分数上涨才更新排名
-    local is_mainline_or_fengta = rank_type == 3 or rank_type == 4
+    local is_mainline_or_fengta = rank_type == RankDef.RankType.Mainline or rank_type == RankDef.RankType.Fengta
     if is_mainline_or_fengta and existing_data then
         local new_value = player_data.value or 0
         local old_value = existing_data.value or 0
         if new_value <= old_value then
             -- 分数没有上涨，只更新出战信息，不更新排名
-            print(string.format("[RankLogic] Mainline/Fengta rank: player %d value %d <= %d, update battle info only", 
+            moon.info(string.format("[RankLogic] Mainline/Fengta rank: player %d value %d <= %d, update battle info only", 
                 uid, new_value, old_value))
             if player_data.chr then existing_data.chr = player_data.chr end
             if player_data.chs then existing_data.chs = player_data.chs end
@@ -617,17 +638,17 @@ function RankLogic.UpdatePlayerRankInternal(rank_type, uid, player_data, force)
 
     -- 根据force参数决定更新策略
     if existing_data then
-        print(string.format("[RankLogic] Player %d already exists in rank %d, force=%s, existing value=%d",
+        moon.info(string.format("[RankLogic] Player %d already exists in rank %d, force=%s, existing value=%d",
             uid, rank_type, tostring(force), existing_data.value or 0))
         if force then
             -- force=true: 强制更新，即使分数降低也更新排名
             -- 始终更新
-            print(string.format("[RankLogic] Force update for player %d in rank %d", uid, rank_type))
+            moon.info(string.format("[RankLogic] Force update for player %d in rank %d", uid, rank_type))
         else
             -- force=false (初始化模式):
             -- 如果已有数据，只更新出战信息（chr, chs, gho, ghs），不覆盖分数相关字段
             -- 保留：value, ed, rank, ut 等分数相关字段
-            print(string.format("[RankLogic] Init mode: updating battle info only for player %d in rank %d", uid, rank_type))
+            moon.info(string.format("[RankLogic] Init mode: updating battle info only for player %d in rank %d", uid, rank_type))
             if player_data.chr then existing_data.chr = player_data.chr end
             if player_data.chs then existing_data.chs = player_data.chs end
             if player_data.gho then existing_data.gho = player_data.gho end
@@ -635,7 +656,7 @@ function RankLogic.UpdatePlayerRankInternal(rank_type, uid, player_data, force)
             return ErrorCode.None
         end
     else
-        print(string.format("[RankLogic] Player %d not found in rank %d, adding new data with value=%d", 
+        moon.info(string.format("[RankLogic] Player %d not found in rank %d, adding new data with value=%d", 
             uid, rank_type, player_data.value or 0))
     end
 
@@ -649,9 +670,11 @@ end
 
 -- 启动队列处理器（定时批量处理）
 function RankLogic.StartQueueProcessor()
+    moon.info(string.format("[RankLogic] StartQueueProcessor: BATCH_PROCESS_INTERVAL=%ds", BATCH_PROCESS_INTERVAL))
     moon.async(function()
         while true do
             moon.sleep(BATCH_PROCESS_INTERVAL * 1000)
+            moon.info(string.format("[RankLogic] ProcessRankUpdateQueue triggered, queue_size=%d", table.size(rank_update_queue)))
             RankLogic.ProcessRankUpdateQueue()
         end
     end)

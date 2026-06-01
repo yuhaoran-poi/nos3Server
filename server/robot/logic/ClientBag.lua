@@ -165,7 +165,7 @@ function Client:show_antique(config_id, uniqid, showcase_id, showcase_idx, opera
 
     local req_msg = {
         config_id = config_id,
-        uniq_id = uniqid,
+        uniqid = uniqid,
         showcase_id = showcase_id,
         showcase_idx = showcase_idx,
         operate_type = operate_type,

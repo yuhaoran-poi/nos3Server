@@ -13,6 +13,8 @@ start cmd /k moon\moon.exe main_match.lua 3002
 timeout /t 3
 start cmd /k moon\moon.exe main_logs.lua 3003
 timeout /t 3
+start cmd /k moon\moon.exe main_rank.lua 3004
+timeout /t 3
 start cmd /k moon\moon.exe main_social.lua 1001
 timeout /t 3
 start cmd /k moon\moon.exe main_game.lua 1

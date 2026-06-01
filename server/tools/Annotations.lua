@@ -4090,10 +4090,6 @@
 ---@field Mail Mail
 
 
----@class rank_scripts
----@field service_rank service_rank
-
-
 ---@class room_scripts
 ---@field Aoi Aoi
 ---@field Room Room

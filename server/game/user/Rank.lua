@@ -1,12 +1,9 @@
 --require("common.LuaPanda").start("127.0.0.1", 8818)
 local moon = require "moon"
 local common = require "common"
-local protocol = require("common.protocol_pb")
 local clusterd = require("cluster")
-local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
-local Database = common.Database
 local RankDef = require "common.def.RankDef"
 local ItemDefine = require("common.logic.ItemDefine")
 local BagDef = require("common.def.BagDef")
@@ -50,7 +47,7 @@ function Rank.Start(isnew)
     -- 启动时的处理
     -- 检查并分配玩家到各种排行榜
     Rank.AssignPlayerToAllRanks()
-    print("Player assigned to all ranks")
+    moon.info("Player assigned to all ranks for uid:%d nowtime:%d", context.uid, moon.time())
 end
 
 -- 分配玩家到所有排行榜
@@ -108,16 +105,15 @@ function Rank.PBRankGetInfoReqCmd(req)
     end
 
     -- 调用排行榜服务获取数据
-    local rank_addr = moon.queryservice("rank")
-    if rank_addr == 0 then
-        moon.error("Cannot find rank service")
+    local rank_data, err = clusterd.call(3004, "rank", "GetRankInfo", {rank_type = rank_type, sub_rank_id = rank_id, uid = context.uid})
+    if not rank_data then
+        moon.error("Failed to get rank data:", err)
         return context.S2C(context.net_id, CmdCode.PBRankGetInfoRspCmd, {
             code = ErrorCode.ServerInternalError,
             error = "获取排行榜数据失败",
             uid = context.uid,
         }, req.msg_context.stub_id)
     end
-    local rank_data = moon.call("lua", rank_addr, "getRankData", rank_type, rank_id)
 
     if not rank_data or type(rank_data) ~= "table" then
         moon.error("Failed to get rank data:", rank_data)
@@ -152,9 +148,9 @@ function Rank.PBRankGetRewardReqCmd(req)
     end
 
     -- 调用排行榜服务领取奖励
-    local rank_addr = moon.queryservice("rank")
-    if rank_addr == 0 then
-        moon.error("Cannot find rank service")
+    local reward_data, err = clusterd.call(3004, "rank", "GetRankReward", {rank_type = rank_type, uid = context.uid})
+    if not reward_data then
+        moon.error("Failed to get rank reward:", err)
         return context.S2C(context.net_id, CmdCode.PBRankGetRewardRspCmd, {
             code = ErrorCode.ServerInternalError,
             error = "领取奖励失败",
@@ -235,12 +231,12 @@ end
 -- 处理玩家上榜
 function Rank.UpdatePlayerRank(rank_type, player_data, force)
     player_data.uid = context.uid
-    local rank_addr = moon.queryservice("rank")
-    if rank_addr == 0 then
-        moon.error("Cannot find rank service")
+    local result, err = clusterd.call(3004, "rank", "handlePlayerRankUpdate", {rank_type = rank_type, uid = context.uid, player_data = player_data, force = force})
+    if result == nil then  -- 修改：检查是否为 nil，而不是检查假值
+        moon.error("Failed to update player rank:", err)
         return ErrorCode.ServerInternalError
     end
-    return moon.call("lua", rank_addr, "handlePlayerRankUpdate", rank_type, context.uid, player_data, force)
+    return result
 end
 
 -- 段位榜更新

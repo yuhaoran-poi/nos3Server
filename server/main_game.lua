@@ -134,12 +134,6 @@ local function run(node_conf)
         },
         {
             unique = true,
-            name = "rank",
-            file = "game/rank/service_rank.lua",
-            threadid = 10
-        },
-        {
-            unique = true,
             name = "dgate",
             file = "game/service_dgate.lua",
             host = node_conf.dhost,
@@ -182,7 +176,6 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("gate"), "Init"))
         assert(moon.call("lua", moon.queryservice("node"), "Init"))
         assert(moon.call("lua", moon.queryservice("dgate"), "Init"))
-        assert(moon.call("lua", moon.queryservice("rank"), "Init"))
         ---加载完数据后 开始接受网络连接
         assert(moon.call("lua", moon.queryservice("cluster"), "Listen"))
         assert(moon.call("lua", moon.queryservice("gate"), "Start"))
