@@ -2117,11 +2117,11 @@ function User.PBSureCompositeReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
     end
     -- 暂时屏蔽配方检测
-    -- if not scripts.ItemImage.GetCompositeFormula(req.msg.composite_id) then
-    --     rsp_msg.code = ErrorCode.FormulaNoUnlock
-    --     rsp_msg.error = "配方未解锁"
-    --     return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
-    -- end
+    if not scripts.ItemImage.GetCompositeFormula(req.msg.composite_id) then
+        rsp_msg.code = ErrorCode.FormulaNoUnlock
+        rsp_msg.error = "配方未解锁"
+        return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
 
     local cost_items = {}
     local cost_coins = {}
