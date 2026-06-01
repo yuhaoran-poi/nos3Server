@@ -1477,6 +1477,16 @@ function Bag.AddMagicItem(bagType, baginfo, item_data, change_log)
 
     if table.size(new_itemdata.special_info.magic_item.tags) == 0 then
         -- 获取默认词条
+        local uniq_item_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+        if uniq_item_cfg and uniq_item_cfg.default_entry and table.size(uniq_item_cfg.default_entry) > 0 then
+            for tag_id, tag_value in pairs(uniq_item_cfg.default_entry) do
+                local new_tag = {
+                    tag_id = tag_id,
+                    val = tag_value,
+                }
+                table.insert(new_itemdata.special_info.magic_item.tags, new_tag)
+            end
+        end
     end
 
     return ErrorCode.None
@@ -1502,6 +1512,19 @@ function Bag.AddDiagramsCard(bagType, baginfo, item_data, change_log)
             new_itemdata.special_info.diagrams_item.strong_value = item_cfg.sturdy
         end
     end
+    if table.size(new_itemdata.special_info.diagrams_item.tags) == 0 then
+        -- 获取默认词条
+        local uniq_item_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+        if uniq_item_cfg and uniq_item_cfg.default_entry and table.size(uniq_item_cfg.default_entry) > 0 then
+            for tag_id, tag_value in pairs(uniq_item_cfg.default_entry) do
+                local new_tag = {
+                    tag_id = tag_id,
+                    val = tag_value,
+                }
+                table.insert(new_itemdata.special_info.diagrams_item.tags, new_tag)
+            end
+        end
+    end
 
     return ErrorCode.None
 end
@@ -1524,6 +1547,19 @@ function Bag.AddSpaceRing(bagType, baginfo, item_data, change_log)
         if item_cfg then
             new_itemdata.special_info.space_ring.cur_durability = item_cfg.durability
             new_itemdata.special_info.space_ring.strong_value = item_cfg.sturdy
+        end
+    end
+    if table.size(new_itemdata.special_info.space_ring.tags) == 0 then
+        -- 获取默认词条
+        local uniq_item_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+        if uniq_item_cfg and uniq_item_cfg.default_entry and table.size(uniq_item_cfg.default_entry) > 0 then
+            for tag_id, tag_value in pairs(uniq_item_cfg.default_entry) do
+                local new_tag = {
+                    tag_id = tag_id,
+                    val = tag_value,
+                }
+                table.insert(new_itemdata.special_info.space_ring.tags, new_tag)
+            end
         end
     end
 

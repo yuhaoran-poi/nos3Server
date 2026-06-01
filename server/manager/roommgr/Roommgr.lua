@@ -1352,6 +1352,15 @@ function Roommgr.RandomMapAndBoss(room_data)
     return ErrorCode.None
 end
 
+function Roommgr.GetMasterAndChapter(room_id)
+    local room = context.rooms[room_id]
+    if not room then
+        return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+
+    return { code = ErrorCode.None, error = "获取房主和章节成功", master_id = room.master_id, chapter = room.room_data.chapter }
+end
+
 function Roommgr.StartGame(req)
     local room = context.rooms[req.roomid]
     if not room then
