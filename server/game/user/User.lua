@@ -724,8 +724,13 @@ function User.C2SPing(req)
 end
 
 function User.RecoverGameModeItem(recover_list)
+    local add_items, add_coins = {}, {}
+    local ok = ItemDefine.GetItemsFromCfg(recover_list, 1, false, add_items, add_coins)
+    if not ok then
+        return false
+    end
     local stack_items, unstack_items, deal_coins = {}, {}, {}
-    local ok = ItemDefine.GetItemDataFromIdCount(recover_list, {}, stack_items, unstack_items, deal_coins)
+    ok = ItemDefine.GetItemDataFromIdCount(add_items, add_coins, stack_items, unstack_items, deal_coins)
     if not ok then
         return false
     end

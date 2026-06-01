@@ -23,6 +23,7 @@ local context = ...
 
 local listenfd
 local maxplayers = 10
+local BOSS_MODE = 3
 
 ---@class Roommgr
 local Roommgr = {
@@ -1323,6 +1324,29 @@ function Roommgr.RandomMapAndBoss(room_data)
 
     local tmp_conf = GameCfg.GameChapter[cur_idx]
 
+    -- 鬼王入侵模式
+    local sure_boss = false
+    local game_mode_cfg = GameCfg.GameMode[BOSS_MODE]
+    if game_mode_cfg
+        and tmp_conf.chapterid >= game_mode_cfg.begin_id
+        and tmp_conf.chapterid <= game_mode_cfg.end_id then
+        local now_ts = moon.time()
+        local game_boss_cfgs = GameCfg.GameModeBoss
+        if game_boss_cfgs and table.size(game_boss_cfgs) > 0 then
+            for _, game_boss_cfg in pairs(game_boss_cfgs) do
+                if game_boss_cfg.time_start <= now_ts and game_boss_cfg.time_end >= now_ts then
+                    room_data.boss_id = game_boss_cfg.boss_id
+                    sure_boss = true
+                    break
+                end
+            end
+            if not sure_boss then
+                room_data.boss_id = game_boss_cfgs[1].boss_id
+                sure_boss = true
+            end
+        end
+    end
+
     local map_total_weight = 0
     for id, weight in pairs(tmp_conf.mapid) do
         map_total_weight = map_total_weight + weight
@@ -1336,16 +1360,18 @@ function Roommgr.RandomMapAndBoss(room_data)
         end
     end
 
-    local boss_total_weight = 0
-    for id, weight in pairs(tmp_conf.bossid) do
-        boss_total_weight = boss_total_weight + weight
-    end
-    local boss_rand = math.random(boss_total_weight)
-    for id, weight in pairs(tmp_conf.bossid) do
-        boss_rand = boss_rand - weight
-        if boss_rand <= 0 then
-            room_data.boss_id = id
-            break
+    if not sure_boss then
+        local boss_total_weight = 0
+        for id, weight in pairs(tmp_conf.bossid) do
+            boss_total_weight = boss_total_weight + weight
+        end
+        local boss_rand = math.random(boss_total_weight)
+        for id, weight in pairs(tmp_conf.bossid) do
+            boss_rand = boss_rand - weight
+            if boss_rand <= 0 then
+                room_data.boss_id = id
+                break
+            end
         end
     end
 

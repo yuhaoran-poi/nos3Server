@@ -4267,6 +4267,7 @@
 ---@field FriendConfig FriendConfig_cfg[]
 ---@field GameChapter GameChapter_cfg[]
 ---@field GameMode GameMode_cfg[]
+---@field GameModeBoss GameModeBoss_cfg[]
 ---@field GamePropUpLv GamePropUpLv_cfg[]
 ---@field GhostEquipmentUpLv GhostEquipmentUpLv_cfg[]
 ---@field GhostInfo GhostInfo_cfg[]
