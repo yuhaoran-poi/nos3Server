@@ -348,7 +348,7 @@ end
 
 function Console.send_system_mail(send_info_str)
     local ok, info = MailLogic.DealSystemMail(send_info_str)
-    moon.debug("Console.send_system_mail ok: %s, info: %s", ok, info)
+    moon.info("Console.send_system_mail ok: %s, info: %s", ok, info)
     if ok then
         local res, err = clusterd.call(3999, "mailmgr", "Mailmgr.AddSystemMail", info)
         if err then

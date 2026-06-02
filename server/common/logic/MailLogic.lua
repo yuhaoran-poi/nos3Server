@@ -281,8 +281,8 @@ function MailLogic.DealSystemMail(send_info_str)
     end
 
     local all_user = 0
-    moon.debug("MailLogic.DealSystemMail table.size(send_info.uids)", table.size(send_info.uids))
-    moon.debug("MailLogic.DealSystemMail send_info.uids[1]", send_info.uids[1])
+    moon.info("MailLogic.DealSystemMail table.size(send_info.uids)", table.size(send_info.uids))
+    moon.info("MailLogic.DealSystemMail send_info.uids[1]", send_info.uids[1])
     if table.size(send_info.uids) == 1 and send_info.uids[1] == 0 then
         all_user = 1
     end
