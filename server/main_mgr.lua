@@ -187,6 +187,13 @@ local function run(node_conf)
         },
         {
             unique = true,
+            name = "auctionmgr",
+            file = "manager/service_auctionmgr.lua",
+            threadid = 11,
+            websocket = false,
+        },
+        {
+            unique = true,
             name = "billmgr",
             file = "manager/service_billmgr.lua",
             threadid = 11,
@@ -213,6 +220,7 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("mailmgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("shopmgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("trademgr"), "Init"))
+        assert(moon.call("lua", moon.queryservice("auctionmgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("billmgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("battlereportmgr"), "Init"))
 
@@ -226,6 +234,7 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("mailmgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("shopmgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("trademgr"), "Start"))
+        assert(moon.call("lua", moon.queryservice("auctionmgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("billmgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("battlereportmgr"), "Start"))
 

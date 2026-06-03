@@ -17,7 +17,7 @@ local UserAttrLogic = require("common.logic.UserAttrLogic")
 local jencode = json.encode
 local jdecode = json.decode
 
----@type trademgr_context
+---@type shopmgr_context
 local context = ...
 
 local listenfd

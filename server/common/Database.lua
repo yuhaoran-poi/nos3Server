@@ -1521,10 +1521,11 @@ function _M.addauctionproduct(addr, product_data, condition1, condition2, condit
     local cmd = string.format([[
         INSERT INTO mgame.auction_product (auction_id, config_id, uniqid, seller_uid, beg_ts, end_ts, delay_cnt, item_data, item_data_json, start_price, buyout_price, cur_price, buyer_uid, condition1, condition2, condition3, condition4, condition5, custom_conditions1, custom_conditions2, state) VALUES (%d, %d, %d, %d, %d, %d, %d, '%s', '%s', %d, %d, %d, %d, %d, %d, %d, %d, %d, '%s', %d, %d);]],
         product_data.auction_id, product_data.item_data.common_info.config_id, product_data.item_data.common_info.uniqid,
-        product_data.seller_uid, product_data.beg_ts, product_data.delay_cnt, product_data.end_ts, pbvalue, item_data_str,
+        product_data.seller_uid, product_data.beg_ts, product_data.end_ts, product_data.delay_cnt, pbvalue, item_data_str,
         product_data.auction_data.start_price, product_data.auction_data.buyout_price,
         product_data.auction_data.cur_price, product_data.auction_data.buyer_uid, condition1, condition2, condition3,
         condition4, condition5, custome_condition_str, custom_conditions2, product_data.state)
+    moon.warn("addauctionproduct cmd", cmd)
         
     local res, err = moon.call("lua", addr, cmd)
     if err then
@@ -1700,7 +1701,7 @@ end
 
 function _M.getauctionproductwithnum(addr, start_auction_id, state, num)
     local cmd = string.format([[
-        SELECT auction_id, config_id, uniqid, seller_uid, delay_cnt, beg_ts, end_ts, item_data, start_price, buyout_price, cur_price, buyer_uid WHERE auction_id >= %d AND state = %d ORDER BY trade_id LIMIT %d;
+        SELECT auction_id, config_id, uniqid, seller_uid, delay_cnt, beg_ts, end_ts, item_data, start_price, buyout_price, cur_price, buyer_uid FROM mgame.auction_product WHERE auction_id >= %d AND state = %d ORDER BY auction_id LIMIT %d;
     ]], start_auction_id, state, num)
     local res, err = moon.call("lua", addr, cmd)
     if err then

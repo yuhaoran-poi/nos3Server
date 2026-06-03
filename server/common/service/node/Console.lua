@@ -70,7 +70,9 @@ Command List:
 User command format:     U<uid> command params
 Command List:
 	addscore <count> #增加积分. U1234567 addscore 999 给玩家1234567增加999积分
-]]
+	add_account_exp <count> #增加账号经验. U1234567 add_account_exp 999 给玩家1234567增加999账号经验
+	add_items <config_id> <item_count> #增加物品. U1234567 add_items 30001 2 给玩家1234567增加2个30001物品
+	]]
 
 function Console.help()
 	return help
@@ -394,6 +396,26 @@ function Console.add_account_exp(uid, add_exp)
 		return Response(0, "OK")
     else
 		return Response(444, "Failed", string.format("%d %d", uid, add_exp))
+	end
+end
+
+function Console.add_items(uid, config_id, item_count)
+	local item_simple = {
+		config_id = config_id,
+		item_count = item_count,
+		uniqid = 0
+    }
+	local items = {}
+	table.insert(items, item_simple)
+	local res, err = context.call_user(uid, "User.DsAddItems", items)
+	if err then
+		return Response(444, err, string.format("%d %d, %d", uid, config_id, item_count))
+	end
+
+	if res then
+		return Response(0, "OK")
+	else
+		return Response(444, "Failed", string.format("%d %d, %d", uid, config_id, item_count))
 	end
 end
 

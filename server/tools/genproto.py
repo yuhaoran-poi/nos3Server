@@ -133,8 +133,8 @@ namespace CommonNetCmd
 '''
 
 ######################TEMPLATE END#######################
-special_file_list=["common","team","room","guild","chat","city","bag","item","role","ghost","itemimage","friend","mail","shop","gods","grade","trade","bill","mission","seasonpass"]
-user_file_list=["team","room","guild","chat","city","bag","item","role","ghost","itemimage","friend","mail","shop","gods","grade","trade","bill","mission","seasonpass"]
+special_file_list=["common","team","room","guild","chat","city","bag","item","role","ghost","itemimage","friend","mail","shop","gods","grade","trade","bill","mission","seasonpass","auction"]
+user_file_list=["team","room","guild","chat","city","bag","item","role","ghost","itemimage","friend","mail","shop","gods","grade","trade","bill","mission","seasonpass","auction"]
 CommonNetUE = "./proto_out"
 LuaPB = ""
 

@@ -209,6 +209,7 @@ function Auctionmgr.AddAuctionLog()
 end
 
 function Auctionmgr.AddAuctionProduct(req_data)
+    moon.info(string.format("Auctionmgr.AddAuctionProduct req_data = %s", json.pretty_encode(req_data)))
     if not Auctionmgr.load_finish or Auctionmgr.now_auction_id <= 0 then
         return 0
     end
