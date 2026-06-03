@@ -246,7 +246,7 @@ formula_id (R	formulaId"r
 uid (Ruid
 
 formula_id (R	formulaIdbproto3
-∆
+Ê
 auction.proto
 item.proto"ç
 PBAuctionData
@@ -363,12 +363,14 @@ auction_id (R	auctionId"z
 
 auction_id (R	auctionId
 uniqid (Runiqid
-	buy_price (RbuyPrice"v
+	buy_price (RbuyPrice"ï
 PBAuctionBuyRspCmd
 code (Rcode
 error (	Rerror
 uid (Ruid$
-real_buy_price (RrealBuyPrice"P
+real_buy_price (RrealBuyPrice
+
+auction_id (R	auctionId"P
 PBAuctionTakeOffProductReqCmd
 uid (Ruid
 

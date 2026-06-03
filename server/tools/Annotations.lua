@@ -131,6 +131,7 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public real_buy_price integer
+---@field public auction_id integer
 
 
 ---@class PBAuctionTakeOffProductReqCmd

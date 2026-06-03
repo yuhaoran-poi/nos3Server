@@ -4,7 +4,7 @@
 ---@field public type1 integer @资源大类型 0.其他 1.真经 （对应交易行一级分类 id）
 ---@field public type2 integer @品质 1.白 2.蓝 3.紫 4.金 5.红
 ---@field public type3 integer @属性 0.无 1.金 2.水 3.木 4.火 5.土
----@field public type4 integer @自定义类型1 0.无
+---@field public type4 integer @自定义类型1 0.无 剑：101 伞：103 鞭子：104 关刀：107 弓：109 刀：110 臂铠：113
 ---@field public type5 integer @自定义类型2 0.无
 ---@field public market integer[] @交易行/拍卖行分类
 ---@field public stack_count integer @仓库堆叠上限
@@ -596,6 +596,11 @@ return {
 [44053] = { id=44053,bound_id=0,type1=0,type2=3,type3=0,type4=0,type5=0,market={3,2,5,0,0},stack_count=999,use_award={},award_count=0,award_weight={},award_repetition=0,decompose={[1]=2250},Durability=0,could_sell=1,item_weight=5000,use_type=0,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={[1]=2250},is_test=1 },
 [44054] = { id=44054,bound_id=0,type1=0,type2=4,type3=0,type4=0,type5=0,market={4,2,5,0,0},stack_count=999,use_award={},award_count=0,award_weight={},award_repetition=0,decompose={[1]=4500},Durability=0,could_sell=1,item_weight=10000,use_type=0,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={[1]=4500},is_test=1 },
 [44055] = { id=44055,bound_id=0,type1=0,type2=5,type3=0,type4=0,type5=0,market={5,2,5,0,0},stack_count=999,use_award={},award_count=0,award_weight={},award_repetition=0,decompose={[1]=10000},Durability=0,could_sell=1,item_weight=20000,use_type=0,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={[1]=10000},is_test=1 },
+[44056] = { id=44056,bound_id=0,type1=0,type2=1,type3=0,type4=0,type5=0,market={1,2,1,5,0},stack_count=999,use_award={},award_count=0,award_weight={},award_repetition=0,decompose={[1]=3750},Durability=0,could_sell=1,item_weight=1000,use_type=0,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={[1]=3750},is_test=0 },
+[44057] = { id=44057,bound_id=0,type1=0,type2=2,type3=0,type4=0,type5=0,market={2,2,1,5,0},stack_count=999,use_award={},award_count=0,award_weight={},award_repetition=0,decompose={[1]=7500},Durability=0,could_sell=1,item_weight=2000,use_type=0,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={[1]=7500},is_test=0 },
+[44058] = { id=44058,bound_id=0,type1=0,type2=3,type3=0,type4=0,type5=0,market={3,2,1,5,0},stack_count=999,use_award={},award_count=0,award_weight={},award_repetition=0,decompose={[1]=11250},Durability=0,could_sell=1,item_weight=5000,use_type=0,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={[1]=11250},is_test=0 },
+[44059] = { id=44059,bound_id=0,type1=0,type2=4,type3=0,type4=0,type5=0,market={4,2,1,5,0},stack_count=999,use_award={},award_count=0,award_weight={},award_repetition=0,decompose={[1]=22500},Durability=0,could_sell=1,item_weight=10000,use_type=0,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={[1]=22500},is_test=0 },
+[44060] = { id=44060,bound_id=0,type1=0,type2=5,type3=0,type4=0,type5=0,market={5,2,1,5,0},stack_count=999,use_award={},award_count=0,award_weight={},award_repetition=0,decompose={[1]=50000},Durability=0,could_sell=1,item_weight=20000,use_type=0,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={[1]=50000},is_test=0 },
 [45001] = { id=45001,bound_id=0,type1=0,type2=1,type3=0,type4=0,type5=0,market={1,2,3,0,0},stack_count=999,use_award={},award_count=0,award_weight={},award_repetition=0,decompose={[1]=750},Durability=0,could_sell=1,item_weight=1000,use_type=0,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={[1]=750},is_test=1 },
 [45002] = { id=45002,bound_id=0,type1=0,type2=2,type3=0,type4=0,type5=0,market={2,2,3,0,0},stack_count=999,use_award={},award_count=0,award_weight={},award_repetition=0,decompose={[1]=1500},Durability=0,could_sell=1,item_weight=1000,use_type=0,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={[1]=1500},is_test=1 },
 [45003] = { id=45003,bound_id=0,type1=0,type2=3,type3=0,type4=0,type5=0,market={3,2,3,0,0},stack_count=999,use_award={},award_count=0,award_weight={},award_repetition=0,decompose={[1]=2250},Durability=0,could_sell=1,item_weight=1000,use_type=0,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={[1]=2250},is_test=1 },

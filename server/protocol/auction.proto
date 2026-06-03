@@ -130,6 +130,7 @@ message PBAuctionBuyRspCmd
     string error = 2; // 错误信息
 	int64 uid	= 3;
 	int32 real_buy_price = 4;
+	int64 auction_id	= 5;
 }
 
 // 下架交易行商品
