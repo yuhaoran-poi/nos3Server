@@ -431,7 +431,8 @@ function RankLogic.GetRankInfo(rank_type, rank_id, uid)
         for _, rank in ipairs(rank_data[rank_type]) do
             moon.info(string.format("[RankLogic] GetRankInfo: checking rank.rid=%d, rank_id=%s, rank.ps[uid]=%s", 
                 rank.rid or 0, tostring(rank_id), tostring(rank.ps[uid])))
-            if not (rank_id and rank.rid ~= rank_id) then
+            -- rank_id=0 表示查询所有子榜，否则只查询指定的子榜
+            if not (rank_id and rank_id > 0 and rank.rid ~= rank_id) then
                 if rank.ps[uid] then
                     moon.info(string.format("[RankLogic] GetRankInfo: found player %d in rank %d", uid, rank.rid))
                     local player_data = rank.ps[uid]
