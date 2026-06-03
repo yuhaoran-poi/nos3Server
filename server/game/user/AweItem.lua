@@ -81,11 +81,11 @@ end
 function AweItem.ResetAllAweItemLevel()
     local aweitems = scripts.UserModel.GetAweItems()
     if not aweitems then
-        return ErrorCode.SystemError
+        return ErrorCode.AweItemNotUnlock
     end
 
     local has_changed = false
-    for config_id, aweitem in pairs(aweitems.awe_item_map) do
+    for _, aweitem in pairs(aweitems.awe_item_map) do
         if aweitem.up_level ~= 1 then
             aweitem.up_level = 1
             has_changed = true
@@ -173,7 +173,7 @@ function AweItem.PBAweItemUpLvReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local session_lv_condition = uplv_cfg.condition
+    --local session_lv_condition = uplv_cfg.condition
     -- 判断一次赛季等级和是否达到条件
 
     local change_reason = ItemDef.ChangeReason.AweItemUpLv
@@ -204,7 +204,7 @@ function AweItem.PBAweItemUpLvReqCmd(req)
 
     -- 扣除消耗
     local change_log = {}
-    local err_code_del = ErrorCode.None
+    local err_code_del
     if table.size(cost_items) > 0 then
         err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_log)
         if err_code_del ~= ErrorCode.None then
@@ -342,7 +342,7 @@ function AweItem.UpStar(awe_item_id)
 
     -- 扣除消耗
     local change_log = {}
-    local err_code_del = ErrorCode.None
+    local err_code_del
     if table.size(cost_items) > 0 then
         err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_log)
         if err_code_del ~= ErrorCode.None then
