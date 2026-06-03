@@ -1,6 +1,7 @@
 local moon = require("moon")
 local socket = require("moon.socket")
 local common = require("common")
+local cluster = require("cluster")
 local CmdCode = common.CmdCode
 local GameCfg = common.GameCfg --游戏配置
 local Database = common.Database
@@ -58,6 +59,8 @@ function Seasonmgr.CheckSeason()
         Seasonmgr.now_season_id = Seasonmgr.now_season_id + 1
 
         -- 通知排行榜管理器
+        moon.info("Seasonmgr.CheckSeason, now_season_id = %d", Seasonmgr.now_season_id)
+        cluster.send(3004, "rank", "RankMgr.RefreshSeasonRanks")
 
         -- 通知所有Gate
         context.broadcast_gate("Gate.SendSeasonChange", Seasonmgr.now_season_id)
