@@ -19,6 +19,10 @@ command.handlePlayerRankUpdate = function(...)
     return RankMgr.handlePlayerRankUpdate(...)
 end
 
+command.GetAllRankTypes = function(...)
+    return RankMgr.GetAllRankTypes()
+end
+
 command.GetRankInfo = function(...)
     return RankMgr.GetRankInfo(...)
 end

@@ -95,23 +95,24 @@ end
 function Rank.PBRankGetInfoReqCmd(req)
     local rank_type = req.msg.rank_type
     local rank_id = req.msg.rank_id
+    local query_uid = req.msg.uid
 
     if not rank_type then
         return context.S2C(context.net_id, CmdCode.PBRankGetInfoRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效的请求参数",
-            uid = context.uid,
+            uid = query_uid,
         }, req.msg_context.stub_id)
     end
 
     -- 调用排行榜服务获取数据
-    local rank_data, err = clusterd.call(3004, "rank", "GetRankInfo", {rank_type = rank_type, sub_rank_id = rank_id, uid = context.uid})
-    if not rank_data then
+    local err, rank_data = clusterd.call(3004, "rank", "GetRankInfo", {rank_type = rank_type, rank_id = rank_id, uid = query_uid})
+    if err ~= ErrorCode.None then
         moon.error("Failed to get rank data:", err)
         return context.S2C(context.net_id, CmdCode.PBRankGetInfoRspCmd, {
             code = ErrorCode.ServerInternalError,
             error = "获取排行榜数据失败",
-            uid = context.uid,
+            uid = query_uid,
         }, req.msg_context.stub_id)
     end
 
@@ -120,6 +121,65 @@ function Rank.PBRankGetInfoReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBRankGetInfoRspCmd, {
             code = ErrorCode.ServerInternalError,
             error = "获取排行榜数据失败",
+            uid = query_uid,
+        }, req.msg_context.stub_id)
+    end
+
+    -- 检查是否是玩家数据（包含 sub_rank_id 字段）
+    -- GetRankInfo 返回：单个玩家对象 或 玩家对象数组 或 排行榜数据
+    local is_player_data = false
+    local player_info = nil
+
+    if rank_data.sub_rank_id then
+        -- 单个玩家对象
+        is_player_data = true
+        player_info = rank_data
+    elseif rank_data[1] and rank_data[1].sub_rank_id then
+        -- 玩家对象数组
+        is_player_data = true
+        player_info = rank_data[1]
+    end
+
+    local rsp_msg
+    if is_player_data and player_info then
+        -- 玩家数据，构建为排行榜格式
+        rsp_msg = {
+            code = ErrorCode.None,
+            error = "",
+            uid = query_uid,
+            rank_data = {
+                {
+                    rank_id = player_info.sub_rank_id or 0,
+                    rank_type = player_info.rank_type or 0,
+                    is_flow = player_info.is_flow or false,
+                    players = {player_info},
+                    create_time = player_info.create_time or 0,
+                    last_refresh_time = player_info.last_refresh_time or 0,
+                }
+            },
+        }
+    else
+        -- 完整的排行榜数据
+        rsp_msg = {
+            code = ErrorCode.None,
+            error = "",
+            uid = query_uid,
+            rank_data = rank_data,
+        }
+    end
+
+    return context.S2C(context.net_id, CmdCode.PBRankGetInfoRspCmd, rsp_msg, req.msg_context.stub_id)
+end
+
+-- 获取所有排行榜类型
+function Rank.PBRankGetAllTypesReqCmd(req)
+    -- 调用排行榜服务获取所有类型
+    local err, types_data = clusterd.call(3004, "rank", "GetAllRankTypes", {})
+    if err ~= ErrorCode.None then
+        moon.error("Failed to get all rank types:", err)
+        return context.S2C(context.net_id, CmdCode.PBRankGetAllTypesRspCmd, {
+            code = ErrorCode.ServerInternalError,
+            error = "获取排行榜类型失败",
             uid = context.uid,
         }, req.msg_context.stub_id)
     end
@@ -129,10 +189,10 @@ function Rank.PBRankGetInfoReqCmd(req)
         code = ErrorCode.None,
         error = "",
         uid = context.uid,
-        rank_data = rank_data[1] and rank_data or {rank_data},
+        types = types_data,
     }
 
-    return context.S2C(context.net_id, CmdCode.PBRankGetInfoRspCmd, rsp_msg, req.msg_context.stub_id)
+    return context.S2C(context.net_id, CmdCode.PBRankGetAllTypesRspCmd, rsp_msg, req.msg_context.stub_id)
 end
 
 -- 领取排行榜奖励

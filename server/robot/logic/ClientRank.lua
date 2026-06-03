@@ -6,14 +6,30 @@ local moon = require("moon")
 ---@class Client
 local Client = require "robot.logic.Client"
 
--- 获取排行榜信息
-function Client:get_rank_info(rank_type, rank_id)
+-- 获取所有排行榜类型
+function Client:get_all_rank_types()
     if not self.ok then
         print("connect failed, err = ", err)
         return
     end
     local req_msg = {
         uid = self.uid,
+    }
+
+    self:send("PBRankGetAllTypesReqCmd", req_msg, function(msg)
+        print("rpc PBRankGetAllTypesReqCmd ret = ", self.index, msg)
+        print_r(msg)
+    end)
+end
+
+-- 获取排行榜信息
+function Client:get_rank_info(rank_type, rank_id, uid)
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+    local req_msg = {
+        uid = uid or self.uid,
         rank_type = rank_type,
         rank_id = rank_id or 1,
     }

@@ -2587,9 +2587,33 @@
 ---@field public gl_ghost_skin integer @宗主出战鬼怪时装
 
 
+---@class SubRankInfo
+---@field public rank_id integer @子榜ID
+---@field public create_time integer @创建时间
+---@field public last_refresh_time integer @上次刷新时间
+
+
+---@class RankTypeInfo
+---@field public rank_type integer @排行榜类型
+---@field public name string @排行榜名称
+---@field public is_flow boolean @是否为流动榜
+---@field public sub_ranks SubRankInfo[] @子榜列表
+
+
+---@class PBRankGetAllTypesReqCmd
+---@field public uid integer @玩家ID
+
+
+---@class PBRankGetAllTypesRspCmd
+---@field public code integer @错误码
+---@field public error string @错误信息
+---@field public uid integer @玩家ID
+---@field public types RankTypeInfo[] @排行榜类型列表
+
+
 ---@class RankData
 ---@field public rank_id integer @排行榜ID
----@field public rank_type RankType @排行榜类型
+---@field public rank_type integer @排行榜类型
 ---@field public is_flow boolean @是否为流动榜
 ---@field public players PlayerRankData[] @玩家数据
 ---@field public create_time integer @创建时间
@@ -2598,7 +2622,7 @@
 
 ---@class PBRankGetInfoReqCmd
 ---@field public uid integer @玩家ID
----@field public rank_type RankType @排行榜类型
+---@field public rank_type integer @排行榜类型
 ---@field public rank_id integer @排行榜ID（流动榜需要）
 
 

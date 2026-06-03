@@ -45,10 +45,38 @@ message PlayerRankData {
     int32 gl_ghost_skin = 18;           // 宗主出战鬼怪时装
 }
 
+// 子榜信息
+message SubRankInfo {
+    int32 rank_id = 1;          // 子榜ID
+    int64 create_time = 2;      // 创建时间
+    int64 last_refresh_time = 3; // 上次刷新时间
+}
+
+// 排行榜类型信息
+message RankTypeInfo {
+    int32 rank_type = 1;        // 排行榜类型
+    string name = 2;            // 排行榜名称
+    bool is_flow = 3;           // 是否为流动榜
+    repeated SubRankInfo sub_ranks = 4; // 子榜列表
+}
+
+// 获取所有排行榜类型请求
+message PBRankGetAllTypesReqCmd {
+    int64 uid = 1;             // 玩家ID
+}
+
+// 获取所有排行榜类型响应
+message PBRankGetAllTypesRspCmd {
+    int32 code = 1;             // 错误码
+    string error = 2;            // 错误信息
+    int64 uid = 3;             // 玩家ID
+    repeated RankTypeInfo types = 4; // 排行榜类型列表
+}
+
 // 排行榜数据
 message RankData {
     int32 rank_id = 1;          // 排行榜ID
-    RankType rank_type = 2;     // 排行榜类型
+    int32 rank_type = 2;        // 排行榜类型
     bool is_flow = 3;           // 是否为流动榜
     repeated PlayerRankData players = 4; // 玩家数据
     int64 create_time = 5;      // 创建时间
@@ -58,7 +86,7 @@ message RankData {
 // 获取排行榜请求
 message PBRankGetInfoReqCmd {
     int64 uid = 1;             // 玩家ID
-    RankType rank_type = 2;     // 排行榜类型
+    int32 rank_type = 2;        // 排行榜类型
     int32 rank_id = 3;          // 排行榜ID（流动榜需要）
 }
 

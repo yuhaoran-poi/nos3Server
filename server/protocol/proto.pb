@@ -3040,7 +3040,7 @@ period_ids (R	periodIds%
 uid (Ruid8
 new_mission_data (2.PBMissionDataRnewMissionData&
 new_complete_id (RnewCompleteIdbproto3
-ç
+õ
 
 rank.proto"á
 PlayerRankData
@@ -3070,18 +3070,35 @@ gl_char_id (RglCharId"
 gl_ghost_skin (RglGhostSkin<
 ExtraDataEntry
 key (	Rkey
-value (	Rvalue:8"‹
+value (	Rvalue:8"s
+SubRankInfo
+rank_id (RrankId
+create_time (R
+createTime*
+last_refresh_time (RlastRefreshTime"É
+RankTypeInfo
+	rank_type (RrankType
+name (	Rname
+is_flow (RisFlow)
+	sub_ranks (2.SubRankInfoRsubRanks"+
+PBRankGetAllTypesReqCmd
+uid (Ruid"z
+PBRankGetAllTypesRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid#
+types (2.RankTypeInfoRtypes"—
 RankData
-rank_id (RrankId&
-	rank_type (2	.RankTypeRrankType
+rank_id (RrankId
+	rank_type (RrankType
 is_flow (RisFlow)
 players (2.PlayerRankDataRplayers
 create_time (R
 createTime*
-last_refresh_time (RlastRefreshTime"h
+last_refresh_time (RlastRefreshTime"]
 PBRankGetInfoReqCmd
-uid (Ruid&
-	rank_type (2	.RankTypeRrankType
+uid (Ruid
+	rank_type (RrankType
 rank_id (RrankId"y
 PBRankGetInfoRspCmd
 code (Rcode

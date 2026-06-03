@@ -33,11 +33,15 @@ function RankMgr.handlePlayerRankUpdate(msg)
     return RankLogic.UpdatePlayerRank(rank_type, uid, player_data, force)
 end
 
+function RankMgr.GetAllRankTypes()
+    return RankLogic.GetAllRankTypes()
+end
+
 function RankMgr.GetRankInfo(msg)
     local rank_type = msg.rank_type
-    local sub_rank_id = msg.sub_rank_id
+    local rank_id = msg.rank_id
     local uid = msg.uid
-    return RankLogic.GetRankInfo(rank_type, sub_rank_id, uid)
+    return RankLogic.GetRankInfo(rank_type, rank_id, uid)
 end
 
 function RankMgr.GetRankReward(msg)
