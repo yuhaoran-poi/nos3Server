@@ -9,7 +9,7 @@ local protocol = common.protocol
 
 local conf = ...
 
----@class battlereportmgr_context:base_context
+---@class seasonmgr_context:base_context
 local context = {
     conf = conf,
 }

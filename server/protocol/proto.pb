@@ -3211,7 +3211,7 @@ RankReward
 RankType_GuildMoney
 RankType_GuildScore_Weekly
 RankType_GuildScore_Seasonbproto3
-÷+
+¬0
 
 room.proto
 user.proto"≠
@@ -3229,12 +3229,28 @@ masterName
 	needcheck (R	needcheck
 needpwd	 (Rneedpwd
 describe
- (	Rdescribe"à
+ (	Rdescribe"Ù
 PBRoomMemberInfo
 seat_idx (RseatIdx
 is_ready (RisReady&
 mem_info (2.PBUserAttrRmemInfo
-cityid (Rcityid"°
+cityid (RcityidR
+story_line_record (2&.PBRoomMemberInfo.StoryLineRecordEntryRstoryLineRecordR
+ghost_gate_record (2&.PBRoomMemberInfo.GhostGateRecordEntryRghostGateRecordU
+boss_battle_record (2'.PBRoomMemberInfo.BossBattleRecordEntryRbossBattleRecordX
+tower_battle_record (2(.PBRoomMemberInfo.TowerBattleRecordEntryRtowerBattleRecordB
+StoryLineRecordEntry
+key (Rkey
+value (Rvalue:8B
+GhostGateRecordEntry
+key (Rkey
+value (Rvalue:8C
+BossBattleRecordEntry
+key (Rkey
+value (Rvalue:8D
+TowerBattleRecordEntry
+key (Rkey
+value (Rvalue:8"°
 
 PBRoomInfo
 roomid (Rroomid
@@ -3465,7 +3481,7 @@ ds_address (	R	dsAddress
 error (	Rerror(
 	room_data (2.PBRoomInfoRroomData4
 member_datas (2.PBRoomMemberInfoRmemberDatasbproto3
-ï
+â
 season.proto"Ï
 PBSeasonData
 	season_id (RseasonId;
@@ -3483,13 +3499,29 @@ bootyValue"
 value (Rvalue:8A
 BattleCompleteEntry
 key (Rkey
-value (Rvalue:8"–
+value (Rvalue:8"ƒ
 PBSeasonPlayerData"
 cur_season_id (RcurSeasonIdG
-season_infos (2$.PBSeasonPlayerData.SeasonInfosEntryRseasonInfosM
+season_infos (2$.PBSeasonPlayerData.SeasonInfosEntryRseasonInfosT
+story_line_record (2(.PBSeasonPlayerData.StoryLineRecordEntryRstoryLineRecordT
+ghost_gate_record (2(.PBSeasonPlayerData.GhostGateRecordEntryRghostGateRecordW
+boss_battle_record (2).PBSeasonPlayerData.BossBattleRecordEntryRbossBattleRecordZ
+tower_battle_record (2*.PBSeasonPlayerData.TowerBattleRecordEntryRtowerBattleRecordM
 SeasonInfosEntry
 key (Rkey#
-value (2.PBSeasonDataRvalue:8"+
+value (2.PBSeasonDataRvalue:8B
+StoryLineRecordEntry
+key (Rkey
+value (Rvalue:8B
+GhostGateRecordEntry
+key (Rkey
+value (Rvalue:8C
+BossBattleRecordEntry
+key (Rkey
+value (Rvalue:8D
+TowerBattleRecordEntry
+key (Rkey
+value (Rvalue:8"+
 PBGetSeasonPlayerReqCmd
 uid (Ruid"ç
 PBGetSeasonPlayerRspCmd

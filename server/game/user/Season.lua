@@ -10,6 +10,7 @@ local SeasonDef = require("common.def.SeasonDef")
 local ItemDefine = require("common.logic.ItemDefine")
 local BagDef = require("common.def.BagDef")
 local ItemDef = require("common.def.ItemDef")
+local RoomDef = require("common.def.RoomDef")
 local ProtoEnum = require("tools.ProtoEnum")
 
 ---@type user_context
@@ -120,7 +121,7 @@ function Season.ChangeSeason(new_season_id)
     Season.SaveSeasonsNow()
 end
 
-function Season.AddBattleNum(type_id, battle_num, complete_num, booty_value, game_ts, kill_monster_cnt)
+function Season.AddBattleNum(type_id, battle_num, complete_num, booty_value, game_ts, kill_monster_cnt, chapterid, difficulty)
     local Seasons = scripts.UserModel.GetSeasons()
     if not Seasons or not Seasons.season_infos then
         return
@@ -143,7 +144,95 @@ function Season.AddBattleNum(type_id, battle_num, complete_num, booty_value, gam
     season_data.total_game_ts = season_data.total_game_ts + game_ts
     season_data.kill_monster_cnt = season_data.kill_monster_cnt + kill_monster_cnt
 
+    if complete_num > 0 then
+        local now_mode = RoomDef.GameMode.STORY_MODE
+        local game_mode_cfgs = GameCfg.GameMode
+        if game_mode_cfgs and table.size(game_mode_cfgs) > 0 then
+            for _, game_mode_cfg in pairs(game_mode_cfgs) do
+                if game_mode_cfg.begin_id <= chapterid and chapterid <= game_mode_cfg.end_id then
+                    now_mode = game_mode_cfg.id
+                    break
+                end
+            end
+
+            local is_change = false
+            if now_mode == RoomDef.GameMode.STORY_MODE then
+                if not Seasons.story_line_record[chapterid] then
+                    Seasons.story_line_record[chapterid] = difficulty
+                    is_change = true
+                else
+                    if difficulty > Seasons.story_line_record[chapterid] then
+                        Seasons.story_line_record[chapterid] = difficulty
+                        is_change = true
+                    end
+                end
+            elseif now_mode == RoomDef.GameMode.GHOST_GATE_MODE then
+                if not Seasons.ghost_gate_record[chapterid] then
+                    Seasons.ghost_gate_record[chapterid] = difficulty
+                    is_change = true
+                else
+                    if difficulty > Seasons.ghost_gate_record[chapterid] then
+                        Seasons.ghost_gate_record[chapterid] = difficulty
+                        is_change = true
+                    end
+                end
+            elseif now_mode == RoomDef.GameMode.BOSS_MODE then
+                if not Seasons.boss_battle_record[chapterid] then
+                    Seasons.boss_battle_record[chapterid] = difficulty
+                    is_change = true
+                else
+                    if difficulty > Seasons.boss_battle_record[chapterid] then
+                        Seasons.boss_battle_record[chapterid] = difficulty
+                        is_change = true
+                    end
+                end
+            elseif now_mode == RoomDef.GameMode.TOWER_MODE then
+                if not Seasons.tower_battle_record[chapterid] then
+                    Seasons.tower_battle_record[chapterid] = difficulty
+                    is_change = true
+                else
+                    if difficulty > Seasons.tower_battle_record[chapterid] then
+                        Seasons.tower_battle_record[chapterid] = difficulty
+                        is_change = true
+                    end
+                end
+            end
+
+            if is_change and context.roomid and context.roomid > 0 then
+                clusterd.send(3999, "roommgr", "Roommgr.UpdatePlayerRecord", {
+                    roomid = context.roomid,
+                    uid = context.uid,
+                    records = {
+                        story_line_record = Seasons.story_line_record or {},
+                        ghost_gate_record = Seasons.ghost_gate_record or {},
+                        boss_battle_record = Seasons.boss_battle_record or {},
+                        tower_battle_record = Seasons.tower_battle_record or {},
+                    },
+                })
+            end
+        end
+    end
+
     Season.SaveSeasonsNow()
+end
+
+function Season.GetBattleRecord()
+    local Seasons = scripts.UserModel.GetSeasons()
+    if not Seasons or not Seasons.season_infos then
+        return {
+            story_line_record = {},
+            ghost_gate_record = {},
+            boss_battle_record = {},
+            tower_battle_record = {},
+        }
+    end
+
+    return {
+        story_line_record = Seasons.story_line_record,
+        ghost_gate_record = Seasons.ghost_gate_record,
+        boss_battle_record = Seasons.boss_battle_record,
+        tower_battle_record = Seasons.tower_battle_record,
+    }
 end
 
 function Season.PBGetSeasonPlayerReqCmd(req)

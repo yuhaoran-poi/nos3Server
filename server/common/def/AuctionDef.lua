@@ -9,8 +9,8 @@ local AuctionDef = {
         TAKE_DOWNED = 4, -- 已下架
     },
     SortDescribe = {
-        [1] = "auction_config_id ASC",
-        [2] = "auction_config_id DESC",
+        [1] = "config_id ASC",
+        [2] = "config_id DESC",
         [3] = "end_ts ASC",
         [4] = "end_ts DESC",
         [5] = "cur_price ASC",

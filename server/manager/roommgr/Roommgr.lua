@@ -23,7 +23,6 @@ local context = ...
 
 local listenfd
 local maxplayers = 10
-local BOSS_MODE = 3
 
 ---@class Roommgr
 local Roommgr = {
@@ -1326,7 +1325,7 @@ function Roommgr.RandomMapAndBoss(room_data)
 
     -- 鬼王入侵模式
     local sure_boss = false
-    local game_mode_cfg = GameCfg.GameMode[BOSS_MODE]
+    local game_mode_cfg = GameCfg.GameMode[RoomDef.GameMode.BOSS_MODE]
     if game_mode_cfg
         and tmp_conf.chapterid >= game_mode_cfg.begin_id
         and tmp_conf.chapterid <= game_mode_cfg.end_id then
@@ -1387,6 +1386,47 @@ function Roommgr.GetMasterAndChapter(room_id)
     return { code = ErrorCode.None, error = "获取房主和章节成功", master_id = room.master_id, chapter = room.room_data.chapter }
 end
 
+function Roommgr.CheckRecords(chapterid, difficulty, players)
+    if difficulty == 1 then
+        return true
+    end
+
+    local now_mode = RoomDef.GameMode.STORY_MODE
+    local game_mode_cfgs = GameCfg.GameMode
+    if game_mode_cfgs and table.size(game_mode_cfgs) > 0 then
+        for _, game_mode_cfg in pairs(game_mode_cfgs) do
+            if game_mode_cfg.begin_id <= chapterid and chapterid <= game_mode_cfg.end_id then
+                now_mode = game_mode_cfg.id
+                break
+            end
+        end
+    end
+
+    for member_index, info in pairs(players) do
+        if now_mode == RoomDef.GameMode.STORY_MODE then
+            if not info.story_line_record[chapterid] or info.story_line_record[chapterid] < difficulty - 1 then
+                return false
+            end
+        elseif now_mode == RoomDef.GameMode.GHOST_GATE_MODE then
+            if not info.ghost_gate_record[chapterid] or info.ghost_gate_record[chapterid] < difficulty - 1 then
+                return false
+            end
+        elseif now_mode == RoomDef.GameMode.BOSS_MODE then
+            if not info.boss_battle_record[chapterid] or info.boss_battle_record[chapterid] < difficulty - 1 then
+                return false
+            end
+        elseif now_mode == RoomDef.GameMode.TOWER_MODE then
+            if not info.tower_battle_record[chapterid] or info.tower_battle_record[chapterid] < difficulty - 1 then
+                return false
+            end
+        else
+            return false
+        end
+    end
+
+    return true
+end
+
 function Roommgr.StartGame(req)
     local room = context.rooms[req.roomid]
     if not room then
@@ -1409,6 +1449,12 @@ function Roommgr.StartGame(req)
     local map_errcode = Roommgr.RandomMapAndBoss(room.room_data)
     if map_errcode ~= ErrorCode.None then
         return { code = map_errcode, error = "随机地图失败" }
+    end
+
+    -- 检查所有玩家记录
+    local records_errcode = Roommgr.CheckRecords(room.room_data.chapter, room.room_data.difficulty, room.players)
+    if not records_errcode then
+        return { code = ErrorCode.BattleRecordsNotComplete, error = "检查玩家记录失败" }
     end
 
     -- 准备进入DS
@@ -1732,6 +1778,31 @@ function Roommgr.NotifyPlayersSwitchCity(uids_cityids)
     for uid, cityid in pairs(uids_cityids) do
         Roommgr.NotifyPlayerSwitchCity(uid, cityid)
     end
+end
+
+function Roommgr.UpdatePlayerRecord(update_data)
+    local room = context.rooms[update_data.roomid]
+    if not room then
+        return
+    end
+
+    -- 查找玩家在房间中的位置
+    local member_index = nil
+    for i, member in pairs(room.players) do
+        if member.mem_info.uid == update_data.uid then
+            member_index = i
+            break
+        end
+    end
+    if not member_index then
+        return
+    end
+
+    -- 更新records
+    room.players[member_index].story_line_record = update_data.records.story_line_record
+    room.players[member_index].ghost_gate_record = update_data.records.ghost_gate_record
+    room.players[member_index].boss_battle_record = update_data.records.boss_battle_record
+    room.players[member_index].tower_battle_record = update_data.records.tower_battle_record
 end
 
 function Roommgr.Start()

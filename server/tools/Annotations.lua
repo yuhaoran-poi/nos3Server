@@ -3004,6 +3004,10 @@
 ---@field public is_ready integer @0未准备 1已准备 2暂离
 ---@field public mem_info PBUserAttr
 ---@field public cityid integer
+---@field public story_line_record table<integer, integer>
+---@field public ghost_gate_record table<integer, integer>
+---@field public boss_battle_record table<integer, integer>
+---@field public tower_battle_record table<integer, integer>
 
 
 ---@class PBRoomInfo
@@ -3305,6 +3309,10 @@
 ---@class PBSeasonPlayerData
 ---@field public cur_season_id integer
 ---@field public season_infos table<integer, PBSeasonData>
+---@field public story_line_record table<integer, integer>
+---@field public ghost_gate_record table<integer, integer>
+---@field public boss_battle_record table<integer, integer>
+---@field public tower_battle_record table<integer, integer>
 
 
 ---@class PBGetSeasonPlayerReqCmd

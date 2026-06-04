@@ -99,7 +99,7 @@ function Auctionmgr.Start()
                 start_auction_id = auction_product.auction_id
             end
 
-            if now_ts >= auction_product.auction_data.end_ts then
+            if now_ts >= auction_product.end_ts then
                 -- 已过期，应该下架
                 auction_product.state = AuctionDef.StateType.TAKE_DOWNING
                 Auctionmgr.take_down_auction_ids[auction_product.auction_id] = auction_product
@@ -218,7 +218,7 @@ function Auctionmgr.AddAuctionProduct(req_data)
     -- 添加到交易行商品表
     local ret_rows = Database.addauctionproduct(context.addr_db_game, product_data, req_data.condition1,
         req_data.condition2, req_data.condition3, req_data.condition4, req_data.condition5, req_data.custom_conditions1,
-        req_data.custom_conditions2)
+        req_data.custom_condition2)
     if ret_rows <= 0 then
         return 0
     end

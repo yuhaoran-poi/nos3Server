@@ -16,6 +16,10 @@ message PBSeasonPlayerData
 {
     int32 cur_season_id = 1;
     map<int32, PBSeasonData> season_infos  = 2;
+    map<int32, int32> story_line_record = 3;
+    map<int32, int32> ghost_gate_record = 4;
+    map<int32, int32> boss_battle_record    = 5;
+    map<int32, int32> tower_battle_record   = 6;
 }
 
 message PBGetSeasonPlayerReqCmd

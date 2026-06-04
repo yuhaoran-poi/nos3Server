@@ -1513,7 +1513,7 @@ function _M.getmaxauctionid(addr)
 end
 
 function _M.addauctionproduct(addr, product_data, condition1, condition2, condition3, condition4, condition5,
-                              custom_conditions1, custom_conditions2)
+                              custom_conditions1, custom_condition2)
     local item_data_str = jencode(product_data.item_data)
     local _, pbdata = protocol.encodewithname("PBItemData", product_data.item_data)
     local pbvalue = crypt.base64encode(pbdata)
@@ -1524,7 +1524,7 @@ function _M.addauctionproduct(addr, product_data, condition1, condition2, condit
         product_data.seller_uid, product_data.beg_ts, product_data.end_ts, product_data.delay_cnt, pbvalue, item_data_str,
         product_data.auction_data.start_price, product_data.auction_data.buyout_price,
         product_data.auction_data.cur_price, product_data.auction_data.buyer_uid, condition1, condition2, condition3,
-        condition4, condition5, custome_condition_str, custom_conditions2, product_data.state)
+        condition4, condition5, custome_condition_str, custom_condition2, product_data.state)
     moon.warn("addauctionproduct cmd", cmd)
         
     local res, err = moon.call("lua", addr, cmd)
@@ -1561,15 +1561,24 @@ function _M.getauctionwithids(addr, state_type, ids, sort_describe, start_idx, n
     if res and #res > 0 then
         local auction_products = {}
         for i = 1, #res do
-            local pbdata = crypt.base64decode(res[i].item_data)
-            local _, item_data = protocol.decodewithname("PBItemData", pbdata)
-
             local product = AuctionDef.newAuctionProductBaseData()
             product.auction_id = res[i].auction_id
             product.seller_uid = res[i].seller_uid
             product.config_id = res[i].config_id
             product.uniqid = res[i].uniqid
-            product.item_data = item_data
+
+            local item_data_str = res[i].item_data
+            if item_data_str and #item_data_str > 0 then
+                local ok, item_data = protocol.decodewithname("PBItemData", crypt.base64decode(item_data_str))
+                if ok then
+                    product.item_data = item_data
+                else
+                    moon.error(string.format("getauctionwithids decode item_data failed: %s, auction_id=%s",
+                        tostring(item_data), tostring(product.auction_id)))
+                    return nil
+                end
+            end
+
             product.beg_ts = res[i].beg_ts
             product.end_ts = res[i].end_ts
             product.delay_cnt = res[i].delay_cnt
@@ -1630,8 +1639,19 @@ function _M.getauctionwithconditions(addr, state_type, condition1, condition2, c
             product.seller_uid = res[i].seller_uid
             product.config_id = res[i].config_id
             product.uniqid = res[i].uniqid
-            local item_data = protocol.decodewithname("PBItemData", crypt.base64decode(res[i].item_data))
-            product.item_data = item_data
+
+            local item_data_str = res[i].item_data
+            if item_data_str and #item_data_str > 0 then
+                local ok, item_data = protocol.decodewithname("PBItemData", crypt.base64decode(item_data_str))
+                if ok then
+                    product.item_data = item_data
+                else
+                    moon.error(string.format("getauctionwithconditions decode item_data failed: %s, auction_id=%s",
+                        tostring(item_data), tostring(product.auction_id)))
+                    return nil
+                end
+            end
+
             product.beg_ts = res[i].beg_ts
             product.end_ts = res[i].end_ts
             product.delay_cnt = res[i].delay_cnt
@@ -1683,8 +1703,19 @@ function _M.getauctionproduct(addr, where_data, num)
             product.seller_uid = res[i].seller_uid
             product.config_id = res[i].config_id
             product.uniqid = res[i].uniqid
-            local item_data = protocol.decodewithname("PBItemData", crypt.base64decode(res[i].item_data))
-            product.item_data = item_data
+
+            local item_data_str = res[i].item_data
+            if item_data_str and #item_data_str > 0 then
+                local ok, item_data = protocol.decodewithname("PBItemData", crypt.base64decode(item_data_str))
+                if ok then
+                    product.item_data = item_data
+                else
+                    moon.error(string.format("getauctionproduct decode item_data failed: %s, auction_id=%s",
+                        tostring(item_data), tostring(product.auction_id)))
+                    return nil
+                end
+            end
+
             product.beg_ts = res[i].beg_ts
             product.end_ts = res[i].end_ts
             product.delay_cnt = res[i].delay_cnt
@@ -1717,8 +1748,19 @@ function _M.getauctionproductwithnum(addr, start_auction_id, state, num)
             product.seller_uid = res[i].seller_uid
             product.config_id = res[i].config_id
             product.uniqid = res[i].uniqid
-            local item_data = protocol.decodewithname("PBItemData", crypt.base64decode(res[i].item_data))
-            product.item_data = item_data
+
+            local item_data_str = res[i].item_data
+            if item_data_str and #item_data_str > 0 then
+                local ok, item_data = protocol.decodewithname("PBItemData", crypt.base64decode(item_data_str))
+                if ok then
+                    product.item_data = item_data
+                else
+                    moon.error(string.format("getauctionproductwithnum decode item_data failed: %s, auction_id=%s",
+                        tostring(item_data), tostring(product.auction_id)))
+                    return nil
+                end
+            end
+
             product.beg_ts = res[i].beg_ts
             product.end_ts = res[i].end_ts
             product.delay_cnt = res[i].delay_cnt

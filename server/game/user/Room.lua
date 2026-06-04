@@ -80,6 +80,14 @@ function Room.PBCreateRoomReqCmd(req)
         ---@class user_context
         ---@field roomid integer|nil
         context.roomid = res.roomid
+
+        local records = scripts.Season.GetBattleRecord()
+        clusterd.send(3999, "roommgr", "Roommgr.UpdatePlayerRecord", {
+            roomid = context.roomid,
+            uid = context.uid,
+            records = records,
+        })
+
         -- 加入队伍频道
         local chat_ret = ChatLogic.JoinRoomChannel(context.roomid, context.uid)
         if chat_ret.code ~= ErrorCode.None then
@@ -175,6 +183,14 @@ function Room.OnRoomInfoSync(sync_msg)
             if player_info.mem_info and player_info.mem_info.uid == context.uid then
                 context.roomid = sync_msg.roomid
                 moon.info("OnMemberEnter roomid", context.roomid, sync_msg.roomid)
+
+                local records = scripts.Season.GetBattleRecord()
+                clusterd.send(3999, "roommgr", "Roommgr.UpdatePlayerRecord", {
+                    roomid = context.roomid,
+                    uid = context.uid,
+                    records = records,
+                })
+
                 -- 加入队伍频道
                 local chat_ret = ChatLogic.JoinRoomChannel(sync_msg.roomid, context.uid)
                 if chat_ret.code ~= ErrorCode.None then
@@ -328,6 +344,13 @@ function Room.PBEnterRoomReqCmd(req)
     end
     if res.code == ErrorCode.None then
         context.roomid = res.roomid
+
+        local records = scripts.Season.GetBattleRecord()
+        clusterd.send(3999, "roommgr", "Roommgr.UpdatePlayerRecord", {
+            roomid = context.roomid,
+            uid = context.uid,
+            records = records,
+        })
     end
 
     return context.S2C(context.net_id, CmdCode["PBEnterRoomRspCmd"], res, req.msg_context.stub_id)
@@ -668,6 +691,13 @@ function Room.PBCheckReturnRoomReqCmd(req)
     end
     if res.code == ErrorCode.None then
         context.roomid = res.room_data.roomid
+
+        local records = scripts.Season.GetBattleRecord()
+        clusterd.send(3999, "roommgr", "Roommgr.UpdatePlayerRecord", {
+            roomid = context.roomid,
+            uid = context.uid,
+            records = records,
+        })
     end
     return context.S2C(context.net_id, CmdCode["PBCheckReturnRoomRspCmd"], res, req.msg_context.stub_id)
 end
@@ -912,7 +942,7 @@ function Room.GameSettle(settle_info)
             scripts.Role.SaveAndLog(change_roles)
         end
         if table.size(change_image_ids) > 0 then
-            scripts.ItemImage.SaveAndLog(change_image_ids)
+            scripts.ItemImage.SaveAndSync(change_image_ids)
         end
     end
 
@@ -990,7 +1020,8 @@ function Room.GameSettle(settle_info)
         kill_monster_cnt = kill_monster_cnt + kill_monster.kill_cnt
     end
     scripts.Season.AddBattleNum(battle_type, 1, complete_num, settle_info.booty_value,
-        settle_info.end_game_ts - settle_info.start_game_ts, kill_monster_cnt)
+        settle_info.end_game_ts - settle_info.start_game_ts, kill_monster_cnt, settle_info.chapter_id,
+        settle_info.difficulty)
 
     if settle_info.game_missions and table.size(settle_info.game_missions) > 0 then
         -- 局内完成任务

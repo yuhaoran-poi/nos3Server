@@ -12,7 +12,13 @@ local RoomDef = {
         GameStartFailed = 8, -- 游戏开始失败
         PlayerChangeRoleInfo = 9, -- 玩家变更出战角色
         PlayerSwitchCity = 10, -- 玩家切换主城
-    }
+    },
+    GameMode = {
+        STORY_MODE = 1,
+        GHOST_GATE_MODE = 2,
+        BOSS_MODE = 3,
+        TOWER_MODE = 4,
+    },
 }
 
 local defaultPBRoomSearchInfo = {

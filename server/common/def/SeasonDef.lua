@@ -18,6 +18,10 @@ local defaultPBSeasonData = {
 local defaultPBSeasonPlayerData = {
     cur_season_id = 0,
     season_infos = {},
+    story_line_record = {},
+    ghost_gate_record = {},
+    boss_battle_record = {},
+    tower_battle_record = {},
 }
 
 ---@return PBSeasonData

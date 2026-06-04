@@ -150,6 +150,8 @@ local ErrorCode = {
     RoomNotNeedCheck = 915,
     ---房间需要审核
     RoomNeedCheck = 916,
+    ---战斗记录未完成
+    BattleRecordsNotComplete = 917,
 
     ---公会相关错误码
     ---已在公会中

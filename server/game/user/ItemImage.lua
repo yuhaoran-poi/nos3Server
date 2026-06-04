@@ -70,7 +70,7 @@ function ItemImage.LoadItemImages()
     return itemImageinfos
 end
 
-function ItemImage.SaveAndLog(config_ids, composite_formula_ids)
+function ItemImage.SaveAndSync(config_ids, composite_formula_ids)
     local itemImages = scripts.UserModel.GetItemImages()
     if not itemImages then
         return false
@@ -877,7 +877,7 @@ function ItemImage.PBImageUnLockReqCmd(req)
     -- 保存数据
     scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.ImageUnlock)
     if table.size(change_image_ids) > 0 then
-        ItemImage.SaveAndLog(change_image_ids)
+        ItemImage.SaveAndSync(change_image_ids)
     end
 
     return context.S2C(context.net_id, CmdCode.PBImageUnLockRspCmd, {
@@ -992,7 +992,7 @@ function ItemImage.PBFormulaUnLockReqCmd(req)
 
     -- 保存数据
     scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.FormulaUnlock)
-    ItemImage.SaveAndLog({}, {req.msg.formula_id})
+    ItemImage.SaveAndSync({}, {req.msg.formula_id})
 
     return context.S2C(context.net_id, CmdCode.PBFormulaUnLockRspCmd, {
         code = ErrorCode.None,

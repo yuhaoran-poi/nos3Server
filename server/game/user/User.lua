@@ -1423,7 +1423,7 @@ function User.PBClientItemUpLvReqCmd(req)
         -- 图鉴信息变更
         local change_image_ids = {}
         table.insert(change_image_ids, req.msg.config_id)
-        scripts.ItemImage.SaveAndLog(change_image_ids)
+        scripts.ItemImage.SaveAndSync(change_image_ids)
     end
 end
 
@@ -1617,7 +1617,7 @@ function User.PBUseItemUpLvReqCmd(req)
         -- 图鉴信息变更
         local change_image_ids = {}
         table.insert(change_image_ids, req.msg.target_id)
-        scripts.ItemImage.SaveAndLog(change_image_ids)
+        scripts.ItemImage.SaveAndSync(change_image_ids)
     end
 end
 
@@ -1707,7 +1707,7 @@ function User.PBClientItemUpStarReqCmd(req)
         -- 图鉴信息变更
         local change_image_ids = {}
         table.insert(change_image_ids, req.msg.config_id)
-        scripts.ItemImage.SaveAndLog(change_image_ids)
+        scripts.ItemImage.SaveAndSync(change_image_ids)
     end
 end
 
@@ -2998,7 +2998,7 @@ function User.PBUseItemReqCmd(req)
     end
     -- 图鉴信息变更
     if table.size(change_image_ids) > 0 then
-        scripts.ItemImage.SaveAndLog(change_image_ids)
+        scripts.ItemImage.SaveAndSync(change_image_ids)
     end
     -- 账户数据变更
     if table.size(update_user_attr) > 0 then

@@ -81,7 +81,7 @@ function Gods.LoadGods()
     return godsinfo
 end
 
-function Gods.SaveAndLog(change_gods, change_blocks)
+function Gods.SaveAndSync(change_gods, change_blocks)
     local gods = scripts.UserModel.GetGods()
     if not gods then
         return false
@@ -295,7 +295,7 @@ function Gods.PBGodsUnlockReqCmd(req)
 
     -- 保存数据
     scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.GodsUnlock)
-    Gods.SaveAndLog({ [god_cfg.id] = 1 }, nil)
+    Gods.SaveAndSync({ [god_cfg.id] = 1 }, nil)
 
     -- 触发解锁神明总数
     scripts.Mission.TriggerCondition(MissionDef.EConditionIds.UNLOCK_GOD_CNT, {}, table.size(gods.gods_image))
@@ -405,7 +405,7 @@ function Gods.PBGodsUpLvReqCmd(req)
 
     -- 保存数据
     scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.GodsUpLv)
-    Gods.SaveAndLog({ [req.msg.god_id] = 1 }, nil)
+    Gods.SaveAndSync({ [req.msg.god_id] = 1 }, nil)
 
     -- 触发神明等级
     scripts.Mission.TriggerCondition(MissionDef.EConditionIds.GOD_LEVEL, { req.msg.god_id }, now_lv + 1)
@@ -535,7 +535,7 @@ function Gods.PBGodsBlockUnlockReqCmd(req)
 
     -- 保存数据
     scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.GodsBlockUnlock)
-    Gods.SaveAndLog(nil, { [block_cfg.id] = 1 })
+    Gods.SaveAndSync(nil, { [block_cfg.id] = 1 })
 
     return context.S2C(context.net_id, CmdCode.PBGodsBlockUnlockRspCmd, {
         code = ErrorCode.None,
@@ -585,7 +585,7 @@ function Gods.PBGodsWearOrTakeoffReqCmd(req)
     gods.gods_block[req.msg.block_idx].burn_end_ts = 0
 
     -- 保存数据
-    Gods.SaveAndLog(nil, { [req.msg.block_idx] = 1 })
+    Gods.SaveAndSync(nil, { [req.msg.block_idx] = 1 })
 
     return context.S2C(context.net_id, CmdCode.PBGodsWearOrTakeoffRspCmd, {
         code = ErrorCode.None,
@@ -720,7 +720,7 @@ function Gods.PBGodsBurnIncenseReqCmd(req)
 
     -- 保存数据
     scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.GodsBurnIncense)
-    Gods.SaveAndLog(nil, { [req.msg.block_idx] = 1 })
+    Gods.SaveAndSync(nil, { [req.msg.block_idx] = 1 })
 
     return context.S2C(context.net_id, CmdCode.PBGodsBurnIncenseRspCmd, {
         code = ErrorCode.None,

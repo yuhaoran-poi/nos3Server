@@ -33,6 +33,10 @@ message PBRoomMemberInfo
     int32 is_ready      = 2;    // 0未准备 1已准备 2暂离
     PBUserAttr mem_info   = 3;
     int32 cityid        = 4;
+    map<int32, int32> story_line_record = 5;
+    map<int32, int32> ghost_gate_record = 6;
+    map<int32, int32> boss_battle_record    = 7;
+    map<int32, int32> tower_battle_record   = 8;
 }
 
 message PBRoomInfo
