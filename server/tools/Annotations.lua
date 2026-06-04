@@ -4198,7 +4198,7 @@
 
 
 
----@class auction_scripts
+---@class auctionmgr_scripts
 ---@field Auctionmgr Auctionmgr
 
 
