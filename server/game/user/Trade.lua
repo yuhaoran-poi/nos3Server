@@ -357,7 +357,7 @@ function Trade.PBTradeSaleReqCmd(req)
     local trade_cfg = GameCfg.TransactionConfig[1]
     if not trade_cfg
         or not trade_cfg.service_charge_type
-        or not trade_cfg.order_percentage
+        -- or not trade_cfg.order_percentage
         or not trade_cfg.order_time
         or not trade_cfg.order_time[req.msg.sale_ts] then
         return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
@@ -409,13 +409,17 @@ function Trade.PBTradeSaleReqCmd(req)
     local trade_cost_coins = {}
     trade_cost_coins[trade_cfg.service_charge_type] = {
         coin_id = trade_cfg.service_charge_type,
-        coin_count = -trade_cfg.order_time[req.msg.sale_ts],
+        -- coin_count = -trade_cfg.order_time[req.msg.sale_ts],
+        coin_count = 0,
     }
     -- 向上取整trade_rate_coin_count
-    local trade_rate_coin_count = math.ceil((trade_cfg.order_percentage * req.msg.sale_num * req.msg.single_price) /
-        10000)
-    trade_cost_coins[trade_cfg.service_charge_type].coin_count = trade_cost_coins[trade_cfg.service_charge_type]
-        .coin_count - trade_rate_coin_count
+    local trade_rate = trade_cfg.order_time[req.msg.sale_ts]
+    local trade_rate_coin_count = math.ceil((trade_rate * req.msg.sale_num * req.msg.single_price) / 10000)
+    trade_cost_coins[trade_cfg.service_charge_type].coin_count = -trade_rate_coin_count
+    -- local trade_rate_coin_count = math.ceil((trade_cfg.order_percentage * req.msg.sale_num * req.msg.single_price) /
+    --     10000)
+    -- trade_cost_coins[trade_cfg.service_charge_type].coin_count = trade_cost_coins[trade_cfg.service_charge_type]
+    --     .coin_count - trade_rate_coin_count
     
     local err_code = ErrorCode.None
     if not is_gm then
