@@ -427,8 +427,7 @@ function ItemImage.UpLvImage(config_id, add_exp)
         if up_exp_cfgs then
             remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp)
         end
-    elseif item_type == ItemDefine.EItemSmallType.PlayItem
-        or item_type == ItemDefine.EItemSmallType.UnStackItem then
+    elseif item_type == ItemDefine.EItemSmallType.PlayItem then
         local up_exp_cfgs = GameCfg.GamePropUpLv
         if up_exp_cfgs then
             remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp)
@@ -574,8 +573,7 @@ function ItemImage.CheckUseItemUpLv(config_id, exp_id, up_exp_total, item_exps)
     if item_type == ItemDefine.EItemSmallType.MagicItem then
         local up_exp_cfgs = GameCfg.MagicItemUpLv
         return check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
-    elseif item_type == ItemDefine.EItemSmallType.PlayItem
-        or item_type == ItemDefine.EItemSmallType.UnStackItem then
+    elseif item_type == ItemDefine.EItemSmallType.PlayItem then
         local up_exp_cfgs = GameCfg.GamePropUpLv
         return check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
     elseif item_type == ItemDefine.EItemSmallType.HumanDiagrams then
@@ -613,6 +611,7 @@ function ItemImage.UpStarImage(config_id)
     
     local star_cfg = GameCfg.UpStar[image_data.config_id]
     if not star_cfg then
+        moon.error("UpStar config not found, config_id = ", image_data.config_id)
         return ErrorCode.ConfigError
     end
     if image_data.star_level >= star_cfg.maxlv then
@@ -621,18 +620,21 @@ function ItemImage.UpStarImage(config_id)
 
     local cost_key = "cost" .. (image_data.star_level + 1)
     if not star_cfg[cost_key] then
+        moon.error("UpStar cost not found, config_id = ", image_data.config_id, " star_level = ", image_data.star_level)
         return ErrorCode.ConfigError
     end
     local cost_cfg = star_cfg[cost_key]
 
     local rate_key = "rate" .. (image_data.star_level + 1)
     if not star_cfg[rate_key] then
+        moon.error("UpStar rate not found, config_id = ", image_data.config_id, " star_level = ", image_data.star_level)
         return ErrorCode.ConfigError
     end
     local rate_cfg = star_cfg[rate_key]
 
     local add_rate_cfg = CommonCfgDef.getConf("UpStarAdditionRate")
     if not add_rate_cfg then
+        moon.error("UpStarAdditionRate config not found")
         return ErrorCode.ConfigError
     end
 
@@ -644,10 +646,12 @@ function ItemImage.UpStarImage(config_id)
     -- 检查资源是否足够
     local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
     if err_code_items ~= ErrorCode.None then
+        moon.error("UpStar check items not enough, err_code = ", err_code_items)
         return err_code_items
     end
     local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
     if err_code_coins ~= ErrorCode.None then
+        moon.error("UpStar check coins not enough, err_code = ", err_code_coins)
         return err_code_coins
     end
 
@@ -657,6 +661,7 @@ function ItemImage.UpStarImage(config_id)
     if table.size(cost_items) > 0 then
         err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_log)
         if err_code_del ~= ErrorCode.None then
+            moon.error("UpStar del items failed, err_code = ", err_code_del)
             scripts.Bag.RollBackWithChange(change_log)
             return err_code_del
         end
@@ -664,6 +669,7 @@ function ItemImage.UpStarImage(config_id)
     if table.size(cost_coins) > 0 then
         err_code_del = scripts.Bag.DealCoins(cost_coins, change_log)
         if err_code_del ~= ErrorCode.None then
+            moon.error("UpStar deal coins failed, err_code = ", err_code_del)
             scripts.Bag.RollBackWithChange(change_log)
             return err_code_del
         end
