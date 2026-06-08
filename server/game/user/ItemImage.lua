@@ -394,21 +394,28 @@ function ItemImage.UpLvImage(config_id, add_exp)
         return ErrorCode.ItemNotExist
     end
 
-    local function check_add_exp(up_exp_cfgs, exps, remain_exp)
+    local function check_add_exp(up_exp_cfgs, exps, remain_exp, quality)
+        local exp_key = "exp" .. (quality)
+        local allexp_key = "allexp" .. (quality)
+        local cost_key = "cost" .. (quality)
+
         for _, cfg in pairs(up_exp_cfgs) do
-            if cfg.allexp > image_data.exp then
-                if image_data.exp + add_exp >= cfg.allexp then
-                    local canAdd = math.min(cfg.allexp - image_data.exp, remain_exp)
-                    if not exps[cfg.cost] then
-                        exps[cfg.cost] = 0
+            if not cfg[exp_key] or not cfg[allexp_key] or not cfg[cost_key] then
+                return remain_exp
+            end
+            if cfg[allexp_key] > image_data.exp then
+                if image_data.exp + add_exp >= cfg[allexp_key] then
+                    local canAdd = math.min(cfg[allexp_key] - image_data.exp, remain_exp)
+                    if not exps[cfg[cost_key]] then
+                        exps[cfg[cost_key]] = 0
                     end
-                    exps[cfg.cost] = exps[cfg.cost] + canAdd
+                    exps[cfg[cost_key]] = exps[cfg[cost_key]] + canAdd
                     remain_exp = remain_exp - canAdd
                 else
-                    if not exps[cfg.cost] then
-                        exps[cfg.cost] = 0
+                    if not exps[cfg[cost_key]] then
+                        exps[cfg[cost_key]] = 0
                     end
-                    exps[cfg.cost] = exps[cfg.cost] + remain_exp
+                    exps[cfg[cost_key]] = exps[cfg[cost_key]] + remain_exp
                     remain_exp = 0
 
                     break
@@ -423,29 +430,49 @@ function ItemImage.UpLvImage(config_id, add_exp)
     local exps = {}
     local remain_exp = add_exp
     if item_type == ItemDefine.EItemSmallType.MagicItem then
+        local uniqitem_cfg = GameCfg.UniqueItem[config_id]
+        if not uniqitem_cfg or not uniqitem_cfg.type2 then
+            return ErrorCode.ConfigError
+        end
         local up_exp_cfgs = GameCfg.MagicItemUpLv
         if up_exp_cfgs then
-            remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp)
+            remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp, uniqitem_cfg.type2)
         end
     elseif item_type == ItemDefine.EItemSmallType.PlayItem then
+        local item_cfg = GameCfg.Item[config_id]
+        if not item_cfg or not item_cfg.type2 then
+            return ErrorCode.ConfigError
+        end
         local up_exp_cfgs = GameCfg.GamePropUpLv
         if up_exp_cfgs then
-            remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp)
+            remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp, item_cfg.type2)
         end
     elseif item_type == ItemDefine.EItemSmallType.HumanDiagrams then
+        local uniqitem_cfg = GameCfg.UniqueItem[config_id]
+        if not uniqitem_cfg or not uniqitem_cfg.type2 then
+            return ErrorCode.ConfigError
+        end
         local up_exp_cfgs = GameCfg.BaGuaBrandUpLv
         if up_exp_cfgs then
-            remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp)
+            remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp, uniqitem_cfg.type2)
         end
     elseif item_type == ItemDefine.EItemSmallType.GhostDiagrams then
+        local uniqitem_cfg = GameCfg.UniqueItem[config_id]
+        if not uniqitem_cfg or not uniqitem_cfg.type2 then
+            return ErrorCode.ConfigError
+        end
         local up_exp_cfgs = GameCfg.GhostEquipmentUpLv
         if up_exp_cfgs then
-            remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp)
+            remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp, 0)
         end
     elseif item_type == ItemDefine.EItemSmallType.SpaceRing then
+        local uniqitem_cfg = GameCfg.UniqueItem[config_id]
+        if not uniqitem_cfg or not uniqitem_cfg.type2 then
+            return ErrorCode.ConfigError
+        end
         local up_exp_cfgs = GameCfg.SpaceRingUpLv
         if up_exp_cfgs then
-            remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp)
+            remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp, uniqitem_cfg.type2)
         end
     end
 
@@ -521,20 +548,26 @@ function ItemImage.CheckUseItemUpLv(config_id, exp_id, up_exp_total, item_exps)
 
     --     return ErrorCode.ItemMaxExp
     -- end
-    local function check_add_exp(up_exp_cfgs, cur_exp, after_up_exp)
+    local function check_add_exp(up_exp_cfgs, cur_exp, after_up_exp, quality)
+        local allexp_key = "allexp" .. (quality)
+        local cost_key = "cost" .. (quality)
+
         local success = false
         local max_exp = 0
         for _, cfg in pairs(up_exp_cfgs) do
-            if cur_exp < cfg.allexp then
-                if cfg.cost ~= exp_id then
+            if not cfg[allexp_key] or not cfg[cost_key] then
+                return ErrorCode.ConfigError, 0, {}
+            end
+            if cur_exp < cfg[allexp_key] then
+                if cfg[cost_key] ~= exp_id then
                     return ErrorCode.ConfigError, 0, {}
                 end
             end
-            if after_up_exp <= cfg.allexp then
+            if after_up_exp <= cfg[allexp_key] then
                 success = true
                 break
             end
-            max_exp = cfg.allexp
+            max_exp = cfg[allexp_key]
         end
         if success then
             local cost_items = {}
@@ -571,20 +604,40 @@ function ItemImage.CheckUseItemUpLv(config_id, exp_id, up_exp_total, item_exps)
 
     local after_up_exp = image_data.exp + up_exp_total
     if item_type == ItemDefine.EItemSmallType.MagicItem then
+        local uniqitem_cfg = GameCfg.UniqueItem[config_id]
+        if not uniqitem_cfg or not uniqitem_cfg.type2 then
+            return ErrorCode.ConfigError, 0, {}
+        end
         local up_exp_cfgs = GameCfg.MagicItemUpLv
-        return check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
+        return check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp, uniqitem_cfg.type2)
     elseif item_type == ItemDefine.EItemSmallType.PlayItem then
+        local item_cfg = GameCfg.Item[config_id]
+        if not item_cfg or not item_cfg.type2 then
+            return ErrorCode.ConfigError, 0, {}
+        end
         local up_exp_cfgs = GameCfg.GamePropUpLv
-        return check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
+        return check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp, item_cfg.type2)
     elseif item_type == ItemDefine.EItemSmallType.HumanDiagrams then
+        local uniqitem_cfg = GameCfg.UniqueItem[config_id]
+        if not uniqitem_cfg or not uniqitem_cfg.type2 then
+            return ErrorCode.ConfigError, 0, {}
+        end
         local up_exp_cfgs = GameCfg.BaGuaBrandUpLv
-        return check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
+        return check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp, uniqitem_cfg.type2)
     elseif item_type == ItemDefine.EItemSmallType.GhostDiagrams then
+        local uniqitem_cfg = GameCfg.UniqueItem[config_id]
+        if not uniqitem_cfg or not uniqitem_cfg.type2 then
+            return ErrorCode.ConfigError, 0, {}
+        end
         local up_exp_cfgs = GameCfg.GhostEquipmentUpLv
-        return check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
+        return check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp, 0)
     elseif item_type == ItemDefine.EItemSmallType.SpaceRing then
+        local uniqitem_cfg = GameCfg.UniqueItem[config_id]
+        if not uniqitem_cfg or not uniqitem_cfg.type2 then
+            return ErrorCode.ConfigError, 0, {}
+        end
         local up_exp_cfgs = GameCfg.SpaceRingUpLv
-        return check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp)
+        return check_add_exp(up_exp_cfgs, image_data.exp, after_up_exp, uniqitem_cfg.type2)
     end
     
     -- image_data.exp = after_up_exp
