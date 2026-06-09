@@ -2200,31 +2200,20 @@
 ---@field public valid_ts integer @有效期时间
 
 
----@class PBItemImageGroup
----@field public item_image table<integer, PBImage> @道具图鉴	有key则执行覆盖
----@field public item_wear_skin table<integer, integer> @道具皮肤佩戴
-
-
----@class PBEquipImageGroup
----@field public magic_item_image table<integer, PBImage> @法器图鉴	有key则执行覆盖
----@field public human_diagrams_image table<integer, PBImage> @角色八卦牌图鉴	有key则执行覆盖
----@field public ghost_diagrams_image table<integer, PBImage> @鬼宠八卦牌图鉴	有key则执行覆盖
----@field public space_ring_image table<integer, PBImage> @空间戒指图鉴		有key则执行覆盖
+---@class PBCommonImageGroup
+---@field public common_image table<integer, PBImage>
 
 
 ---@class PBSkinImageGroup
----@field public skin_image table<integer, PBSkinImage> @皮肤动作表情图鉴	有key则执行覆盖
+---@field public skin_image table<integer, PBSkinImage> @皮肤动作表情图鉴
+
+
+---@class PBItemWearGroup
+---@field public item_wear_skin table<integer, integer> @合成配方
 
 
 ---@class PBFormulaGroup
----@field public composite_formula table<integer, integer> @合成配方
-
-
----@class PBNewUserImage
----@field public item_image_group PBItemImageGroup
----@field public equip_image_group PBEquipImageGroup
----@field public skin_image_group PBSkinImageGroup
----@field public formula_group PBFormulaGroup
+---@field public formula_group table<integer, integer> @合成配方
 
 
 ---@class PBUserImage
