@@ -708,7 +708,7 @@ end
 
 function User.PBClientGetAllUserAttrReqCmd(req)
     local total_attr = User.GetOnlineUserAttr()
-    moon.warn(string.format("PBClientGetAllUserAttrReqCmd total_attr = %s", json.pretty_encode(total_attr)))
+    -- moon.warn(string.format("PBClientGetAllUserAttrReqCmd total_attr = %s", json.pretty_encode(total_attr)))
     local ret = {
         code = ErrorCode.None,
         error = "success",
@@ -1356,10 +1356,11 @@ function User.PBClientItemUpLvReqCmd(req)
     end
 
     local err_code, change_log = ErrorCode.None, nil
-    if RoleDef.RoleDefine.RoleID.Start <= req.msg.config_id
-        and req.msg.config_id <= RoleDef.RoleDefine.RoleID.End then
-        err_code, change_log = scripts.Role.UpLv(req.msg.config_id, req.msg.add_exp)
-    elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.config_id
+    -- if RoleDef.RoleDefine.RoleID.Start <= req.msg.config_id
+    --     and req.msg.config_id <= RoleDef.RoleDefine.RoleID.End then
+    --     err_code, change_log = scripts.Role.UpLv(req.msg.config_id, req.msg.add_exp)
+    -- elseif GhostDef.GhostDefine.GhostID.Start <= req.msg.config_id
+    if GhostDef.GhostDefine.GhostID.Start <= req.msg.config_id
         and req.msg.config_id <= GhostDef.GhostDefine.GhostID.End then
         err_code, change_log = scripts.Ghost.UpLv(req.msg.config_id, req.msg.add_exp)
     else

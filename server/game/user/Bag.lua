@@ -2774,9 +2774,9 @@ function Bag.PBBagGetDataReqCmd(req)
         uid = context.uid,
         bag_datas = {},
     }
-    moon.warn(string.format("req.msg.bags_name = %s", json.pretty_encode(req.msg.bags_name)))
+    -- moon.warn(string.format("req.msg.bags_name = %s", json.pretty_encode(req.msg.bags_name)))
     local ret = Bag.GetBagdata(req.msg.bags_name)
-    moon.warn(string.format("ret = %s", json.pretty_encode(ret)))
+    -- moon.warn(string.format("ret = %s", json.pretty_encode(ret)))
     if ret.errcode ~= ErrorCode.None or table.size(ret.bag_datas) <= 0 then
         res.code = ret.errcode
         return context.S2C(context.net_id, CmdCode["PBBagGetDataRspCmd"], res, req.msg_context.stub_id)

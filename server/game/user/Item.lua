@@ -1,5 +1,6 @@
 local moon = require "moon"
 local common = require "common"
+local json = require "json"
 local protocol = require("common.protocol_pb")
 local clusterd = require("cluster")
 local GameCfg = common.GameCfg
@@ -120,6 +121,7 @@ end
 -- end
 
 function Item.SendLog(write_log_datas)
+    moon.warn(string.format("Item.SendLog write_log_datas = %s", json.pretty_encode(write_log_datas)))
     --存储日志
     clusterd.send(3003, "logmgr", "LogMgr.ItemChangeLog", write_log_datas)
 end
