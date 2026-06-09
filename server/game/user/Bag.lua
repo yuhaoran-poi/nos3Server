@@ -930,7 +930,9 @@ function Bag.SaveAndLog(change_logs, change_reason,
     --存储日志
     if change_reason ~= ItemDef.ChangeReason.BagMove
         and change_reason ~= ItemDef.ChangeReason.SortOutItems then
-        scripts.Item.SendLog(write_log_datas)
+        if table.size(write_log_datas) > 0 then
+            scripts.Item.SendLog(write_log_datas)
+        end
 
         -- 触发道具任务
         for _, write_log in pairs(write_log_datas) do
