@@ -50,8 +50,12 @@ end
 --     Database.ItemChangeLog(context.addr_db_log, uid, item_id, change_num, before_num, after_num, reason, reason_detail or "")  
 -- end
 function LogMgr.ItemChangeLog(write_log_datas)
-    if not write_log_datas or table.size(write_log_datas) <= 0 then
-        moon.error("LogMgr.ItemChangeLog invalid params:", write_log_datas)
+    if not write_log_datas then
+        moon.error("LogMgr.ItemChangeLog invalid params: no write_log_datas")
+        return
+    end
+    if table.size(write_log_datas) <= 0 then
+        moon.error(string.format("LogMgr.ItemChangeLog invalid params: %s", json.pretty_encode(write_log_datas)))
         return
     end
     moon.warn(string.format("LogMgr.ItemChangeLog write_log_datas = %s", json.pretty_encode(write_log_datas)))
