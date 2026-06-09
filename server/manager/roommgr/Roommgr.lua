@@ -1112,7 +1112,7 @@ function Roommgr.InviteMember(req)
     context.send_users(notify_uids, {}, "Room.OnInviteRoomSync", {
         roomid = room.room_data.roomid,
         mem_uid = req.invite_uid,
-        mem_name = req.invite_name,
+        mem_name = mem_name,
         room_info = room.room_data,
     })
 
