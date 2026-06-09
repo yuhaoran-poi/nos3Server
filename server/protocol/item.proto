@@ -199,6 +199,38 @@ message PBSkinImage
 	int64 valid_ts		= 2;	//有效期时间
 }
 
+message PBItemImageGroup
+{
+	map<int32, PBImage> item_image		= 1;	//道具图鉴	有key则执行覆盖
+	map<int32, int32>	item_wear_skin	= 2;	//道具皮肤佩戴
+}
+
+message PBEquipImageGroup
+{
+	map<int32, PBImage> magic_item_image		= 1;	//法器图鉴	有key则执行覆盖
+	map<int32, PBImage> human_diagrams_image	= 2;	//角色八卦牌图鉴	有key则执行覆盖
+	map<int32, PBImage> ghost_diagrams_image	= 3;	//鬼宠八卦牌图鉴	有key则执行覆盖
+	map<int32, PBImage> space_ring_image		= 4;	//空间戒指图鉴		有key则执行覆盖
+}
+
+message PBSkinImageGroup
+{
+	map<int32, PBSkinImage> skin_image			= 1;	//皮肤动作表情图鉴	有key则执行覆盖
+}
+
+message PBFormulaGroup
+{
+	map<int32, int64>	composite_formula	= 1;	//合成配方
+}
+
+message PBNewUserImage
+{
+	PBItemImageGroup item_image_group	= 1;
+	PBEquipImageGroup equip_image_group	= 2;
+	PBSkinImageGroup skin_image_group	= 3;
+	PBFormulaGroup formula_group		= 4;
+}
+
 message PBUserImage
 {
 	map<int32, PBImage> item_image				= 1;	//道具图鉴	有key则执行覆盖

@@ -13,7 +13,7 @@ activityId
 error (	Rerror
 uid (Ruid6
 activity_datas (2.PBActivityDataRactivityDatasbproto3
-¶1
+ã=
 
 item.proto"@
 PBCoin
@@ -157,7 +157,50 @@ star_level (R	starLevel
 star_fail_cnt (RstarFailCnt"E
 PBSkinImage
 	config_id (RconfigId
-valid_ts (RvalidTs"º	
+valid_ts (RvalidTs"§
+PBItemImageGroup?
+
+item_image (2 .PBItemImageGroup.ItemImageEntryR	itemImageI
+item_wear_skin (2#.PBItemImageGroup.ItemWearSkinEntryRitemWearSkinF
+ItemImageEntry
+key (Rkey
+value (2.PBImageRvalue:8?
+ItemWearSkinEntry
+key (Rkey
+value (Rvalue:8"¯
+PBEquipImageGroupP
+magic_item_image (2&.PBEquipImageGroup.MagicItemImageEntryRmagicItemImage\
+human_diagrams_image (2*.PBEquipImageGroup.HumanDiagramsImageEntryRhumanDiagramsImage\
+ghost_diagrams_image (2*.PBEquipImageGroup.GhostDiagramsImageEntryRghostDiagramsImageP
+space_ring_image (2&.PBEquipImageGroup.SpaceRingImageEntryRspaceRingImageK
+MagicItemImageEntry
+key (Rkey
+value (2.PBImageRvalue:8O
+HumanDiagramsImageEntry
+key (Rkey
+value (2.PBImageRvalue:8O
+GhostDiagramsImageEntry
+key (Rkey
+value (2.PBImageRvalue:8K
+SpaceRingImageEntry
+key (Rkey
+value (2.PBImageRvalue:8"Ÿ
+PBSkinImageGroup?
+
+skin_image (2 .PBSkinImageGroup.SkinImageEntryR	skinImageJ
+SkinImageEntry
+key (Rkey"
+value (2.PBSkinImageRvalue:8"©
+PBFormulaGroupR
+composite_formula (2%.PBFormulaGroup.CompositeFormulaEntryRcompositeFormulaC
+CompositeFormulaEntry
+key (Rkey
+value (Rvalue:8"€
+PBNewUserImage;
+item_image_group (2.PBItemImageGroupRitemImageGroup>
+equip_image_group (2.PBEquipImageGroupRequipImageGroup;
+skin_image_group (2.PBSkinImageGroupRskinImageGroup4
+formula_group (2.PBFormulaGroupRformulaGroup"º	
 PBUserImage:
 
 item_image (2.PBUserImage.ItemImageEntryR	itemImageJ
