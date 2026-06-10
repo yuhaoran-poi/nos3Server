@@ -163,8 +163,9 @@ function Roommgr.CheckWaitDSRooms()
         moon.info("roomid = %d, status = %d, failcnt = %d", k, v.status, v.failcnt)
         if v.status == 2 then
             allocated_rooms[k] = v
-        elseif v.failcnt > 5 then
-            table.insert(fail_rooms, k)
+        elseif v.failcnt > 10 then
+            -- table.insert(fail_rooms, k)
+            fail_rooms[k] = v
         end
     end
     for roomid, _ in pairs(allocated_rooms) do
