@@ -6,6 +6,7 @@ local protocol = require("common.protocol_pb")
 local crypt = require("crypt")
 local TradeDef = require("common.def.TradeDef")
 local AuctionDef = require("common.def.AuctionDef")
+local ItemDef = require("common.def.ItemDef")
 
 ---@type sqlclient
 local pgsql = require("sqldriver")
@@ -856,33 +857,289 @@ function _M.saveuserghosts(addr, uid, data)
     return moon.send("lua", addr, cmd)
 end
 
+-- function _M.loaduseritemimage(addr, uid)
+--     local cmd = string.format([[
+--         SELECT value, json FROM mgame.itemimages WHERE uid = %d;
+--     ]], uid)
+--     local res, err = moon.call("lua", addr, cmd)
+--     if res and #res > 0 then
+--         -- local ok, item_data = protocol.decodewithname("PBItemData", crypt.base64decode(item_data_str))
+--         local pbdata = crypt.base64decode(res[1].value)
+--         local _, tmp_data = protocol.decodewithname("PBUserImage", pbdata)
+--         return tmp_data
+--     end
+--     print("loaduseritemimage failed", uid, err)
+--     return nil
+-- end
+
+-- function _M.saveuseritemimage(addr, uid, data)
+--     assert(data)
+
+--     local data_str = jencode(data)
+--     local _, pbdata = protocol.encodewithname("PBUserImage", data)
+--     local pbvalue = crypt.base64encode(pbdata)
+--     local cmd = string.format([[
+--         INSERT INTO mgame.itemimages (uid, value, json)
+--         VALUES (%d, '%s', '%s')
+--         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+--     ]], uid, pbvalue, data_str, pbvalue, data_str)
+
+--     return moon.send("lua", addr, cmd)
+-- end
+
 function _M.loaduseritemimage(addr, uid)
     local cmd = string.format([[
-        SELECT value, json FROM mgame.itemimages WHERE uid = %d;
+        SELECT item_value, item_json, magic_item_value, magic_item_json, human_diagrams_value,
+        human_diagrams_json, ghost_diagrams_value, ghost_diagrams_json, skin_value, skin_json,
+        space_ring_value, space_ring_json, item_wear_skin_value, item_wear_skin_json, composite_formula_value,
+        composite_formula_json FROM mgame.itemimages_copy1 WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
-        local pbdata = crypt.base64decode(res[1].value)
-        local _, tmp_data = protocol.decodewithname("PBUserImage", pbdata)
-        return tmp_data
+        local user_image_data = ItemDef.newUserImage()
+        local ok_1, data_1 = protocol.decodewithname("PBCommonImageGroup", crypt.base64decode(res[1].item_value))
+        if ok_1 then
+            user_image_data.item_image = data_1.common_image
+        else
+            print("loaduseritemimage item_value failed", uid, err)
+            return nil
+        end
+        local ok_2, data_2 = protocol.decodewithname("PBCommonImageGroup", crypt.base64decode(res[1].magic_item_value))
+        if ok_2 then
+            user_image_data.magic_item_image = data_2.common_image
+        else
+            print("loaduseritemimage magic_item_value failed", uid, err)
+            return nil
+        end
+        local ok_3, data_3 = protocol.decodewithname("PBCommonImageGroup", crypt.base64decode(res[1].human_diagrams_value))
+        if ok_3 then
+            user_image_data.human_diagrams_image = data_3.common_image
+        else
+            print("loaduseritemimage human_diagrams_value failed", uid, err)
+            return nil
+        end
+        local ok_4, data_4 = protocol.decodewithname("PBCommonImageGroup", crypt.base64decode(res[1].ghost_diagrams_value))
+        if ok_4 then
+            user_image_data.ghost_diagrams_image = data_4.common_image
+        else
+            print("loaduseritemimage ghost_diagrams_value failed", uid, err)
+            return nil
+        end
+        local ok_5, data_5 = protocol.decodewithname("PBSkinImageGroup", crypt.base64decode(res[1].skin_value))
+        if ok_5 then
+            user_image_data.skin_image = data_5.skin_image
+        else
+            print("loaduseritemimage skin_value failed", uid, err)
+            return nil
+        end
+        local ok_6, data_6 = protocol.decodewithname("PBCommonImageGroup", crypt.base64decode(res[1].space_ring_value))
+        if ok_6 then
+            user_image_data.space_ring_image = data_6.common_image
+        else
+            print("loaduseritemimage space_ring_value failed", uid, err)
+            return nil
+        end
+        local ok_7, data_7 = protocol.decodewithname("PBItemWearGroup", crypt.base64decode(res[1].item_wear_skin_value))
+        if ok_7 then
+            user_image_data.item_wear_skin = data_7.item_wear_skin
+        else
+            print("loaduseritemimage item_wear_skin_value failed", uid, err)
+            return nil
+        end
+        local ok_8, data_8 = protocol.decodewithname("PBFormulaGroup", crypt.base64decode(res[1].composite_formula_value))
+        if ok_8 then
+            user_image_data.composite_formula = data_8.formula_group
+        else
+            print("loaduseritemimage composite_formula_value failed", uid, err)
+            return nil
+        end
+        
+        return user_image_data
     end
     print("loaduseritemimage failed", uid, err)
     return nil
 end
 
-function _M.saveuseritemimage(addr, uid, data)
+function _M.saveuseritemimage(addr, uid, data, change_fields)
     assert(data)
 
-    local data_str = jencode(data)
-    local _, pbdata = protocol.encodewithname("PBUserImage", data)
-    local pbvalue = crypt.base64encode(pbdata)
-    local cmd = string.format([[
-        INSERT INTO mgame.itemimages (uid, value, json)
-        VALUES (%d, '%s', '%s')
-        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], uid, pbvalue, data_str, pbvalue, data_str)
+    if change_fields.all then
+        local data_1 = ItemDef.newCommonImageGroup()
+        data_1.common_image = data.item_image or {}
+        local data_str_1 = jencode(data_1)
+        local _, pbdata_1 = protocol.encodewithname("PBCommonImageGroup", data_1)
+        local pbvalue_1 = crypt.base64encode(pbdata_1)
+        local data_2 = ItemDef.newCommonImageGroup()
+        data_2.common_image = data.magic_item_image or {}
+        local data_str_2 = jencode(data_2)
+        local _, pbdata_2 = protocol.encodewithname("PBCommonImageGroup", data_2)
+        local pbvalue_2 = crypt.base64encode(pbdata_2)
+        local data_3 = ItemDef.newCommonImageGroup()
+        data_3.common_image = data.human_diagrams_image or {}
+        local data_str_3 = jencode(data_3)
+        local _, pbdata_3 = protocol.encodewithname("PBCommonImageGroup", data_3)
+        local pbvalue_3 = crypt.base64encode(pbdata_3)
+        local data_4 = ItemDef.newCommonImageGroup()
+        data_4.common_image = data.ghost_diagrams_image or {}
+        local data_str_4 = jencode(data_4)
+        local _, pbdata_4 = protocol.encodewithname("PBCommonImageGroup", data_4)
+        local pbvalue_4 = crypt.base64encode(pbdata_4)
+        local data_5 = ItemDef.newSkinImageGroup()
+        data_5.skin_image = data.skin_image or {}
+        local data_str_5 = jencode(data_5)
+        local _, pbdata_5 = protocol.encodewithname("PBSkinImageGroup", data_5)
+        local pbvalue_5 = crypt.base64encode(pbdata_5)
+        local data_6 = ItemDef.newCommonImageGroup()
+        data_6.common_image = data.space_ring_image or {}
+        local data_str_6 = jencode(data_6)
+        local _, pbdata_6 = protocol.encodewithname("PBCommonImageGroup", data_6)
+        local pbvalue_6 = crypt.base64encode(pbdata_6)
+        local data_7 = ItemDef.newItemWearGroup()
+        data_7.item_wear_skin = data.item_wear_skin or {}
+        local data_str_7 = jencode(data_7)
+        local _, pbdata_7 = protocol.encodewithname("PBItemWearGroup", data_7)
+        local pbvalue_7 = crypt.base64encode(pbdata_7)
+        local data_8 = ItemDef.newFormulaGroup()
+        data_8.formula_group = data.composite_formula or {}
+        local data_str_8 = jencode(data_8)
+        local _, pbdata_8 = protocol.encodewithname("PBFormulaGroup", data_8)
+        local pbvalue_8 = crypt.base64encode(pbdata_8)
 
-    return moon.send("lua", addr, cmd)
+        local cmd = string.format([[
+        INSERT INTO mgame.itemimages_copy1 (uid, item_value, item_json, magic_item_value, magic_item_json,
+        human_diagrams_value, human_diagrams_json, ghost_diagrams_value, ghost_diagrams_json, skin_value,
+        skin_json, space_ring_value, space_ring_json, item_wear_skin_value, item_wear_skin_json,
+        composite_formula_value, composite_formula_json)
+        VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')
+        ON DUPLICATE KEY UPDATE item_value = '%s', item_json = '%s', magic_item_value = '%s',
+        magic_item_json = '%s', human_diagrams_value = '%s', human_diagrams_json = '%s',
+        ghost_diagrams_value = '%s', ghost_diagrams_json = '%s', skin_value = '%s', skin_json = '%s',
+        space_ring_value = '%s', space_ring_json = '%s', item_wear_skin_value = '%s', item_wear_skin_json = '%s',
+        composite_formula_value = '%s', composite_formula_json = '%s';
+        ]], uid, pbvalue_1, data_str_1, pbvalue_2, data_str_2, pbvalue_3, data_str_3, pbvalue_4, data_str_4,
+            pbvalue_5, data_str_5, pbvalue_6, data_str_6, pbvalue_7, data_str_7, pbvalue_8, data_str_8,
+            pbvalue_1, data_str_1, pbvalue_2, data_str_2, pbvalue_3, data_str_3, pbvalue_4, data_str_4,
+            pbvalue_5, data_str_5, pbvalue_6, data_str_6, pbvalue_7, data_str_7, pbvalue_8, data_str_8)
+
+        return moon.send("lua", addr, cmd)
+    else
+        local update_fields = {}
+        if change_fields.item_image then
+            if not data.item_image then
+                moon.error("saveuseritemimage item_image is nil")
+                return
+            end
+            local data_1 = ItemDef.newCommonImageGroup()
+            data_1.common_image = data.item_image
+            local data_str_1 = jencode(data_1)
+            local _, pbdata_1 = protocol.encodewithname("PBCommonImageGroup", data_1)
+            local pbvalue_1 = crypt.base64encode(pbdata_1)
+            table.insert(update_fields, string.format("%s = %s", "item_value", pbvalue_1))
+            table.insert(update_fields, string.format("%s = %s", "item_json", data_str_1))
+        end
+        if change_fields.magic_item_image then
+            if not data.magic_item_image then
+                moon.error("saveuseritemimage magic_item_image is nil")
+                return
+            end
+            local data_2 = ItemDef.newCommonImageGroup()
+            data_2.common_image = data.magic_item_image
+            local data_str_2 = jencode(data_2)
+            local _, pbdata_2 = protocol.encodewithname("PBCommonImageGroup", data_2)
+            local pbvalue_2 = crypt.base64encode(pbdata_2)
+            table.insert(update_fields, string.format("%s = %s", "magic_item_value", pbvalue_2))
+            table.insert(update_fields, string.format("%s = %s", "magic_item_json", data_str_2))
+        end
+        if change_fields.human_diagrams_image then
+            if not data.human_diagrams_image then
+                moon.error("saveuseritemimage human_diagrams_image is nil")
+                return
+            end
+            local data_3 = ItemDef.newCommonImageGroup()
+            data_3.common_image = data.human_diagrams_image
+            local data_str_3 = jencode(data_3)
+            local _, pbdata_3 = protocol.encodewithname("PBCommonImageGroup", data_3)
+            local pbvalue_3 = crypt.base64encode(pbdata_3)
+            table.insert(update_fields, string.format("%s = %s", "human_diagrams_value", pbvalue_3))
+            table.insert(update_fields, string.format("%s = %s", "human_diagrams_json", data_str_3))
+        end
+        if change_fields.ghost_diagrams_image then
+            if not data.ghost_diagrams_image then
+                moon.error("saveuseritemimage ghost_diagrams_image is nil")
+                return
+            end
+            local data_4 = ItemDef.newCommonImageGroup()
+            data_4.common_image = data.ghost_diagrams_image
+            local data_str_4 = jencode(data_4)
+            local _, pbdata_4 = protocol.encodewithname("PBCommonImageGroup", data_4)
+            local pbvalue_4 = crypt.base64encode(pbdata_4)
+            table.insert(update_fields, string.format("%s = %s", "ghost_diagrams_value", pbvalue_4))
+            table.insert(update_fields, string.format("%s = %s", "ghost_diagrams_json", data_str_4))
+        end
+        if change_fields.skin_image then
+            if not data.skin_image then
+                moon.error("saveuseritemimage skin_image is nil")
+                return
+            end
+            local data_5 = ItemDef.newSkinImageGroup()
+            data_5.skin_image = data.skin_image
+            local data_str_5 = jencode(data_5)
+            local _, pbdata_5 = protocol.encodewithname("PBSkinImageGroup", data_5)
+            local pbvalue_5 = crypt.base64encode(pbdata_5)
+            table.insert(update_fields, string.format("%s = %s", "skin_value", pbvalue_5))
+            table.insert(update_fields, string.format("%s = %s", "skin_json", data_str_5))
+        end
+        if change_fields.space_ring_image then
+            if not data.space_ring_image then
+                moon.error("saveuseritemimage space_ring_image is nil")
+                return
+            end
+            local data_6 = ItemDef.newCommonImageGroup()
+            data_6.common_image = data.space_ring_image
+            local data_str_6 = jencode(data_6)
+            local _, pbdata_6 = protocol.encodewithname("PBCommonImageGroup", data_6)
+            local pbvalue_6 = crypt.base64encode(pbdata_6)
+            table.insert(update_fields, string.format("%s = %s", "space_ring_value", pbvalue_6))
+            table.insert(update_fields, string.format("%s = %s", "space_ring_json", data_str_6))
+        end
+        if change_fields.item_wear_skin then
+            if not data.item_wear_skin then
+                moon.error("saveuseritemimage item_wear_skin is nil")
+                return
+            end
+            local data_7 = ItemDef.newItemWearGroup()
+            data_7.item_wear_skin = data.item_wear_skin
+            local data_str_7 = jencode(data_7)
+            local _, pbdata_7 = protocol.encodewithname("PBItemWearGroup", data_7)
+            local pbvalue_7 = crypt.base64encode(pbdata_7)
+            table.insert(update_fields, string.format("%s = %s", "item_wear_skin_value", pbvalue_7))
+            table.insert(update_fields, string.format("%s = %s", "item_wear_skin_json", data_str_7))
+        end
+        if change_fields.composite_formula then
+            if not data.composite_formula then
+                moon.error("saveuseritemimage composite_formula is nil")
+                return
+            end
+            local data_8 = ItemDef.newFormulaGroup()
+            data_8.formula_group = data.composite_formula
+            local data_str_8 = jencode(data_8)
+            local _, pbdata_8 = protocol.encodewithname("PBFormulaGroup", data_8)
+            local pbvalue_8 = crypt.base64encode(pbdata_8)
+            table.insert(update_fields, string.format("%s = %s", "composite_formula_value", pbvalue_8))
+            table.insert(update_fields, string.format("%s = %s", "composite_formula_json", data_str_8))
+        end
+
+        if table.size(update_fields) == 0 then
+            moon.error("saveuseritemimage update_fields is empty")
+            return
+        end
+
+        local cmd = string.format([[
+        UPDATE mgame.itemimages_copy1 SET %s WHERE uid = %d;
+        ]], table.concat(update_fields, ", "), uid)
+
+        return moon.send("lua", addr, cmd)
+    end
 end
 
 function _M.loadusercoins(addr, uid)

@@ -1513,9 +1513,11 @@ function Roommgr.StartGame(req)
         -----临时通知所有玩家进入DS------------
         moon.warn("Roommgr.StartGame test_url get")
         local test_port = math.random(room.room_data.roomid - 2000, 10000)
-        local test_url =
-            "http://192.168.2.31:8080/job/LaunchGH-DS/buildWithParameters?token=WXCY&MAP=5001&DSID=" ..
-            room.room_data.roomid .. "&PORT=" .. test_port
+        -- local test_url =
+        --     "http://192.168.2.31:8080/job/LaunchGH-DS/buildWithParameters?token=WXCY&MAP=5200&DSID=" ..
+        --     room.room_data.roomid .. "&PORT=" .. test_port
+        local test_url = "http://192.168.2.31:8080/job/LaunchGH-DS/buildWithParameters?token=WXCY&MAP=" ..
+            room.room_data.map_id .. "&DSID=" .. room.room_data.roomid .. "&PORT=" .. test_port
         moon.info("Roommgr.StartGame test_url", test_url)
         print_r(httpc.get(test_url))
 

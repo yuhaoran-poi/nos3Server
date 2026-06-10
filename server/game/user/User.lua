@@ -1921,7 +1921,7 @@ end
 function User.PBClientItemRepairReqCmd(req)
     -- 参数验证
     if not req.msg.repair_uniqid or not req.msg.pos then
-        return context.S2C(context.net_id, CmdCode.PBClientItemUpLvRspCmd, {
+        return context.S2C(context.net_id, CmdCode.PBClientItemRepairRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
             uid = context.uid,
@@ -1940,6 +1940,7 @@ function User.PBClientItemRepairReqCmd(req)
         -- 消耗配置
         local common_cfg = CommonCfgDef.getConf("MaintenanceCost")
         if not common_cfg then
+            moon.error("repair_func common_cfg is nil")
             return ErrorCode.ConfigError
         end
         local cost_items = {}
@@ -1952,8 +1953,9 @@ function User.PBClientItemRepairReqCmd(req)
             if item_data.special_info.magic_item.strong_value <= 0 then
                 return ErrorCode.StrongNotEnough
             end
-            local magic_cfg = GameCfg.MagicItem[item_data.common_info.config_id]
+            local magic_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
             if not magic_cfg then
+                moon.error("repair_func magic_cfg is nil", item_data.common_info.config_id)
                 return ErrorCode.ConfigError
             end
             if item_data.special_info.magic_item.cur_durability >= magic_cfg.durability then
@@ -1970,6 +1972,7 @@ function User.PBClientItemRepairReqCmd(req)
             end
             local uniq_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
             if not uniq_cfg then
+                moon.error("repair_func uniq_cfg is nil", item_data.common_info.config_id)
                 return ErrorCode.ConfigError
             end
             if item_data.special_info.diagrams_item.cur_durability >= uniq_cfg.durability then
@@ -1985,6 +1988,7 @@ function User.PBClientItemRepairReqCmd(req)
             end
             local uniq_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
             if not uniq_cfg then
+                moon.error("repair_func uniq_cfg is nil", item_data.common_info.config_id)
                 return ErrorCode.ConfigError
             end
             if item_data.special_info.space_ring.cur_durability >= uniq_cfg.durability then
@@ -2061,7 +2065,7 @@ function User.PBClientItemRepairReqCmd(req)
     end
 
     local errcode = repair_func()
-    return context.S2C(context.net_id, CmdCode.PBClientItemUpLvRspCmd, {
+    return context.S2C(context.net_id, CmdCode.PBClientItemRepairRspCmd, {
         code = errcode,
         error = "",
         uid = context.uid,

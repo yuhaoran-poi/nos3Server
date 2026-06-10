@@ -177,6 +177,22 @@ local defaultPBSkinImage = {
     valid_ts = 0,
 }
 
+local defaultPBCommonImageGroup = {
+    common_image = {},
+}
+
+local defaultPBSkinImageGroup = {
+    skin_image = {},
+}
+
+local defaultPBItemWearGroup = {
+    item_wear_skin = {},
+}
+
+local defaultPBFormulaGroup = {
+    formula_group = {},
+}
+
 local defaultPBUserImage = {
     item_image = {},
     magic_item_image = {},
@@ -185,6 +201,7 @@ local defaultPBUserImage = {
     skin_image = {},
     space_ring_image = {},
     item_wear_skin = {},
+    composite_formula = {},
 }
 
 local defaultPBAntique = {
@@ -274,6 +291,26 @@ end
 --- @return PBSkinImage
 function ItemDef.newSkinImage()
     return LuaExt.const(table.copy(defaultPBSkinImage))
+end
+
+--- @return PBCommonImageGroup
+function ItemDef.newCommonImageGroup()
+    return LuaExt.const(table.copy(defaultPBCommonImageGroup))
+end
+
+--- @return PBSkinImageGroup
+function ItemDef.newSkinImageGroup()
+    return LuaExt.const(table.copy(defaultPBSkinImageGroup))
+end
+
+--- @return PBItemWearGroup
+function ItemDef.newItemWearGroup()
+    return LuaExt.const(table.copy(defaultPBItemWearGroup))
+end
+
+--- @return PBFormulaGroup
+function ItemDef.newFormulaGroup()
+    return LuaExt.const(table.copy(defaultPBFormulaGroup))
 end
 
 --- @return PBUserImage

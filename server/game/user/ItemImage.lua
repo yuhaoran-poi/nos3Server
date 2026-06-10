@@ -51,17 +51,20 @@ function ItemImage.Start(isnew)
             end
         end
 
-        ItemImage.SaveItemImagesNow()
+        local change_fields = {
+            all = true,
+        }
+        ItemImage.SaveItemImagesNow(change_fields)
     end
 end
 
-function ItemImage.SaveItemImagesNow()
+function ItemImage.SaveItemImagesNow(change_fields)
     local itemImages = scripts.UserModel.GetItemImages()
     if not itemImages then
         return false
     end
 
-    local success = Database.saveuseritemimage(context.addr_db_user, context.uid, itemImages)
+    local success = Database.saveuseritemimage(context.addr_db_user, context.uid, itemImages, change_fields)
     return success
 end
 
@@ -79,6 +82,7 @@ function ItemImage.SaveAndSync(config_ids, composite_formula_ids)
     local update_msg = {
         update_images = {},
     }
+    local change_fields = {}
     
     if config_ids then
         for _, config_id in pairs(config_ids) do
@@ -89,6 +93,7 @@ function ItemImage.SaveAndSync(config_ids, composite_formula_ids)
                         update_msg.update_images.magic_item_image = {}
                     end
                     update_msg.update_images.magic_item_image[config_id] = itemImages.magic_item_image[config_id]
+                    change_fields.magic_item_image = true
                 end
             elseif item_type == ItemDefine.EItemSmallType.HumanDiagrams then
                 if itemImages.human_diagrams_image[config_id] then
@@ -96,7 +101,8 @@ function ItemImage.SaveAndSync(config_ids, composite_formula_ids)
                         update_msg.update_images.human_diagrams_image = {}
                     end
                     update_msg.update_images.human_diagrams_image[config_id] = itemImages.human_diagrams_image
-                    [config_id]
+                        [config_id]
+                    change_fields.human_diagrams_image = true
                 end
             elseif item_type == ItemDefine.EItemSmallType.GhostDiagrams then
                 if itemImages.ghost_diagrams_image[config_id] then
@@ -104,7 +110,8 @@ function ItemImage.SaveAndSync(config_ids, composite_formula_ids)
                         update_msg.update_images.ghost_diagrams_image = {}
                     end
                     update_msg.update_images.ghost_diagrams_image[config_id] = itemImages.ghost_diagrams_image
-                    [config_id]
+                        [config_id]
+                    change_fields.ghost_diagrams_image = true
                 end
             elseif item_type == ItemDefine.EItemSmallType.RoleSkin
                 or item_type == ItemDefine.EItemSmallType.GhostSkin
@@ -116,12 +123,14 @@ function ItemImage.SaveAndSync(config_ids, composite_formula_ids)
                     update_msg.update_images.skin_image = {}
                 end
                 update_msg.update_images.skin_image[config_id] = itemImages.skin_image[config_id]
+                change_fields.skin_image = true
             elseif item_type == ItemDefine.EItemSmallType.SpaceRing then
                 if itemImages.space_ring_image[config_id] then
                     if not update_msg.update_images.space_ring_image then
                         update_msg.update_images.space_ring_image = {}
                     end
                     update_msg.update_images.space_ring_image[config_id] = itemImages.space_ring_image[config_id]
+                    change_fields.space_ring_image = true
                 end
             else
                 if itemImages.item_image[config_id] then
@@ -129,6 +138,7 @@ function ItemImage.SaveAndSync(config_ids, composite_formula_ids)
                         update_msg.update_images.item_image = {}
                     end
                     update_msg.update_images.item_image[config_id] = itemImages.item_image[config_id]
+                    change_fields.item_image = true
                 end
             end
         end
@@ -141,13 +151,14 @@ function ItemImage.SaveAndSync(config_ids, composite_formula_ids)
                     update_msg.update_images.composite_formula = {}
                 end
                 update_msg.update_images.composite_formula[cid] = itemImages.composite_formula[cid]
+                change_fields.composite_formula = true
             end
         end
     end
 
     context.S2C(context.net_id, CmdCode["PBImageUpdateSyncCmd"], update_msg, 0)
 
-    ItemImage.SaveItemImagesNow()
+    ItemImage.SaveItemImagesNow(change_fields)
 end
 
 function ItemImage.GetSkinTypeCnt(itemImages)
@@ -795,7 +806,10 @@ function ItemImage.ItemChangeSkin(item_config_id, skin_id)
     end
     itemImages.item_wear_skin[item_config_id] = skin_id
 
-    ItemImage.SaveItemImagesNow()
+    local change_fields = {
+        item_wear_skin = true,
+    }
+    ItemImage.SaveItemImagesNow(change_fields)
     return ErrorCode.None
 end
 
