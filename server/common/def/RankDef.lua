@@ -80,6 +80,7 @@ local defaultRankRewardData = {
     rt = 0,                -- rank_type: 排行榜类型
     sr = {},               -- sub_ranks: 子榜数据（key为rank_id）
     rt_ref = 0,            -- refresh_time: 刷新时间
+    period = 0,            -- period: 期数（用于多期管理）
 }
 
 ---@return table

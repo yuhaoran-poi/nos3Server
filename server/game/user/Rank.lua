@@ -208,20 +208,11 @@ function Rank.PBRankGetRewardReqCmd(req)
     end
 
     -- 调用排行榜服务领取奖励
-    local reward_data, err = clusterd.call(3004, "rank", "GetRankReward", {rank_type = rank_type, uid = context.uid})
-    if not reward_data then
+    local err, reward_pool_cfg = clusterd.call(3004, "rank", "GetRankReward", {rank_type = rank_type, uid = context.uid})
+    if err ~= ErrorCode.None then
         moon.error("Failed to get rank reward:", err)
         return context.S2C(context.net_id, CmdCode.PBRankGetRewardRspCmd, {
-            code = ErrorCode.ServerInternalError,
-            error = "领取奖励失败",
-            uid = context.uid
-        }, req.msg_context.stub_id)
-    end
-    local code, reward_cfg = moon.call("lua", rank_addr, "getRankReward", rank_type, context.uid)
-
-    if code ~= ErrorCode.None or not reward_cfg then
-        return context.S2C(context.net_id, CmdCode.PBRankGetRewardRspCmd, {
-            code = code,
+            code = err,
             error = "领取奖励失败",
             uid = context.uid
         }, req.msg_context.stub_id)
@@ -230,7 +221,7 @@ function Rank.PBRankGetRewardReqCmd(req)
     -- 发放奖励
     -- 这里需要调用奖励发放相关的函数
     local add_items = {}
-    for item_id, item_cnt in pairs(reward_cfg) do
+    for item_id, item_cnt in pairs(reward_pool_cfg) do
         if not add_items[item_id] then
             add_items[item_id] = {
                 id = item_id,
@@ -281,7 +272,7 @@ function Rank.PBRankGetRewardReqCmd(req)
         error = "",
         uid = context.uid,
         success = true,
-        reward = reward_cfg,
+        reward = reward_data,
     }
 
     scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.RankReward)

@@ -5,8 +5,10 @@ local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local Database = common.Database
 local RankDef = require "common.def.RankDef"
+local MailLogic = require "common.logic.MailLogic"
 local redisd = require "redisd"
 local redis_call = redisd.call
+local clusterd = require "cluster"
 local json = require "json"
 
 local RankLogic = {}
@@ -14,8 +16,12 @@ local RankLogic = {}
 -- 排行榜数据
 local rank_data = {}
 
--- 排行榜奖励数据（用于保存刷新前的排名数据）
+-- 排行榜奖励数据（用于保存刷新前的排名数据，支持多期）
+-- 结构: {rank_type = {period = reward_data, ...}}
 local rank_reward_data = {}
+
+-- 最大保留期数（超过此数自动清理过期数据）
+local MAX_RETAIN_PERIODS = 4  -- 保留4期（约1个月）
 
 -- 排行榜更新队列（待处理的更新请求）
 local rank_update_queue = {}
@@ -25,6 +31,24 @@ local BATCH_PROCESS_INTERVAL = 10
 
 -- 是否正在处理队列
 local is_processing_queue = false
+
+-- 邮件发送队列（用于分批发送奖励邮件）
+local mail_send_queue = {}
+local is_processing_mail_queue = false
+
+-- 邮件发送配置
+local MAIL_BATCH_SIZE = 50      -- 每批发送50封
+local MAIL_BATCH_DELAY = 1000   -- 每批间隔1秒（毫秒）
+local MAIL_SEND_THRESHOLD = 100  -- 超过此数量的邮件使用分批发送
+
+-- 玩家信息更新队列（专门处理头像、头像框、昵称等非排名数据）
+local player_info_update_queue = {}
+local is_processing_info_queue = false
+
+-- 玩家信息更新配置
+local INFO_UPDATE_DELAY = 300   -- 延迟5分钟（秒）后同步
+local INFO_UPDATE_BATCH_SIZE = 100  -- 每批处理100个玩家
+local INFO_UPDATE_INTERVAL = 5   -- 批量处理间隔（秒）
 
 -- 初始化排行榜
 function RankLogic.Init()
@@ -189,17 +213,81 @@ function RankLogic.IsFlowRank(rank_type)
     return flow_ranks[rank_type] or false
 end
 
+-- 周期类型常量
+local PERIOD_TYPE = {
+    WEEKLY = 1,      -- 周周期
+    MONTHLY = 2,     -- 月周期
+    SEASON = 3       -- 赛季周期（3个月）
+}
+
+-- 获取排行榜的周期类型（可根据需要扩展）
+local function getPeriodType(rank_type)
+    -- 赛季排行榜使用赛季周期
+    if rank_type == RankDef.RankType.Duanwei_Season then
+        return PERIOD_TYPE.SEASON
+    elseif rank_type == RankDef.RankType.GuildScore_Season then
+        return PERIOD_TYPE.SEASON
+    -- 月度排行榜使用月周期
+    elseif rank_type == RankDef.RankType.Fadian_Total then
+        return PERIOD_TYPE.MONTHLY
+    -- 默认使用周周期
+    else
+        return PERIOD_TYPE.WEEKLY
+    end
+end
+
+-- 获取当前期数（支持多种周期类型）
+local function getCurrentPeriod(rank_type)
+    local now = moon.time()
+    local period_type = getPeriodType(rank_type)
+
+    -- 从2026年1月1日0点开始计算期数
+    local start_time = os.time({year=2026, month=1, day=1, hour=0, min=0, sec=0})
+    local diff_days = math.floor((now - start_time) / 86400)
+
+    if period_type == PERIOD_TYPE.WEEKLY then
+        return math.floor(diff_days / 7) + 1  -- 每周一期
+    elseif period_type == PERIOD_TYPE.MONTHLY then
+        -- 每月一期（按30天计算）
+        return math.floor(diff_days / 30) + 1
+    elseif period_type == PERIOD_TYPE.SEASON then
+        -- 每赛季一期（按90天计算，约3个月）
+        return math.floor(diff_days / 90) + 1
+    else
+        return math.floor(diff_days / 7) + 1  -- 默认每周一期
+    end
+end
+
+-- 获取最大保留期数（根据周期类型调整）
+local function getMaxRetainPeriods(rank_type)
+    local period_type = getPeriodType(rank_type)
+
+    if period_type == PERIOD_TYPE.WEEKLY then
+        return 4  -- 保留4周（约1个月）
+    elseif period_type == PERIOD_TYPE.MONTHLY then
+        return 3  -- 保留3个月（约1季度）
+    elseif period_type == PERIOD_TYPE.SEASON then
+        return 2  -- 保留2个赛季（约6个月）
+    else
+        return 4
+    end
+end
+
 -- 刷新排行榜数据
 function RankLogic.RefreshRankData(rank_type)
     if not rank_data[rank_type] then
         return ErrorCode.ConfigError
     end
 
+    -- 获取当前期数（根据排行榜类型选择周期）
+    local current_period = getCurrentPeriod(rank_type)
+
     -- 保存刷新前的排名数据，用于奖励领取
     local reward_data = RankDef.newRankRewardData()
     reward_data.rt = rank_type
     reward_data.rt_ref = moon.time()
     reward_data.sr = {}
+    reward_data.period = current_period
 
     for _, rank in ipairs(rank_data[rank_type]) do
         -- 创建子榜奖励数据
@@ -215,7 +303,16 @@ function RankLogic.RefreshRankData(rank_type)
         reward_data.sr[rank.rid] = sub_rank_reward
     end
 
-    rank_reward_data[rank_type] = reward_data
+    -- 初始化多期奖励数据结构
+    if not rank_reward_data[rank_type] then
+        rank_reward_data[rank_type] = {}
+    end
+
+    -- 保存到当前期数
+    rank_reward_data[rank_type][current_period] = reward_data
+
+    -- 清理过期的期数数据
+    RankLogic.CleanExpiredPeriods(rank_type)
 
     -- 清空排行榜数据
     for _, rank in ipairs(rank_data[rank_type]) do
@@ -227,7 +324,309 @@ function RankLogic.RefreshRankData(rank_type)
     RankLogic.SaveRankDataToRedis(rank_type)
     RankLogic.SaveRankRewardToRedis(rank_type)
 
+    -- 异步给在线玩家发送奖励邮件
+    moon.async(function()
+        RankLogic.SendRewardMailToOnlinePlayers(rank_type, current_period)
+    end)
+
     return ErrorCode.None
+end
+
+-- 清理过期的期数数据
+function RankLogic.CleanExpiredPeriods(rank_type)
+    if not rank_reward_data[rank_type] then
+        return
+    end
+
+    -- 使用动态的最大保留期数
+    local current_period = getCurrentPeriod(rank_type)
+    local max_retain_periods = getMaxRetainPeriods(rank_type)
+    local min_valid_period = current_period - max_retain_periods + 1
+
+    for period, _ in pairs(rank_reward_data[rank_type]) do
+        if period < min_valid_period then
+            rank_reward_data[rank_type][period] = nil
+        end
+    end
+end
+
+-- 给所有玩家发送奖励邮件（通过邮件管理器，支持离线玩家）
+-- 使用异步分批发送，避免阻塞事件循环
+function RankLogic.SendRewardMailToOnlinePlayers(rank_type, period)
+    if not rank_reward_data[rank_type] or not rank_reward_data[rank_type][period] then
+        return
+    end
+
+    local reward_data = rank_reward_data[rank_type][period]
+    local rank_reward_cfg = GameCfg.RankingListReward[rank_type]
+    if not rank_reward_cfg then
+        return
+    end
+
+    -- 收集所有需要发送的邮件任务
+    local mail_tasks = {}
+    for _, sub_rank in pairs(reward_data.sr) do
+        for uid, player_data in pairs(sub_rank.ps) do
+            local player_rank = player_data.rank
+            local reward_id = RankLogic.GetRewardIdByRank(rank_reward_cfg, player_rank)
+            if reward_id then
+                table.insert(mail_tasks, {
+                    uid = uid,
+                    reward_id = reward_id,
+                    player_rank = player_rank
+                })
+            end
+        end
+    end
+
+    local total_tasks = #mail_tasks
+    moon.info(string.format("[RankLogic] SendRewardMailToOnlinePlayers: rank_type=%d, period=%d, total_tasks=%d",
+        rank_type, period, total_tasks))
+
+    if total_tasks == 0 then
+        return
+    end
+
+    -- 如果任务数量较少，直接同步发送
+    if total_tasks <= MAIL_SEND_THRESHOLD then
+        moon.info(string.format("[RankLogic] Small batch, sending synchronously: %d tasks", total_tasks))
+        for _, task in ipairs(mail_tasks) do
+            RankLogic.SendRewardMailToPlayer(task.uid, rank_type, period, task.reward_id, task.player_rank)
+        end
+        moon.info(string.format("[RankLogic] All %d reward mails sent synchronously for rank_type=%d, period=%d",
+            total_tasks, rank_type, period))
+        return
+    end
+
+    -- 任务数量较多，使用异步分批发送
+    moon.async(function()
+        local sent_count = 0
+        local batch_num = 0
+
+        for i = 1, total_tasks, MAIL_BATCH_SIZE do
+            batch_num = batch_num + 1
+            local batch_end = math.min(i + MAIL_BATCH_SIZE - 1, total_tasks)
+
+            moon.info(string.format("[RankLogic] Processing batch %d: tasks %d-%d of %d",
+                batch_num, i, batch_end, total_tasks))
+
+            -- 处理当前批次
+            for j = i, batch_end do
+                local task = mail_tasks[j]
+                local ok, err = pcall(function()
+                    RankLogic.SendRewardMailToPlayer(task.uid, rank_type, period, task.reward_id, task.player_rank)
+                end)
+                if not ok then
+                    moon.error(string.format("[RankLogic] Send mail failed for uid=%d, err=%s", task.uid, err))
+                end
+                sent_count = sent_count + 1
+            end
+
+            moon.info(string.format("[RankLogic] Batch %d completed: %d/%d tasks sent",
+                batch_num, sent_count, total_tasks))
+
+            -- 如果不是最后一批，等待一段时间再发送下一批
+            if batch_end < total_tasks then
+                moon.sleep(MAIL_BATCH_DELAY)
+            end
+        end
+
+        moon.info(string.format("[RankLogic] All %d reward mails sent for rank_type=%d, period=%d",
+            total_tasks, rank_type, period))
+    end)
+end
+
+-- 给玩家发送奖励邮件（通过邮件管理器，支持离线玩家）
+function RankLogic.SendMailToOnlinePlayer(uid, rank_type, period, reward_id, player_rank)
+    -- 获取奖励配置
+    local reward_pool_cfg = GameCfg.RankingListRewardPool[reward_id]
+    if not reward_pool_cfg then
+        moon.error(string.format("[RankLogic] SendMailToOnlinePlayer: reward_pool_cfg not found for reward_id=%d", reward_id))
+        return
+    end
+
+    -- 准备附件
+    local item_datas = {}
+    for item_id, item_cnt in pairs(reward_pool_cfg.reward) do
+        table.insert(item_datas, {
+            config_id = item_id,
+            item_count = item_cnt
+        })
+    end
+
+    -- 构建邮件内容
+    local mail_title = "排行榜奖励"
+    local mail_content = string.format("恭喜你在排行榜中获得第%d名，获得以下奖励：", player_rank)
+
+    -- 通过玩家服务发送邮件
+    clusterd.call(3001, "user", "SendRankRewardMail", {
+        uid = uid,
+        title = mail_title,
+        content = mail_content,
+        items = item_datas,
+        rank_type = rank_type,
+        period = period
+    })
+end
+
+-- 给玩家发送奖励邮件（由游戏层调用）
+function RankLogic.SendRewardMailToPlayer(uid, rank_type, period, reward_id, player_rank)
+    -- 获取奖励配置
+    local reward_pool_cfg = GameCfg.RankingListRewardPool[reward_id]
+    if not reward_pool_cfg then
+        moon.error(string.format("[RankLogic] SendRewardMailToPlayer: reward_pool_cfg not found for reward_id=%d", reward_id))
+        return false
+    end
+
+    -- 准备附件（从 reward 字段中获取，结构是 {config_id = item_count}）
+    local attachments = {}
+    local reward_items = reward_pool_cfg.reward or {}
+    for config_id, item_count in pairs(reward_items) do
+        -- 确保 config_id 是数字类型且不为0
+        local item_id = tonumber(config_id)
+        if item_id and item_id > 0 then
+            table.insert(attachments, {
+                config_id = item_id,
+                item_count = item_count
+            })
+        else
+            moon.error(string.format("[RankLogic] SendRewardMailToPlayer: invalid config_id=%s", tostring(config_id)))
+        end
+    end
+
+    -- 打印要发送的道具信息
+    moon.info(string.format("[RankLogic] SendRewardMailToPlayer: uid=%d, rank=%d, attachments=%s", 
+        uid, player_rank, json.encode(attachments)))
+
+    -- 构建邮件内容
+    local mail_title = "排行榜奖励"
+    local mail_content = string.format("恭喜你在排行榜中获得第%d名，获得以下奖励：", player_rank)
+
+    -- 构建邮件发送参数
+    local send_info = {
+        uids = {uid},
+        beg_ts = moon.time(),
+        end_ts = moon.time() + 86400 * 7,  -- 7天有效期
+        mail_title = mail_title,
+        mail_icon_id = 1,  -- 系统邮件图标
+        mail_content = mail_content,
+        sign = "系统",
+        attachments = attachments
+    }
+
+    -- 通过邮件管理器发送邮件（支持离线玩家）
+    local ok, mail_info = MailLogic.DealSystemMail(json.encode(send_info))
+    if not ok then
+        moon.error(string.format("[RankLogic] SendRewardMailToPlayer: DealSystemMail failed for uid=%d, err=%s", uid, mail_info))
+        return false
+    end
+
+    -- 调用邮件管理器发送邮件
+    local res, err = clusterd.call(3999, "mailmgr", "Mailmgr.AddSystemMail", mail_info)
+    if err or not res or not res.success then
+        moon.error(string.format("[RankLogic] SendRewardMailToPlayer: AddSystemMail failed for uid=%d, err=%s", uid, tostring(err)))
+        return false
+    end
+
+    moon.info(string.format("[RankLogic] SendRewardMailToPlayer: mail sent to uid=%d, rank=%d, period=%d, mail_id=%d", 
+        uid, player_rank, period, res.id))
+
+    -- 邮件发送成功后，从奖励数据中移除玩家，防止重复发送
+    RankLogic.RemovePlayerFromRewardData(rank_type, period, uid)
+    return ErrorCode.None
+end
+
+-- 根据排名获取奖励ID
+function RankLogic.GetRewardIdByRank(rank_reward_cfg, player_rank)
+    local ranking_range = rank_reward_cfg.ranking_range
+    local reward_ids = rank_reward_cfg.reward_id
+
+    local sorted_min_ranks = {}
+    for min_rank, _ in pairs(ranking_range) do
+        table.insert(sorted_min_ranks, min_rank)
+    end
+    table.sort(sorted_min_ranks)
+
+    for i, min_rank in ipairs(sorted_min_ranks) do
+        local max_rank = ranking_range[min_rank]
+        if player_rank >= min_rank and player_rank <= max_rank then
+            return reward_ids[i]
+        end
+    end
+    return nil
+end
+
+-- 获取玩家未领取的奖励
+function RankLogic.GetUnclaimedRewards(uid)
+    local unclaimed_rewards = {}
+
+    -- 遍历所有排行榜类型
+    for rank_type, periods in pairs(rank_reward_data) do
+        -- 遍历所有期数
+        for period, reward_data in pairs(periods) do
+            -- 遍历所有子榜
+            for _, sub_rank in pairs(reward_data.sr) do
+                -- 检查玩家是否在该子榜中
+                if sub_rank.ps[uid] then
+                    local player_data = sub_rank.ps[uid]
+                    local player_rank = player_data.rank
+
+                    -- 获取奖励配置
+                    local rank_reward_cfg = GameCfg.RankingListReward[rank_type]
+                    if rank_reward_cfg then
+                        local reward_id = RankLogic.GetRewardIdByRank(rank_reward_cfg, player_rank)
+                        if reward_id then
+                            -- 添加到未领取奖励列表
+                            if not unclaimed_rewards[period] then
+                                unclaimed_rewards[period] = {}
+                            end
+                            unclaimed_rewards[period][rank_type] = {
+                                reward_id = reward_id,
+                                rank = player_rank
+                            }
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    moon.info(string.format("[RankLogic] GetUnclaimedRewards: uid=%d, unclaimed_rewards=%s", uid, json.encode(unclaimed_rewards)))
+    return ErrorCode.None, unclaimed_rewards
+end
+
+-- 从奖励数据中移除玩家
+function RankLogic.RemovePlayerFromRewardData(rank_type, period, uid)
+    if not rank_reward_data[rank_type] or not rank_reward_data[rank_type][period] then
+        return
+    end
+
+    local reward_data = rank_reward_data[rank_type][period]
+    for rid, sub_rank in pairs(reward_data.sr) do
+        if sub_rank.ps[uid] then
+            sub_rank.ps[uid] = nil
+
+            -- 如果该子榜所有奖励都已领取，清除子榜数据
+            if table.empty(sub_rank.ps) then
+                reward_data.sr[rid] = nil
+            end
+
+            -- 如果所有子榜奖励都已领取，清除该期数数据
+            if table.empty(reward_data.sr) then
+                rank_reward_data[rank_type][period] = nil
+            end
+
+            -- 如果该排行榜类型没有任何期数数据，清除排行榜类型数据
+            if table.empty(rank_reward_data[rank_type]) then
+                rank_reward_data[rank_type] = nil
+            end
+
+            -- 同步到Redis
+            RankLogic.SaveRankRewardToRedis(rank_type)
+            moon.info(string.format("[RankLogic] Removed player %d from reward data: rank_type=%d, period=%d", uid, rank_type, period))
+            break
+        end
+    end
 end
 
 -- 合并流动榜
@@ -810,6 +1209,124 @@ function RankLogic.StartQueueProcessor()
             RankLogic.ProcessRankUpdateQueue()
         end
     end)
+
+    -- 启动玩家信息更新队列处理器
+    moon.async(function()
+        while true do
+            moon.sleep(INFO_UPDATE_INTERVAL * 1000)
+            RankLogic.ProcessPlayerInfoUpdateQueue()
+        end
+    end)
+end
+
+-- 加入玩家信息更新队列（延迟同步）
+-- info: {name, avatar, avatar_frame, ...}
+function RankLogic.EnqueuePlayerInfoUpdate(uid, info)
+    if not uid or not info then
+        return ErrorCode.ParamInvalid
+    end
+
+    -- 更新或创建队列条目
+    local entry = player_info_update_queue[uid] or {
+        uid = uid,
+        update_time = moon.time(),
+        info = {}
+    }
+
+    -- 合并更新信息（只更新非nil字段，允许0和空字符串）
+    if info.name ~= nil then entry.info.name = info.name end
+    if info.avatar ~= nil then entry.info.avatar = info.avatar end
+    if info.avatar_frame ~= nil then entry.info.avatar_frame = info.avatar_frame end
+
+    -- 更新下次处理时间
+    entry.update_time = moon.time()
+    player_info_update_queue[uid] = entry
+
+    moon.info(string.format("[RankLogic] EnqueuePlayerInfoUpdate: uid=%d, info=%s", uid, json.encode(info)))
+    return ErrorCode.None
+end
+
+-- 处理玩家信息更新队列
+function RankLogic.ProcessPlayerInfoUpdateQueue()
+    if is_processing_info_queue then
+        return
+    end
+
+    -- 立即设置处理标志，防止并发
+    is_processing_info_queue = true
+
+    local now = moon.time()
+    local tasks_to_process = {}
+
+    -- 收集已到延迟时间的更新任务
+    for uid, entry in pairs(player_info_update_queue) do
+        if now - entry.update_time >= INFO_UPDATE_DELAY then
+            table.insert(tasks_to_process, entry)
+        end
+    end
+
+    if #tasks_to_process == 0 then
+        is_processing_info_queue = false
+        return
+    end
+
+    moon.info(string.format("[RankLogic] Processing %d player info updates", #tasks_to_process))
+
+    -- 分批处理
+    for i = 1, #tasks_to_process, INFO_UPDATE_BATCH_SIZE do
+        local batch_end = math.min(i + INFO_UPDATE_BATCH_SIZE - 1, #tasks_to_process)
+
+        for j = i, batch_end do
+            local entry = tasks_to_process[j]
+            RankLogic.UpdatePlayerInfoInternal(entry.uid, entry.info)
+            player_info_update_queue[entry.uid] = nil
+        end
+
+        -- 批次间隔
+        if batch_end < #tasks_to_process then
+            moon.sleep(100)
+        end
+    end
+
+    is_processing_info_queue = false
+
+    moon.info(string.format("[RankLogic] Player info updates completed"))
+end
+
+-- 内部：更新玩家信息（不影响排名）
+function RankLogic.UpdatePlayerInfoInternal(uid, info)
+    -- 遍历所有排行榜类型，更新玩家信息
+    for rank_type, ranks in pairs(rank_data) do
+        for _, rank in ipairs(ranks) do
+            if rank.ps[uid] then
+                local player_data = rank.ps[uid]
+                local updated = false
+                
+                if info.name ~= nil then
+                    player_data.name = info.name
+                    updated = true
+                end
+                if info.avatar ~= nil then
+                    player_data.avatar = info.avatar
+                    updated = true
+                end
+                if info.avatar_frame ~= nil then
+                    player_data.af = info.avatar_frame
+                    updated = true
+                end
+
+                if updated then
+                    moon.info(string.format("[RankLogic] Updated player info: uid=%d, rank_type=%d, info=%s",
+                        uid, rank_type, json.encode(info)))
+                end
+            end
+        end
+    end
+end
+
+-- 立即更新玩家信息（用于特殊场景）
+function RankLogic.UpdatePlayerInfoImmediately(uid, info)
+    return RankLogic.UpdatePlayerInfoInternal(uid, info)
 end
 
 return RankLogic

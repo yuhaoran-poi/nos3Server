@@ -31,6 +31,22 @@ command.GetRankReward = function(...)
     return RankMgr.GetRankReward(...)
 end
 
+command.GetUnclaimedRewards = function(...)
+    return RankMgr.GetUnclaimedRewards(...)
+end
+
+command.SendRankRewardMail = function(...)
+    return RankMgr.SendRankRewardMail(...)
+end
+
+command.RemovePlayerFromRewardData = function(...)
+    return RankMgr.RemovePlayerFromRewardData(...)
+end
+
+command.UpdatePlayerInfo = function(...)
+    return RankMgr.UpdatePlayerInfo(...)
+end
+
 ---@diagnostic disable-next-line: duplicate-set-field
 command.hotfix = function(names)
 
