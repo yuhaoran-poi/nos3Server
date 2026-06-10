@@ -1034,8 +1034,8 @@ function _M.saveuseritemimage(addr, uid, data, change_fields)
             local data_str_1 = jencode(data_1)
             local _, pbdata_1 = protocol.encodewithname("PBCommonImageGroup", data_1)
             local pbvalue_1 = crypt.base64encode(pbdata_1)
-            table.insert(update_fields, string.format("%s = %s", "item_value", pbvalue_1))
-            table.insert(update_fields, string.format("%s = %s", "item_json", data_str_1))
+            table.insert(update_fields, string.format("item_value = '%s'", pbvalue_1))
+            table.insert(update_fields, string.format("item_json = '%s'", data_str_1))
         end
         if change_fields.magic_item_image then
             if not data.magic_item_image then
@@ -1047,8 +1047,8 @@ function _M.saveuseritemimage(addr, uid, data, change_fields)
             local data_str_2 = jencode(data_2)
             local _, pbdata_2 = protocol.encodewithname("PBCommonImageGroup", data_2)
             local pbvalue_2 = crypt.base64encode(pbdata_2)
-            table.insert(update_fields, string.format("%s = %s", "magic_item_value", pbvalue_2))
-            table.insert(update_fields, string.format("%s = %s", "magic_item_json", data_str_2))
+            table.insert(update_fields, string.format("magic_item_value = '%s'", pbvalue_2))
+            table.insert(update_fields, string.format("magic_item_json = '%s'", data_str_2))
         end
         if change_fields.human_diagrams_image then
             if not data.human_diagrams_image then
@@ -1060,8 +1060,8 @@ function _M.saveuseritemimage(addr, uid, data, change_fields)
             local data_str_3 = jencode(data_3)
             local _, pbdata_3 = protocol.encodewithname("PBCommonImageGroup", data_3)
             local pbvalue_3 = crypt.base64encode(pbdata_3)
-            table.insert(update_fields, string.format("%s = %s", "human_diagrams_value", pbvalue_3))
-            table.insert(update_fields, string.format("%s = %s", "human_diagrams_json", data_str_3))
+            table.insert(update_fields, string.format("human_diagrams_value = '%s'", pbvalue_3))
+            table.insert(update_fields, string.format("human_diagrams_json = '%s'", data_str_3))
         end
         if change_fields.ghost_diagrams_image then
             if not data.ghost_diagrams_image then
@@ -1073,8 +1073,8 @@ function _M.saveuseritemimage(addr, uid, data, change_fields)
             local data_str_4 = jencode(data_4)
             local _, pbdata_4 = protocol.encodewithname("PBCommonImageGroup", data_4)
             local pbvalue_4 = crypt.base64encode(pbdata_4)
-            table.insert(update_fields, string.format("%s = %s", "ghost_diagrams_value", pbvalue_4))
-            table.insert(update_fields, string.format("%s = %s", "ghost_diagrams_json", data_str_4))
+            table.insert(update_fields, string.format("ghost_diagrams_value = '%s'", pbvalue_4))
+            table.insert(update_fields, string.format("ghost_diagrams_json = '%s'", data_str_4))
         end
         if change_fields.skin_image then
             if not data.skin_image then
@@ -1086,8 +1086,8 @@ function _M.saveuseritemimage(addr, uid, data, change_fields)
             local data_str_5 = jencode(data_5)
             local _, pbdata_5 = protocol.encodewithname("PBSkinImageGroup", data_5)
             local pbvalue_5 = crypt.base64encode(pbdata_5)
-            table.insert(update_fields, string.format("%s = %s", "skin_value", pbvalue_5))
-            table.insert(update_fields, string.format("%s = %s", "skin_json", data_str_5))
+            table.insert(update_fields, string.format("skin_value = '%s'", pbvalue_5))
+            table.insert(update_fields, string.format("skin_json = '%s'", data_str_5))
         end
         if change_fields.space_ring_image then
             if not data.space_ring_image then
@@ -1099,8 +1099,8 @@ function _M.saveuseritemimage(addr, uid, data, change_fields)
             local data_str_6 = jencode(data_6)
             local _, pbdata_6 = protocol.encodewithname("PBCommonImageGroup", data_6)
             local pbvalue_6 = crypt.base64encode(pbdata_6)
-            table.insert(update_fields, string.format("%s = %s", "space_ring_value", pbvalue_6))
-            table.insert(update_fields, string.format("%s = %s", "space_ring_json", data_str_6))
+            table.insert(update_fields, string.format("space_ring_value = '%s'", pbvalue_6))
+            table.insert(update_fields, string.format("space_ring_json = '%s'", data_str_6))
         end
         if change_fields.item_wear_skin then
             if not data.item_wear_skin then
@@ -1112,8 +1112,8 @@ function _M.saveuseritemimage(addr, uid, data, change_fields)
             local data_str_7 = jencode(data_7)
             local _, pbdata_7 = protocol.encodewithname("PBItemWearGroup", data_7)
             local pbvalue_7 = crypt.base64encode(pbdata_7)
-            table.insert(update_fields, string.format("%s = %s", "item_wear_skin_value", pbvalue_7))
-            table.insert(update_fields, string.format("%s = %s", "item_wear_skin_json", data_str_7))
+            table.insert(update_fields, string.format("item_wear_skin_value = '%s'", pbvalue_7))
+            table.insert(update_fields, string.format("item_wear_skin_json = '%s'", data_str_7))
         end
         if change_fields.composite_formula then
             if not data.composite_formula then
@@ -1125,8 +1125,8 @@ function _M.saveuseritemimage(addr, uid, data, change_fields)
             local data_str_8 = jencode(data_8)
             local _, pbdata_8 = protocol.encodewithname("PBFormulaGroup", data_8)
             local pbvalue_8 = crypt.base64encode(pbdata_8)
-            table.insert(update_fields, string.format("%s = %s", "composite_formula_value", pbvalue_8))
-            table.insert(update_fields, string.format("%s = %s", "composite_formula_json", data_str_8))
+            table.insert(update_fields, string.format("composite_formula_value = '%s'", pbvalue_8))
+            table.insert(update_fields, string.format("composite_formula_json = '%s'", data_str_8))
         end
 
         if table.size(update_fields) == 0 then
