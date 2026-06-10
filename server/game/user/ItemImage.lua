@@ -406,6 +406,8 @@ function ItemImage.UpLvImage(config_id, add_exp)
     end
 
     local function check_add_exp(up_exp_cfgs, exps, remain_exp, quality)
+        -- 临时锁定6级品质
+        quality = 6
         local exp_key = "exp" .. (quality)
         local allexp_key = "allexp" .. (quality)
         local cost_key = "cost" .. (quality)
@@ -560,6 +562,8 @@ function ItemImage.CheckUseItemUpLv(config_id, exp_id, up_exp_total, item_exps)
     --     return ErrorCode.ItemMaxExp
     -- end
     local function check_add_exp(up_exp_cfgs, cur_exp, after_up_exp, quality)
+        -- 临时锁定6级品质
+        quality = 6
         local allexp_key = "allexp" .. (quality)
         local cost_key = "cost" .. (quality)
 
