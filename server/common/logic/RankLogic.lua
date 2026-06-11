@@ -182,10 +182,15 @@ function RankLogic.SortRank(rank)
 
     -- 排序规则：先按value降序，再按update_time升序
     table.sort(players, function(a, b)
-        if a.value ~= b.value then
-            return a.value > b.value
+        local val_a = a.value or 0
+        local val_b = b.value or 0
+        local ut_a = a.ut or 0
+        local ut_b = b.ut or 0
+
+        if val_a ~= val_b then
+            return val_a > val_b
         else
-            return a.ut < b.ut
+            return ut_a < ut_b
         end
     end)
 
