@@ -37,7 +37,7 @@ function Citymgr.Init()
     -- 新增定时器轮询
     moon.async(function()
         while true do
-            moon.sleep(10000) -- 每10秒检查一次
+            moon.sleep(30000) -- 每30秒检查一次
             local allocated_citys = Citymgr.CheckWaitDSCitys()
             Citymgr.SetNewDsCitys(allocated_citys)
             Citymgr.CheckCityRun()
@@ -257,7 +257,7 @@ function Citymgr.CheckCityRun()
             Citymgr.DestroyCity(cityid)
         end
 
-        if #canEnterRoom + table.size(context.waitds_citys) < 2 then
+        if #canEnterRoom + table.size(context.waitds_citys) < 1 then
             moon.info("CheckCityRun #canEnterRoom = %d, table.size(context.waitds_citys) = %d", #canEnterRoom,
                 table.size(context.waitds_citys))
             Citymgr.CreateCity()
