@@ -21,7 +21,7 @@
 ---@field public skin_time integer @皮肤体验卡有效期（单位:秒）
 ---@field public buff_type integer @账户 buff id
 ---@field public buff_count integer @buff 生效次数或时长（秒）
----@field public sell_value table @出售价格（NPC回收）: 配置为空 = 不可出售
+---@field public sell_value table @出售价格（NPC回收）: 配置为空 = 不可出售 主要用于显示价格
 ---@field public is_test integer @是否测试数据（空为正式数据，1为测试数据）
 return {
 [20000] = { id=20000,bound_id=0,type1=0,type2=2,type3=0,type4=0,type5=0,market={1,1,6,0,0},stack_count=999,use_award={},award_count=0,award_weight={},award_repetition=0,decompose={[1]=100},Durability=0,could_sell=1,item_weight=10000,use_type=0,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={[1]=100},is_test=0 },

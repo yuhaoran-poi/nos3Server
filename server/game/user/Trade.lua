@@ -16,7 +16,6 @@ local ItemDefine = require("common.logic.ItemDefine")
 local context = ...
 local scripts = context.scripts
 
-local MAX_SALE_CAPACITY = 50
 local MAX_SEARCH_IDS_COUNT = 100
 local TRADE_LOG_MAX_COUNT = 100
 
@@ -364,7 +363,7 @@ function Trade.PBTradeSaleReqCmd(req)
             { code = ErrorCode.ConfigError, error = "交易上架费用配置不存在", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    if player_trade_data.simple_info.box_capacity + 1 > MAX_SALE_CAPACITY
+    if player_trade_data.simple_info.box_capacity + 1 > trade_cfg.order_num
         and not is_gm then
         return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
             { code = ErrorCode.TradeCapacityNotEnough, error = "交易容量不足", uid = context.uid }, req.msg_context.stub_id)
@@ -409,7 +408,6 @@ function Trade.PBTradeSaleReqCmd(req)
     local trade_cost_coins = {}
     trade_cost_coins[trade_cfg.service_charge_type] = {
         coin_id = trade_cfg.service_charge_type,
-        -- coin_count = -trade_cfg.order_time[req.msg.sale_ts],
         coin_count = 0,
     }
     -- 向上取整trade_rate_coin_count

@@ -713,15 +713,15 @@ function Roommgr.ReturnRoom(req)
     end
 
     -- 回归房间
-    local function return_room()
+    local function return_room(return_uid, return_roomid)
         local scope <close> = lock_away_uid()
 
-        local away_value = context.away_uids[req.uid]
-        if away_value and away_value.roomid == req.roomid then
-            context.away_uids[req.uid] = nil
+        local away_value = context.away_uids[return_uid]
+        if away_value and away_value.roomid == return_roomid then
+            context.away_uids[return_uid] = nil
         end
     end
-    return_room()
+    return_room(req.uid, roomid)
 
     -- 构造房间信息返回结构
     local res = {
@@ -794,15 +794,15 @@ function Roommgr.ExitRoom(req)
     Database.upsert_room(context.addr_db_server, room.room_data.roomid, room_tags, redis_data)
 
     -- 消除暂离房间
-    local function clear_away_room()
+    local function clear_away_room(return_uid, return_roomid)
         local scope <close> = lock_away_uid()
 
-        local away_value = context.away_uids[req.uid]
-        if away_value and away_value.roomid == req.roomid then
-            context.away_uids[req.uid] = nil
+        local away_value = context.away_uids[return_uid]
+        if away_value and away_value.roomid == return_roomid then
+            context.away_uids[return_uid] = nil
         end
     end
-    clear_away_room()
+    clear_away_room(req.uid, req.roomid)
 
     -- 广播玩家退出
     local notify_uids = {}
@@ -892,17 +892,17 @@ function Roommgr.AwayRoom(req)
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
     -- 暂离房间
-    local function away_room()
+    local function away_room(away_uid, away_roomid)
         local scope <close> = lock_away_uid()
 
-        context.away_uids[req.uid] = {
-            roomid = req.roomid,
+        context.away_uids[away_uid] = {
+            roomid = away_roomid,
             away_time = moon.time(),
         }
     end
     if room.room_data.state == 0 then
         -- 未开始游戏的房间内设置暂离玩家进入定时退出列表
-        away_room()
+        away_room(req.uid, req.roomid)
     end
 
     return { code = ErrorCode.None, error = "暂离成功", uid = req.uid, roomid = req.roomid }
