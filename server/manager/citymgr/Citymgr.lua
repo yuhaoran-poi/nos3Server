@@ -37,7 +37,7 @@ function Citymgr.Init()
     -- 新增定时器轮询
     moon.async(function()
         while true do
-            moon.sleep(15000) -- 每15秒检查一次
+            moon.sleep(10000) -- 每10秒检查一次
             local allocated_citys = Citymgr.CheckWaitDSCitys()
             Citymgr.SetNewDsCitys(allocated_citys)
             Citymgr.CheckCityRun()
