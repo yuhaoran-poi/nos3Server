@@ -22,7 +22,7 @@ local context = ...
 
 local listenfd
 local max_num = 5000
-local min_num = 3000
+local min_num = 30
 
 ---@class Citymgr
 local Citymgr = {}

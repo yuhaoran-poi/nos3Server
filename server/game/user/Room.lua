@@ -735,6 +735,7 @@ function Room.GameSettle(settle_info)
     if settle_info.booty_bag then
         -- 获取战利品
         local item_list = {}
+        local booty_item_datas = {}
         for pos, itemdata in pairs(settle_info.booty_bag.items) do
             local item_id = itemdata.common_info.config_id
             if not item_list[item_id] then
@@ -757,16 +758,18 @@ function Room.GameSettle(settle_info)
             local bag_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, item_list, 0)
             if bag_code ~= ErrorCode.None then
                 -- 仓库已满 发送邮件
-                local item_datas = {}
-                for _, item_data in pairs(stack_items) do
-                    table.insert(item_datas, item_data)
-                end
-                for _, item_data in pairs(unstack_items) do
-                    table.insert(item_datas, item_data)
-                end
-                local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
+                -- local item_datas = {}
+                -- for _, item_data in pairs(stack_items) do
+                --     table.insert(item_datas, item_data)
+                -- end
+                -- for _, item_data in pairs(unstack_items) do
+                --     table.insert(item_datas, item_data)
+                -- end
+                -- local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
+                local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, item_list, {}, {})
                 if not mail_ret then
-                    moon.error(string.format("GameSettle RecvImmediateMail err:\n%s", json.pretty_encode(item_datas)))
+                    -- moon.error(string.format("GameSettle RecvImmediateMail err:\n%s", json.pretty_encode(item_datas)))
+                    moon.error(string.format("GameSettle RecvImmediateMail err:\n%s", json.pretty_encode(item_list)))
                     return
                 end
             else
