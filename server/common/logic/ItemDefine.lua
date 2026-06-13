@@ -333,7 +333,7 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                 stack_items[item.id].common_info.item_count = stack_items[item.id].common_info.item_count + item.count
 
             elseif item_big_type == ItemDefine.EItemBigType.UnStackItem then
-                local item_cfg = GameCfg.Item[item.id]
+                local item_cfg = GameCfg.Item[item.id]  -- 耐久度道具配置？
                 if not item_cfg then
                     return false
                 end

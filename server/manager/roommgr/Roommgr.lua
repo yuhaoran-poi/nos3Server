@@ -1684,10 +1684,12 @@ function Roommgr.MemberChangeRoleInfo(msg)
         magic_item_id = msg.role_info.magic_item.common_info.config_id
     end
     room.players[member_index].mem_info.cur_show_role = {
-        roleid = msg.role_info.config_id,
+        config_id = msg.role_info.config_id,
         skins = msg.role_info.skins,
         magic_item_id = magic_item_id,
     }
+    moon.info(string.format("Roommgr.MemberChangeRoleInfo room.players[member_index].mem_info.cur_show_role:\n%s",
+        json.pretty_encode(room.players[member_index].mem_info.cur_show_role)))
 
     -- 广播状态更新
     local notify_uids = {}
@@ -1713,6 +1715,7 @@ function Roommgr.MemberChangeRoleInfo(msg)
             cur_show_role = room.players[member_index].mem_info.cur_show_role
         },
     })
+    moon.info(string.format("Roommgr.MemberChangeRoleInfo sync_msg:\n%s", json.pretty_encode(sync_msg)))
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
     return { code = ErrorCode.None }

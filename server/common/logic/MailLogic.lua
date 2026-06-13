@@ -139,7 +139,7 @@ function MailLogic.DealSystemMail(send_info_str)
                 end
                 mail_info.items_simple[attachment.config_id].item_count = attachment.item_count
             elseif big_type == ItemDefine.EItemBigType.UnStackItem then
-                local item_cfg = GameCfg.Item[attachment.config_id]
+                local item_cfg = GameCfg.Item[attachment.config_id] -- 耐久度道具配置？
                 if not item_cfg then
                     return false, "send_info_str attachments error, config_id not exist"
                 end

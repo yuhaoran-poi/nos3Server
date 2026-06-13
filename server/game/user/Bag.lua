@@ -1404,7 +1404,7 @@ function Bag.AddAntique(bagType, baginfo, item_data, change_log)
 end
 
 function Bag.AddDurabItem(bagType, baginfo, item_data, change_log)
-    local item_cfg = GameCfg.Item[item_data.common_info.config_id]
+    local item_cfg = GameCfg.Item[item_data.common_info.config_id] -- 耐久度道具配置？
     if not item_cfg then
         return ErrorCode.ItemNotExist
     end
