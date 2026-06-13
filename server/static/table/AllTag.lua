@@ -206,7 +206,6 @@ return {
 [198] = { id=198,color=7,min=16,max=17,exclusion={192,193,194,195,196,197,198},attribute="YingDef_B_F" },
 [1000100] = { id=1000100,color=2,min=1,max=6,exclusion={},attribute="" },
 [1000101] = { id=1000101,color=3,min=1,max=6,exclusion={},attribute="" },
-[1000102] = { id=1000102,color=4,min=1,max=6,exclusion={},attribute="" },
 [1000103] = { id=1000103,color=4,min=1,max=6,exclusion={},attribute="" },
 [1000104] = { id=1000104,color=2,min=1,max=6,exclusion={},attribute="" },
 [1000105] = { id=1000105,color=5,min=1,max=6,exclusion={},attribute="" },
