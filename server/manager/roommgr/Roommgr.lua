@@ -778,6 +778,7 @@ function Roommgr.ExitRoom(req)
             room.room_data.master_id = room.players[1].mem_info.uid
             room.master_id = room.players[1].mem_info.uid
             room.master_name = room.players[1].mem_info.nick_name
+            room.players[1].is_ready = 1
         end
     end
 
@@ -1002,6 +1003,7 @@ function Roommgr.SystemKickMember(roomid, kick_uid)
             room.room_data.master_id = room.players[1].mem_info.uid
             room.master_id = room.players[1].mem_info.uid
             room.master_name = room.players[1].mem_info.nick_name
+            room.players[1].is_ready = 1
         end
     end
 
