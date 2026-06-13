@@ -363,7 +363,7 @@ function Trade.PBTradeSaleReqCmd(req)
             { code = ErrorCode.ConfigError, error = "交易上架费用配置不存在", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    if player_trade_data.simple_info.box_capacity + 1 > trade_cfg.order_num
+    if table.size(player_trade_data.simple_info.trade_ids) + 1 > trade_cfg.order_num
         and not is_gm then
         return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
             { code = ErrorCode.TradeCapacityNotEnough, error = "交易容量不足", uid = context.uid }, req.msg_context.stub_id)
