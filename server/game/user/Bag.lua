@@ -1434,7 +1434,7 @@ function Bag.AddDurabItem(bagType, baginfo, item_data, change_log)
                 new_item.common_info.item_type = item_cfg.type1
                 new_item.common_info.trade_cnt = -1
                 new_item.special_info.durab_item = ItemDef.newDurabItem()
-                new_item.special_info.durab_item.cur_durability = item_cfg.Durability
+                new_item.special_info.durab_item.cur_durability = item_cfg.durability
             end
             if new_item.common_info.uniqid == 0 then
                 new_item.common_info.uniqid = uuid.next()

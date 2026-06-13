@@ -359,13 +359,13 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                             new_item.special_info.durab_item.cur_durability = item.special_info.durab_item
                                 .cur_durability
                         else
-                            new_item.special_info.durab_item.cur_durability = item_cfg.Durability
+                            new_item.special_info.durab_item.cur_durability = item_cfg.durability
                         end
                         if item.special_info.durab_item.strong_value then
                             new_item.special_info.durab_item.strong_value = item.special_info.durab_item.strong_value
                         end
                     else
-                        new_item.special_info.durab_item.cur_durability = item_cfg.Durability
+                        new_item.special_info.durab_item.cur_durability = item_cfg.durability
                     end
                     table.insert(unstack_items, new_item)
                 end
