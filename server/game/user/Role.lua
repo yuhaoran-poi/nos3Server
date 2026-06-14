@@ -1226,7 +1226,7 @@ function Role.PBRoleWearEquipReqCmd(req)
     local item_small_type, takeoff_item_data = Role.GetRoleEquipment(role_info, item_data.common_info.config_id,
         req.msg.equip_idx)
     if item_small_type ~= ItemDefine.EItemSmallType.MagicItem
-        and item_small_type ~= item_small_type == ItemDefine.EItemSmallType.HumanDiagrams
+        and item_small_type ~= ItemDefine.EItemSmallType.HumanDiagrams
         and item_small_type ~= ItemDefine.EItemSmallType.SpaceRing then
         return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
             { code = ErrorCode.ItemNotExist, error = "装备不存在", uid = context.uid }, req.msg_context.stub_id)
