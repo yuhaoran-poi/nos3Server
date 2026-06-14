@@ -22,7 +22,7 @@ local jdecode = json.decode
 local context = ...
 
 local listenfd
-local maxplayers = 10
+local maxplayers = 5
 
 ---@class Roommgr
 local Roommgr = {
@@ -505,6 +505,11 @@ function Roommgr.DealApply(req)
             return { code = ErrorCode.RoomAlreadyInRoom, error = "玩家已在其他房间" }
         end
 
+        -- 检查房间是否已满
+        if table.size(room.players) >= maxplayers then
+            return { code = ErrorCode.RoomFull, error = "房间已满" }
+        end
+
         -- 添加玩家到房间
         local uid_cityid, err = cluster.call(3999, "citymgr", "Citymgr.GetCityidFromUid", { apply_data.apply_info.uid })
         if err then
@@ -601,6 +606,10 @@ function Roommgr.EnterRoom(req)
     -- 检查密码
     if room.room_data.needpwd == 1 and room.room_data.pwd ~= req.msg.pwd then
         return { code = ErrorCode.RoomPwdError, error = "密码错误" }
+    end
+
+    if table.size(room.players) >= maxplayers then
+        return { code = ErrorCode.RoomFull, error = "房间已满" }
     end
 
     -- 添加玩家到房间
