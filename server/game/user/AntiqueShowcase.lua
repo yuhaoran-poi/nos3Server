@@ -370,6 +370,8 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
         scripts.Rank.UpdateRank_Antique(real_config_id, rsp_price)
     end
 
+    moon.info(string.format("IdentifyAntique - uid = %lld, config_id = %d, uniqid = %lld, pos = %d, is_succ = %d, price_probability = %d", req.msg.uid, req.msg.config_id, req.msg.uniqid, req.msg.pos, is_succ, price_probability))
+
     if is_succ == 1 then
         return ErrorCode.None, "鉴定完成 古董为真品", price_probability
     elseif is_succ ==0 then
