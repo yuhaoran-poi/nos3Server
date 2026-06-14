@@ -370,7 +370,7 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
         scripts.Rank.UpdateRank_Antique(real_config_id, rsp_price)
     end
 
-    moon.info(string.format("IdentifyAntique - config_id=%d, uniqid=%s, pos=%d, is_succ=%d, price=%d", 
+    moon.info(string.format("IdentifyAntique - config_id=%d, uniqid=%s, pos=%d, is_succ=%d, price=%d",
     config_id, tostring(uniqid), bag_pos, is_succ, price_probability))
 
     if is_succ == 1 then
