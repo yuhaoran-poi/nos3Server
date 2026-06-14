@@ -1333,7 +1333,7 @@ function _M.add_system_mail(addr, mail_info, all_user, recv_uids)
     mail_info.simple_data.mail_title_id, mail_info.simple_data.mail_title, mail_info.mail_icon_id,
         mail_info.mail_content_id, mail_info.mail_content, mail_info.sign, items_str, item_datas_str,
         coins_str, pbvalue, all_user, uids_str, 1)
-    moon.info("cmd: ", cmd)
+    moon.info("add_system_mail cmd: ", cmd)
 
     local res, err = moon.call("lua", addr, cmd)
     if err then
