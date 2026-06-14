@@ -3387,7 +3387,7 @@ function Bag.RandomWeightedIndex(weightMap)
 end
 
 function Bag.PBAntiqueIdentifyReqCmd(req)
-    moon.info(string.format("PBAntiqueIdentifyReqCmd - uid = %lld, config_id = %d, uniqid = %lld, pos = %d", req.msg.uid, req.msg.config_id, req.msg.uniqid, req.msg.pos))
+    moon.info(string.format("PBAntiqueIdentifyReqCmd - uid = %s, config_id = %d, uniqid = %s, pos = %d", tostring(req.msg.uid), req.msg.config_id, tostring(req.msg.uniqid), req.msg.pos))
     local err_code, error, price_probability = scripts.AntiqueShowcase.IdentifyAntique(req.msg.config_id, req.msg.uniqid, req.msg.pos)
     return context.S2C(context.net_id, CmdCode.PBAntiqueIdentifyRspCmd, {
         code = err_code,
