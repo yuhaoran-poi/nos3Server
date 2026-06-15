@@ -21,8 +21,8 @@ local jdecode = json.decode
 local context = ...
 
 local listenfd
-local max_num = 5000
-local min_num = 99
+local max_num = 99
+local min_num = 60
 
 ---@class Citymgr
 local Citymgr = {}
