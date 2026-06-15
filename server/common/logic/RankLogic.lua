@@ -329,10 +329,11 @@ function RankLogic.RefreshRankData(rank_type)
     RankLogic.SaveRankDataToRedis(rank_type)
     RankLogic.SaveRankRewardToRedis(rank_type)
 
+    -- TODO: 暂时注释掉排行榜邮件发送功能
     -- 异步给在线玩家发送奖励邮件
-    moon.async(function()
-        RankLogic.SendRewardMailToOnlinePlayers(rank_type, current_period)
-    end)
+    -- moon.async(function()
+    --     RankLogic.SendRewardMailToOnlinePlayers(rank_type, current_period)
+    -- end)
 
     return ErrorCode.None
 end
