@@ -150,15 +150,12 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
     end
 
     local change_logs = {}
-    local stack_item_data = nil
 
     -- 检查是否为可堆叠古董（鉴定前）
     local is_stack_antique = item_data.itype == ItemDefine.EItemSmallType.StackAntique
 
     -- 如果是可堆叠古董，需要先转换为唯一古董
     if is_stack_antique then
-        stack_item_data = item_data
-
         -- 使用 GetSpecialItemFromCommonItem 方法转换为唯一古董
         local special_err_code, change_log = scripts.Bag.GetSpecialItemFromCommonItem(BagDef.BagType.Cangku, bag_pos, config_id)
         if special_err_code ~= ErrorCode.None then
