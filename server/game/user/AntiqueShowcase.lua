@@ -149,24 +149,36 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
         return err_code, "未拥有古董"
     end
 
+    local change_logs = {}
+    local stack_item_data = nil
+
     -- 检查是否为可堆叠古董（鉴定前）
     local is_stack_antique = item_data.itype == ItemDefine.EItemSmallType.StackAntique
 
     -- 如果是可堆叠古董，需要先转换为唯一古董
     if is_stack_antique then
+        stack_item_data = item_data
+
         -- 使用 GetSpecialItemFromCommonItem 方法转换为唯一古董
         local special_err_code, change_log = scripts.Bag.GetSpecialItemFromCommonItem(BagDef.BagType.Cangku, bag_pos, config_id)
         if special_err_code ~= ErrorCode.None then
             return special_err_code, "转换古董失败"
         end
 
-        -- 从 change_log 中获取新位置
+        -- 从 change_log 中获取新位置，并合并物品变化日志
         if change_log then
+            if not change_logs then
+                change_logs = {}
+            end
             for bag_type, logs in pairs(change_log) do
+                change_logs[bag_type] = change_logs[bag_type] or {}
                 for pos, old_item in pairs(logs) do
                     if table.size(old_item) == 0 then
+                        -- 新增物品的位置
                         bag_pos = pos
-                        break
+                    else
+                        -- 被删除的物品记录到日志
+                        change_logs[bag_type][pos] = old_item
                     end
                 end
             end
@@ -194,7 +206,7 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
         end
     end
 
-    local old_item_data = table.copy(item_data)
+    local old_item_data = table.copy(item_data, true)
 
     local real_config_id = config_id
     local a_cfg
@@ -227,7 +239,6 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
         return err_code, "金币不足"
     end
 
-    local change_logs = {}
     -- 扣除道具消耗
     if table.size(cost_items) > 0 then
         err_code = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_logs)
@@ -359,6 +370,7 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
         change_logs[BagDef.BagType.Cangku] = {}
     end
     scripts.Bag.AddLog(change_logs[BagDef.BagType.Cangku], bag_pos, old_item_data)
+
     if table.size(change_logs) > 0 then
         scripts.Bag.SaveAndLog(change_logs, ItemDef.ChangeReason.AntiqueIdentify)
     end
