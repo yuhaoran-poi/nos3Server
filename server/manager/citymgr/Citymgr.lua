@@ -22,7 +22,7 @@ local context = ...
 
 local listenfd
 local max_num = 99
-local min_num = 60
+local min_num = 50
 
 ---@class Citymgr
 local Citymgr = {}
@@ -339,7 +339,7 @@ function Citymgr.ApplyLoginToCity(uid)
         -- 查找空闲主城加入
         for cityid, city in pairs(context.citys) do
             if city.addr_dsnode and city.now_num + city.pre_enter_num < min_num then
-                city.pre_enter_num = city.pre_enter_num + 1
+                -- city.pre_enter_num = city.pre_enter_num + 1
                 return {
                     code = ErrorCode.None,
                     error = "允许加入",
@@ -353,7 +353,7 @@ function Citymgr.ApplyLoginToCity(uid)
 
         for cityid, city in pairs(context.citys) do
             if city.now_num + city.pre_enter_num < max_num then
-                city.pre_enter_num = city.pre_enter_num + 1
+                -- city.pre_enter_num = city.pre_enter_num + 1
                 return {
                     code = ErrorCode.None,
                     error = "允许加入",
@@ -429,7 +429,7 @@ function Citymgr.ApplySwitchCity(uid, cityid)
             return { code = ErrorCode.CityFull, error = "主城已满", cityid = cityid }
         end
 
-        now_city.pre_enter_num = now_city.pre_enter_num + 1
+        -- now_city.pre_enter_num = now_city.pre_enter_num + 1
         return {
             code = ErrorCode.None,
             error = "允许加入",

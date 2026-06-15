@@ -137,15 +137,18 @@ function Mail.AddMail(mails, mail_info)
 
     if table.size(mails.mails_info) >= MAX_MAIL_COUNT then
         local tmp_mails_time = {}
-        for mail_id, mail_info in pairs(mails.mails_info) do
+        for _mail_id, _mail_info in pairs(mails.mails_info) do
             table.insert(tmp_mails_time, {
-                mail_id = mail_id,
-                beg_ts = mail_info.simple_data.beg_ts,
+                mail_id = _mail_id,
+                beg_ts = _mail_info.simple_data.beg_ts,
             })
         end
         sort_mails_by_beg_time(tmp_mails_time)
 
-        table.remove(mails.mails_info, tmp_mails_time[1].mail_id)
+        local min_mail_id = tmp_mails_time[1].mail_id
+        if min_mail_id then
+            mails.mails_info[min_mail_id] = nil
+        end
     end
 
     mails.mails_info[mail_info.simple_data.mail_id] = mail_info
@@ -385,8 +388,8 @@ function Mail.PBGetAllMailReqCmd(req)
         mail_simple_list = {}
     }
     if mails.mails_info then
-        for _, mail_info in pairs(mails.mails_info) do
-            table.insert(rsp.mail_simple_list, mail_info.simple_data)
+        for _mail_id, _mail_info in pairs(mails.mails_info) do
+            table.insert(rsp.mail_simple_list, _mail_info.simple_data)
         end
     end
 
