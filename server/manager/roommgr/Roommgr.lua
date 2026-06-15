@@ -1464,10 +1464,10 @@ function Roommgr.StartGame(req)
     end
 
     -- 检查所有玩家记录
-    local records_errcode = Roommgr.CheckRecords(room.room_data.chapter, room.room_data.difficulty, room.players)
-    if not records_errcode then
-        return { code = ErrorCode.BattleRecordsNotComplete, error = "检查玩家记录失败" }
-    end
+    -- local records_errcode = Roommgr.CheckRecords(room.room_data.chapter, room.room_data.difficulty, room.players)
+    -- if not records_errcode then
+    --     return { code = ErrorCode.BattleRecordsNotComplete, error = "检查玩家记录失败" }
+    -- end
 
     -- 准备进入DS
     local room_info = {
