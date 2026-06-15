@@ -278,7 +278,7 @@ function _M.RedisSetSimpleUserAttr(addr_db, simple_user_attrs)
         table.insert(tmp, uid)
         table.insert(tmp, json.encode(simple_user_attr))
     end
-    moon.warn(string.format("RedisSetSimpleUserAttr res = %s", json.pretty_encode(tmp)))
+    -- moon.warn(string.format("RedisSetSimpleUserAttr res = %s", json.pretty_encode(tmp)))
     redis_send(addr_db, "HSET", "user_simple_attr", table.unpack(tmp))
 end
 

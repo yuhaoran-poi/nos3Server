@@ -2,7 +2,7 @@
 if _G["__init__"] then
     local arg = ...
     return {
-        thread = 11,
+        thread = 15,
         enable_stdout = true,
         logfile = string.format("log/manager-%s-%s.log", arg[1], os.date("%Y-%m-%d-%H-%M-%S")),
         loglevel = "DEBUG",
@@ -60,14 +60,14 @@ local function run(node_conf)
             unique = true,
             name = "db_server",
             file = "moon/service/redisd.lua",
-            threadid = 1,
+            threadid = 2,
             opts = db_conf.redis
         },
         {
             unique = true,
             name = "db_mgr",
             file = "moon/service/redisd.lua",
-            threadid = 1,
+            threadid = 2,
             poolsize = 5,
             opts = db_conf.redis
         },
@@ -75,27 +75,27 @@ local function run(node_conf)
             unique = true,
             name = "node",
             file = "common/service/service_node.lua",
-            threadid = 2,
+            threadid = 3,
         },
         {
             unique = true,
             name = "sharetable",
             file = "moon/service/sharetable.lua",
             dir = "static/table",
-            threadid = 3
+            threadid = 4
         },
         {
             unique = true,
             name = "nodemgr",
             file = "manager/service_nodemgr.lua",
-            threadid = 4,
+            threadid = 5,
             websocket = false,
         },
         {
             unique = true,
             name = "usermgr",
             file = "manager/service_usermgr.lua",
-            threadid = 5,
+            threadid = 6,
             websocket = false,
         },
         {
@@ -128,7 +128,7 @@ local function run(node_conf)
             unique = true,
             name = "guildmgr",
             file = "manager/service_guildmgr.lua",
-            threadid = 8,
+            threadid = 7,
             websocket = false,
             room_startid = 10000,
         },
@@ -136,7 +136,7 @@ local function run(node_conf)
             unique = true,
             name = "db_game",
             file = "common/service/mysqldriver.lua",
-            threadid = 9,
+            threadid = 8,
             poolsize = 5,
             opts = db_conf.mysql
         },
@@ -144,7 +144,7 @@ local function run(node_conf)
             unique = true,
             name = "citymgr",
             file = "manager/service_citymgr.lua",
-            threadid = 7,
+            threadid = 9,
             websocket = false,
             city_startid = 0,
             -- allocate_url = "http://43.136.214.127:8000/api/allocator",
@@ -168,42 +168,42 @@ local function run(node_conf)
             unique = true,
             name = "mailmgr",
             file = "manager/service_mailmgr.lua",
-            threadid = 6,
+            threadid = 11,
             websocket = false,
         },
         {
             unique = true,
             name = "shopmgr",
             file = "manager/service_shopmgr.lua",
-            threadid = 8,
+            threadid = 11,
             websocket = false,
         },
         {
             unique = true,
             name = "trademgr",
             file = "manager/service_trademgr.lua",
-            threadid = 11,
+            threadid = 12,
             websocket = false,
         },
         {
             unique = true,
             name = "auctionmgr",
             file = "manager/service_auctionmgr.lua",
-            threadid = 11,
+            threadid = 12,
             websocket = false,
         },
         {
             unique = true,
             name = "billmgr",
             file = "manager/service_billmgr.lua",
-            threadid = 11,
+            threadid = 13,
             websocket = false,
         },
         {
             unique = true,
             name = "battlereportmgr",
             file = "manager/service_battlereportmgr.lua",
-            threadid = 8,
+            threadid = 14,
             websocket = false,
         },
     }

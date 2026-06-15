@@ -88,7 +88,7 @@ local function run(node_conf)
             unique = true,
             name = "auth",
             file = "game/service_auth.lua",
-            threadid = 2,
+            threadid = 3,
             ds_ticket = "TicketCityDS"
         },
         {
@@ -97,40 +97,40 @@ local function run(node_conf)
             file = "game/service_gate.lua",
             host = node_conf.host,
             port = node_conf.port,
-            threadid = 3,
+            threadid = 4,
             websocket = false,
         },
         {
             unique = true,
             name = "center",
             file = "game/service_center.lua",
-            threadid = 4,
+            threadid = 5,
         },
         {
             unique = true,
             name = "cluster",
             file = "moon/service/cluster.lua",
             url = serverconf.CLUSTER_ETC_URL,
-            threadid = 5,
+            threadid = 6,
         },
         {
             unique = true,
             name = "node",
             file = "common/service/service_node.lua",
-            threadid = 6,
+            threadid = 7,
         },
         {
             unique = true,
             name = "sharetable",
             file = "moon/service/sharetable.lua",
             dir = "static/table",
-            threadid = 7
+            threadid = 8
         },
         {
             unique = true,
             name = "mail",
             file = "game/service_mail.lua",
-            threadid = 8
+            threadid = 9
         },
         {
             unique = true,
@@ -138,7 +138,7 @@ local function run(node_conf)
             file = "game/service_dgate.lua",
             host = node_conf.dhost,
             port = node_conf.dport,
-            threadid = 9,
+            threadid = 10,
         },
         -- {
         --     name = "robot",

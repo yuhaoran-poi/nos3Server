@@ -1975,7 +1975,7 @@ function User.PBClientItemRepairReqCmd(req)
                 return ErrorCode.DurabilityMax
             end
 
-            local add_durability = math.min(magic_cfg.durability - item_data.special_info.magic_item.cur_durability,
+            add_durability = math.min(magic_cfg.durability - item_data.special_info.magic_item.cur_durability,
                 item_data.special_info.magic_item.strong_value)
             ItemDefine.GetItemsFromCfg(common_cfg.items, add_durability, true, cost_items, cost_coins)
         elseif smallType == ItemDefine.EItemSmallType.HumanDiagrams
@@ -1992,7 +1992,7 @@ function User.PBClientItemRepairReqCmd(req)
                 return ErrorCode.DurabilityMax
             end
 
-            local add_durability = math.min(uniq_cfg.durability - item_data.special_info.diagrams_item.cur_durability,
+            add_durability = math.min(uniq_cfg.durability - item_data.special_info.diagrams_item.cur_durability,
                 item_data.special_info.diagrams_item.strong_value)
             ItemDefine.GetItemsFromCfg(common_cfg.items, add_durability, true, cost_items, cost_coins)
         elseif smallType == ItemDefine.EItemSmallType.SpaceRing then
