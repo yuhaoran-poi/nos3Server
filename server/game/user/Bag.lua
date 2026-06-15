@@ -3135,9 +3135,16 @@ function Bag.PBDecomposeReqCmd(req)
         local cost_items = {}
         local add_items, add_coins = {}, {}
         for _, value in pairs(req.msg.decompose_items) do
+            -- 检查是否为古董道具（古董使用鉴定后的价格出售）
+            local antique_info = scripts.AntiqueShowcase.GetAntiqueDecomposeInfo(value.config_id, value.uniqid, value.pos)
+
             -- 获取分解配置
             local decompose_cfg = {}
-            if value.uniqid == 0 then
+            if antique_info then
+                -- 古董道具：使用鉴定后的价格作为出售价格
+                decompose_cfg[antique_info.coin_id] = antique_info.coin_count * value.item_count
+                moon.info(string.format("Baqg.PBDecomposeReqCmd: uid %d, config_id %d, uniqid %d, pos %d, coin_id %d, coin_count %d, item_count %d", context.uid, value.config_id, value.uniqid, value.pos, antique_info.coin_id, antique_info.coin_count, value.item_count))
+            elseif value.uniqid == 0 then
                 local cfg = GameCfg.Item[value.config_id]
                 if not cfg or table.size(cfg.decompose) <= 0 then
                     return ErrorCode.ForbidDecompose
