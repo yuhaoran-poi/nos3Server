@@ -12,7 +12,10 @@
 return {
 [1120000] = { id=1120000,type=2,open_consume={[1]=1000},start_time=0,end_time=0,quality_weight={[1]=10,[2]=10,[3]=10},class_weight={[1]=5,[2]=5,[3]=5},guarantee_item=1000000,guarantee_times=0,guarantee_trigger=10 },
 [1120001] = { id=1120001,type=2,open_consume={[1]=1000},start_time=0,end_time=0,quality_weight={[1]=10,[2]=10,[3]=10},class_weight={[2]=5,[3]=5,[4]=5},guarantee_item=1000001,guarantee_times=0,guarantee_trigger=0 },
-[1120002] = { id=1120002,type=2,open_consume={},start_time=0,end_time=0,quality_weight={[1]=20,[2]=20,[3]=20,[4]=10,[5]=5},class_weight={[151]=5,[51]=5,[101]=5,[251]=5,[1]=5},guarantee_item=30014,guarantee_times=-1,guarantee_trigger=10 },
-[1120003] = { id=1120003,type=2,open_consume={},start_time=0,end_time=0,quality_weight={[1]=20,[2]=20,[3]=20,[4]=10,[5]=5},class_weight={[1001]=1000},guarantee_item=50014,guarantee_times=-1,guarantee_trigger=10 },
-[1120004] = { id=1120004,type=2,open_consume={},start_time=0,end_time=0,quality_weight={[1]=20,[2]=20,[3]=20,[4]=10,[5]=5},class_weight={[3001]=1000},guarantee_item=60014,guarantee_times=-1,guarantee_trigger=10 }
+[1120002] = { id=1120002,type=2,open_consume={},start_time=0,end_time=0,quality_weight={[2]=20,[3]=20,[4]=20,[5]=20},class_weight={[7000]=5},guarantee_item=1030012,guarantee_times=-1,guarantee_trigger=20 },
+[1120003] = { id=1120003,type=2,open_consume={},start_time=0,end_time=0,quality_weight={[3]=20,[4]=20,[5]=20},class_weight={[7000]=5},guarantee_item=1030013,guarantee_times=-1,guarantee_trigger=20 },
+[1120004] = { id=1120004,type=2,open_consume={},start_time=0,end_time=0,quality_weight={[4]=20,[5]=20},class_weight={[7001]=5},guarantee_item=1030014,guarantee_times=-1,guarantee_trigger=20 },
+[1120005] = { id=1120005,type=2,open_consume={},start_time=0,end_time=0,quality_weight={[4]=20,[5]=20},class_weight={[7002]=5},guarantee_item=1030014,guarantee_times=-1,guarantee_trigger=20 },
+[1120006] = { id=1120006,type=2,open_consume={},start_time=0,end_time=0,quality_weight={[4]=20,[5]=20},class_weight={[7003]=5},guarantee_item=1030014,guarantee_times=-1,guarantee_trigger=20 },
+[1120007] = { id=1120007,type=2,open_consume={},start_time=0,end_time=0,quality_weight={[4]=20,[5]=20},class_weight={[7004]=5},guarantee_item=1030014,guarantee_times=-1,guarantee_trigger=20 }
 }
