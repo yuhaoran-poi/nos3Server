@@ -431,11 +431,11 @@ Auth.PBClientLoginReqCmd = function(req)
         req.net_id = Auth.AllocGateNetId(0)
         moon.send("lua", context.addr_gate, "Gate.BindGnId", req)
 
-        if serverconf.CLIENT_VERSION ~= "" and req.msg.login_data.version ~= serverconf.CLIENT_VERSION then
-            moon.error("client version mismatch: client=", req.msg.login_data.version, " server=",
-                serverconf.CLIENT_VERSION)
-            return { code = ErrorCode.ProtoError, error = "CLIENT_VERSION_MISMATCH" }
-        end
+        -- if serverconf.CLIENT_VERSION ~= "" and req.msg.login_data.version ~= serverconf.CLIENT_VERSION then
+        --     moon.error("client version mismatch: client=", req.msg.login_data.version, " server=",
+        --         serverconf.CLIENT_VERSION)
+        --     return { code = ErrorCode.ProtoError, error = "CLIENT_VERSION_MISMATCH" }
+        -- end
         
         if SERVER_PB_VERSION ~= "" and req.msg.login_data.pb_version ~= SERVER_PB_VERSION then
             moon.error("PB version mismatch: client=", req.msg.login_data.pb_version, " server=", SERVER_PB_VERSION)
@@ -503,11 +503,11 @@ Auth.PBDSLoginReqCmd = function(req)
         req.net_id = Auth.AllocGateNetId(1)
         moon.send("lua", context.addr_dgate, "DGate.BindGnId", req)
 
-        if serverconf.CLIENT_VERSION ~= "" and req.msg.login_data.version ~= serverconf.CLIENT_VERSION then
-            moon.error("client version mismatch: client=", req.msg.login_data.version, " server=",
-                serverconf.CLIENT_VERSION)
-            return { code = ErrorCode.ProtoError, error = "CLIENT_VERSION_MISMATCH" }
-        end
+        -- if serverconf.CLIENT_VERSION ~= "" and req.msg.login_data.version ~= serverconf.CLIENT_VERSION then
+        --     moon.error("client version mismatch: client=", req.msg.login_data.version, " server=",
+        --         serverconf.CLIENT_VERSION)
+        --     return { code = ErrorCode.ProtoError, error = "CLIENT_VERSION_MISMATCH" }
+        -- end
         
         if SERVER_PB_VERSION ~= "" and req.msg.login_data.pb_version ~= SERVER_PB_VERSION then
             moon.error("PB version mismatch: client=", req.msg.login_data.pb_version, " server=", SERVER_PB_VERSION)
