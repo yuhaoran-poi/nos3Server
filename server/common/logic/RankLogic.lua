@@ -903,7 +903,7 @@ end
 
 -- 保存排行榜数据到Redis
 function RankLogic.SaveRankDataToRedis(rank_type)
-    moon.info(string.format("[RankLogic] SaveRankDataToRedis called: rank_type=%d", rank_type))
+    --moon.info(string.format("[RankLogic] SaveRankDataToRedis called: rank_type=%d", rank_type))
     if not rank_data[rank_type] then
         moon.info(string.format("[RankLogic] SaveRankDataToRedis: no data for rank_type=%d", rank_type))
         return ErrorCode.ConfigError
@@ -923,7 +923,7 @@ function RankLogic.SaveRankDataToRedis(rank_type)
         moon.error(string.format("[RankLogic] SaveRankDataToRedis failed: rank_type=%d, err=%s", rank_type, err))
         return ErrorCode.ServerInternalError
     end
-    moon.info(string.format("[RankLogic] SaveRankDataToRedis success: rank_type=%d, key=%s", rank_type, rank_key))
+    --moon.info(string.format("[RankLogic] SaveRankDataToRedis success: rank_type=%d, key=%s", rank_type, rank_key))
     return ErrorCode.None
 end
 
@@ -1110,7 +1110,7 @@ function RankLogic.EnqueueRankUpdate(rank_type, uid, player_data, force)
         force = force or false,
         enqueue_time = moon.time()
     }
-    moon.info(string.format("[RankLogic] EnqueueRankUpdate: rank_type=%d, uid=%d, queue_size=%d", rank_type, uid, table.size(rank_update_queue)))
+    --moon.info(string.format("[RankLogic] EnqueueRankUpdate: rank_type=%d, uid=%d, queue_size=%d", rank_type, uid, table.size(rank_update_queue)))
     return ErrorCode.None
 end
 
@@ -1174,8 +1174,8 @@ function RankLogic.UpdatePlayerRankInternal(rank_type, uid, player_data, force)
 
     -- 根据force参数决定更新策略
     if existing_data then
-        moon.info(string.format("[RankLogic] Player %d already exists in rank %d, force=%s, existing value=%d",
-            uid, rank_type, tostring(force), existing_data.value or 0))
+        --moon.info(string.format("[RankLogic] Player %d already exists in rank %d, force=%s, existing value=%d",
+            --uid, rank_type, tostring(force), existing_data.value or 0))
         if force then
             -- force=true: 强制更新，即使分数降低也更新排名
             -- 始终更新
@@ -1192,7 +1192,7 @@ function RankLogic.UpdatePlayerRankInternal(rank_type, uid, player_data, force)
             return ErrorCode.None
         end
     else
-        moon.info(string.format("[RankLogic] Player %d not found in rank %d, adding new data with value=%d", 
+        moon.info(string.format("[RankLogic] Player %d not found in rank %d, adding new data with value=%d",
             uid, rank_type, player_data.value or 0))
     end
 
@@ -1210,8 +1210,11 @@ function RankLogic.StartQueueProcessor()
     moon.async(function()
         while true do
             moon.sleep(BATCH_PROCESS_INTERVAL * 1000)
-            moon.info(string.format("[RankLogic] ProcessRankUpdateQueue triggered, queue_size=%d", table.size(rank_update_queue)))
-            RankLogic.ProcessRankUpdateQueue()
+            if table.size(rank_update_queue) > 0 then
+                -- 处理队列中的更新请求
+                moon.info(string.format("[RankLogic] ProcessRankUpdateQueue triggered, queue_size=%d", table.size(rank_update_queue)))
+                RankLogic.ProcessRankUpdateQueue()
+            end
         end
     end)
 

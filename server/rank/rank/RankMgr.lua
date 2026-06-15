@@ -27,7 +27,7 @@ function RankMgr.Init()
 end
 
 function RankMgr.handlePlayerRankUpdate(msg)
-    moon.debug("handlePlayerRankUpdate received:", json.encode(msg))
+    --moon.debug("handlePlayerRankUpdate received:", json.encode(msg))
     local rank_type = msg.rank_type
     local uid = msg.uid
     local player_data = msg.player_data
@@ -169,6 +169,7 @@ function RankMgr.setupRefreshTasks()
                 for _, rank_type in ipairs(weeklyRanks) do
                     RankLogic.RefreshRankData(rank_type)
                 end
+                moon.info(string.format("[RankMgr] Daily rank refresh completed"))
                 lastRefreshDay = moon.time()
             end
         end
