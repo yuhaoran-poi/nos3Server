@@ -1178,14 +1178,16 @@ local function LightBagItem(msg)
     local light_pos = msg.pos
 
     local is_new_item = false
+    local new_add_bag_log
     if not msg.uniqid or msg.uniqid == 0 then
-        local err_code, change_log = scripts.Bag.GetSpecialItemFromCommonItem(msg.bag_name, msg.pos, msg.config_id)
-        if err_code ~= ErrorCode.None or not change_log then
+        local err_code = ErrorCode.None
+        err_code, new_add_bag_log = scripts.Bag.GetSpecialItemFromCommonItem(msg.bag_name, msg.pos, msg.config_id)
+        if err_code ~= ErrorCode.None or not new_add_bag_log then
             return err_code
         end
 
         local save_bags = {}
-        for bagType, logs in pairs(change_log) do
+        for bagType, logs in pairs(new_add_bag_log) do
             save_bags[bagType] = 1
             for pos, old_itemdata in pairs(logs) do
                 if table.size(old_itemdata) <= 0 then
@@ -1197,7 +1199,7 @@ local function LightBagItem(msg)
 
         -- 生成新唯一道具，进行保存
         -- scripts.Bag.SaveAndLog(save_bags, change_log)
-        scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.BagLight)
+        -- scripts.Bag.SaveAndLog(new_add_bag_log, ItemDef.ChangeReason.BagLight)
         is_new_item = true
     end
 
@@ -1206,6 +1208,9 @@ local function LightBagItem(msg)
     if get_err_code ~= ErrorCode.None
         or not item_data
         or (msg.uniqid ~= 0 and item_data.common_info.uniqid ~= msg.uniqid) then
+        if is_new_item and new_add_bag_log then
+            scripts.Bag.RollBackWithChange(new_add_bag_log)
+        end
         return get_err_code
     end
     -- 去掉默认词条
@@ -1227,13 +1232,21 @@ local function LightBagItem(msg)
     -- 记录旧道具数据
     local old_itemdata = table.copy(item_data)
     if not old_itemdata then
+        if is_new_item and new_add_bag_log then
+            scripts.Bag.RollBackWithChange(new_add_bag_log)
+        end
         return ErrorCode.BagNotExist
     end
 
     local light_err_code, change_log = scripts.Bag.Light(item_data)
     if light_err_code ~= ErrorCode.None or not change_log then
+        if is_new_item and new_add_bag_log then
+            scripts.Bag.RollBackWithChange(new_add_bag_log)
+        end
         return light_err_code
     end
+    -- 开光成功，存储新产生的道具数据
+    scripts.Bag.SaveAndLog(new_add_bag_log, ItemDef.ChangeReason.BagLight)
 
     -- 存储数据
     if not change_log[light_bagid] then
