@@ -549,26 +549,29 @@ function AntiqueShowcase.PBAntiqueShowcaseDataReqCmd(req)
     return context.S2C(context.net_id, CmdCode["PBAntiqueShowcaseDataRspCmd"], res, req.msg_context.stub_id)
 end
 
-function AntiqueShowcase.GetAntiqueDecomposeInfo(config_id, uniqid, bag_pos)
+function AntiqueShowcase.GetAntiqueInfo(config_id, uniqid, bag_pos)
     local err_code, item_data = scripts.Bag.MutOneItemData(BagDef.BagType.Cangku, bag_pos)
     if err_code ~= ErrorCode.None or not item_data then
-        moon.error(string.format("AntiqueShowcase.GetAntiqueDecomposeInfo111: uid %d, err_code %d, bag_pos %d not found", context.uid, err_code, bag_pos))
+        moon.error(string.format("AntiqueShowcase.GetAntiqueInfo111: uid %d, err_code %d, bag_pos %d not found", context.uid, err_code, bag_pos))
+        return nil
+    end
+
+    if not item_data.common_info then
+        moon.error(string.format("AntiqueShowcase.GetAntiqueInfo222: uid %d, config_id %d, uniqid %d, bag_pos %d no common_info", context.uid, config_id, uniqid, bag_pos))
         return nil
     end
 
     if item_data.common_info.config_id ~= config_id or item_data.common_info.uniqid ~= uniqid then
-        moon.error(string.format("AntiqueShowcase.GetAntiqueDecomposeInfo222: uid %d, config_id %d, uniqid %d, bag_pos %d not match", context.uid, config_id, uniqid, bag_pos))
+        moon.error(string.format("AntiqueShowcase.GetAntiqueInfo333: uid %d, config_id %d, uniqid %d, item_data.config_id %d, item_data.uniqid %d, bag_pos %d not match", context.uid, config_id, uniqid, item_data.common_info.config_id, item_data.common_info.uniqid, bag_pos, bag_pos))
         return nil
     end
 
-    local antique_item = item_data.special_info.antique_item
+    if not item_data.special_info or not item_data.special_info.antique_item then
+        moon.error(string.format("AntiqueShowcase.GetAntiqueInfo444: uid %d, config_id %d, uniqid %d, bag_pos %d no antique_item", context.uid, config_id, uniqid, bag_pos))
+        return nil
+    end
 
-    moon.info(string.format("AntiqueShowcase.GetAntiqueDecomposeInfo333: uid %d, config_id %d, uniqid %d, bag_pos %d, coin_id %d, coin_count %d", context.uid, config_id, uniqid, bag_pos, antique_item.price.coin_id, antique_item.price.coin_count))
-
-    return {
-        coin_id = antique_item.price.coin_id,
-        coin_count = antique_item.price.coin_count,
-    }
+    return item_data.special_info.antique_item
 end
 
 return AntiqueShowcase
