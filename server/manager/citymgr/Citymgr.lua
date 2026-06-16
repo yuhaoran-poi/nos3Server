@@ -257,7 +257,7 @@ function Citymgr.CheckCityRun()
             Citymgr.DestroyCity(cityid)
         end
 
-        if #canEnterRoom + table.size(context.waitds_citys) < 1 then
+        if #canEnterRoom + table.size(context.waitds_citys) < 3 then
             moon.info("CheckCityRun #canEnterRoom = %d, table.size(context.waitds_citys) = %d", #canEnterRoom,
                 table.size(context.waitds_citys))
             Citymgr.CreateCity()
