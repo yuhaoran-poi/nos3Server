@@ -1954,7 +1954,7 @@ function Bag.CheckEmptyEnough(bagType, add_items, use_pos_num)
                     return ErrorCode.BagFull
                 end
             end
-        elseif (item_big_type == ItemDefine.EItemBigType.UnStackItem and item_cfg)
+        elseif (item_big_type == ItemDefine.EItemBigType.UnStackItem and uniqitem_cfg)
             or (item_big_type == ItemDefine.EItemBigType.UniqueItem and uniqitem_cfg) then
             empty_pos_num = empty_pos_num - item.count
             if empty_pos_num < 0 then
@@ -2017,7 +2017,7 @@ function Bag.TryEmptyEnough(bagType, add_items, use_pos_num)
                     ret_code = ErrorCode.BagFull
                 end
             end
-        elseif (item_big_type == ItemDefine.EItemBigType.UnStackItem and item_cfg)
+        elseif (item_big_type == ItemDefine.EItemBigType.UnStackItem and uniqitem_cfg)
             or (item_big_type == ItemDefine.EItemBigType.UniqueItem and uniqitem_cfg) then
             empty_pos_num = empty_pos_num - item.count
             if empty_pos_num < 0 then
