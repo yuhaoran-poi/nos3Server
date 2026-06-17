@@ -419,9 +419,9 @@ function User.Online()
     scripts.UserModel.MutGet().logintime = moon.time()
 
     -- 检查玩家是否有未领取的排行榜奖励
-    moon.async(function()
-        User.CheckUnclaimedRankRewards()
-    end)
+    --moon.async(function()
+        --User.CheckUnclaimedRankRewards()
+    --end)
 end
 
 -- 检查未领取的排行榜奖励并发放
