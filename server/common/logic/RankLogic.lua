@@ -516,7 +516,7 @@ function RankLogic.SendRewardMailToPlayer(uid, rank_type, period, reward_id, pla
         mail_title = mail_title,
         mail_icon_id = 1,  -- 系统邮件图标
         mail_content = mail_content,
-        sign = "系统",
+        sign = "排行榜",
         attachments = attachments
     }
 
@@ -528,14 +528,14 @@ function RankLogic.SendRewardMailToPlayer(uid, rank_type, period, reward_id, pla
     end
 
     -- 调用邮件管理器发送邮件
-    local res, err = clusterd.call(3999, "mailmgr", "Mailmgr.AddSystemMail", mail_info)
-    if err or not res or not res.success then
-        moon.error(string.format("[RankLogic] SendRewardMailToPlayer: AddSystemMail failed for uid=%d, err=%s", uid, tostring(err)))
-        return false
-    end
+    -- local res, err = clusterd.call(3999, "mailmgr", "Mailmgr.AddSystemMail", mail_info)
+    -- if err or not res or not res.success then
+    --     moon.error(string.format("[RankLogic] SendRewardMailToPlayer: AddSystemMail failed for uid=%d, err=%s", uid, tostring(err)))
+    --     return false
+    -- end
 
-    moon.info(string.format("[RankLogic] SendRewardMailToPlayer: mail sent to uid=%d, rank=%d, period=%d, mail_id=%d", 
-        uid, player_rank, period, res.id))
+    moon.info(string.format("[RankLogic] SendRewardMailToPlayer: mail sent to uid=%d, rank=%d, period=%d, nowtime=%d",
+        uid, player_rank, period, moon.time()))
 
     -- 邮件发送成功后，从奖励数据中移除玩家，防止重复发送
     RankLogic.RemovePlayerFromRewardData(rank_type, period, uid)
