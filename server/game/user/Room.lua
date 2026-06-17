@@ -219,8 +219,8 @@ function Room.OnRoomInfoSync(sync_msg)
                 -- 退出队伍频道
                 local chat_ret = ChatLogic.LeaveRoomChannel(context.roomid, context.uid)
                 if not chat_ret or chat_ret.code ~= ErrorCode.None then
-                    moon.error(string.format("LeaveRoomChannel uid:%d, roomid:%d, code:%s, error:%s", context.uid,
-                        context.roomid, tostring(chat_ret and chat_ret.code), tostring(chat_ret and chat_ret.error)))
+                    moon.error(string.format("LeaveRoomChannel uid:%d, roomid:%s, code:%s, error:%s", context.uid,
+                        tostring(context.roomid), tostring(chat_ret and chat_ret.code), tostring(chat_ret and chat_ret.error)))
                 end
                 -- 同步退出房间状态
                 local update_user_attr = {}
@@ -1009,6 +1009,7 @@ function Room.GameSettle(settle_info)
     if settle_info.reward_boxs and table.size(settle_info.reward_boxs) > 0 then
         -- 按照宝箱处理
         for _, item_simple in pairs(settle_info.reward_boxs) do
+            moon.info(string.format("GameSettle AddTreasure uid=%d config_id=%d item_count=%d", context.uid, item_simple.config_id, item_simple.item_count))
             scripts.Shop.AddTreasure(item_simple.config_id, item_simple.item_count)
         end
 

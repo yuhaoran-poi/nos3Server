@@ -2760,7 +2760,7 @@ end
 local NICKNAME_UID = "nickname:uid"
 
 function _M.RedisGetNick(addr_db_redis, nickname)
-    local res, err = redis_call(addr_db_redis, "GET", SYSTEM_MAIL_INFO .. nickname)
+    local res, err = redis_call(addr_db_redis, "GET", NICKNAME_UID .. nickname)
     if err then
         error("RedisCheckNick failed:" .. tostring(err))
         return {}

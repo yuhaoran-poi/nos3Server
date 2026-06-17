@@ -666,12 +666,15 @@ function Shop.GetTreasureTotalOpenCnt()
 end
 
 function Shop.AddTreasure(config_id, num)
+    moon.error("Shop AddTreasure config_id=%d num=%d", config_id, num)
     local treasures = scripts.UserModel.GetTreasureData()
     if not treasures then
+        moon.error("Shop AddTreasure treasures err")
         return false
     end
     local item_type = ItemDefine.GetItemPosType(config_id)
     if item_type ~= ItemDefine.EItemBigType.TreasureChest then
+        moon.error(string.format("Shop AddTreasure config_id=%d item_type=%d", config_id, item_type))
         return false
     end
 
@@ -690,6 +693,8 @@ function Shop.AddTreasure(config_id, num)
     scripts.Mission.TriggerCondition(MissionDef.EConditionIds.GET_TREASURE_CNT, { config_id },
         treasures.treasure_list[config_id].get_count)
     scripts.UserModel.SetTreasureData(treasures)
+
+    Shop.SaveShopsNow()
 end
 
 function Shop.OpenTreasure(config_id, num)
