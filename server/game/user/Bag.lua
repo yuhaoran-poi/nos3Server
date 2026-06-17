@@ -2844,7 +2844,13 @@ function Bag.GetSpecialItemFromCommonItem(srcBagType, srcPos, item_id)
         return ErrorCode.BagCapacityOverflow
     end
 
-    local convert_config_id = GameCfg.LightConvert[item_id].getid
+    local light_convert_cfg = GameCfg.LightConvert[item_id]
+    if not light_convert_cfg then
+        moon.error(string.format("GetSpecialItemFromCommonItem: no LightConvert config uid %d item_id=%d", context.uid, item_id))
+        return ErrorCode.ConfigError
+    end
+
+    local convert_config_id = light_convert_cfg.getid
     if not convert_config_id then
         return ErrorCode.ConfigError
     end
