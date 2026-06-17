@@ -63,7 +63,7 @@ function Mailmgr.AddSystemMail(system_info)
     Mailmgr.SetSystemMailDetail(system_info.mail_data)
 
     -- 通知所有Gate
-    context.broadcast_gate("Gate.SendSystemMail", system_info.mail_data)
+    context.broadcast_gate("Gate.SendSystemMail", system_info.mail_data, system_info.all_user, system_info.recv_uids)
 
     return { success = true, id = ret_id }
 end

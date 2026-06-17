@@ -298,6 +298,13 @@ function Trade.CheckOnSaleCnt(player_trade_data)
             Trade.SaveTradeInfoNow()
         end
     end
+
+    -- 临时增加交易容量,后续再调整
+    if player_trade_data.simple_info.box_capacity ~= trade_cfg.order_num then
+        player_trade_data.simple_info.box_capacity = trade_cfg.order_num
+        player_trade_data.simple_info.can_onsale_cnt = trade_cfg.account_market
+        Trade.SaveTradeInfoNow()
+    end
 end
 
 function Trade.PBGetTradeInfoReqCmd(req)
@@ -363,7 +370,7 @@ function Trade.PBTradeSaleReqCmd(req)
             { code = ErrorCode.ConfigError, error = "交易上架费用配置不存在", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    if table.size(player_trade_data.simple_info.trade_ids) + 1 > trade_cfg.order_num
+    if table.size(player_trade_data.simple_info.trade_ids) + 1 > player_trade_data.simple_info.box_capacity
         and not is_gm then
         return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
             { code = ErrorCode.TradeCapacityNotEnough, error = "交易容量不足", uid = context.uid }, req.msg_context.stub_id)

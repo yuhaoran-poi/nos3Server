@@ -155,14 +155,24 @@ function Gate.BroadcastSysChat(channel_msgs)
     return true
 end
 
-function Gate.SendSystemMail(mail_info)
+function Gate.SendSystemMail(mail_info, all_user, recv_uids)
     moon.info("SendSystemMail mail_info = ", mail_info.simple_data.mail_id)
 
-    for _, c in pairs(context.uid_map) do
-        if c and c.addr_user then
-            moon.send("lua", c.addr_user, "Mail.RecvSystemMail", mail_info)
+    if all_user == 1 then
+        for _, c in pairs(context.uid_map) do
+            if c and c.addr_user then
+                moon.send("lua", c.addr_user, "Mail.RecvSystemMail", mail_info)
+            end
+        end
+    else
+        for _, uid in ipairs(recv_uids) do
+            local c = context.uid_map[uid]
+            if c and c.addr_user then
+                moon.send("lua", c.addr_user, "Mail.RecvSystemMail", mail_info)
+            end
         end
     end
+
     return true
 end
 

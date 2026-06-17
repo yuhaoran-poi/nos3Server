@@ -1478,6 +1478,8 @@ function Roommgr.StartGame(req)
         boss_id = room.room_data.boss_id,
         redis_ip = context.conf.redis_nginx_ip,
         redis_port = context.conf.redis_nginx_port,
+        server_ip = context.conf.mgr_host_ip,
+        server_port = context.conf.mgr_host_port,
         uids = {},
     }
     for _, player in pairs(room.players) do
@@ -1529,7 +1531,8 @@ function Roommgr.StartGame(req)
         --     "http://192.168.2.31:8080/job/LaunchGH-DS/buildWithParameters?token=WXCY&MAP=5200&DSID=" ..
         --     room.room_data.roomid .. "&PORT=" .. test_port
         local test_url = "http://192.168.2.31:8080/job/LaunchGH-DS/buildWithParameters?token=WXCY&MAP=" ..
-            room.room_data.map_id .. "&DSID=" .. room.room_data.roomid .. "&PORT=" .. test_port
+            room.room_data.map_id ..
+            "&DSID=" .. room.room_data.roomid .. "&PORT=" .. test_port .. "&UIDS=" .. table.concat(notify_uids, "+")
         moon.info("Roommgr.StartGame test_url", test_url)
         print_r(httpc.get(test_url))
 
