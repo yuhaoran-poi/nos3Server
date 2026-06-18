@@ -3173,12 +3173,13 @@ function Bag.PBDecomposeReqCmd(req)
                 if not cfg or table.size(cfg.decompose) <= 0 then
                     return ErrorCode.ForbidDecompose
                 end
-                local coef = cur_durability / cfg.durability
+                -- local coef = cur_durability / cfg.durability
                 for c_id, c_num in pairs(cfg.decompose) do
-                    local correct_num = math.floor(c_num * coef)
-                    if correct_num == 0 then
-                        decompose_cfg[c_id] = correct_num
-                    end
+                    -- local correct_num = math.floor(c_num * coef)
+                    -- if correct_num == 0 then
+                    --     decompose_cfg[c_id] = correct_num
+                    -- end
+                    decompose_cfg[c_id] = c_num
                 end
             end
 
