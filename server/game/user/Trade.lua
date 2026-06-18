@@ -223,6 +223,13 @@ function Trade.OnTradeLogSaleMail(trade_log, need_save)
     -- 修改player_trade_data
     if need_save then
         if player_trade_data.product_list[trade_log.trade_id] then
+            if not player_trade_data.product_list[trade_log.trade_id].trade_data then
+                moon.error(string.format("OnTradeLogSaleMail trade_log.trade_id not found trade_log = %s",
+                    json.pretty_encode(trade_log)))
+                moon.error(string.format("OnTradeLogSaleMail trade_log.trade_id not found player_trade_data = %s",
+                    json.pretty_encode(player_trade_data)))
+                return
+            end
             local now_num = player_trade_data.product_list[trade_log.trade_id].trade_data.now_num
             if now_num - trade_log.deal_num <= 0 then
                 player_trade_data.product_list[trade_log.trade_id] = nil
