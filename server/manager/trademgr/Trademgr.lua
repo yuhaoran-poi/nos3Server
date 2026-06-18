@@ -298,6 +298,7 @@ function Trademgr.ChangeTradeRecord(product_simple_data)
         Trademgr.change_record_ids[record_data.trade_config_id] = 1
     end
     if record_data.min_price_num <= 0 then
+        record_data.min_price = 0
         record_data.price_to_num[product_simple_data.single_price] = nil
         for price, value in pairs(record_data.price_to_num) do
             if record_data.min_price == 0 or record_data.min_price > price then
