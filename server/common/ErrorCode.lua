@@ -42,6 +42,8 @@ local ErrorCode = {
     ItemImageExist = 310,
     ---道具不能出售
     ItemNotSell = 311,
+    ---分解无法获得道具
+    DecomposeNotGet = 312,
 
     ---宝物相关错误码
     ---没有拥有该宝物

@@ -2543,10 +2543,15 @@ function _M.RedisGetProductData(addr_db_redis, product_ids)
         return {}
     end
     local product_datas = {}
-    if res and #res > 0 then
+    if res and next(res) then
         moon.warn(string.format("RedisGetProductData res = %s", json.pretty_encode(res)))
-        for i = 1, #res do
-            product_datas[product_ids[i]] = json.decode(res[i] or "null")
+        for _, raw_data in pairs(res) do
+            if raw_data and type(raw_data) == "string" and #raw_data > 0 then
+                local ok, decoded = pcall(json.decode, raw_data)
+                if ok and type(decoded) == "table" and decoded.trade_id then
+                    product_datas[decoded.trade_id] = decoded
+                end
+            end
         end
     end
 

@@ -543,7 +543,12 @@ function Trademgr.AddTradeProduct(req_data)
     if record_data.min_price == 0 or record_data.min_price > price_data.price then
         record_data.min_price = price_data.price
     end
-    record_data.min_price_num = record_data.price_to_num[record_data.min_price].now_num
+    if record_data.price_to_num[record_data.min_price] then
+        record_data.min_price_num = record_data.price_to_num[record_data.min_price].now_num
+    else
+        moon.error("AddTradeProduct min_price not found", record_data.min_price)
+        moon.error(string.format("AddTradeProduct record_data=%s", json.pretty_encode(record_data)))
+    end
 
     -- 添加到交易行商品分类表
     moon.debug(string.format("AddTradeProduct config_id=%d record_data=%s", product_data.config_id, json.pretty_encode(record_data)))

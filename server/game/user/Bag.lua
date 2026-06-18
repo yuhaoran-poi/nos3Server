@@ -1681,7 +1681,7 @@ function Bag.GetItemPosNum(config_id, bagType)
         end
         moon.warn("Bag.GetItemPosNum config_id=", config_id)
         moon.warn("Bag.GetItemPosNum bagType=", bagType)
-        moon.warn(string.format("Bag.GetItemPosNum Bag.dataMap=%s", json.pretty_encode(Bag.dataMap)))
+        -- moon.warn(string.format("Bag.GetItemPosNum Bag.dataMap=%s", json.pretty_encode(Bag.dataMap)))
         return table.size(Bag.dataMap[config_id][bagType].pos_count) +
             table.size(Bag.dataMap[config_id][bagType].uniqid_pos)
     end
@@ -3175,10 +3175,16 @@ function Bag.PBDecomposeReqCmd(req)
                 end
                 local coef = cur_durability / cfg.durability
                 for c_id, c_num in pairs(cfg.decompose) do
-                    decompose_cfg[c_id] = math.floor(c_num * coef)
+                    local correct_num = math.floor(c_num * coef)
+                    if correct_num == 0 then
+                        decompose_cfg[c_id] = correct_num
+                    end
                 end
             end
 
+            if table.size(decompose_cfg) <= 0 then
+                return ErrorCode.DecomposeNotGet
+            end
             -- 分解后获得的道具列表
             ItemDefine.GetItemsFromCfg(decompose_cfg, value.item_count, false, add_items, add_coins)
 
