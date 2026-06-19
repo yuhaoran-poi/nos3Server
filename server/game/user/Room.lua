@@ -175,7 +175,7 @@ function Room.PBModRoomReqCmd(req)
 end
 
 function Room.OnRoomInfoSync(sync_msg)
-    moon.error("OnRoomInfoSync")
+    -- moon.error("OnRoomInfoSync")
     -- print_r(sync_msg)
     local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if sync_msg.sync_type == RoomDef.SyncType.PlayerEnter
