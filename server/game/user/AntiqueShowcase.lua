@@ -379,8 +379,8 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
         scripts.Rank.UpdateRank_Antique(real_config_id, rsp_price)
     end
 
-    moon.info(string.format("IdentifyAntique - config_id=%d, uniqid=%s, pos=%d, is_succ=%d, price=%d",
-    config_id, tostring(uniqid), bag_pos, is_succ, price_probability))
+    moon.info(string.format("IdentifyAntique - uid=%d, config_id=%d, uniqid=%s, pos=%d, is_succ=%d, is_fake=%d, price=%d, final_price=%d",
+    context.uid, config_id, tostring(uniqid), bag_pos, is_succ, rsp_is_fake, price_probability, rsp_price))
 
     if is_succ == 1 then
         return ErrorCode.None, "鉴定完成 古董为真品", price_probability
@@ -571,7 +571,12 @@ function AntiqueShowcase.GetAntiqueInfo(config_id, uniqid, bag_pos)
         return nil
     end
 
-    return item_data.special_info.antique_item
+    local antique_item = item_data.special_info.antique_item
+    moon.info(string.format("GetAntiqueInfo - uid=%d, config_id=%d, uniqid=%d, bag_pos=%d, is_fake=%d, price=%d",
+        context.uid, config_id, uniqid, bag_pos, antique_item.is_fake,
+        antique_item.price.coin_count))
+
+    return antique_item
 end
 
 return AntiqueShowcase

@@ -3150,13 +3150,15 @@ function Bag.PBDecomposeReqCmd(req)
                     return ErrorCode.ItemNotExist
                 end
 
-                -- 古董道具：使用鉴定后的价格作为出售价格
-                decompose_cfg[antique_info.price.coin_id] = antique_info.price.coin_count * value.item_count
-                moon.info(string.format("Bag.PBDecomposeReqCmd antique_info: uid %d, config_id %d, uniqid %d, pos %d, coin_id %d, coin_count %d, item_count %d", context.uid, value.config_id, value.uniqid, value.pos, antique_info.price.coin_id, antique_info.price.coin_count, value.item_count))
-                if antique_info.is_fake then
+                -- 古董道具：根据真伪确定出售价格
+                if antique_info.is_fake == 1 then
                     -- 赝品古董道具：出售价格为100
                     decompose_cfg[antique_info.price.coin_id] = 100 * value.item_count
-                    moon.info(string.format("Bag.PBDecomposeReqCmd antique_info is_fake uid %d config_id %d uniqid %d pos %d", context.uid, value.config_id, value.uniqid, value.pos))
+                    moon.info(string.format("Bag.PBDecomposeReqCmd antique_info is_fake: uid %d, config_id %d, uniqid %d, pos %d, coin_id %d, coin_count %d", context.uid, value.config_id, value.uniqid, value.pos, antique_info.price.coin_id, 100))
+                else
+                    -- 真品古董道具：使用鉴定后的价格作为出售价格
+                    decompose_cfg[antique_info.price.coin_id] = antique_info.price.coin_count * value.item_count
+                    moon.info(string.format("Bag.PBDecomposeReqCmd antique_info: uid %d, config_id %d, uniqid %d, pos %d, coin_id %d, coin_count %d, item_count %d", context.uid, value.config_id, value.uniqid, value.pos, antique_info.price.coin_id, antique_info.price.coin_count, value.item_count))
                 end
             elseif value.uniqid == 0 then
                 local cfg = GameCfg.Item[value.config_id]
