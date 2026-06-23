@@ -189,6 +189,8 @@ function Bag.Start(isnew)
             end
         end
     end
+
+    print(type(bagdata[BagDef.BagType.Cangku].items), getmetatable(bagdata[BagDef.BagType.Cangku].items))
 end
 
 function Bag.SaveBagsNow(bagTypes)
@@ -744,15 +746,25 @@ function Bag.SaveAndLog(change_logs, change_reason,
 
                     -- 记录Bag.dataMap变更前的背包数据
                     if old_config_id > 0 and not item_log_datas[old_config_id] then
-                        local new_tmp = {
-                            old_num = 0,
-                            new_num = 0,
-                            change_uniq = {},
-                        }
-                        for _, tmp_data in pairs(Bag.dataMap[old_config_id]) do
-                            new_tmp.old_num = new_tmp.old_num + tmp_data.allCount
+                        local old_data = Bag.dataMap[old_config_id]
+                        if not old_data then
+                            moon.error(string.format(
+                                "[Bag.SaveAndLog] dataMap[%d] is nil! pos=%d bagType=%s reason=%d old_itemdata=%s dataMap=%s",
+                                old_config_id, pos, bagType, change_reason,
+                                json.pretty_encode(logs),
+                                json.pretty_encode(Bag.dataMap)
+                            ))
+                        else
+                            local new_tmp = {
+                                old_num = 0,
+                                new_num = 0,
+                                change_uniq = {},
+                            }
+                            for _, tmp_data in pairs(old_data) do
+                                new_tmp.old_num = new_tmp.old_num + tmp_data.allCount
+                            end
+                            item_log_datas[old_config_id] = new_tmp
                         end
-                        item_log_datas[old_config_id] = new_tmp
                     end
                     if now_config_id > 0 and not item_log_datas[now_config_id] then
                         local new_tmp = {
@@ -1057,6 +1069,17 @@ function Bag.SortOut(bagType)
                             if src_pos > 0 then
                                 local dest_item = stack_baginfo.items[dest_pos]
                                 local src_item = stack_baginfo.items[src_pos]
+                                if not dest_item or not src_item then
+                                    moon.error(string.format(
+                                        "[Bag.SortOut stack] item nil! bagType=%s config_id=%d dest_pos=%d src_pos=%d dest_count=%d src_count=%d count=%d dest_item=%s src_item=%s\n"
+                                        .. "stack_baginfo.items=%s\n"
+                                        .. "bdata[bagType].pos_count=%s",
+                                        bagType, config_id, dest_pos, src_pos, dest_count, src_count, count,
+                                        tostring(dest_item), tostring(src_item),
+                                        json.pretty_encode(stack_baginfo.items),
+                                        json.pretty_encode(bdata[bagType].pos_count)
+                                    ))
+                                end
                                 Bag.AddLog(stack_change_logs[bagType], dest_pos, dest_item)
                                 Bag.AddLog(stack_change_logs[bagType], src_pos, src_item)
                                 dest_item.common_info.item_count = dest_item.common_info.item_count + src_count
@@ -1102,7 +1125,7 @@ function Bag.SortOut(bagType)
     if not old_items or table.size(old_items) <= 0 then
         return ErrorCode.BagEmpty
     end
-    for _, config_id in pairs(now_config_ids) do
+    for _, config_id in ipairs(now_config_ids) do
         local bdata = Bag.dataMap[config_id][bagType]
         if bdata then
             for pos, count in pairs(bdata.pos_count) do
@@ -1828,15 +1851,12 @@ function Bag.CheckItemsEnoughPos(bagType, del_items)
             return ErrorCode.ParamInvalid
         end
 
-        moon.debug(string.format("Bag.CheckItemsEnoughPos pos=%d baginfo.items[pos]=%s", pos,
-            json.pretty_encode(baginfo.items[pos])))
-        moon.debug("Bag.CheckItemsEnoughPos del_items.uniqid", del_items.uniqid)
-        moon.debug("Bag.CheckItemsEnoughPos baginfo.items[pos]", baginfo.items[pos])
-        moon.debug("Bag.CheckItemsEnoughPos baginfo.items[pos].common_info.config_id",
-            baginfo.items[pos].common_info.config_id)
-        moon.debug("Bag.CheckItemsEnoughPos baginfo.items[pos].common_info.item_count",
-            baginfo.items[pos].common_info.item_count)
-        if del_items.uniqid == 0 then
+        if not baginfo.items[pos] then
+            moon.error(string.format("Bag.CheckItemsEnoughPos item not exist pos=%d", pos))
+            return ErrorCode.ItemNotExist
+        end
+
+        if not del_items.uniqid or del_items.uniqid == 0 then
             if not baginfo.items[pos]
                 or baginfo.items[pos].common_info.config_id ~= item.config_id
                 or baginfo.items[pos].common_info.item_count + item.item_count < 0 then

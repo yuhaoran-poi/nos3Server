@@ -666,7 +666,7 @@ function Shop.GetTreasureTotalOpenCnt()
 end
 
 function Shop.AddTreasure(config_id, num)
-    moon.error("Shop AddTreasure config_id=%d num=%d", config_id, num)
+    -- moon.error("Shop AddTreasure config_id=%d num=%d", config_id, num)
     local treasures = scripts.UserModel.GetTreasureData()
     if not treasures then
         moon.error("Shop AddTreasure treasures err")

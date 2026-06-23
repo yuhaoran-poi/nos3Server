@@ -159,7 +159,7 @@ function Trade.OnTradeTakeDownMail(trade_product, now_state, positive)
     -- 发送邮件
     local item_simple_data = ItemDef.newItemSimple()
     item_simple_data.config_id = trade_product.config_id
-    item_simple_data.item_count = trade_product.total_num
+    item_simple_data.item_count = trade_product.trade_data.now_num
     local attach_items_simple = {}
     attach_items_simple[trade_product.config_id] = item_simple_data
     

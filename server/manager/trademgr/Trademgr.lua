@@ -195,9 +195,11 @@ function Trademgr.Start()
                         total_num = trade_product.total_num,
                         seller_uid = trade_product.seller_uid,
                         end_ts = trade_product.end_ts,
-                        single_price = trade_product.trade_data.single_price,
-                        sale_num = trade_product.trade_data.sale_num,
-                        now_num = trade_product.trade_data.now_num,
+                        trade_data = {
+                            single_price = trade_product.trade_data.single_price,
+                            sale_num = trade_product.trade_data.sale_num,
+                            now_num = trade_product.trade_data.now_num,
+                        },
                         state = TradeDef.StateType.ON_SALE,
                     }
                 end
@@ -282,13 +284,17 @@ function Trademgr.ChangeTradeRecord(product_simple_data)
         return
     end
     local record_data = Trademgr.trade_record_infos[product_simple_data.config_id]
-    if not record_data.price_to_num[product_simple_data.single_price] then
+    if not record_data.price_to_num[product_simple_data.trade_data.single_price] then
+        moon.error(string.format("Trademgr.ChangeTradeRecord price not exist product_simple_data=%s",
+            json.pretty_encode(product_simple_data)))
+        moon.error(string.format("Trademgr.ChangeTradeRecord price not exist record_data.price_to_num=%s",
+            json.pretty_encode(record_data.price_to_num)))
         return
     end
-    local price_data = record_data.price_to_num[product_simple_data.single_price]
+    local price_data = record_data.price_to_num[product_simple_data.trade_data.single_price]
     for idx, cur_trade_id in pairs(price_data.trade_id_list) do
         if cur_trade_id == product_simple_data.trade_id then
-            price_data.now_num = price_data.now_num - product_simple_data.now_num
+            price_data.now_num = price_data.now_num - product_simple_data.trade_data.now_num
             table.remove(price_data.trade_id_list, idx)
             break
         end
@@ -299,7 +305,7 @@ function Trademgr.ChangeTradeRecord(product_simple_data)
     end
     if record_data.min_price_num <= 0 then
         record_data.min_price = 0
-        record_data.price_to_num[product_simple_data.single_price] = nil
+        record_data.price_to_num[product_simple_data.trade_data.single_price] = nil
         for price, value in pairs(record_data.price_to_num) do
             if record_data.min_price == 0 or record_data.min_price > price then
                 record_data.min_price = price
@@ -513,9 +519,11 @@ function Trademgr.AddTradeProduct(req_data)
         total_num = product_data.total_num,
         seller_uid = product_data.seller_uid,
         end_ts = product_data.end_ts,
-        single_price = product_data.trade_data.single_price,
-        sale_num = product_data.trade_data.sale_num,
-        now_num = product_data.trade_data.now_num,
+        trade_data = {
+            single_price = product_data.trade_data.single_price,
+            sale_num = product_data.trade_data.sale_num,
+            now_num = product_data.trade_data.now_num,
+        },
         state = TradeDef.StateType.ON_SALE,
     }
 
@@ -615,8 +623,8 @@ function Trademgr.BuyTradeProduct(buyer_uid, config_id, buy_num, buy_max_price, 
             if can_buy_num > 0 then
                 for _, trade_id in pairs(price_data.trade_id_list) do
                     local product_data = Trademgr.product_list[trade_id]
-                    if product_data and product_data.now_num > 0 then
-                        local cur_num = math.min(can_buy_num, product_data.now_num)
+                    if product_data and product_data.trade_data.now_num > 0 then
+                        local cur_num = math.min(can_buy_num, product_data.trade_data.now_num)
                         table.insert(buy_list, {
                             trade_id = trade_id,
                             seller_uid = product_data.seller_uid,
@@ -647,8 +655,8 @@ function Trademgr.BuyTradeProduct(buyer_uid, config_id, buy_num, buy_max_price, 
 
         -- 添加交易变更数据到Trademgr.change_product_num_state
         local change_data = {
-            sale_num = product_data.sale_num,
-            now_num = product_data.now_num,
+            sale_num = product_data.trade_data.sale_num,
+            now_num = product_data.trade_data.now_num,
         }
         if product_data.state == TradeDef.StateType.CLOSE then
             change_data.state = TradeDef.StateType.CLOSE
@@ -678,9 +686,9 @@ function Trademgr.BuyTradeProduct(buyer_uid, config_id, buy_num, buy_max_price, 
     for _, buy_data in pairs(buy_list) do
         local product_data = Trademgr.product_list[buy_data.trade_id]
         if product_data then
-            product_data.sale_num = product_data.sale_num + buy_data.num
-            product_data.now_num = product_data.now_num - buy_data.num
-            if product_data.now_num <= 0 then
+            product_data.trade_data.sale_num = product_data.trade_data.sale_num + buy_data.num
+            product_data.trade_data.now_num = product_data.trade_data.now_num - buy_data.num
+            if product_data.trade_data.now_num <= 0 then
                 product_data.state = TradeDef.StateType.CLOSE
             end
 
@@ -718,7 +726,21 @@ function Trademgr.BuyTradeProduct(buyer_uid, config_id, buy_num, buy_max_price, 
                 -- 从redis中删除商品
                 Database.RedisDelProductData(context.addr_db_redis, { buy_data.trade_id })
             else
-                -- 修改redis中的商品
+                -- 修改redis中的商品，转换为嵌套格式
+                -- local redis_product_data = {
+                --     trade_id = product_data.trade_id,
+                --     config_id = product_data.config_id,
+                --     total_num = product_data.total_num,
+                --     seller_uid = product_data.seller_uid,
+                --     end_ts = product_data.end_ts,
+                --     trade_data = {
+                --         single_price = product_data.trade_data.single_price,
+                --         sale_num = product_data.trade_data.sale_num,
+                --         now_num = product_data.trade_data.now_num,
+                --     },
+                --     state = product_data.state,
+                -- }
+                -- Database.RedisSetProductData(context.addr_db_redis, redis_product_data)
                 Database.RedisSetProductData(context.addr_db_redis, product_data)
             end
         end
