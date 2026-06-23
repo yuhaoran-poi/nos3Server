@@ -197,6 +197,11 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
             return ErrorCode.ItemNotExist, "道具不存在"
         end
 
+        -- 检查古董信息是否存在
+        if not item_data.special_info or not item_data.special_info.antique_item then
+            return ErrorCode.ItemNotExist, "古董信息不存在"
+        end
+
         -- 古董不存在或剩余可鉴定次数不足或是赝品
         if item_data.special_info.antique_item.remain_identify_num <= 0 or item_data.special_info.antique_item.is_fake == 1 then
             return ErrorCode.IdentifyInvalid, "古董剩余可鉴定次数不足或是赝品"
