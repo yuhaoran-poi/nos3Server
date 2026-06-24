@@ -304,7 +304,7 @@ function Mail.RecvTriggerMail(config_id)
     return ret
 end
 
-function Mail.RecvImmediateMail(config_id, items_simple, item_datas, coins)
+function Mail.RecvImmediateMail(config_id, items_simple, item_datas, coins, content_params)
     -- 检查并删除过期邮件
     Mail.CheckExpireMail()
     local mails = scripts.UserModel.GetMails()
@@ -333,6 +333,9 @@ function Mail.RecvImmediateMail(config_id, items_simple, item_datas, coins)
     new_mail_info.simple_data.is_get = 0
     new_mail_info.mail_icon_id = mail_common_config.icon
     new_mail_info.mail_content_id = mail_common_config.content
+    if content_params and table.size(content_params) > 0 then
+        new_mail_info.content_params = content_params
+    end
     new_mail_info.sign = tostring(mail_common_config.signature)
 
     new_mail_info.items_simple = items_simple

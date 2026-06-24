@@ -30,6 +30,7 @@ local defaultPBMailData = {
     items_simple = {},
     item_datas = {},
     coins = {},
+    content_params = {},
 }
 
 local defaultPBUserMailBox = {

@@ -25,6 +25,7 @@ message PBMailData
     map<int32, PBItemSimple> items_simple = 6;   // 附件
     repeated PBItemData item_datas   = 7;   // 附件
     map<int32, PBCoin> coins = 8;   // 附件
+    repeated string content_params  = 9;
 }
 
 message PBUserMailBox
