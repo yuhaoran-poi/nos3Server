@@ -2753,7 +2753,7 @@ eGS_Freeze
 AO_ADD
 
 AO_DELbproto3
-¸
+ß
 
 mail.proto
 item.proto"³
@@ -2769,7 +2769,7 @@ mail_title (	R	mailTitle
 is_read (RisRead"
 is_have_items	 (RisHaveItems
 is_get
- (RisGet"î
+ (RisGet"•
 
 PBMailData2
 simple_data (2.PBMailSimpleDataR
@@ -2782,7 +2782,8 @@ mailIconId&
 items_simple (2.PBMailData.ItemsSimpleEntryRitemsSimple*
 
 item_datas (2.PBItemDataR	itemDatas,
-coins (2.PBMailData.CoinsEntryRcoinsM
+coins (2.PBMailData.CoinsEntryRcoins%
+content_params	 (	RcontentParamsM
 ItemsSimpleEntry
 key (Rkey#
 value (2.PBItemSimpleRvalue:8A
@@ -3639,7 +3640,7 @@ master_uid (R	masterUid
 
 master_uid (R	masterUid
 team_id (RteamIdbproto3
-ì#
+–(
 trade.proto"d
 PBTradeData!
 single_price (RsinglePrice
@@ -3815,7 +3816,27 @@ condition5
 yes_average_price (28.PBTradeGetAllYesAveragePriceRspCmd.YesAveragePriceEntryRyesAveragePriceB
 YesAveragePriceEntry
 key (Rkey
-value (Rvalue:8bproto3
+value (Rvalue:8"g
+PBBuySingle
+	config_id (RconfigId
+buy_num (RbuyNum"
+buy_max_price (RbuyMaxPrice"»
+PBTradeBuyComplexReqCmd
+uid (RuidC
+	buy_prods (2&.PBTradeBuyComplexReqCmd.BuyProdsEntryRbuyProdsI
+BuyProdsEntry
+key (Rkey"
+value (2.PBBuySingleRvalue:8"€
+PBTradeBuyComplexRspCmd
+code (Rcode
+error (	Rerror
+uid (RuidD
+
+buy_id_num (2&.PBTradeBuyComplexRspCmd.BuyIdNumEntryRbuyIdNum&
+buy_total_price (RbuyTotalPrice;
+BuyIdNumEntry
+key (Rkey
+value (Rvalue:8bproto3
 ä
 google/protobuf/any.protogoogle.protobuf"6
 Any

@@ -217,3 +217,25 @@ message PBTradeGetAllYesAveragePriceRspCmd
 	int64 uid	= 3;
 	map<int32, float> yes_average_price	= 4;
 }
+
+message PBBuySingle
+{
+	int32 config_id	= 1;
+	int32 buy_num	= 2;
+	int64 buy_max_price	= 3;
+}
+
+message PBTradeBuyComplexReqCmd
+{
+	int64 uid	= 1;
+	map<int32, PBBuySingle> buy_prods = 2;
+}
+
+message PBTradeBuyComplexRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+	int64 uid	= 3;
+	map<int32, int32> buy_id_num	= 4;
+	int64 buy_total_price	= 5;
+}

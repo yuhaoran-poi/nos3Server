@@ -2313,6 +2313,7 @@
 ---@field public items_simple table<integer, PBItemSimple> @附件
 ---@field public item_datas PBItemData[] @附件
 ---@field public coins table<integer, PBCoin> @附件
+---@field public content_params string[]
 
 
 ---@class PBUserMailBox
@@ -3738,6 +3739,25 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public yes_average_price table<integer, number>
+
+
+---@class PBBuySingle
+---@field public config_id integer
+---@field public buy_num integer
+---@field public buy_max_price integer
+
+
+---@class PBTradeBuyComplexReqCmd
+---@field public uid integer
+---@field public buy_prods table<integer, PBBuySingle>
+
+
+---@class PBTradeBuyComplexRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public buy_id_num table<integer, integer>
+---@field public buy_total_price integer
 
 
 ---@class PBUserAttr

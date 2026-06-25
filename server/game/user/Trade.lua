@@ -211,7 +211,11 @@ function Trade.OnTradeLogSaleMail(trade_log, need_save)
         coin_count = trade_log.deal_price * trade_log.deal_num - trade_log.trade_tax,
     }
     -- 发送邮件
-    local mail_ret = scripts.Mail.RecvImmediateMail(trade_cfg.sell_email, {}, {}, add_coins)
+    local content_params = {}
+    table.insert(content_params, tostring(trade_log.config_id))
+    table.insert(content_params, tostring(trade_log.deal_num))
+    table.insert(content_params, tostring(trade_log.deal_price))
+    local mail_ret = scripts.Mail.RecvImmediateMail(trade_cfg.sell_email, {}, {}, add_coins, content_params)
     if not mail_ret then
         moon.error(string.format("OnTradeLogSaleMail mail_ret false trade_log = %s", json.pretty_encode(trade_log)))
         return
@@ -978,6 +982,19 @@ function Trade.PBTradeGetAllYesAveragePriceReqCmd(req)
         uid = context.uid,
         yes_average_price = id_price_list,
     }, req.msg_context.stub_id)
+end
+
+function Trade.PBTradeBuyComplexReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid
+        or not req.msg.buy_prods
+        or table.size(req.msg.buy_prods) == 0 then
+        return context.S2C(context.net_id, CmdCode.PBTradeBuyComplexRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
 end
 
 return Trade
