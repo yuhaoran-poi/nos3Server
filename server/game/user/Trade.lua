@@ -713,13 +713,21 @@ function Trade.PBTradeBuyReqCmd(req)
     }
     local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
     if err_code_coins ~= ErrorCode.None then
-        return err_code_coins
+        return context.S2C(context.net_id, CmdCode.PBTradeBuyRspCmd, {
+            code = err_code_coins,
+            error = "货币不足",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
     end
     local bag_change_logs = {}
     err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_logs)
     if err_code_coins ~= ErrorCode.None then
         scripts.Bag.RollBackWithChange(bag_change_logs)
-        return err_code_coins
+        return context.S2C(context.net_id, CmdCode.PBTradeBuyRspCmd, {
+            code = err_code_coins,
+            error = "货币不足",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
     end
 
     local res, err = clusterd.call(3999, "trademgr", "Trademgr.BuyTradeProduct", context.uid, req.msg.config_id,
@@ -743,7 +751,6 @@ function Trade.PBTradeBuyReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    moon.debug(string.format("Trade.PBTradeBuyReqCmd Trademgr.BuyTradeProduct res:%s", json.pretty_encode(res)))
     if res.data.remain_coin and res.data.remain_coin > 0 then
         scripts.Bag.RollBackWithChange(bag_change_logs)
         -- 重新确定扣除的正确金额
@@ -755,7 +762,11 @@ function Trade.PBTradeBuyReqCmd(req)
         if err_code_coins ~= ErrorCode.None then
             moon.error("Trade.PBTradeBuyReqCmd DealCoins err", err_code_coins)
             scripts.Bag.RollBackWithChange(bag_change_logs)
-            return err_code_coins
+            return context.S2C(context.net_id, CmdCode.PBTradeBuyRspCmd, {
+                code = err_code_coins,
+                error = "货币不足",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
         end
     end
 
@@ -778,7 +789,11 @@ function Trade.PBTradeBuyReqCmd(req)
             if not ok then
                 scripts.Bag.RollBackWithChange(bag_change_logs)
                 moon.error(string.format("PBTradeBuyReqCmd GetItemDataFromIdCount err:\n%s", json.pretty_encode(add_list)))
-                return
+                return context.S2C(context.net_id, CmdCode.PBTradeBuyRspCmd, {
+                    code = ErrorCode.ConfigError,
+                    error = "配置错误",
+                    uid = context.uid,
+                }, req.msg_context.stub_id)
             end
 
             -- 添加道具前先扣除花费
@@ -798,7 +813,11 @@ function Trade.PBTradeBuyReqCmd(req)
                         json.pretty_encode(stack_items)))
                     moon.error(string.format("PBTradeBuyReqCmd AddItems unstack_items err:\n%s",
                         json.pretty_encode(unstack_items)))
-                    return
+                    return context.S2C(context.net_id, CmdCode.PBTradeBuyRspCmd, {
+                        code = bag_code,
+                        error = "添加道具失败",
+                        uid = context.uid,
+                    }, req.msg_context.stub_id)
                 end
             end
 
@@ -841,13 +860,7 @@ function Trade.PBTradeBuyReqCmd(req)
         buy_total_price = lock_coin_count - res.data.remain_coin,
     }
     moon.debug(string.format("Trade.PBTradeBuyReqCmd msg_ret:%s", json.pretty_encode(msg_ret)))
-    return context.S2C(context.net_id, CmdCode.PBTradeBuyRspCmd, {
-        code = ErrorCode.None,
-        error = "购买商品成功",
-        uid = context.uid,
-        buy_num = res.data.total_real_buy_num,
-        buy_total_price = lock_coin_count - res.data.remain_coin,
-    }, req.msg_context.stub_id)
+    return context.S2C(context.net_id, CmdCode.PBTradeBuyRspCmd, msg_ret, req.msg_context.stub_id)
 end
 
 function Trade.PBTradeTakeOffProductReqCmd(req)
@@ -995,6 +1008,198 @@ function Trade.PBTradeBuyComplexReqCmd(req)
             uid = context.uid,
         }, req.msg_context.stub_id)
     end
+
+    local trade_cfg = GameCfg.TransactionConfig[1]
+    if not trade_cfg or not trade_cfg.shipments_email then
+        moon.error("PBTradeBuyComplexReqCmd trade_cfg.shipments_email not found")
+        return context.S2C(context.net_id, CmdCode.PBTradeBuyComplexRspCmd, {
+            code = ErrorCode.MailConfigError,
+            error = "邮件参数错误",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    if not trade_cfg.order_currency then
+        return context.S2C(context.net_id, CmdCode.PBTradeBuyComplexRspCmd, {
+            code = ErrorCode.CoinNotEnough,
+            error = "货币不足",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+    -- 校验玩家身上货币是否足够
+    local lock_coin_count = 0
+    for config_id, buy_prod in pairs(req.msg.buy_prods) do
+        lock_coin_count = lock_coin_count + buy_prod.buy_num * buy_prod.buy_max_price
+    end
+    local coin_count = scripts.Bag.GetCoinCount(trade_cfg.order_currency)
+    if coin_count < lock_coin_count then
+        return context.S2C(context.net_id, CmdCode.PBTradeBuyComplexRspCmd, {
+            code = ErrorCode.CoinNotEnough,
+            error = "货币不足",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local cost_coins = {}
+    cost_coins[trade_cfg.order_currency] = {
+        coin_id = trade_cfg.order_currency,
+        coin_count = -lock_coin_count,
+    }
+    local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
+    if err_code_coins ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBTradeBuyComplexRspCmd, {
+            code = err_code_coins,
+            error = "货币不足",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+    local bag_change_logs = {}
+    err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_logs)
+    if err_code_coins ~= ErrorCode.None then
+        scripts.Bag.RollBackWithChange(bag_change_logs)
+        return context.S2C(context.net_id, CmdCode.PBTradeBuyComplexRspCmd, {
+            code = err_code_coins,
+            error = "货币不足",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    -- 开始购买
+    local add_list = {}
+    local mgr_err_code = ErrorCode.None
+    for config_id, buy_prod in pairs(req.msg.buy_prods) do
+        local res, err = clusterd.call(3999, "trademgr", "Trademgr.BuyTradeProduct", context.uid, config_id,
+            buy_prod.buy_num, buy_prod.buy_max_price, lock_coin_count)
+        if err or not res then
+            if table.size(add_list) == 0 then
+                moon.error(string.format("Trade.PBTradeBuyComplexReqCmd Trademgr.BuyTradeProduct err:%s", err))
+                scripts.Bag.RollBackWithChange(bag_change_logs)
+                return context.S2C(context.net_id, CmdCode.PBTradeBuyComplexRspCmd, {
+                    code = ErrorCode.TradeBuyError,
+                    error = "购买商品出错",
+                    uid = context.uid,
+                }, req.msg_context.stub_id)
+            else
+                break
+            end
+        end
+
+        mgr_err_code = res.code
+        if mgr_err_code ~= ErrorCode.None then
+            break
+        end
+        if res.data.total_real_buy_num > 0 then
+            add_list[config_id] = {
+                id = config_id,
+                count = res.data.total_real_buy_num,
+                pos = 0,
+            }
+        end
+
+        lock_coin_count = res.data.remain_coin
+        if lock_coin_count <= 0 then
+            moon.error(string.format("Trade.PBTradeBuyComplexReqCmd remain_coin<=0 add_list:%s", json.stringify(add_list)))
+            break
+        end
+    end
+
+    if table.size(add_list) == 0 then
+        moon.error(string.format("Trade.PBTradeBuyComplexReqCmd add_list is empty"))
+        scripts.Bag.RollBackWithChange(bag_change_logs)
+        return context.S2C(context.net_id, CmdCode.PBTradeBuyComplexRspCmd, {
+            code = mgr_err_code,
+            error = "购买商品出错",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    if lock_coin_count > 0 then
+        scripts.Bag.RollBackWithChange(bag_change_logs)
+        -- 重新确定扣除的正确金额
+        bag_change_logs = {}
+        cost_coins[trade_cfg.order_currency].coin_count = cost_coins[trade_cfg.order_currency].coin_count +
+            lock_coin_count
+
+        err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_logs)
+        if err_code_coins ~= ErrorCode.None then
+            moon.error("Trade.PBTradeBuyComplexReqCmd DealCoins err", err_code_coins)
+            scripts.Bag.RollBackWithChange(bag_change_logs)
+            return context.S2C(context.net_id, CmdCode.PBTradeBuyComplexRspCmd, {
+                code = err_code_coins,
+                error = "货币不足",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
+        end
+    end
+
+    local bag_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_list, 0)
+    if bag_code == ErrorCode.None then
+        local stack_items, unstack_items = {}, {}
+        local ok = ItemDefine.GetItemDataFromIdCount(add_list, {}, stack_items, unstack_items, cost_coins)
+        if not ok then
+            scripts.Bag.RollBackWithChange(bag_change_logs)
+            moon.error(string.format("PBTradeBuyComplexReqCmd GetItemDataFromIdCount err:%s",
+                json.pretty_encode(add_list)))
+            return context.S2C(context.net_id, CmdCode.PBTradeBuyComplexRspCmd, {
+                code = ErrorCode.ConfigError,
+                error = "配置错误",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
+        end
+
+        -- 添加道具
+        if table.size(stack_items) + table.size(unstack_items) > 0 then
+            bag_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_logs)
+            if bag_code ~= ErrorCode.None then
+                scripts.Bag.RollBackWithChange(bag_change_logs)
+                moon.error(string.format("PBTradeBuyReqCmd AddItems stack_items err:\n%s",
+                    json.pretty_encode(stack_items)))
+                moon.error(string.format("PBTradeBuyReqCmd AddItems unstack_items err:\n%s",
+                    json.pretty_encode(unstack_items)))
+                return context.S2C(context.net_id, CmdCode.PBTradeBuyComplexRspCmd, {
+                    code = bag_code,
+                    error = "添加道具失败",
+                    uid = context.uid,
+                }, req.msg_context.stub_id)
+            end
+        end
+
+        scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.TradeBuy)
+    else
+        -- 计算获得资源发送邮件
+        local attach_items_simple = {}
+        for config_id, add_value in pairs(add_list) do
+            local item_simple_data = ItemDef.newItemSimple()
+            item_simple_data.config_id = config_id
+            item_simple_data.item_count = add_value.count
+            attach_items_simple[config_id] = item_simple_data
+        end
+        local mail_ret = scripts.Mail.RecvImmediateMail(trade_cfg.shipments_email, attach_items_simple, {}, {})
+        if not mail_ret then
+            moon.error("Trade.PBTradeBuyComplexReqCmd RecvImmediateMail err")
+            scripts.Bag.RollBackWithChange(bag_change_logs)
+            return context.S2C(context.net_id, CmdCode.PBTradeBuyComplexRspCmd, {
+                code = ErrorCode.MailConfigError,
+                error = "购买商品邮件出错",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
+        end
+
+        scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.TradeBuy)
+    end
+
+    local msg_ret = {
+        code = ErrorCode.None,
+        error = "购买商品成功",
+        uid = context.uid,
+        buy_id_num = {},
+        buy_total_price = cost_coins[trade_cfg.order_currency].coin_count,
+    }
+    for config_id, add_value in pairs(add_list) do
+        msg_ret.buy_id_num[config_id] = add_value.count
+    end
+    moon.debug(string.format("Trade.PBTradeBuyComplexReqCmd msg_ret:%s", json.pretty_encode(msg_ret)))
+    return context.S2C(context.net_id, CmdCode.PBTradeBuyComplexRspCmd, msg_ret, req.msg_context.stub_id)
 end
 
 return Trade
