@@ -474,7 +474,7 @@ end
 function Friend.GetBlacks()
     local friends = scripts.UserModel.GetFriends()
     if not friends then
-        return false
+        return {}
     end
 
     local ret = {}
