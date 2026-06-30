@@ -556,6 +556,7 @@ function DsNode.PBDsNotifyPlayerExitReqCmd(req)
 
     -- 往数据库中写入结算信息并通知User
     if req.msg.need_settle and req.msg.need_settle == 1 then
+        moon.warn(string.format("PBDsNotifyPlayerExitReqCmd settle uid = %d, player_settle = %s", req.msg.uid, json.pretty_encode(req.msg.player_settle)))
         Database.BattleListPushRight(context.addr_db_redis, Database.GetBattleSettleKey(), req.msg.uid,
             req.msg.player_settle)
 
@@ -593,6 +594,7 @@ function DsNode.PBDsNotifyPlayEndReqCmd(req)
     -- 先往数据库中写入结算信息
     if req.msg.need_settle == 1 then
         for uid, settle_info in pairs(req.msg.players_settle) do
+            moon.warn(string.format("PBDsNotifyPlayEndReqCmd settle uid = %d, settle_info = %s", uid, json.pretty_encode(settle_info)))
             Database.BattleListPushRight(context.addr_db_redis, Database.GetBattleSettleKey(), uid, settle_info)
         end
     end
