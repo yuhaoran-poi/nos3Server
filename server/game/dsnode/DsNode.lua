@@ -32,14 +32,19 @@ function DsNode.Load(req)
                 return res
             end
         else
-
+            -- 暂时采用与city不同的处理方式
+            clusterd.send(3999, "roommgr", "Roommgr.ConnectRoomDS", {
+                roomid = req.dsid,
+                nid = moon.env("NODE"),
+                addr_dsnode = req.addr_dsnode,
+            })
         end
 
         local isnew = false
         local data = {
-                dsid = req.dsid,
-                net_id = req.net_id,
-                name = req.dsid,
+            dsid = req.dsid,
+            net_id = req.net_id,
+            name = req.dsid,
         }
 
         context.ds_type = req.msg.login_data.ds_type
@@ -142,7 +147,8 @@ end
 function DsNode.Exit()
     -- 如果是副本则通知RoomMgr
     if context.dsid > 10000 then
-        clusterd.send(3999, "roommgr", "Roommgr.PlayEnd", { roomid = context.dsid })
+        clusterd.send(3999, "roommgr", "Roommgr.PlayEnd",
+            { roomid = context.dsid, nid = moon.env("NODE"), addr_dsnode = context.addr_dsnode })
     else
         clusterd.send(3999, "citymgr", "Citymgr.SetCityDestroy", context.dsid)
     end
@@ -591,7 +597,8 @@ function DsNode.PBDsNotifyPlayEndReqCmd(req)
         end
     end
 
-    clusterd.send(3999, "roommgr", "Roommgr.PlayEnd", { roomid = req.msg.roomid })
+    clusterd.send(3999, "roommgr", "Roommgr.PlayEnd",
+        { roomid = req.msg.roomid, nid = moon.env("NODE"), addr_dsnode = context.addr_dsnode })
 
     local ret = {
         code = ErrorCode.None,

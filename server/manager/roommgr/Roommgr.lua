@@ -1595,7 +1595,10 @@ function Roommgr.ConnectRoomDS(msg)
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
 
-    context.roomid_addr_dsnode[msg.roomid] = msg.addr_dsnode
+    context.roomid_addr_dsnode[msg.roomid] = {
+        nid = msg.nid,
+        addr_dsnode = msg.addr_dsnode,
+    }
     moon.warn(string.format("ConnectRoomDS success context.rooms:\n%s", json.pretty_encode(context.rooms)))
     return { code = ErrorCode.None, error = "连接房间DS成功" }
 end
@@ -1611,6 +1614,14 @@ function Roommgr.PlayEnd(msg)
     if room.room_data.state ~= 1 then
         moon.error("Roommgr.PlayEnd room state error, roomid = ", msg.roomid)
         return { code = ErrorCode.RoomInvalidState, error = "房间状态错误" }
+    end
+
+    if not msg.nid or not msg.addr_dsnode then
+        return { code = ErrorCode.RoomDsLinkInvalid, error = "房间ds链接非法" }
+    end
+    local addr_dsnode = context.roomid_addr_dsnode[msg.roomid]
+    if not addr_dsnode or addr_dsnode.nid ~= msg.nid or addr_dsnode.addr_dsnode ~= msg.addr_dsnode then
+        return { code = ErrorCode.RoomDsLinkInvalid, error = "房间ds链接非法" }
     end
 
     room.room_data.state = 0

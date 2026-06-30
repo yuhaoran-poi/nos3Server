@@ -154,6 +154,8 @@ local ErrorCode = {
     RoomNeedCheck = 916,
     ---战斗记录未完成
     BattleRecordsNotComplete = 917,
+    ---房间ds链接非法
+    RoomDsLinkInvalid = 918,
 
     ---公会相关错误码
     ---已在公会中
