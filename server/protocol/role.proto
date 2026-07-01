@@ -292,3 +292,27 @@ message PBRoleSkillSwitchRspCmd
 	int32 skill_type	= 5; // 技能类型
 	int32 skill_id		= 6; // 技能id
 }
+
+message PBRepairEquipment
+{
+	int32 config_id	= 1;
+	int64 uniqid	= 2;
+	int32 pos		= 3;
+}
+
+// 角色穿戴装备修理
+message PBRoleEquipmentRepairReqCmd
+{
+	int64 uid			= 1;
+	int32 role_id		= 2;
+	repeated PBRepairEquipment need_repairs	= 3;
+}
+
+message PBRoleEquipmentRepairRspCmd
+{
+	int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+	int64 uid			= 3;
+	int32 roleid		= 4;
+	repeated PBRepairEquipment already_repairs	= 5;
+}

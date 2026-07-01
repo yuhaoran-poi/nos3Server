@@ -807,7 +807,7 @@ ds_address (	R	dsAddress
 CityNumListEntry
 key (Rkey
 value (Rvalue:8bproto3
-È.
+Ö1
 
 role.proto
 item.proto"4
@@ -1044,7 +1044,21 @@ skill_type (R	skillType
 roleid (Rroleid
 
 skill_type (R	skillType
-skill_id (RskillIdbproto3
+skill_id (RskillId"Z
+PBRepairEquipment
+	config_id (RconfigId
+uniqid (Runiqid
+pos (Rpos"
+PBRoleEquipmentRepairReqCmd
+uid (Ruid
+role_id (RroleId5
+need_repairs (2.PBRepairEquipmentRneedRepairs"®
+PBRoleEquipmentRepairRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+roleid (Rroleid;
+already_repairs (2.PBRepairEquipmentRalreadyRepairsbproto3
 —
 ghost.proto
 item.proto"I
@@ -1715,7 +1729,7 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-¶3
+¾4
 dsnode.protocommon.proto
 item.proto
 user.proto	bag.proto
@@ -1753,7 +1767,7 @@ addRoleExpb
 
 monster_id (R	monsterId!
 monster_type (RmonsterType
-kill_cnt (RkillCnt"Ù
+kill_cnt (RkillCnt"á
 PBGameSettle
 settle_data (	R
 settleData-
@@ -1782,10 +1796,15 @@ bootyValue,
 start_game_ts (RstartGameTs
 end_game_ts (R	endGameTs
 is_complete (R
-isComplete?
+isComplete>
+booty_coins (2.PBGameSettle.BootyCoinsEntryR
+bootyCoins?
 GameMissionsEntry
 key (Rkey
-value (Rvalue:8"=
+value (Rvalue:8F
+BootyCoinsEntry
+key (Rkey
+value (2.PBCoinRvalue:8"=
 PBEnterCityReqCmd
 uid (Ruid
 cityid (Rcityid"=

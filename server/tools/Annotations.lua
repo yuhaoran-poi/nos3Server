@@ -606,6 +606,7 @@
 ---@field public start_game_ts integer @游戏开始时间戳(秒级)
 ---@field public end_game_ts integer @游戏结束时间戳(秒级)
 ---@field public is_complete integer @完成率/通关率/撤离率
+---@field public booty_coins table<integer, PBCoin> @局内获得的货币类战利品
 
 
 ---@class PBEnterCityReqCmd
@@ -3003,6 +3004,26 @@
 ---@field public skill_id integer @技能id
 
 
+---@class PBRepairEquipment
+---@field public config_id integer
+---@field public uniqid integer
+---@field public pos integer
+
+
+---@class PBRoleEquipmentRepairReqCmd
+---@field public uid integer
+---@field public role_id integer
+---@field public need_repairs PBRepairEquipment[]
+
+
+---@class PBRoleEquipmentRepairRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roleid integer
+---@field public already_repairs PBRepairEquipment[]
+
+
 ---@class PBRoomSearchInfo
 ---@field public roomid integer
 ---@field public chapter integer @章节
@@ -4384,4 +4405,5 @@
 ---@field UniqueItem UniqueItem_cfg[]
 ---@field UpLvCostIDMapping UpLvCostIDMapping_cfg[]
 ---@field UpStar UpStar_cfg[]
+---@field WarehouseExpansion WarehouseExpansion_cfg[]
 ---@field WarehouseExpansion WarehouseExpansion_cfg[]

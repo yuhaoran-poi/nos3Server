@@ -2212,4 +2212,267 @@ function Role.PBRoleSkillSwitchReqCmd(req)
     scripts.Role.SaveAndLog(change_roles)
 end
 
+function Role.PBRoleEquipmentRepairReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid or not req.msg.roleid or not req.msg.need_repairs
+        or table.size(req.msg.need_repairs) == 0 then
+        return context.S2C(context.net_id, CmdCode.PBRoleEquipmentRepairRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = req.msg.uid,
+            roleid = req.msg.roleid or 0,
+            already_repairs = {},
+        }, req.msg_context.stub_id)
+    end
+
+    local roles = scripts.UserModel.GetRoles()
+    if not roles then
+        return context.S2C(context.net_id, CmdCode.PBRoleEquipmentRepairRspCmd,
+            {
+                code = ErrorCode.ServerInternalError,
+                error = "数据加载出错",
+                uid = req.msg.uid,
+                roleid = req.msg.roleid or 0,
+                already_repairs = {},
+            },
+            req.msg_context.stub_id)
+    end
+
+    -- 消耗配置
+    local common_cfg = CommonCfgDef.getConf("MaintenanceCost")
+    if not common_cfg then
+        moon.error("role_repair_func common_cfg is nil")
+        return context.S2C(context.net_id, CmdCode.PBRoleEquipmentRepairRspCmd,
+            {
+                code = ErrorCode.ConfigError,
+                error = "配置错误",
+                uid = req.msg.uid,
+                roleid = req.msg.roleid or 0,
+                already_repairs = {},
+            },
+            req.msg_context.stub_id)
+    end
+
+    local role_info = roles.role_list[req.msg.roleid]
+    if not role_info then
+        return context.S2C(context.net_id, CmdCode.PBRoleEquipmentRepairRspCmd,
+            {
+                code = ErrorCode.RoleNotExist,
+                error = "角色不存在",
+                uid = req.msg.uid,
+                roleid = req.msg.roleid or 0,
+                already_repairs = {},
+            },
+            req.msg_context.stub_id)
+    end
+
+    local function role_repair_func(item_data, smallType, cost_items, cost_coins)
+        local old_item_data = table.copy(item_data)
+        local uniq_item_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+        if not uniq_item_cfg then
+            moon.error("role_repair_func uniq_item_cfg is nil", item_data.common_info.config_id)
+            return ErrorCode.ConfigError, 0
+        end
+
+        local fix_durability = 0
+        local errcode = ErrorCode.None
+        if smallType == ItemDefine.EItemSmallType.MagicItem then
+            if item_data.special_info.magic_item.strong_value <= 0 then
+                return ErrorCode.StrongNotEnough, 0
+            end
+            if item_data.special_info.magic_item.cur_durability >= uniq_item_cfg.durability then
+                return ErrorCode.DurabilityMax, 0
+            end
+            fix_durability = math.min(uniq_item_cfg.durability - item_data.special_info.magic_item.cur_durability,
+                item_data.special_info.magic_item.strong_value)
+        elseif smallType == ItemDefine.EItemSmallType.HumanDiagrams then
+            if item_data.special_info.diagrams_item.strong_value <= 0 then
+                return ErrorCode.StrongNotEnough, 0
+            end
+            if item_data.special_info.diagrams_item.cur_durability >= uniq_item_cfg.durability then
+                return ErrorCode.DurabilityMax, 0
+            end
+            fix_durability = math.min(uniq_item_cfg.durability - item_data.special_info.diagrams_item.cur_durability,
+                item_data.special_info.diagrams_item.strong_value)
+        elseif smallType == ItemDefine.EItemSmallType.SpaceRing then
+            if item_data.special_info.space_ring.strong_value <= 0 then
+                return ErrorCode.StrongNotEnough, 0
+            end
+            if item_data.special_info.space_ring.cur_durability >= uniq_item_cfg.durability then
+                return ErrorCode.DurabilityMax, 0
+            end
+            fix_durability = math.min(uniq_item_cfg.durability - item_data.special_info.space_ring.cur_durability,
+                item_data.special_info.space_ring.strong_value)
+        else
+            return ErrorCode.ItemTypeMismatch, 0
+        end
+        if fix_durability <= 0 then
+            return ErrorCode.DurabilityMax, 0
+        end
+        
+        local change_cost_items = table.copy(cost_items, true)
+        local change_cost_coins = table.copy(cost_coins, true)
+        ItemDefine.GetItemsFromCfg(common_cfg.items, fix_durability, true, change_cost_items, change_cost_coins)
+        -- 检测道具是否足够
+        errcode = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, change_cost_items, {})
+        if errcode ~= ErrorCode.None then
+            return errcode, 0
+        end
+        errcode = scripts.Bag.CheckCoinsEnough(change_cost_coins)
+        if errcode ~= ErrorCode.None then
+            return errcode, 0
+        end
+        cost_items = change_cost_items
+        cost_coins = change_cost_coins
+
+        return ErrorCode.None, fix_durability
+    end
+
+    local cost_items = {}
+    local cost_coins = {}
+    local add_durability_list = {}
+    local ret_code = ErrorCode.None
+    local fix_durability = 0
+    for _, need_repair in ipairs(req.msg.need_repairs) do
+        local smallType = ItemDefine.GetItemType(need_repair.config_id)
+        if smallType == ItemDefine.EItemSmallType.MagicItem then
+            if role_info.magic_item and role_info.magic_item.common_info
+                and role_info.magic_item.common_info.config_id == need_repair.config_id
+                and role_info.magic_item.common_info.uniqid == need_repair.uniqid then
+                ret_code, fix_durability = role_repair_func(role_info.magic_item, smallType, cost_items,
+                    cost_coins)
+                if ret_code == ErrorCode.None then
+                    local add_durability = {
+                        config_id = need_repair.config_id,
+                        uniqid = need_repair.uniqid,
+                        pos = need_repair.pos,
+                        smallType = smallType,
+                        fix_durability = fix_durability,
+                    }
+                    table.insert(add_durability_list, add_durability)
+                end
+            end
+        elseif smallType == ItemDefine.EItemSmallType.HumanDiagrams then
+            if role_info.digrams_cards and table.size(role_info.digrams_cards) > 0
+                and role_info.digrams_cards[need_repair.pos]
+                and role_info.digrams_cards[need_repair.pos].common_info
+                and role_info.digrams_cards[need_repair.pos].common_info.config_id == need_repair.config_id
+                and role_info.digrams_cards[need_repair.pos].common_info.uniqid == need_repair.uniqid then
+                ret_code, fix_durability = role_repair_func(role_info.digrams_cards[need_repair.pos], smallType,
+                    cost_items, cost_coins)
+                if ret_code == ErrorCode.None then
+                    local add_durability = {
+                        config_id = need_repair.config_id,
+                        uniqid = need_repair.uniqid,
+                        pos = need_repair.pos,
+                        smallType = smallType,
+                        fix_durability = fix_durability,
+                    }
+                    table.insert(add_durability_list, add_durability)
+                end
+            end
+        elseif smallType == ItemDefine.EItemSmallType.SpaceRing then
+            if role_info.space_ring and role_info.space_ring.common_info
+                and role_info.space_ring.common_info.config_id == need_repair.config_id
+                and role_info.space_ring.common_info.uniqid == need_repair.uniqid then
+                ret_code, fix_durability = role_repair_func(role_info.space_ring, smallType, cost_items, cost_coins)
+                if ret_code == ErrorCode.None then
+                    local add_durability = {
+                        config_id = need_repair.config_id,
+                        uniqid = need_repair.uniqid,
+                        pos = need_repair.pos,
+                        smallType = smallType,
+                        fix_durability = fix_durability,
+                    }
+                    table.insert(add_durability_list, add_durability)
+                end
+            end
+        end
+    end
+
+    local already_repairs = {}
+    if table.size(add_durability_list) > 0 then
+        local bag_change_logs = {}
+        -- 扣除道具
+        if table.size(cost_items) > 0 then
+            local bag_code = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, bag_change_logs)
+            if bag_code ~= ErrorCode.None then
+                scripts.Bag.RollBackWithChange(bag_change_logs)
+                return context.S2C(context.net_id, CmdCode.PBRoleEquipmentRepairRspCmd,
+                    {
+                        code = bag_code,
+                        error = "道具不足",
+                        uid = req.msg.uid,
+                        roleid = req.msg.roleid or 0,
+                        already_repairs = {},
+                    },
+                    req.msg_context.stub_id)
+            end
+        end
+        if table.size(cost_coins) > 0 then
+            local bag_code = scripts.Bag.DealCoins(cost_coins, bag_change_logs)
+            if bag_code ~= ErrorCode.None then
+                scripts.Bag.RollBackWithChange(bag_change_logs)
+                return context.S2C(context.net_id, CmdCode.PBRoleEquipmentRepairRspCmd,
+                    {
+                        code = bag_code,
+                        error = "货币不足",
+                        uid = req.msg.uid,
+                        roleid = req.msg.roleid or 0,
+                        already_repairs = {},
+                    },
+                    req.msg_context.stub_id)
+            end
+        end
+
+        for _, add_durability in ipairs(add_durability_list) do
+            table.insert(already_repairs, {
+                config_id = add_durability.config_id,
+                uniqid = add_durability.uniqid,
+                pos = add_durability.pos,
+            })
+            if add_durability.smallType == ItemDefine.EItemSmallType.MagicItem then
+                -- 增加法器耐久度
+                local item_data = role_info.magic_item
+                item_data.special_info.magic_item.cur_durability = item_data.special_info.magic_item.cur_durability +
+                    add_durability.fix_durability
+                item_data.special_info.magic_item.strong_value = item_data.special_info.magic_item.strong_value -
+                    add_durability.fix_durability
+            elseif add_durability.smallType == ItemDefine.EItemSmallType.HumanDiagrams then
+                -- 增加八卦牌耐久度
+                local item_data = role_info.digrams_cards[add_durability.pos]
+                item_data.special_info.diagrams_item.cur_durability = item_data.special_info.diagrams_item
+                    .cur_durability + add_durability.fix_durability
+                item_data.special_info.diagrams_item.strong_value = item_data.special_info.diagrams_item.strong_value -
+                    add_durability.fix_durability
+            elseif add_durability.smallType == ItemDefine.EItemSmallType.SpaceRing then
+                -- 增加戒指耐久度
+                local item_data = role_info.space_ring
+                item_data.special_info.space_ring.cur_durability = item_data.special_info.space_ring.cur_durability +
+                    add_durability.fix_durability
+                item_data.special_info.space_ring.strong_value = item_data.special_info.space_ring.strong_value -
+                    add_durability.fix_durability
+            end
+        end
+
+        -- 存储数据
+        if table.size(bag_change_logs) > 0 then
+            scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.ItemRepair)
+        end
+        local change_roles = {}
+        change_roles[req.msg.roleid] = "RepairEquipment"
+        scripts.Role.SaveAndLog(change_roles)
+    end
+
+    return context.S2C(context.net_id, CmdCode.PBRoleEquipmentRepairRspCmd,
+        {
+            code = ret_code,
+            error = "",
+            uid = req.msg.uid,
+            roleid = req.msg.roleid or 0,
+            already_repairs = already_repairs,
+        },
+        req.msg_context.stub_id)
+end
+
 return Role

@@ -841,6 +841,15 @@ function Room.GameSettle(settle_info)
         end
     end
 
+    if settle_info.booty_coins then
+        local ret_code = scripts.Bag.DealCoins(settle_info.booty_coins, bag_change_log)
+        if ret_code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            moon.error(string.format("GameSettle DealCoins err:\n%s", json.pretty_encode(settle_info.booty_coins)))
+            return
+        end
+    end
+
     if settle_info.consume_bag then
         -- 同步消耗品背包
         local sync_baginfo = {

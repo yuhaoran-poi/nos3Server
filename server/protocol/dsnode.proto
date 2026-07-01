@@ -48,6 +48,7 @@ message PBGameSettle
     int64 start_game_ts = 17;   // 游戏开始时间戳(秒级)
     int64 end_game_ts = 18;   // 游戏结束时间戳(秒级)
     int32 is_complete   = 19;   // 完成率/通关率/撤离率
+    map<int32, PBCoin>  booty_coins = 20;   //局内获得的货币类战利品
 }
 
 // 玩家进入主城
