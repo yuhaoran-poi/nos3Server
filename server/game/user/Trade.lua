@@ -1098,7 +1098,7 @@ function Trade.PBTradeBuyComplexReqCmd(req)
 
         lock_coin_count = res.data.remain_coin
         if lock_coin_count <= 0 then
-            moon.error(string.format("Trade.PBTradeBuyComplexReqCmd remain_coin<=0 add_list:%s", json.stringify(add_list)))
+            moon.error(string.format("Trade.PBTradeBuyComplexReqCmd remain_coin<=0 add_list:%s", json.pretty_encode(add_list)))
             break
         end
     end
