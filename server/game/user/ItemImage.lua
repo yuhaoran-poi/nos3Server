@@ -487,6 +487,15 @@ function ItemImage.UpLvImage(config_id, add_exp)
         if up_exp_cfgs then
             remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp, uniqitem_cfg.type2)
         end
+    elseif item_type == ItemDefine.EItemSmallType.DurabItem then
+        local uniqitem_cfg = GameCfg.UniqueItem[config_id]
+        if not uniqitem_cfg or not uniqitem_cfg.type2 then
+            return ErrorCode.ConfigError
+        end
+        local up_exp_cfgs = GameCfg.GamePropUpLv
+        if up_exp_cfgs then
+            remain_exp = check_add_exp(up_exp_cfgs, exps, remain_exp, uniqitem_cfg.type2)
+        end
     end
 
     if remain_exp > 0 or table.size(exps) <= 0 then
