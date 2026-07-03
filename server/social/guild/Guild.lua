@@ -466,4 +466,50 @@ function Guild.DismissGuild(operator_uid)
     return ErrorCode.None
 end
 
+-- 获取宗门信息用于排行榜
+function Guild.GetGuildInfoForRank()
+    local guild_info = scripts.GuildModel.GetGuildInfoDB()
+    if not guild_info then
+        return nil
+    end
+
+    local president_id = guild_info.president_id or 0
+    local president_name = guild_info.president_name or ""
+    local president_chr = 0
+    local president_chs = {}
+    local president_gho = 0
+    local president_ghs = 0
+
+    if president_id > 0 then
+        local res, err = cluster.call(CmdEnum.FixedNodeId.MANAGER, "usermgr", "UserMgr.GetUserAttr", president_id)
+        if res and res.attr then
+            local attr = res.attr
+            local cur_show_role = attr.cur_show_role or {}
+            local cur_show_ghost = attr.cur_show_ghost or {}
+
+            president_chr = cur_show_role.config_id or 0
+            if cur_show_role.skins then
+                for _, skin_id in pairs(cur_show_role.skins) do
+                    table.insert(president_chs, skin_id)
+                end
+            end
+            president_gho = cur_show_ghost.config_id or 0
+            president_ghs = cur_show_ghost.skin_id or 0
+        end
+    end
+
+    return {
+        guild_id = guild_info.guild_id or 0,
+        name = guild_info.name or "",
+        item_headid = guild_info.item_headid or 0,
+        item_frameid = guild_info.item_frameid or 0,
+        president_id = president_id,
+        president_name = president_name,
+        president_chr = president_chr,
+        president_chs = president_chs,
+        president_gho = president_gho,
+        president_ghs = president_ghs,
+    }
+end
+
 return Guild

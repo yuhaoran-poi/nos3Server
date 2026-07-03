@@ -116,14 +116,14 @@ function RankLogic.InitTotalRanks(loaded_rank_types)
     end
 end
 
--- 获取玩家所在的流动榜
-function RankLogic.GetPlayerFlowRank(rank_type, uid)
+-- 获取玩家/宗门所在的流动榜
+function RankLogic.GetPlayerFlowRank(rank_type, id)
     if not rank_data[rank_type] then
         return nil
     end
 
     for _, rank in ipairs(rank_data[rank_type]) do
-        if rank.flow and rank.ps[uid] then
+        if rank.flow and rank.ps[id] then
             return rank
         end
     end
@@ -131,26 +131,23 @@ function RankLogic.GetPlayerFlowRank(rank_type, uid)
     return nil
 end
 
--- 分配玩家到流动榜
-function RankLogic.AssignPlayerToFlowRank(rank_type, uid)
+-- 分配玩家/宗门到流动榜
+function RankLogic.AssignPlayerToFlowRank(rank_type, id)
     if not rank_data[rank_type] then
         return nil
     end
 
-    -- 检查玩家是否已在榜单中
-    local existing_rank = RankLogic.GetPlayerFlowRank(rank_type, uid)
+    local existing_rank = RankLogic.GetPlayerFlowRank(rank_type, id)
     if existing_rank then
         return existing_rank
     end
 
-    -- 找到人数未满的流动榜
     for _, rank in ipairs(rank_data[rank_type]) do
         if rank.flow and table.size(rank.ps) < RankDef.FLOW_RANK_MAX_PLAYERS then
             return rank
         end
     end
 
-    -- 所有榜单都满了，创建新的流动榜
     local new_rank = RankDef.newRankData()
     new_rank.rid = #rank_data[rank_type] + 1
     new_rank.rt = rank_type
@@ -197,7 +194,10 @@ function RankLogic.SortRank(rank)
     -- 更新排名
     for i, data in ipairs(players) do
         data.rank = i
-        rank.ps[data.uid] = data
+        local key = data.id or data.uid
+        if key then
+            rank.ps[key] = data
+        end
     end
 end
 
@@ -562,27 +562,21 @@ function RankLogic.GetRewardIdByRank(rank_reward_cfg, player_rank)
     return nil
 end
 
--- 获取玩家未领取的奖励
-function RankLogic.GetUnclaimedRewards(uid)
+-- 获取玩家/宗门未领取的奖励
+function RankLogic.GetUnclaimedRewards(id)
     local unclaimed_rewards = {}
 
-    -- 遍历所有排行榜类型
     for rank_type, periods in pairs(rank_reward_data) do
-        -- 遍历所有期数
         for period, reward_data in pairs(periods) do
-            -- 遍历所有子榜
             for _, sub_rank in pairs(reward_data.sr) do
-                -- 检查玩家是否在该子榜中
-                if sub_rank.ps[uid] then
-                    local player_data = sub_rank.ps[uid]
+                if sub_rank.ps[id] then
+                    local player_data = sub_rank.ps[id]
                     local player_rank = player_data.rank
 
-                    -- 获取奖励配置
                     local rank_reward_cfg = GameCfg.RankingListReward[rank_type]
                     if rank_reward_cfg then
                         local reward_id = RankLogic.GetRewardIdByRank(rank_reward_cfg, player_rank)
                         if reward_id then
-                            -- 添加到未领取奖励列表
                             if not unclaimed_rewards[period] then
                                 unclaimed_rewards[period] = {}
                             end
@@ -597,39 +591,35 @@ function RankLogic.GetUnclaimedRewards(uid)
         end
     end
 
-    moon.info(string.format("[RankLogic] GetUnclaimedRewards: uid=%d, unclaimed_rewards=%s", uid, json.encode(unclaimed_rewards)))
+    moon.info(string.format("[RankLogic] GetUnclaimedRewards: id=%d, unclaimed_rewards=%s", id, json.encode(unclaimed_rewards)))
     return ErrorCode.None, unclaimed_rewards
 end
 
--- 从奖励数据中移除玩家
-function RankLogic.RemovePlayerFromRewardData(rank_type, period, uid)
+-- 从奖励数据中移除玩家/宗门
+function RankLogic.RemovePlayerFromRewardData(rank_type, period, id)
     if not rank_reward_data[rank_type] or not rank_reward_data[rank_type][period] then
         return
     end
 
     local reward_data = rank_reward_data[rank_type][period]
     for rid, sub_rank in pairs(reward_data.sr) do
-        if sub_rank.ps[uid] then
-            sub_rank.ps[uid] = nil
+        if sub_rank.ps[id] then
+            sub_rank.ps[id] = nil
 
-            -- 如果该子榜所有奖励都已领取，清除子榜数据
             if table.empty(sub_rank.ps) then
                 reward_data.sr[rid] = nil
             end
 
-            -- 如果所有子榜奖励都已领取，清除该期数数据
             if table.empty(reward_data.sr) then
                 rank_reward_data[rank_type][period] = nil
             end
 
-            -- 如果该排行榜类型没有任何期数数据，清除排行榜类型数据
             if table.empty(rank_reward_data[rank_type]) then
                 rank_reward_data[rank_type] = nil
             end
 
-            -- 同步到Redis
             RankLogic.SaveRankRewardToRedis(rank_type)
-            moon.info(string.format("[RankLogic] Removed player %d from reward data: rank_type=%d, period=%d", uid, rank_type, period))
+            moon.info(string.format("[RankLogic] Removed entry %d from reward data: rank_type=%d, period=%d", id, rank_type, period))
             break
         end
     end
@@ -686,28 +676,37 @@ function RankLogic.MergeFlowRanks(rank_type)
     return ErrorCode.None
 end
 
--- 将玩家字典转换为数组并转换字段名为客户端期望的格式
-local function convertPlayersToArray(rank)
+local function isGuildRank(rank_type)
+    local guild_ranks = {
+        [RankDef.RankType.GuildActive] = true,
+        [RankDef.RankType.GuildMoney] = true,
+        [RankDef.RankType.GuildScore_Weekly] = true,
+        [RankDef.RankType.GuildScore_Season] = true,
+    }
+    return guild_ranks[rank_type] or false
+end
+
+local function convertPlayersToArray(rank, rank_type)
     moon.info(string.format("[RankLogic] convertPlayersToArray: rank=%s, rank.ps=%s, rank.rid=%s", 
         tostring(rank), tostring(rank and rank.ps), tostring(rank and rank.rid)))
     if not rank or not rank.ps then
         return rank
     end
 
-    -- 创建新的排行榜数据，使用客户端期望的字段名
     local new_rank = {
         rank_id = rank.rid or rank.id or 1,
         rank_type = rank.rt or rank.rank_type or 0,
         is_flow = rank.flow or rank.is_flow or false,
-        players = {},
+        rank_items = {},
         create_time = rank.ct or rank.create_time or 0,
         last_refresh_time = rank.lrt or rank.last_refresh_time or 0,
     }
 
-    for uid, player_data in pairs(rank.ps) do
-        -- 复制玩家数据并转换字段名为客户端期望的格式
+    local need_guild_leader = isGuildRank(rank_type or rank.rt)
+
+    for id, player_data in pairs(rank.ps) do
         local new_player_data = {
-            uid = player_data.uid or 0,
+            id = player_data.id or player_data.uid or id or 0,
             name = player_data.name or "",
             avatar = player_data.avatar or 0,
             avatar_frame = player_data.af or 0,
@@ -717,32 +716,30 @@ local function convertPlayersToArray(rank)
             extra_data = {},
             rank = player_data.rank or 0,
             update_time = player_data.ut or 0,
-            -- 出战角色和鬼怪信息
             character_id = player_data.chr or 0,
-            -- 处理新旧数据兼容：旧数据是单个数字，新数据是数组
             character_skins = type(player_data.chs) == "table" and player_data.chs or (player_data.chs and {player_data.chs} or {}),
             ghost_id = player_data.gho or 0,
             ghost_skin = player_data.ghs or 0,
-            -- 宗门榜宗主信息
-            guild_leader = player_data.gl or "",
-            gl_char_id = player_data.gl_chr or 0,
-            gl_char_skins = type(player_data.gl_chs) == "table" and player_data.gl_chs or (player_data.gl_chs and {player_data.gl_chs} or {}),
-            gl_ghost_id = player_data.gl_gho or 0,
-            gl_ghost_skin = player_data.gl_ghs or 0,
         }
 
-        -- 转换 ed 中的值并使用客户端期望的字段名
+        if need_guild_leader then
+            new_player_data.guild_leader = player_data.gl or ""
+            new_player_data.gl_char_id = player_data.gl_chr or 0
+            new_player_data.gl_char_skins = type(player_data.gl_chs) == "table" and player_data.gl_chs or (player_data.gl_chs and {player_data.gl_chs} or {})
+            new_player_data.gl_ghost_id = player_data.gl_gho or 0
+            new_player_data.gl_ghost_skin = player_data.gl_ghs or 0
+        end
+
         if player_data.ed then
             for k, v in pairs(player_data.ed) do
-                -- 如果是数组，保持原样；否则转为字符串
                 new_player_data.extra_data[k] = type(v) == "table" and v or tostring(v)
             end
         end
 
-        table.insert(new_rank.players, new_player_data)
+        table.insert(new_rank.rank_items, new_player_data)
     end
 
-    table.sort(new_rank.players, function(a, b)
+    table.sort(new_rank.rank_items, function(a, b)
         if a.rank and b.rank then
             return a.rank < b.rank
         end
@@ -812,10 +809,10 @@ function RankLogic.GetAllRankTypes()
     return ErrorCode.None, result
 end
 
--- 获取玩家在排行榜中的信息或整个排行榜数据
-function RankLogic.GetRankInfo(rank_type, rank_id, uid)
-    moon.info(string.format("[RankLogic] GetRankInfo called: rank_type=%d, rank_id=%s, uid=%s", 
-        rank_type, tostring(rank_id), tostring(uid)))
+-- 获取玩家/宗门在排行榜中的信息或整个排行榜数据
+function RankLogic.GetRankInfo(rank_type, rank_id, query_id)
+    moon.info(string.format("[RankLogic] GetRankInfo called: rank_type=%d, rank_id=%s, query_id=%s", 
+        rank_type, tostring(rank_id), tostring(query_id)))
 
     if not rank_type or not rank_data[rank_type] then
         moon.info(string.format("[RankLogic] GetRankInfo: no rank data for type %d", rank_type))
@@ -829,32 +826,34 @@ function RankLogic.GetRankInfo(rank_type, rank_id, uid)
             table.size(rank_data[rank_type][1].ps or {})))
     end
 
-    -- 如果指定了uid（大于0），获取玩家个人信息（可能在多个子榜中）
-    if uid and uid > 0 then
-        moon.info(string.format("[RankLogic] GetRankInfo: entering player info branch for uid=%d", uid))
+    if query_id and query_id > 0 then
+        moon.info(string.format("[RankLogic] GetRankInfo: entering info branch for query_id=%d", query_id))
         local results = {}
+        local need_guild_leader = isGuildRank(rank_type)
+
         for _, rank in ipairs(rank_data[rank_type]) do
-            moon.info(string.format("[RankLogic] GetRankInfo: checking rank.rid=%d, rank_id=%s, rank.ps[uid]=%s", 
-                rank.rid or 0, tostring(rank_id), tostring(rank.ps[uid])))
-            -- rank_id=0 表示查询所有子榜，否则只查询指定的子榜
+            moon.info(string.format("[RankLogic] GetRankInfo: checking rank.rid=%d, rank_id=%s, rank.ps[query_id]=%s", 
+                rank.rid or 0, tostring(rank_id), tostring(rank.ps[query_id])))
+
             if not (rank_id and rank_id > 0 and rank.rid ~= rank_id) then
-                if rank.ps[uid] then
-                    moon.info(string.format("[RankLogic] GetRankInfo: found player %d in rank %d", uid, rank.rid))
-                    local player_data = rank.ps[uid]
-                    -- 转换 extra_data，确保值都是字符串类型
+                if rank.ps[query_id] then
+                    moon.info(string.format("[RankLogic] GetRankInfo: found entry %d in rank %d", query_id, rank.rid))
+                    local player_data = rank.ps[query_id]
+
                     local extra_data = {}
                     if player_data.ed then
                         for k, v in pairs(player_data.ed) do
                             extra_data[k] = type(v) == "table" and json.encode(v) or tostring(v)
                         end
                     end
-                    table.insert(results, {
+
+                    local player_result = {
                         rank_type = rank_type,
                         sub_rank_id = rank.rid,
                         is_flow = rank.flow or false,
                         create_time = rank.ct or 0,
                         last_refresh_time = rank.lrt or 0,
-                        uid = player_data.uid or 0,
+                        id = player_data.id or player_data.uid or uid or 0,
                         name = player_data.name or "",
                         avatar = player_data.avatar or 0,
                         avatar_frame = player_data.af or 0,
@@ -868,12 +867,17 @@ function RankLogic.GetRankInfo(rank_type, rank_id, uid)
                         character_skins = type(player_data.chs) == "table" and player_data.chs or (player_data.chs and {player_data.chs} or {}),
                         ghost_id = player_data.gho or 0,
                         ghost_skin = player_data.ghs or 0,
-                        guild_leader = player_data.gl or "",
-                        gl_char_id = player_data.gl_chr or 0,
-                        gl_char_skins = type(player_data.gl_chs) == "table" and player_data.gl_chs or (player_data.gl_chs and {player_data.gl_chs} or {}),
-                        gl_ghost_id = player_data.gl_gho or 0,
-                        gl_ghost_skin = player_data.gl_ghs or 0,
-                    })
+                    }
+
+                    if need_guild_leader then
+                        player_result.guild_leader = player_data.gl or ""
+                        player_result.gl_char_id = player_data.gl_chr or 0
+                        player_result.gl_char_skins = type(player_data.gl_chs) == "table" and player_data.gl_chs or (player_data.gl_chs and {player_data.gl_chs} or {})
+                        player_result.gl_ghost_id = player_data.gl_gho or 0
+                        player_result.gl_ghost_skin = player_data.gl_ghs or 0
+                    end
+
+                    table.insert(results, player_result)
                 end
             else
                 moon.info(string.format("[RankLogic] GetRankInfo: rank.rid=%d doesn't match rank_id=%s", rank.rid or 0, tostring(rank_id)))
@@ -881,20 +885,18 @@ function RankLogic.GetRankInfo(rank_type, rank_id, uid)
         end
 
         if #results > 0 then
-            -- 如果只找到一个，返回单个对象；否则返回数组
             return ErrorCode.None, #results == 1 and results[1] or results
         end
 
-        moon.info(string.format("[RankLogic] GetRankInfo: player %d not found in rank %d", uid, rank_type))
+        moon.info(string.format("[RankLogic] GetRankInfo: entry %d not found in rank %d", query_id, rank_type))
         return ErrorCode.None, nil
     end
 
     -- 否则获取整个排行榜数据
     local result = {}
     for _, rank in ipairs(rank_data[rank_type]) do
-        -- rank_id=0 表示查询所有子榜，否则只查询指定的子榜
         if not (rank_id and rank_id > 0 and rank.rid ~= rank_id) then
-            table.insert(result, convertPlayersToArray(rank))
+            table.insert(result, convertPlayersToArray(rank, rank_type))
         end
     end
 
@@ -972,22 +974,25 @@ function RankLogic.LoadRankDataFromRedis()
     local loaded_rank_types = {}
     local loaded_count = 0
 
-    -- 遍历 RankDef.RankType 表的值，而不是键
     for _, rank_type in pairs(RankDef.RankType) do
-        -- 加载排行榜数据
         local rank_key = string.format("rank:%d", rank_type)
         local res, rank_json = pcall(Database.loadserverdata_with_key, addr_db, rank_key)
         if res and rank_json and rank_json ~= nil and rank_json ~= "" then
             local ok, decoded = pcall(json.decode, rank_json)
             if ok then
-                -- 补全缺失的字段
                 for i, rank in ipairs(decoded) do
                     rank.rid = rank.rid or rank.id or i
                     rank.rt = rank.rt or rank.rank_type or rank_type
                     rank.flow = rank.flow or rank.is_flow or false
                     rank.ct = rank.ct or rank.create_time or moon.time()
                     rank.lrt = rank.lrt or rank.last_refresh_time or moon.time()
-                    rank.ps = rank.ps or rank.players or {}
+                    rank.ps = rank.ps or rank.rank_items or {}
+
+                    for uid, player_data in pairs(rank.ps) do
+                        if player_data.uid and not player_data.id then
+                            player_data.id = player_data.uid
+                        end
+                    end
                 end
                 rank_data[rank_type] = decoded
                 loaded_rank_types[rank_type] = true
@@ -1143,18 +1148,19 @@ end
 -- 内部更新方法（不放入队列，直接更新）
 -- force: true=强制更新（即使分数降低）, false=初始化模式（不覆盖已有非零分数）
 function RankLogic.UpdatePlayerRankInternal(rank_type, uid, player_data, force)
+    local rank_key = player_data.id or uid
     local rank
     if RankLogic.IsFlowRank(rank_type) then
-        rank = RankLogic.AssignPlayerToFlowRank(rank_type, uid)
+        rank = RankLogic.AssignPlayerToFlowRank(rank_type, rank_key)
     else
-        rank = rank_data[rank_type][1] -- 总榜只有一个
+        rank = rank_data[rank_type][1]
     end
 
     if not rank then
         return ErrorCode.ConfigError
     end
 
-    local existing_data = rank.ps[uid]
+    local existing_data = rank.ps[rank_key]
 
     -- 主线榜(RankType_Mainline=3)和封塔榜(RankType_Fengta=4)：只有分数上涨才更新排名
     local is_mainline_or_fengta = rank_type == RankDef.RankType.Mainline or rank_type == RankDef.RankType.Fengta
@@ -1197,7 +1203,7 @@ function RankLogic.UpdatePlayerRankInternal(rank_type, uid, player_data, force)
             uid, rank_type, player_data.value or 0))
     end
 
-    rank.ps[uid] = player_data
+    rank.ps[rank_key] = player_data
     player_data.ut = moon.time()
 
     RankLogic.SortRank(rank)

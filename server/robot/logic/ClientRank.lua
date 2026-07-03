@@ -29,10 +29,12 @@ function Client:get_rank_info(rank_type, rank_id, uid)
         return
     end
     local req_msg = {
-        uid = uid or self.uid,
         rank_type = rank_type,
         rank_id = rank_id or 1,
     }
+    if uid then
+        req_msg.uid = uid
+    end
 
     self:send("PBRankGetInfoReqCmd", req_msg, function(msg)
         print("rpc PBRankGetInfoReqCmd ret = ", self.index, msg)

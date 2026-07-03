@@ -50,9 +50,29 @@ function Rank.Start(isnew)
     moon.info("Player assigned to all ranks for uid:%d nowtime:%d", context.uid, moon.time())
 end
 
+-- 获取宗门信息（包含宗门ID、名称、头像、头像框、宗主信息）
+local function getGuildInfo()
+    local user_attr = scripts.UserModel.GetUserAttr()
+    local guild_id = user_attr.guild.guild_id or 0
+    local guild_node = user_attr.guild.guild_node or 0
+    local addr_guild = user_attr.guild.addr_guild or 0
+
+    if guild_id == 0 or guild_node == 0 or addr_guild == 0 then
+        return nil
+    end
+
+    local res, err = clusterd.call(guild_node, addr_guild, "Guild.GetGuildInfoForRank")
+    if not res then
+        moon.error(string.format("[Rank] getGuildInfo failed: guild_id=%d, err=%s", guild_id, tostring(err)))
+        return nil
+    end
+
+    return res
+end
+
 -- 分配玩家到所有排行榜
 function Rank.AssignPlayerToAllRanks()
-    local rank_types = {
+    local player_rank_types = {
         RankDef.RankType.Duanwei_Weekly,
         RankDef.RankType.Duanwei_Season,
         RankDef.RankType.Mainline,
@@ -63,6 +83,9 @@ function Rank.AssignPlayerToAllRanks()
         RankDef.RankType.Player,
         RankDef.RankType.Role,
         RankDef.RankType.Antique,
+    }
+
+    local guild_rank_types = {
         RankDef.RankType.GuildActive,
         RankDef.RankType.GuildMoney,
         RankDef.RankType.GuildScore_Weekly,
@@ -70,25 +93,48 @@ function Rank.AssignPlayerToAllRanks()
     }
 
     local battle_info = getPlayerBattleInfo()
-    for _, rank_type in ipairs(rank_types) do
+    local user_attr = scripts.UserModel.GetUserAttr()
+
+    for _, rank_type in ipairs(player_rank_types) do
         local player_data = {
-            uid = context.uid,
-            name = scripts.UserModel.GetUserAttr().nick_name or "",
-            avatar = scripts.UserModel.GetUserAttr().head_icon or 0,
-            af = scripts.UserModel.GetUserAttr().head_frame or 0,
-            gn = scripts.UserModel.GetUserAttr().guild_name or "",
-            gid = scripts.UserModel.GetUserAttr().guild_id or 0,
-            value = 0, -- 初始分数为0
+            id = context.uid,
+            name = user_attr.nick_name or "",
+            avatar = user_attr.head_icon or 0,
+            af = user_attr.head_frame or 0,
+            gn = user_attr.guild_name or "",
+            gid = user_attr.guild_id or 0,
+            value = 0,
             ed = {},
-            -- 出战角色和鬼怪信息（初始化时也要记录）
             chr = battle_info.chr,
             chs = battle_info.chs,
             gho = battle_info.gho,
             ghs = battle_info.ghs,
         }
-        -- force=false: 初始化模式，不覆盖已有非零分数
         Rank.UpdatePlayerRank(rank_type, player_data, false)
     end
+
+    -- TODO: 宗门榜数据存储由宗门服务或宗门管理器触发，暂时注释
+    -- local guild_info = getGuildInfo()
+    -- if guild_info then
+    --     for _, rank_type in ipairs(guild_rank_types) do
+    --         local guild_data = {
+    --             id = guild_info.guild_id or 0,
+    --             name = guild_info.name or "",
+    --             avatar = guild_info.item_headid or 0,
+    --             af = guild_info.item_frameid or 0,
+    --             gn = guild_info.name or "",
+    --             gid = guild_info.guild_id or 0,
+    --             value = 0,
+    --             ed = {},
+    --             gl = guild_info.president_name or "",
+    --             gl_chr = guild_info.president_chr or 0,
+    --             gl_chs = guild_info.president_chs or {},
+    --             gl_gho = guild_info.president_gho or 0,
+    --             gl_ghs = guild_info.president_ghs or 0,
+    --         }
+    --         Rank.UpdatePlayerRank(rank_type, guild_data, false)
+    --     end
+    -- end
 end
 
 -- 获取排行榜数据
@@ -152,7 +198,7 @@ function Rank.PBRankGetInfoReqCmd(req)
                     rank_id = player_info.sub_rank_id or 0,
                     rank_type = player_info.rank_type or 0,
                     is_flow = player_info.is_flow or false,
-                    players = {player_info},
+                    rank_items = {player_info},
                     create_time = player_info.create_time or 0,
                     last_refresh_time = player_info.last_refresh_time or 0,
                 }
@@ -281,9 +327,10 @@ end
 
 -- 处理玩家上榜
 function Rank.UpdatePlayerRank(rank_type, player_data, force)
-    player_data.uid = context.uid
-    local result, err = clusterd.call(3004, "rank", "handlePlayerRankUpdate", {rank_type = rank_type, uid = context.uid, player_data = player_data, force = force})
-    if result == nil then  -- 修改：检查是否为 nil，而不是检查假值
+    player_data.id = player_data.id or context.uid
+    player_data.uid = player_data.id
+    local result, err = clusterd.call(3004, "rank", "handlePlayerRankUpdate", {rank_type = rank_type, uid = player_data.id, player_data = player_data, force = force})
+    if result == nil then
         moon.error("Failed to update player rank:", err)
         return ErrorCode.ServerInternalError
     end
@@ -480,73 +527,84 @@ end
 
 -- 宗门活跃榜更新
 function Rank.UpdateRank_GuildActive(active_value)
-    --local leader_info = getGuildLeaderInfo()
-    local player_data = {
-        name = scripts.UserModel.GetUserAttr().guild_name or "",
-        avatar = 0,  -- 宗门没有头像，使用默认值
-        af = 0,
-        gn = scripts.UserModel.GetUserAttr().guild_name or "",
-        gid = scripts.UserModel.GetUserAttr().guild_id or 0,
+    local guild_info = getGuildInfo()
+    if not guild_info then
+        return ErrorCode.GuildNotInGuild
+    end
+
+    local guild_data = {
+        id = guild_info.guild_id or 0,
+        name = guild_info.name or "",
+        avatar = guild_info.item_headid or 0,
+        af = guild_info.item_frameid or 0,
+        gn = guild_info.name or "",
+        gid = guild_info.guild_id or 0,
         value = active_value,
         ed = {
-            a = active_value, -- active_value
+            a = active_value,
         },
-        -- 宗主信息
-        --gl = leader_info.gl,
-        --gl_chr = leader_info.gl_chr,
-        --gl_chs = leader_info.gl_chs,
-        --gl_gho = leader_info.gl_gho,
-        --gl_ghs = leader_info.gl_ghs,
+        gl = guild_info.president_name or "",
+        gl_chr = guild_info.president_chr or 0,
+        gl_chs = guild_info.president_chs or {},
+        gl_gho = guild_info.president_gho or 0,
+        gl_ghs = guild_info.president_ghs or 0,
     }
-    return Rank.UpdatePlayerRank(RankDef.RankType.GuildActive, player_data)
+    return Rank.UpdatePlayerRank(RankDef.RankType.GuildActive, guild_data)
 end
 
 -- 宗门资金榜更新
 function Rank.UpdateRank_GuildMoney(money_value)
-    --local leader_info = getGuildLeaderInfo()
-    local player_data = {
-        name = scripts.UserModel.GetUserAttr().guild_name or "",
-        avatar = 0,  -- 宗门没有头像，使用默认值
-        af = 0,
-        gn = scripts.UserModel.GetUserAttr().guild_name or "",
-        gid = scripts.UserModel.GetUserAttr().guild_id or 0,
+    local guild_info = getGuildInfo()
+    if not guild_info then
+        return ErrorCode.GuildNotInGuild
+    end
+
+    local guild_data = {
+        id = guild_info.guild_id or 0,
+        name = guild_info.name or "",
+        avatar = guild_info.item_headid or 0,
+        af = guild_info.item_frameid or 0,
+        gn = guild_info.name or "",
+        gid = guild_info.guild_id or 0,
         value = money_value,
         ed = {
-            m = money_value, -- money_value
+            m = money_value,
         },
-        -- 宗主信息
-        --gl = leader_info.gl,
-        --gl_chr = leader_info.gl_chr,
-        --gl_chs = leader_info.gl_chs,
-        --gl_gho = leader_info.gl_gho,
-        --gl_ghs = leader_info.gl_ghs,
+        gl = guild_info.president_name or "",
+        gl_chr = guild_info.president_chr or 0,
+        gl_chs = guild_info.president_chs or {},
+        gl_gho = guild_info.president_gho or 0,
+        gl_ghs = guild_info.president_ghs or 0,
     }
-    return Rank.UpdatePlayerRank(RankDef.RankType.GuildMoney, player_data)
+    return Rank.UpdatePlayerRank(RankDef.RankType.GuildMoney, guild_data)
 end
 
 -- 宗门积分榜更新（周榜和赛季榜）
 function Rank.UpdateRank_GuildScore(score_value)
-    --local leader_info = getGuildLeaderInfo()
-    local player_data = {
-        name = scripts.UserModel.GetUserAttr().guild_name or "",
-        avatar = 0,  -- 宗门没有头像，使用默认值
-        af = 0,
-        gn = scripts.UserModel.GetUserAttr().guild_name or "",
-        gid = scripts.UserModel.GetUserAttr().guild_id or 0,
+    local guild_info = getGuildInfo()
+    if not guild_info then
+        return ErrorCode.GuildNotInGuild
+    end
+
+    local guild_data = {
+        id = guild_info.guild_id or 0,
+        name = guild_info.name or "",
+        avatar = guild_info.item_headid or 0,
+        af = guild_info.item_frameid or 0,
+        gn = guild_info.name or "",
+        gid = guild_info.guild_id or 0,
         value = score_value,
         ed = {
-            s = score_value, -- score_value
+            s = score_value,
         },
-        -- 宗主信息
-        --gl = leader_info.gl,
-        --gl_chr = leader_info.gl_chr,
-        --gl_chs = leader_info.gl_chs,
-        --gl_gho = leader_info.gl_gho,
-        --gl_ghs = leader_info.gl_ghs,
+        gl = guild_info.president_name or "",
+        gl_chr = guild_info.president_chr or 0,
+        gl_chs = guild_info.president_chs or {},
+        gl_gho = guild_info.president_gho or 0,
+        gl_ghs = guild_info.president_ghs or 0,
     }
-    -- 更新宗门积分周榜和赛季榜
-    Rank.UpdatePlayerRank(RankDef.RankType.GuildScore_Weekly, player_data)
-    return Rank.UpdatePlayerRank(RankDef.RankType.GuildScore_Season, player_data)
+    Rank.UpdatePlayerRank(RankDef.RankType.GuildScore_Weekly, guild_data)
+    return Rank.UpdatePlayerRank(RankDef.RankType.GuildScore_Season, guild_data)
 end
 
 -- 段位榜更新请求处理
