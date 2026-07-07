@@ -6,6 +6,7 @@ local Database = common.Database
 
 ---@type user_context
 local context = ...
+local scripts = context.scripts
 
 ---定时存储标记
 local dirty = false
@@ -14,7 +15,9 @@ local dirty = false
 local DBData
 
 ---@class UserModel
-local UserModel = {}
+local UserModel = {
+    dirty_module = {},
+}
 
 function UserModel.Create(data)
     if DBData then
@@ -29,7 +32,7 @@ function UserModel.SaveRun()
     ---定义自动存储
     moon.async(function()
         while true do
-            moon.sleep(5000)
+            moon.sleep(10000)
             if dirty then
                 local ok, err = xpcall(UserModel.Save, debug.traceback, true)
                 if not ok then
@@ -46,10 +49,57 @@ function UserModel.Save(checkDirty)
     if checkDirty and not dirty then
         return
     end
-    
+
     --Database.saveuserdata(context.addr_db_user, DBData.user_data.user_id, DBData.user_data)
-    Database.saveuser_attr(context.addr_db_user, DBData.user_attr.uid, DBData.user_attr)
-    dirty = false
+    if dirty then
+        Database.saveuser_attr(context.addr_db_user, DBData.user_attr.uid, DBData.user_attr)
+        dirty = false
+    end
+    if table.size(UserModel.dirty_module) > 0 then
+        for module_name, extra_params in pairs(UserModel.dirty_module) do
+            if module_name == "Bag" then
+                scripts.Bag.TimingSave(extra_params)
+            else
+                scripts[module_name].TimingSave()
+            end
+        end
+        UserModel.dirty_module = {}
+    end
+end
+
+function UserModel.AddDirtyModule(module_name, extra_params)
+    if module_name == "Bag" then
+        if not UserModel.dirty_module.Bag then
+            UserModel.dirty_module.Bag = extra_params
+        else
+            for bagtype, _ in pairs(extra_params) do
+                if not UserModel.dirty_module.Bag[bagtype] then
+                    UserModel.dirty_module.Bag[bagtype] = 1
+                end
+            end
+        end
+    else
+        UserModel.dirty_module[module_name] = true
+    end
+end
+
+function UserModel.RemoveDirtyModule(module_name, extra_params)
+    if module_name == "Bag" then
+        if not UserModel.dirty_module.Bag then
+            return
+        end
+
+        for bagtype, _ in pairs(extra_params) do
+            if UserModel.dirty_module.Bag[bagtype] then
+                UserModel.dirty_module.Bag[bagtype] = nil
+            end
+        end
+        if table.size(UserModel.dirty_module.Bag) == 0 then
+            UserModel.dirty_module.Bag = nil
+        end
+    else
+        UserModel.dirty_module[module_name] = nil
+    end
 end
 
 ---只读,使用这个函数
@@ -66,6 +116,7 @@ end
 -- end
 
 ---需要修改数据时,使用这个函数
+---已逐渐废弃,建议使用UserModel.MutGetUserAttr()
 function UserModel.MutGet()
     dirty = true
     return DBData

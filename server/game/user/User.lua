@@ -19,6 +19,7 @@ local ItemDefine = require("common.logic.ItemDefine")
 local ItemDef = require("common.def.ItemDef")
 local ChatLogic = require("common.logic.ChatLogic")
 local MissionDef = require("common.def.MissionDef")
+local RoomDef = require("common.def.RoomDef")
 
 ---@type user_context
 local context = ...
@@ -554,6 +555,7 @@ function User.OutPlay(out_data)
         clusterd.send(3999, "roommgr", "Roommgr.ExitRoom",
             { uid = context.uid, roomid = context.roomid, is_force = true })
         context.roomid = nil
+        context.lock_item_role = 0
 
         -- 同步退出房间状态
         local update_user_attr = {}
@@ -590,6 +592,17 @@ function User.NotifyGameSettle()
             break
         end
     end
+end
+
+function User.NotifyPlayEnd(out_data)
+    User.OutPlay(out_data)
+    User.NotifyGameSettle()
+
+    local sync_msg = {
+        roomid = out_data.roomid,
+        sync_type = RoomDef.SyncType.GameEnd,
+    }
+    scripts.Room.OnRoomInfoSync(sync_msg)
 end
 
 function User.NotifyGameReturnItems()
@@ -2584,7 +2597,7 @@ function User.PBInlayTabooWordReqCmd(req)
         end
     else
         rsp_msg.code = ErrorCode.InlayTypeInvalid
-        rsp_msg.error = "镶嵌类型错误" 
+        rsp_msg.error = "镶嵌类型错误"
     end
 
     if rsp_msg.code ~= ErrorCode.None or not bag_change_log then
@@ -3108,6 +3121,16 @@ function User.PBRefuseReturnRoomReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBRefuseReturnRoomRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
+            uid = context.uid,
+            roomid = req.msg.roomid or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    if req.msg.uid then
+        -- 拒绝玩家不重连的选择
+        return context.S2C(context.net_id, CmdCode.PBRefuseReturnRoomRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无法拒绝重连",
             uid = context.uid,
             roomid = req.msg.roomid or 0,
         }, req.msg_context.stub_id)

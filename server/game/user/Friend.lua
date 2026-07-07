@@ -202,6 +202,17 @@ function Friend.SaveFriendsNow()
     end
 
     local success = Database.savefriends(context.addr_db_user, context.uid, friends)
+    scripts.UserModel.RemoveDirtyModule("Friend")
+    return success
+end
+
+function Friend.TimingSave()
+    local friends = scripts.UserModel.GetFriends()
+    if not friends then
+        return false
+    end
+
+    local success = Database.savefriends(context.addr_db_user, context.uid, friends)
     return success
 end
 
@@ -284,7 +295,8 @@ function Friend.OtherDelFriend(friend_uid)
         return
     end
 
-    Friend.SaveFriendsNow()
+    -- Friend.SaveFriendsNow()
+    scripts.UserModel.AddDirtyModule("Friend")
     Friend.SyncFriends(friends, true, false, false, {})
 end
 
@@ -357,7 +369,8 @@ function Friend.OtherAddFriend(add_uid)
     newfriend.notes = ""
     friends.friend_groups[FriendDef.DefaultGroupId].group_friends[add_uid] = newfriend
 
-    Friend.SaveFriendsNow()
+    -- Friend.SaveFriendsNow()
+    scripts.UserModel.AddDirtyModule("Friend")
     Friend.SyncFriends(friends, true, false, false, { add_uid })
 end
 
@@ -397,7 +410,8 @@ function Friend.OtherApplyFriend(apply_data)
     apply_friend.guild_name = apply_data.guild_name
     friends.apply_friends[apply_data.uid] = apply_friend
 
-    Friend.SaveFriendsNow()
+    -- Friend.SaveFriendsNow()
+    scripts.UserModel.AddDirtyModule("Friend")
     Friend.SyncFriends(friends, false, true, false, {})
 end
 
@@ -628,7 +642,8 @@ function Friend.PBFriendDealApplyReqCmd(req)
         local ret_code = Friend.AgreeApply(friends, req.msg.quest_uid)
         rsp_msg.code = ret_code
 
-        Friend.SaveFriendsNow()
+        -- Friend.SaveFriendsNow()
+        scripts.UserModel.AddDirtyModule("Friend")
         if ret_code == ErrorCode.None then
             Friend.SyncFriends(friends, true, true, false, { req.msg.quest_uid })
         else
@@ -640,7 +655,8 @@ function Friend.PBFriendDealApplyReqCmd(req)
         -- 拒绝好友申请
         Friend.RefuseApply(friends, req.msg.quest_uid)
 
-        Friend.SaveFriendsNow()
+        -- Friend.SaveFriendsNow()
+        scripts.UserModel.AddDirtyModule("Friend")
         Friend.SyncFriends(friends, false, true, false, {})
 
         return context.S2C(context.net_id, CmdCode["PBFriendDealApplyRspCmd"], rsp_msg, req.msg_context.stub_id)
@@ -681,7 +697,8 @@ function Friend.PBFriendDelReqCmd(req)
         return context.S2C(context.net_id, CmdCode["PBFriendDelRspCmd"], rsp_msg, req.msg_context.stub_id)
     end
 
-    Friend.SaveFriendsNow()
+    -- Friend.SaveFriendsNow()
+    scripts.UserModel.AddDirtyModule("Friend")
     Friend.SyncFriends(friends, true, false, false, {})
 
     return context.S2C(context.net_id, CmdCode["PBFriendDelRspCmd"], rsp_msg, req.msg_context.stub_id)
@@ -717,7 +734,8 @@ function Friend.PBFriendAddBlackReqCmd(req)
         return context.S2C(context.net_id, CmdCode["PBFriendAddBlackRspCmd"], rsp_msg, req.msg_context.stub_id)
     end
 
-    Friend.SaveFriendsNow()
+    -- Friend.SaveFriendsNow()
+    scripts.UserModel.AddDirtyModule("Friend")
     Friend.SyncFriends(friends, false, false, true, {})
 
     return context.S2C(context.net_id, CmdCode["PBFriendAddBlackRspCmd"], rsp_msg, req.msg_context.stub_id)
@@ -753,7 +771,8 @@ function Friend.PBFriendDelBlackReqCmd(req)
         return context.S2C(context.net_id, CmdCode["PBFriendDelBlackRspCmd"], rsp_msg, req.msg_context.stub_id)
     end
 
-    Friend.SaveFriendsNow()
+    -- Friend.SaveFriendsNow()
+    scripts.UserModel.AddDirtyModule("Friend")
     Friend.SyncFriends(friends, false, false, true, {})
 
     return context.S2C(context.net_id, CmdCode["PBFriendDelBlackRspCmd"], rsp_msg, req.msg_context.stub_id)
@@ -783,7 +802,8 @@ function Friend.PBFriendSetNotesReqCmd(req)
             req.msg_context.stub_id)
     end
 
-    Friend.SaveFriendsNow()
+    -- Friend.SaveFriendsNow()
+    scripts.UserModel.AddDirtyModule("Friend")
     if success_code == 1 then
         Friend.SyncFriends(friends, true, false, false, {})
     else
@@ -840,7 +860,8 @@ function Friend.PBFriendCreateGroupReqCmd(req)
             break
         end
     end
-    Friend.SaveFriendsNow()
+    -- Friend.SaveFriendsNow()
+    scripts.UserModel.AddDirtyModule("Friend")
 
     return context.S2C(context.net_id, CmdCode["PBFriendCreateGroupRspCmd"],
         { code = ErrorCode.None, error = "", uid = context.uid, group_id = new_group_id, group_name = req.msg.group_name or
@@ -884,7 +905,8 @@ function Friend.PBFriendDeleteGroupReqCmd(req)
     end
     friends.friend_groups[req.msg.group_id] = nil
 
-    Friend.SaveFriendsNow()
+    -- Friend.SaveFriendsNow()
+    scripts.UserModel.AddDirtyModule("Friend")
     Friend.SaveRelations(friends)
     Friend.SyncFriends(friends, true, false, false, {})
 
@@ -929,7 +951,8 @@ function Friend.PBFriendMoveReqCmd(req)
     friends.friend_groups[req.msg.new_group_id].group_friends[req.msg.target_uid] = friend_data
     friends.friend_groups[req.msg.old_group_id].group_friends[req.msg.target_uid] = nil
 
-    Friend.SaveFriendsNow()
+    -- Friend.SaveFriendsNow()
+    scripts.UserModel.AddDirtyModule("Friend")
     Friend.SaveRelations(friends)
     Friend.SyncFriends(friends, true, false, false, {})
 
@@ -970,7 +993,8 @@ function Friend.PBFriendSetGroupNameReqCmd(req)
 
     friends.friend_groups[req.msg.group_id].group_name = req.msg.group_name
 
-    Friend.SaveFriendsNow()
+    -- Friend.SaveFriendsNow()
+    scripts.UserModel.AddDirtyModule("Friend")
     Friend.SyncFriends(friends, true, false, false, {})
 
     return context.S2C(context.net_id, CmdCode.PBFriendSetGroupNameRspCmd,

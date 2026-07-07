@@ -60,12 +60,24 @@ function Season.Start()
     if res ~= Seasons.cur_season_id then
         -- 赛季切换
         Season.ChangeSeason(res)
+        Season.SaveSeasonsNow()
+    else
+        scripts.UserModel.AddDirtyModule("Season")
     end
-
-    Season.SaveSeasonsNow()
 end
 
 function Season.SaveSeasonsNow()
+    local Seasons = scripts.UserModel.GetSeasons()
+    if not Seasons then
+        return false
+    end
+
+    local success = Database.saveseasonsinfo(context.addr_db_user, context.uid, Seasons)
+    scripts.UserModel.RemoveDirtyModule("Season")
+    return success
+end
+
+function Season.TimingSave()
     local Seasons = scripts.UserModel.GetSeasons()
     if not Seasons then
         return false
@@ -213,7 +225,8 @@ function Season.AddBattleNum(type_id, battle_num, complete_num, booty_value, gam
         end
     end
 
-    Season.SaveSeasonsNow()
+    -- Season.SaveSeasonsNow()
+    scripts.UserModel.AddDirtyModule("Season")
 end
 
 function Season.GetBattleRecord()

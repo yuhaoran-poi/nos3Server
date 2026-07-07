@@ -64,6 +64,16 @@ local defaultPBUserRoleDatas = {
     role_list = {},
 }
 
+local defaultPBRoleLog = {
+    uid = 0,
+    config_id = 0,
+    star_level = 0,
+    exp = 0,
+    role_data = {},
+    change_reason = "",
+    log_ts = 0,
+}
+
 ---@return PBStudyBook
 function RoleDef.newStudyBook()
     return LuaExt.const(table.copy(defaultPBStudyBook))

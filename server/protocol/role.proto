@@ -58,6 +58,17 @@ message PBUserRoleDatas
 	map<int32, PBRoleData> role_list	= 3;	//	有key则覆盖
 }
 
+message PBRoleLog
+{
+    int64 uid   = 1;
+    int32 config_id = 2;
+    int32 star_level	= 3;
+    int32 exp   = 4;
+    PBRoleData role_data	= 5;
+	string change_reason	= 6;
+    int64 log_ts	= 7;
+}
+
 // 客户端请求所有角色数据
 message PBClientGetUsrRolesInfoReqCmd
 {

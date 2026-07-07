@@ -44,10 +44,22 @@ function Grade.Start()
         return
     end
 
-    Grade.SaveGradesNow()
+    -- Grade.SaveGradesNow()
+    scripts.UserModel.AddDirtyModule("Grade")
 end
 
 function Grade.SaveGradesNow()
+    local Grades = scripts.UserModel.GetGrades()
+    if not Grades then
+        return false
+    end
+
+    local success = Database.savegradeinfo(context.addr_db_user, context.uid, Grades)
+    scripts.UserModel.RemoveDirtyModule("Grade")
+    return success
+end
+
+function Grade.TimingSave()
     local Grades = scripts.UserModel.GetGrades()
     if not Grades then
         return false
@@ -138,7 +150,8 @@ function Grade.ChangeScore(change_score)
     scripts.Rank.UpdateRank_Duanwei(grade_info.grade_data.now_grade_score)
 
     Grades.grade_infos[Grades.cur_season_id] = grade_info
-    Grade.SaveGradesNow()
+    -- Grade.SaveGradesNow()
+    scripts.UserModel.AddDirtyModule("Grade")
 
     -- 同步到玩家属性上
     local grade_show_info = Grade.GetGradeShowInfo(grade_info)

@@ -62,11 +62,23 @@ function Gods.Start(isnew)
             end
         end
 
-        Gods.SaveGodsNow()
+        -- Gods.SaveGodsNow()
+        scripts.UserModel.AddDirtyModule("Gods")
     end
 end
 
 function Gods.SaveGodsNow()
+    local gods = scripts.UserModel.GetGods()
+    if not gods then
+        return false
+    end
+
+    local success = Database.saveusergods(context.addr_db_user, context.uid, gods)
+    scripts.UserModel.RemoveDirtyModule("Gods")
+    return success
+end
+
+function Gods.TimingSave()
     local gods = scripts.UserModel.GetGods()
     if not gods then
         return false
@@ -102,7 +114,8 @@ function Gods.SaveAndSync(change_gods, change_blocks)
         end
     end
 
-    Gods.SaveGodsNow()
+    -- Gods.SaveGodsNow()
+    scripts.UserModel.AddDirtyModule("Gods")
     if table.size(update_info.gods_image) + table.size(update_info.gods_block) > 0 then
         context.S2C(context.net_id, CmdCode["PBGodsInfoSyncCmd"], { gods_info = update_info }, 0)
     end

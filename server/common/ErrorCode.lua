@@ -369,6 +369,8 @@ local ErrorCode = {
     BagEmpty = 1513,
     --- 背包整理失败
     BagSortOutFailed = 1514,
+    --- 背包道具变更操作被锁定
+    LockItemRole = 1515,
 
     --装备强化系列错误码
     --- 开光次数达到上限

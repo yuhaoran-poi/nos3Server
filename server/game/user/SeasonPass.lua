@@ -53,10 +53,22 @@ function SeasonPass.Start()
         return
     end
 
-    SeasonPass.SaveSeasonPasssNow()
+    -- SeasonPass.SaveSeasonPasssNow()
+    scripts.UserModel.AddDirtyModule("SeasonPass")
 end
 
 function SeasonPass.SaveSeasonPasssNow()
+    local season_pass = scripts.UserModel.GetSeasonPass()
+    if not season_pass then
+        return false
+    end
+
+    local success = Database.saveseasonpassinfo(context.addr_db_user, context.uid, season_pass)
+    scripts.UserModel.RemoveDirtyModule("SeasonPass")
+    return success
+end
+
+function SeasonPass.TimingSave()
     local season_pass = scripts.UserModel.GetSeasonPass()
     if not season_pass then
         return false
@@ -192,7 +204,8 @@ function SeasonPass.PBUnlockSeasonPassReqCmd(req)
 
     -- 保存数据
     scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.SeasonPassUnlock)
-    SeasonPass.SaveSeasonPasssNow()
+    -- SeasonPass.SaveSeasonPasssNow()
+    scripts.UserModel.AddDirtyModule("SeasonPass")
 
     return context.S2C(context.net_id, CmdCode.PBUnlockSeasonPassRspCmd, {
         code = ErrorCode.None,

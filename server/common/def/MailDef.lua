@@ -35,8 +35,8 @@ local defaultPBMailData = {
 
 local defaultPBUserMailBox = {
     last_system_mail_id = 0,
-    last_trigger_mail_id = 0,
-    last_immediate_mail_id = 0,
+    last_trigger_mail_id = 1000000,
+    last_immediate_mail_id = 2000000,
     mails_info = {},
 }
 

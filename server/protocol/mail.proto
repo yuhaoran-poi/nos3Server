@@ -30,9 +30,9 @@ message PBMailData
 
 message PBUserMailBox
 {
-    int64 last_system_mail_id = 1;
-    int64 last_trigger_mail_id = 2;
-    int64 last_immediate_mail_id = 3;
+    int64 last_system_mail_id = 1;  // 1~10000000
+    int64 last_trigger_mail_id = 2; // 1000001~2000000
+    int64 last_immediate_mail_id = 3;   // 2000001~3000000
     map<int64, PBMailData> mails_info = 4;
 }
 

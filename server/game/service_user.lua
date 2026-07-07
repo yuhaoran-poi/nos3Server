@@ -28,6 +28,7 @@ local PTYPE_C2S = GameDef.PTYPE_C2S
 local context = {
     uid = 0,
     play_ds_node = {},
+    lock_item_role = 0,
 ---@diagnostic disable-next-line: missing-fields
     scripts = {},
     ---other service address

@@ -53,10 +53,26 @@ function Shop.Start()
         return
     end
 
-    Shop.SaveShopsNow()
+    -- Shop.SaveShopsNow()
+    scripts.UserModel.AddDirtyModule("Shop")
 end
 
 function Shop.SaveShopsNow()
+    local shops = scripts.UserModel.GetShopData()
+    if not shops then
+        return false
+    end
+    local treasures = scripts.UserModel.GetTreasureData()
+    if not treasures then
+        return false
+    end
+
+    local success = Database.saveshopinfo(context.addr_db_user, context.uid, shops, treasures)
+    scripts.UserModel.RemoveDirtyModule("Shop")
+    return success
+end
+
+function Shop.TimingSave()
     local shops = scripts.UserModel.GetShopData()
     if not shops then
         return false
@@ -118,7 +134,8 @@ function Shop.CheckShopBuyData()
     end
 
     shops.last_check_ts = now_ts
-    Shop.SaveShopsNow()
+    -- Shop.SaveShopsNow()
+    scripts.UserModel.AddDirtyModule("Shop")
 end
 
 function Shop.PBGetShopDataReqCmd(req)
@@ -204,7 +221,8 @@ function Shop.PBShopAddBuyCarReqCmd(req)
     end
 
     shops.buy_car_data[req.msg.product_id] = now_buy_car_cnt + req.msg.product_num
-    Shop.SaveShopsNow()
+    -- Shop.SaveShopsNow()
+    scripts.UserModel.AddDirtyModule("Shop")
 
     rsp_msg.buy_car_data = shops.buy_car_data
     return context.S2C(context.net_id, CmdCode.PBShopAddBuyCarRspCmd, rsp_msg, req.msg_context.stub_id)
@@ -254,7 +272,8 @@ function Shop.PBShopDelBuyCarReqCmd(req)
             shops.buy_car_data[product_id] = nil
         end
     end
-    Shop.SaveShopsNow()
+    -- Shop.SaveShopsNow()
+    scripts.UserModel.AddDirtyModule("Shop")
 
     rsp_msg.buy_car_data = shops.buy_car_data
     return context.S2C(context.net_id, CmdCode.PBShopDelBuyCarRspCmd, rsp_msg, req.msg_context.stub_id)
@@ -694,7 +713,8 @@ function Shop.AddTreasure(config_id, num)
         treasures.treasure_list[config_id].get_count)
     scripts.UserModel.SetTreasureData(treasures)
 
-    Shop.SaveShopsNow()
+    -- Shop.SaveShopsNow()
+    scripts.UserModel.AddDirtyModule("Shop")
 end
 
 function Shop.OpenTreasure(config_id, num)

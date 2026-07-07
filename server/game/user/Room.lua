@@ -210,6 +210,7 @@ function Room.OnRoomInfoSync(sync_msg)
             if player_info.mem_info and player_info.mem_info.uid == context.uid then
                 context.roomid = nil
                 moon.info("OnMemberExit roomid", context.roomid, sync_msg.roomid)
+                context.lock_item_role = 0
             end
         end
     elseif sync_msg.sync_type == RoomDef.SyncType.PlayerKick
@@ -229,6 +230,7 @@ function Room.OnRoomInfoSync(sync_msg)
 
                 context.roomid = nil
                 moon.info("OnMemberKick roomid", context.roomid, sync_msg.roomid)
+                context.lock_item_role = 0
             end
         end
     elseif sync_msg.sync_type == RoomDef.SyncType.GameStart then
@@ -236,11 +238,19 @@ function Room.OnRoomInfoSync(sync_msg)
             moon.error("OnGameStart ERR uid roomid", context.uid, sync_msg.roomid)
         end
         moon.info("OnGameStart uid roomid", context.uid, sync_msg.roomid)
+        context.lock_item_role = 1
     elseif sync_msg.sync_type == RoomDef.SyncType.GameStartFailed then
         if context.roomid ~= sync_msg.roomid then
             moon.error("OnGameEnd ERR uid roomid", context.uid, sync_msg.roomid)
         end
         moon.info("OnGameEnd uid roomid", context.uid, sync_msg.roomid)
+        context.lock_item_role = 0
+    elseif sync_msg.sync_type == RoomDef.SyncType.GameEnd then
+        if context.roomid ~= sync_msg.roomid then
+            moon.error("OnGameEnd ERR uid roomid", context.uid, sync_msg.roomid)
+        end
+        moon.info("OnGameEnd uid roomid", context.uid, sync_msg.roomid)
+        context.lock_item_role = 0
     end
     context.S2C(context.net_id, CmdCode["PBRoomSyncCmd"], sync_msg, 0)
 end
@@ -396,6 +406,7 @@ function Room.PBExitRoomReqCmd(req)
         scripts.User.SetUserAttr(update_user_attr, true)
 
         context.roomid = nil
+        context.lock_item_role = 0
     end
 
     return context.S2C(context.net_id, CmdCode["PBExitRoomRspCmd"], {
@@ -691,6 +702,9 @@ function Room.PBCheckReturnRoomReqCmd(req)
     end
     if res.code == ErrorCode.None then
         context.roomid = res.room_data.roomid
+        if res.room_data.state and res.room_data.state == 1 then
+            context.lock_item_role = 1
+        end
 
         local records = scripts.Season.GetBattleRecord()
         clusterd.send(3999, "roommgr", "Roommgr.UpdatePlayerRecord", {
@@ -1163,7 +1177,7 @@ function Room.GameSettle(settle_info)
         scripts.User.SetUserAttr(user_attr, false)
         -- 保存简略战报
         clusterd.send(3999, "battlereportmgr", "BattleReportmgr.SaveSimpleReport", report_id,
-        settle_info.settle_simple_data)
+            settle_info.settle_simple_data)
     end
 
     if settle_info.chapter_id and settle_info.difficulty then

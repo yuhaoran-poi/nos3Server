@@ -2318,9 +2318,9 @@
 
 
 ---@class PBUserMailBox
----@field public last_system_mail_id integer
----@field public last_trigger_mail_id integer
----@field public last_immediate_mail_id integer
+---@field public last_system_mail_id integer @1~10000000
+---@field public last_trigger_mail_id integer @1000001~2000000
+---@field public last_immediate_mail_id integer @2000001~3000000
 ---@field public mails_info table<integer, PBMailData>
 
 
@@ -2585,11 +2585,12 @@
 ---@field public new_complete_id integer
 
 
----@class PlayerRankData
----@field public uid integer @玩家ID
----@field public name string @玩家名称
----@field public avatar integer @头像
----@field public avatar_frame integer @头像框
+---@class RankItemData
+---@field public id integer @通用ID（玩家榜为uid，宗门榜为guild_id）
+---@field public name string @名称（玩家榜为玩家名称，宗门榜为宗门名称）
+---@field public avatar integer @头像（玩家榜为玩家头像，宗门榜为宗门头像）
+---@field public avatar_frame integer @头像框（玩家榜为玩家头像框，宗门榜为宗门头像框）
+---@field public guild_id integer @所属宗门ID
 ---@field public guild_name string @所属宗门名称
 ---@field public value integer @排行值
 ---@field public extra_data table<string, string> @额外数据
@@ -2634,7 +2635,7 @@
 ---@field public rank_id integer @排行榜ID
 ---@field public rank_type integer @排行榜类型
 ---@field public is_flow boolean @是否为流动榜
----@field public players PlayerRankData[] @玩家数据
+---@field public rank_items RankItemData[] @排行项数据（玩家、宗门等）
 ---@field public create_time integer @创建时间
 ---@field public last_refresh_time integer @上次刷新时间
 
@@ -2809,6 +2810,16 @@
 ---@field public battle_role_id integer
 ---@field public model_role_id integer
 ---@field public role_list table<integer, PBRoleData> @有key则覆盖
+
+
+---@class PBRoleLog
+---@field public uid integer
+---@field public config_id integer
+---@field public star_level integer
+---@field public exp integer
+---@field public role_data PBRoleData
+---@field public change_reason string
+---@field public log_ts integer
 
 
 ---@class PBClientGetUsrRolesInfoReqCmd

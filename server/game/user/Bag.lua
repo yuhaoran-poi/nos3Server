@@ -208,6 +208,25 @@ function Bag.SaveBagsNow(bagTypes)
     end
 
     local success = Database.saveuserbags(context.addr_db_user, context.uid, save_bags)
+    scripts.UserModel.RemoveDirtyModule("Bag", bagTypes)
+    return success
+end
+
+function Bag.TimingSave(bagTypes)
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata then
+        return false
+    end
+
+    local save_bags = {}
+    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    for bagType, _ in pairs(bagTypes) do
+        if bagType ~= BagDef.BagType.Coins and bagdata[bagType] then
+            save_bags[bagType] = bagdata[bagType]
+        end
+    end
+
+    local success = Database.saveuserbags(context.addr_db_user, context.uid, save_bags)
     return success
 end
 
@@ -829,9 +848,11 @@ function Bag.SaveAndLog(change_logs, change_reason,
     -- }
     local write_log_datas = {}
     local now_ts = moon.time()
+    local save_now = false
     -- 统计所有记录变更
     if change_reason ~= ItemDef.ChangeReason.BagMove
         and change_reason ~= ItemDef.ChangeReason.SortOutItems then
+        save_now = true
         for tmp_config_id, tmp_data in pairs(coin_log_datas) do
             if tmp_data.new_num ~= tmp_data.old_num then
                 local new_write_log = ItemDef.newPBItemLog()
@@ -919,7 +940,6 @@ function Bag.SaveAndLog(change_logs, change_reason,
             end
         end
     end
-    
 
     local success = false
     if table.size(update_msg.update_coins) > 0 then
@@ -930,7 +950,11 @@ function Bag.SaveAndLog(change_logs, change_reason,
         bagTypes[bagType] = 1
     end
     if table.size(update_msg.update_items) > 0 then
-        success = Bag.SaveBagsNow(bagTypes)
+        if save_now then
+            success = Bag.SaveBagsNow(bagTypes)
+        else
+            scripts.UserModel.AddDirtyModule("Bag", bagTypes)
+        end
     end
 
     --发送PBBagUpdateSyncCmd
@@ -2827,6 +2851,11 @@ function Bag.PBBagGetCoinsReqCmd(req)
 end
 
 function Bag.PBBagOperateItemReqCmd(req)
+    if context.lock_item_role == 1 then
+        return context.S2C(context.net_id, CmdCode.PBBagOperateItemRspCmd,
+            { code = ErrorCode.LockItemRole, error = "变更操作被锁定", uid = context.uid }, req.msg_context.stub_id)
+    end
+
     local err_code, change_logs = ErrorCode.ParamInvalid, {}
     if req.msg.operate_type == 1 then
         err_code = Bag.StackItems(req.msg.src_bag, req.msg.src_pos, req.msg.dest_bag, req.msg.dest_pos, change_logs)
@@ -3156,6 +3185,11 @@ function Bag.PBDecomposeReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
+    if context.lock_item_role == 1 then
+        return context.S2C(context.net_id, CmdCode.PBDecomposeRspCmd,
+            { code = ErrorCode.LockItemRole, error = "变更操作被锁定", uid = context.uid }, req.msg_context.stub_id)
+    end
+
     local function decompose_func()
         local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         local cost_items = {}
@@ -3308,6 +3342,11 @@ function Bag.PBBagAddCapacityReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
+    if context.lock_item_role == 1 then
+        return context.S2C(context.net_id, CmdCode.PBBagAddCapacityRspCmd,
+            { code = ErrorCode.LockItemRole, error = "变更操作被锁定", uid = context.uid }, req.msg_context.stub_id)
+    end
+
     local err_code, change_log = Bag.AddCapacity(req.msg.bag_name, req.msg.add_capacity_id)
     if err_code ~= ErrorCode.None then
         return context.S2C(context.net_id, CmdCode.PBBagAddCapacityRspCmd, {
@@ -3355,6 +3394,11 @@ function Bag.PBBagSortOutReqCmd(req)
             uid = req.msg.uid,
             bag_name = req.msg.bag_name,
         }, req.msg_context.stub_id)
+    end
+
+    if context.lock_item_role == 1 then
+        return context.S2C(context.net_id, CmdCode.PBBagSortOutRspCmd,
+            { code = ErrorCode.LockItemRole, error = "变更操作被锁定", uid = context.uid }, req.msg_context.stub_id)
     end
 
     local err_code = Bag.SortOut(req.msg.bag_name)
@@ -3473,6 +3517,11 @@ function Bag.PBItemSellNpcReqCmd(req)
             error = "无效请求参数",
             uid = req.msg.uid,
         }, req.msg_context.stub_id)
+    end
+
+    if context.lock_item_role == 1 then
+        return context.S2C(context.net_id, CmdCode.PBItemSellNpcRspCmd,
+            { code = ErrorCode.LockItemRole, error = "变更操作被锁定", uid = context.uid }, req.msg_context.stub_id)
     end
 
     local cost_items = {}

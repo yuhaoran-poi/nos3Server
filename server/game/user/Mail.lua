@@ -67,7 +67,8 @@ function Mail.CheckExpireMail()
         end
     end
     if del_num > 0 then
-        Mail.SaveMailsNow()
+        -- Mail.SaveMailsNow()
+        scripts.UserModel.AddDirtyModule("Mail")
     end
 end
 
@@ -132,6 +133,7 @@ end
 
 function Mail.AddMail(mails, mail_info)
     if mails.mails_info[mail_info.simple_data.mail_id] then
+        moon.error("Mail.AddMail uid, mail_id already exist", context.uid, mail_info.simple_data.mail_id)
         return false
     end
 
@@ -157,6 +159,17 @@ function Mail.AddMail(mails, mail_info)
 end
 
 function Mail.SaveMailsNow()
+    local mails = scripts.UserModel.GetMails()
+    if not mails then
+        return false
+    end
+
+    local success = Database.savemails(context.addr_db_user, context.uid, mails)
+    scripts.UserModel.RemoveDirtyModule("Mail")
+    return success
+end
+
+function Mail.TimingSave()
     local mails = scripts.UserModel.GetMails()
     if not mails then
         return false
@@ -231,7 +244,8 @@ function Mail.RecvSystemMail(new_mail_info)
             mails.last_system_mail_id = new_mail_info.simple_data.mail_id
         end
         
-        Mail.SaveMailsNow()
+        -- Mail.SaveMailsNow()
+        scripts.UserModel.AddDirtyModule("Mail")
 
         local sycn_msg = {
             add_mail_ids = {},
@@ -254,7 +268,8 @@ function Mail.InvalidSystemMail(mail_id)
         and (mail_info.simple_data.is_have_items == 0 or mail_info.simple_data.is_get == 0) then
         mails.mails_info[mail_id] = nil
 
-        Mail.SaveMailsNow()
+        -- Mail.SaveMailsNow()
+        scripts.UserModel.AddDirtyModule("Mail")
 
         local sycn_msg = {
             add_mail_ids = {},
@@ -570,7 +585,8 @@ function Mail.PBReadMailReqCmd(req)
             mail_info.simple_data.end_ts = now_ts + mail_time_config.read_validity_period
         end
     end
-    Mail.SaveMailsNow()
+    -- Mail.SaveMailsNow()
+    scripts.UserModel.AddDirtyModule("Mail")
 
     return context.S2C(context.net_id, CmdCode["PBReadMailRspCmd"], rsp, req.msg_context.stub_id)
 end
@@ -767,7 +783,8 @@ function Mail.PBDelMailReqCmd(req)
         mails.mails_info[mail_id] = nil
     end
 
-    Mail.SaveMailsNow()
+    -- Mail.SaveMailsNow()
+    scripts.UserModel.AddDirtyModule("Mail")
 
     return context.S2C(context.net_id, CmdCode["PBDelMailRspCmd"], rsp, req.msg_context.stub_id)
 end

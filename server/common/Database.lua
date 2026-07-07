@@ -1190,6 +1190,16 @@ function _M.ItemChangeLog(addr, uid, config_id, old_num, new_num, mod_uniqid, de
     moon.send("lua", addr, cmd)
 end
 
+-- 记录角色变更日志
+function _M.RoleChangeLog(addr, uid, config_id, star_level, exp, role_data, reason, log_ts)
+    local role_data_str = jencode(role_data) or ""
+    local cmd = string.format([[
+        INSERT INTO mlog.role_change_log (uid, config_id, star_level, exp, role_data, reason, log_ts)
+        VALUES (%d, %d, %d, %d, '%s', '%s', %d);
+    ]], uid, config_id, star_level, exp, role_data_str, reason, log_ts)
+    moon.send("lua", addr, cmd)
+end
+
 function _M.loadfriends(addr, uid)
     local cmd = string.format([[
         SELECT value, json FROM mgame.friends WHERE uid = %d;

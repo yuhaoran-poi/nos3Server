@@ -6,6 +6,7 @@ local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
 local Database = common.Database
+local clusterd = require("cluster")
 local RoleDef = require("common.def.RoleDef")
 local BagDef = require("common.def.BagDef")
 local ProtoEnum = require("tools.ProtoEnum")
@@ -56,11 +57,23 @@ function Role.Start(isnew)
         end
         Role.SetRoleBattle(init_cfg.battle_role, false)
 
-        Role.SaveRolesNow()
+        -- Role.SaveRolesNow()
+        scripts.UserModel.AddDirtyModule("Role")
     end
 end
 
 function Role.SaveRolesNow()
+    local roles = scripts.UserModel.GetRoles()
+    if not roles then
+        return false
+    end
+
+    local success = Database.saveuserroles(context.addr_db_user, context.uid, roles)
+    scripts.UserModel.RemoveDirtyModule("Role")
+    return success
+end
+
+function Role.TimingSave()
     local roles = scripts.UserModel.GetRoles()
     if not roles then
         return false
@@ -112,6 +125,8 @@ function Role.SaveAndLog(change_roles)
         model_role_id = roles.model_role_id,
         role_list = {},
     }
+    local write_log_datas = {}
+    local save_now = false
     if change_roles then
         for roleid, reason in pairs(change_roles) do
             local roleinfo = roles.role_list[roleid]
@@ -121,7 +136,26 @@ function Role.SaveAndLog(change_roles)
             -- 检测更新角色真经学习进度
             Role.CheckRoleStudyBook(roleinfo)
 
-            update_info.role_list[roleid] = table.copy(roleinfo)
+            update_info.role_list[roleid] = table.copy(roleinfo, true)
+            if reason == "WearEquipment"
+                or reason == "TakeOffEquipment"
+                or reason == "UpLvReward"
+                or reason == "AddRole"
+                or reason == "LightMagicItem"
+                or reason == "LightSpaceRing"
+                or reason == "LightDiagramsCard" then
+                save_now = true
+            end
+
+            local role_log = RoleDef.newRoleLog()
+            role_log.uid = context.uid
+            role_log.config_id = roleinfo.config_id
+            role_log.star_level = roleinfo.star_level
+            role_log.exp = roleinfo.exp
+            role_log.role_data = table.copy(roleinfo, true)
+            role_log.change_reason = reason
+            role_log.log_ts = moon.time()
+            table.insert(write_log_datas, role_log)
 
             if roleid == roles.battle_role_id or roleid == roles.model_role_id then
                 -- 同步到玩家属性上
@@ -144,12 +178,25 @@ function Role.SaveAndLog(change_roles)
         end
     end
 
-    Role.SaveRolesNow()
+    if save_now then
+        Role.SaveRolesNow()
+    else
+        scripts.UserModel.AddDirtyModule("Role")
+    end
     context.S2C(context.net_id, CmdCode["PBRoleInfoSyncCmd"], { roles_info = update_info }, 0)
 
     --存储日志
+    if table.size(write_log_datas) > 0 then
+        scripts.Item.SendLog(write_log_datas)
+    end
 
     return true
+end
+
+function Role.SendLog(write_log_datas)
+    moon.warn(string.format("Role.SendLog write_log_datas = %s", json.pretty_encode(write_log_datas)))
+    --存储日志
+    clusterd.send(3003, "logmgr", "LogMgr.RoleChangeLog", write_log_datas)
 end
 
 function Role.CheckAddRoles(roleids)
@@ -1191,6 +1238,11 @@ function Role.PBRoleWearEquipReqCmd(req)
             { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
     end
 
+    if context.lock_item_role == 1 then
+        return context.S2C(context.net_id, CmdCode.PBRoleWearEquipRspCmd,
+            { code = ErrorCode.LockItemRole, error = "变更操作被锁定", uid = context.uid }, req.msg_context.stub_id)
+    end
+
     local role_info = roles.role_list[req.msg.roleid]
     if not role_info then
         return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
@@ -1330,6 +1382,11 @@ function Role.PBRoleTakeOffEquipReqCmd(req)
     if not roles then
         return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"],
             { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    if context.lock_item_role == 1 then
+        return context.S2C(context.net_id, CmdCode.PBRoleTakeOffEquipRspCmd,
+            { code = ErrorCode.LockItemRole, error = "变更操作被锁定", uid = context.uid }, req.msg_context.stub_id)
     end
 
     local role_info = roles.role_list[req.msg.roleid]
@@ -1523,6 +1580,11 @@ function Role.PBChangeBattleRoleReqCmd(req)
             { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
     end
 
+    if context.lock_item_role == 1 then
+        return context.S2C(context.net_id, CmdCode.PBChangeBattleRoleRspCmd,
+            { code = ErrorCode.LockItemRole, error = "变更操作被锁定", uid = context.uid }, req.msg_context.stub_id)
+    end
+
     local role_info = roles.role_list[req.msg.roleid]
     if not role_info then
         return context.S2C(context.net_id, CmdCode["PBChangeBattleRoleRspCmd"],
@@ -1530,7 +1592,8 @@ function Role.PBChangeBattleRoleReqCmd(req)
     end
 
     Role.SetRoleBattle(req.msg.roleid, true)
-    Role.SaveRolesNow()
+    -- Role.SaveRolesNow()
+    scripts.UserModel.AddDirtyModule("Role")
     return context.S2C(context.net_id, CmdCode["PBChangeBattleRoleRspCmd"],
         { code = ErrorCode.None, error = "success", uid = context.uid, roleid = req.msg.roleid }, req.msg_context.stub_id)
 end
@@ -1549,7 +1612,8 @@ function Role.PBChangeModelRoleReqCmd(req)
     end
 
     Role.SetRoleModel(req.msg.roleid, true)
-    Role.SaveRolesNow()
+    -- Role.SaveRolesNow()
+    scripts.UserModel.AddDirtyModule("Role")
     return context.S2C(context.net_id, CmdCode.PBChangeModelRoleRspCmd,
         { code = ErrorCode.None, error = "success", uid = context.uid, roleid = req.msg.roleid }, req.msg_context.stub_id)
 end
@@ -2223,6 +2287,11 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
             roleid = req.msg.roleid or 0,
             already_repairs = {},
         }, req.msg_context.stub_id)
+    end
+
+    if context.lock_item_role == 1 then
+        return context.S2C(context.net_id, CmdCode.PBRoleEquipmentRepairRspCmd,
+            { code = ErrorCode.LockItemRole, error = "变更操作被锁定", uid = context.uid }, req.msg_context.stub_id)
     end
 
     local roles = scripts.UserModel.GetRoles()

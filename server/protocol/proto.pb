@@ -807,7 +807,7 @@ ds_address (	R	dsAddress
 CityNumListEntry
 key (Rkey
 value (Rvalue:8bproto3
-Ö1
+ª3
 
 role.proto
 item.proto"4
@@ -891,7 +891,16 @@ SkinsEntry
 	role_list (2.PBUserRoleDatas.RoleListEntryRroleListH
 RoleListEntry
 key (Rkey!
-value (2.PBRoleDataRvalue:8"1
+value (2.PBRoleDataRvalue:8"Ñ
+	PBRoleLog
+uid (Ruid
+	config_id (RconfigId
+
+star_level (R	starLevel
+exp (Rexp(
+	role_data (2.PBRoleDataRroleData#
+change_reason (	RchangeReason
+log_ts (RlogTs"1
 PBClientGetUsrRolesInfoReqCmd
 uid (Ruid"Œ
 PBClientGetUsrRolesInfoRspCmd
@@ -3083,34 +3092,35 @@ period_ids (R	periodIds%
 uid (Ruid8
 new_mission_data (2.PBMissionDataRnewMissionData&
 new_complete_id (RnewCompleteIdbproto3
-›
+³
 
-rank.proto"‡
-PlayerRankData
-uid (Ruid
+rank.proto"œ
+RankItemData
+id (Rid
 name (	Rname
 avatar (Ravatar!
-avatar_frame (RavatarFrame
+avatar_frame (RavatarFrame
+guild_id (RguildId
 
-guild_name (	R	guildName
-value (Rvalue=
+guild_name (	R	guildName
+value (Rvalue;
 
-extra_data (2.PlayerRankData.ExtraDataEntryR	extraData
-rank (Rrank
-update_time	 (R
+extra_data (2.RankItemData.ExtraDataEntryR	extraData
+rank	 (Rrank
+update_time
+ (R
 updateTime!
-character_id
- (RcharacterId'
-character_skins (RcharacterSkins
-ghost_id (RghostId
+character_id (RcharacterId'
+character_skins (RcharacterSkins
+ghost_id (RghostId
 
-ghost_skin (R	ghostSkin!
-guild_leader (	RguildLeader
+ghost_skin (R	ghostSkin!
+guild_leader (	RguildLeader
 
-gl_char_id (RglCharId"
-gl_char_skins (RglCharSkins
-gl_ghost_id (R	glGhostId"
-gl_ghost_skin (RglGhostSkin<
+gl_char_id (RglCharId"
+gl_char_skins (RglCharSkins
+gl_ghost_id (R	glGhostId"
+gl_ghost_skin (RglGhostSkin<
 ExtraDataEntry
 key (	Rkey
 value (	Rvalue:8"s
@@ -3130,12 +3140,13 @@ createTime*
 code (Rcode
 error (	Rerror
 uid (Ruid#
-types (2.RankTypeInfoRtypes"Ñ
+types (2.RankTypeInfoRtypes"Ô
 RankData
 rank_id (RrankId
 	rank_type (RrankType
-is_flow (RisFlow)
-players (2.PlayerRankDataRplayers
+is_flow (RisFlow,
+
+rank_items (2.RankItemDataR	rankItems
 create_time (R
 createTime*
 last_refresh_time (RlastRefreshTime"]

@@ -92,6 +92,17 @@ function Trade.SaveTradeInfoNow()
     end
 
     local success = Database.savetradeinfo(context.addr_db_user, context.uid, player_trade_data.simple_info)
+    scripts.UserModel.RemoveDirtyModule("Trade")
+    return success
+end
+
+function Trade.TimingSave()
+    local player_trade_data = scripts.UserModel.GetTradeData()
+    if not player_trade_data then
+        return false
+    end
+
+    local success = Database.savetradeinfo(context.addr_db_user, context.uid, player_trade_data.simple_info)
     return success
 end
 
@@ -251,7 +262,8 @@ function Trade.OnTradeLogSaleMail(trade_log, need_save)
         if table.size(player_trade_data.log_list) > TRADE_LOG_MAX_COUNT then
             table.remove(player_trade_data.log_list, 1)
         end
-        Trade.SaveTradeInfoNow()
+        -- Trade.SaveTradeInfoNow()
+        scripts.UserModel.AddDirtyModule("Trade")
     end
 end
 
@@ -266,7 +278,8 @@ function Trade.OnTradeAddLog(trade_log)
     if table.size(player_trade_data.log_list) > TRADE_LOG_MAX_COUNT then
         table.remove(player_trade_data.log_list, 1)
     end
-    Trade.SaveTradeInfoNow()
+    -- Trade.SaveTradeInfoNow()
+    scripts.UserModel.AddDirtyModule("Trade")
 end
 
 function Trade.DealOfflineTradeLogSale()
@@ -306,7 +319,8 @@ function Trade.CheckOnSaleCnt(player_trade_data)
         if not datetime.is_same_day(player_trade_data.simple_info.update_ts, now_ts - trade_cfg.refresh_time) then
             player_trade_data.simple_info.can_onsale_cnt = trade_cfg.account_market
             player_trade_data.simple_info.update_ts = moon.time()
-            Trade.SaveTradeInfoNow()
+            -- Trade.SaveTradeInfoNow()
+            scripts.UserModel.AddDirtyModule("Trade")
         end
     end
 
@@ -314,7 +328,8 @@ function Trade.CheckOnSaleCnt(player_trade_data)
     if player_trade_data.simple_info.box_capacity ~= trade_cfg.order_num then
         player_trade_data.simple_info.box_capacity = trade_cfg.order_num
         player_trade_data.simple_info.can_onsale_cnt = trade_cfg.account_market
-        Trade.SaveTradeInfoNow()
+        -- Trade.SaveTradeInfoNow()
+        scripts.UserModel.AddDirtyModule("Trade")
     end
 end
 
@@ -949,7 +964,8 @@ function Trade.PBTradeChangeFocusIdReqCmd(req)
         end
         player_trade_data.simple_info.focus_id_ts[req.msg.focus_id] = moon.time()
     end
-    Trade.SaveTradeInfoNow()
+    -- Trade.SaveTradeInfoNow()
+    scripts.UserModel.AddDirtyModule("Trade")
 
     return context.S2C(context.net_id, CmdCode.PBTradeChangeFocusIdRspCmd, {
         code = ErrorCode.None,
