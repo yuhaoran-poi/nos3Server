@@ -21,28 +21,29 @@ enum RankType {
     RankType_GuildScore_Season = 14;  // 宗门赛季积分榜
 }
 
-// 玩家排行数据
-message PlayerRankData {
-    int64 uid = 1;            // 玩家ID
-    string name = 2;           // 玩家名称
-    int32 avatar = 3;         // 头像
-    int32 avatar_frame = 4;    // 头像框
-    string guild_name = 5;      // 所属宗门名称
-    int64 value = 6;            // 排行值
-    map<string, string> extra_data = 7; // 额外数据
-    int32 rank = 8;            // 排名
-    int64 update_time = 9;      // 更新时间
+// 排行项数据（玩家、宗门等）
+message RankItemData {
+    int64 id = 1;             				// 通用ID（玩家榜为uid，宗门榜为guild_id）
+    string name = 2;           				// 名称（玩家榜为玩家名称，宗门榜为宗门名称）
+    int32 avatar = 3;         				// 头像（玩家榜为玩家头像，宗门榜为宗门头像）
+    int32 avatar_frame = 4;    				// 头像框（玩家榜为玩家头像框，宗门榜为宗门头像框）
+    int32 guild_id = 5;             		// 所属宗门ID
+    string guild_name = 6;      			// 所属宗门名称
+    int64 value = 7;            			// 排行值
+    map<string, string> extra_data = 8; 	// 额外数据
+    int32 rank = 9;            				// 排名
+    int64 update_time = 10;      			// 更新时间
     // 出战角色和鬼怪信息
-    int32 character_id = 10;           // 出战角色配置ID
-    repeated int32 character_skins = 11; // 出战角色时装（数组）
-    int32 ghost_id = 12;               // 出战鬼怪配置ID
-    int32 ghost_skin = 13;             // 出战鬼怪时装
+    int32 character_id = 11;           		// 出战角色配置ID
+    repeated int32 character_skins = 12; 	// 出战角色时装（数组）
+    int32 ghost_id = 13;               		// 出战鬼怪配置ID
+    int32 ghost_skin = 14;             		// 出战鬼怪时装
     // 宗门榜宗主信息
-    string guild_leader = 14;            // 宗主名称
-    int32 gl_char_id = 15;              // 宗主出战角色配置ID
-    repeated int32 gl_char_skins = 16;  // 宗主出战角色时装（数组）
-    int32 gl_ghost_id = 17;             // 宗主出战鬼怪配置ID
-    int32 gl_ghost_skin = 18;           // 宗主出战鬼怪时装
+    string guild_leader = 15;            	// 宗主名称
+    int32 gl_char_id = 16;              	// 宗主出战角色配置ID
+    repeated int32 gl_char_skins = 17;  	// 宗主出战角色时装（数组）
+    int32 gl_ghost_id = 18;             	// 宗主出战鬼怪配置ID
+    int32 gl_ghost_skin = 19;           	// 宗主出战鬼怪时装
 }
 
 // 子榜信息
@@ -78,7 +79,7 @@ message RankData {
     int32 rank_id = 1;          // 排行榜ID
     int32 rank_type = 2;        // 排行榜类型
     bool is_flow = 3;           // 是否为流动榜
-    repeated PlayerRankData players = 4; // 玩家数据
+    repeated RankItemData rank_items = 4; // 排行项数据（玩家、宗门等）
     int64 create_time = 5;      // 创建时间
     int64 last_refresh_time = 6; // 上次刷新时间
 }
