@@ -187,7 +187,7 @@ function Role.SaveAndLog(change_roles)
 
     --存储日志
     if table.size(write_log_datas) > 0 then
-        scripts.Item.SendLog(write_log_datas)
+        scripts.Role.SendLog(write_log_datas)
     end
 
     return true
