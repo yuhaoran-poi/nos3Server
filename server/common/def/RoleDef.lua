@@ -94,4 +94,9 @@ function RoleDef.newUserRoleDatas()
     return LuaExt.const(table.copy(defaultPBUserRoleDatas))
 end
 
+---@return PBRoleLog
+function RoleDef.newRoleLog()
+    return LuaExt.const(table.copy(defaultPBRoleLog))
+end
+
 return RoleDef
