@@ -325,14 +325,11 @@ function RankLogic.RefreshRankData(rank_type)
         rank.lrt = moon.time()
     end
 
-    -- 同步到Redis（排行榜数据和奖励数据）
     RankLogic.SaveRankDataToRedis(rank_type)
     RankLogic.SaveRankRewardToRedis(rank_type)
 
-    -- TODO: 暂时注释掉排行榜邮件发送功能
-    -- 异步给在线玩家发送奖励邮件
     -- moon.async(function()
-    --     RankLogic.SendRewardMailToOnlinePlayers(rank_type, current_period)
+    --     RankLogic.NotifyOnlinePlayersCheckRewards(rank_type, current_period)
     -- end)
 
     return ErrorCode.None
@@ -465,7 +462,7 @@ function RankLogic.SendMailToOnlinePlayer(uid, rank_type, period, reward_id, pla
     local mail_content = string.format("恭喜你在排行榜中获得第%d名，获得以下奖励：", player_rank)
 
     -- 通过玩家服务发送邮件
-    clusterd.call(3001, "user", "SendRankRewardMail", {
+    clusterd.call(3001, "user", "User.SendRankRewardMail", {
         uid = uid,
         title = mail_title,
         content = mail_content,
@@ -477,21 +474,18 @@ end
 
 -- 给玩家发送奖励邮件（由游戏层调用）
 function RankLogic.SendRewardMailToPlayer(uid, rank_type, period, reward_id, player_rank)
-    -- 获取奖励配置
     local reward_pool_cfg = GameCfg.RankingListRewardPool[reward_id]
     if not reward_pool_cfg then
         moon.error(string.format("[RankLogic] SendRewardMailToPlayer: reward_pool_cfg not found for reward_id=%d", reward_id))
         return false
     end
 
-    -- 准备附件（从 reward 字段中获取，结构是 {config_id = item_count}）
-    local attachments = {}
+    local items = {}
     local reward_items = reward_pool_cfg.reward or {}
     for config_id, item_count in pairs(reward_items) do
-        -- 确保 config_id 是数字类型且不为0
         local item_id = tonumber(config_id)
         if item_id and item_id > 0 then
-            table.insert(attachments, {
+            table.insert(items, {
                 config_id = item_id,
                 item_count = item_count
             })
@@ -500,44 +494,31 @@ function RankLogic.SendRewardMailToPlayer(uid, rank_type, period, reward_id, pla
         end
     end
 
-    -- 打印要发送的道具信息
-    moon.info(string.format("[RankLogic] SendRewardMailToPlayer: uid=%d, rank=%d, attachments=%s", 
-        uid, player_rank, json.encode(attachments)))
+    moon.info(string.format("[RankLogic] SendRewardMailToPlayer: uid=%d, rank=%d, items=%s", 
+        uid, player_rank, json.encode(items)))
 
-    -- 构建邮件内容
     local mail_title = "排行榜奖励"
     local mail_content = string.format("恭喜你在排行榜中获得第%d名，获得以下奖励：", player_rank)
 
-    -- 构建邮件发送参数
-    local send_info = {
-        uids = {uid},
-        beg_ts = moon.time(),
-        end_ts = moon.time() + 86400 * 7,  -- 7天有效期
-        mail_title = mail_title,
-        mail_icon_id = 1,  -- 系统邮件图标
-        mail_content = mail_content,
-        sign = "排行榜",
-        attachments = attachments
-    }
+    local ok, err = pcall(function()
+        clusterd.call(3001, "user", "User.SendRankRewardMail", {
+            uid = uid,
+            title = mail_title,
+            content = mail_content,
+            items = items,
+            rank_type = rank_type,
+            period = period
+        })
+    end)
 
-    -- 通过邮件管理器发送邮件（支持离线玩家）
-    local ok, mail_info = MailLogic.DealSystemMail(json.encode(send_info))
-    if not ok then
-        moon.error(string.format("[RankLogic] SendRewardMailToPlayer: DealSystemMail failed for uid=%d, err=%s", uid, mail_info))
+    if not ok or err then
+        moon.warn(string.format("[RankLogic] SendRewardMailToPlayer: immediate mail failed for uid=%d, player may be offline", uid))
         return false
     end
 
-    -- 调用邮件管理器发送邮件
-    -- local res, err = clusterd.call(3999, "mailmgr", "Mailmgr.AddSystemMail", mail_info)
-    -- if err or not res or not res.success then
-    --     moon.error(string.format("[RankLogic] SendRewardMailToPlayer: AddSystemMail failed for uid=%d, err=%s", uid, tostring(err)))
-    --     return false
-    -- end
+    moon.info(string.format("[RankLogic] SendRewardMailToPlayer: immediate mail sent to uid=%d, rank=%d, period=%d",
+        uid, player_rank, period))
 
-    moon.info(string.format("[RankLogic] SendRewardMailToPlayer: mail sent to uid=%d, rank=%d, period=%d, nowtime=%d",
-        uid, player_rank, period, moon.time()))
-
-    -- 邮件发送成功后，从奖励数据中移除玩家，防止重复发送
     RankLogic.RemovePlayerFromRewardData(rank_type, period, uid)
     return ErrorCode.None
 end
@@ -562,15 +543,14 @@ function RankLogic.GetRewardIdByRank(rank_reward_cfg, player_rank)
     return nil
 end
 
--- 获取玩家/宗门未领取的奖励
-function RankLogic.GetUnclaimedRewards(id)
+function RankLogic.GetUnclaimedRewards(uid)
     local unclaimed_rewards = {}
 
     for rank_type, periods in pairs(rank_reward_data) do
         for period, reward_data in pairs(periods) do
             for _, sub_rank in pairs(reward_data.sr) do
-                if sub_rank.ps[id] then
-                    local player_data = sub_rank.ps[id]
+                if sub_rank.ps[uid] then
+                    local player_data = sub_rank.ps[uid]
                     local player_rank = player_data.rank
 
                     local rank_reward_cfg = GameCfg.RankingListReward[rank_type]
@@ -591,8 +571,32 @@ function RankLogic.GetUnclaimedRewards(id)
         end
     end
 
-    moon.info(string.format("[RankLogic] GetUnclaimedRewards: id=%d, unclaimed_rewards=%s", id, json.encode(unclaimed_rewards)))
+    moon.info(string.format("[RankLogic] GetUnclaimedRewards: id=%d, unclaimed_rewards=%s", uid, json.encode(unclaimed_rewards)))
     return ErrorCode.None, unclaimed_rewards
+end
+
+function RankLogic.CheckAndSendUnclaimedRewards(uid)
+    for rank_type, periods in pairs(rank_reward_data) do
+        for period, reward_data in pairs(periods) do
+            for _, sub_rank in pairs(reward_data.sr) do
+                if sub_rank.ps[uid] then
+                    local player_data = sub_rank.ps[uid]
+                    local player_rank = player_data.rank
+
+                    local rank_reward_cfg = GameCfg.RankingListReward[rank_type]
+                    if rank_reward_cfg then
+                        local reward_id = RankLogic.GetRewardIdByRank(rank_reward_cfg, player_rank)
+                        if reward_id then
+                            RankLogic.SendRewardMailToPlayer(uid, rank_type, period, reward_id, player_rank)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    moon.info(string.format("[RankLogic] CheckAndSendUnclaimedRewards completed for uid=%d", uid))
+    return ErrorCode.None
 end
 
 -- 从奖励数据中移除玩家/宗门

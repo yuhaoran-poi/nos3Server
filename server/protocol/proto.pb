@@ -3092,7 +3092,7 @@ period_ids (R	periodIds%
 uid (Ruid8
 new_mission_data (2.PBMissionDataRnewMissionData&
 new_complete_id (RnewCompleteIdbproto3
-³
+½
 
 rank.proto"œ
 RankItemData
@@ -3128,9 +3128,9 @@ gl_char_id (RglCharId"
 rank_id (RrankId
 create_time (R
 createTime*
-last_refresh_time (RlastRefreshTime"ƒ
-RankTypeInfo
-	rank_type (RrankType
+last_refresh_time (RlastRefreshTime"Ž
+RankTypeInfo&
+	rank_type (2	.RankTypeRrankType
 name (	Rname
 is_flow (RisFlow)
 	sub_ranks (2.SubRankInfoRsubRanks"+
@@ -3210,10 +3210,10 @@ clear_time (R	clearTime"p
 code (Rcode
 error (	Rerror
 uid (Ruid
-success (Rsuccess"
+success (Rsuccess"~
 PBRankUpdateRoleReqCmd
-uid (Ruid
-role_id (RroleId
+uid (Ruid
+roleid (Rroleid
 
 role_level (R	roleLevel
 	role_skin (RroleSkin"n

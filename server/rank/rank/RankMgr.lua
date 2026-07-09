@@ -58,6 +58,11 @@ function RankMgr.GetUnclaimedRewards(msg)
     return RankLogic.GetUnclaimedRewards(uid)
 end
 
+function RankMgr.CheckAndSendUnclaimedRewards(msg)
+    local uid = msg.uid
+    return RankLogic.CheckAndSendUnclaimedRewards(uid)
+end
+
 function RankMgr.SendRankRewardMail(msg)
     local uid = msg.uid
     local rank_type = msg.rank_type

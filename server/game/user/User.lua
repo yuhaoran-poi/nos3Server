@@ -419,43 +419,32 @@ function User.Online()
     state.online = true
     scripts.UserModel.MutGet().logintime = moon.time()
 
-    -- 检查玩家是否有未领取的排行榜奖励
-    --moon.async(function()
-        --User.CheckUnclaimedRankRewards()
-    --end)
+    moon.async(function()
+        User.CheckUnclaimedRankRewards()
+        User.StartDailyCheck()
+    end)
 end
 
--- 检查未领取的排行榜奖励并发放
-function User.CheckUnclaimedRankRewards()
-    -- 调用排行榜服务检查未领取的奖励
-    local errinfo, unclaimed_rewards = clusterd.call(3004, "rank", "GetUnclaimedRewards", {uid = context.uid})
-    if errinfo ~= ErrorCode.None or not unclaimed_rewards or table.empty(unclaimed_rewards) then
-        return
-    end
+function User.StartDailyCheck()
+    moon.async(function()
+        while state.online do
+            local now = moon.time()
+            local next_midnight = math.floor(now / 86400) * 86400 + 86400
+            local sleep_seconds = next_midnight - now
 
-    moon.info(string.format("[User] Player %d has %d unclaimed rank reward periods", context.uid, table.size(unclaimed_rewards)))
+            moon.sleep(sleep_seconds * 1000)
 
-    -- 如果有未领取的奖励，调用排行榜服务发送邮件
-    for period, period_data in pairs(unclaimed_rewards) do
-        for rank_type, reward_info in pairs(period_data) do
-            -- 调用排行榜服务发送邮件（会直接通过邮件管理器发送）
-            local ok, err = clusterd.call(3004, "rank", "SendRankRewardMail", {
-                uid = context.uid,
-                rank_type = rank_type,
-                period = period,
-                reward_id = reward_info.reward_id,
-                rank = reward_info.rank
-            })
+            moon.sleep(60000)
 
-            if ok then
-                moon.info(string.format("[User] Sent rank reward mail to player %d, period=%d, rank_type=%d", 
-                    context.uid, period, rank_type))
-            else
-                moon.error(string.format("[User] Failed to send rank reward mail to player %d, period=%d, rank_type=%d, err=%s", 
-                    context.uid, period, rank_type, tostring(err)))
+            if state.online then
+                User.CheckUnclaimedRankRewards()
             end
         end
-    end
+    end)
+end
+
+function User.CheckUnclaimedRankRewards()
+    clusterd.call(3004, "rank", "RankMgr.CheckAndSendUnclaimedRewards", {uid = context.uid})
 end
 
 -- 给在线玩家发送排行榜奖励邮件（由排行榜服务调用）
@@ -467,22 +456,14 @@ function User.SendRankRewardMail(msg)
     local rank_type = msg.rank_type
     local period = msg.period
 
-    -- 检查当前玩家是否是目标玩家
     if context.uid ~= uid then
         moon.error(string.format("[User] SendRankRewardMail: uid mismatch, current=%d, target=%d", context.uid, uid))
         return
     end
 
-    -- 使用游戏层的邮件发送方法
-    local mail_ret = scripts.Mail.RecvImmediateMail(0, {}, items, {})
+    local mail_ret = scripts.Mail.RecvImmediateMail(2000001, {}, items, {}, {})
     if mail_ret then
         moon.info(string.format("[User] SendRankRewardMail: mail sent to player %d", uid))
-        -- 邮件发送成功后，从奖励数据中移除玩家，防止重复发送
-        clusterd.call(3004, "rank", "RemovePlayerFromRewardData", {
-            rank_type = rank_type,
-            period = period,
-            uid = uid
-        })
     else
         moon.error(string.format("[User] SendRankRewardMail: failed to send mail to player %d", uid))
     end
@@ -2733,7 +2714,7 @@ function User.PBModNickNameReqCmd(req)
 
     local new_nick_name = req.msg.nick_name
     moon.async(function()
-        clusterd.call(3004, "rank", "UpdatePlayerInfo", {
+        clusterd.call(3004, "rank", "RankMgr.UpdatePlayerInfo", {
             uid = context.uid,
             info = {name = new_nick_name}
         })
@@ -3275,7 +3256,7 @@ function User.PBHeadFrameTitleChangeHeadReqCmd(req)
     local head_icon_id = req.msg.head_icon_id
     local head_frame_id = req.msg.head_frame_id
     moon.async(function()
-        clusterd.call(3004, "rank", "UpdatePlayerInfo", {
+        clusterd.call(3004, "rank", "RankMgr.UpdatePlayerInfo", {
             uid = context.uid,
             info = {
                 avatar = head_icon_id,

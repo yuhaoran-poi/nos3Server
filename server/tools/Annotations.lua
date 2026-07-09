@@ -2614,7 +2614,7 @@
 
 
 ---@class RankTypeInfo
----@field public rank_type integer @排行榜类型
+---@field public rank_type RankType @排行榜类型
 ---@field public name string @排行榜名称
 ---@field public is_flow boolean @是否为流动榜
 ---@field public sub_ranks SubRankInfo[] @子榜列表
@@ -2721,7 +2721,7 @@
 
 ---@class PBRankUpdateRoleReqCmd
 ---@field public uid integer @玩家ID
----@field public role_id integer @角色ID
+---@field public roleid integer @角色ID
 ---@field public role_level integer @角色等级
 ---@field public role_skin integer @角色时装
 

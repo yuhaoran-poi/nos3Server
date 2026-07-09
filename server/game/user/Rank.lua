@@ -152,7 +152,7 @@ function Rank.PBRankGetInfoReqCmd(req)
     end
 
     -- 调用排行榜服务获取数据
-    local err, rank_data = clusterd.call(3004, "rank", "GetRankInfo", {rank_type = rank_type, rank_id = rank_id, uid = query_uid})
+    local err, rank_data = clusterd.call(3004, "rank", "RankMgr.GetRankInfo", {rank_type = rank_type, rank_id = rank_id, uid = query_uid})
     if err ~= ErrorCode.None then
         moon.error("Failed to get rank data:", err)
         return context.S2C(context.net_id, CmdCode.PBRankGetInfoRspCmd, {
@@ -220,8 +220,32 @@ end
 -- 获取所有排行榜类型
 function Rank.PBRankGetAllTypesReqCmd(req)
     -- 调用排行榜服务获取所有类型
-    local err, types_data = clusterd.call(3004, "rank", "GetAllRankTypes", {})
+    local err, types_data = clusterd.call(3004, "rank", "RankMgr.GetAllRankTypes", {})
     if err ~= ErrorCode.None then
+        moon.error("Failed to get all rank types:", err)
+        return context.S2C(context.net_id, CmdCode.PBRankGetAllTypesRspCmd, {
+            code = ErrorCode.ServerInternalError,
+            error = "获取排行榜类型失败",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    -- 构建响应
+    local rsp_msg = {
+        code = ErrorCode.None,
+        error = "",
+        uid = context.uid,
+        types = types_data,
+    }
+
+    return context.S2C(context.net_id, CmdCode.PBRankGetAllTypesRspCmd, rsp_msg, req.msg_context.stub_id)
+end
+
+-- 获取所有排行榜类型
+function Rank.PBRankGetAllTypesReqCmd(req)
+    -- 调用排行榜服务获取所有类型
+    local types_data, err = clusterd.call(3004, "rank", "RankMgr.GetAllRankTypes", {})
+    if not types_data then
         moon.error("Failed to get all rank types:", err)
         return context.S2C(context.net_id, CmdCode.PBRankGetAllTypesRspCmd, {
             code = ErrorCode.ServerInternalError,
@@ -254,7 +278,7 @@ function Rank.PBRankGetRewardReqCmd(req)
     end
 
     -- 调用排行榜服务领取奖励
-    local err, reward_pool_cfg = clusterd.call(3004, "rank", "GetRankReward", {rank_type = rank_type, uid = context.uid})
+    local err, reward_pool_cfg = clusterd.call(3004, "rank", "RankMgr.GetRankReward", {rank_type = rank_type, uid = context.uid})
     if err ~= ErrorCode.None then
         moon.error("Failed to get rank reward:", err)
         return context.S2C(context.net_id, CmdCode.PBRankGetRewardRspCmd, {
@@ -329,7 +353,7 @@ end
 function Rank.UpdatePlayerRank(rank_type, player_data, force)
     player_data.id = player_data.id or context.uid
     player_data.uid = player_data.id
-    local result, err = clusterd.call(3004, "rank", "handlePlayerRankUpdate", {rank_type = rank_type, uid = player_data.id, player_data = player_data, force = force})
+    local result, err = clusterd.call(3004, "rank", "RankMgr.handlePlayerRankUpdate", {rank_type = rank_type, uid = player_data.id, player_data = player_data, force = force})
     if result == nil then
         moon.error("Failed to update player rank:", err)
         return ErrorCode.ServerInternalError
@@ -710,7 +734,7 @@ end
 
 -- 角色榜更新请求处理
 function Rank.PBRankUpdateRoleReqCmd(req)
-    local role_id = req.msg.role_id
+    local role_id = req.msg.roleid
     local role_level = req.msg.role_level
     local role_skin = req.msg.role_skin
     if not role_id or not role_level then
