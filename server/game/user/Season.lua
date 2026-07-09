@@ -30,7 +30,7 @@ function Season.Init()
     local Seasons = scripts.UserModel.GetSeasons()
     if not Seasons then
         local res, err = clusterd.call(3999, "seasonmgr", "Seasonmgr.GetSeasonid")
-        if err or not res then
+        if err or not res or res <= 0 then
             moon.error(string.format("Season.Init err: %s", err))
             return
         end
@@ -52,7 +52,7 @@ function Season.Start()
 
     -- 校验当前赛季
     local res, err = clusterd.call(3999, "seasonmgr", "Seasonmgr.GetSeasonid")
-    if err or not res then
+    if err or not res or res <= 0 then
         moon.error(string.format("Season.Start err: %s", err))
         return
     end

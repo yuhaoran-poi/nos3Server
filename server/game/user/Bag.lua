@@ -954,6 +954,7 @@ function Bag.SaveAndLog(change_logs, change_reason,
             success = Bag.SaveBagsNow(bagTypes)
         else
             scripts.UserModel.AddDirtyModule("Bag", bagTypes)
+            success = true
         end
     end
 

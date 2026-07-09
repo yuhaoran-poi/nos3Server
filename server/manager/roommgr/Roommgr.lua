@@ -1542,7 +1542,7 @@ function Roommgr.StartGame(req)
             moon.error("OnEnterDs ", player.mem_info.uid)
         end
         moon.async(function()
-            moon.sleep(60000) -- 60秒后发送
+            moon.sleep(40000) -- 40秒后发送
             local test_room = context.rooms[req.roomid]
             if test_room then
                 test_room.room_data.ds_address = "192.168.2.31-" .. test_port
