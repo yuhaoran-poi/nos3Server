@@ -807,7 +807,7 @@ ds_address (	R	dsAddress
 CityNumListEntry
 key (Rkey
 value (Rvalue:8bproto3
-ª3
+©3
 
 role.proto
 item.proto"4
@@ -1057,10 +1057,10 @@ skill_type (R	skillType
 PBRepairEquipment
 	config_id (RconfigId
 uniqid (Runiqid
-pos (Rpos"
+pos (Rpos"~
 PBRoleEquipmentRepairReqCmd
-uid (Ruid
-role_id (RroleId5
+uid (Ruid
+roleid (Rroleid5
 need_repairs (2.PBRepairEquipmentRneedRepairs"®
 PBRoleEquipmentRepairRspCmd
 code (Rcode

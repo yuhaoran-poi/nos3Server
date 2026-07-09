@@ -315,7 +315,7 @@ message PBRepairEquipment
 message PBRoleEquipmentRepairReqCmd
 {
 	int64 uid			= 1;
-	int32 role_id		= 2;
+	int32 roleid		= 2;
 	repeated PBRepairEquipment need_repairs	= 3;
 }
 

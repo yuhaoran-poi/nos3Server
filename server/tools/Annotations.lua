@@ -3023,7 +3023,7 @@
 
 ---@class PBRoleEquipmentRepairReqCmd
 ---@field public uid integer
----@field public role_id integer
+---@field public roleid integer
 ---@field public need_repairs PBRepairEquipment[]
 
 

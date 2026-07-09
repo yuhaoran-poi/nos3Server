@@ -1,5 +1,5 @@
 --- Automatically generated,do not modify.
---- Proto version: 826645317
+--- Proto version: 1542046146
 
 local M={
     ["PBPacketCmd"] = 1,
@@ -479,7 +479,7 @@ local M={
     ["PBUseSkinGiftRspCmd"] = 568,
     ["PBUserAttrSyncCmd"] = 569,
 
-    CrC = "826645317",
+    CrC = "1542046146",
 }
 
 local forward = {
