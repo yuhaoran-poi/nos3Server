@@ -35,7 +35,7 @@ function Seasonmgr.Init()
     -- -- 新增定时器轮询
     moon.async(function()
         while true do
-            moon.sleep(5000) -- 每5秒检查一次
+            moon.sleep(10000) -- 每10秒检查一次
             Seasonmgr.CheckSeason()
         end
     end)
@@ -56,7 +56,13 @@ function Seasonmgr.CheckSeason()
     local now_ts = moon.time()
     local next_season_cfg = GameCfg.Season[Seasonmgr.now_season_id + 1]
     if next_season_cfg and next_season_cfg.open == 1 and now_ts >= next_season_cfg.time then
+        if Seasonmgr.now_season_id > 0 and GameCfg.Season[Seasonmgr.now_season_id] then
+            local old_season_cfg = GameCfg.Season[Seasonmgr.now_season_id]
+            Database.setseasonserverdata(context.addr_db_game, Seasonmgr.now_season_id, old_season_cfg.time, now_ts)
+        end
+
         Seasonmgr.now_season_id = Seasonmgr.now_season_id + 1
+        Database.setseasonserverdata(context.addr_db_game, Seasonmgr.now_season_id, now_ts, 0)
 
         -- 通知排行榜管理器
         moon.info("Seasonmgr.CheckSeason, now_season_id = %d", Seasonmgr.now_season_id)

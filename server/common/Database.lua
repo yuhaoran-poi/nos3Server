@@ -407,12 +407,13 @@ function _M.saveuser_attr(addr, uid, data)
     local pbname, pb_data = protocol.encodewithname("PBUserAttr", data)
     local pbvalue = crypt.base64encode(pb_data)
     local data_str = jencode(data)
+    local datavalue = crypt.base64encode(data_str)
 
     local cmd = string.format([[
         INSERT INTO mgame.user_attr (uid, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], uid, pbvalue, data_str, pbvalue, data_str)
+    ]], uid, pbvalue, datavalue, pbvalue, datavalue)
     return moon.call("lua", addr, cmd)
 end
 
@@ -750,7 +751,7 @@ function _M.saveuserbags(addr, uid, bags_data)
                 str_param3 = str_param3.. ", "
             end
             str_param3 = str_param3 ..
-            " " .. bagTypeName .. "='" .. pbvalue .. "', " .. bagTypeName .. "_json='" .. data_str .. "'"
+                " " .. bagTypeName .. "='" .. pbvalue .. "', " .. bagTypeName .. "_json='" .. data_str .. "'"
         end
     end
     if not had_param then
@@ -889,10 +890,9 @@ end
 
 function _M.loaduseritemimage(addr, uid)
     local cmd = string.format([[
-        SELECT item_value, item_json, magic_item_value, magic_item_json, human_diagrams_value,
-        human_diagrams_json, ghost_diagrams_value, ghost_diagrams_json, skin_value, skin_json,
-        space_ring_value, space_ring_json, item_wear_skin_value, item_wear_skin_json, composite_formula_value,
-        composite_formula_json FROM mgame.itemimages_copy1 WHERE uid = %d;
+        SELECT item_value, magic_item_value, human_diagrams_value, ghost_diagrams_value, skin_value,
+        space_ring_value, item_wear_skin_value, composite_formula_value FROM mgame.itemimages_copy1
+        WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
@@ -1218,13 +1218,14 @@ function _M.savefriends(addr, uid, data)
     assert(data)
 
     local data_str = jencode(data)
+    local datavalue = crypt.base64encode(data_str)
     local _, pbdata = protocol.encodewithname("PBUserFriendDatas", data)
     local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.friends (uid, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], uid, pbvalue, data_str, pbvalue, data_str)
+    ]], uid, pbvalue, datavalue, pbvalue, datavalue)
 
     return moon.send("lua", addr, cmd)
 end
@@ -1276,13 +1277,14 @@ function _M.savemails(addr, uid, data)
     assert(data)
 
     local data_str = jencode(data)
+    local datavalue = crypt.base64encode(data_str)
     local _, pbdata = protocol.encodewithname("PBUserMailBox", data)
     local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.mails (uid, value, json)
         VALUES (%d, '%s', '%s')
         ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], uid, pbvalue, data_str, pbvalue, data_str)
+    ]], uid, pbvalue, datavalue, pbvalue, datavalue)
 
     return moon.send("lua", addr, cmd)
 end
@@ -2634,8 +2636,8 @@ function _M.saveshopinfo(addr, uid, data, treasure_data)
     local _, pbdata = protocol.encodewithname("PBShopPlayerData", data)
     local pbvalue = crypt.base64encode(pbdata)
     local treasure_data_str = jencode(treasure_data)
-    local _, pbdata = protocol.encodewithname("PBTreasurePlayerData", treasure_data)
-    local treasurevalue = crypt.base64encode(pbdata)
+    local _, treasure_pbdata = protocol.encodewithname("PBTreasurePlayerData", treasure_data)
+    local treasurevalue = crypt.base64encode(treasure_pbdata)
     local cmd = string.format([[
         INSERT INTO mgame.shops (uid, value, json, treasure_value, treasure_json)
         VALUES (%d, '%s', '%s', '%s', '%s')
@@ -3261,6 +3263,15 @@ function _M.getmaxseasonid(addr)
         return tonumber(res[1].season_id) or 0
     end
     return 0
+end
+
+function _M.setseasonserverdata(addr, season_id, start_ts, end_ts)
+    local cmd = string.format([[
+        INSERT INTO mgame.season_server_data (season_id, start_ts, end_ts)
+        VALUES (%d, %d, %d);
+    ]], season_id, start_ts, end_ts)
+
+    return moon.send("lua", addr, cmd)
 end
 
 -- 赛季数据
