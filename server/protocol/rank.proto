@@ -55,7 +55,7 @@ message SubRankInfo {
 
 // 排行榜类型信息
 message RankTypeInfo {
-    int32 rank_type = 1;        // 排行榜类型
+    RankType rank_type = 1;     // 排行榜类型
     string name = 2;            // 排行榜名称
     bool is_flow = 3;           // 是否为流动榜
     repeated SubRankInfo sub_ranks = 4; // 子榜列表
@@ -178,7 +178,7 @@ message PBRankUpdatePlayerRspCmd {
 // 更新角色榜请求
 message PBRankUpdateRoleReqCmd {
     int64 uid = 1;             // 玩家ID
-    int32 role_id = 2;         // 角色ID
+    int32 roleid = 2;         // 角色ID
     int32 role_level = 3;      // 角色等级
     int32 role_skin = 4;       // 角色时装
 }
