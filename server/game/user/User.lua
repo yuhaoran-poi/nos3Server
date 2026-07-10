@@ -419,6 +419,7 @@ function User.Online()
     state.online = true
     scripts.UserModel.MutGet().logintime = moon.time()
 
+    moon.info(string.format("[User] Online: player logged in, uid=%d nowTime=%d", context.uid, moon.time()))
     moon.async(function()
         User.CheckUnclaimedRankRewards()
         User.StartDailyCheck()
@@ -429,14 +430,18 @@ function User.StartDailyCheck()
     moon.async(function()
         while state.online do
             local now = moon.time()
-            local next_midnight = math.floor(now / 86400) * 86400 + 86400
-            local sleep_seconds = next_midnight - now
+            local now_beijing = now + 8 * 3600
+            local next_midnight_beijing = math.floor(now_beijing / 86400) * 86400 + 86400
+            local sleep_seconds = next_midnight_beijing - 8 * 3600 - now
 
+            moon.info(string.format("[User] StartDailyCheck: waiting until Beijing midnight, uid=%d, sleep_seconds=%d", context.uid, sleep_seconds))
             moon.sleep(sleep_seconds * 1000)
 
+            moon.info(string.format("[User] StartDailyCheck: midnight passed, waiting 60s for rank settlement, uid=%d", context.uid))
             moon.sleep(60000)
 
             if state.online then
+                moon.info(string.format("[User] StartDailyCheck: calling CheckUnclaimedRankRewards for uid=%d", context.uid))
                 User.CheckUnclaimedRankRewards()
             end
         end
@@ -444,11 +449,13 @@ function User.StartDailyCheck()
 end
 
 function User.CheckUnclaimedRankRewards()
+    moon.info(string.format("[User] CheckUnclaimedRankRewards called for uid=%d", context.uid))
     clusterd.call(3004, "rank", "RankMgr.CheckAndSendUnclaimedRewards", {uid = context.uid})
 end
 
 -- 给在线玩家发送排行榜奖励邮件（由排行榜服务调用）
 function User.SendRankRewardMail(msg)
+    moon.info(string.format("[User] SendRankRewardMail called: msg=%s", json.encode(msg)))
     local uid = msg.uid
     local title = msg.title
     local content = msg.content
@@ -458,7 +465,7 @@ function User.SendRankRewardMail(msg)
 
     if context.uid ~= uid then
         moon.error(string.format("[User] SendRankRewardMail: uid mismatch, current=%d, target=%d", context.uid, uid))
-        return
+        return false
     end
 
     local mail_ret = scripts.Mail.RecvImmediateMail(2000001, {}, items, {}, {})
@@ -467,6 +474,8 @@ function User.SendRankRewardMail(msg)
     else
         moon.error(string.format("[User] SendRankRewardMail: failed to send mail to player %d", uid))
     end
+
+    return true
 end
 
 function User.Offline()
@@ -2201,8 +2210,10 @@ function User.PBSureCompositeReqCmd(req)
         rsp_msg.error = "配置不存在"
         return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
     end
-    -- 暂时屏蔽配方检测
-    if not scripts.ItemImage.GetCompositeFormula(req.msg.composite_id) then
+    -- 镇山之宝跳过配方检测（item_id在1016000-1016499范围内）
+    local item_id = composite_cfg.item_id
+    local is_awe_item = item_id >= ItemDefine.AweItem.start and item_id <= ItemDefine.AweItem.End
+    if not is_awe_item and not scripts.ItemImage.GetCompositeFormula(req.msg.composite_id) then
         rsp_msg.code = ErrorCode.FormulaNoUnlock
         rsp_msg.error = "配方未解锁"
         return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)

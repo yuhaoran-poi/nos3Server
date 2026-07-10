@@ -263,7 +263,26 @@ local function AddAweItemBuff(aweitem, buff_id)
     elseif buff_cfg.buff_effect == ProtoEnum.AccountBuffType.Buff_AuctionLimit then
         -- 每日寄售总次数上限增加
     elseif buff_cfg.buff_effect == ProtoEnum.AccountBuffType.Buff_Warehouse then
-        scripts.Bag.AddCapacity(BagDef.BagType.Cangku, 0, buff_cfg.buff_coefficient)
+        local err_code, change_log = scripts.Bag.AddCapacity(BagDef.BagType.Cangku, 0, buff_cfg.buff_coefficient)
+        local bag_data = {}
+        if err_code == ErrorCode.None then
+            local res_bag_data = scripts.Bag.GetBagdata({BagDef.BagType.Cangku})
+            if res_bag_data.errcode == ErrorCode.None
+                and res_bag_data.bag_datas
+                and res_bag_data.bag_datas[BagDef.BagType.Cangku] then
+                bag_data = res_bag_data.bag_datas[BagDef.BagType.Cangku]
+            end
+            if change_log and table.size(change_log) > 0 then
+                scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.BagAddCapacity)
+            end
+        end
+        context.S2C(context.net_id, CmdCode.PBBagAddCapacityRspCmd, {
+            code = err_code,
+            error = err_code == ErrorCode.None and "添加容量成功" or "添加容量失败",
+            uid = context.uid,
+            bag_name = BagDef.BagType.Cangku,
+            bag_data = bag_data,
+        })
     end
 end
 
