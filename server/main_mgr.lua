@@ -130,7 +130,7 @@ local function run(node_conf)
             file = "manager/service_guildmgr.lua",
             threadid = 7,
             websocket = false,
-            room_startid = 10000,
+            guild_startid = 100000,
         },
         {
             unique = true,
@@ -146,7 +146,7 @@ local function run(node_conf)
             file = "manager/service_citymgr.lua",
             threadid = 9,
             websocket = false,
-            city_startid = 0,
+            city_startid = 10,
             -- allocate_url = "http://43.136.214.127:8000/api/allocator",
             allocate_url = "http://106.55.79.212:8000/api/allocator",
             -- query_url = "http://43.136.214.127:8000/api/gameservers",
@@ -208,6 +208,13 @@ local function run(node_conf)
             threadid = 14,
             websocket = false,
         },
+        {
+            unique = true,
+            name = "seasonmgr",
+            file = "manager/service_seasonmgr.lua",
+            threadid = 15,
+            websocket = false,
+        },
     }
 
     local function Start()
@@ -225,6 +232,7 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("auctionmgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("billmgr"), "Init"))
         assert(moon.call("lua", moon.queryservice("battlereportmgr"), "Init"))
+        assert(moon.call("lua", moon.queryservice("seasonmgr"), "Init"))
 
         assert(moon.call("lua", moon.queryservice("nodemgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("usermgr"), "Start"))
@@ -239,6 +247,7 @@ local function run(node_conf)
         assert(moon.call("lua", moon.queryservice("auctionmgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("billmgr"), "Start"))
         assert(moon.call("lua", moon.queryservice("battlereportmgr"), "Start"))
+        assert(moon.call("lua", moon.queryservice("seasonmgr"), "Start"))
 
         local data = db.loadserverdata(moon.queryservice("db_server"))
         if not data then
@@ -294,6 +303,10 @@ local function run(node_conf)
                     moon.sleep(1000)
                     print(i .. "......")
                     i = i - 1
+                end
+
+                if moon.queryservice("db_game") > 0 then
+                    moon.send("lua", moon.queryservice("db_game"), "save_then_quit")
                 end
 
                 moon.kill(moon.queryservice("nodemgr"))

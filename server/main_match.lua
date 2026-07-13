@@ -167,6 +167,10 @@ local function run(node_conf)
                     i = i - 1
                 end
 
+                if moon.queryservice("db_game") > 0 then
+                    moon.send("lua", moon.queryservice("db_game"), "save_then_quit")
+                end
+
                 moon.kill(moon.queryservice("matchmgr"))
             else
                 moon.exit(-1)
