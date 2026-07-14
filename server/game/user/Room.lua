@@ -241,9 +241,9 @@ function Room.OnRoomInfoSync(sync_msg)
         context.lock_item_role = 1
     elseif sync_msg.sync_type == RoomDef.SyncType.GameStartFailed then
         if context.roomid ~= sync_msg.roomid then
-            moon.error("OnGameEnd ERR uid roomid", context.uid, sync_msg.roomid)
+            moon.error("OnGameStartFailed ERR uid roomid", context.uid, sync_msg.roomid)
         end
-        moon.info("OnGameEnd uid roomid", context.uid, sync_msg.roomid)
+        moon.info("OnGameStartFailed uid roomid", context.uid, sync_msg.roomid)
         context.lock_item_role = 0
     elseif sync_msg.sync_type == RoomDef.SyncType.GameEnd then
         if context.roomid ~= sync_msg.roomid then
