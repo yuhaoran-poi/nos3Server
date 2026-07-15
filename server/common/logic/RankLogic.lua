@@ -10,6 +10,8 @@ local redisd = require "redisd"
 local redis_call = redisd.call
 local clusterd = require "cluster"
 local json = require "json"
+local ItemDef = require("common.def.ItemDef")
+local ItemDefine = require("common.logic.ItemDefine")
 
 local RankLogic = {}
 
@@ -485,10 +487,17 @@ function RankLogic.SendRewardMailToPlayer(uid, rank_type, period, reward_id, pla
     for config_id, item_count in pairs(reward_items) do
         local item_id = tonumber(config_id)
         if item_id and item_id > 0 then
-            table.insert(items, {
-                config_id = item_id,
-                item_count = item_count
-            })
+            if item_id >= ItemDefine.Coin.start and item_id <= ItemDefine.Coin.End then
+                local coin = ItemDef.newCoin()
+                coin.coin_id = item_id
+                coin.coin_count = item_count
+                items[item_id] = coin
+            else
+                local item_simple = ItemDef.newItemSimple()
+                item_simple.config_id = item_id
+                item_simple.item_count = item_count
+                items[item_id] = item_simple
+            end
         else
             moon.error(string.format("[RankLogic] SendRewardMailToPlayer: invalid config_id=%s", tostring(config_id)))
         end

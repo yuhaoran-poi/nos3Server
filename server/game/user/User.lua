@@ -468,7 +468,17 @@ function User.SendRankRewardMail(msg)
         return false
     end
 
-    local mail_ret = scripts.Mail.RecvImmediateMail(2000001, {}, items, {}, {})
+    local items_simple = {}
+    local coins = {}
+    for config_id, item_data in pairs(items) do
+        if config_id >= ItemDefine.Coin.start and config_id <= ItemDefine.Coin.End then
+            coins[config_id] = item_data
+        else
+            items_simple[config_id] = item_data
+        end
+    end
+
+    local mail_ret = scripts.Mail.RecvImmediateMail(2000001, items_simple, {}, coins, {})
     if mail_ret then
         moon.info(string.format("[User] SendRankRewardMail: mail sent to player %d", uid))
     else
