@@ -356,6 +356,7 @@ function Trade.PBTradeSaleReqCmd(req)
         or not req.msg.pos
         or not req.msg.sale_num
         or not req.msg.single_price
+        or req.msg.single_price <= 0
         or not req.msg.sale_ts then
         return context.S2C(context.net_id, CmdCode.PBTradeSaleRspCmd, {
             code = ErrorCode.ParamInvalid,
@@ -685,7 +686,8 @@ function Trade.PBTradeBuyReqCmd(req)
     -- 参数验证
     if not req.msg.config_id
         or not req.msg.buy_num
-        or not req.msg.buy_max_price then
+        or not req.msg.buy_max_price
+        or req.msg.buy_max_price <= 0 then
         return context.S2C(context.net_id, CmdCode.PBTradeBuyRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
