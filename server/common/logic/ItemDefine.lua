@@ -348,7 +348,7 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                     end
                     new_item.common_info.item_count = 1
                     new_item.common_info.item_type = item_cfg.type1
-                    new_item.common_info.trade_cnt = -1
+                    new_item.common_info.trade_cnt = item_cfg.deal_num
                     if item.trade_cnt then
                         new_item.common_info.trade_cnt = item.trade_cnt
                     end
@@ -387,7 +387,7 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                     end
                     new_item.common_info.item_count = 1
                     new_item.common_info.item_type = uniqitem_cfg.type1
-                    new_item.common_info.trade_cnt = -1
+                    new_item.common_info.trade_cnt = uniqitem_cfg.deal_num
                     if item.trade_cnt then
                         new_item.common_info.trade_cnt = item.trade_cnt
                     end

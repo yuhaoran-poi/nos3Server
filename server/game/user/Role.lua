@@ -330,7 +330,7 @@ function Role.AddRole(roleid)
         new_item_data.common_info.uniqid = uuid.next()
         new_item_data.common_info.item_count = 1
         new_item_data.common_info.item_type = magic_item_cfg.type1
-        new_item_data.common_info.trade_cnt = -1
+        new_item_data.common_info.trade_cnt = magic_item_cfg.deal_num
         new_item_data.special_info.magic_item = ItemDef.newMagicItem()
         new_item_data.special_info.magic_item.cur_durability = magic_item_cfg.durability
         new_item_data.special_info.magic_item.strong_value = magic_item_cfg.sturdy
@@ -359,7 +359,7 @@ function Role.AddRole(roleid)
                 new_item_data.common_info.uniqid = uuid.next()
                 new_item_data.common_info.item_count = 1
                 new_item_data.common_info.item_type = diagrams_item_cfg.type1
-                new_item_data.common_info.trade_cnt = -1
+                new_item_data.common_info.trade_cnt = diagrams_item_cfg.deal_num
                 new_item_data.special_info.diagrams_item = ItemDef.newDiagramsCard()
                 new_item_data.special_info.diagrams_item.cur_durability = diagrams_item_cfg.durability
                 new_item_data.special_info.diagrams_item.strong_value = diagrams_item_cfg.sturdy
@@ -390,7 +390,7 @@ function Role.AddRole(roleid)
         new_item_data.common_info.uniqid = uuid.next()
         new_item_data.common_info.item_count = 1
         new_item_data.common_info.item_type = space_ring_cfg.type1
-        new_item_data.common_info.trade_cnt = -1
+        new_item_data.common_info.trade_cnt = space_ring_cfg.deal_num
         new_item_data.special_info.space_ring = ItemDef.newSpaceRing()
         new_item_data.special_info.space_ring.cur_durability = space_ring_cfg.durability
         new_item_data.special_info.space_ring.strong_value = space_ring_cfg.sturdy
