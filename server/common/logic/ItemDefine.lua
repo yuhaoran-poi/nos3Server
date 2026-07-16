@@ -29,7 +29,7 @@ local ItemDefine = {
     HumanTabooWord = { start = 116000, End = 119999 },
     GhostTabooWord = { start = 120000, End = 123999 },
     StackSpaceRing = { start = 124000, End = 133999 },
-    SkinCard = { start = 134000, End = 353999 },
+    -- SkinCard = { start = 134000, End = 353999 },
     Gift = { start = 354000, End = 363999 },
     SkinTryCard = { start = 364000, End = 379999 },
     TreasureBox = { start = 380000, End = 419999 },
@@ -40,6 +40,7 @@ local ItemDefine = {
     HumanDiagrams = { start = 630000, End = 639999 },
     GhostDiagrams = { start = 640000, End = 649999 },
     SpaceRing = { start = 650000, End = 659999 },
+    SkinCard = { start = 661000, End = 679999 },
     HeadSkin = { start = 1015000, End = 1015499 },
     HeadFrameSkin = { start = 1015500, End = 1015999 },
     AweItem = { start = 1016000, End = 1016499 },
@@ -204,9 +205,10 @@ function ItemDefine.GetItemPosType(nConfigId)
         return ItemDefine.EItemBigType.Skin
     elseif nItemType == ItemDefine.EItemSmallType.SpaceRing then
         return ItemDefine.EItemBigType.UniqueItem
-    elseif nItemType == ItemDefine.EItemSmallType.SkinCard
-        or nItemType == ItemDefine.EItemSmallType.SkinTryCard then
+    elseif nItemType == ItemDefine.EItemSmallType.SkinTryCard then
         return ItemDefine.EItemBigType.StackItem
+    elseif nItemType == ItemDefine.EItemSmallType.SkinCard then
+        return ItemDefine.EItemBigType.UnStackItem
     elseif nItemType == ItemDefine.EItemSmallType.ItemSkin then
         return ItemDefine.EItemBigType.Skin
     elseif nItemType == ItemDefine.EItemSmallType.HeadSkin then
@@ -337,11 +339,11 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                 if not item_cfg then
                     return false
                 end
-                local item_type = ItemDefine.GetItemType(item.id)
+                local item_small_type = ItemDefine.GetItemType(item.id)
 
                 for i = 1, item.count do
                     local new_item = ItemDef.newItemData()
-                    new_item.itype = item_type
+                    new_item.itype = item_small_type
                     new_item.common_info.config_id = item_cfg.id
                     if item.uniqid and i == 1 then
                         new_item.common_info.uniqid = item.uniqid
@@ -352,22 +354,29 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                     if item.trade_cnt then
                         new_item.common_info.trade_cnt = item.trade_cnt
                     end
-                    new_item.special_info.durab_item = ItemDef.newDurabItem()
-                    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-                    if item.special_info and item.special_info.durab_item then
-                        if item.special_info.durab_item.cur_durability then
-                            new_item.special_info.durab_item.cur_durability = item.special_info.durab_item
-                                .cur_durability
+
+                    if item_small_type == ItemDefine.EItemSmallType.DurabItem
+                        or item_small_type == ItemDefine.EItemSmallType.Tool then
+                        new_item.special_info.durab_item = ItemDef.newDurabItem()
+                        --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+                        if item.special_info and item.special_info.durab_item then
+                            if item.special_info.durab_item.cur_durability then
+                                new_item.special_info.durab_item.cur_durability = item.special_info.durab_item
+                                    .cur_durability
+                            else
+                                new_item.special_info.durab_item.cur_durability = item_cfg.durability
+                            end
+                            if item.special_info.durab_item.strong_value then
+                                new_item.special_info.durab_item.strong_value = item.special_info.durab_item
+                                .strong_value
+                            end
                         else
                             new_item.special_info.durab_item.cur_durability = item_cfg.durability
                         end
-                        if item.special_info.durab_item.strong_value then
-                            new_item.special_info.durab_item.strong_value = item.special_info.durab_item.strong_value
-                        end
-                    else
-                        new_item.special_info.durab_item.cur_durability = item_cfg.durability
+                        table.insert(unstack_items, new_item)
+                    elseif item_small_type == ItemDefine.EItemSmallType.SkinCard then
+                        table.insert(unstack_items, new_item)
                     end
-                    table.insert(unstack_items, new_item)
                 end
                 
             elseif item_big_type == ItemDefine.EItemBigType.UniqueItem then
@@ -375,12 +384,12 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                 if not uniqitem_cfg then
                     return false
                 end
-                local item_type = ItemDefine.GetItemType(item.id)
+                -- local item_type = ItemDefine.GetItemType(item.id)
                 local item_small_type = ItemDefine.GetItemType(item.id)
 
                 for i = 1, item.count do
                     local new_item = ItemDef.newItemData()
-                    new_item.itype = item_type
+                    new_item.itype = item_small_type
                     new_item.common_info.config_id = uniqitem_cfg.id
                     if item.uniqid and i == 1 then
                         new_item.common_info.uniqid = item.uniqid

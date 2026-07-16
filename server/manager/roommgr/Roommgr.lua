@@ -1395,7 +1395,12 @@ function Roommgr.GetMasterAndChapter(room_id)
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
 
-    return { code = ErrorCode.None, error = "获取房主和章节成功", master_id = room.master_id, chapter = room.room_data.chapter }
+    local mem_uids = {}
+    for _, member in pairs(room.players) do
+        table.insert(mem_uids, member.mem_info.uid)
+    end
+
+    return { code = ErrorCode.None, error = "获取房主和章节成功", master_id = room.master_id, chapter = room.room_data.chapter, mem_uids = mem_uids }
 end
 
 function Roommgr.CheckRecords(chapterid, difficulty, players)

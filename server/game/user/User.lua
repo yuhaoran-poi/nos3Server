@@ -3102,7 +3102,7 @@ function User.PBUseItemReqCmd(req)
     -- 存储背包变更
     if bag_change_log then
         if table.size(bag_change_log) > 0 then
-            scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.UseItemUpLv, 0, 0, 0, req.msg.target_id)
+            scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.UseItem, 0, 0, 0, 0)
         end
     end
     -- 图鉴信息变更
@@ -3113,8 +3113,97 @@ function User.PBUseItemReqCmd(req)
     if table.size(update_user_attr) > 0 then
         User.SetUserAttr(update_user_attr, true)
     end
+end
 
-    
+-- 客户端请求--使用唯一道具
+function User.PBUseUniqItemReqCmd(req)
+    -- 参数验证
+    if not req.msg.use_item_id
+        or not req.msg.use_uniqid
+        or not req.msg.use_pos then
+        return context.S2C(context.net_id, CmdCode.PBUseUniqItemRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            use_item_id = req.msg.use_item_id or 0,
+            use_uniqid = req.msg.use_uniqid or 0,
+            use_pos = req.msg.use_pos or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    local get_err_code, item_data = scripts.Bag.MutOneItemData(BagDef.BagType.Cangku, req.msg.use_pos)
+    if get_err_code ~= ErrorCode.None
+        or not item_data
+        or req.msg.use_item_id ~= item_data.common_info.config_id
+        or req.msg.use_uniqid ~= item_data.common_info.uniqid then
+        return context.S2C(context.net_id, CmdCode.PBUseUniqItemRspCmd, {
+            code = ErrorCode.ItemNotExist,
+            error = "道具不存在",
+            uid = context.uid,
+            use_item_id = req.msg.use_item_id,
+            use_uniqid = req.msg.use_uniqid,
+            use_pos = req.msg.use_pos,
+        }, req.msg_context.stub_id)
+    end
+
+    local change_image_ids = {}
+    local bag_change_log = {}
+    local uniqitem_cfg = GameCfg.UniqueItem[req.msg.use_item_id]
+    if uniqitem_cfg and uniqitem_cfg.use_type then
+        if uniqitem_cfg.use_type == 1 then
+            local err_code = scripts.ItemImage.UseUniqItemAddImage(uniqitem_cfg, req.msg, change_image_ids)
+            if err_code ~= ErrorCode.None then
+                return context.S2C(context.net_id, CmdCode.PBUseUniqItemRspCmd, {
+                    code = err_code,
+                    error = "使用道具失败",
+                    uid = context.uid,
+                    use_item_id = req.msg.use_item_id,
+                    use_uniqid = req.msg.use_uniqid,
+                    use_pos = req.msg.use_pos,
+                }, req.msg_context.stub_id)
+            end
+        end
+    end
+
+    local del_unique_items = {}
+    del_unique_items[req.msg.use_uniqid] = {
+        config_id = req.msg.use_item_id,
+        uniqid = req.msg.use_uniqid,
+        pos = req.msg.use_pos,
+    }
+    -- 扣除消耗
+    local errcode = scripts.Bag.DelItems(BagDef.BagType.Cangku, {}, del_unique_items, bag_change_log)
+    if errcode ~= ErrorCode.None then
+        scripts.Bag.RollBackWithChange(bag_change_log)
+        return context.S2C(context.net_id, CmdCode.PBUseUniqItemRspCmd, {
+            code = errcode,
+            error = "道具不足",
+            uid = context.uid,
+            use_item_id = req.msg.use_item_id,
+            use_uniqid = req.msg.use_uniqid,
+            use_pos = req.msg.use_pos,
+        }, req.msg_context.stub_id)
+    end
+
+    context.S2C(context.net_id, CmdCode.PBUseUniqItemRspCmd, {
+        code = ErrorCode.None,
+        error = "success",
+        uid = context.uid,
+        use_item_id = req.msg.use_item_id,
+        use_uniqid = req.msg.use_uniqid,
+        use_pos = req.msg.use_pos,
+    }, req.msg_context.stub_id)
+
+    -- 存储背包变更
+    if bag_change_log then
+        if table.size(bag_change_log) > 0 then
+            scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.UseItem, 0, 0, 0, 0)
+        end
+    end
+    -- 图鉴信息变更
+    if table.size(change_image_ids) > 0 then
+        scripts.ItemImage.SaveAndSync(change_image_ids)
+    end
 end
 
 function User.PBRefuseReturnRoomReqCmd(req)

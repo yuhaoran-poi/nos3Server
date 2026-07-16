@@ -1347,7 +1347,7 @@ open_count (R	openCount(
 TreasureListEntry
 key (Rkey'
 value (2.PBTreasureSingleRvalue:8bproto3
-Ð>
+ý@
 
 user.protocommon.proto
 item.proto	bag.proto
@@ -1585,7 +1585,21 @@ useItemCntK
 uid (Ruid
 use_item_id (R	useItemId 
 use_item_cnt (R
-useItemCnt"D
+useItemCnt"
+PBUseUniqItemReqCmd
+uid (Ruid
+use_item_id (R	useItemId
+
+use_uniqid (R	useUniqid
+use_pos (RusePos"©
+PBUseUniqItemRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+use_item_id (R	useItemId
+
+use_uniqid (R	useUniqid
+use_pos (RusePos"D
 PBRefuseReturnRoomReqCmd
 uid (Ruid
 roomid (Rroomid"n

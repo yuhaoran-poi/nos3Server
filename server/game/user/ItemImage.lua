@@ -848,6 +848,18 @@ function ItemImage.UseItemAddImage(item_cfg, msg_data, change_image_ids)
     return err_code
 end
 
+function ItemImage.UseUniqItemAddImage(item_cfg, msg_data, change_image_ids)
+    local err_code = ErrorCode.ItemTypeMismatch
+    if item_cfg.use_type == 1
+        and item_cfg.use_skin
+        and item_cfg.use_skin > 0 then
+        err_code = ItemImage.AddItemImage(item_cfg.use_skin, change_image_ids, true)
+        return err_code
+    end
+
+    return err_code
+end
+
 function ItemImage.ItemChangeSkin(item_config_id, skin_id)
     local itemImages = scripts.UserModel.GetItemImages()
     if not itemImages then

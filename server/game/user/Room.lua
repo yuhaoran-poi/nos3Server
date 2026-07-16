@@ -603,6 +603,58 @@ function Room.PBStartGameRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
+    -- 先扣所有人的消耗
+    -- if front_res.mem_uids and table.size(front_res.mem_uids) > 1 then
+    --     local query_uids = {}
+    --     for _, uid in ipairs(front_res.mem_uids) do
+    --         if uid ~= context.uid then
+    --             table.insert(query_uids, uid)
+    --         end
+    --     end
+
+    --     --查询在线用户列表
+    --     local online_uids, err = clusterd.call(3999, "usermgr", "Usermgr.getOnlineUsers", query_uids)
+    --     if not online_uids then
+    --         moon.error(err)
+    --         return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+    --             code = ErrorCode.ServerInternalError,
+    --             error = "getOnlineUsers failed",
+    --         }, req.msg_context.stub_id)
+    --     end
+    --     local success_uids = {}
+    --     local mine_node = math.tointeger(moon.env("NODE"))
+    --     for uid, info in pairs(online_uids) do
+    --         local query_node, query_addr_user = info.nid, info.addr_user
+    --         if query_node ~= 0 or query_addr_user ~= 0 then
+    --             if mine_node == query_node then
+    --                 local check_res, check_err = moon.call("lua", query_addr_user, "Room.GameStartCost", "")
+    --                 if check_res ~= ErrorCode.None then
+    --                     break
+    --                 end
+    --                 table.insert(success_uids, uid)
+    --             else
+    --                 local check_res, check_err = clusterd.call(query_node, query_addr_user, "Room.GameStartCost", "")
+    --                 if check_res ~= ErrorCode.None then
+    --                     break
+    --                 end
+    --                 table.insert(success_uids, uid)
+    --             end
+    --         else
+    --             break
+    --         end
+    --     end
+    --     if table.size(success_uids) < table.size(query_uids) then
+    --         for _, uid in ipairs(success_uids) do
+    --             if mine_node == online_uids[uid].nid then
+    --                 moon.send("lua", online_uids[uid].addr_user, "Room.GameStartCostReturn", "")
+    --             else
+    --                 clusterd.send(online_uids[uid].nid, online_uids[uid].addr_user,
+    --                     "Room.GameStartCostReturn", "")
+    --             end
+    --         end
+    --     end
+    -- end
+
     -- 先扣除模式门票
     local game_mode_cfgs = GameCfg.GameMode
     if not game_mode_cfgs or table.size(game_mode_cfgs) <= 0 then
@@ -1162,7 +1214,7 @@ function Room.GameSettle(settle_info)
     if settle_info.settle_simple_data and report_id > 0 then
         local user_attr = scripts.User.GetOnlineUserAttr({ ProtoEnum.UserAttrType.battle_report_ids })
         if not user_attr[ProtoEnum.UserAttrType.battle_report_ids]
-            or table.size(user_attr[ProtoEnum.UserAttrType.battle_report_ids]) then
+            or table.size(user_attr[ProtoEnum.UserAttrType.battle_report_ids]) == 0 then
             user_attr[ProtoEnum.UserAttrType.battle_report_ids] = {}
             table.insert(user_attr[ProtoEnum.UserAttrType.battle_report_ids], report_id)
         else

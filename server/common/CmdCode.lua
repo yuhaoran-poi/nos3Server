@@ -1,5 +1,5 @@
 --- Automatically generated,do not modify.
---- Proto version: 1542046146
+--- Proto version: 4043840968
 
 local M={
     ["PBPacketCmd"] = 1,
@@ -477,9 +477,11 @@ local M={
     ["PBUseItemUpLvRspCmd"] = 566,
     ["PBUseSkinGiftReqCmd"] = 567,
     ["PBUseSkinGiftRspCmd"] = 568,
-    ["PBUserAttrSyncCmd"] = 569,
+    ["PBUseUniqItemReqCmd"] = 569,
+    ["PBUseUniqItemRspCmd"] = 570,
+    ["PBUserAttrSyncCmd"] = 571,
 
-    CrC = "1542046146",
+    CrC = "4043840968",
 }
 
 local forward = {
@@ -941,6 +943,8 @@ local forward = {
     PBModNickNameRspCmd = 'addr_user',
     PBUseItemReqCmd = 'addr_user',
     PBUseItemRspCmd = 'addr_user',
+    PBUseUniqItemReqCmd = 'addr_user',
+    PBUseUniqItemRspCmd = 'addr_user',
     PBRefuseReturnRoomReqCmd = 'addr_user',
     PBRefuseReturnRoomRspCmd = 'addr_user',
     PBItemChangeSkinReqCmd = 'addr_user',

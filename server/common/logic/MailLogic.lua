@@ -144,8 +144,7 @@ function MailLogic.DealSystemMail(send_info_str)
                     return false, "send_info_str attachments error, config_id not exist"
                 end
 
-                if (attachment.uniqid and attachment.uniqid ~= 0)
-                    or (attachment.special_info) then
+                if attachment.uniqid and attachment.uniqid ~= 0 then
                     local small_type = ItemDefine.GetItemType(attachment.config_id)
                     local new_item_data = ItemDef.newItemData()
                     new_item_data.itype = small_type
@@ -161,12 +160,16 @@ function MailLogic.DealSystemMail(send_info_str)
                     if attachment.trade_cnt then
                         new_item_data.common_info.trade_cnt = attachment.trade_cnt
                     end
-                    new_item_data.special_info.durab_item = ItemDef.newDurabItem()
-                    if attachment.special_info and attachment.special_info.cur_durability then
-                        new_item_data.special_info.durab_item.cur_durability = attachment.special_info.cur_durability
-                    end
-                    if attachment.special_info and attachment.special_info.strong_value then
-                        new_item_data.special_info.durab_item.strong_value = attachment.special_info.strong_value
+                    if small_type ~= ItemDefine.EItemSmallType.SkinCard
+                        and attachment.special_info then
+                        new_item_data.special_info.durab_item = ItemDef.newDurabItem()
+                        if attachment.special_info and attachment.special_info.cur_durability then
+                            new_item_data.special_info.durab_item.cur_durability = attachment.special_info
+                            .cur_durability
+                        end
+                        if attachment.special_info and attachment.special_info.strong_value then
+                            new_item_data.special_info.durab_item.strong_value = attachment.special_info.strong_value
+                        end
                     end
                     for i = 1, attachment.item_count, 1 do
                         table.insert(mail_info.item_datas, new_item_data)

@@ -68,7 +68,8 @@ local ItemDef = {
         -- UpLv = 37,               --升级
         -- UpStar = 38,             --升级星数
         -- InlayTabooWord = 39,     --镶嵌讳字
-        RankReward = 47,            --排行榜奖励
+        RankReward = 47, --排行榜奖励
+        UseItem = 48, --使用道具
     },
     TabooWordInlay = {
         RoleType = 1000,

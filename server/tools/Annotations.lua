@@ -4069,6 +4069,22 @@
 ---@field public use_item_cnt integer
 
 
+---@class PBUseUniqItemReqCmd
+---@field public uid integer
+---@field public use_item_id integer
+---@field public use_uniqid integer
+---@field public use_pos integer
+
+
+---@class PBUseUniqItemRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public use_item_id integer
+---@field public use_uniqid integer
+---@field public use_pos integer
+
+
 ---@class PBRefuseReturnRoomReqCmd
 ---@field public uid integer
 ---@field public roomid integer
