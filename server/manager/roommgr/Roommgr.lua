@@ -1400,7 +1400,22 @@ function Roommgr.GetMasterAndChapter(room_id)
         table.insert(mem_uids, member.mem_info.uid)
     end
 
-    return { code = ErrorCode.None, error = "获取房主和章节成功", master_id = room.master_id, chapter = room.room_data.chapter, mem_uids = mem_uids }
+    local conf_idx = 0
+    for idx, tmp_conf in pairs(GameCfg.GameChapter) do
+        if tmp_conf.chapterid == room.room_data.chapter
+            and tmp_conf.difficulty == room.room_data.difficulty then
+            conf_idx = idx
+            break
+        end
+    end
+
+    return { code = ErrorCode.None,
+        error = "获取房主和章节成功",
+        master_id = room.master_id,
+        chapter = room.room_data.chapter,
+        mem_uids = mem_uids,
+        conf_idx = conf_idx
+    }
 end
 
 function Roommgr.CheckRecords(chapterid, difficulty, players)

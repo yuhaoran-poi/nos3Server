@@ -62,8 +62,25 @@ function LogMgr.ItemChangeLog(write_log_datas)
     for _, log_data in pairs(write_log_datas) do
         Database.ItemChangeLog(context.addr_db_log, log_data.uid, log_data.config_id, log_data.old_num,
             log_data.new_num, log_data.mod_uniqid, log_data.del_uniqids, log_data.add_uniqids,
-            log_data.old_item_data,log_data.new_item_data, log_data.relation_roleid, log_data.relation_ghostid, log_data.relation_ghost_uniqid, log_data.relation_imageid, log_data.change_type,
+            log_data.old_item_data, log_data.new_item_data, log_data.relation_roleid, log_data.relation_ghostid,
+            log_data.relation_ghost_uniqid, log_data.relation_imageid, log_data.change_type,
             log_data.change_reason, log_data.log_ts)
+    end
+end
+
+function LogMgr.RoleChangeLog(write_log_datas)
+    if not write_log_datas then
+        moon.error("LogMgr.RoleChangeLog invalid params: no write_log_datas")
+        return
+    end
+    if table.size(write_log_datas) <= 0 then
+        moon.error(string.format("LogMgr.RoleChangeLog invalid params: %s", json.pretty_encode(write_log_datas)))
+        return
+    end
+    moon.warn(string.format("LogMgr.RoleChangeLog write_log_datas = %s", json.pretty_encode(write_log_datas)))
+    for _, log_data in pairs(write_log_datas) do
+        Database.RoleChangeLog(context.addr_db_log, log_data.uid, log_data.role_info.config_id,
+            log_data.role_info.star_level, log_data.role_info.exp, log_data.role_info, log_data.reason, log_data.log_ts)
     end
 end
 

@@ -852,7 +852,10 @@ function Bag.SaveAndLog(change_logs, change_reason,
     -- 统计所有记录变更
     if change_reason ~= ItemDef.ChangeReason.BagMove
         and change_reason ~= ItemDef.ChangeReason.SortOutItems then
-        save_now = true
+            
+        if change_reason ~= ItemDef.ChangeReason.GameStartCost then
+            save_now = true
+        end
         for tmp_config_id, tmp_data in pairs(coin_log_datas) do
             if tmp_data.new_num ~= tmp_data.old_num then
                 local new_write_log = ItemDef.newPBItemLog()

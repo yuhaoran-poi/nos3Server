@@ -574,6 +574,55 @@ function Room.PBGetRoomInfoReqCmd(req)
     return context.S2C(context.net_id, CmdCode["PBGetRoomInfoRspCmd"], res, req.msg_context.stub_id)
 end
 
+function Room.GameStartCheckCost(cost_data)
+    moon.info(string.format("Room.GameStartCheckCost uid=%d cost_data:\n%s", context.uid, json.pretty_encode(cost_data)))
+    -- 检查资源是否足够
+    if cost_data and cost_data.cost_items and table.size(cost_data.cost_items) > 0 then
+        local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_data.cost_items, {})
+        if err_code_items ~= ErrorCode.None then
+            moon.error("Room.GameStartCheckCost check items not enough, err_code = ", err_code_items)
+            return err_code_items
+        end
+    end
+    if cost_data and cost_data.cost_coins and table.size(cost_data.cost_coins) > 0 then
+        local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_data.cost_coins)
+        if err_code_coins ~= ErrorCode.None then
+            moon.error("Room.GameStartCheckCost check coins not enough, err_code = ", err_code_coins)
+            return err_code_coins
+        end
+    end
+
+    return ErrorCode.None
+end
+
+function Room.GameStartCost(cost_data)
+    moon.info(string.format("Room.GameStartCost uid=%d cost_data:\n%s", context.uid, json.pretty_encode(cost_data)))
+    -- 扣除消耗
+    local change_log = {}
+    local err_code_del = ErrorCode.None
+    if cost_data and cost_data.cost_items and table.size(cost_data.cost_items) > 0 then
+        err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_data.cost_items, {}, change_log)
+        if err_code_del ~= ErrorCode.None then
+            moon.error("Room.GameStartCost del items failed, err_code = ", err_code_del)
+            scripts.Bag.RollBackWithChange(change_log)
+            return err_code_del
+        end
+    end
+    if cost_data and cost_data.cost_coins and table.size(cost_data.cost_coins) > 0 then
+        err_code_del = scripts.Bag.DealCoins(cost_data.cost_coins, change_log)
+        if err_code_del ~= ErrorCode.None then
+            moon.error("Room.GameStartCost deal coins failed, err_code = ", err_code_del)
+            scripts.Bag.RollBackWithChange(change_log)
+            return err_code_del
+        end
+    end
+
+    if table.size(change_log) > 0 then
+        scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.GameStartCost)
+    end
+    return ErrorCode.None
+end
+
 function Room.PBStartGameRoomReqCmd(req)
     if not context.roomid or context.roomid ~= req.msg.roomid then
         return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
@@ -603,57 +652,79 @@ function Room.PBStartGameRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    -- 先扣所有人的消耗
-    -- if front_res.mem_uids and table.size(front_res.mem_uids) > 1 then
-    --     local query_uids = {}
-    --     for _, uid in ipairs(front_res.mem_uids) do
-    --         if uid ~= context.uid then
-    --             table.insert(query_uids, uid)
-    --         end
-    --     end
+    local game_chapter_cfg = GameCfg.GameChapter[front_res.conf_idx]
+    if not game_chapter_cfg then
+        return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+            code = ErrorCode.ConfigError,
+            error = "game chapter not found",
+        }, req.msg_context.stub_id)
+    end
+    -- 计算消耗资源
+    local all_cost_items = {}
+    local all_cost_coins = {}
+    if game_chapter_cfg.cost and table.size(game_chapter_cfg.cost) > 0 then
+        ItemDefine.GetItemsFromCfg(game_chapter_cfg.cost, 1, true, all_cost_items, all_cost_coins)
+    end
 
-    --     --查询在线用户列表
-    --     local online_uids, err = clusterd.call(3999, "usermgr", "Usermgr.getOnlineUsers", query_uids)
-    --     if not online_uids then
-    --         moon.error(err)
-    --         return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
-    --             code = ErrorCode.ServerInternalError,
-    --             error = "getOnlineUsers failed",
-    --         }, req.msg_context.stub_id)
-    --     end
-    --     local success_uids = {}
-    --     local mine_node = math.tointeger(moon.env("NODE"))
-    --     for uid, info in pairs(online_uids) do
-    --         local query_node, query_addr_user = info.nid, info.addr_user
-    --         if query_node ~= 0 or query_addr_user ~= 0 then
-    --             if mine_node == query_node then
-    --                 local check_res, check_err = moon.call("lua", query_addr_user, "Room.GameStartCost", "")
-    --                 if check_res ~= ErrorCode.None then
-    --                     break
-    --                 end
-    --                 table.insert(success_uids, uid)
-    --             else
-    --                 local check_res, check_err = clusterd.call(query_node, query_addr_user, "Room.GameStartCost", "")
-    --                 if check_res ~= ErrorCode.None then
-    --                     break
-    --                 end
-    --                 table.insert(success_uids, uid)
-    --             end
-    --         else
-    --             break
-    --         end
-    --     end
-    --     if table.size(success_uids) < table.size(query_uids) then
-    --         for _, uid in ipairs(success_uids) do
-    --             if mine_node == online_uids[uid].nid then
-    --                 moon.send("lua", online_uids[uid].addr_user, "Room.GameStartCostReturn", "")
-    --             else
-    --                 clusterd.send(online_uids[uid].nid, online_uids[uid].addr_user,
-    --                     "Room.GameStartCostReturn", "")
-    --             end
-    --         end
-    --     end
-    -- end
+    -- 先检查所有人的消耗
+    local success_uids = {}
+    local mine_node = math.tointeger(moon.env("NODE"))
+    local online_uids, call_err
+    if front_res.mem_uids and table.size(front_res.mem_uids) > 1
+        and table.size(all_cost_items) + table.size(all_cost_coins) > 0 then
+        local query_uids = {}
+        for _, uid in ipairs(front_res.mem_uids) do
+            if uid ~= context.uid then
+                table.insert(query_uids, uid)
+            end
+        end
+
+        --查询在线用户列表
+        online_uids, call_err = clusterd.call(3999, "usermgr", "Usermgr.getOnlineUsers", query_uids)
+        if not online_uids then
+            moon.error(call_err)
+            return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+                code = ErrorCode.ServerInternalError,
+                error = "getOnlineUsers failed",
+            }, req.msg_context.stub_id)
+        end
+        
+        for uid, info in pairs(online_uids) do
+            local query_node, query_addr_user = info.nid, info.addr_user
+            if query_node ~= 0 or query_addr_user ~= 0 then
+                if mine_node == query_node then
+                    local check_res, check_err = moon.call("lua", query_addr_user, "Room.GameStartCheckCost",
+                        { cost_items = all_cost_items, cost_coins = all_cost_coins })
+                    if check_res ~= ErrorCode.None then
+                        break
+                    end
+                    table.insert(success_uids, uid)
+                else
+                    local check_res, check_err = clusterd.call(query_node, query_addr_user, "Room.GameStartCheckCost",
+                        { cost_items = all_cost_items, cost_coins = all_cost_coins })
+                    if check_res ~= ErrorCode.None then
+                        break
+                    end
+                    table.insert(success_uids, uid)
+                end
+            else
+                break
+            end
+        end
+        if table.size(success_uids) < table.size(query_uids) then
+            return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+                code = ErrorCode.CoinNotEnough,
+                error = "消耗模式门票不足",
+            }, req.msg_context.stub_id)
+        end
+    end
+    local cost_code = Room.GameStartCheckCost({cost_items = all_cost_items, cost_coins = all_cost_coins})
+    if cost_code ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+            code = cost_code,
+            error = "消耗模式门票不足",
+        }, req.msg_context.stub_id)
+    end
 
     -- 先扣除模式门票
     local game_mode_cfgs = GameCfg.GameMode
@@ -669,12 +740,12 @@ function Room.PBStartGameRoomReqCmd(req)
             local err_code_coins = ErrorCode.None
 
             if game_mode_cfg.cost1 and table.size(game_mode_cfg.cost1) > 0 then
-                local cost_items, cost_coins = {}, {}
-                ItemDefine.GetItemsFromCfg(game_mode_cfg.cost1, 1, true, cost_items, cost_coins)
-                err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
+                local mode_cost_items, mode_cost_coins = {}, {}
+                ItemDefine.GetItemsFromCfg(game_mode_cfg.cost1, 1, true, mode_cost_items, mode_cost_coins)
+                err_code_coins = scripts.Bag.CheckCoinsEnough(mode_cost_coins)
                 if err_code_coins == ErrorCode.None then
-                    if table.size(cost_coins) > 0 then
-                        err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_log)
+                    if table.size(mode_cost_coins) > 0 then
+                        err_code_coins = scripts.Bag.DealCoins(mode_cost_coins, bag_change_log)
                         if err_code_coins ~= ErrorCode.None then
                             scripts.Bag.RollBackWithChange(bag_change_log)
                             return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
@@ -688,17 +759,17 @@ function Room.PBStartGameRoomReqCmd(req)
 
             if err_code_coins ~= ErrorCode.None
                 and game_mode_cfg.cost2 and table.size(game_mode_cfg.cost2) > 0 then
-                local cost_items, cost_coins = {}, {}
-                ItemDefine.GetItemsFromCfg(game_mode_cfg.cost2, 1, true, cost_items, cost_coins)
-                err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
+                local mode_cost_items, mode_cost_coins = {}, {}
+                ItemDefine.GetItemsFromCfg(game_mode_cfg.cost2, 1, true, mode_cost_items, mode_cost_coins)
+                err_code_coins = scripts.Bag.CheckCoinsEnough(mode_cost_coins)
                 if err_code_coins ~= ErrorCode.None then
                     return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
                         code = err_code_coins,
                         error = "消耗模式门票不足",
                     }, req.msg_context.stub_id)
                 end
-                if table.size(cost_coins) > 0 then
-                    err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_log)
+                if table.size(mode_cost_coins) > 0 then
+                    err_code_coins = scripts.Bag.DealCoins(mode_cost_coins, bag_change_log)
                     if err_code_coins ~= ErrorCode.None then
                         scripts.Bag.RollBackWithChange(bag_change_log)
                         return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
@@ -727,6 +798,18 @@ function Room.PBStartGameRoomReqCmd(req)
             scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.GameStartCost)
         end
     end
+
+    -- 扣除所有人的消耗
+    for _, uid in ipairs(success_uids) do
+        if mine_node == online_uids[uid].nid then
+            moon.send("lua", online_uids[uid].addr_user, "Room.GameStartCost",
+            { cost_items = all_cost_items, cost_coins = all_cost_coins })
+        else
+            clusterd.send(online_uids[uid].nid, online_uids[uid].addr_user,
+                "Room.GameStartCost", { cost_items = all_cost_items, cost_coins = all_cost_coins })
+        end
+    end
+    Room.GameStartCost({ cost_items = all_cost_items, cost_coins = all_cost_coins })
 
     return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, res, req.msg_context.stub_id)
 end
