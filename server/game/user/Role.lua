@@ -2381,6 +2381,7 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
         
         local change_cost_items = table.copy(cost_items, true)
         local change_cost_coins = table.copy(cost_coins, true)
+        moon.info(string.format("role_repair_func 1 cost_coins = %s", json.pretty_encode(cost_coins)))
         ItemDefine.GetItemsFromCfg(common_cfg.items, fix_durability, true, change_cost_items, change_cost_coins)
         -- 检测道具是否足够
         errcode = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, change_cost_items, {})
@@ -2393,6 +2394,7 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
         end
         cost_items = change_cost_items
         cost_coins = change_cost_coins
+        moon.info(string.format("role_repair_func 2 cost_coins = %s", json.pretty_encode(cost_coins)))
 
         return ErrorCode.None, fix_durability
     end
@@ -2461,6 +2463,7 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
 
     local already_repairs = {}
     if table.size(add_durability_list) > 0 then
+        moon.info(string.format("PBRoleEquipmentRepairReqCmd cost_coins = %s", json.pretty_encode(cost_coins)))
         local bag_change_logs = {}
         -- 扣除道具
         if table.size(cost_items) > 0 then
