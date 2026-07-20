@@ -79,8 +79,8 @@ function LogMgr.RoleChangeLog(write_log_datas)
     end
     moon.warn(string.format("LogMgr.RoleChangeLog write_log_datas = %s", json.pretty_encode(write_log_datas)))
     for _, log_data in pairs(write_log_datas) do
-        Database.RoleChangeLog(context.addr_db_log, log_data.uid, log_data.role_info.config_id,
-            log_data.role_info.star_level, log_data.role_info.exp, log_data.role_info, log_data.reason, log_data.log_ts)
+        Database.RoleChangeLog(context.addr_db_log, log_data.uid, log_data.config_id, log_data.star_level, log_data.exp,
+            log_data.role_data, log_data.reason, log_data.log_ts)
     end
 end
 
