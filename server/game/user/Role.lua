@@ -152,7 +152,8 @@ function Role.SaveAndLog(change_roles)
             role_log.config_id = roleinfo.config_id
             role_log.star_level = roleinfo.star_level
             role_log.exp = roleinfo.exp
-            role_log.role_data = table.copy(roleinfo, true)
+            -- role_log.role_data = table.copy(roleinfo, true)
+            role_log.role_data = roleinfo
             role_log.change_reason = reason
             role_log.log_ts = moon.time()
             table.insert(write_log_datas, role_log)
@@ -2335,7 +2336,7 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
             req.msg_context.stub_id)
     end
 
-    local function role_repair_func(item_data, smallType, cost_items, cost_coins)
+    local function role_repair_func(item_data, smallType, old_cost_items, old_cost_coins)
         local old_item_data = table.copy(item_data)
         local uniq_item_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
         if not uniq_item_cfg then
@@ -2379,9 +2380,9 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
             return ErrorCode.DurabilityMax, 0
         end
         
-        local change_cost_items = table.copy(cost_items, true)
-        local change_cost_coins = table.copy(cost_coins, true)
-        moon.info(string.format("role_repair_func 1 cost_coins = %s", json.pretty_encode(cost_coins)))
+        local change_cost_items = table.copy(old_cost_items, true)
+        local change_cost_coins = table.copy(old_cost_coins, true)
+        moon.info(string.format("role_repair_func 1 change_cost_coins = %s", json.pretty_encode(change_cost_items)))
         ItemDefine.GetItemsFromCfg(common_cfg.items, fix_durability, true, change_cost_items, change_cost_coins)
         -- 检测道具是否足够
         errcode = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, change_cost_items, {})
@@ -2392,27 +2393,31 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
         if errcode ~= ErrorCode.None then
             return errcode, 0
         end
-        cost_items = change_cost_items
-        cost_coins = change_cost_coins
-        moon.info(string.format("role_repair_func 2 cost_coins = %s", json.pretty_encode(cost_coins)))
+        moon.info(string.format("role_repair_func 2 change_cost_coins = %s", json.pretty_encode(change_cost_items)))
 
-        return ErrorCode.None, fix_durability
+        return ErrorCode.None, fix_durability, change_cost_items, change_cost_coins
     end
 
     local cost_items = {}
     local cost_coins = {}
     local add_durability_list = {}
-    local ret_code = ErrorCode.None
-    local fix_durability = 0
+    -- local ret_code = ErrorCode.None
+    -- local fix_durability = 0
     for _, need_repair in ipairs(req.msg.need_repairs) do
         local smallType = ItemDefine.GetItemType(need_repair.config_id)
         if smallType == ItemDefine.EItemSmallType.MagicItem then
             if role_info.magic_item and role_info.magic_item.common_info
                 and role_info.magic_item.common_info.config_id == need_repair.config_id
                 and role_info.magic_item.common_info.uniqid == need_repair.uniqid then
-                ret_code, fix_durability = role_repair_func(role_info.magic_item, smallType, cost_items,
-                    cost_coins)
+                local ret_code, fix_durability, change_cost_items, change_cost_coins = role_repair_func(
+                    role_info.magic_item, smallType, cost_items, cost_coins)
                 if ret_code == ErrorCode.None then
+                    if change_cost_items and table.size(change_cost_items) > 0 then
+                        cost_items = change_cost_items
+                    end
+                    if change_cost_coins and table.size(change_cost_coins) > 0 then
+                        cost_coins = change_cost_coins
+                    end
                     local add_durability = {
                         config_id = need_repair.config_id,
                         uniqid = need_repair.uniqid,
@@ -2429,9 +2434,15 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
                 and role_info.digrams_cards[need_repair.pos].common_info
                 and role_info.digrams_cards[need_repair.pos].common_info.config_id == need_repair.config_id
                 and role_info.digrams_cards[need_repair.pos].common_info.uniqid == need_repair.uniqid then
-                ret_code, fix_durability = role_repair_func(role_info.digrams_cards[need_repair.pos], smallType,
-                    cost_items, cost_coins)
+                local ret_code, fix_durability, change_cost_items, change_cost_coins = role_repair_func(
+                    role_info.digrams_cards[need_repair.pos], smallType, cost_items, cost_coins)
                 if ret_code == ErrorCode.None then
+                    if change_cost_items and table.size(change_cost_items) > 0 then
+                        cost_items = change_cost_items
+                    end
+                    if change_cost_coins and table.size(change_cost_coins) > 0 then
+                        cost_coins = change_cost_coins
+                    end
                     local add_durability = {
                         config_id = need_repair.config_id,
                         uniqid = need_repair.uniqid,
@@ -2446,8 +2457,15 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
             if role_info.space_ring and role_info.space_ring.common_info
                 and role_info.space_ring.common_info.config_id == need_repair.config_id
                 and role_info.space_ring.common_info.uniqid == need_repair.uniqid then
-                ret_code, fix_durability = role_repair_func(role_info.space_ring, smallType, cost_items, cost_coins)
+                local ret_code, fix_durability, change_cost_items, change_cost_coins = role_repair_func(
+                    role_info.space_ring, smallType, cost_items, cost_coins)
                 if ret_code == ErrorCode.None then
+                    if change_cost_items and table.size(change_cost_items) > 0 then
+                        cost_items = change_cost_items
+                    end
+                    if change_cost_coins and table.size(change_cost_coins) > 0 then
+                        cost_coins = change_cost_coins
+                    end
                     local add_durability = {
                         config_id = need_repair.config_id,
                         uniqid = need_repair.uniqid,
