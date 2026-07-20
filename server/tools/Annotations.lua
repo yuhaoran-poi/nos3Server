@@ -354,7 +354,7 @@
 ---@field public config_id integer
 ---@field public uniqid integer
 ---@field public pos integer @道具所在格子号
----@field public price_change integer @价格变动 1-降 2-平 3-升
+---@field public price_change_result integer @价格变动 1-降 2-平 3-升
 
 
 ---@class PBAntiqueShowReqCmd

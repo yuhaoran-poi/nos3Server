@@ -3544,7 +3544,7 @@ function Bag.PBAntiqueIdentifyReqCmd(req)
         config_id = req.msg.config_id,
         uniqid = req.msg.uniqid,
         pos = req.msg.pos,
-        price_change = price_probability,
+        price_change_result = price_probability,
     }, req.msg_context.stub_id)
 end
 

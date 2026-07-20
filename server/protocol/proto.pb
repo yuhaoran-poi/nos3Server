@@ -541,7 +541,7 @@ aweItemMapI
 error (	Rerror
 uid (Ruid3
 awe_item_info (2.PBUserAweItemsRaweItemInfobproto3
-£
+°
 	bag.proto
 item.proto"·
 PBBag"
@@ -634,14 +634,14 @@ item_count (R	itemCount
 PBAntiqueIdentifyReqCmd
 	config_id (RconfigId
 uniqid (Runiqid
-pos (Rpos"­
+pos (Rpos"º
 PBAntiqueIdentifyRspCmd
 code (Rcode
 error (	Rerror
 	config_id (RconfigId
 uniqid (Runiqid
-pos (Rpos!
-price_change (RpriceChange"Ã
+pos (Rpos.
+price_change_result (RpriceChangeResult"Ã
 PBAntiqueShowReqCmd
 	config_id (RconfigId
 uniqid (Runiqid
