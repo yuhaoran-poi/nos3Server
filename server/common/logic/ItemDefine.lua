@@ -12,7 +12,7 @@ local GameCfg = common.GameCfg
 ---@field public GetItemBagType fun(nConfigId: integer): integer
 
 local ItemDefine = {
-    Coin = { start = 1, End = 99 },
+    Coin = { start = 1, End = 999 },
     Piece = { start = 10000, End = 29999 },
     EffectCard = { start = 30000, End = 30999 },
     Book = { start = 31000, End = 33999 },
