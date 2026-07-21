@@ -478,7 +478,7 @@ function User.SendRankRewardMail(msg)
         end
     end
 
-    local mail_ret = scripts.Mail.RecvImmediateMail(2000001, items_simple, {}, coins, {})
+    local mail_ret = scripts.Mail.RecvImmediateMail(2000022, items_simple, {}, coins, {})
     if mail_ret then
         moon.info(string.format("[User] SendRankRewardMail: mail sent to player %d", uid))
     else
