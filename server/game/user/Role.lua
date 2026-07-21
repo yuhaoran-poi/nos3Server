@@ -320,7 +320,7 @@ function Role.AddRole(roleid)
         table.insert(skillids, skillid)
     end
     -- 初始化法器
-    local init_magic_item_id = role_cfg.Initial_equipment1
+    local init_magic_item_id = role_cfg.initial_equipment1
     local magic_item_cfg = GameCfg.UniqueItem[init_magic_item_id]
     if init_magic_item_id
         and magic_item_cfg
@@ -349,8 +349,8 @@ function Role.AddRole(roleid)
         role_info.magic_item = new_item_data
     end
     -- 初始化八卦牌
-    if role_cfg.Initial_equipment2 and table.size(role_cfg.Initial_equipment2) > 0 then
-        for equip_idx, diagrams_id in pairs(role_cfg.Initial_equipment2) do
+    if role_cfg.initial_equipment2 and table.size(role_cfg.initial_equipment2) > 0 then
+        for equip_idx, diagrams_id in pairs(role_cfg.initial_equipment2) do
             local diagrams_item_cfg = GameCfg.UniqueItem[diagrams_id]
             if diagrams_item_cfg
                 and ItemDefine.GetItemType(diagrams_id) == ItemDefine.EItemSmallType.HumanDiagrams then
@@ -380,7 +380,7 @@ function Role.AddRole(roleid)
         end
     end
     -- 初始化空间戒指
-    local init_space_ring_id = role_cfg.Initial_equipment3
+    local init_space_ring_id = role_cfg.initial_equipment3
     local space_ring_cfg = GameCfg.UniqueItem[init_space_ring_id]
     if init_space_ring_id
         and space_ring_cfg
@@ -407,6 +407,21 @@ function Role.AddRole(roleid)
             end
         end
         role_info.space_ring = new_item_data
+    end
+    -- 初始化皮肤
+    if role_cfg.initial_suit and table.size(role_cfg.initial_suit) > 0 then
+        local change_image_ids = {}
+        for skin_idx, skin_id in pairs(role_cfg.initial_suit) do
+            local skin_cfg = GameCfg.Skin[skin_id]
+            if skin_cfg then
+                role_info.skins[skin_idx] = skin_id
+                scripts.ItemImage.AddItemImage(skin_id, change_image_ids, true)
+            end
+        end
+        -- 图鉴信息变更
+        if table.size(change_image_ids) > 0 then
+            scripts.ItemImage.SaveAndSync(change_image_ids)
+        end
     end
 
     roles.role_list[roleid] = role_info
