@@ -1317,8 +1317,32 @@ function Bag.SortOutNew(bagType)
         end
     end
 
-    -- 4) 重建 items：先按 config_id 升序填入可堆叠物品，再依次填入唯一物品
-    --    目标位置从 1 开始连续递增；同时重建 Bag.dataMap 中 pos_count / uniqid_pos
+    -- 4) 重建 items：按 config_id 升序，每个 config_id 内「可堆叠物品」在前、「唯一物品」在后
+    --    这样可以保证最终顺序完全按 config_id 从小到大排列
+    -- 收集所有涉及的 config_id（可堆叠 + 唯一物品）
+    local all_cfg_ids = {}
+    local seen = {}
+    for _, cfg_id in ipairs(sorted_cfg_ids) do
+        all_cfg_ids[#all_cfg_ids + 1] = cfg_id
+        seen[cfg_id] = true
+    end
+    for _, entry in ipairs(unique_items) do
+        if not seen[entry.config_id] then
+            all_cfg_ids[#all_cfg_ids + 1] = entry.config_id
+            seen[entry.config_id] = true
+        end
+    end
+    table.sort(all_cfg_ids)
+
+    -- 唯一物品按 config_id 分桶（桶内保持原顺序）
+    local unique_by_cfg = {}
+    for _, entry in ipairs(unique_items) do
+        if not unique_by_cfg[entry.config_id] then
+            unique_by_cfg[entry.config_id] = {}
+        end
+        table.insert(unique_by_cfg[entry.config_id], entry)
+    end
+
     local old_items = baginfo.items
     local new_items = {}
     local new_pos_count = {}  -- config_id -> { [pos] = count }
@@ -1326,7 +1350,8 @@ function Bag.SortOutNew(bagType)
     local new_all_count = {}  -- config_id -> number
     local cur_pos = 1
 
-    for _, cfg_id in ipairs(sorted_cfg_ids) do
+    for _, cfg_id in ipairs(all_cfg_ids) do
+        -- 先填入可堆叠物品
         local group = stackable_groups[cfg_id]
         if group then
             for _, entry in ipairs(group) do
@@ -1341,17 +1366,20 @@ function Bag.SortOutNew(bagType)
                 end
             end
         end
-    end
 
-    -- 唯一物品沿用其原顺序
-    for _, entry in ipairs(unique_items) do
-        new_items[cur_pos] = entry.item
-        if not new_uniqid_pos[entry.config_id] then
-            new_uniqid_pos[entry.config_id] = {}
+        -- 再填入唯一物品
+        local u_items = unique_by_cfg[cfg_id]
+        if u_items then
+            for _, entry in ipairs(u_items) do
+                new_items[cur_pos] = entry.item
+                if not new_uniqid_pos[cfg_id] then
+                    new_uniqid_pos[cfg_id] = {}
+                end
+                new_uniqid_pos[cfg_id][entry.uniqid] = cur_pos
+                new_all_count[cfg_id] = (new_all_count[cfg_id] or 0) + 1
+                cur_pos = cur_pos + 1
+            end
         end
-        new_uniqid_pos[entry.config_id][entry.uniqid] = cur_pos
-        new_all_count[entry.config_id] = (new_all_count[entry.config_id] or 0) + 1
-        cur_pos = cur_pos + 1
     end
 
     -- 5) 记录移动日志并替换 items
@@ -1380,22 +1408,13 @@ function Bag.SortOutNew(bagType)
     end
 
     -- 6) 同步 Bag.dataMap 中的 pos_count / uniqid_pos / allCount（仅针对本 bagType）
-    for _, cfg_id in ipairs(sorted_cfg_ids) do
+    for _, cfg_id in ipairs(all_cfg_ids) do
         local bd = Bag.dataMap[cfg_id] and Bag.dataMap[cfg_id][bagType]
         if bd then
             bd.pos_count = new_pos_count[cfg_id] or {}
             bd.uniqid_pos = new_uniqid_pos[cfg_id] or {}
             bd.allCount = new_all_count[cfg_id] or 0
             Bag.dataMap[cfg_id][bagType] = bd
-        end
-    end
-    for _, entry in ipairs(unique_items) do
-        local bd = Bag.dataMap[entry.config_id] and Bag.dataMap[entry.config_id][bagType]
-        if bd then
-            bd.pos_count = new_pos_count[entry.config_id] or {}
-            bd.uniqid_pos = new_uniqid_pos[entry.config_id] or {}
-            bd.allCount = new_all_count[entry.config_id] or 0
-            Bag.dataMap[entry.config_id][bagType] = bd
         end
     end
 
