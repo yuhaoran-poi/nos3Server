@@ -1516,7 +1516,8 @@ function Role.PBRoleWearSkinReqCmd(req)
     role_info.skins = req.msg.skins
 
     context.S2C(context.net_id, CmdCode["PBRoleWearSkinRspCmd"],
-        { code = ErrorCode.None, error = "", uid = context.uid }, req.msg_context.stub_id)
+        { code = ErrorCode.None, error = "", uid = context.uid, roleid = req.msg.roleid, skins = role_info.skins },
+        req.msg_context.stub_id)
 
     local change_roles = {}
     change_roles[req.msg.roleid] = "WearSkin"
