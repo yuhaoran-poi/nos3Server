@@ -1026,6 +1026,15 @@ end
 -- end
 
 function Bag.AddLog(logs, pos, old_itemdata)
+    if pos < 0 then
+        moon.error("Bag.AddLog pos = ", pos)
+        moon.error(string.format("logs = %s", json.pretty_encode(logs)))
+        if old_itemdata then
+            moon.error(string.format("old_itemdata = %s", json.pretty_encode(old_itemdata)))
+        end
+        return
+    end
+
     if logs[pos] then
         return
     end
@@ -1200,6 +1209,199 @@ function Bag.SortOut(bagType)
 
     return ErrorCode.None
 end
+
+-- 整理背包（新实现，保持原 Bag.SortOut 不变以便对比）
+---@param bagType string
+function Bag.SortOutNew(bagType)
+    -- 参数校验
+    if bagType ~= BagDef.BagType.Cangku
+        and bagType ~= BagDef.BagType.Consume
+        and bagType ~= BagDef.BagType.Booty
+        and bagType ~= BagDef.BagType.Tool then
+        return ErrorCode.BagNotExist
+    end
+
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata or not bagdata[bagType] then
+        return ErrorCode.BagNotExist
+    end
+
+    local baginfo = bagdata[bagType]
+    if not baginfo.items or table.size(baginfo.items) <= 0 then
+        return ErrorCode.BagEmpty
+    end
+
+    -- 1) 收集所有物品，拆分为可堆叠和不可堆叠两组
+    -- 同一 config_id 视为可堆叠；uniqid != 0 的物品单独存放
+    local stackable_groups = {} -- config_id -> list of {pos, item, count}
+    local unique_items = {}     -- list of {pos, item, uniqid, config_id}
+    for pos, item in pairs(baginfo.items) do
+        if not item or not item.common_info then
+            baginfo.items[pos] = nil
+        else
+            local cfg_id = item.common_info.config_id
+            local uniqid = item.common_info.uniqid
+            if uniqid and uniqid ~= 0 then
+                table.insert(unique_items, {
+                    pos = pos,
+                    item = item,
+                    uniqid = uniqid,
+                    config_id = cfg_id,
+                })
+            else
+                if not stackable_groups[cfg_id] then
+                    stackable_groups[cfg_id] = {}
+                end
+                table.insert(stackable_groups[cfg_id], {
+                    pos = pos,
+                    item = item,
+                    count = item.common_info.item_count or 0,
+                })
+            end
+        end
+    end
+
+    -- 2) 按 config_id 升序排序，确定可堆叠物品的最终顺序
+    local sorted_cfg_ids = {}
+    for cfg_id, _ in pairs(stackable_groups) do
+        table.insert(sorted_cfg_ids, cfg_id)
+    end
+    table.sort(sorted_cfg_ids)
+
+    -- 3) 堆叠阶段：同类物品按堆叠上限合并，记录变更日志
+    local stack_change_logs = { [bagType] = {} }
+    local need_rebuild = false
+    for _, cfg_id in ipairs(sorted_cfg_ids) do
+        local item_cfg = GameCfg.Item[cfg_id]
+        if not item_cfg then
+            -- 配置不存在时跳过
+            stackable_groups[cfg_id] = nil
+        else
+            local group = stackable_groups[cfg_id]
+            -- 同组内按数量降序排列：先把大堆作为目标，后续小堆往里塞
+            table.sort(group, function(a, b)
+                return a.count > b.count
+            end)
+
+            for i = 1, #group - 1 do
+                local dest = group[i]
+                if dest.count < item_cfg.stack_count then
+                    for j = i + 1, #group do
+                        local src = group[j]
+                        if dest.count >= item_cfg.stack_count then
+                            break
+                        end
+                        if src.count > 0 then
+                            local space = item_cfg.stack_count - dest.count
+                            local move = math.min(space, src.count)
+                            if move > 0 then
+                                Bag.AddLog(stack_change_logs[bagType], dest.pos, dest.item)
+                                Bag.AddLog(stack_change_logs[bagType], src.pos, src.item)
+                                dest.item.common_info.item_count = dest.item.common_info.item_count + move
+                                src.item.common_info.item_count = src.item.common_info.item_count - move
+                                dest.count = dest.item.common_info.item_count
+                                src.count = src.item.common_info.item_count
+                                need_rebuild = true
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    if need_rebuild then
+        local success = Bag.SaveAndLog(stack_change_logs, ItemDef.ChangeReason.SortOutItems)
+        if not success then
+            return ErrorCode.BagSortOutFailed
+        end
+    end
+
+    -- 4) 重建 items：先按 config_id 升序填入可堆叠物品，再依次填入唯一物品
+    --    目标位置从 1 开始连续递增；同时重建 Bag.dataMap 中 pos_count / uniqid_pos
+    local old_items = baginfo.items
+    local new_items = {}
+    local new_pos_count = {}  -- config_id -> { [pos] = count }
+    local new_uniqid_pos = {} -- config_id -> { [uniqid] = pos }
+    local new_all_count = {}  -- config_id -> number
+    local cur_pos = 1
+
+    for _, cfg_id in ipairs(sorted_cfg_ids) do
+        local group = stackable_groups[cfg_id]
+        if group then
+            for _, entry in ipairs(group) do
+                if entry.count > 0 and entry.item.common_info.item_count > 0 then
+                    new_items[cur_pos] = entry.item
+                    if not new_pos_count[cfg_id] then
+                        new_pos_count[cfg_id] = {}
+                    end
+                    new_pos_count[cfg_id][cur_pos] = entry.item.common_info.item_count
+                    new_all_count[cfg_id] = (new_all_count[cfg_id] or 0) + entry.item.common_info.item_count
+                    cur_pos = cur_pos + 1
+                end
+            end
+        end
+    end
+
+    -- 唯一物品沿用其原顺序
+    for _, entry in ipairs(unique_items) do
+        new_items[cur_pos] = entry.item
+        if not new_uniqid_pos[entry.config_id] then
+            new_uniqid_pos[entry.config_id] = {}
+        end
+        new_uniqid_pos[entry.config_id][entry.uniqid] = cur_pos
+        new_all_count[entry.config_id] = (new_all_count[entry.config_id] or 0) + 1
+        cur_pos = cur_pos + 1
+    end
+
+    -- 5) 记录移动日志并替换 items
+    local move_change_logs = { [bagType] = {} }
+    local need_save_move = false
+    for old_pos, old_item in pairs(old_items) do
+        if old_item and old_item.common_info then
+            Bag.AddLog(move_change_logs[bagType], old_pos, old_item)
+            need_save_move = true
+        end
+    end
+    for new_pos, new_item in pairs(new_items) do
+        if not move_change_logs[bagType][new_pos] then
+            Bag.AddLog(move_change_logs[bagType], new_pos, {})
+            need_save_move = true
+        end
+    end
+
+    baginfo.items = new_items
+
+    if need_save_move then
+        local success = Bag.SaveAndLog(move_change_logs, ItemDef.ChangeReason.SortOutItems)
+        if not success then
+            return ErrorCode.BagSortOutFailed
+        end
+    end
+
+    -- 6) 同步 Bag.dataMap 中的 pos_count / uniqid_pos / allCount（仅针对本 bagType）
+    for _, cfg_id in ipairs(sorted_cfg_ids) do
+        local bd = Bag.dataMap[cfg_id] and Bag.dataMap[cfg_id][bagType]
+        if bd then
+            bd.pos_count = new_pos_count[cfg_id] or {}
+            bd.uniqid_pos = new_uniqid_pos[cfg_id] or {}
+            bd.allCount = new_all_count[cfg_id] or 0
+            Bag.dataMap[cfg_id][bagType] = bd
+        end
+    end
+    for _, entry in ipairs(unique_items) do
+        local bd = Bag.dataMap[entry.config_id] and Bag.dataMap[entry.config_id][bagType]
+        if bd then
+            bd.pos_count = new_pos_count[entry.config_id] or {}
+            bd.uniqid_pos = new_uniqid_pos[entry.config_id] or {}
+            bd.allCount = new_all_count[entry.config_id] or 0
+            Bag.dataMap[entry.config_id][bagType] = bd
+        end
+    end
+
+    return ErrorCode.None
+end
+
 -- 添加物品（支持自动堆叠）
 ---@param bagType string
 ---@param baginfo PBBag
@@ -1312,17 +1514,17 @@ function Bag.DelItem(bagType, baginfo, itemId, count, pos, logs)
         remaining = 0
     else
         -- 先尝试扣减
-        for pos, itemdata in pairs(baginfo.items) do
+        for cur_pos, itemdata in pairs(baginfo.items) do
             if itemdata.common_info.config_id == itemId
                 and itemdata.common_info.uniqid == 0
                 and itemdata.common_info.item_count > 0 then
                 local canSub = math.min(itemdata.common_info.item_count, -remaining)
 
-                -- Bag.AddLog(logs, pos, ItemDef.LogType.ChangeNum, itemId, 0, itemdata.common_info.item_count)
-                Bag.AddLog(logs, pos, itemdata)
+                -- Bag.AddLog(logs, cur_pos, ItemDef.LogType.ChangeNum, itemId, 0, itemdata.common_info.item_count)
+                Bag.AddLog(logs, cur_pos, itemdata)
                 itemdata.common_info.item_count = itemdata.common_info.item_count - canSub
                 if itemdata.common_info.item_count == 0 then
-                    baginfo.items[pos] = nil
+                    baginfo.items[cur_pos] = nil
                 end
 
                 remaining = remaining + canSub
@@ -3455,7 +3657,7 @@ function Bag.PBBagSortOutReqCmd(req)
             { code = ErrorCode.LockItemRole, error = "变更操作被锁定", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    local err_code = Bag.SortOut(req.msg.bag_name)
+    local err_code = Bag.SortOutNew(req.msg.bag_name)
     if err_code ~= ErrorCode.None then
         return context.S2C(context.net_id, CmdCode.PBBagSortOutRspCmd, {
             code = err_code,
