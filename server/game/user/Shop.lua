@@ -543,14 +543,21 @@ function Shop.PBShopBuyReqCmd(req)
         end
     else
         -- 发送邮件
-        local item_datas = {}
-        for _, item_data in pairs(stack_items) do
-            table.insert(item_datas, item_data)
+        local items_simple = {}
+        for item_id, item in pairs(stack_items) do
+            local new_simple_item = ItemDef.newItemSimple()
+            new_simple_item.config_id = item_id
+            new_simple_item.item_count = item.common_info.item_count
+            items_simple[item_id] = new_simple_item
         end
+        -- for _, item_data in pairs(stack_items) do
+        --     table.insert(item_datas, item_data)
+        -- end
+        local item_datas = {}
         for _, item_data in pairs(unstack_items) do
             table.insert(item_datas, item_data)
         end
-        local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
+        local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, items_simple, item_datas, {})
         if not mail_ret then
             rsp_msg.code = ErrorCode.ShopMailSendFailed
             rsp_msg.error = "发送邮件失败"
@@ -776,16 +783,19 @@ function Shop.OpenTreasure(config_id, num)
     local add_list, re_list = {}, {}
     for i = 1, num do
         local is_guarantee = false
-        local cur_yu = (treasure_data.no_guarantee_cnt + i) % treasure_cfg.guarantee_trigger
-        local cur_zheng = math.floor((treasure_data.no_guarantee_cnt + i) / treasure_cfg.guarantee_trigger)
-        if treasure_cfg.guarantee_times < 0 then
-            if cur_yu == 0 then
-                is_guarantee = true
-            end
-        elseif treasure_cfg.guarantee_times > 0 then
-            if treasure_data.already_guarantee_cnt + cur_zheng <= treasure_cfg.guarantee_times
-                and cur_yu == 0 then
-                is_guarantee = true
+        -- guarantee_trigger 为 0 表示未配置保底，跳过保底判断
+        if treasure_cfg.guarantee_trigger and treasure_cfg.guarantee_trigger > 0 then
+            local cur_yu = (treasure_data.no_guarantee_cnt + i) % treasure_cfg.guarantee_trigger
+            local cur_zheng = math.floor((treasure_data.no_guarantee_cnt + i) / treasure_cfg.guarantee_trigger)
+            if treasure_cfg.guarantee_times < 0 then
+                if cur_yu == 0 then
+                    is_guarantee = true
+                end
+            elseif treasure_cfg.guarantee_times > 0 then
+                if treasure_data.already_guarantee_cnt + cur_zheng <= treasure_cfg.guarantee_times
+                    and cur_yu == 0 then
+                    is_guarantee = true
+                end
             end
         end
 
@@ -881,14 +891,21 @@ function Shop.OpenTreasure(config_id, num)
         end
     else
         -- 发送邮件
-        local item_datas = {}
-        for _, item_data in pairs(stack_items) do
-            table.insert(item_datas, item_data)
+        local items_simple = {}
+        for item_id, item in pairs(stack_items) do
+            local new_simple_item = ItemDef.newItemSimple()
+            new_simple_item.config_id = item_id
+            new_simple_item.item_count = item.common_info.item_count
+            items_simple[item_id] = new_simple_item
         end
+        -- for _, item_data in pairs(stack_items) do
+        --     table.insert(item_datas, item_data)
+        -- end
+        local item_datas = {}
         for _, item_data in pairs(unstack_items) do
             table.insert(item_datas, item_data)
         end
-        local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
+        local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, items_simple, item_datas, {})
         if not mail_ret then
             scripts.Bag.RollBackWithChange(bag_change_log)
             return ErrorCode.TreasureMailSendFailed

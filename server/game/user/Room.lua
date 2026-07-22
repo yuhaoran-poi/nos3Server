@@ -1344,6 +1344,7 @@ function Room.GameReturnItems(return_info)
     end
 
     -- 发送邮件
+    -- 只有唯一道具
     local item_datas = {}
     for _, item_data in pairs(return_info) do
         table.insert(item_datas, item_data)

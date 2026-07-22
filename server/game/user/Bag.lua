@@ -160,7 +160,7 @@ function Bag.Start(isnew)
         bagTypes[BagDef.BagType.Consume] = 1
         bagTypes[BagDef.BagType.Booty] = 1
         bagTypes[BagDef.BagType.Tool] = 1
-        Bag.SaveBagsNow(bagTypes)
+        Bag.SaveBagsNow(bagTypes, 2)
         Bag.SaveCoinsNow()
     end
 
@@ -193,7 +193,7 @@ function Bag.Start(isnew)
     print(type(bagdata[BagDef.BagType.Cangku].items), getmetatable(bagdata[BagDef.BagType.Cangku].items))
 end
 
-function Bag.SaveBagsNow(bagTypes)
+function Bag.SaveBagsNow(bagTypes, update_version)
     local bagdata = scripts.UserModel.GetBagData()
     if not bagdata then
         return false
@@ -207,7 +207,7 @@ function Bag.SaveBagsNow(bagTypes)
         end
     end
 
-    local success = Database.saveuserbags(context.addr_db_user, context.uid, save_bags)
+    local success = Database.saveuserbags(context.addr_db_user, context.uid, save_bags, update_version)
     scripts.UserModel.RemoveDirtyModule("Bag", bagTypes)
     return success
 end
@@ -2486,6 +2486,7 @@ function Bag.AddItems(bagType, stack_item_datas, unstack_item_datas, change_log)
         elseif item_small_type == ItemDefine.EItemSmallType.SkinCard then
             err_code = Bag.AddSkinCard(bagType, baginfo, item_data, change_log[bagType])
         else
+            moon.error(string.format("AddItems failed, item_data=%s", json.pretty_encode(item_data)))
             err_code = ErrorCode.ItemNotExist
         end
 

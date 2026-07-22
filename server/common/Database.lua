@@ -7,6 +7,9 @@ local crypt = require("crypt")
 local TradeDef = require("common.def.TradeDef")
 local AuctionDef = require("common.def.AuctionDef")
 local ItemDef = require("common.def.ItemDef")
+local BagDef = require("common.def.BagDef")
+-- local ItemDefine = require("common.logic.ItemDefine")
+local GameCfg = require("common.GameCfg")
 
 ---@type sqlclient
 local pgsql = require("sqldriver")
@@ -729,7 +732,7 @@ end
 --     moon.send("lua", addr, cmd)
 -- end
 
-function _M.saveuserbags(addr, uid, bags_data)
+function _M.saveuserbags(addr, uid, bags_data, update_version)
     assert(bags_data)
 
     local str_sql = "INSERT INTO mgame.userbag(uid"
@@ -760,6 +763,13 @@ function _M.saveuserbags(addr, uid, bags_data)
 
     str_sql = str_sql .. str_param1 .. ") VALUES (" .. uid .. str_param2 .. ")" .. "ON DUPLICATE KEY UPDATE" .. str_param3 .. ";"
     moon.send("lua", addr, str_sql)
+
+    -- if update_version and update_version > 0 then
+    --     local update_str_sql = string.format([[
+    --         UPDATE mgame.userbag SET data_version = %d WHERE uid = %d;
+    --     ]], update_version, uid)
+    --     moon.send("lua", addr, update_str_sql)
+    -- end
 
     return true
 end
@@ -799,6 +809,149 @@ function _M.loaduserbags(addr, uid, bags_id)
 
     return nil
 end
+-- function _M.loaduserbags(addr, uid, bags_id, data_version)
+--     assert(bags_id)
+
+--     local str_sql = "SELECT uid"
+--     local str_param1 = ""
+--     local had_param = false
+--     for bagTypeName, _ in pairs(bags_id) do
+--         if bagTypeName then
+--             had_param = true
+--             str_param1 = str_param1 .. ", " .. bagTypeName
+--         end
+--     end
+--     if not had_param then
+--         return nil
+--     end
+
+--     str_sql = str_sql .. str_param1 .. ", data_version " .. " FROM mgame.userbag WHERE uid=" .. uid
+--     local sql_res, err = moon.call("lua", addr, str_sql)
+--     if not err and sql_res and #sql_res > 0 then
+--         local bag_res = {}
+--         if sql_res[1]["data_version"] ~= data_version then
+--             -- 使用数据修复
+--             local fix_str_sql = string.format([[
+--                 SELECT cangku_json, consume_json, booty_json, tool_json FROM mgame.userbag WHERE uid=%d;
+--             ]], uid)
+--             local fix_sql_res, fix_err = moon.call("lua", addr, fix_str_sql)
+--             if not fix_err and fix_sql_res and #fix_sql_res > 0 then
+--                 local canku_json_tbl = jdecode(fix_sql_res[1]["cangku_json"])
+--                 local consume_json_tbl = jdecode(fix_sql_res[1]["consume_json"])
+--                 local booty_json_tbl = jdecode(fix_sql_res[1]["booty_json"])
+--                 local tool_json_tbl = jdecode(fix_sql_res[1]["tool_json"])
+
+--                 local new_bagdata = BagDef.newBags()
+--                 new_bagdata[BagDef.BagType.Cangku].bag_item_type = 1
+--                 new_bagdata[BagDef.BagType.Consume].bag_item_type = 2
+--                 new_bagdata[BagDef.BagType.Booty].bag_item_type = 1
+--                 new_bagdata[BagDef.BagType.Tool].bag_item_type = 3
+--                 if canku_json_tbl then
+--                     new_bagdata[BagDef.BagType.Cangku].capacity = canku_json_tbl.capacity
+--                     new_bagdata[BagDef.BagType.Cangku].items = canku_json_tbl.items
+--                     new_bagdata[BagDef.BagType.Cangku].capacity_grid = 1
+
+--                     local warehouse_cfgs = GameCfg.WarehouseExpansion
+--                     if warehouse_cfgs and table.size(warehouse_cfgs) > 0 then
+--                         for cfg_id, warehouse_cfg in pairs(warehouse_cfgs) do
+--                             if warehouse_cfg.warehouse_grids
+--                                 and warehouse_cfg.warehouse_grids > 0
+--                                 and warehouse_cfg.warehouse_grids < canku_json_tbl.capacity
+--                                 and cfg_id > new_bagdata[BagDef.BagType.Cangku].capacity_grid then
+--                                 new_bagdata[BagDef.BagType.Cangku].capacity_grid = cfg_id
+--                             end
+--                         end
+--                     end
+--                 else
+--                     moon.error("loaduserbags fix failed, canku_json_tbl is nil, uid=", uid)
+--                     return nil
+--                 end
+--                 if consume_json_tbl then
+--                     new_bagdata[BagDef.BagType.Consume].capacity = consume_json_tbl.capacity
+--                     new_bagdata[BagDef.BagType.Consume].items = consume_json_tbl.items
+--                     new_bagdata[BagDef.BagType.Consume].capacity_grid = 1
+
+--                     local consume_cfgs = GameCfg.ConsumablesBackpackExpansion
+--                     if consume_cfgs and table.size(consume_cfgs) > 0 then
+--                         for cfg_id, consume_cfg in pairs(consume_cfgs) do
+--                             if consume_cfg.consumables_backpack_grids
+--                                 and consume_cfg.consumables_backpack_grids > 0
+--                                 and consume_cfg.consumables_backpack_grids < consume_json_tbl.capacity
+--                                 and cfg_id > new_bagdata[BagDef.BagType.Consume].capacity_grid then
+--                                 new_bagdata[BagDef.BagType.Consume].capacity_grid = cfg_id
+--                             end
+--                         end
+--                     end
+--                 else
+--                     moon.error("loaduserbags fix failed, consume_json_tbl is nil, uid=", uid)
+--                     return nil
+--                 end
+--                 if booty_json_tbl then
+--                     new_bagdata[BagDef.BagType.Booty].capacity = booty_json_tbl.capacity
+--                     new_bagdata[BagDef.BagType.Booty].items = booty_json_tbl.items
+--                     new_bagdata[BagDef.BagType.Booty].capacity_grid = 1
+
+--                     local booty_cfgs = GameCfg.BootyBackpackExpansion
+--                     if booty_cfgs and table.size(booty_cfgs) > 0 then
+--                         for cfg_id, booty_cfg in pairs(booty_cfgs) do
+--                             if booty_cfg.booty_backpack_grids
+--                                 and booty_cfg.booty_backpack_grids > 0
+--                                 and booty_cfg.booty_backpack_grids < booty_json_tbl.capacity
+--                                 and cfg_id > new_bagdata[BagDef.BagType.Booty].capacity_grid then
+--                                 new_bagdata[BagDef.BagType.Booty].capacity_grid = cfg_id
+--                             end
+--                         end
+--                     end
+--                 else
+--                     moon.error("loaduserbags fix failed, booty_json_tbl is nil, uid=", uid)
+--                     return nil
+--                 end
+--                 if tool_json_tbl then
+--                     new_bagdata[BagDef.BagType.Tool].capacity = tool_json_tbl.capacity
+--                     new_bagdata[BagDef.BagType.Tool].items = tool_json_tbl.items
+--                     new_bagdata[BagDef.BagType.Tool].capacity_grid = 1
+
+--                     local tool_cfgs = GameCfg.ToolBackpackExpansion
+--                     if tool_cfgs and table.size(tool_cfgs) > 0 then
+--                         for cfg_id, tool_cfg in pairs(tool_cfgs) do
+--                             if tool_cfg.grids
+--                                 and tool_cfg.grids > 0
+--                                 and tool_cfg.grids < tool_json_tbl.capacity
+--                                 and cfg_id > new_bagdata[BagDef.BagType.Tool].capacity_grid then
+--                                 new_bagdata[BagDef.BagType.Tool].capacity_grid = cfg_id
+--                             end
+--                         end
+--                     end
+--                 else
+--                     moon.error("loaduserbags fix failed, tool_json_tbl is nil, uid=", uid)
+--                     return nil
+--                 end
+
+--                 _M.saveuserbags(addr, uid, new_bagdata, data_version)
+
+--                 for bagTypeName, _ in pairs(bags_id) do
+--                     if new_bagdata[bagTypeName] then
+--                         bag_res[bagTypeName] = new_bagdata[bagTypeName]
+--                     end
+--                 end
+--             end
+--         else
+--             for bagTypeName, _ in pairs(bags_id) do
+--                 if sql_res[1][bagTypeName] then
+--                     local pbdata = crypt.base64decode(sql_res[1][bagTypeName])
+--                     local _, tmp_data = protocol.decodewithname("PBBag", pbdata)
+--                     if tmp_data then
+--                         bag_res[bagTypeName] = tmp_data
+--                     end
+--                 end
+--             end
+--         end
+
+--         return bag_res
+--     end
+
+--     return nil
+-- end
 
 function _M.loaduserroles(addr, uid)
     local cmd = string.format([[
