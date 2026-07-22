@@ -61,20 +61,24 @@ function AweItem.SaveAweItemNow()
     return success
 end
 
+function AweItem.SyncAweItem()
+    local aweitems = scripts.UserModel.GetAweItems()
+    if not aweitems then
+        return false
+    end
+
+    context.S2C(context.net_id, CmdCode["PBAweItemsSyncCmd"], { awe_item_info = aweitems }, 0)
+    return true
+end
+
 function AweItem.LoadAweItem()
     local aweiteminfo = Database.loaduseraweitem(context.addr_db_user, context.uid)
     return aweiteminfo
 end
 
 function AweItem.SaveAndLog()
-    local aweitems = scripts.UserModel.GetAweItems()
-    if not aweitems then
-        return false
-    end
-
     AweItem.SaveAweItemNow()
-    context.S2C(context.net_id, CmdCode["PBAweItemsSyncCmd"], { awe_item_info = aweitems }, 0)
-
+    AweItem.SyncAweItem()
     return true
 end
 
@@ -258,6 +262,10 @@ local function AddAweItemBuff(aweitem, buff_id)
         surplus_cnt = 0,
         coefficient = buff_cfg.buff_coefficient
     }
+
+    -- 先同步给客户端
+    AweItem.SyncAweItem()
+
     if buff_cfg.buff_effect == ProtoEnum.AccountBuffType.Buff_TradeSlot then
         -- 交易行同时上架栏位增加
     elseif buff_cfg.buff_effect == ProtoEnum.AccountBuffType.Buff_AuctionLimit then
@@ -403,12 +411,13 @@ function AweItem.UpStar(awe_item_id)
                 AddAweItemBuff(aweitem, buff_id)
             end
         end
+
+        AweItem.SaveAweItemNow()
     else
         aweitem[fail_cnt_field] = aweitem[fail_cnt_field] + 1
+        -- 保存数据
+        AweItem.SaveAndLog()
     end
-
-    -- 保存数据
-    AweItem.SaveAndLog()
 
     return success and ErrorCode.None or ErrorCode.UpStarProbFail, change_log
 end
@@ -440,15 +449,15 @@ function AweItem.AweItemUnlock(aweitem_id)
     newAweitem.config_id = aweitem_id
     newAweitem.up_level = 1
     newAweitem.star_level = 1
+    aweitems.awe_item_map[aweitem_id] = newAweitem
+
     for star_lv, buff_id in ipairs(awe_cfg.buff) do
         if star_lv == 1 then
             AddAweItemBuff(newAweitem, buff_id)
         end
     end
-    aweitems.awe_item_map[aweitem_id] = newAweitem
 
-    -- 保存数据
-    AweItem.SaveAndLog()
+    AweItem.SaveAweItemNow()
 
     return ErrorCode.None
 end
