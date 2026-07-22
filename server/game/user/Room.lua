@@ -689,6 +689,7 @@ function Room.PBStartGameRoomReqCmd(req)
             }, req.msg_context.stub_id)
         end
         
+        local fail_uid = 0
         for uid, info in pairs(online_uids) do
             local query_node, query_addr_user = info.nid, info.addr_user
             if query_node ~= 0 or query_addr_user ~= 0 then
@@ -696,6 +697,7 @@ function Room.PBStartGameRoomReqCmd(req)
                     local check_res, check_err = moon.call("lua", query_addr_user, "Room.GameStartCheckCost",
                         { cost_items = all_cost_items, cost_coins = all_cost_coins })
                     if check_res ~= ErrorCode.None then
+                        fail_uid = uid
                         break
                     end
                     table.insert(success_uids, uid)
@@ -703,18 +705,20 @@ function Room.PBStartGameRoomReqCmd(req)
                     local check_res, check_err = clusterd.call(query_node, query_addr_user, "Room.GameStartCheckCost",
                         { cost_items = all_cost_items, cost_coins = all_cost_coins })
                     if check_res ~= ErrorCode.None then
+                        fail_uid = uid
                         break
                     end
                     table.insert(success_uids, uid)
                 end
             else
+                fail_uid = uid
                 break
             end
         end
         if table.size(success_uids) < table.size(query_uids) then
             return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
                 code = ErrorCode.CoinNotEnough,
-                error = "消耗模式门票不足",
+                error = "消耗模式灵币不足 uid=" .. fail_uid,
             }, req.msg_context.stub_id)
         end
     end
@@ -722,7 +726,7 @@ function Room.PBStartGameRoomReqCmd(req)
     if cost_code ~= ErrorCode.None then
         return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
             code = cost_code,
-            error = "消耗模式门票不足",
+            error = "消耗模式灵币不足 uid=" .. context.uid,
         }, req.msg_context.stub_id)
     end
 
