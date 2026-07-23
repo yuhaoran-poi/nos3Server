@@ -608,18 +608,14 @@ function RankLogic.CheckAndSendUnclaimedRewards(uid)
     for rank_type, periods in pairs(rank_reward_data) do
         for period, reward_data in pairs(periods) do
             for _, sub_rank in pairs(reward_data.sr) do
-                moon.info(string.format("[RankLogic] CheckAndSendUnclaimedRewards: sub_rank.ps=%s", json.encode(sub_rank.ps)))
                 if sub_rank.ps[uid] then
                     local player_data = sub_rank.ps[uid]
                     local player_rank = player_data.rank
-
-                    moon.info(string.format("[RankLogic] CheckAndSendUnclaimedRewards: found player uid=%d in rank_type=%d, rank=%d", uid, rank_type, player_rank))
 
                     local rank_reward_cfg = GameCfg.RankingListReward[rank_type]
                     if rank_reward_cfg then
                         local reward_id = RankLogic.GetRewardIdByRank(rank_reward_cfg, player_rank)
                         if reward_id then
-                            moon.info(string.format("[RankLogic] CheckAndSendUnclaimedRewards: sending mail for uid=%d, reward_id=%d", uid, reward_id))
                             RankLogic.SendRewardMailToPlayer(uid, rank_type, period, reward_id, player_rank)
                         end
                     end
