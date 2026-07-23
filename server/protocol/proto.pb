@@ -541,13 +541,14 @@ aweItemMapI
 error (	Rerror
 uid (Ruid3
 awe_item_info (2.PBUserAweItemsRaweItemInfobproto3
-°
+É
 	bag.proto
-item.proto"·
+item.proto"Ð
 PBBag"
 bag_item_type (RbagItemType
-capacity (Rcapacity'
-items (2.PBBag.ItemsEntryRitemsE
+capacity (Rcapacity
+grid_id (RgridId'
+items (2.PBBag.ItemsEntryRitemsE
 
 ItemsEntry
 key (Rkey!

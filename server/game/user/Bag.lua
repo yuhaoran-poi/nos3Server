@@ -16,6 +16,7 @@ local MissionDef = require("common.def.MissionDef")
 local context = ...
 local scripts = context.scripts
 local AbilityTagIdMin = 1000000
+local data_version = 2
 
 -- local ItemType = {
 --     ALL = 1,
@@ -53,18 +54,22 @@ function Bag.Init()
         local cangku_cfg = GameCfg.WarehouseExpansion[1]
         if cangku_cfg then
             bagdata[BagDef.BagType.Cangku].capacity = cangku_cfg.warehouse_grids
+            bagdata[BagDef.BagType.Cangku].grid_id = 1
         end
         local consume_cfg = GameCfg.ConsumablesBackpackExpansion[1]
         if consume_cfg then
             bagdata[BagDef.BagType.Consume].capacity = consume_cfg.consumables_backpack_grids
+            bagdata[BagDef.BagType.Consume].grid_id = 1
         end
         local booty_cfg = GameCfg.BootyBackpackExpansion[1]
         if booty_cfg then
             bagdata[BagDef.BagType.Booty].capacity = booty_cfg.booty_backpack_grids
+            bagdata[BagDef.BagType.Booty].grid_id = 1
         end
         local tool_cfg = GameCfg.ToolBackpackExpansion[1]
         if tool_cfg then
             bagdata[BagDef.BagType.Tool].capacity = tool_cfg.grids
+            bagdata[BagDef.BagType.Tool].grid_id = 1
         end
         scripts.UserModel.SetBagData(bagdata)
     end
@@ -160,7 +165,7 @@ function Bag.Start(isnew)
         bagTypes[BagDef.BagType.Consume] = 1
         bagTypes[BagDef.BagType.Booty] = 1
         bagTypes[BagDef.BagType.Tool] = 1
-        Bag.SaveBagsNow(bagTypes, 2)
+        Bag.SaveBagsNow(bagTypes, true)
         Bag.SaveCoinsNow()
     end
 
@@ -193,7 +198,7 @@ function Bag.Start(isnew)
     print(type(bagdata[BagDef.BagType.Cangku].items), getmetatable(bagdata[BagDef.BagType.Cangku].items))
 end
 
-function Bag.SaveBagsNow(bagTypes, update_version)
+function Bag.SaveBagsNow(bagTypes, is_new)
     local bagdata = scripts.UserModel.GetBagData()
     if not bagdata then
         return false
@@ -207,7 +212,11 @@ function Bag.SaveBagsNow(bagTypes, update_version)
         end
     end
 
-    local success = Database.saveuserbags(context.addr_db_user, context.uid, save_bags, update_version)
+    local write_version = 0
+    if is_new then
+        write_version = data_version
+    end
+    local success = Database.saveuserbags(context.addr_db_user, context.uid, save_bags, write_version)
     scripts.UserModel.RemoveDirtyModule("Bag", bagTypes)
     return success
 end
@@ -231,7 +240,7 @@ function Bag.TimingSave(bagTypes)
 end
 
 function Bag.LoadBags(bagTypes)
-    local baginfos = Database.loaduserbags(context.addr_db_user, context.uid, bagTypes)
+    local baginfos = Database.loaduserbags(context.addr_db_user, context.uid, bagTypes, data_version)
     return baginfos
 end
 
@@ -274,38 +283,42 @@ function Bag.AddCapacity(bagType, add_capacity_id, add_capacity_num)
     if add_capacity_id and add_capacity_id > 0 then
         -- 使用配置ID方式扩容
         if bagType == BagDef.BagType.Cangku then
+            local cur_grid_id = baginfo.grid_id or 1
+            local cur_bag_cfg = GameCfg.WarehouseExpansion[cur_grid_id]
             local bag_cfg = GameCfg.WarehouseExpansion[add_capacity_id]
-            if not bag_cfg then
+            if not cur_bag_cfg or not bag_cfg or add_capacity_id ~= cur_grid_id + 1 then
                 return ErrorCode.ParamInvalid
             end
-            if bag_cfg.warehouse_grids <= baginfo.capacity
-                or table.size(bag_cfg.warehouse_cost) <= 0 then
+            if table.size(bag_cfg.warehouse_cost) <= 0 then
                 return ErrorCode.BagCapacityOverflow
             end
             cost = bag_cfg.warehouse_cost
-            after_capacity = bag_cfg.warehouse_grids
+            after_capacity = baginfo.capacity + (bag_cfg.warehouse_grids - cur_bag_cfg.warehouse_grids)
         elseif bagType == BagDef.BagType.Consume then
+            local cur_grid_id = baginfo.grid_id or 1
+            local cur_bag_cfg = GameCfg.ConsumablesBackpackExpansion[cur_grid_id]
             local bag_cfg = GameCfg.ConsumablesBackpackExpansion[add_capacity_id]
-            if not bag_cfg then
+            if not cur_bag_cfg or not bag_cfg or add_capacity_id ~= cur_grid_id + 1 then
                 return ErrorCode.ParamInvalid
             end
-            if bag_cfg.consumables_backpack_grids <= baginfo.capacity
-                or table.size(bag_cfg.consumables_backpack_cost) <= 0 then
+            if table.size(bag_cfg.consumables_backpack_cost) <= 0 then
                 return ErrorCode.BagCapacityOverflow
             end
             cost = bag_cfg.consumables_backpack_cost
-            after_capacity = bag_cfg.consumables_backpack_grids
+            after_capacity = baginfo.capacity +
+                (bag_cfg.consumables_backpack_grids - cur_bag_cfg.consumables_backpack_grids)
         elseif bagType == BagDef.BagType.Booty then
+            local cur_grid_id = baginfo.grid_id or 1
+            local cur_bag_cfg = GameCfg.BootyBackpackExpansion[cur_grid_id]
             local bag_cfg = GameCfg.BootyBackpackExpansion[add_capacity_id]
-            if not bag_cfg then
+            if not cur_bag_cfg or not bag_cfg or add_capacity_id ~= cur_grid_id + 1 then
                 return ErrorCode.ParamInvalid
             end
-            if bag_cfg.booty_backpack_grids <= baginfo.capacity
-                or table.size(bag_cfg.booty_backpack_cost) <= 0 then
+            if table.size(bag_cfg.booty_backpack_cost) <= 0 then
                 return ErrorCode.BagCapacityOverflow
             end
             cost = bag_cfg.booty_backpack_cost
-            after_capacity = bag_cfg.booty_backpack_grids
+            after_capacity = baginfo.capacity + (bag_cfg.booty_backpack_grids - cur_bag_cfg.booty_backpack_grids)
         else
             return ErrorCode.ParamInvalid
         end
@@ -349,6 +362,9 @@ function Bag.AddCapacity(bagType, add_capacity_id, add_capacity_num)
                 return err_code_del
             end
         end
+
+        -- 更新当前配置ID
+        baginfo.grid_id = add_capacity_id
     end
 
     baginfo.capacity = after_capacity

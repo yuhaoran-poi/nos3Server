@@ -24,10 +24,10 @@ local BagDef = {
 }
 
 local defaultPBBags = {
-    [BagDef.BagType.Cangku] = { bag_item_type = 0, capacity = 1, items = {} },
-    [BagDef.BagType.Consume] = { bag_item_type = 0, capacity = 1, items = {} },
-    [BagDef.BagType.Booty] = { bag_item_type = 0, capacity = 1, items = {} },
-    [BagDef.BagType.Tool] = { bag_item_type = 0, capacity = 1, items = {} },
+    [BagDef.BagType.Cangku] = { bag_item_type = 0, capacity = 1, grid_id = 0, items = {} },
+    [BagDef.BagType.Consume] = { bag_item_type = 0, capacity = 1, grid_id = 0, items = {} },
+    [BagDef.BagType.Booty] = { bag_item_type = 0, capacity = 1, grid_id = 0, items = {} },
+    [BagDef.BagType.Tool] = { bag_item_type = 0, capacity = 1, grid_id = 0, items = {} },
 }
 
 local defaultPBUserCoins = {

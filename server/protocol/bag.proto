@@ -5,7 +5,8 @@ message PBBag
 {
 	int32 bag_item_type	= 1;
 	int32 capacity		= 2;
-	map<int32, PBItemData>	items	= 3;    // 有key则覆盖
+    int32 grid_id       = 3;
+	map<int32, PBItemData>	items	= 4;    // 有key则覆盖
 }
 
 message PBBags

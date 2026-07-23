@@ -245,6 +245,7 @@
 ---@class PBBag
 ---@field public bag_item_type integer
 ---@field public capacity integer
+---@field public grid_id integer
 ---@field public items table<integer, PBItemData> @有key则覆盖
 
 
