@@ -800,20 +800,20 @@ function Room.PBStartGameRoomReqCmd(req)
             scripts.Bag.RollBackWithChange(bag_change_log)
         else
             scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.GameStartCost)
-        end
-    end
 
-    -- 扣除所有人的消耗
-    for _, uid in ipairs(success_uids) do
-        if mine_node == online_uids[uid].nid then
-            moon.send("lua", online_uids[uid].addr_user, "Room.GameStartCost",
-            { cost_items = all_cost_items, cost_coins = all_cost_coins })
-        else
-            clusterd.send(online_uids[uid].nid, online_uids[uid].addr_user,
-                "Room.GameStartCost", { cost_items = all_cost_items, cost_coins = all_cost_coins })
+            -- 扣除所有人的消耗
+            for _, uid in ipairs(success_uids) do
+                if mine_node == online_uids[uid].nid then
+                    moon.send("lua", online_uids[uid].addr_user, "Room.GameStartCost",
+                        { cost_items = all_cost_items, cost_coins = all_cost_coins })
+                else
+                    clusterd.send(online_uids[uid].nid, online_uids[uid].addr_user,
+                        "Room.GameStartCost", { cost_items = all_cost_items, cost_coins = all_cost_coins })
+                end
+            end
+            Room.GameStartCost({ cost_items = all_cost_items, cost_coins = all_cost_coins })
         end
     end
-    Room.GameStartCost({ cost_items = all_cost_items, cost_coins = all_cost_coins })
 
     return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, res, req.msg_context.stub_id)
 end
