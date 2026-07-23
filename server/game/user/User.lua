@@ -421,6 +421,7 @@ function User.Online()
 
     moon.info(string.format("[User] Online: player logged in, uid=%d nowTime=%d", context.uid, moon.time()))
     moon.async(function()
+        moon.sleep(30000)
         User.CheckUnclaimedRankRewards()
         User.StartDailyCheck()
     end)
