@@ -768,7 +768,7 @@ function _M.saveuserbags(addr, uid, bags_data, data_version)
     end
     str_sql = str_sql .. str_param1 .. ") VALUES (" .. uid .. str_param2 .. ")" .. "ON DUPLICATE KEY UPDATE" .. str_param3 .. ";"
     moon.send("lua", addr, str_sql)
-    moon.error("saveuserbags str_sql: " .. str_sql)
+    -- moon.error("saveuserbags str_sql: " .. str_sql)
 
     -- if data_version and data_version > 0 then
     --     local update_str_sql = string.format([[
