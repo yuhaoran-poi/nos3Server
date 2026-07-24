@@ -324,13 +324,21 @@ function Trade.CheckOnSaleCnt(player_trade_data)
         end
     end
 
-    -- 临时增加交易容量,后续再调整
-    if player_trade_data.simple_info.box_capacity ~= trade_cfg.order_num then
-        player_trade_data.simple_info.box_capacity = trade_cfg.order_num
-        player_trade_data.simple_info.can_onsale_cnt = trade_cfg.account_market
-        -- Trade.SaveTradeInfoNow()
-        scripts.UserModel.AddDirtyModule("Trade")
+    -- -- 临时增加交易容量,后续再调整
+    -- if player_trade_data.simple_info.box_capacity ~= trade_cfg.order_num then
+    --     player_trade_data.simple_info.box_capacity = trade_cfg.order_num
+    --     player_trade_data.simple_info.can_onsale_cnt = trade_cfg.account_market
+    --     -- Trade.SaveTradeInfoNow()
+    --     scripts.UserModel.AddDirtyModule("Trade")
+    -- end
+end
+
+function Trade.AddCapacity(add_num)
+    local player_trade_data = scripts.UserModel.GetTradeData()
+    if not player_trade_data then
+        return
     end
+    player_trade_data.simple_info.box_capacity = player_trade_data.simple_info.box_capacity + add_num
 end
 
 function Trade.PBGetTradeInfoReqCmd(req)
