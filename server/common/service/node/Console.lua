@@ -402,14 +402,27 @@ function Console.add_account_exp(uid, add_exp)
 end
 
 function Console.add_items(uid, config_id, item_count)
-	local item_simple = {
-		config_id = config_id,
-		item_count = item_count,
-		uniqid = 0
+    local item_simple = {
+        config_id = config_id,
+        item_count = item_count,
+        uniqid = 0
     }
-	local items = {}
-	table.insert(items, item_simple)
-	local res, err = context.call_user(uid, "User.DsAddItems", items)
+    local items = {}
+    table.insert(items, item_simple)
+    local res, err = context.call_user(uid, "User.DsAddItems", items)
+    if err then
+        return Response(444, err, string.format("%d %d, %d", uid, config_id, item_count))
+    end
+
+    if res then
+        return Response(0, "OK")
+    else
+        return Response(444, "Failed", string.format("%d %d, %d", uid, config_id, item_count))
+    end
+end
+
+function Console.add_treasure_box(uid, config_id, item_count)
+	local res, err = context.call_user(uid, "Shop.AddTreasure", config_id, item_count)
 	if err then
 		return Response(444, err, string.format("%d %d, %d", uid, config_id, item_count))
 	end

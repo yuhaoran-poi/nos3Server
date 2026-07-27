@@ -163,7 +163,7 @@ function Auctionmgr.TakeDownProduct()
 
     local now_ts = moon.time()
     for auction_id, product_data in pairs(Auctionmgr.take_down_auction_ids) do
-        local ret = Database.updateauctionproduct(context.addr_db_user, auction_id,
+        local ret = Database.updateauctionproduct(context.addr_db_game, auction_id,
             { state = AuctionDef.StateType.ON_SALE }, { state = AuctionDef.StateType.TAKE_DOWNING }, true)
         if ret ~= 1 then
             moon.error(string.format("Auctionmgr.TakeDownProduct err = %s", json.pretty_encode(product_data)))
