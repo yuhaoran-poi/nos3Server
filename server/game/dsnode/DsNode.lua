@@ -539,11 +539,16 @@ function DsNode.PBDsNotifyPlayerExitReqCmd(req)
         local send_data = {
             roomid = req.msg.roomid,
             need_exit_room = false,
+            is_early_retreat = false,
             -- need_settle = req.msg.need_settle,
             -- player_settle = req.msg.player_settle,
         }
+        -- 现在提前撤离玩家不让踢出房间了
+        -- if req.msg.need_settle and req.msg.need_settle == 1 then
+        --     send_data.need_exit_room = true
+        -- end
         if req.msg.need_settle and req.msg.need_settle == 1 then
-            send_data.need_exit_room = true
+            send_data.is_early_retreat = true
         end
         if mine_node == node then
             moon.send("lua", addr_user, "User.OutPlay", send_data)

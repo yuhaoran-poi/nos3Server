@@ -571,6 +571,11 @@ function User.OutPlay(out_data)
                 chat_ret.code, chat_ret.error))
         end
     else
+        if out_data.is_early_retreat then
+            -- 处理提前撤离玩家
+            clusterd.send(3999, "roommgr", "Roommgr.EarlyRetreat", { uid = context.uid, roomid = context.roomid })
+        end
+
         if query_res.user_attr[ProtoEnum.UserAttrType.is_online] == UserAttrDef.ONLINE_STATE.IN_GAME then
             -- 同步离开游戏中状态到redis
             local update_user_attr = {}

@@ -112,7 +112,8 @@ function Roommgr.CheckWaitDSRooms()
             
             if v.status == 0 then
                 local response = httpc.post(context.conf.allocate_url, v.allocate_data)
-                print_r(response)
+                -- print_r(response)
+                moon.info(string.format("response = %s", json.pretty_encode(response)))
                 --local rsp_data = json.decode(response.body)
                 local json_success, rsp_data = pcall(json.decode, response.body or "")
                 if not json_success then
@@ -132,10 +133,12 @@ function Roommgr.CheckWaitDSRooms()
                 end
             elseif v.status == 1 then
                 local get_url = context.conf.query_url .. "?name=" .. v.region
-                print_r(get_url)
+                -- print_r(get_url)
+                moon.info("get_url = ", get_url)
                 local response = httpc.get(get_url)
                 --
-                print_r(response)
+                -- print_r(response)
+                moon.info(string.format("response = %s", json.pretty_encode(response)))
                 --local rsp_data = json.decode(response.body)
                 local json_success, rsp_data = pcall(json.decode, response.body or "")
                 if not json_success then
@@ -760,9 +763,6 @@ function Roommgr.ExitRoom(req)
     if not room then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
-    if room.room_data.state ~= 0 and not req.is_force then
-        return { code = ErrorCode.RoomInGame, error = "房间正在游戏中" }
-    end
 
     -- 验证玩家是否在房间内
     local member_index = nil
@@ -774,6 +774,13 @@ function Roommgr.ExitRoom(req)
     end
     if not member_index then
         return { code = ErrorCode.RoomMemberNotFound, error = "不在该房间内" }
+    end
+
+    if room.room_data.state ~= 0 and not req.is_force then
+        -- 提前撤离的玩家可以退出
+        if room.players[member_index].is_ready ~= 3 then
+            return { code = ErrorCode.RoomInGame, error = "房间正在游戏中" }
+        end
     end
 
     -- 移除玩家数据
@@ -916,6 +923,55 @@ function Roommgr.AwayRoom(req)
     end
 
     return { code = ErrorCode.None, error = "暂离成功", uid = req.uid, roomid = req.roomid }
+end
+
+function Roommgr.EarlyRetreat(req)
+    moon.info("EarlyRetreat beg roomid = , uid = ", req.roomid, req.uid)
+    local room = context.rooms[req.roomid]
+    if not room then
+        return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+    if room.room_data.state ~= 1 then
+        return { code = ErrorCode.RoomInGame, error = "房间不在游戏中" }
+    end
+
+    -- 验证玩家是否在房间内
+    local member_index = nil
+    for i, member in pairs(room.players) do
+        if member.mem_info.uid == req.uid then
+            member_index = i
+            break
+        end
+    end
+    if not member_index then
+        return { code = ErrorCode.RoomMemberNotFound, error = "不在该房间内" }
+    end
+
+    -- 更新准备状态（0-未准备 1-准备 2-暂离 3-提前撤离）
+    room.players[member_index].is_ready = 3
+
+    -- 广播状态更新
+    local notify_uids = {}
+    for _, player in pairs(room.players) do
+        table.insert(notify_uids, player.mem_info.uid)
+    end
+    local sync_msg = {
+        roomid = room.room_data.roomid,
+        sync_type = RoomDef.SyncType.PlayerReady,
+        sync_info = {
+            players = {},
+        }
+    }
+    table.insert(sync_msg.sync_info.players, {
+        seat_idx = member_index,
+        is_ready = room.players[member_index].is_ready,
+        mem_info = {
+            uid = req.uid
+        },
+    })
+    context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
+
+    return { code = ErrorCode.None, error = "提前撤离成功", uid = req.uid, roomid = req.roomid }
 end
 
 function Roommgr.KickMember(req)
@@ -1387,6 +1443,37 @@ function Roommgr.RandomMapAndBoss(room_data)
     end
 
     return ErrorCode.None
+end
+
+function Roommgr.PreStart(room_id)
+    local room = context.rooms[room_id]
+    if not room then
+        return false
+    end
+
+    local now_ts = moon.time()
+    if room.room_data
+        and room.room_data.pre_start
+        and room.room_data.pre_start > 0
+        and now_ts - room.room_data.pre_start < 10 then
+        return false
+    end
+
+    room.room_data.pre_start = now_ts
+    return true
+end
+
+function Roommgr.CheckPreStart(room_data)
+    if room_data and room_data.pre_start and room_data.pre_start > 0 then
+        local now_ts = moon.time()
+        if now_ts - room_data.pre_start < 10 then
+            return true
+        end
+
+        room_data.pre_start = 0
+    end
+
+    return false
 end
 
 function Roommgr.GetMasterAndChapter(room_id)
