@@ -722,6 +722,8 @@ function Shop.AddTreasure(config_id, num)
 
     -- Shop.SaveShopsNow()
     scripts.UserModel.AddDirtyModule("Shop")
+
+    return true
 end
 
 function Shop.OpenTreasure(config_id, num)
