@@ -61,8 +61,20 @@ function ChatProxy.PBChatReqCmd(req)
         context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatSilence }, req)
         return { code = ErrorCode.ChatSilence }
     end
-    -- 参数检查
-    if not channel_type or not msg_content then
+    -- 参数检查：channel_type 必须存在；msg_content 与 msg_attach 至少一个非空
+    -- 兼容msg_attach聊天（仅传 msg_attach 的场景）
+    if not channel_type then
+        context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatInvalidParam }, req)
+        return { code = ErrorCode.ChatInvalidParam }
+    end
+    -- 防御性：msg_content/msg_attach 可能为 nil、数字、table 等非字符串类型，必须先转 string 才能走 utf8.len
+    if type(msg_content) ~= "string" then
+        msg_content = msg_content == nil and "" or tostring(msg_content)
+    end
+    if type(msg_attach) ~= "string" then
+        msg_attach = nil
+    end
+    if msg_content == "" and (not msg_attach or msg_attach == "") then
         context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatInvalidParam }, req)
         return { code = ErrorCode.ChatInvalidParam }
     end
@@ -71,7 +83,10 @@ function ChatProxy.PBChatReqCmd(req)
     if GameCfg.ChatChannelConfig[WORLD_CHAT_MAX_SIZE_CONFID] then
         ChatWordLimit = GameCfg.ChatChannelConfig[WORLD_CHAT_MAX_SIZE_CONFID].value
     end
-    if utf8.len(msg_content) + (msg_attach and utf8.len(msg_attach) or 0) > ChatWordLimit then
+    -- utf8.len 在非法 UTF-8 字节序列时会返回 nil，必须 or 0 兜底，避免 nil + X 触发算术异常
+    local msg_len = (msg_content ~= "" and utf8.len(msg_content)) or 0
+    local attach_len = (msg_attach and msg_attach ~= "" and utf8.len(msg_attach)) or 0
+    if msg_len + attach_len > ChatWordLimit then
         context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatWordLimit }, req)
         return { code = ErrorCode.ChatWordLimit }
     end
