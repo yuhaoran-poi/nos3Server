@@ -112,8 +112,8 @@ function Roommgr.CheckWaitDSRooms()
             
             if v.status == 0 then
                 local response = httpc.post(context.conf.allocate_url, v.allocate_data)
-                -- print_r(response)
-                moon.info(string.format("response = %s", json.pretty_encode(response)))
+                print_r(response)
+                -- moon.info(string.format("response = %s", json.pretty_encode(response)))
                 --local rsp_data = json.decode(response.body)
                 local json_success, rsp_data = pcall(json.decode, response.body or "")
                 if not json_success then
@@ -137,8 +137,8 @@ function Roommgr.CheckWaitDSRooms()
                 moon.info("get_url = ", get_url)
                 local response = httpc.get(get_url)
                 --
-                -- print_r(response)
-                moon.info(string.format("response = %s", json.pretty_encode(response)))
+                print_r(response)
+                -- moon.info(string.format("response = %s", json.pretty_encode(response)))
                 --local rsp_data = json.decode(response.body)
                 local json_success, rsp_data = pcall(json.decode, response.body or "")
                 if not json_success then
