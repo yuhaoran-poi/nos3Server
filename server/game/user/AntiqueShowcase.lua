@@ -387,10 +387,14 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
     moon.info(string.format("IdentifyAntique - uid=%d, config_id=%d, uniqid=%s, pos=%d, is_succ=%d, is_fake=%d, price=%d, final_price=%d",
     context.uid, config_id, tostring(uniqid), bag_pos, is_succ, rsp_is_fake, price_probability, rsp_price))
 
+    local rsp_config_id = real_config_id
+    local rsp_uniqid = item_data.common_info.uniqid
+    local rsp_pos = bag_pos
+
     if is_succ == 1 then
-        return ErrorCode.None, "鉴定完成 古董为真品", price_probability
+        return ErrorCode.None, "鉴定完成 古董为真品", price_probability, rsp_config_id, rsp_uniqid, rsp_pos
     elseif is_succ ==0 then
-        return ErrorCode.None, "鉴定完成 古董为赝品", price_probability
+        return ErrorCode.None, "鉴定完成 古董为赝品", price_probability, rsp_config_id, rsp_uniqid, rsp_pos
     end
 end
 
