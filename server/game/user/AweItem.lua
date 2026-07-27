@@ -111,6 +111,20 @@ function AweItem.GetAweItemsInfo()
     return aweitems, ErrorCode.None
 end
 
+function AweItem.GetRepairCostDiscount()
+    local aweitems = scripts.UserModel.GetAweItems()
+    if not aweitems then
+        return 0
+    end
+    local repair_discount = 0
+    for _, aweitem in pairs(aweitems.awe_item_map) do
+        if aweitem.buff_data and aweitem.buff_data.buff_effect == ProtoEnum.AccountBuffType.Buff_DurabilityCost then
+            repair_discount = repair_discount + aweitem.buff_data.coefficient
+        end
+    end
+    return repair_discount
+end
+
 function AweItem.PBAweItemsGetInfoReqCmd(req)
     local aweitems = scripts.UserModel.GetAweItems()
     if not aweitems then
@@ -260,7 +274,7 @@ local function AddAweItemBuff(aweitem, buff_id)
         period_type = buff_cfg.period_type,
         end_ts = 0,
         surplus_cnt = 0,
-        coefficient = buff_cfg.buff_coefficient
+        coefficient = buff_cfg.final_value,
     }
 
     -- 先同步给客户端
@@ -268,6 +282,7 @@ local function AddAweItemBuff(aweitem, buff_id)
 
     if buff_cfg.buff_effect == ProtoEnum.AccountBuffType.Buff_TradeSlot then
         -- 交易行同时上架栏位增加
+        scripts.Trade.AddCapacity(buff_cfg.buff_coefficient)
     elseif buff_cfg.buff_effect == ProtoEnum.AccountBuffType.Buff_AuctionLimit then
         -- 每日寄售总次数上限增加
     elseif buff_cfg.buff_effect == ProtoEnum.AccountBuffType.Buff_Warehouse then

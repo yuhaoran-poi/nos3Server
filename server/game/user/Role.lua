@@ -2395,11 +2395,30 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
         if fix_durability <= 0 then
             return ErrorCode.DurabilityMax, 0
         end
-        
+
         local change_cost_items = table.copy(old_cost_items, true)
         local change_cost_coins = table.copy(old_cost_coins, true)
         moon.info(string.format("role_repair_func 1 change_cost_coins = %s", json.pretty_encode(change_cost_items)))
         ItemDefine.GetItemsFromCfg(common_cfg.items, fix_durability, true, change_cost_items, change_cost_coins)
+
+        -- 获取镇山之宝修复耐久度货币消耗折扣
+        local repair_discount = scripts.AweItem.GetRepairCostDiscount()
+
+        -- 应用折扣到货币消耗
+        if repair_discount > 0 and change_cost_coins then
+            for coin_id, coin_data in pairs(change_cost_coins) do
+                local original_count = coin_data.coin_count or coin_data.count
+                if original_count then
+                    local discounted_count = math.floor(original_count * (10000 - repair_discount) / 10000)
+                    if coin_data.coin_count then
+                        coin_data.coin_count = discounted_count
+                    end
+                    moon.info(string.format("role_repair_func: uid=%d, coin_id=%d, original=%d, discounted=%d, discount=%d",
+                        context.uid, coin_id, original_count, discounted_count, repair_discount))
+                end
+            end
+        end
+
         -- 检测道具是否足够
         errcode = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, change_cost_items, {})
         if errcode ~= ErrorCode.None then

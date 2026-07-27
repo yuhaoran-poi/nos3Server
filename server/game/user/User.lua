@@ -2028,7 +2028,25 @@ function User.PBClientItemRepairReqCmd(req)
         else
             return ErrorCode.ItemTypeMismatch
         end
-        
+
+        -- 获取镇山之宝修复耐久度货币消耗折扣
+        local repair_discount = scripts.AweItem.GetRepairCostDiscount()
+
+        -- 应用折扣到货币消耗
+        if repair_discount > 0 and cost_coins then
+            for coin_id, coin_data in pairs(cost_coins) do
+                local original_count = coin_data.coin_count or coin_data.count
+                if original_count then
+                    local discounted_count = math.floor(original_count * (10000 - repair_discount) / 10000)
+                    if coin_data.coin_count then
+                        coin_data.coin_count = discounted_count
+                    end
+                    moon.info(string.format("PBClientItemRepairReqCmd: uid=%d, coin_id=%d, original=%d, discounted=%d, discount=%d",
+                        context.uid, coin_id, original_count, discounted_count, repair_discount))
+                end
+            end
+        end
+
         -- 检测道具是否足够
         errcode = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
         if errcode ~= ErrorCode.None then

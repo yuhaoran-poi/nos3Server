@@ -418,8 +418,9 @@ function AntiqueShowcase.AntiqueShow(config_id, uniqid, showcase_id, showcase_id
         return ErrorCode.ShowcaseNotFound, "展示柜不存在"
     end
 
-    -- 检查展示索引是否越界
-    if showcase_idx > tar_showcase.box_num then
+    -- 检查展示索引是否越界 因临时改表暂时改为按配置表上数量检查
+    --if showcase_idx > showcase_cfg.box_num then
+    if showcase_idx > showcase_cfg.num then
         return ErrorCode.ShowcaseIdxOutOfBounds, "展示索引越界"
     end
 
