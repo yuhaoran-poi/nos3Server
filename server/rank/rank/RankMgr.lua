@@ -169,13 +169,13 @@ function RankMgr.setupRefreshTasks()
     moon.async(function()
         while true do
             moon.sleep(30000) -- 30秒检测一次
-            if isNewDay(lastRefreshDay) then
-                moon.info(string.format("[RankMgr] Daily rank refresh triggered"))
+            if isNewWeek(lastRefreshWeek) then
+                moon.info(string.format("[RankMgr] Weekly rank refresh triggered"))
                 for _, rank_type in ipairs(weeklyRanks) do
                     RankLogic.RefreshRankData(rank_type)
                 end
-                moon.info(string.format("[RankMgr] Daily rank refresh completed"))
-                lastRefreshDay = moon.time()
+                moon.info(string.format("[RankMgr] Weekly rank refresh completed"))
+                lastRefreshWeek = moon.time()
             end
         end
     end)
