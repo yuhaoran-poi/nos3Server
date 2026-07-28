@@ -722,6 +722,7 @@ function Bag.SaveAndLog(change_logs, change_reason,
                 update_msg.update_items[bagType] = {
                     bag_item_type = baginfo.bag_item_type,
                     capacity = baginfo.capacity,
+                    grid_id = baginfo.grid_id,
                     items = {},
                 }
 
