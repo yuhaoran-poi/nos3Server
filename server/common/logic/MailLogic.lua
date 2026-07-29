@@ -279,6 +279,12 @@ function MailLogic.DealSystemMail(send_info_str)
                     end
                     mail_info.items_simple[attachment.config_id].item_count = attachment.item_count
                 end
+            elseif big_type == ItemDefine.EItemBigType.TreasureChest then
+                if not mail_info.items_simple[attachment.config_id] then
+                    mail_info.items_simple[attachment.config_id] = ItemDef.newItemSimple()
+                    mail_info.items_simple[attachment.config_id].config_id = attachment.config_id
+                end
+                mail_info.items_simple[attachment.config_id].item_count = attachment.item_count
             end
         end
     end
