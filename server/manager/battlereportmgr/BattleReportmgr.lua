@@ -50,6 +50,12 @@ function BattleReportmgr.SaveDetailReport(uid, report_id, start_ts, report_data)
     Database.addbattlereport(context.addr_db_game, report_id, uid, start_ts, report_data)
 end
 
+function BattleReportmgr.SaveTotalSettleInfo(uid, report_id, start_ts, settle_info)
+    settle_info.settle_simple_data = nil
+    settle_info.settle_data = nil
+    Database.addsettleinfo(context.addr_db_game, report_id, uid, start_ts, settle_info)
+end
+
 function BattleReportmgr.Shutdown()
     -- for _, n in pairs(context.rooms) do
     --     socket.close(n.fd)

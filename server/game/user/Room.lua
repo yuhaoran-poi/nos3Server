@@ -1338,6 +1338,10 @@ function Room.GameSettle(settle_info)
         scripts.Mission.TriggerCondition(MissionDef.EConditionIds.GET_BOOTY_VALUE_CNT,
             { settle_info.chapter_id, settle_info.difficulty }, settle_info.booty_value)
     end
+
+    -- 临时增加战报整体记录
+    clusterd.send(3999, "battlereportmgr", "BattleReportmgr.SaveTotalSettleInfo", context.uid, report_id, settle_info.start_game_ts,
+        settle_info)
 end
 
 function Room.GameReturnItems(return_info)

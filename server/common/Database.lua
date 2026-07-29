@@ -3384,6 +3384,18 @@ function _M.getbattlereports(addr, uid, start_idx, end_idx)
     return report_infos
 end
 
+function _M.addsettleinfo(addr, report_id, uid, start_ts, settle_info)
+    assert(report_id and uid and start_ts and settle_info)
+
+    local data_str = jencode(settle_info)
+    local cmd = string.format([[
+        INSERT INTO mgame.battle_settle_info (report_id, uid, start_ts, settle_info)
+        VALUES (%d, %d, %d, '%s');
+    ]], report_id, uid, start_ts, data_str)
+
+    return moon.send("lua", addr, cmd)
+end
+
 -- 赛季通行证
 function _M.loadseasonpassinfo(addr, uid)
     local cmd = string.format([[
