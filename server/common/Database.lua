@@ -3388,10 +3388,11 @@ function _M.addsettleinfo(addr, report_id, uid, start_ts, settle_info)
     assert(report_id and uid and start_ts and settle_info)
 
     local data_str = jencode(settle_info)
+    local datavalue = crypt.base64encode(data_str)
     local cmd = string.format([[
         INSERT INTO mgame.battle_settle_info (report_id, uid, start_ts, settle_info)
         VALUES (%d, %d, %d, '%s');
-    ]], report_id, uid, start_ts, data_str)
+    ]], report_id, uid, start_ts, datavalue)
 
     return moon.send("lua", addr, cmd)
 end
