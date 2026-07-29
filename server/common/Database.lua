@@ -863,7 +863,7 @@ function _M.loaduserbags(addr, uid, bags_id, data_version)
                         for cfg_id, warehouse_cfg in pairs(warehouse_cfgs) do
                             if warehouse_cfg.warehouse_grids
                                 and warehouse_cfg.warehouse_grids > 0
-                                and warehouse_cfg.warehouse_grids < canku_json_tbl.capacity
+                                and warehouse_cfg.warehouse_grids <= canku_json_tbl.capacity
                                 and cfg_id > new_bagdata[BagDef.BagType.Cangku].grid_id then
                                 new_bagdata[BagDef.BagType.Cangku].grid_id = cfg_id
                             end

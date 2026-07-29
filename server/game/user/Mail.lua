@@ -671,6 +671,17 @@ function Mail.PBGetRewardReqCmd(req)
     end
 
     -- 领取奖励
+    -- 先剔除宝箱
+    local chest_items = {}
+    for config_id, item in pairs(attach_items) do
+        local item_type = ItemDefine.GetItemType(config_id)
+        if item_type == ItemDefine.EItemBigType.TreasureChest then
+            chest_items[config_id] = item.count
+        end
+    end
+    for chest_id, chest_count in pairs(chest_items) do
+        attach_items[chest_id] = nil
+    end
     -- 检查背包容量
     rsp.code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, attach_items, table.size(attach_item_datas))
     if rsp.code ~= ErrorCode.None then
@@ -717,6 +728,11 @@ function Mail.PBGetRewardReqCmd(req)
             rsp.error = "添加金币失败"
             return context.S2C(context.net_id, CmdCode["PBGetRewardRspCmd"], rsp, req.msg_context.stub_id)
         end
+    end
+
+    -- 添加宝箱
+    for chest_id, chest_count in pairs(chest_items) do
+        scripts.Shop.AddTreasure(chest_id, chest_count)
     end
 
     -- 数据存储更新

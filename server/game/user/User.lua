@@ -366,6 +366,7 @@ function User.GetUserDetails()
         ProtoEnum.UserAttrType.player_flag,
         ProtoEnum.UserAttrType.cur_show_ghost,
         ProtoEnum.UserAttrType.cur_model_role,
+        ProtoEnum.UserAttrType.account_exp,
     }
     local details_data = User.GetOnlineUserAttr(details_fields)
     local role_data = scripts.Role.GetRoleInfo(details_data.cur_show_role.config_id)
