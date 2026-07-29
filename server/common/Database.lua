@@ -3385,6 +3385,7 @@ function _M.getbattlereports(addr, uid, start_idx, end_idx)
 end
 
 function _M.addsettleinfo(addr, report_id, uid, start_ts, settle_info)
+    moon.info("addsettleinfo report_id ", report_id)
     assert(report_id and uid and start_ts and settle_info)
 
     local data_str = jencode(settle_info)

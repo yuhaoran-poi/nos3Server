@@ -1340,6 +1340,7 @@ function Room.GameSettle(settle_info)
     end
 
     -- 临时增加战报整体记录
+    moon.info("SaveTotalSettleInfo report_id ", report_id)
     clusterd.send(3999, "battlereportmgr", "BattleReportmgr.SaveTotalSettleInfo", context.uid, report_id, settle_info.start_game_ts,
         settle_info)
 end

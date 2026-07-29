@@ -51,6 +51,7 @@ function BattleReportmgr.SaveDetailReport(uid, report_id, start_ts, report_data)
 end
 
 function BattleReportmgr.SaveTotalSettleInfo(uid, report_id, start_ts, settle_info)
+    moon.info("BattleReportmgr.SaveTotalSettleInfo report_id ", report_id)
     settle_info.settle_simple_data = nil
     settle_info.settle_data = nil
     Database.addsettleinfo(context.addr_db_game, report_id, uid, start_ts, settle_info)
