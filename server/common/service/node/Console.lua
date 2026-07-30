@@ -6,6 +6,7 @@ local sharetable = require("sharetable")
 local clusterd = require("cluster")
 local ChatLogic = require("common.logic.ChatLogic") --聊天逻辑
 local MailLogic = require("common.logic.MailLogic")
+local TradeDef = require("common.def.TradeDef")
 
 ---@type node_context
 local context = ...
@@ -64,14 +65,25 @@ Command List:
 	ping <address> :                   Ping the specificed service.
 	reload:                            Reload static table files.
 	syschat:                           Send system chat to all online users.
+	add_account_exp:                   Add account exp to users.
+	add_items:                         Add items to users.
 	send_system_mail:                  Send system mail to users.
+	cancel_system_mail:                Cancel system mail to users.
+	add_treasure_box:                  Add treasure box to users.
+	add_trade_product:                 Add trade product to users.
 	hotfix <servicename> <filename_no_path_no_ext_1> <filename_no_path_no_ext_2>....: Hotfix script file. e. S1 hotfix user Hello
+	queryservice <name>:               Query service address by name. e. S1 queryservice roommgr
 
 User command format:     U<uid> command params
 Command List:
-	addscore <count> #增加积分. U1234567 addscore 999 给玩家1234567增加999积分
-	add_account_exp <count> #增加账号经验. U1234567 add_account_exp 999 给玩家1234567增加999账号经验
-	add_items <config_id> <item_count> #增加物品. U1234567 add_items 30001 2 给玩家1234567增加2个30001物品
+	syschat <msg_content> <msg_attach> #发送系统聊天. syschat 你好 1234567
+	addscore <uid> <count> #增加积分. 1234567 999 给玩家1234567增加999积分
+	add_account_exp <uid> <count> #增加账号经验. 1234567 999 给玩家1234567增加999账号经验
+	add_items <uid> <config_id> <item_count> #增加物品. 1234567 30001 2 给玩家1234567增加2个30001物品
+	send_system_mail <uid> <send_info_str> #给玩家发系统邮件. 1234567 send_system_mail mail_info 给玩家1234567发系统邮件mail_info
+	cancel_system_mail <uid> <mail_id> #撤销系统邮件. 1234567 cancel_system_mail 12345 给玩家1234567撤销系统邮件12345
+	add_treasure_box <uid> <config_id> <item_count> #给玩家加宝箱. 1234567 30001 2 给玩家1234567加2个30001宝箱
+	add_trade_product <uid> <sale_config_id> <sale_num> <sale_price> <sale_ts> #添加交易行商品. 1234567 10001 10 100 3600 给玩家1234567添加交易行商品10001,10个,100元,3600秒有效
 	]]
 
 function Console.help()
@@ -433,5 +445,47 @@ function Console.add_treasure_box(uid, config_id, item_count)
 		return Response(444, "Failed", string.format("%d %d, %d", uid, config_id, item_count))
 	end
 end
+
+-- function Console.add_trade_product(sale_config_id, sale_num, sale_price, sale_ts)
+-- 	local gm_uid = 100
+-- 	local product_data = TradeDef.newTradeProductBaseData()
+-- 	product_data.trade_id = 1
+-- 	product_data.seller_uid = gm_uid
+-- 	product_data.config_id = sale_config_id
+-- 	product_data.total_num = sale_num
+-- 	product_data.beg_ts = moon.time()
+-- 	product_data.end_ts = moon.time() + sale_ts
+-- 	product_data.state = TradeDef.StateType.ON_SALE
+-- 	product_data.trade_data.single_price = sale_price
+-- 	product_data.trade_data.sale_num = 0
+-- 	product_data.trade_data.now_num = sale_num
+
+-- 	local sale_data = {
+-- 		uid = gm_uid,
+-- 		product_data = product_data,
+-- 		condition1 = 0,
+-- 		condition2 = 0,
+-- 		condition3 = 0,
+-- 		condition4 = 0,
+-- 		condition5 = 0,
+-- 	}
+-- 	if table.size(item_conf.market) >= 1 then
+-- 		sale_data.condition1 = item_conf.market[1]
+-- 	end
+-- 	if table.size(item_conf.market) >= 2 then
+-- 		sale_data.condition2 = item_conf.market[2]
+-- 	end
+-- 	if table.size(item_conf.market) >= 3 then
+-- 		sale_data.condition3 = item_conf.market[3]
+-- 	end
+-- 	if table.size(item_conf.market) >= 4 then
+-- 		sale_data.condition4 = item_conf.market[4]
+-- 	end
+--     if table.size(item_conf.market) >= 5 then
+--         sale_data.condition5 = item_conf.market[5]
+--     end
+	
+-- 	local res, err = clusterd.call(3999, "trademgr", "Trademgr.AddTradeProduct", sale_data)
+-- end
 
 return Console
