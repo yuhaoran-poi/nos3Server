@@ -684,7 +684,8 @@ function Mail.PBGetRewardReqCmd(req)
     for chest_id, chest_count in pairs(chest_items) do
         attach_items[chest_id] = nil
     end
-    moon.warn(string.format("PBGetRewardReqCmd uid: %d last attach_items: %s", context.uid, json.pretty_encode(attach_items)))
+    moon.warn(string.format("PBGetRewardReqCmd last uid: %d attach_items: %s", context.uid,
+        json.pretty_encode(attach_items)))
     -- 检查背包容量
     rsp.code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, attach_items, table.size(attach_item_datas))
     if rsp.code ~= ErrorCode.None then
