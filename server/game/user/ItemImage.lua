@@ -407,7 +407,7 @@ function ItemImage.UpLvImage(config_id, add_exp)
 
     local function check_add_exp(up_exp_cfgs, exps, remain_exp, quality)
         -- 临时锁定6级品质
-        quality = 6
+        -- quality = 6
         local exp_key = "exp" .. (quality)
         local allexp_key = "allexp" .. (quality)
         local cost_key = "cost" .. (quality)
@@ -596,7 +596,7 @@ function ItemImage.CheckUseItemUpLv(config_id, exp_id, up_exp_total, item_exps)
     -- end
     local function check_add_exp(up_exp_cfgs, cur_exp, after_up_exp, quality)
         -- 临时锁定6级品质
-        quality = 6
+        -- quality = 6
         local allexp_key = "allexp" .. (quality)
         local cost_key = "cost" .. (quality)
 
@@ -909,6 +909,21 @@ function ItemImage.UnlockCompositeFormula(formula_id)
 
     item_images.composite_formula[formula_id] = moon.time()
     return ErrorCode.None
+end
+
+function ItemImage.OtherGetImageDataReqCmd()
+    local item_images = scripts.UserModel.GetItemImages()
+    if not item_images then
+        return {}
+    end
+
+    local ret = {
+        magic_item_image = item_images.magic_item_image,
+        human_diagrams_image = item_images.human_diagrams_image,
+        space_ring_image = item_images.space_ring_image,
+    }
+
+    return ret
 end
 
 function ItemImage.PBImageGetDataReqCmd(req)
