@@ -911,7 +911,7 @@ function ItemImage.UnlockCompositeFormula(formula_id)
     return ErrorCode.None
 end
 
-function ItemImage.OtherGetImageDataReqCmd()
+function ItemImage.OtherGetImagesData()
     local item_images = scripts.UserModel.GetItemImages()
     if not item_images then
         return {}

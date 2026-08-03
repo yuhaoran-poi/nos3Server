@@ -382,7 +382,7 @@ function User.GetUserDetails()
         grade_show_infos = grade_show_infos,
         consume_bag_data = res.bag_datas[BagDef.BagType.Consume] or {},
         model_role_data = model_role_data,
-        -- show_images_data = other_images_data,
+        show_images_data = other_images_data,
     }
 end
 

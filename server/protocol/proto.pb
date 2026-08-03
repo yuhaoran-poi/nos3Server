@@ -1348,7 +1348,7 @@ open_count (R	openCount(
 TreasureListEntry
 key (Rkey'
 value (2.PBTreasureSingleRvalue:8bproto3
-ý@
+µA
 
 user.protocommon.proto
 item.proto	bag.proto
@@ -1499,7 +1499,7 @@ cost_items (2.PBItemSimpleR	costItems"I
 info (2.PBUserAttrRinfo"G
 PBGetOtherDetailReqCmd
 uid (Ruid
-	quest_uid (RquestUid"ó
+	quest_uid (RquestUid"«
 PBGetOtherDetailRspCmd
 code (Rcode
 error (	Rerror
@@ -1513,7 +1513,8 @@ ghost_data (2.PBGhostDataR	ghostDataU
 consume_bag	 (2.PBBagR
 consumeBag3
 model_role_data
- (2.PBRoleDataRmodelRoleDataS
+ (2.PBRoleDataRmodelRoleData6
+show_images_data (2.PBUserImageRshowImagesDataS
 GradeShowInfosEntry
 key (Rkey&
 value (2.PBGradeShowInfoRvalue:8"@

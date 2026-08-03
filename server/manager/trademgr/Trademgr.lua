@@ -23,6 +23,7 @@ local context = ...
 
 local listenfd
 local MAX_SEARCH_NUM = 1000
+local GM_UID = 100
 
 ---@class Trademgr
 local Trademgr = {
@@ -454,8 +455,10 @@ function Trademgr.TakeDownProduct()
             end
             for _, trade_product in pairs(take_down_products) do
                 -- 通知卖家商品已下架
-                context.send_user(trade_product.seller_uid, "Trade.OnTradeTakeDownMail", trade_product,
-                    TradeDef.StateType.TAKE_DOWNING, false)
+                if trade_product.seller_uid ~= GM_UID then
+                    context.send_user(trade_product.seller_uid, "Trade.OnTradeTakeDownMail", trade_product,
+                        TradeDef.StateType.TAKE_DOWNING, false)
+                end
             end
         end
     end
@@ -487,10 +490,39 @@ function Trademgr.AddTradeLog()
         Trademgr.now_log_id = Trademgr.now_log_id + 1
     end
     for _, trade_log in pairs(Trademgr.add_trade_logs) do
-        context.send_user(trade_log.seller_uid, "Trade.OnTradeLogSaleMail", trade_log, true)
+        if trade_log.seller_uid ~= GM_UID then
+            context.send_user(trade_log.seller_uid, "Trade.OnTradeLogSaleMail", trade_log, true)
+        end
         context.send_user(trade_log.buyer_uid, "Trade.OnTradeAddLog", trade_log)
     end
     Trademgr.add_trade_logs = {}
+end
+
+function Trademgr.GmAddTradeProduct(req_data)
+    local item_conf = GameCfg.Item[req_data.product_data.config_id]
+    if not item_conf then
+        return 0
+    end
+
+    req_data.uid = GM_UID
+    req_data.product_data.seller_uid = GM_UID
+    if table.size(item_conf.market) >= 1 then
+        req_data.condition1 = item_conf.market[1]
+    end
+    if table.size(item_conf.market) >= 2 then
+        req_data.condition2 = item_conf.market[2]
+    end
+    if table.size(item_conf.market) >= 3 then
+        req_data.condition3 = item_conf.market[3]
+    end
+    if table.size(item_conf.market) >= 4 then
+        req_data.condition4 = item_conf.market[4]
+    end
+    if table.size(item_conf.market) >= 5 then
+        req_data.condition5 = item_conf.market[5]
+    end
+
+    return Trademgr.AddTradeProduct(req_data)
 end
 
 function Trademgr.AddTradeProduct(req_data)
@@ -793,6 +825,7 @@ function Trademgr.TakeOffProduct(uid, trade_id)
         local trade_products = Database.gettradeproductwithids(context.addr_db_game, { trade_id })
         if trade_products and #trade_products == 1 then
             local trade_product = trade_products[1]
+            -- GM_UID不会主动下架
             context.send_user(trade_product.seller_uid, "Trade.OnTradeTakeDownMail", trade_product,
                 TradeDef.StateType.ON_SALE, true)
             return ErrorCode.None

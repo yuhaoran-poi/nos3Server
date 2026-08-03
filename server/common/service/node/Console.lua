@@ -7,6 +7,7 @@ local clusterd = require("cluster")
 local ChatLogic = require("common.logic.ChatLogic") --聊天逻辑
 local MailLogic = require("common.logic.MailLogic")
 local TradeDef = require("common.def.TradeDef")
+-- local GameCfg = require("common.cfg.GameCfg")
 
 ---@type node_context
 local context = ...
@@ -76,7 +77,7 @@ Command List:
 
 User command format:     U<uid> command params
 Command List:
-	syschat <msg_content> <msg_attach> #发送系统聊天. syschat 你好 1234567
+	syschat <msg_content> <msg_attach> #发送系统聊天. syschat 你好 这是聊天附件字符串
 	addscore <uid> <count> #增加积分. 1234567 999 给玩家1234567增加999积分
 	add_account_exp <uid> <count> #增加账号经验. 1234567 999 给玩家1234567增加999账号经验
 	add_items <uid> <config_id> <item_count> #增加物品. 1234567 30001 2 给玩家1234567增加2个30001物品
@@ -446,46 +447,40 @@ function Console.add_treasure_box(uid, config_id, item_count)
 	end
 end
 
--- function Console.add_trade_product(sale_config_id, sale_num, sale_price, sale_ts)
--- 	local gm_uid = 100
--- 	local product_data = TradeDef.newTradeProductBaseData()
--- 	product_data.trade_id = 1
--- 	product_data.seller_uid = gm_uid
--- 	product_data.config_id = sale_config_id
--- 	product_data.total_num = sale_num
--- 	product_data.beg_ts = moon.time()
--- 	product_data.end_ts = moon.time() + sale_ts
--- 	product_data.state = TradeDef.StateType.ON_SALE
--- 	product_data.trade_data.single_price = sale_price
--- 	product_data.trade_data.sale_num = 0
--- 	product_data.trade_data.now_num = sale_num
+function Console.add_trade_product(sale_config_id, sale_num, sale_price, sale_ts)
+	local product_data = TradeDef.newTradeProductBaseData()
+	product_data.trade_id = 1
+	product_data.seller_uid = 0
+	product_data.config_id = sale_config_id
+	product_data.total_num = sale_num
+	product_data.beg_ts = moon.time()
+	product_data.end_ts = moon.time() + sale_ts
+	product_data.state = TradeDef.StateType.ON_SALE
+	product_data.trade_data.single_price = sale_price
+	product_data.trade_data.sale_num = 0
+	product_data.trade_data.now_num = sale_num
 
--- 	local sale_data = {
--- 		uid = gm_uid,
--- 		product_data = product_data,
--- 		condition1 = 0,
--- 		condition2 = 0,
--- 		condition3 = 0,
--- 		condition4 = 0,
--- 		condition5 = 0,
--- 	}
--- 	if table.size(item_conf.market) >= 1 then
--- 		sale_data.condition1 = item_conf.market[1]
--- 	end
--- 	if table.size(item_conf.market) >= 2 then
--- 		sale_data.condition2 = item_conf.market[2]
--- 	end
--- 	if table.size(item_conf.market) >= 3 then
--- 		sale_data.condition3 = item_conf.market[3]
--- 	end
--- 	if table.size(item_conf.market) >= 4 then
--- 		sale_data.condition4 = item_conf.market[4]
--- 	end
---     if table.size(item_conf.market) >= 5 then
---         sale_data.condition5 = item_conf.market[5]
---     end
+	local sale_data = {
+		uid = 0,
+		product_data = product_data,
+		condition1 = 0,
+		condition2 = 0,
+		condition3 = 0,
+		condition4 = 0,
+		condition5 = 0,
+    }
 	
--- 	local res, err = clusterd.call(3999, "trademgr", "Trademgr.AddTradeProduct", sale_data)
--- end
+    local res, err = clusterd.call(3999, "trademgr", "Trademgr.GmAddTradeProduct", sale_data)
+	if err then
+        moon.error("Console.add_trade_product err: ", sale_config_id, sale_num, sale_price, sale_ts)
+		return Response(444, err, string.format("%d %d, %d %d", sale_config_id, sale_num, sale_price, sale_ts))
+	else
+        if res <= 0 then
+            return Response(444, "Failed", string.format("%d %d, %d %d", sale_config_id, sale_num, sale_price, sale_ts))
+        end
+		
+		return Response(0, "OK trade_id: " .. res)
+	end
+end
 
 return Console

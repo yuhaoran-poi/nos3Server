@@ -247,6 +247,7 @@ message PBGetOtherDetailRspCmd
 	map<int32, PBGradeShowInfo> grade_show_infos	= 8; // 段位信息
 	PBBag consume_bag	= 9;	// 消耗品背包
 	PBRoleData model_role_data	= 10; // 展示角色数据
+	PBUserImage show_images_data = 11; // 展示部分图鉴数据
 }
 
 // 客户端使用皮肤礼包
