@@ -906,7 +906,7 @@ function User.PBPingCmd(req)
             -- 触发签到
             scripts.Mission.TriggerCondition(MissionDef.EConditionIds.SIGN_CNT, {}, 1)
             -- 持续在线计入第二天登录
-            Database.updatelogin(context.addr_db_user, req.uid)
+            Database.updatelogin(context.addr_db_user, context.uid)
         end
         -- 触发在线时间累计
         scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ONLINE_TIME, {}, add_time)
