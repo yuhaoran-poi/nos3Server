@@ -374,6 +374,7 @@ function User.GetUserDetails()
     local grade_show_infos = scripts.Grade.GetGradeShowInfos()
     local model_role_data = scripts.Role.GetRoleInfo(details_data.cur_model_role.config_id)
     local res = scripts.Bag.GetBagdata({ BagDef.BagType.Consume })
+    local other_images_data = scripts.ItemImage.OtherGetImagesData()
     return {
         user_attr = details_data,
         role_data = role_data,
@@ -381,6 +382,7 @@ function User.GetUserDetails()
         grade_show_infos = grade_show_infos,
         consume_bag_data = res.bag_datas[BagDef.BagType.Consume] or {},
         model_role_data = model_role_data,
+        -- show_images_data = other_images_data,
     }
 end
 
@@ -903,6 +905,8 @@ function User.PBPingCmd(req)
         if change_day then
             -- 触发签到
             scripts.Mission.TriggerCondition(MissionDef.EConditionIds.SIGN_CNT, {}, 1)
+            -- 持续在线计入第二天登录
+            Database.updatelogin(context.addr_db_user, req.uid)
         end
         -- 触发在线时间累计
         scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ONLINE_TIME, {}, add_time)
