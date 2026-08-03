@@ -2557,7 +2557,7 @@ function _M.gettradelognomail(addr, uid)
             trade_log.trade_ts = res[i].trade_ts
             trade_log.trade_tax = res[i].trade_tax
             trade_log.send_mail = res[i].send_mail
-            trade_logs[trade_log.trade_id] = trade_log
+            trade_logs[trade_log.log_id] = trade_log
         end
         return trade_logs
     end
