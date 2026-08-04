@@ -29,6 +29,7 @@ local context = {
     uid = 0,
     play_ds_node = {},
     lock_item_role = 0,
+    last_send_sale_mail_ts = 0,
 ---@diagnostic disable-next-line: missing-fields
     scripts = {},
     ---other service address

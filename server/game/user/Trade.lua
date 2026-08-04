@@ -196,10 +196,10 @@ end
 function Trade.OnTradeLogSaleMail(trade_log, need_save)
     if trade_log.send_mail ~= 0 then
         moon.error(string.format("OnTradeLogSaleMail trade_log.send_mail not 0 trade_log = %s",
-        json.pretty_encode(trade_log)))
+            json.pretty_encode(trade_log)))
         return
     end
-    
+
     if TradeDef.GM_UID[trade_log.seller_uid] then
         -- GM不用发送邮件
         return
@@ -267,6 +267,112 @@ function Trade.OnTradeLogSaleMail(trade_log, need_save)
     end
 end
 
+function Trade.OnTradeLogListSaleMail(trade_log_list, need_save)
+    if TradeDef.GM_UID[context.uid] then
+        -- GM不用发送邮件
+        return
+    end
+
+    local trade_cfg = GameCfg.TransactionConfig[1]
+    if not trade_cfg or not trade_cfg.sell_email or not trade_cfg.order_currency then
+        moon.error("OnTradeLogListSaleMail trade_cfg.sell_email or trade_cfg.order_currency not found = %s")
+        return
+    end
+    local player_trade_data = scripts.UserModel.GetTradeData()
+    if not player_trade_data then
+        moon.error("OnTradeLogListSaleMail not found player_trade_data")
+        return
+    end
+
+    local now_ts = moon.time()
+    if now_ts - context.last_send_sale_mail_ts < 10 then
+        moon.error("OnTradeLogListSaleMail last_send_sale_mail_ts < 10, uid=", context.uid)
+        return
+    end
+    context.last_send_sale_mail_ts = now_ts
+
+    local id_price_map = {}
+    for _, trade_log in pairs(trade_log_list) do
+        if trade_log.send_mail == 0 then
+            if id_price_map[trade_log.config_id] == nil then
+                id_price_map[trade_log.config_id] = {}
+            end
+            if id_price_map[trade_log.config_id][trade_log.deal_price] == nil then
+                id_price_map[trade_log.config_id][trade_log.deal_price] = {}
+            end
+            id_price_map[trade_log.config_id][trade_log.deal_price][trade_log.log_id] = trade_log
+        end
+    end
+
+    for config_id, price_map in pairs(id_price_map) do
+        local add_coins = {}
+        local content_params = {}
+        local notify_log_ids = {}
+        table.insert(content_params, tostring(config_id))
+        local total_deal_num = 0
+        local total_deal_price = 0
+
+        for log_id, trade_log in pairs(price_map) do
+            total_deal_num = total_deal_num + trade_log.deal_num
+            total_deal_price = total_deal_price + trade_log.deal_price * trade_log.deal_num
+            total_deal_price = total_deal_price - trade_log.trade_tax
+            table.insert(notify_log_ids, log_id)
+        end
+
+        table.insert(content_params, tostring(total_deal_num))
+        table.insert(content_params, tostring(total_deal_price))
+        add_coins[trade_cfg.order_currency] = {
+            coin_id = trade_cfg.order_currency,
+            coin_count = total_deal_price,
+        }
+
+        local mail_ret = scripts.Mail.RecvImmediateMail(trade_cfg.sell_email, {}, {}, add_coins, content_params)
+        if not mail_ret then
+            moon.error(string.format("OnTradeLogListSaleMail mail_ret false price_map = %s",
+                json.pretty_encode(price_map)))
+            return
+        end
+
+        -- 通知Trademgr更改邮件发送记录
+        clusterd.send(3999, "trademgr", "Trademgr.UserDealTradeLogList", notify_log_ids)
+
+        if need_save then
+            for log_id, trade_log in pairs(price_map) do
+                if player_trade_data.product_list[trade_log.trade_id] then
+                    if not player_trade_data.product_list[trade_log.trade_id].trade_data then
+                        moon.error(string.format("OnTradeLogListSaleMail trade_log.trade_id not found trade_log = %s",
+                            json.pretty_encode(trade_log)))
+                        moon.error(string.format(
+                            "OnTradeLogListSaleMail trade_log.trade_id not found player_trade_data = %s",
+                            json.pretty_encode(player_trade_data)))
+                        return
+                    end
+                    local now_num = player_trade_data.product_list[trade_log.trade_id].trade_data.now_num
+                    if now_num - trade_log.deal_num <= 0 then
+                        player_trade_data.product_list[trade_log.trade_id] = nil
+                        for idx, trade_id in pairs(player_trade_data.simple_info.trade_ids) do
+                            if trade_id == trade_log.trade_id then
+                                table.remove(player_trade_data.simple_info.trade_ids, idx)
+                                break
+                            end
+                        end
+                    else
+                        player_trade_data.product_list[trade_log.trade_id].trade_data.now_num = now_num -
+                            trade_log.deal_num
+                    end
+                end
+                table.insert(player_trade_data.log_list, trade_log)
+                if table.size(player_trade_data.log_list) > TRADE_LOG_MAX_COUNT then
+                    table.remove(player_trade_data.log_list, 1)
+                end
+            end
+            
+            -- Trade.SaveTradeInfoNow()
+            scripts.UserModel.AddDirtyModule("Trade")
+        end
+    end
+end
+
 function Trade.OnTradeAddLog(trade_log)
     local player_trade_data = scripts.UserModel.GetTradeData()
     if not player_trade_data then
@@ -287,10 +393,22 @@ function Trade.DealOfflineTradeLogSale()
     if not trade_logs or table.size(trade_logs) == 0 then
         return
     end
-    for _, trade_log in pairs(trade_logs) do
-        moon.warn(string.format("DealOfflineTradeLogSale trade_log = %s", json.pretty_encode(trade_log)))
-        Trade.OnTradeLogSaleMail(trade_log, false)
+
+    clusterd.send(3999, "trademgr", "Trademgr.NotifyAlreadySendSaleMail", context.uid)
+    -- for _, trade_log in pairs(trade_logs) do
+    --     moon.warn(string.format("DealOfflineTradeLogSale trade_log = %s", json.pretty_encode(trade_log)))
+    --     Trade.OnTradeLogSaleMail(trade_log, false)
+    -- end
+    Trade.OnTradeLogListSaleMail(trade_logs, false)
+end
+
+function Trade.OnNotifySaleMail()
+    local trade_logs = Database.gettradelognomail(context.addr_db_user, context.uid)
+    if not trade_logs or table.size(trade_logs) == 0 then
+        return
     end
+
+    Trade.OnTradeLogListSaleMail(trade_logs, true)
 end
 
 function Trade.DealOfflineTradeTakeDown()

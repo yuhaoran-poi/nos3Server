@@ -38,6 +38,7 @@ local Trademgr = {
     take_down_trade_ids = {}, -- 交易行下架商品id
     change_product_num_state = {}, -- 交易行商品数量状态变更
     add_trade_logs = {},           -- 交易行商品日志添加
+    wait_sale_mail_uids = {},    -- 等待发送销售邮件的uid列表
 }
 
 function Trademgr.Init()
@@ -480,10 +481,11 @@ end
 function Trademgr.AddTradeLog()
     local short_scope <close> = lock_trade_log()
 
-    if table.size(Trademgr.add_trade_logs) == 0 then
+    if table.size(Trademgr.add_trade_logs) == 0 and table.size(Trademgr.wait_sale_mail_uids) == 0 then
         return
     end
 
+    local now_ts = moon.time()
     for _, trade_log in pairs(Trademgr.add_trade_logs) do
         trade_log.log_id = Trademgr.now_log_id
         Database.addtradelog(context.addr_db_game, trade_log)
@@ -491,11 +493,26 @@ function Trademgr.AddTradeLog()
     end
     for _, trade_log in pairs(Trademgr.add_trade_logs) do
         if trade_log.seller_uid ~= GM_UID then
-            context.send_user(trade_log.seller_uid, "Trade.OnTradeLogSaleMail", trade_log, true)
+            -- context.send_user(trade_log.seller_uid, "Trade.OnTradeLogSaleMail", trade_log, true)
+            if not Trademgr.wait_sale_mail_uids[trade_log.seller_uid] then
+                Trademgr.wait_sale_mail_uids[trade_log.seller_uid] = now_ts
+            end
         end
         context.send_user(trade_log.buyer_uid, "Trade.OnTradeAddLog", trade_log)
     end
     Trademgr.add_trade_logs = {}
+
+    -- 通知已经等待了60*30秒的卖家发送销售邮件
+    local already_send_uids = {}
+    for uid, wait_ts in pairs(Trademgr.wait_sale_mail_uids) do
+        if now_ts - wait_ts >= 60 * 30 then
+            context.send_user(uid, "Trade.OnNotifySaleMail")
+            table.insert(already_send_uids, uid)
+        end
+    end
+    for _, uid in ipairs(already_send_uids) do
+        Trademgr.wait_sale_mail_uids[uid] = nil
+    end
 end
 
 function Trademgr.GmAddTradeProduct(req_data)
@@ -805,6 +822,16 @@ end
 
 function Trademgr.UserDealTradeLog(log_id)
     Database.updatetradelog(context.addr_db_game, log_id, 1)
+end
+
+function Trademgr.UserDealTradeLogList(log_ids)
+    Database.updatetradeloglist(context.addr_db_game, log_ids, 1)
+end
+
+function Trademgr.NotifyAlreadySendSaleMail(seller_uid)
+    local short_scope <close> = lock_trade_log()
+
+    Trademgr.wait_sale_mail_uids[seller_uid] = nil
 end
 
 function Trademgr.TakeOffProduct(uid, trade_id)
