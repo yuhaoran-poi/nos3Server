@@ -692,11 +692,15 @@ function Roommgr.ReturnRoom(req)
         return { code = ErrorCode.RoomMemberNotFound, error = "不在该房间内" }
     end
 
-    -- 更新准备状态（0-未准备 1-准备 2-暂离）
+    -- 更新准备状态（0-未准备 1-准备 2-暂离 3-撤离）
     if req.uid == room.room_data.master_id then
-        room.players[member_index].is_ready = 1
+        if room.players[member_index].is_ready ~= 3 then
+            room.players[member_index].is_ready = 1
+        end
     else
-        room.players[member_index].is_ready = 0
+        if room.players[member_index].is_ready ~= 3 then
+            room.players[member_index].is_ready = 0
+        end
     end
 
     -- 广播状态更新--排除返回者本人
