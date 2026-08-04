@@ -84,7 +84,7 @@ Command List:
 	send_system_mail <uid> <send_info_str> #给玩家发系统邮件. 1234567 send_system_mail mail_info 给玩家1234567发系统邮件mail_info
 	cancel_system_mail <uid> <mail_id> #撤销系统邮件. 1234567 cancel_system_mail 12345 给玩家1234567撤销系统邮件12345
 	add_treasure_box <uid> <config_id> <item_count> #给玩家加宝箱. 1234567 30001 2 给玩家1234567加2个30001宝箱
-	add_trade_product <uid> <sale_config_id> <sale_num> <sale_price> <sale_ts> #添加交易行商品. 1234567 10001 10 100 3600 给玩家1234567添加交易行商品10001,10个,100元,3600秒有效
+	add_trade_product <sale_config_id> <sale_num> <sale_price> <sale_ts> #添加交易行商品. 10001 10 100 3600 添加交易行商品10001,10个,单价100元,3600秒有效
 	]]
 
 function Console.help()
