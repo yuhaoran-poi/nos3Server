@@ -30,7 +30,7 @@ return {
 [1162010] = { id=1162010,type=4,color=4,belong=1000005 },
 [1162011] = { id=1162011,type=4,color=4,belong=1000005 },
 [1162012] = { id=1162012,type=4,color=4,belong=1000004 },
-[1162016] = { id=1162016,type=4,color=2,belong=1000003 },
+[1162016] = { id=1162016,type=4,color=5,belong=1000003 },
 [1162018] = { id=1162018,type=4,color=3,belong=1000004 },
 [1162019] = { id=1162019,type=4,color=2,belong=1000003 },
 [1162020] = { id=1162020,type=4,color=2,belong=1000004 },
@@ -43,7 +43,7 @@ return {
 [1172010] = { id=1172010,type=5,color=4,belong=1000005 },
 [1172011] = { id=1172011,type=5,color=4,belong=1000005 },
 [1172012] = { id=1172012,type=5,color=4,belong=1000004 },
-[1172016] = { id=1172016,type=5,color=2,belong=1000003 },
+[1172016] = { id=1172016,type=5,color=5,belong=1000003 },
 [1172018] = { id=1172018,type=5,color=3,belong=1000004 },
 [1172019] = { id=1172019,type=5,color=2,belong=1000003 },
 [1172020] = { id=1172020,type=5,color=2,belong=1000004 },
@@ -63,7 +63,7 @@ return {
 [1192013] = { id=1192013,type=7,color=4,belong=1000002 },
 [1192014] = { id=1192014,type=7,color=3,belong=1000001 },
 [1192015] = { id=1192015,type=7,color=2,belong=1000002 },
-[1192016] = { id=1192016,type=7,color=2,belong=1000003 },
+[1192016] = { id=1192016,type=7,color=5,belong=1000003 },
 [1192017] = { id=1192017,type=7,color=2,belong=1000001 },
 [1192018] = { id=1192018,type=7,color=3,belong=1000004 },
 [1192019] = { id=1192019,type=7,color=2,belong=1000003 },
@@ -75,5 +75,5 @@ return {
 [1212009] = { id=1212009,type=9,color=4,belong=1000001 },
 [1212013] = { id=1212013,type=9,color=4,belong=1000002 },
 [1232009] = { id=1232009,type=11,color=4,belong=1000001 },
-[1242016] = { id=1242016,type=12,color=2,belong=1000003 }
+[1242016] = { id=1242016,type=12,color=5,belong=1000003 }
 }
