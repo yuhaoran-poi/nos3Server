@@ -820,4 +820,21 @@ function DsNode.PBGetDsUserAweItemReqCmd(req)
     return context.S2D(context.net_id, CmdCode.PBGetDsUserAweItemRspCmd, ret, req.msg_context.stub_id)
 end
 
+function DsNode.PBDsTestGameSettleReqCmd(req)
+    local roomid = req.msg.roomid or 0
+    local uid = req.msg.uid or 0
+    local player_settle = req.msg.player_settle
+    local settle_str = json.pretty_encode(player_settle)
+    moon.warn(string.format("PBDsTestGameSettleReqCmd roomid=%d, uid=%d, settle_str=%s", roomid, uid, settle_str))
+    local ret = {
+        code = ErrorCode.None,
+        error = "",
+        roomid = roomid,
+        uid = uid,
+        player_settle = player_settle,
+        settle_str = "",
+    }
+    return context.S2D(context.net_id, CmdCode.PBDsTestGameSettleRspCmd, ret, req.msg_context.stub_id)
+end
+
 return DsNode

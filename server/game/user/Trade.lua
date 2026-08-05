@@ -373,12 +373,8 @@ function Trade.OnTradeLogListSaleMail(trade_log_list, need_save)
 
             -- 通知Trademgr更改邮件发送记录
             clusterd.send(3999, "trademgr", "Trademgr.UserDealTradeLogList", notify_log_ids)
-        end
-    end
 
-    if need_save then
-        for config_id, price_map in pairs(id_price_map) do
-            for price, trade_logs in pairs(price_map) do
+            if need_save then
                 for log_id, trade_log in pairs(trade_logs) do
                     if player_trade_data.product_list[trade_log.trade_id] then
                         if not player_trade_data.product_list[trade_log.trade_id].trade_data then
@@ -409,11 +405,11 @@ function Trade.OnTradeLogListSaleMail(trade_log_list, need_save)
                         table.remove(player_trade_data.log_list, 1)
                     end
                 end
+
+                -- Trade.SaveTradeInfoNow()
+                scripts.UserModel.AddDirtyModule("Trade")
             end
         end
-
-        -- Trade.SaveTradeInfoNow()
-        scripts.UserModel.AddDirtyModule("Trade")
     end
 end
 

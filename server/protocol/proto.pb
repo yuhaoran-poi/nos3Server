@@ -1754,7 +1754,7 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-æ4
+¸6
 dsnode.protocommon.proto
 item.proto
 user.proto	bag.proto
@@ -1999,7 +1999,19 @@ buff_datas (2,.PBGetDsUserAccountBuffRspCmd.BuffDatasEntryR	buffDatasI
 error (	Rerror
 dsid (Rdsid
 	quest_uid (RquestUid,
-	awe_items (2.PBUserAweItemsRaweItemsbproto3
+	awe_items (2.PBUserAweItemsRaweItems"x
+PBDsTestGameSettleReqCmd
+roomid (Rroomid
+uid (Ruid2
+player_settle (2.PBGameSettleRplayerSettle"¡
+PBDsTestGameSettleRspCmd
+code (Rcode
+error (	Rerror
+roomid (Rroomid
+uid (Ruid2
+player_settle (2.PBGameSettleRplayerSettle
+
+settle_str (	R	settleStrbproto3
 Å
 friend.proto
 user.proto"6

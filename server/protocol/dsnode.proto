@@ -332,3 +332,21 @@ message PBGetDsUserAweItemRspCmd
 	int64 quest_uid		= 4;
     PBUserAweItems awe_items = 5;   // 玩家镇山之宝数据
 }
+
+// 测试收到结算接口并打印
+message PBDsTestGameSettleReqCmd
+{
+    int64 roomid    = 1;
+    int64 uid       = 2;
+    PBGameSettle player_settle  = 3;    //结算数据
+}
+
+message PBDsTestGameSettleRspCmd
+{
+    int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+    int64 roomid    = 3;
+    int64 uid       = 4;
+    PBGameSettle player_settle  = 5;    //结算数据
+    string settle_str = 6;  // 结算字符串
+}

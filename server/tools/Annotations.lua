@@ -832,6 +832,21 @@
 ---@field public awe_items PBUserAweItems @玩家镇山之宝数据
 
 
+---@class PBDsTestGameSettleReqCmd
+---@field public roomid integer
+---@field public uid integer
+---@field public player_settle PBGameSettle @结算数据
+
+
+---@class PBDsTestGameSettleRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public roomid integer
+---@field public uid integer
+---@field public player_settle PBGameSettle @结算数据
+---@field public settle_str string @结算字符串
+
+
 ---@class PBFriendData
 ---@field public uid integer
 ---@field public notes string @备注
