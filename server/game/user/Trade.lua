@@ -319,15 +319,15 @@ function Trade.OnTradeLogListSaleMail(trade_log_list, need_save)
     local total_process_count = 0
 
     for config_id, price_map in pairs(id_price_map) do
-        local add_coins = {}
-        local content_params = {}
-        local notify_log_ids = {}
-        local skip_log_ids = {}
-        table.insert(content_params, tostring(config_id))
-        local total_deal_num = 0
-        local total_deal_price = 0
-
         for price, trade_logs in pairs(price_map) do
+            local add_coins = {}
+            local content_params = {}
+            local notify_log_ids = {}
+            local skip_log_ids = {}
+            table.insert(content_params, tostring(config_id))
+            local total_deal_num = 0
+            local total_deal_price = 0
+
             for log_id, trade_log in pairs(trade_logs) do
                 local missing = missing_fields(trade_log)
                 if #missing > 0 then
@@ -347,35 +347,37 @@ function Trade.OnTradeLogListSaleMail(trade_log_list, need_save)
                     table.insert(notify_log_ids, log_id)
                 end
             end
+
+            -- 该 config_id 处理完成,打一条汇总(便于核对账目)
+            if #skip_log_ids > 0 then
+                moon.warn(string.format(
+                    "OnTradeLogListSaleMail config_id=%s summary: process=%d, skip=%d, skip_log_ids=[%s]",
+                    tostring(config_id), #price_map - #skip_log_ids, #skip_log_ids,
+                    table.concat(skip_log_ids, ",")))
+                return
+            end
+
+            table.insert(content_params, tostring(total_deal_num))
+            table.insert(content_params, tostring(total_deal_price))
+            add_coins[trade_cfg.order_currency] = {
+                coin_id = trade_cfg.order_currency,
+                coin_count = total_deal_price,
+            }
+
+            local mail_ret = scripts.Mail.RecvImmediateMail(trade_cfg.sell_email, {}, {}, add_coins, content_params)
+            if not mail_ret then
+                moon.error(string.format("OnTradeLogListSaleMail mail_ret false price_map = %s",
+                    json.pretty_encode(price_map)))
+                return
+            end
+
+            -- 通知Trademgr更改邮件发送记录
+            clusterd.send(3999, "trademgr", "Trademgr.UserDealTradeLogList", notify_log_ids)
         end
+    end
 
-        -- 该 config_id 处理完成,打一条汇总(便于核对账目)
-        if #skip_log_ids > 0 then
-            moon.warn(string.format(
-                "OnTradeLogListSaleMail config_id=%s summary: process=%d, skip=%d, skip_log_ids=[%s]",
-                tostring(config_id), #price_map - #skip_log_ids, #skip_log_ids,
-                table.concat(skip_log_ids, ",")))
-            return
-        end
-
-        table.insert(content_params, tostring(total_deal_num))
-        table.insert(content_params, tostring(total_deal_price))
-        add_coins[trade_cfg.order_currency] = {
-            coin_id = trade_cfg.order_currency,
-            coin_count = total_deal_price,
-        }
-
-        local mail_ret = scripts.Mail.RecvImmediateMail(trade_cfg.sell_email, {}, {}, add_coins, content_params)
-        if not mail_ret then
-            moon.error(string.format("OnTradeLogListSaleMail mail_ret false price_map = %s",
-                json.pretty_encode(price_map)))
-            return
-        end
-
-        -- 通知Trademgr更改邮件发送记录
-        clusterd.send(3999, "trademgr", "Trademgr.UserDealTradeLogList", notify_log_ids)
-
-        if need_save then
+    if need_save then
+        for config_id, price_map in pairs(id_price_map) do
             for price, trade_logs in pairs(price_map) do
                 for log_id, trade_log in pairs(trade_logs) do
                     if player_trade_data.product_list[trade_log.trade_id] then
@@ -399,7 +401,7 @@ function Trade.OnTradeLogListSaleMail(trade_log_list, need_save)
                             end
                         else
                             player_trade_data.product_list[trade_log.trade_id].trade_data.now_num = now_num -
-                            trade_log.deal_num
+                                trade_log.deal_num
                         end
                     end
                     table.insert(player_trade_data.log_list, trade_log)
@@ -408,10 +410,10 @@ function Trade.OnTradeLogListSaleMail(trade_log_list, need_save)
                     end
                 end
             end
-
-            -- Trade.SaveTradeInfoNow()
-            scripts.UserModel.AddDirtyModule("Trade")
         end
+
+        -- Trade.SaveTradeInfoNow()
+        scripts.UserModel.AddDirtyModule("Trade")
     end
 end
 

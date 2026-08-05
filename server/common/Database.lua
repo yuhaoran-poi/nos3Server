@@ -2522,7 +2522,7 @@ function _M.updatetradeloglist(addr, log_ids, send_mail)
     local cmd = string.format([[
         UPDATE mgame.trade_log SET send_mail = %d WHERE log_id IN (%s);
     ]], send_mail, table.concat(log_ids, ","))
-    moon.info("updatetradeloglist cmd:", cmd)
+    moon.info("updatetradeloglist execute cmd:", cmd)
     return moon.send("lua", addr, cmd)
 end
 

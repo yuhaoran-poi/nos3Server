@@ -825,7 +825,10 @@ function Trademgr.UserDealTradeLog(log_id)
 end
 
 function Trademgr.UserDealTradeLogList(log_ids)
-    Database.updatetradeloglist(context.addr_db_game, log_ids, 1)
+    if log_ids and #log_ids > 0 then
+        moon.info(string.format("UserDealTradeLogList log_ids=%s", table.concat(log_ids, ",")))
+        Database.updatetradeloglist(context.addr_db_game, log_ids, 1)
+    end
 end
 
 function Trademgr.NotifyAlreadySendSaleMail(seller_uid)
