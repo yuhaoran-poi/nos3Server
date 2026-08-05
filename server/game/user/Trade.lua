@@ -380,10 +380,11 @@ function Trade.OnTradeLogListSaleMail(trade_log_list, need_save)
                 for log_id, trade_log in pairs(trade_logs) do
                     if player_trade_data.product_list[trade_log.trade_id] then
                         if not player_trade_data.product_list[trade_log.trade_id].trade_data then
-                            moon.error(string.format("OnTradeLogSaleMail trade_log.trade_id not found trade_log = %s",
+                            moon.error(string.format(
+                                "OnTradeLogListSaleMail trade_log.trade_id not found trade_log = %s",
                                 json.pretty_encode(trade_log)))
                             moon.error(string.format(
-                                "OnTradeLogSaleMail trade_log.trade_id not found player_trade_data = %s",
+                                "OnTradeLogListSaleMail trade_log.trade_id not found player_trade_data = %s",
                                 json.pretty_encode(player_trade_data)))
                             return
                         end
@@ -504,7 +505,8 @@ function Trade.PBGetTradeInfoReqCmd(req)
     local player_trade_data = scripts.UserModel.GetTradeData()
     if not player_trade_data then
         return context.S2C(context.net_id, CmdCode["PBGetTradeInfoRspCmd"],
-            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid, now_sys_ts = moon.time() },
+            req.msg_context.stub_id)
     end
     Trade.CheckOnSaleCnt(player_trade_data)
 
@@ -512,7 +514,8 @@ function Trade.PBGetTradeInfoReqCmd(req)
         code = ErrorCode.None,
         error = "",
         uid = context.uid,
-        self_trade_info = player_trade_data
+        self_trade_info = player_trade_data,
+        now_sys_ts = moon.time(),
     }
     return context.S2C(context.net_id, CmdCode["PBGetTradeInfoRspCmd"], rsp, req.msg_context.stub_id)
 end

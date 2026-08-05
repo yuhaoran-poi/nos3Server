@@ -2274,6 +2274,13 @@ function _M.updatetraderecord(addr, record_data, condition1, condition2, conditi
     assert(record_data)
     moon.debug(string.format("updatetraderecord: %s", json.pretty_encode(record_data)))
 
+    -- local now_total_num = 0
+    -- if record_data.price_to_num then
+    --     for price, value in pairs(record_data.price_to_num) do
+            
+    --     end
+    -- end
+
     local cmd = string.format([[
         INSERT INTO mgame.trade_record (trade_config_id, sale_num, sale_total_price, last_deal_price, update_ts, yes_sale_num, yes_sale_total_price, yes_average_price, min_price, min_price_num, condition1, condition2, condition3, condition4, condition5)
         VALUES (%d, %d, %d, %d, %d, %d, %d, %f, %d, %d, %d, %d, %d, %d, %d)
@@ -2508,6 +2515,14 @@ function _M.updatetradelog(addr, log_id, send_mail)
     local cmd = string.format([[
         UPDATE mgame.trade_log SET send_mail = %d WHERE log_id = %d;
     ]], send_mail, log_id)
+    return moon.send("lua", addr, cmd)
+end
+
+function _M.updatetradeloglist(addr, log_ids, send_mail)
+    local cmd = string.format([[
+        UPDATE mgame.trade_log SET send_mail = %d WHERE log_id IN (%s);
+    ]], send_mail, table.concat(log_ids, ","))
+    moon.info("updatetradeloglist cmd:", cmd)
     return moon.send("lua", addr, cmd)
 end
 

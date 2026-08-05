@@ -831,6 +831,7 @@ end
 function Trademgr.NotifyAlreadySendSaleMail(seller_uid)
     local short_scope <close> = lock_trade_log()
 
+    moon.info("NotifyAlreadySendSaleMail seller_uid", seller_uid)
     Trademgr.wait_sale_mail_uids[seller_uid] = nil
 end
 
