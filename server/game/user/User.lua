@@ -652,9 +652,9 @@ function User.Exit()
     User.Logout()
 
     -- 通知usermgr
-    local res, err = clusterd.call(3999, "usermgr", "Usermgr.NotifyLogout", { uid = context.uid, nid = moon.env("NODE") })
-    if err then
-        moon.error(string.format("User.Exit err = %s", json.pretty_encode(err)))
+    local res, err_umg = clusterd.call(3999, "usermgr", "Usermgr.NotifyLogout", { uid = context.uid, nid = moon.env("NODE") })
+    if err_umg then
+        moon.error(string.format("User.Exit err_umg = %s", json.pretty_encode(err_umg)))
     end
     if res.error ~= "success" then
         moon.error(string.format("User.Exit res = %s", json.pretty_encode(res)))

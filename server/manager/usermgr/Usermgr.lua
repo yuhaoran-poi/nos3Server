@@ -118,8 +118,8 @@ end
 function Usermgr.NotifyLogout(msg)
     local old = context.user_node[msg.uid]
     if not old or old.nid ~= msg.nid then
-        --moon.error(string.format("Usermgr.NotifyLogout msg = %s", json.pretty_encode(msg)))
-        --moon.error(string.format("Usermgr.NotifyLogout context.user_node = %s", json.pretty_encode(context.user_node)))
+        moon.error(string.format("Usermgr.NotifyLogout msg = %s", json.pretty_encode(msg)))
+        moon.error(string.format("Usermgr.NotifyLogout context.user_node = %s", json.pretty_encode(context.user_node)))
         return { error = "failed" }
     end
 
