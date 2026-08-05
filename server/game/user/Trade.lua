@@ -327,33 +327,35 @@ function Trade.OnTradeLogListSaleMail(trade_log_list, need_save)
         local total_deal_num = 0
         local total_deal_price = 0
 
-        for log_id, trade_log in pairs(price_map) do
-            local missing = missing_fields(trade_log)
-            if #missing > 0 then
-                -- 字段缺失,记录并跳过
-                table.insert(skip_log_ids, log_id)
-                total_skip_count = total_skip_count + 1
-                moon.warn(string.format(
-                    "[OnTradeLogListSaleMail] skip trade_log due to missing fields: " ..
-                    "uid=%d, log_id=%s, config_id=%s, deal_price=%s, missing=[%s], trade_log=%s",
-                    context.uid, tostring(log_id), tostring(trade_log.config_id),
-                    tostring(trade_log.deal_price), table.concat(missing, ","),
-                    json.pretty_encode(trade_log)))
-            else
-                total_deal_num = total_deal_num + trade_log.deal_num
-                total_deal_price = total_deal_price + trade_log.deal_price * trade_log.deal_num
-                total_deal_price = total_deal_price - trade_log.trade_tax
-                total_process_count = total_process_count + 1
-                table.insert(notify_log_ids, log_id)
+        for price, trade_logs in pairs(price_map) do
+            for log_id, trade_log in pairs(trade_logs) do
+                local missing = missing_fields(trade_log)
+                if #missing > 0 then
+                    -- 字段缺失,记录并跳过
+                    table.insert(skip_log_ids, log_id)
+                    total_skip_count = total_skip_count + 1
+                    moon.warn(string.format(
+                        "OnTradeLogListSaleMail skip trade_log due to missing fields: " ..
+                        "uid=%d, log_id=%d, config_id=%d, deal_price=%d, missing=[%s], trade_log=%s",
+                        context.uid, log_id, trade_log.config_id, price, table.concat(missing, ","),
+                        json.pretty_encode(trade_log)))
+                else
+                    total_deal_num = total_deal_num + trade_log.deal_num
+                    total_deal_price = total_deal_price + trade_log.deal_price * trade_log.deal_num
+                    total_deal_price = total_deal_price - trade_log.trade_tax
+                    total_process_count = total_process_count + 1
+                    table.insert(notify_log_ids, log_id)
+                end
             end
         end
 
         -- 该 config_id 处理完成,打一条汇总(便于核对账目)
         if #skip_log_ids > 0 then
             moon.warn(string.format(
-                "[OnTradeLogListSaleMail] config_id=%s summary: process=%d, skip=%d, skip_log_ids=[%s]",
+                "OnTradeLogListSaleMail config_id=%s summary: process=%d, skip=%d, skip_log_ids=[%s]",
                 tostring(config_id), #price_map - #skip_log_ids, #skip_log_ids,
                 table.concat(skip_log_ids, ",")))
+            return
         end
 
         table.insert(content_params, tostring(total_deal_num))
@@ -374,14 +376,8 @@ function Trade.OnTradeLogListSaleMail(trade_log_list, need_save)
         clusterd.send(3999, "trademgr", "Trademgr.UserDealTradeLogList", notify_log_ids)
 
         if need_save then
-            for log_id, trade_log in pairs(price_map) do
-                -- 字段缺失的 trade_log 在上面已经跳过累加,这里再次防御:
-                -- now_num - trade_log.deal_num 同样会因为 deal_num=nil 崩溃
-                if not trade_log.deal_num or not trade_log.trade_id then
-                    moon.warn(string.format(
-                        "[OnTradeLogListSaleMail] skip save for invalid trade_log: log_id=%s, trade_log=%s",
-                        tostring(log_id), json.pretty_encode(trade_log)))
-                else
+            for price, trade_logs in pairs(price_map) do
+                for log_id, trade_log in pairs(trade_logs) do
                     if player_trade_data.product_list[trade_log.trade_id] then
                         if not player_trade_data.product_list[trade_log.trade_id].trade_data then
                             moon.error(string.format("OnTradeLogSaleMail trade_log.trade_id not found trade_log = %s",
@@ -415,13 +411,6 @@ function Trade.OnTradeLogListSaleMail(trade_log_list, need_save)
             -- Trade.SaveTradeInfoNow()
             scripts.UserModel.AddDirtyModule("Trade")
         end
-    end
-
-    -- 所有 config_id 处理完,打全局汇总
-    if total_skip_count > 0 then
-        moon.warn(string.format(
-            "[OnTradeLogListSaleMail] TOTAL summary: uid=%d, processed=%d, skipped=%d",
-            context.uid, total_process_count, total_skip_count))
     end
 end
 
