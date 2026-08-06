@@ -2252,6 +2252,14 @@
 
 ---@class PBAntiqueShowcaseDataS
 ---@field public antique_showcase_list table<integer, PBAntiqueShowcaseData>
+---@field public antique_preset_list PBAntiquePreset[] @预设列表
+---@field public current_preset_idx integer @当前使用的预设索引（0表示未使用）
+
+
+---@class PBAntiquePreset
+---@field public preset_idx integer @预设索引（1-5）
+---@field public is_unlock boolean @是否已解锁
+---@field public showcase_data table<integer, PBAntiqueShowcaseData> @预设的展示柜数据
 
 
 ---@class PBImageGetDataReqCmd
@@ -2282,6 +2290,54 @@
 
 ---@class PBAntiqueShowcaseUpdateSyncCmd
 ---@field public antique_showcase_list table<integer, PBAntiqueShowcaseData>
+---@field public current_preset_idx integer @当前使用的预设索引
+
+
+---@class PBAntiquePresetUnlockReqCmd
+---@field public preset_idx integer @预设索引（1-5）
+
+
+---@class PBAntiquePresetUnlockRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public preset_idx integer
+---@field public antique_preset_list PBAntiquePreset[] @预设列表
+---@field public current_preset_idx integer @当前使用的预设索引
+
+
+---@class PBAntiquePresetSaveReqCmd
+---@field public preset_idx integer @预设索引（1-5）
+
+
+---@class PBAntiquePresetSaveRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public preset_idx integer
+---@field public antique_preset_list PBAntiquePreset[] @预设列表
+---@field public current_preset_idx integer @当前使用的预设索引
+
+
+---@class PBAntiquePresetUseReqCmd
+---@field public preset_idx integer @预设索引（1-5）
+
+
+---@class PBAntiquePresetUseRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public preset_idx integer
+---@field public antique_showcase_list table<integer, PBAntiqueShowcaseData> @展示柜数据
+---@field public antique_preset_list PBAntiquePreset[] @预设列表
+---@field public current_preset_idx integer @当前使用的预设索引
+
+
+---@class PBAntiquePresetInfoReqCmd
+
+
+---@class PBAntiquePresetInfoRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public antique_preset_list PBAntiquePreset[] @预设列表
+---@field public current_preset_idx integer @当前使用的预设索引
 
 
 ---@class PBImageUnLockReqCmd

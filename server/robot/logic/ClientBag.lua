@@ -193,3 +193,66 @@ function Client:addbag()
         print_r(msg)
     end)
 end
+
+-- 获取古董预设信息
+function Client:get_antique_preset_info()
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+
+    local req_msg = {
+    }
+    self:send("PBAntiquePresetInfoReqCmd", req_msg, function(msg)
+        print("rpc PBAntiquePresetInfoRspCmd ret = ", self.index, msg)
+        print_r(msg)
+    end)
+end
+
+-- 解锁古董预设
+function Client:unlock_antique_preset(preset_idx)
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+
+    local req_msg = {
+        preset_idx = preset_idx,
+    }
+    self:send("PBAntiquePresetUnlockReqCmd", req_msg, function(msg)
+        print("rpc PBAntiquePresetUnlockRspCmd ret = ", self.index, msg)
+        print_r(msg)
+    end)
+end
+
+-- 保存古董预设
+function Client:save_antique_preset(preset_idx)
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+
+    local req_msg = {
+        preset_idx = preset_idx,
+    }
+    self:send("PBAntiquePresetSaveReqCmd", req_msg, function(msg)
+        print("rpc PBAntiquePresetSaveRspCmd ret = ", self.index, msg)
+        print_r(msg)
+    end)
+end
+
+-- 使用古董预设
+function Client:use_antique_preset(preset_idx)
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+
+    local req_msg = {
+        preset_idx = preset_idx,
+    }
+    self:send("PBAntiquePresetUseReqCmd", req_msg, function(msg)
+        print("rpc PBAntiquePresetUseRspCmd ret = ", self.index, msg)
+        print_r(msg)
+    end)
+end

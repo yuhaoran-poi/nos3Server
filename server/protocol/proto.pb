@@ -13,7 +13,7 @@ activityId
 error (	Rerror
 uid (Ruid6
 activity_datas (2.PBActivityDataRactivityDatasbproto3
-½6
+¥C
 
 item.proto"@
 PBCoin
@@ -221,10 +221,20 @@ showcaseId
 antique_show_list (2+.PBAntiqueShowcaseData.AntiqueShowListEntryRantiqueShowListO
 AntiqueShowListEntry
 key (Rkey!
-value (2.PBItemDataRvalue:8"Þ
+value (2.PBItemDataRvalue:8"Î
 PBAntiqueShowcaseDataSd
-antique_showcase_list (20.PBAntiqueShowcaseDataS.AntiqueShowcaseListEntryRantiqueShowcaseList^
+antique_showcase_list (20.PBAntiqueShowcaseDataS.AntiqueShowcaseListEntryRantiqueShowcaseList@
+antique_preset_list (2.PBAntiquePresetRantiquePresetList,
+current_preset_idx (RcurrentPresetIdx^
 AntiqueShowcaseListEntry
+key (Rkey,
+value (2.PBAntiqueShowcaseDataRvalue:8"ï
+PBAntiquePreset
+
+preset_idx (R	presetIdx
+	is_unlock (RisUnlockG
+showcase_data (2".PBAntiquePreset.ShowcaseDataEntryRshowcaseDataW
+ShowcaseDataEntry
 key (Rkey,
 value (2.PBAntiqueShowcaseDataRvalue:8"(
 PBImageGetDataReqCmd
@@ -243,12 +253,53 @@ image_data (2.PBUserImageR	imageData"I
 code (Rcode
 error (	Rerror
 uid (RuidK
-antique_showcase_data (2.PBAntiqueShowcaseDataSRantiqueShowcaseData"î
+antique_showcase_data (2.PBAntiqueShowcaseDataSRantiqueShowcaseData"œ
 PBAntiqueShowcaseUpdateSyncCmdl
-antique_showcase_list (28.PBAntiqueShowcaseUpdateSyncCmd.AntiqueShowcaseListEntryRantiqueShowcaseList^
+antique_showcase_list (28.PBAntiqueShowcaseUpdateSyncCmd.AntiqueShowcaseListEntryRantiqueShowcaseList,
+current_preset_idx (RcurrentPresetIdx^
 AntiqueShowcaseListEntry
 key (Rkey,
-value (2.PBAntiqueShowcaseDataRvalue:8"M
+value (2.PBAntiqueShowcaseDataRvalue:8"<
+PBAntiquePresetUnlockReqCmd
+
+preset_idx (R	presetIdx"Ö
+PBAntiquePresetUnlockRspCmd
+code (Rcode
+error (	Rerror
+
+preset_idx (R	presetIdx@
+antique_preset_list (2.PBAntiquePresetRantiquePresetList,
+current_preset_idx (RcurrentPresetIdx":
+PBAntiquePresetSaveReqCmd
+
+preset_idx (R	presetIdx"Ô
+PBAntiquePresetSaveRspCmd
+code (Rcode
+error (	Rerror
+
+preset_idx (R	presetIdx@
+antique_preset_list (2.PBAntiquePresetRantiquePresetList,
+current_preset_idx (RcurrentPresetIdx"9
+PBAntiquePresetUseReqCmd
+
+preset_idx (R	presetIdx"›
+PBAntiquePresetUseRspCmd
+code (Rcode
+error (	Rerror
+
+preset_idx (R	presetIdxf
+antique_showcase_list (22.PBAntiquePresetUseRspCmd.AntiqueShowcaseListEntryRantiqueShowcaseList@
+antique_preset_list (2.PBAntiquePresetRantiquePresetList,
+current_preset_idx (RcurrentPresetIdx^
+AntiqueShowcaseListEntry
+key (Rkey,
+value (2.PBAntiqueShowcaseDataRvalue:8"
+PBAntiquePresetInfoReqCmd"µ
+PBAntiquePresetInfoRspCmd
+code (Rcode
+error (	Rerror@
+antique_preset_list (2.PBAntiquePresetRantiquePresetList,
+current_preset_idx (RcurrentPresetIdx"M
 PBImageUnLockReqCmd
 uid (Ruid$
 item_config_id (RitemConfigId"w

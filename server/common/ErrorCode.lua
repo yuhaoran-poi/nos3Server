@@ -419,6 +419,8 @@ local ErrorCode = {
     LightSpaceRingFail = 1622,
     --- 升星概率失败
     UpStarProbFail = 1623,
+    --- 赝品不可展示
+    AntiqueIsFake = 1624,
 
     --角色相关错误码
     --- 角色不存在
@@ -597,6 +599,16 @@ local ErrorCode = {
     AweItemNotUnlock = 2252,
     --- 镇山之宝已到最大等级
     AweItemUpLvMax = 2253,
+
+    -- 古董预设系统相关错误码
+    --- 预设未解锁
+    PresetNotUnlock = 2261,
+    --- 前置预设未解锁
+    PresetPrevNotUnlock = 2262,
+    --- 预设为空
+    PresetEmpty = 2263,
+    --- 预设已解锁
+    PresetAlreadyUnlock = 2264,
 
     -- 战报系统相关错误码
     --- 战报不存在

@@ -68,8 +68,10 @@ local ItemDef = {
         -- UpLv = 37,               --升级
         -- UpStar = 38,             --升级星数
         -- InlayTabooWord = 39,     --镶嵌讳字
-        RankReward = 47, --排行榜奖励
-        UseItem = 48, --使用道具
+        RankReward = 52, --排行榜奖励
+        UseItem = 53, --使用道具
+        UnlockAntiquePreset = 54,   -- 解锁古董预设
+        UseAntiquePreset = 55,     -- 使用古董预设
     },
     TabooWordInlay = {
         RoleType = 1000,
@@ -222,6 +224,14 @@ local defaultAntiqueShowcase = {
 
 local defaultAntiqueShowcaseS = {
     antique_showcase_list = {},
+    antique_preset_list = {},    -- 预设列表
+    current_preset_idx = 0,      -- 当前使用的预设索引（0表示未使用）
+}
+
+local defaultPBAntiquePreset = {
+    preset_idx = 0,              -- 预设索引（0-4）
+    is_unlock = false,           -- 是否已解锁
+    showcase_data = {},          -- 预设的展示柜数据
 }
 
 local defaultPBAweItem = {
@@ -332,6 +342,15 @@ end
 --- @return PBAntiqueShowcaseDataS
 function ItemDef.newAntiqueShowcaseS()
     return LuaExt.const(table.copy(defaultAntiqueShowcaseS))
+end
+
+--- @return PBAntiquePreset
+function ItemDef.newAntiquePreset(preset_idx)
+    local preset = LuaExt.const(table.copy(defaultPBAntiquePreset))
+    preset.preset_idx = preset_idx
+    preset.is_unlock = false
+    preset.showcase_data = {}
+    return preset
 end
 
 --- @return PBAweItem
