@@ -473,6 +473,19 @@ function AntiqueShowcase.AntiqueShow(config_id, uniqid, showcase_id, showcase_id
             end
         end
 
+        -- 检查同品质同名古董是否已展示（同一展示柜内不能有相同的古董）
+        -- 新增展示时才检查，替换操作不检查（因为会被替换掉）
+        local is_replace = aimShowAntique and aimShowAntique.common_info and aimShowAntique.common_info.uniqid
+        if not is_replace then
+            for idx, show_antique in pairs(tar_showcase.antique_show_list) do
+                if show_antique and show_antique.common_info then
+                    if show_antique.common_info.config_id == config_id then
+                        return ErrorCode.SameAntiqueInShowcase, "该展柜已有相同古董展示"
+                    end
+                end
+            end
+        end
+
         local old_item_data = table.copy(item_data)
 
         if aimShowAntique and aimShowAntique.common_info and aimShowAntique.common_info.uniqid then
