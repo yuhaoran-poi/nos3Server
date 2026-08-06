@@ -1608,6 +1608,12 @@ function Bag.AddUniqItem(bagType, baginfo, item_data, itype, logs)
             new_item.common_info.trade_cnt = item_data.common_info.trade_cnt
             if new_item.common_info.uniqid == 0 then
                 new_item.common_info.uniqid = uuid.next()
+                -- 只在古董 config_id 范围内打印日志
+                local config_id = item_data.common_info.config_id
+                if config_id >= ItemDefine.ItemSubType.Antique.start and config_id <= ItemDefine.ItemSubType.Antique.End then
+                    moon.info(string.format("[AddUniqItem] generated new uniqid=%d for antique config_id=%d, bagType=%s, pos=%d",
+                        new_item.common_info.uniqid, config_id, bagType, pos))
+                end
             end
 
             baginfo.items[pos] = new_item

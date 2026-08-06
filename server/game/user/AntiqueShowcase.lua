@@ -801,7 +801,12 @@ function AntiqueShowcase.UsePreset(preset_idx)
             local add_unstack_items = {}  -- 用于 AddItems 的 unstack_item_datas
             for showcase_idx, antique_data in pairs(showcase_data.antique_show_list) do
                 if antique_data and antique_data.common_info then
-                    table.insert(add_unstack_items, antique_data)
+                    -- 检查背包中是否已有该 uniqid，避免重复
+                    local err_code, pos, existing_item = scripts.Bag.GetUniqItemData(BagDef.BagType.Cangku, antique_data.common_info.uniqid)
+                    if err_code ~= ErrorCode.None or not existing_item then
+                        -- 背包中没有，才添加
+                        table.insert(add_unstack_items, antique_data)
+                    end
                 end
             end
             -- 将古董放回背包
