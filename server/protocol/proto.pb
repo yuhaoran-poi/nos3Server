@@ -3342,7 +3342,7 @@ RankReward
 RankType_GuildMoney
 RankType_GuildScore_Weekly
 RankType_GuildScore_Seasonbproto3
-Â0
+ì0
 
 room.proto
 user.proto"­
@@ -3360,16 +3360,17 @@ masterName
 	needcheck (R	needcheck
 needpwd	 (Rneedpwd
 describe
- (	Rdescribe"ô
+ (	Rdescribe"ž
 PBRoomMemberInfo
 seat_idx (RseatIdx
 is_ready (RisReady&
 mem_info (2.PBUserAttrRmemInfo
-cityid (RcityidR
-story_line_record (2&.PBRoomMemberInfo.StoryLineRecordEntryRstoryLineRecordR
-ghost_gate_record (2&.PBRoomMemberInfo.GhostGateRecordEntryRghostGateRecordU
-boss_battle_record (2'.PBRoomMemberInfo.BossBattleRecordEntryRbossBattleRecordX
-tower_battle_record (2(.PBRoomMemberInfo.TowerBattleRecordEntryRtowerBattleRecordB
+cityid (Rcityid(
+is_early_retreat (RisEarlyRetreatR
+story_line_record (2&.PBRoomMemberInfo.StoryLineRecordEntryRstoryLineRecordR
+ghost_gate_record (2&.PBRoomMemberInfo.GhostGateRecordEntryRghostGateRecordU
+boss_battle_record (2'.PBRoomMemberInfo.BossBattleRecordEntryRbossBattleRecordX
+tower_battle_record	 (2(.PBRoomMemberInfo.TowerBattleRecordEntryRtowerBattleRecordB
 StoryLineRecordEntry
 key (Rkey
 value (Rvalue:8B
@@ -3749,7 +3750,7 @@ master_uid (R	masterUid
 
 master_uid (R	masterUid
 team_id (RteamIdbproto3
-–(
+º(
 trade.proto"d
 PBTradeData!
 single_price (RsinglePrice
@@ -3779,13 +3780,14 @@ seller_uid (R	sellerUid
 trade_ts (RtradeTs
 	trade_tax	 (RtradeTax
 	send_mail
- (RsendMail"Ë
+ (RsendMail"ï
 PBTradeSearchSimpleData
 	config_id (RconfigId
 	min_price (RminPrice&
 last_deal_price (RlastDealPrice*
 yes_average_price (RyesAveragePrice"
-min_price_num (RminPriceNum"Ï
+min_price_num (RminPriceNum"
+now_total_num (RnowTotalNum"Ï
 PBTradeSearchData>
 trade_sim_data (2.PBTradeSearchSimpleDataRtradeSimData=
 	price_num (2 .PBTradeSearchData.PriceNumEntryRpriceNum;

@@ -40,6 +40,7 @@ message PBTradeSearchSimpleData
 	int32 last_deal_price	= 3;	//最近成交价
 	float yes_average_price = 4;	//昨日成交平均价
 	int32 min_price_num		= 5;	//最低价数量
+	int64 now_total_num		= 6;	//当前在售总数量
 }
 
 message PBTradeSearchData

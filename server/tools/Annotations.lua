@@ -3125,6 +3125,7 @@
 ---@field public is_ready integer @0未准备 1已准备 2暂离
 ---@field public mem_info PBUserAttr
 ---@field public cityid integer
+---@field public is_early_retreat integer @0-正常 1-提前撤离
 ---@field public story_line_record table<integer, integer>
 ---@field public ghost_gate_record table<integer, integer>
 ---@field public boss_battle_record table<integer, integer>
@@ -3694,6 +3695,7 @@
 ---@field public last_deal_price integer @最近成交价
 ---@field public yes_average_price number @昨日成交平均价
 ---@field public min_price_num integer @最低价数量
+---@field public now_total_num integer @当前在售总数量
 
 
 ---@class PBTradeSearchData
