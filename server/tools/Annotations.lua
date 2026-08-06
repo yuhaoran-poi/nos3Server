@@ -4437,6 +4437,7 @@
 ---@field AllTag AllTag_cfg[]
 ---@field AllTagPool AllTagPool_cfg[]
 ---@field AntiqueItem AntiqueItem_cfg[]
+---@field AntiquePreset AntiquePreset_cfg[]
 ---@field AntiquePriceTagChangeRate AntiquePriceTagChangeRate_cfg[]
 ---@field AntiqueSlot AntiqueSlot_cfg[]
 ---@field AntiqueTagPool AntiqueTagPool_cfg[]

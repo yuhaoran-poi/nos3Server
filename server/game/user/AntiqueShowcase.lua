@@ -614,7 +614,7 @@ end
 
 -- 预设常量
 local MAX_PRESET_COUNT = 5           -- 最多5套预设（preset_idx = 1-5）
-local DEFAULT_UNLOCKED_PRESETS = 0   -- 默认解锁0套预设
+local DEFAULT_UNLOCKED_PRESETS = 1   -- 默认免费解锁第1套预设
 
 -- 初始化预设数据
 -- @return true 需要保存, false 不需要保存
@@ -660,19 +660,14 @@ end
 
 -- 获取解锁预设的消耗
 function AntiqueShowcase.GetPresetUnlockCost(preset_idx)
-    -- 所有预设都需要解锁消耗
+    -- 从配置表读取消耗
     -- 返回格式: { [coin_id] = { coin_count = xxx } }
     local unlock_cost = {}
-    if preset_idx == 1 then
-        unlock_cost[1] = { coin_count = 10000 }  -- 1万灵币
-    elseif preset_idx == 2 then
-        unlock_cost[1] = { coin_count = 10000 }  -- 1万灵币
-    elseif preset_idx == 3 then
-        unlock_cost[1] = { coin_count = 20000 }
-    elseif preset_idx == 4 then
-        unlock_cost[1] = { coin_count = 50000 }
-    elseif preset_idx == 5 then
-        unlock_cost[1] = { coin_count = 100000 }
+    local preset_cfg = GameCfg.AntiquePreset[preset_idx]
+    if preset_cfg and preset_cfg.preset_cost then
+        for coin_id, coin_count in pairs(preset_cfg.preset_cost) do
+            unlock_cost[coin_id] = { coin_count = coin_count }
+        end
     end
     return unlock_cost
 end
