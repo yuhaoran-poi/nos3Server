@@ -675,7 +675,7 @@ function Mail.PBGetRewardReqCmd(req)
     local chest_items = {}
     for config_id, item in pairs(attach_items) do
         local item_type = ItemDefine.GetItemType(config_id)
-        if item_type == ItemDefine.EItemBigType.TreasureChest then
+        if item_type == ItemDefine.EItemSmallType.TreasureChest then
             chest_items[config_id] = item.count
         end
     end
