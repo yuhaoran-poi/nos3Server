@@ -238,18 +238,18 @@ message PBAntiqueShowcaseData {
 	map<int32, PBItemData> antique_show_list	= 3;	// 在展古董数据
 }
 
+// 古董预设数据（必须放在 PBAntiqueShowcaseDataS 前面，避免前向引用）
+message PBAntiquePreset {
+	int32 preset_idx = 1;              // 预设索引（1-5）
+	bool is_unlock = 2;                // 是否已解锁
+	map<int32, PBAntiqueShowcaseData> showcase_data = 3;  // 预设的展示柜数据
+}
+
 // 古董展柜总数据
 message PBAntiqueShowcaseDataS {
 	map<int32, PBAntiqueShowcaseData> antique_showcase_list = 1;
 	repeated PBAntiquePreset antique_preset_list = 2;    // 预设列表
 	int32 current_preset_idx = 3;                       // 当前使用的预设索引（0表示未使用）
-}
-
-// 古董预设数据
-message PBAntiquePreset {
-	int32 preset_idx = 1;              // 预设索引（1-5）
-	bool is_unlock = 2;                // 是否已解锁
-	map<int32, PBAntiqueShowcaseData> showcase_data = 3;  // 预设的展示柜数据
 }
 
 // 客户端获取图鉴数据

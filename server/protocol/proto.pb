@@ -221,20 +221,20 @@ showcaseId
 antique_show_list (2+.PBAntiqueShowcaseData.AntiqueShowListEntryRantiqueShowListO
 AntiqueShowListEntry
 key (Rkey!
-value (2.PBItemDataRvalue:8"Î
-PBAntiqueShowcaseDataSd
-antique_showcase_list (20.PBAntiqueShowcaseDataS.AntiqueShowcaseListEntryRantiqueShowcaseList@
-antique_preset_list (2.PBAntiquePresetRantiquePresetList,
-current_preset_idx (RcurrentPresetIdx^
-AntiqueShowcaseListEntry
-key (Rkey,
-value (2.PBAntiqueShowcaseDataRvalue:8"ï
+value (2.PBItemDataRvalue:8"ï
 PBAntiquePreset
 
 preset_idx (R	presetIdx
 	is_unlock (RisUnlockG
 showcase_data (2".PBAntiquePreset.ShowcaseDataEntryRshowcaseDataW
 ShowcaseDataEntry
+key (Rkey,
+value (2.PBAntiqueShowcaseDataRvalue:8"Î
+PBAntiqueShowcaseDataSd
+antique_showcase_list (20.PBAntiqueShowcaseDataS.AntiqueShowcaseListEntryRantiqueShowcaseList@
+antique_preset_list (2.PBAntiquePresetRantiquePresetList,
+current_preset_idx (RcurrentPresetIdx^
+AntiqueShowcaseListEntry
 key (Rkey,
 value (2.PBAntiqueShowcaseDataRvalue:8"(
 PBImageGetDataReqCmd

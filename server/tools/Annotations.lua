@@ -2250,16 +2250,16 @@
 ---@field public antique_show_list table<integer, PBItemData> @在展古董数据
 
 
----@class PBAntiqueShowcaseDataS
----@field public antique_showcase_list table<integer, PBAntiqueShowcaseData>
----@field public antique_preset_list PBAntiquePreset[] @预设列表
----@field public current_preset_idx integer @当前使用的预设索引（0表示未使用）
-
-
 ---@class PBAntiquePreset
 ---@field public preset_idx integer @预设索引（1-5）
 ---@field public is_unlock boolean @是否已解锁
 ---@field public showcase_data table<integer, PBAntiqueShowcaseData> @预设的展示柜数据
+
+
+---@class PBAntiqueShowcaseDataS
+---@field public antique_showcase_list table<integer, PBAntiqueShowcaseData>
+---@field public antique_preset_list PBAntiquePreset[] @预设列表
+---@field public current_preset_idx integer @当前使用的预设索引（0表示未使用）
 
 
 ---@class PBImageGetDataReqCmd
