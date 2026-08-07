@@ -126,6 +126,7 @@ local defaultPBTradeSearchSimpleData = {
     last_deal_price = 0,
     yes_average_price = 0,
     min_price_num = 0,
+    now_total_num = 0,
 }
 
 local defaultPBTradeSearchData = {

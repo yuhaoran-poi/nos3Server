@@ -24,6 +24,7 @@ local context = ...
 local listenfd
 local MAX_SEARCH_NUM = 1000
 local GM_UID = 100
+local DELAY_SALE_MAIL_TIME = 60 * 20 -- 20分钟后发送销售邮件
 
 ---@class Trademgr
 local Trademgr = {
@@ -502,10 +503,10 @@ function Trademgr.AddTradeLog()
     end
     Trademgr.add_trade_logs = {}
 
-    -- 通知已经等待了60*3秒的卖家发送销售邮件
+    -- 通知已经等待了DELAY_SALE_MAIL_TIME秒的卖家发送销售邮件
     local already_send_uids = {}
     for uid, wait_ts in pairs(Trademgr.wait_sale_mail_uids) do
-        if now_ts - wait_ts >= 60 * 3 then
+        if now_ts - wait_ts >= DELAY_SALE_MAIL_TIME then
             context.send_user(uid, "Trade.OnNotifySaleMail")
             table.insert(already_send_uids, uid)
         end

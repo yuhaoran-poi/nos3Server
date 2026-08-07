@@ -347,6 +347,14 @@ function _M.updatelogin(addr, user_id)
     moon.send("lua", addr, cmd)
 end
 
+-- 更新用户昵称方法
+function _M.updateusernickname(addr, user_id, nickname)
+    local cmd = string.format([[
+        UPDATE mgame.account SET username = '%s' WHERE user_id = %d;
+    ]], nickname, user_id)
+    moon.send("lua", addr, cmd)
+end
+
 -- function _M.loaduserdata(addr, uid)
 --     local cmd = string.format([[
 --         SELECT data FROM mgame.userdata WHERE uid = %d;
@@ -2274,23 +2282,22 @@ function _M.updatetraderecord(addr, record_data, condition1, condition2, conditi
     assert(record_data)
     moon.debug(string.format("updatetraderecord: %s", json.pretty_encode(record_data)))
 
-    -- local now_total_num = 0
-    -- if record_data.price_to_num then
-    --     for price, value in pairs(record_data.price_to_num) do
-            
-    --     end
-    -- end
-
+    local now_total_num = 0
+    if record_data.price_to_num then
+        for price, value in pairs(record_data.price_to_num) do
+            now_total_num = now_total_num + value.now_num
+        end
+    end
     local cmd = string.format([[
-        INSERT INTO mgame.trade_record (trade_config_id, sale_num, sale_total_price, last_deal_price, update_ts, yes_sale_num, yes_sale_total_price, yes_average_price, min_price, min_price_num, condition1, condition2, condition3, condition4, condition5)
-        VALUES (%d, %d, %d, %d, %d, %d, %d, %f, %d, %d, %d, %d, %d, %d, %d)
-        ON DUPLICATE KEY UPDATE sale_num = %d, sale_total_price = %d, last_deal_price = %d, update_ts = %d, yes_sale_num = %d, yes_sale_total_price = %d, yes_average_price = %f, min_price = %d, min_price_num = %d, condition1 = %d, condition2 = %d, condition3 = %d, condition4 = %d, condition5 = %d;
+        INSERT INTO mgame.trade_record (trade_config_id, sale_num, sale_total_price, last_deal_price, update_ts, yes_sale_num, yes_sale_total_price, yes_average_price, min_price, min_price_num, now_total_num, condition1, condition2, condition3, condition4, condition5)
+        VALUES (%d, %d, %d, %d, %d, %d, %d, %f, %d, %d, %d, %d, %d, %d, %d, %d)
+        ON DUPLICATE KEY UPDATE sale_num = %d, sale_total_price = %d, last_deal_price = %d, update_ts = %d, yes_sale_num = %d, yes_sale_total_price = %d, yes_average_price = %f, min_price = %d, min_price_num = %d, now_total_num = %d, condition1 = %d, condition2 = %d, condition3 = %d, condition4 = %d, condition5 = %d;
     ]], record_data.trade_config_id, record_data.sale_num, record_data.sale_total_price, record_data.last_deal_price,
         record_data.update_ts, record_data.yes_sale_num, record_data.yes_sale_total_price, record_data.yes_average_price,
-        record_data.min_price, record_data.min_price_num, condition1, condition2, condition3, condition4, condition5,
-        record_data.sale_num, record_data.sale_total_price, record_data.last_deal_price, record_data.update_ts, record_data.yes_sale_num,
-        record_data.yes_sale_total_price, record_data.yes_average_price, record_data.min_price,
-        record_data.min_price_num, condition1, condition2, condition3, condition4, condition5)
+        record_data.min_price, record_data.min_price_num, now_total_num, condition1, condition2, condition3, condition4,
+        condition5, record_data.sale_num, record_data.sale_total_price, record_data.last_deal_price, record_data.update_ts,
+        record_data.yes_sale_num, record_data.yes_sale_total_price, record_data.yes_average_price, record_data.min_price,
+        record_data.min_price_num, now_total_num, condition1, condition2, condition3, condition4, condition5)
     moon.debug(cmd)
 
     return moon.send("lua", addr, cmd)
@@ -2307,7 +2314,7 @@ function _M.gettraderecordwithids(addr, ids, sort_describe)
     where_str = where_str .. ")"
 
     local cmd = string.format([[
-        SELECT trade_config_id, last_deal_price, yes_average_price, min_price, min_price_num FROM mgame.trade_record WHERE %s ORDER BY %s;
+        SELECT trade_config_id, last_deal_price, yes_average_price, min_price, min_price_num, now_total_num FROM mgame.trade_record WHERE %s ORDER BY %s;
     ]], where_str, sort_describe)
     moon.debug(cmd)
     local res, err = moon.call("lua", addr, cmd)
@@ -2324,6 +2331,7 @@ function _M.gettraderecordwithids(addr, ids, sort_describe)
             record.last_deal_price = res[i].last_deal_price
             record.yes_average_price = res[i].yes_average_price
             record.min_price_num = res[i].min_price_num
+            record.now_total_num = res[i].now_total_num
             table.insert(trade_records, record)
         end
         return trade_records
@@ -2368,7 +2376,7 @@ function _M.gettraderecordswithconditions(addr, condition1, condition2, conditio
     end
 
     local cmd = string.format([[
-        SELECT trade_config_id, last_deal_price, yes_average_price, min_price, min_price_num FROM mgame.trade_record %s ORDER BY %s LIMIT %d OFFSET %d;
+        SELECT trade_config_id, last_deal_price, yes_average_price, min_price, min_price_num, now_total_num FROM mgame.trade_record %s ORDER BY %s LIMIT %d OFFSET %d;
     ]], where_str, sort_describe, num, start_idx)
     moon.debug(cmd)
     local res, err = moon.call("lua", addr, cmd)
@@ -2386,6 +2394,7 @@ function _M.gettraderecordswithconditions(addr, condition1, condition2, conditio
             record.last_deal_price = res[i].last_deal_price
             record.yes_average_price = res[i].yes_average_price
             record.min_price_num = res[i].min_price_num
+            record.now_total_num = res[i].now_total_num
             table.insert(trade_records, record)
         end
         return trade_records

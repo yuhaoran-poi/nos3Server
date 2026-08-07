@@ -12,7 +12,8 @@ local RoomDef = {
         GameStartFailed = 8, -- 游戏开始失败
         PlayerChangeRoleInfo = 9, -- 玩家变更出战角色
         PlayerSwitchCity = 10,    -- 玩家切换主城
-        GameEnd = 11,    -- 游戏结束
+        GameEnd = 11,             -- 游戏结束
+        PlayerEarlyRetreat = 12, -- 玩家提前退出
     },
     GameMode = {
         STORY_MODE = 1,

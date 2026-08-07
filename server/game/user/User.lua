@@ -165,6 +165,8 @@ function User.Load(req)
         --if user_attr_res.code ~= ErrorCode.None then
         --    return false
         --end
+        -- 更新用户昵称
+        Database.updateusernickname(context.addr_db_user, context.uid, simple_attr[ProtoEnum.UserAttrType.nick_name] or "")
 
         scripts.UserModel.SaveRun()
 
@@ -634,6 +636,7 @@ function User.OnDay()
 end
 
 function User.Exit()
+    moon.warn("User.Exit uid = ", context.uid)
     local ok, err = xpcall(scripts.UserModel.Save, debug.traceback)
     if not ok then
         moon.error("user exit save db error", err)
@@ -2385,13 +2388,13 @@ function User.PBSureCompositeReqCmd(req)
 
     -- 触发制作道具次数
     local target_prop_cnt = {}
-    for _, item_id in pairs(com_item_list) do
+    for _, com_item_id in pairs(com_item_list) do
         local prop = 0
-        local item_cfg = GameCfg.Item[item_id]
+        local item_cfg = GameCfg.Item[com_item_id]
         if item_cfg and item_cfg.type2 then
             prop = item_cfg.type2
         else
-            local uniqitem_cfg = GameCfg.UniqueItem[item_id]
+            local uniqitem_cfg = GameCfg.UniqueItem[com_item_id]
             if uniqitem_cfg and uniqitem_cfg.type2 then
                 prop = uniqitem_cfg.type2
             end
@@ -2461,8 +2464,13 @@ function User.PBRandomCompositeReqCmd(req)
 
     local add_roles = {}
     local add_items = {}
+    local com_item_list = {}
     for i = 1, req.msg.composite_cnt do
-        local composite_ret = User.Composite(composite_cfg, add_roles, add_items)
+        local composite_ret = User.Composite(composite_cfg, add_roles, add_items, com_item_list)
+        moon.warn(string.format("Composite ret: %s", json.pretty_encode(composite_ret)))
+        moon.warn(string.format("Composite composite_cfg: %s", json.pretty_encode(composite_cfg)))
+        moon.warn(string.format("Composite add_roles: %s", json.pretty_encode(add_roles)))
+        moon.warn(string.format("Composite add_items: %s", json.pretty_encode(add_items)))
         if composite_ret.code ~= ErrorCode.None
             and composite_ret.code ~= composite_ret.Errcode.CompositeFail then
             rsp_msg.code = composite_ret.code
@@ -2702,6 +2710,7 @@ function User.PBModNickNameReqCmd(req)
         update_user_attr[ProtoEnum.UserAttrType.nick_name] = req.msg.nick_name
         User.SetUserAttr(update_user_attr, true)
         Database.RedisSetNick(context.addr_db_redis, req.msg.nick_name, context.uid)
+        Database.updateusernickname(context.addr_db_user, context.uid, req.msg.nick_name)
     else
         local old_nick_name = user_attr[ProtoEnum.UserAttrType.nick_name]
         if old_nick_name == req.msg.nick_name then
@@ -2760,6 +2769,7 @@ function User.PBModNickNameReqCmd(req)
         update_user_attr[ProtoEnum.UserAttrType.nick_name] = req.msg.nick_name
         User.SetUserAttr(update_user_attr, true)
         Database.RedisSetNick(context.addr_db_redis, req.msg.nick_name, context.uid)
+        Database.updateusernickname(context.addr_db_user, context.uid, req.msg.nick_name)
     end
 
     local new_nick_name = req.msg.nick_name

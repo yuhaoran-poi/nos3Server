@@ -251,6 +251,11 @@ function Room.OnRoomInfoSync(sync_msg)
         end
         moon.info("OnGameEnd uid roomid", context.uid, sync_msg.roomid)
         context.lock_item_role = 0
+    elseif sync_msg.sync_type == RoomDef.SyncType.PlayerEarlyRetreat then
+        if context.roomid ~= sync_msg.roomid then
+            moon.error("OnPlayerEarlyRetreat ERR uid roomid", context.uid, sync_msg.roomid)
+        end
+        moon.info("OnPlayerEarlyRetreat uid roomid", context.uid, sync_msg.roomid)
     end
     context.S2C(context.net_id, CmdCode["PBRoomSyncCmd"], sync_msg, 0)
 end

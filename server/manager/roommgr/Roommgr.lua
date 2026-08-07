@@ -298,9 +298,10 @@ function Roommgr.CreateRoom(req)
         moon.error(string.format("GetCityidFromUid uid:%d, error:%s", req.msg.uid, err))
     end
     if uid_cityid and uid_cityid[req.msg.uid] then
-        table.insert(room.players, { is_ready = 1, mem_info = req.self_info, cityid = uid_cityid[req.msg.uid] })
+        table.insert(room.players,
+            { is_ready = 1, mem_info = req.self_info, cityid = uid_cityid[req.msg.uid], is_early_retreat = 0 })
     else
-        table.insert(room.players, { is_ready = 1, mem_info = req.self_info, cityid = 0 })
+        table.insert(room.players, { is_ready = 1, mem_info = req.self_info, cityid = 0, is_early_retreat = 0 })
     end
     -- moon.info(string.format("Roommgr.CreateRoom mem_info:\n%s", json.pretty_encode(room.players[1].mem_info)))
     
@@ -522,7 +523,8 @@ function Roommgr.DealApply(req)
         if uid_cityid and uid_cityid[apply_data.apply_info.uid] then
             apply_cityid = uid_cityid[apply_data.apply_info.uid]
         end
-        table.insert(room.players, { is_ready = 0, mem_info = apply_data.apply_info, cityid = apply_cityid })
+        table.insert(room.players,
+            { is_ready = 0, mem_info = apply_data.apply_info, cityid = apply_cityid, is_early_retreat = 0 })
         
         moon.debug(string.format("Roommgr.DealApply uid:%d, roomid:%d", req.deal_uid, req.roomid))
         context.uid_roomid[req.deal_uid] = req.roomid
@@ -565,6 +567,7 @@ function Roommgr.DealApply(req)
             is_ready = 0,
             mem_info = apply_data.apply_info,
             cityid = apply_cityid,
+            is_early_retreat = 0,
         })
         context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
     else
@@ -624,7 +627,7 @@ function Roommgr.EnterRoom(req)
     if uid_cityid and uid_cityid[req.mem_info.uid] then
         mem_cityid = uid_cityid[req.mem_info.uid]
     end
-    table.insert(room.players, { is_ready = 0, mem_info = req.mem_info, cityid = mem_cityid })
+    table.insert(room.players, { is_ready = 0, mem_info = req.mem_info, cityid = mem_cityid, is_early_retreat = 0 })
     moon.debug(string.format("Roommgr.EnterRoom uid:%d, roomid:%d", req.msg.uid, req.msg.roomid))
     context.uid_roomid[req.msg.uid] = req.msg.roomid
     moon.debug(string.format("Roommgr.EnterRoom context.uid_roomid=%s", json.pretty_encode(context.uid_roomid)))
@@ -659,6 +662,7 @@ function Roommgr.EnterRoom(req)
         is_ready = 0,
         mem_info = req.mem_info,
         cityid = mem_cityid,
+        is_early_retreat = 0,
     })
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
@@ -692,15 +696,11 @@ function Roommgr.ReturnRoom(req)
         return { code = ErrorCode.RoomMemberNotFound, error = "不在该房间内" }
     end
 
-    -- 更新准备状态（0-未准备 1-准备 2-暂离 3-撤离）
+    -- 更新准备状态（0-未准备 1-准备 2-暂离）
     if req.uid == room.room_data.master_id then
-        if room.players[member_index].is_ready ~= 3 then
-            room.players[member_index].is_ready = 1
-        end
+        room.players[member_index].is_ready = 1
     else
-        if room.players[member_index].is_ready ~= 3 then
-            room.players[member_index].is_ready = 0
-        end
+        room.players[member_index].is_ready = 0
     end
 
     -- 广播状态更新--排除返回者本人
@@ -724,6 +724,7 @@ function Roommgr.ReturnRoom(req)
             mem_info = {
                 uid = req.uid
             },
+            is_early_retreat = room.players[member_index].is_early_retreat,
         })
         context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
     end
@@ -755,6 +756,7 @@ function Roommgr.ReturnRoom(req)
             is_ready = member.is_ready,
             mem_info = member.mem_info,
             cityid = member.cityid,
+            is_early_retreat = member.is_early_retreat,
         })
     end
 
@@ -782,7 +784,7 @@ function Roommgr.ExitRoom(req)
 
     if room.room_data.state ~= 0 and not req.is_force then
         -- 提前撤离的玩家可以退出
-        if room.players[member_index].is_ready ~= 3 then
+        if not room.players[member_index].is_early_retreat or room.players[member_index].is_early_retreat ~= 1 then
             return { code = ErrorCode.RoomInGame, error = "房间正在游戏中" }
         end
     end
@@ -849,7 +851,8 @@ function Roommgr.ExitRoom(req)
         is_ready = 0,
         mem_info = {
             uid = req.uid,
-        }
+        },
+        is_early_retreat = 0,
     })
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
@@ -909,6 +912,7 @@ function Roommgr.AwayRoom(req)
         mem_info = {
             uid = req.uid
         },
+        is_early_retreat = room.players[member_index].is_early_retreat,
     })
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
@@ -952,7 +956,7 @@ function Roommgr.EarlyRetreat(req)
     end
 
     -- 更新准备状态（0-未准备 1-准备 2-暂离 3-提前撤离）
-    room.players[member_index].is_ready = 3
+    room.players[member_index].is_early_retreat = 1
 
     -- 广播状态更新
     local notify_uids = {}
@@ -961,7 +965,7 @@ function Roommgr.EarlyRetreat(req)
     end
     local sync_msg = {
         roomid = room.room_data.roomid,
-        sync_type = RoomDef.SyncType.PlayerReady,
+        sync_type = RoomDef.SyncType.PlayerEarlyRetreat,
         sync_info = {
             players = {},
         }
@@ -972,6 +976,7 @@ function Roommgr.EarlyRetreat(req)
         mem_info = {
             uid = req.uid
         },
+        is_early_retreat = room.players[member_index].is_early_retreat,
     })
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
@@ -1032,7 +1037,8 @@ function Roommgr.KickMember(req)
         is_ready = 0,
         mem_info = {
             uid = req.kick_uid,
-        }
+        },
+        is_early_retreat = 0,
     })
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
@@ -1112,7 +1118,8 @@ function Roommgr.SystemKickMember(roomid, kick_uid)
         is_ready = 0,
         mem_info = {
             uid = kick_uid,
-        }
+        },
+        is_early_retreat = 0,
     })
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
@@ -1233,7 +1240,7 @@ function Roommgr.DealInvite(req)
         if uid_cityid and uid_cityid[req.invite_info.uid] then
             invite_cityid = uid_cityid[req.invite_info.uid]
         end
-        table.insert(room.players, { is_ready = 0, mem_info = req.invite_info, cityid = invite_cityid })
+        table.insert(room.players, { is_ready = 0, mem_info = req.invite_info, cityid = invite_cityid, is_early_retreat = 0 })
         moon.debug(string.format("Roommgr.DealInvite uid:%d, roomid:%d", req.msg.uid, req.msg.roomid))
         context.uid_roomid[req.msg.uid] = req.msg.roomid
 
@@ -1267,6 +1274,7 @@ function Roommgr.DealInvite(req)
             is_ready = 0,
             mem_info = req.invite_info,
             cityid = invite_cityid,
+            is_early_retreat = 0,
         })
         context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
     else
@@ -1329,6 +1337,7 @@ function Roommgr.UpdateReadyStatus(req)
         mem_info = {
             uid = req.uid
         },
+        is_early_retreat = room.players[member_index].is_early_retreat,
     })
     context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
 
@@ -1370,6 +1379,7 @@ function Roommgr.GetRoomInfo(req)
             is_ready = member.is_ready,
             mem_info = member.mem_info,
             cityid = member.cityid,
+            is_early_retreat = member.is_early_retreat,
         })
     end
     --moon.info(string.format("Roommgr.GetRoomInfo res:\n%s", json.pretty_encode(res)))
@@ -1770,6 +1780,7 @@ function Roommgr.PlayEnd(msg)
                 player.is_ready = 0
             end
         end
+        player.is_early_retreat = 0
     end
 
     local room_tags = {
