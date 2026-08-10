@@ -675,6 +675,7 @@ function Mail.PBGetRewardReqCmd(req)
     local chest_items = {}
     for config_id, item in pairs(attach_items) do
         local item_type = ItemDefine.GetItemType(config_id)
+        moon.warn(string.format("PBGetRewardReqCmd uid: %d config_id: %d item_type: %d", context.uid, config_id, item_type))
         if item_type == ItemDefine.EItemSmallType.TreasureChest then
             chest_items[config_id] = item.count
         end

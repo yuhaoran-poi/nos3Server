@@ -1653,7 +1653,7 @@ function Roommgr.StartGame(req)
         --     room.room_data.roomid .. "&PORT=" .. test_port
         local test_url = "http://192.168.2.31:8080/job/LaunchGH-DS/buildWithParameters?token=WXCY&MAP=" ..
             room.room_data.map_id ..
-            "&DSID=" .. room.room_data.roomid .. "&PORT=" .. test_port .. "&UIDS=" .. table.concat(notify_uids, "+")
+            "&DSID=" .. room.room_data.roomid .. "&PORT=" .. test_port .. "&UIDS=" .. table.concat(notify_uids, "p")
         moon.info("Roommgr.StartGame test_url", test_url)
         print_r(httpc.get(test_url))
 
