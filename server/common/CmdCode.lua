@@ -1,5 +1,5 @@
 --- Automatically generated,do not modify.
---- Proto version: 2926688436
+--- Proto version: 1779725993
 
 local M={
     ["PBPacketCmd"] = 1,
@@ -14,8 +14,8 @@ local M={
     ["PBAntiqueIdentifyRspCmd"] = 103,
     ["PBAntiquePresetInfoReqCmd"] = 104,
     ["PBAntiquePresetInfoRspCmd"] = 105,
-    ["PBAntiquePresetSaveReqCmd"] = 106,
-    ["PBAntiquePresetSaveRspCmd"] = 107,
+    ["PBAntiquePresetRemoveReqCmd"] = 106,
+    ["PBAntiquePresetRemoveRspCmd"] = 107,
     ["PBAntiquePresetUnlockReqCmd"] = 108,
     ["PBAntiquePresetUnlockRspCmd"] = 109,
     ["PBAntiquePresetUseReqCmd"] = 110,
@@ -491,7 +491,7 @@ local M={
     ["PBUseUniqItemRspCmd"] = 580,
     ["PBUserAttrSyncCmd"] = 581,
 
-    CrC = "2926688436",
+    CrC = "1779725993",
 }
 
 local forward = {
@@ -756,12 +756,12 @@ local forward = {
     PBAntiqueShowcaseUpdateSyncCmd = 'addr_user',
     PBAntiquePresetUnlockReqCmd = 'addr_user',
     PBAntiquePresetUnlockRspCmd = 'addr_user',
-    PBAntiquePresetSaveReqCmd = 'addr_user',
-    PBAntiquePresetSaveRspCmd = 'addr_user',
     PBAntiquePresetUseReqCmd = 'addr_user',
     PBAntiquePresetUseRspCmd = 'addr_user',
     PBAntiquePresetInfoReqCmd = 'addr_user',
     PBAntiquePresetInfoRspCmd = 'addr_user',
+    PBAntiquePresetRemoveReqCmd = 'addr_user',
+    PBAntiquePresetRemoveRspCmd = 'addr_user',
     PBImageUnLockReqCmd = 'addr_user',
     PBImageUnLockRspCmd = 'addr_user',
     PBFormulaUnLockReqCmd = 'addr_user',

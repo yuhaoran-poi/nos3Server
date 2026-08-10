@@ -1610,7 +1610,7 @@ function Bag.AddUniqItem(bagType, baginfo, item_data, itype, logs)
                 new_item.common_info.uniqid = uuid.next()
                 -- 只在古董 config_id 范围内打印日志
                 local config_id = item_data.common_info.config_id
-                if config_id >= ItemDefine.ItemSubType.Antique.start and config_id <= ItemDefine.ItemSubType.Antique.End then
+                if config_id >= ItemDefine.Antique.start and config_id <= ItemDefine.Antique.End then
                     moon.info(string.format("[AddUniqItem] generated new uniqid=%d for antique config_id=%d, bagType=%s, pos=%d",
                         new_item.common_info.uniqid, config_id, bagType, pos))
                 end
@@ -3794,7 +3794,8 @@ function Bag.PBAntiqueIdentifyReqCmd(req)
 end
 
 function Bag.PBAntiqueShowReqCmd(req)
-    local err_code, error = scripts.AntiqueShowcase.AntiqueShow(req.msg.config_id, req.msg.uniqid, req.msg.showcase_id, req.msg.showcase_idx, req.msg.operate_type, req.msg.pos)
+    local preset_idx = req.msg.preset_idx or 0
+    local err_code, error = scripts.AntiqueShowcase.AntiqueShow(req.msg.config_id, req.msg.uniqid, req.msg.showcase_id, req.msg.showcase_idx, req.msg.operate_type, req.msg.pos, preset_idx)
     return context.S2C(context.net_id, CmdCode.PBAntiqueShowRspCmd, {
         code = err_code,
         error = error,
@@ -3804,6 +3805,7 @@ function Bag.PBAntiqueShowReqCmd(req)
         showcase_idx = req.msg.showcase_idx,
         operate_type = req.msg.operate_type,
         pos = req.msg.pos,
+        preset_idx = preset_idx,
     }, req.msg_context.stub_id)
 end
 
@@ -3812,32 +3814,15 @@ function Bag.PBAntiquePresetUnlockReqCmd(req)
     moon.info(string.format("PBAntiquePresetUnlockReqCmd - uid=%d, preset_idx=%d", context.uid, req.msg.preset_idx))
     local err_code, error = scripts.AntiqueShowcase.UnlockPreset(req.msg.preset_idx)
 
-    -- 获取解锁后的预设信息
-    local preset_info = scripts.AntiqueShowcase.GetPresetInfo()
+    -- 获取解锁后的展示柜数据（含预设列表）
+    local showcase_info = scripts.AntiqueShowcase.GetAntiqueShowcaseInfo()
+    local showcase_data = showcase_info.antique_showcase_data or {}
 
     return context.S2C(context.net_id, CmdCode.PBAntiquePresetUnlockRspCmd, {
         code = err_code,
         error = error,
         preset_idx = req.msg.preset_idx,
-        antique_preset_list = preset_info.antique_preset_list,
-        current_preset_idx = preset_info.current_preset_idx,
-    }, req.msg_context.stub_id)
-end
-
--- 保存预设
-function Bag.PBAntiquePresetSaveReqCmd(req)
-    moon.info(string.format("PBAntiquePresetSaveReqCmd - uid=%d, preset_idx=%d", context.uid, req.msg.preset_idx))
-    local err_code, error = scripts.AntiqueShowcase.SavePreset(req.msg.preset_idx)
-
-    -- 获取保存后的预设信息
-    local preset_info = scripts.AntiqueShowcase.GetPresetInfo()
-
-    return context.S2C(context.net_id, CmdCode.PBAntiquePresetSaveRspCmd, {
-        code = err_code,
-        error = error,
-        preset_idx = req.msg.preset_idx,
-        antique_preset_list = preset_info.antique_preset_list,
-        current_preset_idx = preset_info.current_preset_idx,
+        antique_showcase_data = showcase_data,
     }, req.msg_context.stub_id)
 end
 
@@ -3846,28 +3831,40 @@ function Bag.PBAntiquePresetUseReqCmd(req)
     moon.info(string.format("PBAntiquePresetUseReqCmd - uid=%d, preset_idx=%d", context.uid, req.msg.preset_idx))
     local err_code, error = scripts.AntiqueShowcase.UsePreset(req.msg.preset_idx)
 
-    -- 获取使用后的展示柜和预设信息
-    local preset_info = scripts.AntiqueShowcase.GetPresetInfo()
+    -- 获取使用后的展示柜数据（含预设列表）
     local showcase_info = scripts.AntiqueShowcase.GetAntiqueShowcaseInfo()
+    local showcase_data = showcase_info.antique_showcase_data or {}
 
     return context.S2C(context.net_id, CmdCode.PBAntiquePresetUseRspCmd, {
         code = err_code,
         error = error,
         preset_idx = req.msg.preset_idx,
-        antique_showcase_list = showcase_info.antique_showcase_data.antique_showcase_list,
-        antique_preset_list = preset_info.antique_preset_list,
-        current_preset_idx = preset_info.current_preset_idx,
+        antique_showcase_data = showcase_data,
     }, req.msg_context.stub_id)
 end
 
 -- 获取预设信息
 function Bag.PBAntiquePresetInfoReqCmd(req)
-    local preset_info = scripts.AntiqueShowcase.GetPresetInfo()
+    -- 获取展示柜数据（含预设列表）
+    local showcase_info = scripts.AntiqueShowcase.GetAntiqueShowcaseInfo()
+    local showcase_data = showcase_info.antique_showcase_data or {}
     return context.S2C(context.net_id, CmdCode.PBAntiquePresetInfoRspCmd, {
-        code = preset_info.errcode,
-        error = "",
-        antique_preset_list = preset_info.antique_preset_list,
-        current_preset_idx = preset_info.current_preset_idx,
+        code = showcase_info.errcode or ErrorCode.None,
+        error = showcase_info.error or "",
+        antique_showcase_data = showcase_data,
+    }, req.msg_context.stub_id)
+end
+
+-- 一键卸载预设页所有古董
+function Bag.PBAntiquePresetRemoveReqCmd(req)
+    moon.info(string.format("PBAntiquePresetRemoveReqCmd - uid=%d, preset_idx=%d", context.uid, req.msg.preset_idx))
+    local err_code, error, total_count = scripts.AntiqueShowcase.RemoveAllAntiquesFromPreset(req.msg.preset_idx)
+
+    return context.S2C(context.net_id, CmdCode.PBAntiquePresetRemoveRspCmd, {
+        code = err_code,
+        error = error,
+        preset_idx = req.msg.preset_idx,
+        total_count = total_count or 0,
     }, req.msg_context.stub_id)
 end
 

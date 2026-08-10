@@ -365,6 +365,7 @@
 ---@field public showcase_idx integer @展示柜中的具体展柜下标
 ---@field public operate_type integer @1 -- 展示 0 -- 取消展示
 ---@field public pos integer @道具所在格子号
+---@field public preset_idx integer @预设页索引（1-5）
 
 
 ---@class PBAntiqueShowRspCmd
@@ -376,6 +377,7 @@
 ---@field public showcase_idx integer @展示柜中的具体展柜下标
 ---@field public operate_type integer @1 -- 展示 0 -- 取消展示
 ---@field public pos integer @道具所在格子号
+---@field public preset_idx integer @预设页索引
 
 
 ---@class PBItemSellNpcReqCmd
@@ -2258,7 +2260,7 @@
 
 ---@class PBAntiqueShowcaseDataS
 ---@field public antique_showcase_list table<integer, PBAntiqueShowcaseData>
----@field public antique_preset_list PBAntiquePreset[] @预设列表
+---@field public antique_preset_list table<integer, PBAntiquePreset> @预设列表（key 为预设索引 1-5）
 ---@field public current_preset_idx integer @当前使用的预设索引（0表示未使用）
 
 
@@ -2278,19 +2280,16 @@
 
 
 ---@class PBAntiqueShowcaseDataReqCmd
----@field public uid integer
 
 
 ---@class PBAntiqueShowcaseDataRspCmd
 ---@field public code integer @服务器验证返回,0成功,其他失败
 ---@field public error string @错误信息
----@field public uid integer
 ---@field public antique_showcase_data PBAntiqueShowcaseDataS @古董展示柜数据
 
 
 ---@class PBAntiqueShowcaseUpdateSyncCmd
----@field public antique_showcase_list table<integer, PBAntiqueShowcaseData>
----@field public current_preset_idx integer @当前使用的预设索引
+---@field public antique_showcase_data PBAntiqueShowcaseDataS @古董展示柜数据（含预设列表）
 
 
 ---@class PBAntiquePresetUnlockReqCmd
@@ -2301,20 +2300,7 @@
 ---@field public code integer @服务器验证返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public preset_idx integer
----@field public antique_preset_list PBAntiquePreset[] @预设列表
----@field public current_preset_idx integer @当前使用的预设索引
-
-
----@class PBAntiquePresetSaveReqCmd
----@field public preset_idx integer @预设索引（1-5）
-
-
----@class PBAntiquePresetSaveRspCmd
----@field public code integer @服务器验证返回,0成功,其他失败
----@field public error string @错误信息
----@field public preset_idx integer
----@field public antique_preset_list PBAntiquePreset[] @预设列表
----@field public current_preset_idx integer @当前使用的预设索引
+---@field public antique_showcase_data PBAntiqueShowcaseDataS @预设及展示柜数据
 
 
 ---@class PBAntiquePresetUseReqCmd
@@ -2325,9 +2311,7 @@
 ---@field public code integer @服务器验证返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public preset_idx integer
----@field public antique_showcase_list table<integer, PBAntiqueShowcaseData> @展示柜数据
----@field public antique_preset_list PBAntiquePreset[] @预设列表
----@field public current_preset_idx integer @当前使用的预设索引
+---@field public antique_showcase_data PBAntiqueShowcaseDataS @预设及展示柜数据
 
 
 ---@class PBAntiquePresetInfoReqCmd
@@ -2336,8 +2320,18 @@
 ---@class PBAntiquePresetInfoRspCmd
 ---@field public code integer @服务器验证返回,0成功,其他失败
 ---@field public error string @错误信息
----@field public antique_preset_list PBAntiquePreset[] @预设列表
----@field public current_preset_idx integer @当前使用的预设索引
+---@field public antique_showcase_data PBAntiqueShowcaseDataS @古董展示柜数据（含预设列表）
+
+
+---@class PBAntiquePresetRemoveReqCmd
+---@field public preset_idx integer @预设索引（1-5）
+
+
+---@class PBAntiquePresetRemoveRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public preset_idx integer
+---@field public total_count integer @卸载的古董数量
 
 
 ---@class PBImageUnLockReqCmd

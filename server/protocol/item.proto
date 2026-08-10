@@ -248,7 +248,7 @@ message PBAntiquePreset {
 // 古董展柜总数据
 message PBAntiqueShowcaseDataS {
 	map<int32, PBAntiqueShowcaseData> antique_showcase_list = 1;
-	repeated PBAntiquePreset antique_preset_list = 2;    // 预设列表
+	map<int32, PBAntiquePreset> antique_preset_list = 2;    // 预设列表（key 为预设索引 1-5）
 	int32 current_preset_idx = 3;                       // 当前使用的预设索引（0表示未使用）
 }
 
@@ -274,21 +274,18 @@ message PBImageUpdateSyncCmd
 // 客户端获取古董展示柜数据
 message PBAntiqueShowcaseDataReqCmd
 {
-	int64 uid 		= 1;
 }
 
 message PBAntiqueShowcaseDataRspCmd
 {
 	int32   code    = 1; // 服务器验证返回,0成功,其他失败
     string  error   = 2; // 错误信息
-    int64   uid     = 3;
     PBAntiqueShowcaseDataS antique_showcase_data = 4;	// 古董展示柜数据
 }
 
 message PBAntiqueShowcaseUpdateSyncCmd
 {
-	map<int32, PBAntiqueShowcaseData> antique_showcase_list = 1;
-	int32 current_preset_idx = 2;  // 当前使用的预设索引
+	PBAntiqueShowcaseDataS antique_showcase_data = 1;   // 古董展示柜数据（含预设列表）
 }
 
 // 解锁预设页请求
@@ -303,24 +300,7 @@ message PBAntiquePresetUnlockRspCmd
 	int32   code    = 1; // 服务器验证返回,0成功,其他失败
 	string  error   = 2; // 错误信息
 	int32 preset_idx = 3;
-	repeated PBAntiquePreset antique_preset_list = 4;    // 预设列表
-	int32 current_preset_idx = 5;                      // 当前使用的预设索引
-}
-
-// 保存预设请求
-message PBAntiquePresetSaveReqCmd
-{
-	int32 preset_idx = 1;  // 预设索引（1-5）
-}
-
-// 保存预设响应
-message PBAntiquePresetSaveRspCmd
-{
-	int32   code    = 1; // 服务器验证返回,0成功,其他失败
-	string  error   = 2; // 错误信息
-	int32 preset_idx = 3;
-	repeated PBAntiquePreset antique_preset_list = 4;    // 预设列表
-	int32 current_preset_idx = 5;                      // 当前使用的预设索引
+	PBAntiqueShowcaseDataS antique_showcase_data = 4;   // 预设及展示柜数据
 }
 
 // 使用预设请求
@@ -335,9 +315,7 @@ message PBAntiquePresetUseRspCmd
 	int32   code    = 1; // 服务器验证返回,0成功,其他失败
 	string  error   = 2; // 错误信息
 	int32 preset_idx = 3;
-	map<int32, PBAntiqueShowcaseData> antique_showcase_list = 4;  // 展示柜数据
-	repeated PBAntiquePreset antique_preset_list = 5;    // 预设列表
-	int32 current_preset_idx = 6;                      // 当前使用的预设索引
+	PBAntiqueShowcaseDataS antique_showcase_data = 4;   // 预设及展示柜数据
 }
 
 // 获取预设信息请求
@@ -350,8 +328,22 @@ message PBAntiquePresetInfoRspCmd
 {
 	int32   code    = 1; // 服务器验证返回,0成功,其他失败
 	string  error   = 2; // 错误信息
-	repeated PBAntiquePreset antique_preset_list = 3;    // 预设列表
-	int32 current_preset_idx = 4;                      // 当前使用的预设索引
+	PBAntiqueShowcaseDataS antique_showcase_data = 3;   // 古董展示柜数据（含预设列表）
+}
+
+// 一键卸下预设页古董请求
+message PBAntiquePresetRemoveReqCmd
+{
+	int32 preset_idx = 1;  // 预设索引（1-5）
+}
+
+// 一键卸下预设页古董响应
+message PBAntiquePresetRemoveRspCmd
+{
+	int32   code    = 1; // 服务器验证返回,0成功,其他失败
+	string  error   = 2; // 错误信息
+	int32 preset_idx = 3;
+	int32 total_count = 4;  // 卸载的古董数量
 }
 
 message PBImageUnLockReqCmd

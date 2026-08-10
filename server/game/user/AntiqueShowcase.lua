@@ -81,23 +81,16 @@ function AntiqueShowcase.LoadShowcases()
     return showcaseInfos
 end
 
--- 同步客户端更新用
-function AntiqueShowcase.SaveAndLog(update_showcase_ids)
+-- 同步完整展示柜数据（含预设列表）给客户端并保存
+function AntiqueShowcase.SyncAllToClient()
     local showcases = scripts.UserModel.GetAntiqueShowcase()
     if not showcases then
         return false
     end
 
     local update_msg = {
-        antique_showcase_list = {}
+        antique_showcase_data = showcases,
     }
-
-    for _, sid in pairs(update_showcase_ids) do
-        local showcase = showcases.antique_showcase_list[sid]
-        if showcase then
-            update_msg.antique_showcase_list[sid] = showcase
-        end
-    end
 
     context.S2C(context.net_id, CmdCode["PBAntiqueShowcaseUpdateSyncCmd"], update_msg, 0)
 
@@ -214,7 +207,7 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
         end
     end
 
-    local old_item_data = table.copy(item_data, true)
+    local old_item_data = table.copy(item_data, true) or item_data
 
     local real_config_id = config_id
     local a_cfg
@@ -405,7 +398,8 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
 end
 
 -- 展示古董
-function AntiqueShowcase.AntiqueShow(config_id, uniqid, showcase_id, showcase_idx, operate_type, bag_pos)
+-- @param preset_idx 预设页索引（1-5），nil或0表示使用当前激活的展示柜
+function AntiqueShowcase.AntiqueShow(config_id, uniqid, showcase_id, showcase_idx, operate_type, bag_pos, preset_idx)
     -- 参数验证
     if not showcase_id or not showcase_idx or showcase_id <= 0 or showcase_idx <= 0 then
         return ErrorCode.ParamInvalid, "参数错误"
@@ -422,8 +416,37 @@ function AntiqueShowcase.AntiqueShow(config_id, uniqid, showcase_id, showcase_id
         return ErrorCode.ShowcaseNotFound, "展示柜不存在"
     end
 
-    -- 查找并验证古董是否可以展示
-    local tar_showcase = AntiqueShowcase.GetShowcase(showcase_id)
+    -- 获取要操作的展示柜数据
+    local tar_showcase
+    if preset_idx and preset_idx > 0 then
+        -- 操作指定预设页的展示柜
+        local showcases = scripts.UserModel.GetAntiqueShowcase()
+        if not showcases or not showcases.antique_preset_list then
+            return ErrorCode.ServerInternalError, "数据加载失败"
+        end
+        local preset = showcases.antique_preset_list[preset_idx]
+        if not preset then
+            return ErrorCode.ParamInvalid, "预设页不存在"
+        end
+        if not preset.is_unlock then
+            return ErrorCode.PresetNotUnlock, "预设页未解锁"
+        end
+        if not preset.showcase_data then
+            preset.showcase_data = {}
+        end
+        if not preset.showcase_data[showcase_id] then
+            -- 初始化该展示柜在该页的数据
+            local new_showcase = ItemDef.newAntiqueShowcase()
+            new_showcase.showcase_id = showcase_id
+            new_showcase.box_num = showcase_cfg.num
+            preset.showcase_data[showcase_id] = new_showcase
+        end
+        tar_showcase = preset.showcase_data[showcase_id]
+    else
+        -- 操作当前激活的展示柜（兼容旧逻辑）
+        tar_showcase = AntiqueShowcase.GetShowcase(showcase_id)
+    end
+
     if not tar_showcase then
         return ErrorCode.ShowcaseNotFound, "展示柜不存在"
     end
@@ -486,7 +509,7 @@ function AntiqueShowcase.AntiqueShow(config_id, uniqid, showcase_id, showcase_id
             end
         end
 
-        local old_item_data = table.copy(item_data)
+        local old_item_data = table.copy(item_data) or item_data
 
         if aimShowAntique and aimShowAntique.common_info and aimShowAntique.common_info.uniqid then
             local del_unique_items = { [uniqid] = { config_id = config_id, uniqid = uniqid, pos = bag_pos } }
@@ -543,9 +566,8 @@ function AntiqueShowcase.AntiqueShow(config_id, uniqid, showcase_id, showcase_id
         return ErrorCode.InvalidOperateType, "操作类型错误"
     end
 
-    -- 保存数据并同步给客户端
-    local change_showcase_id = { showcase_id }
-    AntiqueShowcase.SaveAndLog(change_showcase_id)
+    -- 保存数据并同步给客户端（含预设列表）
+    AntiqueShowcase.SyncAllToClient()
 
     if table.size(bag_change_log) > 0 then
         scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.AntiqueShow)
@@ -561,10 +583,10 @@ end
 function AntiqueShowcase.GetAntiqueShowcaseInfo()
     local antiqueShowcse = scripts.UserModel.GetAntiqueShowcase()
     if not antiqueShowcse then
-        return { errcode = ErrorCode.ServerInternalError }
+        return { errcode = ErrorCode.ServerInternalError, error = "服务器内部错误" }
     end
 
-    return { errcode = ErrorCode.None, antique_showcase_data = antiqueShowcse }
+    return { errcode = ErrorCode.None, error = "", antique_showcase_data = antiqueShowcse }
 end
 
 function AntiqueShowcase.PBAntiqueShowcaseDataReqCmd(req)
@@ -576,7 +598,6 @@ function AntiqueShowcase.PBAntiqueShowcaseDataReqCmd(req)
     local res = {
         code = ErrorCode.None,
         error = "",
-        uid = context.uid,
         antique_showcase_data = antiqueShowcse
     }
     return context.S2C(context.net_id, CmdCode["PBAntiqueShowcaseDataRspCmd"], res, req.msg_context.stub_id)
@@ -627,13 +648,6 @@ function AntiqueShowcase.InitPresets()
 
     local need_save = false
 
-    -- 如果已有预设数据且完整，检查是否需要补充
-    if showcases.antique_preset_list and #showcases.antique_preset_list >= MAX_PRESET_COUNT then
-        moon.info(string.format("[AntiqueShowcase] InitPresets: already initialized, uid=%d, preset_count=%d",
-            context.uid, #showcases.antique_preset_list))
-        return false  -- 不需要保存
-    end
-
     -- 初始化预设列表
     showcases.antique_preset_list = showcases.antique_preset_list or {}
     showcases.current_preset_idx = showcases.current_preset_idx or 0
@@ -643,13 +657,47 @@ function AntiqueShowcase.InitPresets()
     -- 补充缺失的预设
     for i = 1, MAX_PRESET_COUNT do
         if not showcases.antique_preset_list[i] then
-            local preset = ItemDef.newAntiquePreset(i)  -- 使用 i 而不是 i-1
+            local preset = ItemDef.newAntiquePreset(i)
             preset.is_unlock = (i <= DEFAULT_UNLOCKED_PRESETS)
+            preset.showcase_data = {}
             showcases.antique_preset_list[i] = preset
-            need_save = true  -- 需要保存
+            need_save = true
             moon.info(string.format("[AntiqueShowcase] InitPresets: created preset_idx=%d, is_unlock=%s",
                 i, tostring(preset.is_unlock)))
         end
+    end
+
+    -- 迁移现有展示柜数据到第一页（兼容老数据）
+    -- 如果第一页未解锁，先解锁
+    if not showcases.antique_preset_list[1].is_unlock then
+        showcases.antique_preset_list[1].is_unlock = true
+        need_save = true
+        moon.info(string.format("[AntiqueShowcase] InitPresets: unlocked first preset for migration, uid=%d", context.uid))
+    end
+
+    -- 如果第一页的showcase_data为空，且当前有展示柜数据，则迁移
+    local first_preset = showcases.antique_preset_list[1]
+    if table.size(first_preset.showcase_data) == 0 and table.size(showcases.antique_showcase_list) > 0 then
+        local copied_data = table.copy(showcases.antique_showcase_list, true)
+        if copied_data then
+            first_preset.showcase_data = copied_data
+        else
+            first_preset.showcase_data = {}
+            for k, v in pairs(showcases.antique_showcase_list) do
+                first_preset.showcase_data[k] = v
+            end
+        end
+        showcases.current_preset_idx = 1
+        need_save = true
+        moon.info(string.format("[AntiqueShowcase] InitPresets: migrated showcase data to first preset, uid=%d, showcase_count=%d",
+            context.uid, table.size(showcases.antique_showcase_list)))
+    end
+
+    -- 如果current_preset_idx为0，设置为1（默认使用第一页）
+    if showcases.current_preset_idx == 0 then
+        showcases.current_preset_idx = 1
+        need_save = true
+        moon.info(string.format("[AntiqueShowcase] InitPresets: set current_preset_idx to 1, uid=%d", context.uid))
     end
 
     moon.info(string.format("[AntiqueShowcase] InitPresets: uid=%d, presets initialized, current_preset_idx=%d, need_save=%s",
@@ -661,12 +709,12 @@ end
 -- 获取解锁预设的消耗
 function AntiqueShowcase.GetPresetUnlockCost(preset_idx)
     -- 从配置表读取消耗
-    -- 返回格式: { [coin_id] = { coin_count = xxx } }
+    -- 返回格式: { [coin_id] = { coin_count = xxx } }（负值表示扣除）
     local unlock_cost = {}
     local preset_cfg = GameCfg.AntiquePreset[preset_idx]
     if preset_cfg and preset_cfg.preset_cost then
         for coin_id, coin_count in pairs(preset_cfg.preset_cost) do
-            unlock_cost[coin_id] = { coin_count = coin_count }
+            unlock_cost[coin_id] = { coin_count = -coin_count }
         end
     end
     return unlock_cost
@@ -729,44 +777,7 @@ function AntiqueShowcase.UnlockPreset(preset_idx)
     return ErrorCode.None, "解锁成功"
 end
 
--- 保存当前展示柜数据到预设
-function AntiqueShowcase.SavePreset(preset_idx)
-    if preset_idx < 1 or preset_idx > MAX_PRESET_COUNT then
-        return ErrorCode.ParamInvalid, "预设索引无效"
-    end
-
-    local showcases = scripts.UserModel.GetAntiqueShowcase()
-    if not showcases then
-        return ErrorCode.ServerInternalError, "数据加载失败"
-    end
-
-    -- 确保预设数据已初始化
-    AntiqueShowcase.InitPresets()
-
-    local preset = showcases.antique_preset_list[preset_idx]
-    if not preset then
-        return ErrorCode.ServerInternalError, "预设数据不存在"
-    end
-
-    if not preset.is_unlock then
-        return ErrorCode.PresetNotUnlock, "预设未解锁"
-    end
-
-    -- 复制当前展示柜数据到预设
-    preset.showcase_data = {}
-    for showcase_id, showcase_data in pairs(showcases.antique_showcase_list) do
-        preset.showcase_data[showcase_id] = table.copy(showcase_data, true)
-    end
-
-    -- 保存数据
-    AntiqueShowcase.SaveShowcasesNow()
-
-    moon.info(string.format("SavePreset - uid=%d, preset_idx=%d success", context.uid, preset_idx))
-
-    return ErrorCode.None, "保存成功"
-end
-
--- 使用预设，一键替换展示古董
+-- 使用预设，切换当前使用的预设页
 function AntiqueShowcase.UsePreset(preset_idx)
     if preset_idx < 1 or preset_idx > MAX_PRESET_COUNT then
         return ErrorCode.ParamInvalid, "预设索引无效"
@@ -789,16 +800,56 @@ function AntiqueShowcase.UsePreset(preset_idx)
         return ErrorCode.PresetNotUnlock, "预设未解锁"
     end
 
+    -- 已经是当前使用的预设页，无需切换
+    if showcases.current_preset_idx == preset_idx then
+        return ErrorCode.None, "已是当前预设页"
+    end
+
+    -- 更新当前使用的预设索引
+    showcases.current_preset_idx = preset_idx
+
+    -- 保存数据
+    AntiqueShowcase.SaveShowcasesNow()
+
+    moon.info(string.format("UsePreset - uid=%d, preset_idx=%d success", context.uid, preset_idx))
+
+    return ErrorCode.None, "切换成功"
+end
+
+-- 一键卸载预设页所有古董到背包
+function AntiqueShowcase.RemoveAllAntiquesFromPreset(preset_idx)
+    if preset_idx < 1 or preset_idx > MAX_PRESET_COUNT then
+        return ErrorCode.ParamInvalid, "预设索引无效"
+    end
+
+    local showcases = scripts.UserModel.GetAntiqueShowcase()
+    if not showcases then
+        return ErrorCode.ServerInternalError, "数据加载失败"
+    end
+
+    -- 确保预设数据已初始化
+    AntiqueShowcase.InitPresets()
+
+    local preset = showcases.antique_preset_list[preset_idx]
+    if not preset then
+        return ErrorCode.ServerInternalError, "预设数据不存在"
+    end
+
+    if not preset.is_unlock then
+        return ErrorCode.PresetNotUnlock, "预设页未解锁"
+    end
+
     if not preset.showcase_data or table.size(preset.showcase_data) == 0 then
-        return ErrorCode.PresetEmpty, "预设为空，请先保存预设"
+        return ErrorCode.PresetEmpty, "预设页为空"
     end
 
     local bag_change_log = {}
+    local total_count = 0
 
-    -- 遍历当前展示柜，清空所有展示的古董（放回背包）
-    for showcase_id, showcase_data in pairs(showcases.antique_showcase_list) do
+    -- 遍历预设页的所有展示柜，将古董放回背包
+    for showcase_id, showcase_data in pairs(preset.showcase_data) do
         if showcase_data.antique_show_list then
-            local add_unstack_items = {}  -- 用于 AddItems 的 unstack_item_datas
+            local add_unstack_items = {}
             for showcase_idx, antique_data in pairs(showcase_data.antique_show_list) do
                 if antique_data and antique_data.common_info then
                     -- 检查背包中是否已有该 uniqid，避免重复
@@ -807,8 +858,10 @@ function AntiqueShowcase.UsePreset(preset_idx)
                         -- 背包中没有，才添加
                         table.insert(add_unstack_items, antique_data)
                     end
+                    total_count = total_count + 1
                 end
             end
+
             -- 将古董放回背包
             if #add_unstack_items > 0 then
                 local err_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, {}, add_unstack_items, bag_change_log)
@@ -817,93 +870,22 @@ function AntiqueShowcase.UsePreset(preset_idx)
                     return err_code, "背包空间不足"
                 end
             end
-        end
-        -- 清空展示列表
-        showcase_data.antique_show_list = {}
-    end
 
-    -- 从预设中恢复展示古董
-    for showcase_id, preset_showcase_data in pairs(preset.showcase_data) do
-        local current_showcase = showcases.antique_showcase_list[showcase_id]
-        if current_showcase and preset_showcase_data.antique_show_list then
-            local del_unique_items = {}  -- 用于 DelItems 的 del_unique_items
-            for showcase_idx, antique_data in pairs(preset_showcase_data.antique_show_list) do
-                if antique_data and antique_data.common_info then
-                    local config_id = antique_data.common_info.config_id
-                    local uniqid = antique_data.common_info.uniqid
-
-                    -- 查找古董是否在背包中
-                    local err_code, pos, item_data = scripts.Bag.GetUniqItemData(BagDef.BagType.Cangku, uniqid)
-                    if err_code ~= ErrorCode.None or not item_data then
-                        -- 古董不在背包中，跳过
-                        moon.warn(string.format("UsePreset - antique not in bag, config_id=%d, uniqid=%s", config_id, tostring(uniqid)))
-                    else
-                        -- 从背包移除
-                        table.insert(del_unique_items, { config_id = config_id, uniqid = uniqid, pos = pos })
-                        -- 添加到展示柜
-                        local show_antique = table.copy(item_data, true)
-                        current_showcase.antique_show_list[showcase_idx] = show_antique
-                    end
-                end
-            end
-            -- 批量从背包移除古董
-            if #del_unique_items > 0 then
-                -- 构建 del_unique_items map 格式
-                local del_unique_map = {}
-                for _, del_item in ipairs(del_unique_items) do
-                    del_unique_map[del_item.uniqid] = del_item
-                end
-                local err_code = scripts.Bag.DelItems(BagDef.BagType.Cangku, {}, del_unique_map, bag_change_log)
-                if err_code ~= ErrorCode.None then
-                    scripts.Bag.RollBackWithChange(bag_change_log)
-                    return err_code, "删除古董失败"
-                end
-            end
+            -- 清空展示柜的展示列表
+            showcase_data.antique_show_list = {}
         end
     end
 
-    -- 更新当前使用的预设索引
-    showcases.current_preset_idx = preset_idx
-
-    -- 保存数据并同步
-    local change_showcase_ids = {}
-    for showcase_id, _ in pairs(showcases.antique_showcase_list) do
-        table.insert(change_showcase_ids, showcase_id)
-    end
-
+    -- 保存数据
     if table.size(bag_change_log) > 0 then
-        scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.UseAntiquePreset)
+        scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.AntiqueShow)
     end
+    -- 同步完整数据（含预设列表）并保存
+    AntiqueShowcase.SyncAllToClient()
 
-    AntiqueShowcase.SaveShowcasesNow()
+    moon.info(string.format("RemoveAllAntiquesFromPreset - uid=%d, preset_idx=%d, total_count=%d", context.uid, preset_idx, total_count))
 
-    -- 同步展示柜数据给客户端
-    local update_msg = {
-        antique_showcase_list = showcases.antique_showcase_list,
-        current_preset_idx = showcases.current_preset_idx
-    }
-    context.S2C(context.net_id, CmdCode["PBAntiqueShowcaseUpdateSyncCmd"], update_msg, 0)
-
-    moon.info(string.format("UsePreset - uid=%d, preset_idx=%d success", context.uid, preset_idx))
-
-    return ErrorCode.None, "使用成功"
-end
-
--- 获取预设信息
-function AntiqueShowcase.GetPresetInfo()
-    local showcases = scripts.UserModel.GetAntiqueShowcase()
-    if not showcases then
-        return { errcode = ErrorCode.ServerInternalError }
-    end
-
-    -- 确保预设数据已初始化
-    AntiqueShowcase.InitPresets()
-
-    return {
-        errcode = ErrorCode.None,
-        antique_preset_list = showcases.antique_preset_list,
-        current_preset_idx = showcases.current_preset_idx
-    }
+    return ErrorCode.None, "卸载成功", total_count
 end
 
 return AntiqueShowcase

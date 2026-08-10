@@ -146,6 +146,7 @@ message PBAntiqueShowReqCmd
 	int32 showcase_idx = 4;			// 展示柜中的具体展柜下标
 	int32 operate_type = 5;			// 1 -- 展示 0 -- 取消展示
 	int32 pos			= 6;		// 道具所在格子号
+	int32 preset_idx = 7;			// 预设页索引（1-5）
 }
 
 message PBAntiqueShowRspCmd
@@ -158,6 +159,7 @@ message PBAntiqueShowRspCmd
 	int32 showcase_idx = 6;			// 展示柜中的具体展柜下标
 	int32 operate_type = 7;			// 1 -- 展示 0 -- 取消展示
 	int32 pos			= 8;		// 道具所在格子号
+	int32 preset_idx = 9;			// 预设页索引
 }
 
 message PBItemSellNpcReqCmd

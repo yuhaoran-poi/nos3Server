@@ -229,7 +229,7 @@ local defaultAntiqueShowcaseS = {
 }
 
 local defaultPBAntiquePreset = {
-    preset_idx = 0,              -- 预设索引（0-4）
+    preset_idx = 0,              -- 预设索引（1-5）
     is_unlock = false,           -- 是否已解锁
     showcase_data = {},          -- 预设的展示柜数据
 }

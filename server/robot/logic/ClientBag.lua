@@ -157,7 +157,7 @@ function Client:identify_antique(config_id, uniqid, pos)
 end
 
 -- 展示古董
-function Client:show_antique(config_id, uniqid, showcase_id, showcase_idx, operate_type, pos)
+function Client:show_antique(config_id, uniqid, showcase_id, showcase_idx, operate_type, pos, preset_idx)
     if not self.ok then
         print("connect failed, err = ", err)
         return
@@ -170,6 +170,7 @@ function Client:show_antique(config_id, uniqid, showcase_id, showcase_idx, opera
         showcase_idx = showcase_idx,
         operate_type = operate_type,
         pos = pos,
+        preset_idx = preset_idx,
     }
     self:send("PBAntiqueShowReqCmd", req_msg, function(msg)
         print("rpc PBAntiqueShowRspCmd ret = ", self.index, msg)
@@ -225,22 +226,6 @@ function Client:unlock_antique_preset(preset_idx)
     end)
 end
 
--- 保存古董预设
-function Client:save_antique_preset(preset_idx)
-    if not self.ok then
-        print("connect failed, err = ", err)
-        return
-    end
-
-    local req_msg = {
-        preset_idx = preset_idx,
-    }
-    self:send("PBAntiquePresetSaveReqCmd", req_msg, function(msg)
-        print("rpc PBAntiquePresetSaveRspCmd ret = ", self.index, msg)
-        print_r(msg)
-    end)
-end
-
 -- 使用古董预设
 function Client:use_antique_preset(preset_idx)
     if not self.ok then
@@ -253,6 +238,22 @@ function Client:use_antique_preset(preset_idx)
     }
     self:send("PBAntiquePresetUseReqCmd", req_msg, function(msg)
         print("rpc PBAntiquePresetUseRspCmd ret = ", self.index, msg)
+        print_r(msg)
+    end)
+end
+
+-- 一键卸载预设页古董
+function Client:remove_antique_preset(preset_idx)
+    if not self.ok then
+        print("connect failed, err = ", err)
+        return
+    end
+
+    local req_msg = {
+        preset_idx = preset_idx,
+    }
+    self:send("PBAntiquePresetRemoveReqCmd", req_msg, function(msg)
+        print("rpc PBAntiquePresetRemoveRspCmd ret = ", self.index, msg)
         print_r(msg)
     end)
 end
