@@ -1877,10 +1877,10 @@ function User.PBGetOtherSimpleReqCmd(req)
     end
 
     if req.msg.nick_name and (not req.msg.quest_uid or req.msg.quest_uid == 0) then
-        local nick_info = Database.RedisGetNick(context.addr_db_redis, req.msg.nick_name)
-        moon.warn(string.format("nick_info res = %s", json.pretty_encode(nick_info)))
-        if nick_info and table.size(nick_info) > 0 then
-            req.msg.quest_uid = nick_info[req.msg.nick_name]
+        local quest_uid = Database.RedisGetNick(context.addr_db_redis, req.msg.nick_name)
+        moon.warn("quest_uid = ", quest_uid)
+        if quest_uid > 0 then
+            req.msg.quest_uid = quest_uid
         else
             return context.S2C(context.net_id, CmdCode.PBGetOtherSimpleRspCmd, {
                 code = ErrorCode.UserNotExist,
@@ -2687,9 +2687,9 @@ function User.PBModNickNameReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local nick_info = Database.RedisGetNick(context.addr_db_redis, req.msg.nick_name)
-    moon.warn(string.format("nick_info res = %s", json.pretty_encode(nick_info)))
-    if nick_info and table.size(nick_info) > 0 then
+    local quest_uid = Database.RedisGetNick(context.addr_db_redis, req.msg.nick_name)
+    moon.warn("quest_uid = ", quest_uid)
+    if quest_uid > 0 then
         return context.S2C(context.net_id, CmdCode.PBModNickNameRspCmd, {
             code = ErrorCode.NicknameAlreadyExist,
             error = "昵称已存在",

@@ -2403,9 +2403,74 @@ function _M.gettraderecordswithconditions(addr, condition1, condition2, conditio
     return nil
 end
 
+function _M.gettraderecordsonsale(addr, condition1, condition2, condition3, condition4, condition5
+    , sort_describe, start_idx, num)
+    local where_str = "WHERE "
+    if condition1 > 0 then
+        where_str = where_str .. string.format("condition1=%d", condition1)
+    end
+    if condition2 > 0 then
+        if where_str ~= "WHERE " then
+            where_str = where_str .. " AND "
+        end
+        where_str = where_str .. string.format("condition2=%d", condition2)
+    end
+    if condition3 > 0 then
+        if where_str ~= "WHERE " then
+            where_str = where_str .. " AND "
+        end
+        where_str = where_str .. string.format("condition3 = %d", condition3)
+    end
+    if condition4 > 0 then
+        if where_str ~= "WHERE " then
+            where_str = where_str .. " AND "
+        end
+        where_str = where_str .. string.format("condition4 = %d", condition4)
+    end
+    if condition5 > 0 then
+        if where_str ~= "WHERE " then
+            where_str = where_str .. " AND "
+        end
+        where_str = where_str .. string.format("condition5 = %d", condition5)
+    end
+
+    if where_str == "WHERE " then
+        where_str = "WHERE min_price_num > 0 AND now_total_num > 0"
+    else
+        where_str = where_str .. " AND min_price_num > 0 AND now_total_num > 0"
+    end
+
+    local cmd = string.format([[
+        SELECT trade_config_id, last_deal_price, yes_average_price, min_price, min_price_num, now_total_num FROM mgame.trade_record %s ORDER BY %s LIMIT %d OFFSET %d;
+    ]], where_str, sort_describe, num, start_idx)
+    moon.debug(cmd)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("gettraderecordswithconditions err = %s", json.pretty_encode(err)))
+        return nil
+    end
+    moon.debug(string.format("gettraderecordswithconditions res = %s", json.pretty_encode(res)))
+    if res and #res > 0 then
+        local trade_records = {}
+        for i = 1, #res do
+            local record = TradeDef.newTradeSearchSimpleData()
+            record.config_id = res[i].trade_config_id
+            record.min_price = res[i].min_price
+            record.last_deal_price = res[i].last_deal_price
+            record.yes_average_price = res[i].yes_average_price
+            record.min_price_num = res[i].min_price_num
+            record.now_total_num = res[i].now_total_num
+            table.insert(trade_records, record)
+        end
+        return trade_records
+    end
+    moon.error("gettraderecordswithconditions failed", where_str, err)
+    return nil
+end
+
 function _M.gettraderecordseq(addr, start_config_id, num)
     local cmd = string.format([[
-        SELECT trade_config_id, sale_num, sale_total_price, last_deal_price, update_ts, yes_sale_num, yes_sale_total_price, yes_average_price, min_price, min_price_num, condition1, condition2, condition3, condition4, condition5 FROM mgame.trade_record WHERE trade_config_id > %d ORDER BY trade_config_id ASC LIMIT %d;
+        SELECT trade_config_id, sale_num, sale_total_price, last_deal_price, update_ts, yes_sale_num, yes_sale_total_price, yes_average_price, min_price, min_price_num, now_total_num, condition1, condition2, condition3, condition4, condition5 FROM mgame.trade_record WHERE trade_config_id > %d ORDER BY trade_config_id ASC LIMIT %d;
     ]], start_config_id, num)
     local res, err = moon.call("lua", addr, cmd)
     if err then
@@ -2426,6 +2491,7 @@ function _M.gettraderecordseq(addr, start_config_id, num)
             record.yes_average_price = res[i].yes_average_price
             record.min_price = res[i].min_price
             record.min_price_num = res[i].min_price_num
+            record.now_total_num = res[i].now_total_num
             record.condition1 = res[i].condition1
             record.condition2 = res[i].condition2
             record.condition3 = res[i].condition3
@@ -2965,18 +3031,18 @@ function _M.RedisGetNick(addr_db_redis, nickname)
     local res, err = redis_call(addr_db_redis, "GET", NICKNAME_UID .. nickname)
     if err then
         error("RedisCheckNick failed:" .. tostring(err))
-        return {}
+        return 0
     end
 
-    local nick_info = {}
     if res and #res > 0 then
         moon.warn(string.format("RedisCheckNick res = %s", json.pretty_encode(res)))
-        for i = 1, #res do
-            nick_info[nickname] = json.decode(res[i] or "null")
-        end
+        -- for i = 1, #res do
+        --     nick_info[nickname] = json.decode(res[i] or "null")
+        -- end
+        return tonumber(res or "0")
     end
 
-    return nick_info
+    return 0
 end
 
 function _M.RedisSetNick(addr_db_redis, nickname, uid)
