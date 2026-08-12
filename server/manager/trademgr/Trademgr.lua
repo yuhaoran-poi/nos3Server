@@ -93,6 +93,7 @@ function Trademgr.Start()
     local now_ts = moon.time()
     -- 从trade_record表中加载trade_record_infos
     local need_mod_record = {}
+    local old_total_num_map = {}
     local start_config_id = 0
     while true do
         local trade_records = Database.gettraderecordseq(context.addr_db_game, start_config_id, MAX_SEARCH_NUM)
@@ -105,6 +106,8 @@ function Trademgr.Start()
             if trade_record.trade_config_id > start_config_id then
                 start_config_id = trade_record.trade_config_id
             end
+
+            old_total_num_map[trade_record.trade_config_id] = trade_record.now_total_num
 
             local new_record_data = TradeDef.newTradeRecordInfo()
             new_record_data.trade_config_id = trade_record.trade_config_id
@@ -230,7 +233,7 @@ function Trademgr.Start()
             record_data.min_price = 0
             record_data.min_price_num = 0
 
-            for price, price_data in ipairs(record_data.price_to_num) do
+            for price, price_data in pairs(record_data.price_to_num) do
                 if record_data.min_price == 0 or price < record_data.min_price then
                     record_data.min_price = price
                     record_data.min_price_num = price_data.now_num
@@ -246,6 +249,24 @@ function Trademgr.Start()
         if not datetime.is_same_day(record_data.update_ts, now_ts) then
             Trademgr.UpdateSaleNum(record_data, now_ts)
             need_mod_record[config_id] = 1
+        end
+
+        -- 修复now_total_num
+        local mod_num = 0
+        if not need_mod_record[config_id] then
+            if record_data.price_to_num
+                and table.size(record_data.price_to_num) > 0 then
+                for price, price_data in pairs(record_data.price_to_num) do
+                    mod_num = mod_num + price_data.now_num
+                end
+                if not old_total_num_map[config_id] or mod_num ~= old_total_num_map[config_id] then
+                    need_mod_record[config_id] = 1
+                end
+            else
+                if old_total_num_map[config_id] and old_total_num_map[config_id] > 0 then
+                    need_mod_record[config_id] = 1
+                end
+            end
         end
     end
     for config_id, _ in pairs(need_mod_record) do
