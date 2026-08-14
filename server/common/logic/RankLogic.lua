@@ -1201,8 +1201,8 @@ function RankLogic.UpdatePlayerRankInternal(rank_type, uid, player_data, force)
         local old_value = existing_data.value or 0
         if new_value <= old_value then
             -- 分数没有上涨，只更新出战信息，不更新排名
-            moon.info(string.format("[RankLogic] Mainline/Fengta rank: player %d value %d <= %d, update battle info only", 
-                uid, new_value, old_value))
+            --moon.info(string.format("[RankLogic] Mainline/Fengta rank: player %d value %d <= %d, update battle info only", 
+                --uid, new_value, old_value))
             if player_data.chr then existing_data.chr = player_data.chr end
             if player_data.chs then existing_data.chs = player_data.chs end
             if player_data.gho then existing_data.gho = player_data.gho end
@@ -1218,12 +1218,12 @@ function RankLogic.UpdatePlayerRankInternal(rank_type, uid, player_data, force)
         if force then
             -- force=true: 强制更新，即使分数降低也更新排名
             -- 始终更新
-            moon.info(string.format("[RankLogic] Force update for player %d in rank %d", uid, rank_type))
+            --moon.info(string.format("[RankLogic] Force update for player %d in rank %d", uid, rank_type))
         else
             -- force=false (初始化模式):
             -- 如果已有数据，只更新出战信息（chr, chs, gho, ghs），不覆盖分数相关字段
             -- 保留：value, ed, rank, ut 等分数相关字段
-            moon.info(string.format("[RankLogic] Init mode: updating battle info only for player %d in rank %d", uid, rank_type))
+            -- moon.info(string.format("[RankLogic] Init mode: updating battle info only for player %d in rank %d", uid, rank_type))
             if player_data.chr then existing_data.chr = player_data.chr end
             if player_data.chs then existing_data.chs = player_data.chs end
             if player_data.gho then existing_data.gho = player_data.gho end

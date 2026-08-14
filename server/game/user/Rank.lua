@@ -154,7 +154,7 @@ function Rank.PBRankGetInfoReqCmd(req)
     -- 调用排行榜服务获取数据
     local err, rank_data = clusterd.call(3004, "rank", "RankMgr.GetRankInfo", {rank_type = rank_type, rank_id = rank_id, uid = query_uid})
     if err ~= ErrorCode.None then
-        moon.error("Failed to get rank data:", err)
+        moon.info("Failed to get rank data: uid=%d type=%d err=%s nowtime:%d", query_uid, rank_type, err, moon.time())
         return context.S2C(context.net_id, CmdCode.PBRankGetInfoRspCmd, {
             code = ErrorCode.ServerInternalError,
             error = "获取排行榜数据失败",
@@ -163,11 +163,12 @@ function Rank.PBRankGetInfoReqCmd(req)
     end
 
     if not rank_data or type(rank_data) ~= "table" then
-        moon.error("Failed to get rank data:", rank_data)
+        -- 玩家不在该排行榜中属于正常情况（如宗门榜未收录、古董榜无数据等），返回成功+空数据
         return context.S2C(context.net_id, CmdCode.PBRankGetInfoRspCmd, {
-            code = ErrorCode.ServerInternalError,
-            error = "获取排行榜数据失败",
+            code = ErrorCode.None,
+            error = "",
             uid = query_uid,
+            rank_data = {},
         }, req.msg_context.stub_id)
     end
 
