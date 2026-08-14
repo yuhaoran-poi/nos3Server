@@ -240,3 +240,24 @@ message PBTradeBuyComplexRspCmd
 	map<int32, int32> buy_id_num	= 4;
 	int64 buy_total_price	= 5;
 }
+
+message PBSearchTradeProductOnSaleReqCmd
+{
+	int64 uid	= 1;
+	repeated int32 config_ids	= 2;	//搜索的道具配置id,可以为空
+	int32 condition1	= 3;	//条件1
+	int32 condition2	= 4;	//条件2
+	int32 condition3	= 5;	//条件3
+	int32 condition4	= 6;	//条件4
+	int32 condition5	= 7;	//条件5
+	int32 sort_type		= 8;	//排序类型
+	int32 start_idx		= 9;	//起始序号
+}
+
+message PBSearchTradeProductOnSaleRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    int64 uid	= 3;
+	repeated PBTradeSearchSimpleData search_products = 4;	//搜索到的商品信息
+}

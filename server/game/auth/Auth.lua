@@ -404,7 +404,7 @@ Auth.PBClientLoginReqCmd = function(req)
             local datas, err = db.getuserbyauthkey(context.addr_db_game, plateform_id)
             print("datas=\n" .. print_r(datas, true))
             -- 判断user_data是否为nil或空表
-            if err or datas == nil or next(datas) == nil then
+            if err or datas == nil or next(datas) == nil or not datas[1] or not datas[1].user_id then
                 context.openid_map[req.msg.login_data.authkey] = nil
                 return { code = ErrorCode.PasswordError, error = "INVALID_AUTHKEY" }
             end

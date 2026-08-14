@@ -111,12 +111,30 @@ function Trade.LoadTradeInfo()
     return trade_info
 end
 
-function Trade.SearchTradeRecordWitchConditions(condition1, condition2, condition3, condition4, condition5, sort_type, start_idx)
+function Trade.SearchTradeRecordWitchConditions(condition1, condition2, condition3, condition4, condition5, sort_type,
+                                                start_idx)
     if not TradeDef.SortDescribe[sort_type] then
         return ErrorCode.SearchProductTypeErr
     end
 
     local trade_records = Database.gettraderecordswithconditions(context.addr_db_user, condition1, condition2,
+        condition3, condition4, condition5, TradeDef.SortDescribe[sort_type], start_idx, MAX_SEARCH_IDS_COUNT)
+    if not trade_records then
+        return ErrorCode.SearchProductFailed
+    end
+    if table.size(trade_records) == 0 then
+        return ErrorCode.SearchProductNone
+    end
+
+    return ErrorCode.None, trade_records
+end
+
+function Trade.SearchTradeRecordOnSale(condition1, condition2, condition3, condition4, condition5, sort_type, start_idx)
+    if not TradeDef.SortDescribe[sort_type] then
+        return ErrorCode.SearchProductTypeErr
+    end
+
+    local trade_records = Database.gettraderecordsonsale(context.addr_db_user, condition1, condition2,
         condition3, condition4, condition5, TradeDef.SortDescribe[sort_type], start_idx, MAX_SEARCH_IDS_COUNT)
     if not trade_records then
         return ErrorCode.SearchProductFailed
@@ -1284,7 +1302,8 @@ function Trade.PBTradeBuyComplexReqCmd(req)
 
         lock_coin_count = res.data.remain_coin
         if lock_coin_count <= 0 then
-            moon.error(string.format("Trade.PBTradeBuyComplexReqCmd remain_coin<=0 add_list:%s", json.pretty_encode(add_list)))
+            moon.error(string.format("Trade.PBTradeBuyComplexReqCmd remain_coin<=0 add_list:%s",
+            json.pretty_encode(add_list)))
             break
         end
     end
@@ -1386,6 +1405,82 @@ function Trade.PBTradeBuyComplexReqCmd(req)
     end
     moon.debug(string.format("Trade.PBTradeBuyComplexReqCmd msg_ret:%s", json.pretty_encode(msg_ret)))
     return context.S2C(context.net_id, CmdCode.PBTradeBuyComplexRspCmd, msg_ret, req.msg_context.stub_id)
+end
+
+function Trade.PBSearchTradeProductOnSaleReqCmd(req)
+    -- 参数验证
+    if not req.msg.sort_type
+        or not req.msg.start_idx then
+        return context.S2C(context.net_id, CmdCode.PBSearchTradeProductOnSaleRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local player_trade_data = scripts.UserModel.GetTradeData()
+    if not player_trade_data then
+        return context.S2C(context.net_id, CmdCode.PBSearchTradeProductOnSaleRspCmd,
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    if req.msg.config_ids and table.size(req.msg.config_ids) > 0 then
+        local trade_cfg = GameCfg.TransactionConfig[1]
+        local max_search_num = MAX_SEARCH_IDS_COUNT
+        if trade_cfg and trade_cfg.collection_num and trade_cfg.collection_num > max_search_num then
+            max_search_num = trade_cfg.collection_num
+        end
+        if table.size(req.msg.config_ids) > max_search_num then
+            return context.S2C(context.net_id, CmdCode.PBSearchTradeProductOnSaleRspCmd, {
+                code = ErrorCode.SearchIdsOverflow,
+                error = "搜索商品数量超过最大数量",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
+        end
+
+        local errcode, trade_records = Trade.SearchTradeRecordWithIds(req.msg.config_ids, req.msg.sort_type,
+            req.msg.start_idx)
+        if errcode ~= ErrorCode.None then
+            return context.S2C(context.net_id, CmdCode.PBSearchTradeProductOnSaleRspCmd, {
+                code = errcode,
+                error = "搜索商品出错",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
+        end
+
+        return context.S2C(context.net_id, CmdCode.PBSearchTradeProductOnSaleRspCmd, {
+            code = ErrorCode.None,
+            error = "搜索商品成功",
+            uid = context.uid,
+            search_products = trade_records,
+        }, req.msg_context.stub_id)
+    else
+        if not req.msg.condition1 and not req.msg.condition2 and not req.msg.condition3
+            and not req.msg.condition4 and not req.msg.condition5 then
+            return context.S2C(context.net_id, CmdCode.PBSearchTradeProductOnSaleRspCmd, {
+                code = ErrorCode.SearchParamsInvalid,
+                error = "无效请求参数",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
+        end
+
+        local errcode, trade_records = Trade.SearchTradeRecordOnSale(req.msg.condition1, req.msg.condition2,
+            req.msg.condition3, req.msg.condition4, req.msg.condition5, req.msg.sort_type, req.msg.start_idx)
+        if errcode ~= ErrorCode.None then
+            return context.S2C(context.net_id, CmdCode.PBSearchTradeProductOnSaleRspCmd, {
+                code = errcode,
+                error = "搜索商品出错",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
+        end
+
+        return context.S2C(context.net_id, CmdCode.PBSearchTradeProductOnSaleRspCmd, {
+            code = ErrorCode.None,
+            error = "搜索商品成功",
+            uid = context.uid,
+            search_products = trade_records,
+        }, req.msg_context.stub_id)
+    end
 end
 
 return Trade

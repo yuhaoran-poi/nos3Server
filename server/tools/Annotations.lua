@@ -589,12 +589,18 @@
 ---@field public kill_cnt integer
 
 
+---@class PBDsUseItemInfo
+---@field public config_id integer
+---@field public item_count integer
+---@field public cur_durability integer
+
+
 ---@class PBGameSettle
 ---@field public settle_data string @战报详情
 ---@field public account_experience integer @账户经验值
 ---@field public game_role_change PBGameChangeRoleInfo[] @角色信息变更
 ---@field public consume_bag PBBag @消耗品背包
----@field public booty_bag PBBag @战利品背包
+---@field public booty_bag PBBag @战利品背包    --废弃
 ---@field public tool_bag PBBag @工具品背包
 ---@field public grade_id integer @段位
 ---@field public change_score integer @段位积分
@@ -610,6 +616,8 @@
 ---@field public end_game_ts integer @游戏结束时间戳(秒级)
 ---@field public is_complete integer @完成率/通关率/撤离率
 ---@field public booty_coins table<integer, PBCoin> @局内获得的货币类战利品
+---@field public booty_items table<integer, integer> @局内获得的道具战利品
+---@field public booty_use_items PBDsUseItemInfo[] @局内获得的使用过道具战利品
 
 
 ---@class PBEnterCityReqCmd
@@ -3860,6 +3868,25 @@
 ---@field public buy_total_price integer
 
 
+---@class PBSearchTradeProductOnSaleReqCmd
+---@field public uid integer
+---@field public config_ids integer[] @搜索的道具配置id,可以为空
+---@field public condition1 integer @条件1
+---@field public condition2 integer @条件2
+---@field public condition3 integer @条件3
+---@field public condition4 integer @条件4
+---@field public condition5 integer @条件5
+---@field public sort_type integer @排序类型
+---@field public start_idx integer @起始序号
+
+
+---@class PBSearchTradeProductOnSaleRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public search_products PBTradeSearchSimpleData[] @搜索到的商品信息
+
+
 ---@class PBUserAttr
 ---@field public uid integer
 ---@field public plateform_id string
@@ -4428,14 +4455,13 @@
 ---@class static_conf
 ---@field AccountBuffConfig AccountBuffConfig_cfg[]
 ---@field AchievementMissionConfig AchievementMissionConfig_cfg[]
+---@field allconfigs allconfigs_cfg[]
 ---@field AllTag AllTag_cfg[]
 ---@field AllTagPool AllTagPool_cfg[]
 ---@field AntiqueItem AntiqueItem_cfg[]
 ---@field AntiquePreset AntiquePreset_cfg[]
 ---@field AntiquePriceTagChangeRate AntiquePriceTagChangeRate_cfg[]
 ---@field AntiqueSlot AntiqueSlot_cfg[]
----@field AntiqueTagPool AntiqueTagPool_cfg[]
----@field AweItem AweItem_cfg[]
 ---@field AweItemUpLv AweItemUpLv_cfg[]
 ---@field BaGuaBrand BaGuaBrand_cfg[]
 ---@field BaGuaBrandUpLv BaGuaBrandUpLv_cfg[]
@@ -4472,7 +4498,6 @@
 ---@field LightConvert LightConvert_cfg[]
 ---@field LightInfo LightInfo_cfg[]
 ---@field LinearMissionConfig LinearMissionConfig_cfg[]
----@field MagicItem MagicItem_cfg[]
 ---@field MagicItemUpLv MagicItemUpLv_cfg[]
 ---@field MissionBox MissionBox_cfg[]
 ---@field OnlyOneItem OnlyOneItem_cfg[]
@@ -4484,7 +4509,6 @@
 ---@field RankLevel RankLevel_cfg[]
 ---@field RankRewardPool RankRewardPool_cfg[]
 ---@field RechargeStoreConfig RechargeStoreConfig_cfg[]
----@field ReplaceableDailyMissionConfig ReplaceableDailyMissionConfig_cfg[]
 ---@field RoleLvAward RoleLvAward_cfg[]
 ---@field RoleUpLv RoleUpLv_cfg[]
 ---@field Season Season_cfg[]

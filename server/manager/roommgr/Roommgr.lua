@@ -1574,7 +1574,7 @@ function Roommgr.StartGame(req)
     -- 检查所有玩家准备状态
     for _, player in pairs(room.players) do
         if player.is_ready ~= 1 then
-            moon.error("Roommgr.StartGame uid, is_ready", player.mem_info.uid, player.is_ready)
+            moon.warn("Roommgr.StartGame uid, is_ready", player.mem_info.uid, player.is_ready)
             return { code = ErrorCode.RoomNotAllReady, error = "存在未准备玩家" }
         end
     end
@@ -1653,7 +1653,13 @@ function Roommgr.StartGame(req)
         --     room.room_data.roomid .. "&PORT=" .. test_port
         local test_url = "http://192.168.2.31:8080/job/LaunchGH-DS/buildWithParameters?token=WXCY&MAP=" ..
             room.room_data.map_id ..
-            "&DSID=" .. room.room_data.roomid .. "&PORT=" .. test_port .. "&UIDS=" .. table.concat(notify_uids, "p")
+            "&DSID=" ..
+            room.room_data.roomid ..
+            "&PORT=" ..
+            test_port ..
+            "&UIDS=" ..
+            table.concat(notify_uids, "p") ..
+            "&CHAPTER=" .. room.room_data.chapter .. "&DIFFICULTY=" .. room.room_data.difficulty
         moon.info("Roommgr.StartGame test_url", test_url)
         print_r(httpc.get(test_url))
 
@@ -1733,7 +1739,7 @@ function Roommgr.PlayEnd(msg)
     end
 
     if room.room_data.state ~= 1 then
-        moon.error("Roommgr.PlayEnd room state error, roomid = ", msg.roomid)
+        moon.error("Roommgr.PlayEnd room state error, roomid, state = ", msg.roomid, room.room_data.state)
         return { code = ErrorCode.RoomInvalidState, error = "房间状态错误" }
     end
 

@@ -26,6 +26,13 @@ message PBInGameKillMonster
     int32 kill_cnt      = 3;
 }
 
+message PBDsUseItemInfo
+{
+    int32 config_id     = 1;
+    int32 item_count    = 2;
+    int32 cur_durability    = 3;
+}
+
 // DS结算数据
 message PBGameSettle
 {
@@ -33,7 +40,7 @@ message PBGameSettle
     int32 account_experience = 2;//账户经验值
     repeated PBGameChangeRoleInfo game_role_change = 3;//角色信息变更
     PBBag consume_bag   = 4;//消耗品背包
-    PBBag booty_bag     = 5;//战利品背包
+    PBBag booty_bag     = 5;//战利品背包    --废弃
     PBBag tool_bag      = 6;//工具品背包
     int32 grade_id      = 7;//段位
     int32 change_score  = 8;//段位积分
@@ -49,6 +56,8 @@ message PBGameSettle
     int64 end_game_ts = 18;   // 游戏结束时间戳(秒级)
     int32 is_complete   = 19;   // 完成率/通关率/撤离率
     map<int32, PBCoin>  booty_coins = 20;   //局内获得的货币类战利品
+    map<int32, int64>   booty_items = 21;   //局内获得的道具战利品
+    repeated PBDsUseItemInfo booty_use_items    = 22;   //局内获得的使用过道具战利品
 }
 
 // 玩家进入主城

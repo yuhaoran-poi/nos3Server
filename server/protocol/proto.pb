@@ -1799,7 +1799,7 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-ü6
+«9
 dsnode.protocommon.proto
 item.proto
 user.proto	bag.proto
@@ -1837,7 +1837,12 @@ addRoleExpb
 
 monster_id (R	monsterId!
 monster_type (RmonsterType
-kill_cnt (RkillCnt"á
+kill_cnt (RkillCnt"t
+PBDsUseItemInfo
+	config_id (RconfigId
+
+item_count (R	itemCount%
+cur_durability (RcurDurability"š	
 PBGameSettle
 settle_data (	R
 settleData-
@@ -1868,13 +1873,19 @@ bootyValue,
 is_complete (R
 isComplete>
 booty_coins (2.PBGameSettle.BootyCoinsEntryR
-bootyCoins?
+bootyCoins>
+booty_items (2.PBGameSettle.BootyItemsEntryR
+bootyItems8
+booty_use_items (2.PBDsUseItemInfoRbootyUseItems?
 GameMissionsEntry
 key (Rkey
 value (Rvalue:8F
 BootyCoinsEntry
 key (Rkey
-value (2.PBCoinRvalue:8"=
+value (2.PBCoinRvalue:8=
+BootyItemsEntry
+key (Rkey
+value (Rvalue:8"=
 PBEnterCityReqCmd
 uid (Ruid
 cityid (Rcityid"=
@@ -3744,7 +3755,7 @@ master_uid (R	masterUid
 
 master_uid (R	masterUid
 team_id (RteamIdbproto3
-º(
+Ž,
 trade.proto"d
 PBTradeData!
 single_price (RsinglePrice
@@ -3941,7 +3952,33 @@ buy_id_num (2&.PBTradeBuyComplexRspCmd.BuyIdNumEntryRbuyIdNum&
 buy_total_price (RbuyTotalPrice;
 BuyIdNumEntry
 key (Rkey
-value (Rvalue:8bproto3
+value (Rvalue:8"­
+ PBSearchTradeProductOnSaleReqCmd
+uid (Ruid
+
+config_ids (R	configIds
+
+condition1 (R
+condition1
+
+condition2 (R
+condition2
+
+condition3 (R
+condition3
+
+condition4 (R
+condition4
+
+condition5 (R
+condition5
+	sort_type (RsortType
+	start_idx	 (RstartIdx"¡
+ PBSearchTradeProductOnSaleRspCmd
+code (Rcode
+error (	Rerror
+uid (RuidA
+search_products (2.PBTradeSearchSimpleDataRsearchProductsbproto3
 ä
 google/protobuf/any.protogoogle.protobuf"6
 Any

@@ -585,14 +585,14 @@ function Room.GameStartCheckCost(cost_data)
     if cost_data and cost_data.cost_items and table.size(cost_data.cost_items) > 0 then
         local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_data.cost_items, {})
         if err_code_items ~= ErrorCode.None then
-            moon.error("Room.GameStartCheckCost check items not enough, err_code = ", err_code_items)
+            moon.warn("Room.GameStartCheckCost check items not enough, err_code = ", err_code_items)
             return err_code_items
         end
     end
     if cost_data and cost_data.cost_coins and table.size(cost_data.cost_coins) > 0 then
         local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_data.cost_coins)
         if err_code_coins ~= ErrorCode.None then
-            moon.error("Room.GameStartCheckCost check coins not enough, err_code = ", err_code_coins)
+            moon.warn("Room.GameStartCheckCost check coins not enough, err_code = ", err_code_coins)
             return err_code_coins
         end
     end
@@ -979,6 +979,79 @@ function Room.GameSettle(settle_info)
                 local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, attach_items_simple, unstack_items, {})
                 if not mail_ret then
                     -- moon.error(string.format("GameSettle RecvImmediateMail err:\n%s", json.pretty_encode(item_datas)))
+                    moon.error(string.format("GameSettle RecvImmediateMail err:\n%s", json.pretty_encode(item_list)))
+                    return
+                end
+            else
+                -- 添加道具
+                if table.size(stack_items) + table.size(unstack_items) > 0 then
+                    bag_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
+                    if bag_code ~= ErrorCode.None then
+                        scripts.Bag.RollBackWithChange(bag_change_log)
+                        moon.error(string.format("GameSettle AddItems stack_items err:\n%s",
+                            json.pretty_encode(stack_items)))
+                        moon.error(string.format("GameSettle AddItems unstack_items err:\n%s",
+                            json.pretty_encode(unstack_items)))
+                        return
+                    end
+                end
+            end
+        end
+    end
+
+    local mod_params = {}
+    if settle_info.booty_items or settle_info.booty_use_items then
+        local item_list = {}
+        for item_id, item_count in pairs(settle_info.booty_items) do
+            if not item_list[item_id] then
+                item_list[item_id] = {
+                    id = item_id,
+                    count = 0,
+                    pos = 0,
+                }
+            end
+            item_list[item_id].count = item_list[item_id].count + item_count
+        end
+        for _, item_info in pairs(settle_info.booty_use_items) do
+            if not item_list[item_info.config_id] then
+                item_list[item_info.config_id] = {
+                    id = item_info.config_id,
+                    count = 0,
+                    pos = 0,
+                }
+            end
+            item_list[item_info.config_id].count = item_list[item_info.config_id].count + item_info.item_count
+            if not mod_params[item_info.config_id] then
+                mod_params[item_info.config_id] = {}
+            end
+            for i = 1, item_info.item_count do
+                table.insert(mod_params[item_info.config_id], {
+                    cur_durability = item_info.cur_durability,
+                })
+            end
+        end
+
+        if table.size(item_list) > 0 then
+            local stack_items, unstack_items, deal_coins = {}, {}, {}
+            local ok = ItemDefine.GetItemDataFromIdCount(item_list, {}, stack_items, unstack_items, deal_coins,
+                mod_params)
+            if not ok then
+                moon.error(string.format("GameSettle GetItemDataFromIdCount err:\n%s", json.pretty_encode(item_list)))
+                return
+            end
+
+            local bag_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, item_list, table.size(unstack_items))
+            if bag_code ~= ErrorCode.None then
+                -- 仓库已满 发送邮件
+                local attach_items_simple = {}
+                for item_id, item in pairs(item_list) do
+                    local new_simple_item = ItemDef.newItemSimple()
+                    new_simple_item.config_id = item_id
+                    new_simple_item.item_count = item.count
+                    attach_items_simple[item_id] = new_simple_item
+                end
+                local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, attach_items_simple, unstack_items, {})
+                if not mail_ret then
                     moon.error(string.format("GameSettle RecvImmediateMail err:\n%s", json.pretty_encode(item_list)))
                     return
                 end
