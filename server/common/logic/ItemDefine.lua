@@ -375,9 +375,9 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                         new_item.special_info.durab_item.cur_durability = item_cfg.durability
                         -- end
                         if mod_params and mod_params[item_cfg.id] and table.size(mod_params[item_cfg.id]) > 0 then
-                            local params = mod_params[item_cfg.id][1]
-                            if params[1].cur_durability then
-                                new_item.special_info.durab_item.cur_durability = params[1].cur_durability
+                            local cur_param = mod_params[item_cfg.id][1]
+                            if cur_param and cur_param.cur_durability then
+                                new_item.special_info.durab_item.cur_durability = cur_param.cur_durability
                             end
                         end
                         table.insert(unstack_items, new_item)
