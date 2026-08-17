@@ -321,6 +321,15 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
         -- 词条权重map
         local tag_weight_map = {}
 
+        -- 收集已有词条ID，防止鉴定出重复词条
+        local existing_tag_ids = {}
+        local existing_tags = item_data.special_info.antique_item.tags
+        if existing_tags then
+            for _, tag in ipairs(existing_tags) do
+                existing_tag_ids[tag.tag_id] = true
+            end
+        end
+
         local tagpool = a_p_t_cfg.pooltype
         if not tagpool or next(tagpool) == nil then
             return ErrorCode.ConfigError, "配置错误"
@@ -337,7 +346,13 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
         end
 
         for tag_id, weight in pairs(a_t_p_cfg.all_tag) do
-            tag_weight_map[tag_id] = weight
+            if not existing_tag_ids[tag_id] then
+                tag_weight_map[tag_id] = weight
+            end
+        end
+
+        if next(tag_weight_map) == nil then
+            return ErrorCode.TagDuplicate, "词条已全部获得，无法鉴定出新词条"
         end
 
         local r_w_code, tag_id = scripts.Bag.RandomWeightedIndex(tag_weight_map)
