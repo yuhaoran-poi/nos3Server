@@ -156,6 +156,8 @@ local ErrorCode = {
     BattleRecordsNotComplete = 917,
     ---房间ds链接非法
     RoomDsLinkInvalid = 918,
+    ---房间内玩家账户经验不足
+    RoomPlayerAccountExpError = 919,
 
     ---公会相关错误码
     ---已在公会中

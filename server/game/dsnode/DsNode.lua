@@ -13,7 +13,7 @@ local context = ...
 local scripts = context.scripts
 
 --- 内存中的状态
-local state = { 
+local state = {
     online = false,
     ismatching = false
 }
@@ -599,8 +599,17 @@ function DsNode.PBDsNotifyPlayEndReqCmd(req)
     -- 先往数据库中写入结算信息
     if req.msg.need_settle == 1 then
         for uid, settle_info in pairs(req.msg.players_settle) do
-            moon.warn(string.format("PBDsNotifyPlayEndReqCmd settle uid = %d, settle_info = %s", uid, json.pretty_encode(settle_info)))
-            Database.BattleListPushRight(context.addr_db_redis, Database.GetBattleSettleKey(), uid, settle_info)
+            moon.warn(string.format("PBDsNotifyPlayEndReqCmd settle uid = %d, settle_info = %s", uid,
+                json.pretty_encode(settle_info)))
+            if context.already_settle and context.already_settle[uid] then
+                moon.error(string.format("PBDsNotifyPlayEndReqCmd uid = %d already settle", uid))
+            else
+                if not context.already_settle then
+                    context.already_settle = {}
+                end
+                context.already_settle[uid] = true
+                Database.BattleListPushRight(context.addr_db_redis, Database.GetBattleSettleKey(), uid, settle_info)
+            end
         end
     end
 

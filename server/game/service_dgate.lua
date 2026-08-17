@@ -22,7 +22,8 @@ local context = {
     net_id_map = {},  --直连到本Gate的所有ds服务器,gateNetId
     fd_map = {},
     auth_watch = {},
-}
+    already_settle = {},
+   }
 
 setup(context)
 

@@ -194,8 +194,6 @@ function Bag.Start(isnew)
             end
         end
     end
-
-    print(type(bagdata[BagDef.BagType.Cangku].items), getmetatable(bagdata[BagDef.BagType.Cangku].items))
 end
 
 function Bag.SaveBagsNow(bagTypes, is_new)
@@ -815,7 +813,30 @@ function Bag.SaveAndLog(change_logs, change_reason,
                     end
 
                     -- 处理dataMap变更
+                    -- 设计契约:old_config_id 出现在这里时,Bag.dataMap 必须有对应索引
+                    -- 如果不存在,说明上游某处改了背包数据但没同步 dataMap,这是数据错误
+                    -- 不能 silently 创建/跳过,必须 assert 暴露以便排查根因
                     if old_config_id > 0 then
+                        if not (Bag.dataMap[old_config_id] and Bag.dataMap[old_config_id][bagType]) then
+                            -- 收集该 bagType 下所有已注册 config_id,便于定位漏注册的是哪个
+                            local registered_cfgs = {}
+                            for k, v in pairs(Bag.dataMap) do
+                                if v[bagType] then
+                                    table.insert(registered_cfgs, k)
+                                end
+                            end
+                            moon.error(string.format(
+                                "Bag.SaveAndLog dataMap inconsistent: "
+                                .. "old_config_id=%d not in Bag.dataMap (bagType=%d, pos=%d), "
+                                .. "old_item_count=%d, old_uniqid=%d, now_config_id=%d, "
+                                .. "registered_cfgs_in_bagType=[%s], "
+                                .. "old_itemdata=%s, now_itemdata=%s",
+                                old_config_id, bagType, pos,
+                                old_item_count, old_uniqid, now_config_id,
+                                table.concat(registered_cfgs, ","),
+                                json.pretty_encode(old_itemdata or {}),
+                                json.pretty_encode(now_itemdata or {})))
+                        end
                         local change_dataMap = Bag.dataMap[old_config_id][bagType]
                         change_dataMap.allCount = change_dataMap.allCount - old_item_count
                         if old_uniqid > 0 and change_dataMap.uniqid_pos[old_uniqid] == pos then
@@ -3354,6 +3375,7 @@ function Bag.Light(op_itemdata)
         for tag_id, tag_weight in pairs(pool_cfg.all_tag) do
             local tag_cfg = GameCfg.AllTag[tag_id]
             if not tag_cfg then
+                moon.error("tag_id not found", tag_id, pool_id)
                 return ErrorCode.TagNotExist
             end
 
@@ -3374,16 +3396,19 @@ function Bag.Light(op_itemdata)
             end
         end
     end
+    -- moon.info(string.format("cur_ability_tag:\n%s", json.pretty_encode(cur_ability_tag)))
     if table.size(cur_ability_tag) == 0 then
         for pool_id, pool_weight in pairs(light_cfg.lightpooltype2) do
             local pool_cfg = GameCfg.AllTagPool[pool_id]
             if not pool_cfg then
+                moon.error("pool_cfg not found", pool_id)
                 return ErrorCode.TagPoolNotExist
             end
 
             for tag_id, tag_weight in pairs(pool_cfg.all_tag) do
                 local tag_cfg = GameCfg.AllTag[tag_id]
                 if not tag_cfg then
+                    moon.error("tag_id not found", tag_id, pool_id)
                     return ErrorCode.TagNotExist
                 end
 
@@ -3395,8 +3420,10 @@ function Bag.Light(op_itemdata)
             end
         end
     end
+    -- moon.info(string.format("id_weight:\n%s", json.pretty_encode(id_weight)))
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if table.size(id_weight) <= 0 then
+        moon.error("id_weight is empty")
         return ErrorCode.TagNotExist
     end
 
@@ -3412,6 +3439,7 @@ function Bag.Light(op_itemdata)
     -- 随机词条数值
     local tag_cfg = GameCfg.AllTag[new_tag_id]
     if not tag_cfg then
+        moon.error("tag_id not found", new_tag_id)
         return ErrorCode.TagNotExist
     end
     local new_tag_value = math.random(tag_cfg.min, tag_cfg.max)
