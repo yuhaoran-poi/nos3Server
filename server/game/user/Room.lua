@@ -890,114 +890,114 @@ function Room.GameSettle(settle_info)
     end
 
     local bag_change_log = {}
-    if settle_info.booty_bag then
-        -- 获取战利品
-        local item_list = {}
-        local booty_item_datas = {}
-        for pos, itemdata in pairs(settle_info.booty_bag.items) do
-            local item_id = itemdata.common_info.config_id
-            if not item_list[item_id] then
-                item_list[item_id] = {
-                    id = item_id,
-                    count = 0,
-                    pos = 0,
-                }
-            end
-            item_list[item_id].count = item_list[item_id].count + itemdata.common_info.item_count
-            if itemdata.common_info.uniqid ~= 0 and itemdata.common_info.item_count > 1 then
-                local uniqid = uuid.next()
-                booty_item_datas[uniqid] = itemdata
-            end
-        end
-        if table.size(item_list) > 0 then
-            local stack_items, unstack_items, deal_coins = {}, {}, {}
-            local ok = ItemDefine.GetItemDataFromIdCount(item_list, {}, stack_items, unstack_items, deal_coins)
-            if not ok then
-                moon.error(string.format("GameSettle GetItemDataFromIdCount err:\n%s", json.pretty_encode(item_list)))
-                return
-            end
+    -- if settle_info.booty_bag then
+    --     -- 获取战利品
+    --     local item_list = {}
+    --     local booty_item_datas = {}
+    --     for pos, itemdata in pairs(settle_info.booty_bag.items) do
+    --         local item_id = itemdata.common_info.config_id
+    --         if not item_list[item_id] then
+    --             item_list[item_id] = {
+    --                 id = item_id,
+    --                 count = 0,
+    --                 pos = 0,
+    --             }
+    --         end
+    --         item_list[item_id].count = item_list[item_id].count + itemdata.common_info.item_count
+    --         if itemdata.common_info.uniqid ~= 0 and itemdata.common_info.item_count > 1 then
+    --             local uniqid = uuid.next()
+    --             booty_item_datas[uniqid] = itemdata
+    --         end
+    --     end
+    --     if table.size(item_list) > 0 then
+    --         local stack_items, unstack_items, deal_coins = {}, {}, {}
+    --         local ok = ItemDefine.GetItemDataFromIdCount(item_list, {}, stack_items, unstack_items, deal_coins)
+    --         if not ok then
+    --             moon.error(string.format("GameSettle GetItemDataFromIdCount err:\n%s", json.pretty_encode(item_list)))
+    --             return
+    --         end
 
-            -- 使用ds发回的进行item_data替换
-            if table.size(booty_item_datas) > 0 then
-                for uniqid, booty_item_data in pairs(booty_item_datas) do
-                    for _, item_data in pairs(unstack_items) do
-                        if item_data.common_info.config_id == booty_item_data.common_info.config_id
-                            and item_data.common_info.uniqid == 0 then
-                            item_data.common_info.uniqid = uniqid
-                            if item_data.special_info.durab_item then
-                                item_data.special_info.durab_item = table.copy(booty_item_data.special_info.durab_item,
-                                    true)
-                            elseif item_data.special_info.diagrams_item then
-                                item_data.special_info.diagrams_item = table.copy(
-                                    booty_item_data.special_info.diagrams_item,
-                                    true)
-                            elseif item_data.special_info.magic_item then
-                                item_data.special_info.magic_item = table.copy(booty_item_data.special_info.magic_item,
-                                    true)
-                            elseif item_data.special_info.antique_item then
-                                item_data.special_info.antique_item = table.copy(
-                                    booty_item_data.special_info.antique_item,
-                                    true)
-                            elseif item_data.special_info.space_ring then
-                                item_data.special_info.space_ring = table.copy(booty_item_data.special_info.space_ring,
-                                    true)
-                            else
-                                moon.error(string.format("GameSettle booty_bag item_data err:\n%s",
-                                    json.pretty_encode(item_data)))
-                            end
-                        end
-                    end
-                end
-            end
+    --         -- 使用ds发回的进行item_data替换
+    --         if table.size(booty_item_datas) > 0 then
+    --             for uniqid, booty_item_data in pairs(booty_item_datas) do
+    --                 for _, item_data in pairs(unstack_items) do
+    --                     if item_data.common_info.config_id == booty_item_data.common_info.config_id
+    --                         and item_data.common_info.uniqid == 0 then
+    --                         item_data.common_info.uniqid = uniqid
+    --                         if item_data.special_info.durab_item then
+    --                             item_data.special_info.durab_item = table.copy(booty_item_data.special_info.durab_item,
+    --                                 true)
+    --                         elseif item_data.special_info.diagrams_item then
+    --                             item_data.special_info.diagrams_item = table.copy(
+    --                                 booty_item_data.special_info.diagrams_item,
+    --                                 true)
+    --                         elseif item_data.special_info.magic_item then
+    --                             item_data.special_info.magic_item = table.copy(booty_item_data.special_info.magic_item,
+    --                                 true)
+    --                         elseif item_data.special_info.antique_item then
+    --                             item_data.special_info.antique_item = table.copy(
+    --                                 booty_item_data.special_info.antique_item,
+    --                                 true)
+    --                         elseif item_data.special_info.space_ring then
+    --                             item_data.special_info.space_ring = table.copy(booty_item_data.special_info.space_ring,
+    --                                 true)
+    --                         else
+    --                             moon.error(string.format("GameSettle booty_bag item_data err:\n%s",
+    --                                 json.pretty_encode(item_data)))
+    --                         end
+    --                     end
+    --                 end
+    --             end
+    --         end
 
-            -- 从item_list中去除unstack_items中的item
-            for _, item_data in pairs(unstack_items) do
-                item_list[item_data.common_info.config_id].count = item_list[item_data.common_info.config_id].count - 1
-                if item_list[item_data.common_info.config_id].count == 0 then
-                    item_list[item_data.common_info.config_id] = nil
-                end
-            end
-            local bag_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, item_list, table.size(unstack_items))
-            if bag_code ~= ErrorCode.None then
-                -- 仓库已满 发送邮件
-                local attach_items_simple = {}
-                for item_id, item in pairs(item_list) do
-                    local new_simple_item = ItemDef.newItemSimple()
-                    new_simple_item.config_id = item_id
-                    new_simple_item.item_count = item.count
-                    attach_items_simple[item_id] = new_simple_item
-                end
-                -- local item_datas = {}
-                -- for _, item_data in pairs(stack_items) do
-                --     table.insert(item_datas, item_data)
-                -- end
-                -- for _, item_data in pairs(unstack_items) do
-                --     table.insert(item_datas, item_data)
-                -- end
-                -- local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
-                -- local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, item_list, {}, {})
-                local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, attach_items_simple, unstack_items, {})
-                if not mail_ret then
-                    -- moon.error(string.format("GameSettle RecvImmediateMail err:\n%s", json.pretty_encode(item_datas)))
-                    moon.error(string.format("GameSettle RecvImmediateMail err:\n%s", json.pretty_encode(item_list)))
-                    return
-                end
-            else
-                -- 添加道具
-                if table.size(stack_items) + table.size(unstack_items) > 0 then
-                    bag_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
-                    if bag_code ~= ErrorCode.None then
-                        scripts.Bag.RollBackWithChange(bag_change_log)
-                        moon.error(string.format("GameSettle AddItems stack_items err:\n%s",
-                            json.pretty_encode(stack_items)))
-                        moon.error(string.format("GameSettle AddItems unstack_items err:\n%s",
-                            json.pretty_encode(unstack_items)))
-                        return
-                    end
-                end
-            end
-        end
-    end
+    --         -- 从item_list中去除unstack_items中的item
+    --         for _, item_data in pairs(unstack_items) do
+    --             item_list[item_data.common_info.config_id].count = item_list[item_data.common_info.config_id].count - 1
+    --             if item_list[item_data.common_info.config_id].count == 0 then
+    --                 item_list[item_data.common_info.config_id] = nil
+    --             end
+    --         end
+    --         local bag_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, item_list, table.size(unstack_items))
+    --         if bag_code ~= ErrorCode.None then
+    --             -- 仓库已满 发送邮件
+    --             local attach_items_simple = {}
+    --             for item_id, item in pairs(item_list) do
+    --                 local new_simple_item = ItemDef.newItemSimple()
+    --                 new_simple_item.config_id = item_id
+    --                 new_simple_item.item_count = item.count
+    --                 attach_items_simple[item_id] = new_simple_item
+    --             end
+    --             -- local item_datas = {}
+    --             -- for _, item_data in pairs(stack_items) do
+    --             --     table.insert(item_datas, item_data)
+    --             -- end
+    --             -- for _, item_data in pairs(unstack_items) do
+    --             --     table.insert(item_datas, item_data)
+    --             -- end
+    --             -- local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
+    --             -- local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, item_list, {}, {})
+    --             local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, attach_items_simple, unstack_items, {})
+    --             if not mail_ret then
+    --                 -- moon.error(string.format("GameSettle RecvImmediateMail err:\n%s", json.pretty_encode(item_datas)))
+    --                 moon.error(string.format("GameSettle RecvImmediateMail err:\n%s", json.pretty_encode(item_list)))
+    --                 return
+    --             end
+    --         else
+    --             -- 添加道具
+    --             if table.size(stack_items) + table.size(unstack_items) > 0 then
+    --                 bag_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
+    --                 if bag_code ~= ErrorCode.None then
+    --                     scripts.Bag.RollBackWithChange(bag_change_log)
+    --                     moon.error(string.format("GameSettle AddItems stack_items err:\n%s",
+    --                         json.pretty_encode(stack_items)))
+    --                     moon.error(string.format("GameSettle AddItems unstack_items err:\n%s",
+    --                         json.pretty_encode(unstack_items)))
+    --                     return
+    --                 end
+    --             end
+    --         end
+    --     end
+    -- end
 
     local mod_params = {}
     if settle_info.booty_items or settle_info.booty_use_items then
