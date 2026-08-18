@@ -1628,7 +1628,8 @@ function Bag.AddUniqItem(bagType, baginfo, item_data, itype, logs)
             new_item.common_info.item_type = item_cfg.type1
             new_item.common_info.trade_cnt = item_data.common_info.trade_cnt
             if new_item.common_info.uniqid == 0 then
-                new_item.common_info.uniqid = uuid.next()
+                -- new_item.common_info.uniqid = uuid.next()
+                new_item.common_info.uniqid = common.UniqueId.next()
                 -- 只在古董 config_id 范围内打印日志
                 local config_id = item_data.common_info.config_id
                 if config_id >= ItemDefine.Antique.start and config_id <= ItemDefine.Antique.End then
@@ -1753,7 +1754,8 @@ function Bag.AddDurabItem(bagType, baginfo, item_data, change_log)
                 new_item.special_info.durab_item.cur_durability = item_cfg.durability
             end
             if new_item.common_info.uniqid == 0 then
-                new_item.common_info.uniqid = uuid.next()
+                -- new_item.common_info.uniqid = uuid.next()
+                new_item.common_info.uniqid = common.UniqueId.next()
             end
 
             baginfo.items[pos] = new_item
@@ -1914,7 +1916,8 @@ function Bag.AddSkinCard(bagType, baginfo, item_data, change_log)
                 new_item.common_info.trade_cnt = -1
             end
             if new_item.common_info.uniqid == 0 then
-                new_item.common_info.uniqid = uuid.next()
+                -- new_item.common_info.uniqid = uuid.next()
+                new_item.common_info.uniqid = common.UniqueId.next()
             end
 
             baginfo.items[pos] = new_item

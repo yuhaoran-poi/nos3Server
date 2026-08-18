@@ -30,7 +30,8 @@ function Teammgr.CreateTeam(uid, match_type, simple_data)
     end
     
     -- 生成唯一队伍ID
-    local team_id = uuid.next()
+    -- local team_id = uuid.next()
+    local team_id = common.UniqueId.next()
     -- 创建队伍数据
     context.team_info[team_id] = {
         team_id = team_id,

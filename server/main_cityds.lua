@@ -123,6 +123,8 @@ local function run(node_conf)
         moon.env("SERVER_START_TIMES", tostring(data.boot_times))
         ---初始化唯一ID生成器
         uuid.init(1, tonumber(arg[1]), data.boot_times)
+        -- 初始化永不重复的 UniqueId(用同一个 serverid 避免与现有 uuid 段位宽冲突)
+        common.UniqueId.init(tonumber(arg[1]))
 
         ---控制服务初始化顺序,Init一般为加载DB
         assert(moon.call("lua", moon.queryservice("auth"), "Init"))

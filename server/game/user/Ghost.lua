@@ -152,7 +152,8 @@ function Ghost.AddGhost(ghost_config_id)
 
     local ghost_info = GhostDef.newGhostData()
     ghost_info.config_id = ghost_config_id
-    ghost_info.uniqid = uuid.next()
+    -- ghost_info.uniqid = uuid.next()
+    ghost_info.uniqid = common.UniqueId.next()
 
     ghosts.ghost_list[ghost_info.uniqid] = ghost_info
 

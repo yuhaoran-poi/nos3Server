@@ -136,7 +136,8 @@ function GuildMgr.CreateGuild(creator_uid, guild_name)
     end
     
     -- 生成唯一公会ID
-    local guild_id = uuid.next()
+    -- local guild_id = uuid.next()
+    local guild_id = common.UniqueId.next()
     -- 查找node_guilds表中公会数量最少的节点
     local min_node =  GuildMgr.FindLeastLoadedNode()
     if not min_node then

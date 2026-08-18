@@ -56,7 +56,8 @@ function ChatMgr.CreateNearbyChannel(city_id)
     if channel then
         return { code = ErrorCode.ChannelAlreadyExists, error = "nearby chat channel already exists" }
     end
-    local channel_id = uuid.next()
+    -- local channel_id = uuid.next()
+    local channel_id = common.UniqueId.next()
     local conf = {
         name = "channel_nearby".. city_id,
         file = "chat/service_chatchannel.lua"
@@ -118,7 +119,8 @@ function ChatMgr.CreateWorldChannel(world_id)
         moon.error("create world chat channel failed: channel already exists! world_id = ", world_id)
         return { code = ErrorCode.ChannelAlreadyExists, error = "world chat channel already exists" }
     end
-    local channel_id = uuid.next()
+    -- local channel_id = uuid.next()
+    local channel_id = common.UniqueId.next()
     local conf = {
         name = "channel_world".. world_id,
         file = "chat/service_chatchannel.lua"
@@ -213,7 +215,8 @@ function ChatMgr.CreateGuildChannel(guild_id)
         moon.warn("create guild chat channel failed: channel already exists! guild_id = ", guild_id)
         return { code = ErrorCode.ChannelAlreadyExists, error = "guild chat channel already exists" }
     end
-    local channel_id = uuid.next()
+    -- local channel_id = uuid.next()
+    local channel_id = common.UniqueId.next()
     local conf = {
         name = "channel_guild" .. guild_id,
         file = "chat/service_chatchannel.lua"
@@ -275,7 +278,8 @@ function ChatMgr.CreateTeamChannel(team_id)
     if channel then
         return { code = ErrorCode.ChannelAlreadyExists, error = "team chat channel already exists" }
     end
-    local channel_id = uuid.next()
+    -- local channel_id = uuid.next()
+    local channel_id = common.UniqueId.next()
     local conf = {
         name = "channel_team".. team_id,
         file = "chat/service_chatchannel.lua"
@@ -332,7 +336,8 @@ function ChatMgr.CreateSystemChannel()
     if channel then
         return { code = ErrorCode.ChannelAlreadyExists, error = "system chat channel already exists" }
     end
-    local channel_id = uuid.next()
+    -- local channel_id = uuid.next()
+    local channel_id = common.UniqueId.next()
     local conf = {
         name = "channel_system".. system_id,
         file = "chat/service_chatchannel.lua"
@@ -405,7 +410,8 @@ function ChatMgr.CreateRoomChannel(room_id)
     if channel then
         return { code = ErrorCode.ChannelAlreadyExists, error = "room chat channel already exists" }
     end
-    local channel_id = uuid.next()
+    -- local channel_id = uuid.next()
+    local channel_id = common.UniqueId.next()
     local conf = {
         name = "channel_room" .. room_id,
         file = "chat/service_chatchannel.lua"
