@@ -328,7 +328,8 @@ function Role.AddRole(roleid)
         local new_item_data = ItemDef.newItemData()
         new_item_data.itype = ItemDefine.EItemSmallType.MagicItem
         new_item_data.common_info.config_id = init_magic_item_id
-        new_item_data.common_info.uniqid = uuid.next()
+        -- new_item_data.common_info.uniqid = uuid.next()
+        new_item_data.common_info.uniqid = common.UniqueId.next()
         new_item_data.common_info.item_count = 1
         new_item_data.common_info.item_type = magic_item_cfg.type1
         new_item_data.common_info.trade_cnt = magic_item_cfg.deal_num
@@ -357,7 +358,8 @@ function Role.AddRole(roleid)
                 local new_item_data = ItemDef.newItemData()
                 new_item_data.itype = ItemDefine.EItemSmallType.HumanDiagrams
                 new_item_data.common_info.config_id = diagrams_id
-                new_item_data.common_info.uniqid = uuid.next()
+                -- new_item_data.common_info.uniqid = uuid.next()
+                new_item_data.common_info.uniqid = common.UniqueId.next()
                 new_item_data.common_info.item_count = 1
                 new_item_data.common_info.item_type = diagrams_item_cfg.type1
                 new_item_data.common_info.trade_cnt = diagrams_item_cfg.deal_num
@@ -388,7 +390,8 @@ function Role.AddRole(roleid)
         local new_item_data = ItemDef.newItemData()
         new_item_data.itype = ItemDefine.EItemSmallType.SpaceRing
         new_item_data.common_info.config_id = init_space_ring_id
-        new_item_data.common_info.uniqid = uuid.next()
+        -- new_item_data.common_info.uniqid = uuid.next()
+        new_item_data.common_info.uniqid = common.UniqueId.next()
         new_item_data.common_info.item_count = 1
         new_item_data.common_info.item_type = space_ring_cfg.type1
         new_item_data.common_info.trade_cnt = space_ring_cfg.deal_num
@@ -2325,9 +2328,22 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
     end
 
     -- 消耗配置
-    local common_cfg = CommonCfgDef.getConf("MaintenanceCost")
-    if not common_cfg then
-        moon.error("role_repair_func common_cfg is nil")
+    -- local common_cfg = CommonCfgDef.getConf("MaintenanceCost")
+    -- if not common_cfg then
+    --     moon.error("role_repair_func common_cfg is nil")
+    --     return context.S2C(context.net_id, CmdCode.PBRoleEquipmentRepairRspCmd,
+    --         {
+    --             code = ErrorCode.ConfigError,
+    --             error = "配置错误",
+    --             uid = req.msg.uid,
+    --             roleid = req.msg.roleid or 0,
+    --             already_repairs = {},
+    --         },
+    --         req.msg_context.stub_id)
+    -- end
+    local maintenance_cfgs = GameCfg.MaintenanceCost1
+    if not maintenance_cfgs or table.size(maintenance_cfgs) <= 0 then
+        moon.error("repair_func maintenance_cfgs is nil")
         return context.S2C(context.net_id, CmdCode.PBRoleEquipmentRepairRspCmd,
             {
                 code = ErrorCode.ConfigError,
@@ -2357,6 +2373,18 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
         local uniq_item_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
         if not uniq_item_cfg then
             moon.error("role_repair_func uniq_item_cfg is nil", item_data.common_info.config_id)
+            return ErrorCode.ConfigError, 0
+        end
+        local cur_maintenance_cfg
+        for _, maintenance_cfg in pairs(maintenance_cfgs) do
+            if maintenance_cfg.type1 == uniq_item_cfg.type1
+                and maintenance_cfg.type2 == uniq_item_cfg.type2 then
+                cur_maintenance_cfg = maintenance_cfg
+                break
+            end
+        end
+        if not cur_maintenance_cfg or not cur_maintenance_cfg.cost then
+            moon.error("repair_func cur_maintenance_cfg is nil", item_data.common_info.config_id)
             return ErrorCode.ConfigError, 0
         end
 
@@ -2399,7 +2427,8 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
         local change_cost_items = table.copy(old_cost_items, true)
         local change_cost_coins = table.copy(old_cost_coins, true)
         moon.info(string.format("role_repair_func 1 change_cost_coins = %s", json.pretty_encode(change_cost_items)))
-        ItemDefine.GetItemsFromCfg(common_cfg.items, fix_durability, true, change_cost_items, change_cost_coins)
+        -- ItemDefine.GetItemsFromCfg(common_cfg.items, fix_durability, true, change_cost_items, change_cost_coins)
+        ItemDefine.GetItemsFromCfg(cur_maintenance_cfg.cost, fix_durability, true, change_cost_items, change_cost_coins)
 
         -- 获取镇山之宝修复耐久度货币消耗折扣
         local repair_discount = scripts.AweItem.GetRepairCostDiscount()
@@ -2436,7 +2465,7 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
     local cost_items = {}
     local cost_coins = {}
     local add_durability_list = {}
-    -- local ret_code = ErrorCode.None
+    local last_ret_code = ErrorCode.None
     -- local fix_durability = 0
     for _, need_repair in ipairs(req.msg.need_repairs) do
         local smallType = ItemDefine.GetItemType(need_repair.config_id)
@@ -2446,6 +2475,7 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
                 and role_info.magic_item.common_info.uniqid == need_repair.uniqid then
                 local ret_code, fix_durability, change_cost_items, change_cost_coins = role_repair_func(
                     role_info.magic_item, smallType, cost_items, cost_coins)
+                last_ret_code = ret_code
                 if ret_code == ErrorCode.None then
                     if change_cost_items and table.size(change_cost_items) > 0 then
                         cost_items = change_cost_items
@@ -2471,6 +2501,7 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
                 and role_info.digrams_cards[need_repair.pos].common_info.uniqid == need_repair.uniqid then
                 local ret_code, fix_durability, change_cost_items, change_cost_coins = role_repair_func(
                     role_info.digrams_cards[need_repair.pos], smallType, cost_items, cost_coins)
+                last_ret_code = ret_code
                 if ret_code == ErrorCode.None then
                     if change_cost_items and table.size(change_cost_items) > 0 then
                         cost_items = change_cost_items
@@ -2494,6 +2525,7 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
                 and role_info.space_ring.common_info.uniqid == need_repair.uniqid then
                 local ret_code, fix_durability, change_cost_items, change_cost_coins = role_repair_func(
                     role_info.space_ring, smallType, cost_items, cost_coins)
+                last_ret_code = ret_code
                 if ret_code == ErrorCode.None then
                     if change_cost_items and table.size(change_cost_items) > 0 then
                         cost_items = change_cost_items
@@ -2591,7 +2623,7 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
 
     return context.S2C(context.net_id, CmdCode.PBRoleEquipmentRepairRspCmd,
         {
-            code = ret_code,
+            code = last_ret_code,
             error = "",
             uid = req.msg.uid,
             roleid = req.msg.roleid or 0,

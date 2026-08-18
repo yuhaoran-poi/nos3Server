@@ -1978,11 +1978,35 @@ function User.PBClientItemRepairReqCmd(req)
         local old_item_data = table.copy(item_data)
 
         -- 消耗配置
-        local common_cfg = CommonCfgDef.getConf("MaintenanceCost")
-        if not common_cfg then
-            moon.error("repair_func common_cfg is nil")
+        -- local common_cfg = CommonCfgDef.getConf("MaintenanceCost")
+        -- if not common_cfg then
+        --     moon.error("repair_func common_cfg is nil")
+        --     return ErrorCode.ConfigError
+        -- end
+        
+        local maintenance_cfgs = GameCfg.MaintenanceCost1
+        if not maintenance_cfgs or table.size(maintenance_cfgs) <= 0 then
+            moon.error("repair_func maintenance_cfgs is nil", item_data.common_info.config_id)
             return ErrorCode.ConfigError
         end
+        local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+        if not uniqitem_cfg then
+            moon.error("repair_func uniqitem_cfg is nil", item_data.common_info.config_id)
+            return ErrorCode.ConfigError
+        end
+        local cur_maintenance_cfg
+        for _, maintenance_cfg in pairs(maintenance_cfgs) do
+            if maintenance_cfg.type1 == uniqitem_cfg.type1
+                and maintenance_cfg.type2 == uniqitem_cfg.type2 then
+                cur_maintenance_cfg = maintenance_cfg
+                break
+            end
+        end
+        if not cur_maintenance_cfg or not cur_maintenance_cfg.cost then
+            moon.error("repair_func cur_maintenance_cfg is nil", item_data.common_info.config_id)
+            return ErrorCode.ConfigError
+        end
+
         local cost_items = {}
         local cost_coins = {}
         local change_logs = {}
@@ -1993,51 +2017,72 @@ function User.PBClientItemRepairReqCmd(req)
             if item_data.special_info.magic_item.strong_value <= 0 then
                 return ErrorCode.StrongNotEnough
             end
-            local magic_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
-            if not magic_cfg then
-                moon.error("repair_func magic_cfg is nil", item_data.common_info.config_id)
-                return ErrorCode.ConfigError
-            end
-            if item_data.special_info.magic_item.cur_durability >= magic_cfg.durability then
+            -- local magic_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+            -- if not magic_cfg then
+            --     moon.error("repair_func magic_cfg is nil", item_data.common_info.config_id)
+            --     return ErrorCode.ConfigError
+            -- end
+            -- if item_data.special_info.magic_item.cur_durability >= magic_cfg.durability then
+            --     return ErrorCode.DurabilityMax
+            -- end
+            -- add_durability = math.min(magic_cfg.durability - item_data.special_info.magic_item.cur_durability,
+            --     item_data.special_info.magic_item.strong_value)
+            -- ItemDefine.GetItemsFromCfg(common_cfg.items, add_durability, true, cost_items, cost_coins)
+
+            if item_data.special_info.magic_item.cur_durability >= uniqitem_cfg.durability then
                 return ErrorCode.DurabilityMax
             end
-
-            add_durability = math.min(magic_cfg.durability - item_data.special_info.magic_item.cur_durability,
+            add_durability = math.min(uniqitem_cfg.durability - item_data.special_info.magic_item.cur_durability,
                 item_data.special_info.magic_item.strong_value)
-            ItemDefine.GetItemsFromCfg(common_cfg.items, add_durability, true, cost_items, cost_coins)
+            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg.cost, add_durability, true, cost_items, cost_coins)
+
         elseif smallType == ItemDefine.EItemSmallType.HumanDiagrams
             or smallType == ItemDefine.EItemSmallType.GhostDiagrams then
             if item_data.special_info.diagrams_item.strong_value <= 0 then
                 return ErrorCode.StrongNotEnough
             end
-            local uniq_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
-            if not uniq_cfg then
-                moon.error("repair_func uniq_cfg is nil", item_data.common_info.config_id)
-                return ErrorCode.ConfigError
-            end
-            if item_data.special_info.diagrams_item.cur_durability >= uniq_cfg.durability then
+            -- local uniq_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+            -- if not uniq_cfg then
+            --     moon.error("repair_func uniq_cfg is nil", item_data.common_info.config_id)
+            --     return ErrorCode.ConfigError
+            -- end
+            -- if item_data.special_info.diagrams_item.cur_durability >= uniq_cfg.durability then
+            --     return ErrorCode.DurabilityMax
+            -- end
+            -- add_durability = math.min(uniq_cfg.durability - item_data.special_info.diagrams_item.cur_durability,
+            --     item_data.special_info.diagrams_item.strong_value)
+            -- ItemDefine.GetItemsFromCfg(common_cfg.items, add_durability, true, cost_items, cost_coins)
+            
+            if item_data.special_info.diagrams_item.cur_durability >= uniqitem_cfg.durability then
                 return ErrorCode.DurabilityMax
             end
-
-            add_durability = math.min(uniq_cfg.durability - item_data.special_info.diagrams_item.cur_durability,
+            add_durability = math.min(uniqitem_cfg.durability - item_data.special_info.diagrams_item.cur_durability,
                 item_data.special_info.diagrams_item.strong_value)
-            ItemDefine.GetItemsFromCfg(common_cfg.items, add_durability, true, cost_items, cost_coins)
+            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg.cost, add_durability, true, cost_items, cost_coins)
+
         elseif smallType == ItemDefine.EItemSmallType.SpaceRing then
             if item_data.special_info.space_ring.strong_value <= 0 then
                 return ErrorCode.StrongNotEnough
             end
-            local uniq_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
-            if not uniq_cfg then
-                moon.error("repair_func uniq_cfg is nil", item_data.common_info.config_id)
-                return ErrorCode.ConfigError
-            end
-            if item_data.special_info.space_ring.cur_durability >= uniq_cfg.durability then
+            -- local uniq_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+            -- if not uniq_cfg then
+            --     moon.error("repair_func uniq_cfg is nil", item_data.common_info.config_id)
+            --     return ErrorCode.ConfigError
+            -- end
+            -- if item_data.special_info.space_ring.cur_durability >= uniq_cfg.durability then
+            --     return ErrorCode.DurabilityMax
+            -- end
+            -- add_durability = math.min(uniq_cfg.durability - item_data.special_info.space_ring.cur_durability,
+            --     item_data.special_info.space_ring.strong_value)
+            -- ItemDefine.GetItemsFromCfg(common_cfg.items, add_durability, true, cost_items, cost_coins)
+
+            if item_data.special_info.space_ring.cur_durability >= uniqitem_cfg.durability then
                 return ErrorCode.DurabilityMax
             end
-
-            add_durability = math.min(uniq_cfg.durability - item_data.special_info.space_ring.cur_durability,
+            add_durability = math.min(uniqitem_cfg.durability - item_data.special_info.space_ring.cur_durability,
                 item_data.special_info.space_ring.strong_value)
-            ItemDefine.GetItemsFromCfg(common_cfg.items, add_durability, true, cost_items, cost_coins)
+            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg.cost, add_durability, true, cost_items, cost_coins)
+
         else
             return ErrorCode.ItemTypeMismatch
         end

@@ -349,6 +349,9 @@ end
 
 -- 更新用户昵称方法
 function _M.updateusernickname(addr, user_id, nickname)
+    if nickname == nil or nickname == "" then
+        nickname = "dbt" .. tostring(user_id)
+    end
     local cmd = string.format([[
         UPDATE mgame.account SET username = '%s' WHERE user_id = %d;
     ]], nickname, user_id)
