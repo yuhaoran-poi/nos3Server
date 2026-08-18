@@ -423,6 +423,10 @@ local ErrorCode = {
     UpStarProbFail = 1623,
     --- 赝品不可展示
     AntiqueIsFake = 1624,
+    --- 坚固值不为0
+    StrongNotZero = 1625,
+    --- 坚固值修复次数已达上限
+    StrongRepairMax = 1626,
 
     --角色相关错误码
     --- 角色不存在
