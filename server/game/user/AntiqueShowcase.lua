@@ -149,44 +149,10 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
     end
 
     local change_logs = {}
-
-    -- 检查是否为可堆叠古董（鉴定前）
     local is_stack_antique = item_data.itype == ItemDefine.EItemSmallType.StackAntique
 
-    -- 如果是可堆叠古董，需要先转换为唯一古董
-    if is_stack_antique then
-        -- 使用 GetSpecialItemFromCommonItem 方法转换为唯一古董
-        local special_err_code, change_log = scripts.Bag.GetSpecialItemFromCommonItem(BagDef.BagType.Cangku, bag_pos, config_id)
-        if special_err_code ~= ErrorCode.None then
-            return special_err_code, "转换古董失败"
-        end
-
-        -- 从 change_log 中获取新位置，并合并物品变化日志
-        if change_log then
-            if not change_logs then
-                change_logs = {}
-            end
-            for bag_type, logs in pairs(change_log) do
-                change_logs[bag_type] = change_logs[bag_type] or {}
-                for pos, old_item in pairs(logs) do
-                    if table.size(old_item) == 0 then
-                        -- 新增物品的位置
-                        bag_pos = pos
-                    else
-                        -- 被删除的物品记录到日志
-                        change_logs[bag_type][pos] = old_item
-                    end
-                end
-            end
-        end
-
-        -- 获取转换后的古董数据
-        err_code, item_data = scripts.Bag.MutOneItemData(BagDef.BagType.Cangku, bag_pos)
-        if err_code ~= ErrorCode.None or not item_data then
-            return err_code, "获取转换后的古董失败"
-        end
-    else
-        -- 已鉴定的古董需要检查唯一性
+    -- 非堆叠古董的前置检查
+    if not is_stack_antique then
         if not uniqid or uniqid <= 0 then
             return ErrorCode.ParamInvalid, "无效请求参数"
         end
@@ -196,30 +162,26 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
             return ErrorCode.ItemNotExist, "道具不存在"
         end
 
-        -- 检查古董信息是否存在
         if not item_data.special_info or not item_data.special_info.antique_item then
             return ErrorCode.ItemNotExist, "古董信息不存在"
         end
 
-        -- 古董不存在或剩余可鉴定次数不足或是赝品
         if item_data.special_info.antique_item.remain_identify_num <= 0 or item_data.special_info.antique_item.is_fake == 1 then
             return ErrorCode.IdentifyInvalid, "古董剩余可鉴定次数不足或是赝品"
         end
     end
 
-    local old_item_data = table.copy(item_data, true) or item_data
-
+    -- 提前计算真实 config_id 和消耗（在转换道具之前检查）
     local real_config_id = config_id
-    local a_cfg
-    if(is_stack_antique) then
-        local convert_config_id = GameCfg.LightConvert[config_id].getid
-        if not convert_config_id or convert_config_id <= 0 then
+    if is_stack_antique then
+        local light_convert_cfg = GameCfg.LightConvert[config_id]
+        if not light_convert_cfg or not light_convert_cfg.getid or light_convert_cfg.getid <= 0 then
             return ErrorCode.ItemNotExist, "道具不存在"
         end
-        real_config_id = convert_config_id
+        real_config_id = light_convert_cfg.getid
     end
 
-    a_cfg = GameCfg.AntiqueItem[real_config_id]
+    local a_cfg = GameCfg.AntiqueItem[real_config_id]
     if not a_cfg then
         return ErrorCode.ItemNotExist, "道具不存在"
     end
@@ -229,7 +191,7 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
     local cost_coins = {}
     ItemDefine.GetItemsFromCfg(a_cfg.identifycost, 1, true, cost_items, cost_coins)
 
-    -- 检测道具是否足够
+    -- 检测道具是否足够（在转换之前检查，避免转换后无法回滚）
     err_code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
     if err_code ~= ErrorCode.None then
         return err_code, "道具不足"
@@ -239,6 +201,35 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
     if err_code ~= ErrorCode.None then
         return err_code, "金币不足"
     end
+
+    -- 消耗已确认足够，现在执行可堆叠古董的转换
+    if is_stack_antique then
+        local special_err_code, change_log = scripts.Bag.GetSpecialItemFromCommonItem(BagDef.BagType.Cangku, bag_pos, config_id)
+        if special_err_code ~= ErrorCode.None then
+            return special_err_code, "转换古董失败"
+        end
+
+        if change_log then
+            for bag_type, logs in pairs(change_log) do
+                change_logs[bag_type] = change_logs[bag_type] or {}
+                for pos, old_item in pairs(logs) do
+                    if table.size(old_item) == 0 then
+                        bag_pos = pos
+                    else
+                        change_logs[bag_type][pos] = old_item
+                    end
+                end
+            end
+        end
+
+        err_code, item_data = scripts.Bag.MutOneItemData(BagDef.BagType.Cangku, bag_pos)
+        if err_code ~= ErrorCode.None or not item_data then
+            scripts.Bag.RollBackWithChange(change_logs)
+            return err_code, "获取转换后的古董失败"
+        end
+    end
+
+    local old_item_data = table.copy(item_data, true) or item_data
 
     -- 扣除道具消耗
     if table.size(cost_items) > 0 then
