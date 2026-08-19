@@ -34,7 +34,7 @@ message PBDsCreateData
 	int32 boss_id		= 5;
 	string server_ip    = 6;
 	int32 server_port	= 7;
-	repeated int32 uids = 8;
+	repeated int64 uids = 8;
 }
 
 // 客户端和服务器直接通信的消息

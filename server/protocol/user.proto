@@ -22,7 +22,7 @@ message PBUserAttr
     int64 account_create_time = 8;// 账户创建时间
 	// 账户经验 账户等级
     int32 account_level   = 9;
-    int32 account_exp     = 10;
+    int64 account_exp     = 10;
     // 战队ID
     int64 guild_id       = 11;
     string guild_name      = 12;
@@ -146,7 +146,7 @@ message PBClientItemUpLvReqCmd
 {
 	int64 uid		= 1;
 	int32 config_id = 2;
-	int32 add_exp	= 3;
+	int64 add_exp	= 3;
 }
 
 message PBClientItemUpLvRspCmd
@@ -155,7 +155,7 @@ message PBClientItemUpLvRspCmd
     string error	= 2; // 错误信息
 	int64 uid		= 3;
 	int32 config_id = 4;
-	int32 add_exp	= 5;
+	int64 add_exp	= 5;
 }
 
 // 客户端请求--使用道具升级
@@ -342,8 +342,8 @@ message PBUseItemReqCmd
 {
 	int64 uid	= 1;
 	int32 use_item_id	= 2;
-	int32 use_item_cnt	= 3;
-	map<int32, int32> choose_item_ids	= 4;
+	int64 use_item_cnt	= 3;
+	map<int32, int64> choose_item_ids	= 4;
 }
 
 message PBUseItemRspCmd
@@ -352,7 +352,7 @@ message PBUseItemRspCmd
     string  error   = 2; // 错误信息
 	int64 uid	= 3;
 	int32 use_item_id	= 4;
-	int32 use_item_cnt	= 5;
+	int64 use_item_cnt	= 5;
 }
 
 // 客户端使用唯一道具
@@ -484,4 +484,21 @@ message PBGetBattleReportDetailRspCmd
     string  error   = 2; // 错误信息
 	int64 uid	= 3;
 	map<int64, string>	battle_report_infos	= 4;
+}
+
+// 客户端请求--坚固值维修
+message PBClientStrongRepairReqCmd
+{
+	int64 uid			= 1;
+	int64 repair_uniqid	= 2;	// 要修复的装备唯一id
+	int32 pos			= 3;	// 装备所在的格子号
+}
+
+message PBClientStrongRepairRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid			= 3;
+	int64 repair_uniqid	= 4;
+	int32 pos			= 5;	// 装备所在的格子号
 }

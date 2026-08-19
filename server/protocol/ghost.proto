@@ -14,7 +14,7 @@ message PBGhostData
 	int32 config_id			= 1;	//配置ID
 	int64 uniqid			= 2;	//唯一ID
 	int32 star_level		= 3;	//星级
-	int32 exp				= 4;	//经验值
+	int64 exp				= 4;	//经验值
 	map<int32, PBItemData> digrams_cards	= 5;	//八卦牌
 	repeated PBSkill passive_skills			= 6;	//被动技能
 	repeated PBSkill active_skills			= 7;	//主动技能
@@ -27,7 +27,7 @@ message PBGhostImage
 {
 	int32 config_id		= 1;	//配置ID
 	int32 star_level	= 2;	//星级
-	int32 exp			= 3;	//经验值
+	int64 exp			= 3;	//经验值
 	int32 cur_skin_id	= 4;	//当前装备皮肤
 	repeated int32 skin_id_list	= 5;	//拥有皮肤
 	int32 star_fail_cnt		= 6;	//升星失败次数
@@ -48,7 +48,7 @@ message PBGourd
 	int32 gourd_id		= 1;	//葫芦id
 	string nick_name	= 2;	//葫芦昵称
 	int32 up_level		= 3;	//葫芦等级
-	int32 up_exp		= 4;	//葫芦经验
+	int64 up_exp		= 4;	//葫芦经验
 	int32 total_talent	= 5;	//总天赋点
 	int32 cur_talent	= 6;	//当前天赋点
 	repeated PBAttribute talent_attr = 8;	//天赋属性

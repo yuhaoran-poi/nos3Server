@@ -2,9 +2,9 @@ syntax = "proto3";
 
 message PBTradeData
 {
-	int32 single_price = 1;	// 单价
-	int32 sale_num = 2;	// 售出数量
-	int32 now_num = 3; // 现有数量
+	int64 single_price = 1;	// 单价
+	int64 sale_num = 2;	// 售出数量
+	int64 now_num = 3; // 现有数量
 }
 
 message PBTradeProductBaseData
@@ -12,7 +12,7 @@ message PBTradeProductBaseData
 	int64 trade_id		= 1;	//交易id
 	int64 seller_uid	= 2;	//卖家id
 	int32 config_id		= 3;	//道具的配置id
-	int32 total_num		= 4;	//上架道具的总数量
+	int64 total_num		= 4;	//上架道具的总数量
 	int64 beg_ts		= 5;	//商品上架时间
 	int64 end_ts		= 6;	//商品下架时间
 	int32 state			= 7;
@@ -24,8 +24,8 @@ message PBTradeLogData
 	int64 log_id	= 1;
 	int64 trade_id	= 2;
 	int32 config_id	= 3;		//商品配置id
-	int32 deal_num	= 4;		//成交数量
-	int32 deal_price	= 5;	//成交价
+	int64 deal_num	= 4;		//成交数量
+	int64 deal_price	= 5;	//成交价
 	int64 seller_uid	= 6;	//卖家id
 	int64 buyer_uid		= 7;	//买家id
 	int64 trade_ts		= 8;	//交易时间
@@ -36,24 +36,24 @@ message PBTradeLogData
 message PBTradeSearchSimpleData
 {
 	int32 config_id	= 1;	//道具的配置id
-	int32 min_price	= 2;	//当前最低价
-	int32 last_deal_price	= 3;	//最近成交价
+	int64 min_price	= 2;	//当前最低价
+	int64 last_deal_price	= 3;	//最近成交价
 	float yes_average_price = 4;	//昨日成交平均价
-	int32 min_price_num		= 5;	//最低价数量
+	int64 min_price_num		= 5;	//最低价数量
 	int64 now_total_num		= 6;	//当前在售总数量
 }
 
 message PBTradeSearchData
 {
 	PBTradeSearchSimpleData trade_sim_data	= 1;
-	map<int32, int32> price_num	= 2;	//价格-数量
+	map<int64, int64> price_num	= 2;	//价格-数量
 }
 
 message PBPriceAndNum
 {
-	int32 price		= 1;
-	int32 now_num	= 2;
-	repeated int32 trade_id_list	= 3;
+	int64 price		= 1;
+	int64 now_num	= 2;
+	repeated int64 trade_id_list	= 3;
 }
 
 message PBTradeRecordInfo
@@ -61,14 +61,14 @@ message PBTradeRecordInfo
 	int32 trade_config_id	= 1;	//道具的配置id
 	int64 sale_num	= 2;
 	int64 sale_total_price	= 3;
-	int32 last_deal_price	= 4;
+	int64 last_deal_price	= 4;
 	int64 update_ts			= 5;
 	int64 yes_sale_num		= 6;
 	int64 yes_sale_total_price	= 7;
 	float yes_average_price	= 8;
-	int32 min_price			= 9;
-	int32 min_price_num		= 10;
-	map<int32, PBPriceAndNum> price_to_num	= 11;
+	int64 min_price			= 9;
+	int64 min_price_num		= 10;
+	map<int64, PBPriceAndNum> price_to_num	= 11;
 }
 
 message PBSelfTradeInfo
@@ -145,8 +145,8 @@ message PBTradeSaleReqCmd
 	int64 uid	= 1;
 	int32 config_id	= 2;
 	int32 pos	= 3;
-	int32 sale_num	= 4;
-	int32 single_price	= 5;
+	int64 sale_num	= 4;
+	int64 single_price	= 5;
 	int64 sale_ts	= 6;
 }
 
@@ -163,8 +163,8 @@ message PBTradeBuyReqCmd
 {
 	int64 uid	= 1;
 	int32 config_id	= 2;
-	int32 buy_num	= 3;
-	int32 buy_max_price	= 4;
+	int64 buy_num	= 3;
+	int64 buy_max_price	= 4;
 }
 
 message PBTradeBuyRspCmd
@@ -172,8 +172,8 @@ message PBTradeBuyRspCmd
 	int32 code = 1; // 服务器返回,0成功,其他失败
     string error = 2; // 错误信息
 	int64 uid	= 3;
-	int32 buy_num	= 4;
-	int32 buy_total_price	= 5;
+	int64 buy_num	= 4;
+	int64 buy_total_price	= 5;
 }
 
 // 下架交易行商品
@@ -222,7 +222,7 @@ message PBTradeGetAllYesAveragePriceRspCmd
 message PBBuySingle
 {
 	int32 config_id	= 1;
-	int32 buy_num	= 2;
+	int64 buy_num	= 2;
 	int64 buy_max_price	= 3;
 }
 
@@ -237,7 +237,7 @@ message PBTradeBuyComplexRspCmd
 	int32 code = 1; // 服务器返回,0成功,其他失败
     string error = 2; // 错误信息
 	int64 uid	= 3;
-	map<int32, int32> buy_id_num	= 4;
+	map<int32, int64> buy_id_num	= 4;
 	int64 buy_total_price	= 5;
 }
 

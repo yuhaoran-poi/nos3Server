@@ -3,8 +3,8 @@ syntax = "proto3";
 message PBConditionData
 {
 	int32 cond_id		= 1;
-	int32 target_value	= 2;
-	int32 now_value		= 3;
+	int64 target_value	= 2;
+	int64 now_value		= 3;
 	int32 is_complete	= 4;
 	repeated int32 params	= 5;
 	repeated int32 arr_params	= 6;

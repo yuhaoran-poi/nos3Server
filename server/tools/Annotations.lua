@@ -2101,6 +2101,7 @@
 ---@class PBDurabItem
 ---@field public cur_durability integer @当前耐久度
 ---@field public strong_value integer @坚固值
+---@field public repair_strong_cnt integer @修理坚固值次数
 
 
 ---@class PBMagicItem
@@ -2108,6 +2109,7 @@
 ---@field public strong_value integer @当前坚固值
 ---@field public tabooword_id integer @讳字id
 ---@field public light_cnt integer @开光次数
+---@field public repair_strong_cnt integer @修理坚固值次数
 ---@field public tags PBTag[] @随机词条id,最大10条
 ---@field public ability_tag PBTag[] @能力词条
 
@@ -2117,6 +2119,7 @@
 ---@field public strong_value integer @当前坚固值
 ---@field public tabooword_id integer @讳字id
 ---@field public light_cnt integer @开光次数
+---@field public repair_strong_cnt integer @修理坚固值次数
 ---@field public tags PBTag[] @随机词条id,最大10条
 ---@field public ability_tag PBTag[] @能力词条
 
@@ -2126,6 +2129,7 @@
 ---@field public strong_value integer @当前坚固值
 ---@field public tabooword_id integer @讳字id
 ---@field public light_cnt integer @开光次数
+---@field public repair_strong_cnt integer @修理坚固值次数
 ---@field public tags PBTag[] @随机词条id,最大10条
 ---@field public ability_tag PBTag[] @能力词条
 
@@ -4271,6 +4275,20 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public battle_report_infos table<integer, string>
+
+
+---@class PBClientStrongRepairReqCmd
+---@field public uid integer
+---@field public repair_uniqid integer @要修复的装备唯一id
+---@field public pos integer @装备所在的格子号
+
+
+---@class PBClientStrongRepairRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public repair_uniqid integer
+---@field public pos integer @装备所在的格子号
 
 
 

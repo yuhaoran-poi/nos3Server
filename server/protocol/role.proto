@@ -29,7 +29,7 @@ message PBRoleData
 {
 	int32 config_id			= 1;	//配置ID
 	int32 star_level		= 2;	//星级
-	int32 exp				= 3;	//经验值
+	int64 exp				= 3;	//经验值
 	PBItemData magic_item	= 4;	//法器
 	map<int32, PBItemData> digrams_cards	= 5;	//八卦牌
 	map<int32, int32> equip_books	= 6;	//已装备真经
@@ -63,7 +63,7 @@ message PBRoleLog
     int64 uid   = 1;
     int32 config_id = 2;
     int32 star_level	= 3;
-    int32 exp   = 4;
+    int64 exp   = 4;
     PBRoleData role_data	= 5;
 	string change_reason	= 6;
     int64 log_ts	= 7;

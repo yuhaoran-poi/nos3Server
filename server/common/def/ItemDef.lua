@@ -106,6 +106,7 @@ local defaultPBItemCommonData = {
 local defaultPBDurabItem = {
     cur_durability = 0,
     strong_value = 0,
+    repair_strong_cnt = 0,
 }
 
 local defaultPBMagicItem = {
@@ -113,6 +114,7 @@ local defaultPBMagicItem = {
     strong_value = 0,
     tabooword_id = 0,
     light_cnt = 0,
+    repair_strong_cnt = 0,
     tags = {},
     ability_tag = {},
 }
@@ -122,6 +124,7 @@ local defaultPBDiagramsCard = {
     strong_value = 0,
     tabooword_id = 0,
     light_cnt = 0,
+    repair_strong_cnt = 0,
     tags = {},
     ability_tag = {},
 }
@@ -131,6 +134,7 @@ local defaultPBSpaceRing = {
     strong_value = 0,
     tabooword_id = 0,
     light_cnt = 0,
+    repair_strong_cnt = 0,
     tags = {},
     ability_tag = {},
 }

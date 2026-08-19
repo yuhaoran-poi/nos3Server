@@ -2631,7 +2631,8 @@ function Bag.StackItems(srcBagType, srcPos, destBagType, destPos, change_log)
 
     local srcBag = bagdata[srcBagType]
     local destBag = bagdata[destBagType]
-    if srcBag.capacity < srcPos or destBag.capacity < destPos then
+    if srcBag.capacity < srcPos or destBag.capacity < destPos
+        or srcPos <= 0 or destPos <= 0 then
         return ErrorCode.BagCapacityOverflow
     end
 
@@ -2725,7 +2726,8 @@ function Bag.SplitItem(srcBagType, srcPos, destBagType, destPos, split_count, ch
 
     local srcBag = bagdata[srcBagType]
     local destBag = bagdata[destBagType]
-    if srcBag.capacity < srcPos or destBag.capacity < destPos then
+    if srcBag.capacity < srcPos or destBag.capacity < destPos
+        or srcPos <= 0 or destPos <= 0 then
         return ErrorCode.BagCapacityOverflow
     end
 
@@ -2804,7 +2806,8 @@ function Bag.MoveItem(srcBagType, srcPos, destBagType, destPos, change_log)
 
     local srcBag = bagdata[srcBagType]
     local destBag = bagdata[destBagType]
-    if srcBag.capacity < srcPos or destBag.capacity < destPos then
+    if srcBag.capacity < srcPos or destBag.capacity < destPos
+        or srcPos <= 0 or destPos <= 0 then
         return ErrorCode.BagCapacityOverflow
     end
 

@@ -18,7 +18,7 @@ message PBGuildItemData{
     int64 grid_id = 1;            //背包格子ID
     int64 item_uid = 2;    //物品实例ID
     int32 item_id = 3;            // 配置文件ID
-    int32 item_num = 4;        // 数量
+    int64 item_num = 4;        // 数量
 }
 
 // 公会道具列表
@@ -99,7 +99,7 @@ message PBGuildRecordInfo{
 	repeated PBItemData  spoils_item =15;     //只在战利品发放时使用，物品id
 	int32   season_point = 16;      //只在ERT_SEASON_POINT时使用
     string  op_mgr_name = 17;       //发放管理员名字
-    int32	 rechage_num = 18;       //玩家充值的灵石数量 
+    int64	 rechage_num = 18;       //玩家充值的灵石数量 
 	int64 operater_uid = 19;			//操作玩家UID
 }
 

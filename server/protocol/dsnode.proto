@@ -10,13 +10,13 @@ import "aweitem.proto";
 message PBGameChangeRoleInfo
 {
     int32 roleid   = 1;
-    int32 add_role_exp  = 2;    //角色经验变化
+    int64 add_role_exp  = 2;    //角色经验变化
     map<int64, int32> magic_item_durability   = 3;	//法器耐久值
     map<int64, int32> digrams_cards_durability	= 4;	//八卦牌耐久值
     map<int64, int32> space_ring_durability	= 5;	//空间戒指耐久值
-    map<int32, int32> magic_item_exp    = 6;    //法器增加经验
-    map<int32, int32> digrams_cards_exp = 7;    //八卦牌增加经验
-    map<int32, int32> space_ring_exp = 8;       //空间戒指增加经验
+    map<int32, int64> magic_item_exp    = 6;    //法器增加经验
+    map<int32, int64> digrams_cards_exp = 7;    //八卦牌增加经验
+    map<int32, int64> space_ring_exp = 8;       //空间戒指增加经验
 }
 
 message PBInGameKillMonster
@@ -29,7 +29,7 @@ message PBInGameKillMonster
 message PBDsUseItemInfo
 {
     int32 config_id     = 1;
-    int32 item_count    = 2;
+    int64 item_count    = 2;
     int32 cur_durability    = 3;
 }
 
@@ -37,7 +37,7 @@ message PBDsUseItemInfo
 message PBGameSettle
 {
     string settle_data = 1;//战报详情
-    int32 account_experience = 2;//账户经验值
+    int64 account_experience = 2;//账户经验值
     repeated PBGameChangeRoleInfo game_role_change = 3;//角色信息变更
     PBBag consume_bag   = 4;//消耗品背包
     PBBag booty_bag     = 5;//战利品背包    --废弃

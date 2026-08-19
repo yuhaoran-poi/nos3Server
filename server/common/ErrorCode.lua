@@ -158,6 +158,8 @@ local ErrorCode = {
     RoomDsLinkInvalid = 918,
     ---房间内玩家账户经验不足
     RoomPlayerAccountExpError = 919,
+    ---开始游戏被关闭
+    RoomStartClose = 920,
 
     ---公会相关错误码
     ---已在公会中

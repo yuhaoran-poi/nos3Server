@@ -3,9 +3,9 @@ import "item.proto";
 
 message PBAuctionData
 {
-	int32 start_price = 1;	// 起拍价格
-	int32 buyout_price = 2;	// 一口价
-	int32 cur_price = 3;	// 当前价格
+	int64 start_price = 1;	// 起拍价格
+	int64 buyout_price = 2;	// 一口价
+	int64 cur_price = 3;	// 当前价格
 	int64 buyer_uid = 4;	// 当前买家id
 }
 
@@ -30,11 +30,11 @@ message PBAuctionLogData
 	int32 config_id		= 3;
 	int64 uniqid		= 4;
 	PBItemData item_data = 5;	//商品信息
-	int32 deal_price	= 6;	//成交价
+	int64 deal_price	= 6;	//成交价
 	int64 seller_uid	= 7;	//卖家id
 	int64 buyer_uid		= 8;	//买家id
 	int64 auction_ts	= 9;	//交易时间
-	int32 auction_tax	= 10;	//交易税
+	int64 auction_tax	= 10;	//交易税
 	int32 send_seller_mail	= 11;	//是否已发送邮件
 	int32 send_buyer_mail	= 12;	//是否已发送邮件
 }
@@ -102,8 +102,8 @@ message PBAuctionSaleReqCmd
 	int32 config_id	= 2;
 	int64 uniqid	= 3;
 	int32 pos	= 4;
-	int32 start_price	= 5;	// 起拍价格
-	int32 buyout_price	= 6;	// 一口价
+	int64 start_price	= 5;	// 起拍价格
+	int64 buyout_price	= 6;	// 一口价
 	int64 sale_ts	= 7;
 }
 
@@ -121,7 +121,7 @@ message PBAuctionBuyReqCmd
 	int64 uid	= 1;
 	int64 auction_id	= 2;
 	int64 uniqid	= 3;
-	int32 buy_price	= 4;
+	int64 buy_price	= 4;
 }
 
 message PBAuctionBuyRspCmd
@@ -129,7 +129,7 @@ message PBAuctionBuyRspCmd
 	int32 code = 1; // 服务器返回,0成功,其他失败
     string error = 2; // 错误信息
 	int64 uid	= 3;
-	int32 real_buy_price = 4;
+	int64 real_buy_price = 4;
 	int64 auction_id	= 5;
 }
 

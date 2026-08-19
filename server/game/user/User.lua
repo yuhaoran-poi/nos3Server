@@ -3604,4 +3604,162 @@ function User.PBGetBattleReportDetailReqCmd(req)
     }, req.msg_context.stub_id)
 end
 
+function User.PBClientStrongRepairReqCmd(req)
+    -- 参数验证
+    if not req.msg.repair_uniqid or not req.msg.pos then
+        return context.S2C(context.net_id, CmdCode.PBClientStrongRepairRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+            repair_uniqid = req.msg.repair_uniqid or 0,
+            pos = req.msg.pos or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    local function repair_strong_func()
+        local errcode, item_data = scripts.Bag.MutOneItemData(BagDef.BagType.Cangku, req.msg.pos)
+        if errcode ~= ErrorCode.None or not item_data then
+            return errcode
+        end
+        local old_item_data = table.copy(item_data)
+
+        local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+        if not uniqitem_cfg then
+            moon.error("repair_strong_func uniqitem_cfg is nil", item_data.common_info.config_id)
+            return ErrorCode.ConfigError
+        end
+        -- 消耗配置
+        local maintenance_cfgs = GameCfg.MaintenanceCost2
+        if not maintenance_cfgs or table.size(maintenance_cfgs) <= 0 then
+            moon.error("repair_strong_func maintenance_cfgs is nil", item_data.common_info.config_id)
+            return ErrorCode.ConfigError
+        end
+        local cur_maintenance_cfg
+        for _, maintenance_cfg in pairs(maintenance_cfgs) do
+            if maintenance_cfg.type1 == uniqitem_cfg.type1
+                and maintenance_cfg.type2 == uniqitem_cfg.type2 then
+                cur_maintenance_cfg = maintenance_cfg
+                break
+            end
+        end
+        if not cur_maintenance_cfg then
+            moon.error("repair_strong_func cur_maintenance_cfg is nil", item_data.common_info.config_id)
+            return ErrorCode.ConfigError
+        end
+
+        local cost_items = {}
+        local cost_coins = {}
+        local change_logs = {}
+
+        local smallType = ItemDefine.GetItemType(item_data.common_info.config_id)
+        if smallType == ItemDefine.EItemSmallType.MagicItem then
+            if item_data.special_info.magic_item.strong_value > 0 then
+                return ErrorCode.StrongNotZero
+            end
+            if item_data.special_info.magic_item.repair_strong_cnt >= cur_maintenance_cfg.sturdy_reset_count then
+                return ErrorCode.StrongRepairMax
+            end
+            local repair_cost_key = "cost" .. (item_data.special_info.magic_item.repair_strong_cnt + 1)
+            if not cur_maintenance_cfg[repair_cost_key]
+                or table.size(cur_maintenance_cfg[repair_cost_key]) <= 0 then
+                return ErrorCode.ConfigError
+            end
+            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], true, cost_items, cost_coins)
+        
+        elseif smallType == ItemDefine.EItemSmallType.HumanDiagrams
+            or smallType == ItemDefine.EItemSmallType.GhostDiagrams then
+            if item_data.special_info.diagrams_item.strong_value > 0 then
+                return ErrorCode.StrongNotZero
+            end
+            if item_data.special_info.diagrams_item.repair_strong_cnt >= cur_maintenance_cfg.sturdy_reset_count then
+                return ErrorCode.StrongRepairMax
+            end
+            local repair_cost_key = "cost" .. (item_data.special_info.diagrams_item.repair_strong_cnt + 1)
+            if not cur_maintenance_cfg[repair_cost_key]
+                or table.size(cur_maintenance_cfg[repair_cost_key]) <= 0 then
+                return ErrorCode.ConfigError
+            end
+            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], true, cost_items, cost_coins)
+        
+        elseif smallType == ItemDefine.EItemSmallType.SpaceRing then
+            if item_data.special_info.space_ring.strong_value > 0 then
+                return ErrorCode.StrongNotZero
+            end
+            if item_data.special_info.space_ring.repair_strong_cnt >= cur_maintenance_cfg.sturdy_reset_count then
+                return ErrorCode.StrongRepairMax
+            end
+            local repair_cost_key = "cost" .. (item_data.special_info.space_ring.repair_strong_cnt + 1)
+            if not cur_maintenance_cfg[repair_cost_key]
+                or table.size(cur_maintenance_cfg[repair_cost_key]) <= 0 then
+                return ErrorCode.ConfigError
+            end
+            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], true, cost_items, cost_coins)
+        
+        else
+            return ErrorCode.ItemTypeMismatch
+        end
+
+        -- 检测道具是否足够
+        errcode = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+        if errcode ~= ErrorCode.None then
+            return errcode
+        end
+        errcode = scripts.Bag.CheckCoinsEnough(cost_coins)
+        if errcode ~= ErrorCode.None then
+            return errcode
+        end
+
+        -- 扣除道具
+        if table.size(cost_items) > 0 then
+            errcode = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_logs)
+            if errcode ~= ErrorCode.None then
+                scripts.Bag.RollBackWithChange(change_logs)
+                return errcode
+            end
+        end
+        if table.size(cost_coins) > 0 then
+            errcode = scripts.Bag.DealCoins(cost_coins, change_logs)
+            if errcode ~= ErrorCode.None then
+                scripts.Bag.RollBackWithChange(change_logs)
+                return errcode
+            end
+        end
+
+        if smallType == ItemDefine.EItemSmallType.MagicItem then
+            -- 增加法器坚固值
+            item_data.special_info.magic_item.strong_value = uniqitem_cfg.sturdy
+            item_data.special_info.magic_item.repair_strong_cnt = item_data.special_info.magic_item.repair_strong_cnt + 1
+        elseif smallType == ItemDefine.EItemSmallType.HumanDiagrams
+            or smallType == ItemDefine.EItemSmallType.GhostDiagrams then
+            -- 增加八卦牌坚固值
+            item_data.special_info.diagrams_item.strong_value = uniqitem_cfg.sturdy
+            item_data.special_info.diagrams_item.repair_strong_cnt = item_data.special_info.diagrams_item.repair_strong_cnt + 1
+        elseif smallType == ItemDefine.EItemSmallType.SpaceRing then
+            -- 增加戒指坚固值
+            item_data.special_info.space_ring.strong_value = uniqitem_cfg.sturdy
+            item_data.special_info.space_ring.repair_strong_cnt = item_data.special_info.space_ring.repair_strong_cnt + 1
+        end
+
+        -- 存储数据
+        if not change_logs[BagDef.BagType.Cangku] then
+            change_logs[BagDef.BagType.Cangku] = {}
+        end
+        scripts.Bag.AddLog(change_logs[BagDef.BagType.Cangku], req.msg.pos, old_item_data)
+        if table.size(change_logs) > 0 then
+            scripts.Bag.SaveAndLog(change_logs, ItemDef.ChangeReason.ItemRepair)
+        end
+
+        return ErrorCode.None, item_data
+    end
+
+    local errcode = repair_strong_func()
+    return context.S2C(context.net_id, CmdCode.PBClientStrongRepairRspCmd, {
+        code = errcode,
+        error = "",
+        uid = context.uid,
+        repair_uniqid = req.msg.repair_uniqid or 0,
+        pos = req.msg.pos or 0,
+    }, req.msg_context.stub_id)
+end
+
 return User
