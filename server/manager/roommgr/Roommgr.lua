@@ -26,7 +26,8 @@ local maxplayers = 5
 
 ---@class Roommgr
 local Roommgr = {
-    notify_uids = {}
+    notify_uids = {},
+    start_is_close = false,
 }
 
 function Roommgr.Init()
@@ -1496,6 +1497,10 @@ function Roommgr.GetMasterAndChapter(room_id)
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
 
+    if Roommgr.start_is_close then
+        return { code = ErrorCode.RoomStartClose, error = "开始游戏被关闭" }
+    end
+
     local mem_uids = {}
     for _, member in pairs(room.players) do
         table.insert(mem_uids, member.mem_info.uid)
@@ -1506,9 +1511,30 @@ function Roommgr.GetMasterAndChapter(room_id)
         if tmp_conf.chapterid == room.room_data.chapter
             and tmp_conf.difficulty == room.room_data.difficulty then
             conf_idx = idx
+
+            -- 检查玩家账户经验是否满足
+            -- if tmp_conf.playerlvlimits and tmp_conf.playerlvlimits > 0 then
+            --     for _, player in pairs(room.players) do
+            --         if not player.mem_info.account_exp
+            --             or player.mem_info.account_exp < tmp_conf.playerlvlimits then
+            --             if not player.mem_info.account_exp then
+            --                 moon.error(string.format("player %d account_exp is nil mem_info: %s", player.mem_info.uid,
+            --                     json.pretty_encode(player.mem_info)))
+            --             end
+            --             return { code = ErrorCode.RoomPlayerAccountExpError, error = "房间内玩家账户经验不足" }
+            --         end
+            --     end
+            -- end
+            
             break
         end
     end
+
+    -- 检查所有玩家记录
+    -- local records_errcode = Roommgr.CheckRecords(room.room_data.chapter, room.room_data.difficulty, room.players)
+    -- if not records_errcode then
+    --     return { code = ErrorCode.BattleRecordsNotComplete, error = "检查玩家记录失败" }
+    -- end
 
     return { code = ErrorCode.None,
         error = "获取房主和章节成功",
@@ -1961,6 +1987,10 @@ function Roommgr.UpdatePlayerRecord(update_data)
     room.players[member_index].ghost_gate_record = update_data.records.ghost_gate_record
     room.players[member_index].boss_battle_record = update_data.records.boss_battle_record
     room.players[member_index].tower_battle_record = update_data.records.tower_battle_record
+end
+
+function Roommgr.StartGameIsClose(is_close)
+    Roommgr.start_is_close = is_close
 end
 
 function Roommgr.Start()

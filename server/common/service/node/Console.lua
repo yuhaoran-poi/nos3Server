@@ -85,6 +85,8 @@ Command List:
 	cancel_system_mail <uid> <mail_id> #撤销系统邮件. 1234567 cancel_system_mail 12345 给玩家1234567撤销系统邮件12345
 	add_treasure_box <uid> <config_id> <item_count> #给玩家加宝箱. 1234567 30001 2 给玩家1234567加2个30001宝箱
 	add_trade_product <sale_config_id> <sale_num> <sale_price> <sale_ts> #添加交易行商品. 10001 10 100 3600 添加交易行商品10001,10个,单价100元,3600秒有效
+	close_start_game <close_reason> #关闭游戏开始. close_start_game 关闭游戏
+	open_start_game <open_reason> #打开游戏开始. open_start_game 打开游戏
 	]]
 
 function Console.help()
@@ -448,38 +450,58 @@ function Console.add_treasure_box(uid, config_id, item_count)
 end
 
 function Console.add_trade_product(sale_config_id, sale_num, sale_price, sale_ts)
-	local product_data = TradeDef.newTradeProductBaseData()
-	product_data.trade_id = 1
-	product_data.seller_uid = 0
-	product_data.config_id = sale_config_id
-	product_data.total_num = sale_num
-	product_data.beg_ts = moon.time()
-	product_data.end_ts = moon.time() + sale_ts
-	product_data.state = TradeDef.StateType.ON_SALE
-	product_data.trade_data.single_price = sale_price
-	product_data.trade_data.sale_num = 0
-	product_data.trade_data.now_num = sale_num
+    local product_data = TradeDef.newTradeProductBaseData()
+    product_data.trade_id = 1
+    product_data.seller_uid = 0
+    product_data.config_id = sale_config_id
+    product_data.total_num = sale_num
+    product_data.beg_ts = moon.time()
+    product_data.end_ts = moon.time() + sale_ts
+    product_data.state = TradeDef.StateType.ON_SALE
+    product_data.trade_data.single_price = sale_price
+    product_data.trade_data.sale_num = 0
+    product_data.trade_data.now_num = sale_num
 
-	local sale_data = {
-		uid = 0,
-		product_data = product_data,
-		condition1 = 0,
-		condition2 = 0,
-		condition3 = 0,
-		condition4 = 0,
-		condition5 = 0,
+    local sale_data = {
+        uid = 0,
+        product_data = product_data,
+        condition1 = 0,
+        condition2 = 0,
+        condition3 = 0,
+        condition4 = 0,
+        condition5 = 0,
     }
-	
+
     local res, err = clusterd.call(3999, "trademgr", "Trademgr.GmAddTradeProduct", sale_data)
-	if err then
+    if err then
         moon.error("Console.add_trade_product err: ", sale_config_id, sale_num, sale_price, sale_ts)
-		return Response(444, err, string.format("%d %d, %d %d", sale_config_id, sale_num, sale_price, sale_ts))
-	else
+        return Response(444, err, string.format("%d %d, %d %d", sale_config_id, sale_num, sale_price, sale_ts))
+    else
         if res <= 0 then
             return Response(444, "Failed", string.format("%d %d, %d %d", sale_config_id, sale_num, sale_price, sale_ts))
         end
-		
-		return Response(0, "OK trade_id: " .. res)
+
+        return Response(0, "OK trade_id: " .. res)
+    end
+end
+
+function Console.close_start_game(close_reason)
+	local res, err = clusterd.call(3999, "roommgr", "Roommgr.StartGameIsClose", true)
+	if err then
+		moon.error("Console.close_start_game err: ", close_reason)
+		return Response(444, err, string.format("%s", close_reason))
+	else
+		return Response(0, "OK")
+	end
+end
+
+function Console.open_start_game(open_reason)
+	local res, err = clusterd.call(3999, "roommgr", "Roommgr.StartGameIsClose", false)
+	if err then
+		moon.error("Console.open_start_game err: ", open_reason)
+		return Response(444, err, string.format("%s", open_reason))
+	else
+		return Response(0, "OK")
 	end
 end
 
