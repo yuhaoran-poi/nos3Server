@@ -857,7 +857,7 @@ ds_address (	R	dsAddress
 CityNumListEntry
 key (Rkey
 value (Rvalue:8bproto3
-©3
+Å6
 
 role.proto
 item.proto"4
@@ -1117,7 +1117,21 @@ skill_type (R	skillType
 error (	Rerror
 uid (Ruid
 roleid (Rroleid;
-already_repairs (2.PBRepairEquipmentRalreadyRepairsbproto3
+already_repairs (2.PBRepairEquipmentRalreadyRepairs"î
+!PBRoleEquipmentStrongRepairReqCmd
+uid (Ruid
+roleid (Rroleid
+	config_id (RconfigId
+uniqid (Runiqid
+pos (Rpos"æ
+!PBRoleEquipmentStrongRepairRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+roleid (Rroleid
+	config_id (RconfigId
+uniqid (Runiqid
+pos (Rposbproto3
 ó
 ghost.proto
 item.proto"I

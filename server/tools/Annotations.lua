@@ -3113,6 +3113,24 @@
 ---@field public already_repairs PBRepairEquipment[]
 
 
+---@class PBRoleEquipmentStrongRepairReqCmd
+---@field public uid integer
+---@field public roleid integer
+---@field public config_id integer
+---@field public uniqid integer
+---@field public pos integer
+
+
+---@class PBRoleEquipmentStrongRepairRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roleid integer
+---@field public config_id integer
+---@field public uniqid integer
+---@field public pos integer
+
+
 ---@class PBRoomSearchInfo
 ---@field public roomid integer
 ---@field public chapter integer @章节

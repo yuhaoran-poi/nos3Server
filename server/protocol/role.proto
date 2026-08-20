@@ -327,3 +327,24 @@ message PBRoleEquipmentRepairRspCmd
 	int32 roleid		= 4;
 	repeated PBRepairEquipment already_repairs	= 5;
 }
+
+// 角色穿戴装备坚固值修理
+message PBRoleEquipmentStrongRepairReqCmd
+{
+	int64 uid		= 1;
+	int32 roleid	= 2;
+	int32 config_id	= 3;
+	int64 uniqid	= 4;
+	int32 pos		= 5;
+}
+
+message PBRoleEquipmentStrongRepairRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 roleid	= 4;
+	int32 config_id	= 5;
+	int64 uniqid	= 6;
+	int32 pos		= 7;
+}
