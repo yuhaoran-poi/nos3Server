@@ -377,6 +377,7 @@ function User.GetUserDetails()
     local model_role_data = scripts.Role.GetRoleInfo(details_data.cur_model_role.config_id)
     local res = scripts.Bag.GetBagdata({ BagDef.BagType.Consume })
     local other_images_data = scripts.ItemImage.OtherGetImagesData()
+    local showcase_result = scripts.AntiqueShowcase.GetAntiqueShowcaseInfo()
     return {
         user_attr = details_data,
         role_data = role_data,
@@ -385,6 +386,7 @@ function User.GetUserDetails()
         consume_bag_data = res.bag_datas[BagDef.BagType.Consume] or {},
         model_role_data = model_role_data,
         show_images_data = other_images_data,
+        antique_showcase_data = showcase_result.antique_showcase_data,
     }
 end
 
@@ -1957,6 +1959,8 @@ function User.PBGetOtherDetailReqCmd(req)
             grade_show_infos = res.grade_show_infos,
             consume_bag = res.consume_bag_data,
             model_role_data = res.model_role_data,
+            show_images_data = res.show_images_data,
+            antique_showcase_data = res.antique_showcase_data,
         }, req.msg_context.stub_id)
     else
         return context.S2C(context.net_id, CmdCode.PBGetOtherDetailRspCmd, {
