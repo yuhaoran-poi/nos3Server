@@ -1548,6 +1548,17 @@ function User.PBUseItemUpLvReqCmd(req)
             cost_items = req.msg.cost_items or {},
         }, req.msg_context.stub_id)
     end
+    for _, cost_item in pairs(req.msg.cost_items) do
+        if not cost_item.config_id or cost_item.item_count <= 0 then
+            return context.S2C(context.net_id, CmdCode.PBUseItemUpLvRspCmd, {
+                code = ErrorCode.ParamInvalid,
+                error = "无效请求参数",
+                uid = context.uid,
+                target_id = req.msg.target_id,
+                cost_items = {},
+            }, req.msg_context.stub_id)
+        end
+    end
 
     local cost_items, item_exps = {}, {}
     local up_exp_id, up_exp_total = 0, 0
@@ -1960,7 +1971,7 @@ end
 -- 客户端请求--道具修复
 function User.PBClientItemRepairReqCmd(req)
     -- 参数验证
-    if not req.msg.repair_uniqid or not req.msg.pos then
+    if not req.msg.repair_uniqid or not req.msg.pos or req.msg.pos <= 0 then
         return context.S2C(context.net_id, CmdCode.PBClientItemRepairRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
@@ -2273,7 +2284,10 @@ end
 
 function User.PBSureCompositeReqCmd(req)
     -- 参数验证
-    if not req.msg.uid or not req.msg.composite_id then
+    if not req.msg.uid
+        or not req.msg.composite_id
+        or not req.msg.composite_cnt
+        or req.msg.composite_cnt <= 0 then
         return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
@@ -2465,7 +2479,10 @@ end
 
 function User.PBRandomCompositeReqCmd(req)
     -- 参数验证
-    if not req.msg.uid or not req.msg.composite_id then
+    if not req.msg.uid
+        or not req.msg.composite_id
+        or not req.msg.composite_cnt
+        or req.msg.composite_cnt <= 0 then
         return context.S2C(context.net_id, CmdCode.PBRandomCompositeRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
@@ -3068,7 +3085,10 @@ end
 -- 客户端请求--使用道具
 function User.PBUseItemReqCmd(req)
     -- 参数验证
-    if not req.msg.use_item_id or not req.msg.use_item_cnt then
+    if not req.msg.use_item_id
+        or not req.msg.use_item_cnt
+        or req.msg.use_item_cnt <= 0
+        or not req.msg.use_item_cnt <= 0 then
         return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
@@ -3076,6 +3096,19 @@ function User.PBUseItemReqCmd(req)
             use_item_id = req.msg.use_item_id or 0,
             use_item_cnt = req.msg.use_item_cnt or 0,
         }, req.msg_context.stub_id)
+    end
+    if req.msg.choose_item_ids and table.size(req.msg.choose_item_ids) > 0 then
+        for key, value in pairs(req.msg.choose_item_ids) do
+            if value <= 0 then
+                return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
+                    code = ErrorCode.ParamInvalid,
+                    error = "无效请求参数",
+                    uid = context.uid,
+                    use_item_id = req.msg.use_item_id or 0,
+                    use_item_cnt = req.msg.use_item_cnt or 0,
+                }, req.msg_context.stub_id)
+            end
+        end
     end
 
     local cost_items = {}
@@ -3491,7 +3524,8 @@ end
 function User.PBOpenTreasureReqCmd(req)
     if not req.msg.uid
         or not req.msg.open_treasure_id
-        or not req.msg.open_count then
+        or not req.msg.open_count
+        or req.msg.open_count <= 0 then
         return context.S2C(context.net_id, CmdCode.PBOpenTreasureRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",

@@ -3177,6 +3177,19 @@ function Bag.PBBagGetCoinsReqCmd(req)
 end
 
 function Bag.PBBagOperateItemReqCmd(req)
+    if not req.msg.operate_type
+        or not req.msg.src_bag
+        or not req.msg.src_pos
+        or req.msg.src_pos <= 0
+        or not req.msg.dest_bag
+        or not req.msg.dest_pos
+        or req.msg.dest_pos <= 0
+        or not req.msg.split_count
+        or req.msg.split_count <= 0 then
+        return context.S2C(context.net_id, CmdCode.PBBagOperateItemRspCmd,
+            { code = ErrorCode.ParamInvalid, error = "参数错误", uid = context.uid }, req.msg_context.stub_id)
+    end
+
     if context.lock_item_role == 1 then
         return context.S2C(context.net_id, CmdCode.PBBagOperateItemRspCmd,
             { code = ErrorCode.LockItemRole, error = "变更操作被锁定", uid = context.uid }, req.msg_context.stub_id)
@@ -3516,6 +3529,17 @@ function Bag.PBDecomposeReqCmd(req)
             uid = req.msg.uid,
             decompose_items = req.msg.decompose_items or {},
         }, req.msg_context.stub_id)
+    end
+
+    for _, decompose_item in pairs(req.msg.decompose_items) do
+        if decompose_item.item_count <= 0 then
+            return context.S2C(context.net_id, CmdCode.PBDecomposeRspCmd, {
+                code = ErrorCode.ParamInvalid,
+                error = "参数错误",
+                uid = req.msg.uid,
+                decompose_items = req.msg.decompose_items
+                }, req.msg_context.stub_id)
+        end
     end
 
     if context.lock_item_role == 1 then
@@ -3911,6 +3935,16 @@ function Bag.PBItemSellNpcReqCmd(req)
             error = "无效请求参数",
             uid = req.msg.uid,
         }, req.msg_context.stub_id)
+    end
+    for pos, item_simple in pairs(req.msg.sell_items) do
+        if item_simple.item_count <= 0 then
+            return context.S2C(context.net_id, CmdCode.PBItemSellNpcRspCmd, {
+                code = ErrorCode.ParamInvalid,
+                error = "参数错误",
+                uid = req.msg.uid,
+                sell_items = req.msg.sell_items
+            }, req.msg_context.stub_id)
+        end
     end
 
     if context.lock_item_role == 1 then

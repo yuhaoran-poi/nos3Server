@@ -1251,6 +1251,18 @@ function Role.UpStar(roleid)
 end
 
 function Role.PBRoleWearEquipReqCmd(req)
+    -- 参数验证
+    if not req.msg.roleid
+        or not req.msg.equip_config_id
+        or not req.msg.equip_uniqid
+        or not req.msg.equip_idx
+        or req.msg.equip_idx <= 0
+        or not req.msg.pos
+        or req.msg.pos <= 0 then
+        return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
+            { code = ErrorCode.ParamInvalid, error = "无效请求参数", uid = req.msg.uid }, req.msg_context.stub_id)
+    end
+
     local roles = scripts.UserModel.GetRoles()
     if not roles then
         return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
@@ -1397,6 +1409,16 @@ function Role.PBRoleWearEquipReqCmd(req)
 end
 
 function Role.PBRoleTakeOffEquipReqCmd(req)
+    -- 参数验证
+    if not req.msg.roleid
+        or not req.msg.takeoff_config_id
+        or not req.msg.takeoff_uniqid
+        or not req.msg.takeoff_idx
+        or req.msg.takeoff_idx <= 0 then
+        return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"],
+            { code = ErrorCode.ParamInvalid, error = "无效请求参数", uid = req.msg.uid }, req.msg_context.stub_id)
+    end
+
     local roles = scripts.UserModel.GetRoles()
     if not roles then
         return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"],

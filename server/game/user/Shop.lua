@@ -165,7 +165,8 @@ end
 function Shop.PBShopAddBuyCarReqCmd(req)
     -- 参数验证
     if not req.msg.product_id
-        or not req.msg.product_num then
+        or not req.msg.product_num
+        or req.msg.product_num <= 0 then
         return context.S2C(context.net_id, CmdCode.PBShopAddBuyCarRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
@@ -231,16 +232,25 @@ end
 function Shop.PBShopDelBuyCarReqCmd(req)
     -- 参数验证
     if not req.msg.product_id_num then
-        return context.S2C(context.net_id, CmdCode.PBShopAddBuyCarRspCmd, {
+        return context.S2C(context.net_id, CmdCode.PBShopDelBuyCarRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
             uid = context.uid,
         }, req.msg_context.stub_id)
     end
+    for id, num in pairs(req.msg.product_id_num) do
+        if num <= 0 then
+            return context.S2C(context.net_id, CmdCode.PBShopDelBuyCarRspCmd, {
+                code = ErrorCode.ParamInvalid,
+                error = "无效请求参数",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
+        end
+    end
 
     local shops = scripts.UserModel.GetShopData()
     if not shops then
-        return context.S2C(context.net_id, CmdCode["PBShopDelBuyCarReqCmd"],
+        return context.S2C(context.net_id, CmdCode["PBShopDelBuyCarRspCmd"],
             { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
     end
 
@@ -288,6 +298,15 @@ function Shop.PBShopBuyReqCmd(req)
             error = "无效请求参数",
             uid = context.uid,
         }, req.msg_context.stub_id)
+    end
+    for id, num in pairs(req.msg.buy_id_num) do
+        if num <= 0 then
+            return context.S2C(context.net_id, CmdCode.PBShopBuyRspCmd, {
+                code = ErrorCode.ParamInvalid,
+                error = "无效请求参数",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
+        end
     end
     Shop.CheckShopBuyData()
 

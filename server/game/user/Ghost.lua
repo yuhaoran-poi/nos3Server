@@ -576,6 +576,18 @@ function Ghost.ChangeEquipment(ghost_info, config_id, equip_idx, equip_item_data
 end
 
 function Ghost.PBGhostWearEquipReqCmd(req)
+    -- 参数验证
+    if not req.msg.ghost_uniqid
+        or not req.msg.equip_config_id
+        or not req.msg.equip_uniqid
+        or not req.msg.equip_idx
+        or req.msg.equip_idx <= 0
+        or not req.msg.pos
+        or req.msg.pos <= 0 then
+        return context.S2C(context.net_id, CmdCode["PBGhostWearEquipRspCmd"],
+            { code = ErrorCode.ParamInvalid, error = "无效请求参数", uid = req.msg.uid }, req.msg_context.stub_id)
+    end
+
     local ghosts = scripts.UserModel.GetGhosts()
     if not ghosts then
         return context.S2C(context.net_id, CmdCode["PBGhostWearEquipRspCmd"],

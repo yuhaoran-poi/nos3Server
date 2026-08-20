@@ -368,7 +368,8 @@ end
 function Bill.PBApplyBillOrderReqCmd(req)
     -- 参数验证
     if not req.msg.bill_id
-        or not req.msg.bill_num then
+        or not req.msg.bill_num
+        or req.msg.bill_num <= 0 then
         return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
