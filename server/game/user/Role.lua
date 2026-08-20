@@ -2654,4 +2654,285 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
         req.msg_context.stub_id)
 end
 
+function Role.PBRoleEquipmentStrongRepairReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid or not req.msg.roleid or not req.msg.config_id
+        or not req.msg.uniqid then
+        return context.S2C(context.net_id, CmdCode.PBRoleEquipmentStrongRepairRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = req.msg.uid,
+            roleid = req.msg.roleid or 0,
+            config_id = req.msg.config_id or 0,
+            uniqid = req.msg.uniqid or 0,
+            pos = req.msg.pos or 0,
+        }, req.msg_context.stub_id)
+    end
+
+    if context.lock_item_role == 1 then
+        return context.S2C(context.net_id, CmdCode.PBRoleEquipmentStrongRepairRspCmd,
+            { code = ErrorCode.LockItemRole, error = "变更操作被锁定", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local roles = scripts.UserModel.GetRoles()
+    if not roles then
+        return context.S2C(context.net_id, CmdCode.PBRoleEquipmentStrongRepairRspCmd,
+            {
+                code = ErrorCode.ServerInternalError,
+                error = "数据加载出错",
+                uid = req.msg.uid,
+                roleid = req.msg.roleid,
+                config_id = req.msg.config_id,
+                uniqid = req.msg.uniqid,
+                pos = req.msg.pos or 0,
+            },
+            req.msg_context.stub_id)
+    end
+
+    local role_info = roles.role_list[req.msg.roleid]
+    if not role_info then
+        return context.S2C(context.net_id, CmdCode.PBRoleEquipmentStrongRepairRspCmd,
+            {
+                code = ErrorCode.RoleNotExist,
+                error = "角色不存在",
+                uid = req.msg.uid,
+                roleid = req.msg.roleid,
+                config_id = req.msg.config_id,
+                uniqid = req.msg.uniqid,
+                pos = req.msg.pos or 0,
+            },
+            req.msg_context.stub_id)
+    end
+
+    local uniqitem_cfg = GameCfg.UniqueItem[req.msg.config_id]
+    if not uniqitem_cfg then
+        return context.S2C(context.net_id, CmdCode.PBRoleEquipmentStrongRepairRspCmd,
+            {
+                code = ErrorCode.ConfigError,
+                error = "配置不存在",
+                uid = req.msg.uid,
+                roleid = req.msg.roleid,
+                config_id = req.msg.config_id,
+                uniqid = req.msg.uniqid,
+                pos = req.msg.pos or 0,
+            },
+            req.msg_context.stub_id)
+    end
+
+    local function role_repair_strong_func(item_data, smallType)
+        local old_item_data = table.copy(item_data)
+
+        -- 消耗配置
+        local maintenance_cfgs = GameCfg.MaintenanceCost2
+        if not maintenance_cfgs or table.size(maintenance_cfgs) <= 0 then
+            moon.error("repair_strong_func maintenance_cfgs is nil", item_data.common_info.config_id)
+            return ErrorCode.ConfigError
+        end
+        local cur_maintenance_cfg
+        for _, maintenance_cfg in pairs(maintenance_cfgs) do
+            if maintenance_cfg.type1 == uniqitem_cfg.type1
+                and maintenance_cfg.type2 == uniqitem_cfg.type2 then
+                cur_maintenance_cfg = maintenance_cfg
+                break
+            end
+        end
+        if not cur_maintenance_cfg then
+            moon.error("repair_strong_func cur_maintenance_cfg is nil", item_data.common_info.config_id)
+            return ErrorCode.ConfigError
+        end
+
+        local cost_items = {}
+        local cost_coins = {}
+        local change_logs = {}
+        if smallType == ItemDefine.EItemSmallType.MagicItem then
+            if item_data.special_info.magic_item.strong_value > 0 then
+                return ErrorCode.StrongNotZero
+            end
+            if item_data.special_info.magic_item.repair_strong_cnt >= cur_maintenance_cfg.sturdy_reset_count then
+                return ErrorCode.StrongRepairMax
+            end
+            local repair_cost_key = "cost" .. (item_data.special_info.magic_item.repair_strong_cnt + 1)
+            if not cur_maintenance_cfg[repair_cost_key]
+                or table.size(cur_maintenance_cfg[repair_cost_key]) <= 0 then
+                return ErrorCode.ConfigError
+            end
+            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], true, cost_items, cost_coins)
+
+        elseif smallType == ItemDefine.EItemSmallType.HumanDiagrams
+            or smallType == ItemDefine.EItemSmallType.GhostDiagrams then
+            if item_data.special_info.diagrams_item.strong_value > 0 then
+                return ErrorCode.StrongNotZero
+            end
+            if item_data.special_info.diagrams_item.repair_strong_cnt >= cur_maintenance_cfg.sturdy_reset_count then
+                return ErrorCode.StrongRepairMax
+            end
+            local repair_cost_key = "cost" .. (item_data.special_info.diagrams_item.repair_strong_cnt + 1)
+            if not cur_maintenance_cfg[repair_cost_key]
+                or table.size(cur_maintenance_cfg[repair_cost_key]) <= 0 then
+                return ErrorCode.ConfigError
+            end
+            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], true, cost_items, cost_coins)
+
+        elseif smallType == ItemDefine.EItemSmallType.SpaceRing then
+            if item_data.special_info.space_ring.strong_value > 0 then
+                return ErrorCode.StrongNotZero
+            end
+            if item_data.special_info.space_ring.repair_strong_cnt >= cur_maintenance_cfg.sturdy_reset_count then
+                return ErrorCode.StrongRepairMax
+            end
+            local repair_cost_key = "cost" .. (item_data.special_info.space_ring.repair_strong_cnt + 1)
+            if not cur_maintenance_cfg[repair_cost_key]
+                or table.size(cur_maintenance_cfg[repair_cost_key]) <= 0 then
+                return ErrorCode.ConfigError
+            end
+            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], true, cost_items, cost_coins)
+
+        else
+            return ErrorCode.ItemTypeMismatch
+        end
+
+        -- 检测道具是否足够
+        local errcode = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+        if errcode ~= ErrorCode.None then
+            return errcode
+        end
+        errcode = scripts.Bag.CheckCoinsEnough(cost_coins)
+        if errcode ~= ErrorCode.None then
+            return errcode
+        end
+
+        -- 扣除道具
+        if table.size(cost_items) > 0 then
+            errcode = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_logs)
+            if errcode ~= ErrorCode.None then
+                scripts.Bag.RollBackWithChange(change_logs)
+                return errcode
+            end
+        end
+        if table.size(cost_coins) > 0 then
+            errcode = scripts.Bag.DealCoins(cost_coins, change_logs)
+            if errcode ~= ErrorCode.None then
+                scripts.Bag.RollBackWithChange(change_logs)
+                return errcode
+            end
+        end
+
+        return ErrorCode.None, change_logs
+    end
+
+    local smallType = ItemDefine.GetItemType(req.msg.config_id)
+    if smallType == ItemDefine.EItemSmallType.MagicItem then
+        if role_info.magic_item and role_info.magic_item.common_info
+            and role_info.magic_item.common_info.config_id == req.msg.config_id
+            and role_info.magic_item.common_info.uniqid == req.msg.uniqid then
+            local ret_code, bag_change_logs = role_repair_strong_func(role_info.magic_item, smallType)
+            if ret_code ~= ErrorCode.None then
+                return context.S2C(context.net_id, CmdCode.PBRoleEquipmentStrongRepairRspCmd,
+                    {
+                        code = ret_code,
+                        error = "修理失败",
+                        uid = req.msg.uid,
+                        roleid = req.msg.roleid,
+                        config_id = req.msg.config_id,
+                        uniqid = req.msg.uniqid,
+                        pos = req.msg.pos or 0,
+                    },
+                    req.msg_context.stub_id)
+            end
+
+            -- 增加法器坚固值
+            role_info.magic_item.special_info.magic_item.strong_value = uniqitem_cfg.sturdy
+            role_info.magic_item.special_info.magic_item.repair_strong_cnt = role_info.magic_item.special_info
+                .magic_item.repair_strong_cnt + 1
+
+            -- 存储数据
+            if table.size(bag_change_logs) > 0 then
+                scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.ItemRepair)
+            end
+            local change_roles = {}
+            change_roles[req.msg.roleid] = "RepairEquipment"
+            scripts.Role.SaveAndLog(change_roles)
+        end
+    elseif smallType == ItemDefine.EItemSmallType.HumanDiagrams then
+        if role_info.digrams_cards and table.size(role_info.digrams_cards) > 0
+            and role_info.digrams_cards[req.msg.pos]
+            and role_info.digrams_cards[req.msg.pos].common_info
+            and role_info.digrams_cards[req.msg.pos].common_info.config_id == req.msg.config_id
+            and role_info.digrams_cards[req.msg.pos].common_info.uniqid == req.msg.uniqid then
+            local ret_code, bag_change_logs = role_repair_strong_func(role_info.digrams_cards[req.msg.pos],
+                smallType)
+            if ret_code ~= ErrorCode.None then
+                return context.S2C(context.net_id, CmdCode.PBRoleEquipmentStrongRepairRspCmd,
+                    {
+                        code = ret_code,
+                        error = "修理失败",
+                        uid = req.msg.uid,
+                        roleid = req.msg.roleid,
+                        config_id = req.msg.config_id,
+                        uniqid = req.msg.uniqid,
+                        pos = req.msg.pos or 0,
+                    },
+                    req.msg_context.stub_id)
+            end
+
+            -- 增加八卦牌坚固值
+            role_info.digrams_cards[req.msg.pos].special_info.diagrams_item.strong_value = uniqitem_cfg.sturdy
+            role_info.digrams_cards[req.msg.pos].special_info.diagrams_item.repair_strong_cnt = role_info.digrams_cards
+                [req.msg.pos].special_info.diagrams_item.repair_strong_cnt + 1
+
+            -- 存储数据
+            if table.size(bag_change_logs) > 0 then
+                scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.ItemRepair)
+            end
+            local change_roles = {}
+            change_roles[req.msg.roleid] = "RepairEquipment"
+            scripts.Role.SaveAndLog(change_roles)
+        end
+    elseif smallType == ItemDefine.EItemSmallType.SpaceRing then
+        if role_info.space_ring and role_info.space_ring.common_info
+            and role_info.space_ring.common_info.config_id == req.msg.config_id
+            and role_info.space_ring.common_info.uniqid == req.msg.uniqid then
+            local ret_code, bag_change_logs = role_repair_strong_func(role_info.space_ring, smallType)
+            if ret_code ~= ErrorCode.None then
+                return context.S2C(context.net_id, CmdCode.PBRoleEquipmentStrongRepairRspCmd,
+                    {
+                        code = ret_code,
+                        error = "修理失败",
+                        uid = req.msg.uid,
+                        roleid = req.msg.roleid,
+                        config_id = req.msg.config_id,
+                        uniqid = req.msg.uniqid,
+                        pos = req.msg.pos or 0,
+                    },
+                    req.msg_context.stub_id)
+            end
+
+            -- 增加戒指坚固值
+            role_info.space_ring.special_info.space_ring.strong_value = uniqitem_cfg.sturdy
+            role_info.space_ring.special_info.space_ring.repair_strong_cnt = role_info.space_ring.special_info
+                .space_ring.repair_strong_cnt + 1
+
+            -- 存储数据
+            if table.size(bag_change_logs) > 0 then
+                scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.ItemRepair)
+            end
+            local change_roles = {}
+            change_roles[req.msg.roleid] = "RepairEquipment"
+            scripts.Role.SaveAndLog(change_roles)
+        end
+    end
+
+    return context.S2C(context.net_id, CmdCode.PBRoleEquipmentStrongRepairRspCmd,
+        {
+            code = ErrorCode.None,
+            error = "修理成功",
+            uid = req.msg.uid,
+            roleid = req.msg.roleid,
+            config_id = req.msg.config_id,
+            uniqid = req.msg.uniqid,
+            pos = req.msg.pos or 0,
+        },
+        req.msg_context.stub_id)
+end
+
 return Role
