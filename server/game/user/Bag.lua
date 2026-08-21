@@ -3183,9 +3183,7 @@ function Bag.PBBagOperateItemReqCmd(req)
         or req.msg.src_pos <= 0
         or not req.msg.dest_bag
         or not req.msg.dest_pos
-        or req.msg.dest_pos <= 0
-        or not req.msg.split_count
-        or req.msg.split_count <= 0 then
+        or req.msg.dest_pos <= 0 then
         return context.S2C(context.net_id, CmdCode.PBBagOperateItemRspCmd,
             { code = ErrorCode.ParamInvalid, error = "参数错误", uid = context.uid }, req.msg_context.stub_id)
     end
@@ -3199,6 +3197,12 @@ function Bag.PBBagOperateItemReqCmd(req)
     if req.msg.operate_type == 1 then
         err_code = Bag.StackItems(req.msg.src_bag, req.msg.src_pos, req.msg.dest_bag, req.msg.dest_pos, change_logs)
     elseif req.msg.operate_type == 2 then
+        if not req.msg.split_count
+            or req.msg.split_count <= 0 then
+            return context.S2C(context.net_id, CmdCode.PBBagOperateItemRspCmd,
+                { code = ErrorCode.ParamInvalid, error = "参数错误", uid = context.uid }, req.msg_context.stub_id)
+        end
+        
         err_code = Bag.SplitItem(req.msg.src_bag, req.msg.src_pos, req.msg.dest_bag, req.msg.dest_pos,
             req.msg.split_count, change_logs)
     elseif req.msg.operate_type == 3 then
