@@ -33,6 +33,8 @@ if conf.name then
     local dbs = list.new()
     -- 需要重连的连接队列(被踢出主池,后台重连后回流)
     local pending_reconnect = list.new()
+    -- 正在执行的 SQL 追踪(连接句柄 -> SQL),用于 POOL_EMPTY 时定位占着连接不放的语句
+    local inflight = {}
     pool_stats.total = conf.poolsize or 1
 
     -- conf 覆盖(可选,运维想调阈值不用改代码)
@@ -219,6 +221,13 @@ if conf.name then
         end
 
         if not db then
+            -- 池子空且等待超时,先 dump 当前所有 in-flight 的 SQL,直接定位占着连接的语句
+            local inflight_dump = {}
+            local idx = 0
+            for _, in_sql in pairs(inflight) do
+                idx = idx + 1
+                inflight_dump[idx] = string.sub(in_sql or "", 1, 200)
+            end
             -- 池子空且等待超时,立即返回错误给 caller(由 caller 决定 retry)
             local err_res = {
                 badresult = true,
@@ -233,11 +242,23 @@ if conf.name then
                 wait_cnt, wait_target, pending_cnt,
                 tostring(pool_stats.last_err),
                 sql:sub(1, 80)))
+            -- 把当前正在执行的 N 条 SQL 全部 dump,前面标序号便于逐一核对
+            if idx > 0 then
+                moon.error(string.format(
+                    "[%s] POOL_EMPTY inflight_count=%d (these SQLs are currently holding connections):",
+                    conf.name, idx))
+                for i, dumped_sql in ipairs(inflight_dump) do
+                    moon.error(string.format("  [%d] %s", i, dumped_sql))
+                end
+            end
             if sessionid ~= 0 then
                 moon.response("lua", sender, sessionid, err_res)
             end
             return
         end
+
+        -- 拿到连接,登记到 in-flight,等所有归还路径(push/pending)统一清理
+        inflight[db] = sql
 
         -- 拿到连接,但等待过久:打点日志(>50ms 视为异常,避免刷屏)
         if wait_cnt > 50 then
@@ -267,6 +288,7 @@ if conf.name then
             -- query 本身抛异常(连接被踢 / 协议错误),踢出重连
             moon.error(string.format("[%s] mysql query exception from sender=%s session=%d: %s",
                 conf.name, sender_hex, sessionid, tostring(res)))
+            inflight[db] = nil
             list.push(pending_reconnect, db)
             pool_stats.alive = list.size(dbs)
             res = {
@@ -279,6 +301,7 @@ if conf.name then
             moon.error(string.format("[%s] mysql query failed from sender=%s session=%d: errno=%d, msg=%s",
                 conf.name, sender_hex, sessionid, res.errno, tostring(res.message)))
             moon.error(string.format("[%s] mysql query sql: %s", conf.name, tostring(sql)))
+            inflight[db] = nil
             list.push(dbs, db)
             res = {
                 badresult = true,
@@ -288,6 +311,7 @@ if conf.name then
             }
         else
             -- 正常,放回池子
+            inflight[db] = nil
             list.push(dbs, db)
         end
 

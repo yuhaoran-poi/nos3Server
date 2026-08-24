@@ -661,7 +661,7 @@ function Gods.PBGodsBurnIncenseReqCmd(req)
             uid = context.uid,
         }, req.msg_context.stub_id)
     end
-    if cur_god_image < god_cfg.pool[req.msg.burn_incense_id] then
+    if cur_god_image.lv < god_cfg.pool[req.msg.burn_incense_id] then
         return context.S2C(context.net_id, CmdCode.PBGodsBurnIncenseRspCmd, {
             code = ErrorCode.GodLevelNotEnough,
             error = "神明等级不足",
