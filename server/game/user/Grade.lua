@@ -80,6 +80,7 @@ function Grade.GetGradeShowInfo(grade_info)
     grade_show_info.season_id = grade_info.season_id
     grade_show_info.grade_show_data.grade_id = grade_info.grade_data.grade_id
     grade_show_info.grade_show_data.now_grade_score = grade_info.grade_data.now_grade_score
+    grade_show_info.grade_show_data.highest_grade_score = grade_info.grade_data.highest_grade_score
 
     return grade_show_info
 end
@@ -144,6 +145,10 @@ function Grade.ChangeScore(change_score)
         grade_info.grade_data.now_grade_score = new_score
     elseif change_score > 0 then
         grade_info.grade_data.now_grade_score = grade_info.grade_data.now_grade_score + change_score
+    end
+
+    if grade_info.grade_data.highest_grade_score < grade_info.grade_data.now_grade_score then
+        grade_info.grade_data.highest_grade_score = grade_info.grade_data.now_grade_score
     end
 
     -- 更新段位榜

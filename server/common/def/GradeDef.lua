@@ -18,6 +18,7 @@ local defaultPBGradeInfo = {
 local defaultPBGradeShowData = {
     grade_id = 0,
     now_grade_score = 0,
+    highest_grade_score = 0,
 }
 
 local defaultPBGradeShowInfo = {
