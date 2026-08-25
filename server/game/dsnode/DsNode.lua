@@ -807,7 +807,7 @@ function DsNode.PBGetDsUserAweItemReqCmd(req)
         return context.S2D(context.net_id, CmdCode.PBGetDsUserAweItemRspCmd, ret, req.msg_context.stub_id)
     end
 
-    local res, err = context.call_user(req.msg.quest_uid, "AweItem.GetAweItemInfo")
+    local res, err = context.call_user(req.msg.quest_uid, "AweItem.GetAweItemsInfo")
     if not res then
         moon.error("PBGetDsUserAweItemReqCmd failed:", err)
         local ret = {
