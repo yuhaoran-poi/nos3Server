@@ -768,6 +768,7 @@ function AntiqueShowcase.UnlockPreset(preset_idx)
 
     err_code = scripts.Bag.DealCoins(cost_coins, change_logs)
     if err_code ~= ErrorCode.None then
+        scripts.Bag.RollBackWithChange(change_logs)
         return err_code, "扣除货币失败"
     end
 

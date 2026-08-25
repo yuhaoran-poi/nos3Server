@@ -888,14 +888,14 @@ function Shop.OpenTreasure(config_id, num)
     local bag_change_log = {}
     -- 扣除道具消耗
     if table.size(cost_items) > 0 then
-        local err_code_items = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, bag_change_log)
+        err_code_items = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, bag_change_log)
         if err_code_items ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(bag_change_log)
             return err_code_items
         end
     end
     if table.size(cost_coins) > 0 then
-        local err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_log)
+        err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_log)
         if err_code_coins ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(bag_change_log)
             return err_code_coins
@@ -904,7 +904,7 @@ function Shop.OpenTreasure(config_id, num)
     
     if not use_mail then
         if table.size(stack_items) + table.size(unstack_items) > 0 then
-            local err_code_items = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
+            err_code_items = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
             if err_code_items ~= ErrorCode.None then
                 scripts.Bag.RollBackWithChange(bag_change_log)
                 return err_code_items
@@ -934,7 +934,7 @@ function Shop.OpenTreasure(config_id, num)
     end
     -- 添加货币
     if table.size(deal_coins) > 0 then
-        local err_code_coins = scripts.Bag.DealCoins(deal_coins, bag_change_log)
+        err_code_coins = scripts.Bag.DealCoins(deal_coins, bag_change_log)
         if err_code_coins ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(bag_change_log)
             return err_code_coins

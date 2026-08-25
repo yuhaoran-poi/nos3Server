@@ -827,7 +827,7 @@ function Bag.SaveAndLog(change_logs, change_reason,
                             end
                             moon.error(string.format(
                                 "Bag.SaveAndLog dataMap inconsistent: "
-                                .. "old_config_id=%d not in Bag.dataMap (bagType=%d, pos=%d), "
+                                .. "old_config_id=%d not in Bag.dataMap (bagType=%s, pos=%d), "
                                 .. "old_item_count=%d, old_uniqid=%d, now_config_id=%d, "
                                 .. "registered_cfgs_in_bagType=[%s], "
                                 .. "old_itemdata=%s, now_itemdata=%s",

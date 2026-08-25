@@ -238,6 +238,7 @@ function Bill.OnBillPaid(order_info)
 end
 
 function Bill.BillDeliver(order_info, bill_cfg)
+    local old_state = order_info.state
     if order_info.state ~= BillDef.orderStatus.WAIT
         and order_info.state ~= BillDef.orderStatus.PAID then
         return order_info.state
@@ -263,6 +264,10 @@ function Bill.BillDeliver(order_info, bill_cfg)
     if err_code_add ~= ErrorCode.None then
         scripts.Bag.RollBackWithChange(bag_change_log)
         moon.error("Bill.BillDeliver err_code_add = " .. err_code_add)
+
+        Database.updatebillorderstate(context.addr_db_user, order_info.orderid, order_info.state, old_state, true)
+        order_info.state = old_state
+        return order_info.state
     end
     scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.Bill)
 

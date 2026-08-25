@@ -1435,9 +1435,17 @@ function User.DsAddItems(simple_items)
 
     if table.size(stack_items) + table.size(unstack_items) > 0 then
         err_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, change_log)
+        if err_code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(change_log)
+            return err_code
+        end
     end
     if table.size(deal_coins) > 0 then
         err_code = scripts.Bag.DealCoins(deal_coins, change_log)
+        if err_code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(change_log)
+            return err_code
+        end
     end
 
     if err_code == ErrorCode.None then
