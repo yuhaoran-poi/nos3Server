@@ -2864,7 +2864,7 @@ end
 
 function User.OpenGift(item_cfg, msg_data, bag_change_log)
     local err_code = ErrorCode.ItemTypeMismatch
-    local item_list = {}
+    local reward_cfg_list = {}
     if item_cfg.use_type == 4 then
         -- 普通礼包
         if not item_cfg.use_award or table.size(item_cfg.use_award) == 0 then
@@ -2872,14 +2872,10 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log)
             return err_code
         end
         for item_id, item_cnt in pairs(item_cfg.use_award) do
-            if not item_list[item_id] then
-                item_list[item_id] = {
-                    id = item_id,
-                    count = 0,
-                    pos = 0,
-                }
+            if not reward_cfg_list[item_id] then
+                reward_cfg_list[item_id] = 0
             end
-            item_list[item_id].count = item_list[item_id].count + (item_cnt * msg_data.use_item_cnt)
+            reward_cfg_list[item_id] = reward_cfg_list[item_id] + (item_cnt * msg_data.use_item_cnt)
         end
     elseif item_cfg.use_type == 5 then
         -- 自选礼包
@@ -2902,14 +2898,10 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log)
                 err_code = ErrorCode.ParamInvalid
                 return err_code
             end
-            if not item_list[item_id] then
-                item_list[item_id] = {
-                    id = item_id,
-                    count = 0,
-                    pos = 0,
-                }
+            if not reward_cfg_list[item_id] then
+                reward_cfg_list[item_id] = 0
             end
-            item_list[item_id].count = item_list[item_id].count + (item_cfg.use_award[item_id] * msg_data.use_item_cnt)
+            reward_cfg_list[item_id] = reward_cfg_list[item_id] + (item_cfg.use_award[item_id] * msg_data.use_item_cnt)
         end
     elseif item_cfg.use_type == 6 then
         -- 随机礼包
@@ -2943,7 +2935,6 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log)
         for i = 1, item_cfg.award_count do
             local rand_item_id = scripts.Item.RangeTags(id_weight)
             if rand_item_id == 0 then
-                moon.error(string.format("User.OpenGift Item.RangeTags err:\n%s", json.pretty_encode(id_weight)))
                 err_code = ErrorCode.ConfigError
                 return err_code
             end
@@ -2951,14 +2942,10 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log)
                 err_code = ErrorCode.ConfigError
                 return err_code
             end
-            if not item_list[rand_item_id] then
-                item_list[rand_item_id] = {
-                    id = rand_item_id,
-                    count = 0,
-                    pos = 0,
-                }
+            if not reward_cfg_list[rand_item_id] then
+                reward_cfg_list[rand_item_id] = 0
             end
-            item_list[rand_item_id].count = item_list[rand_item_id].count +
+            reward_cfg_list[rand_item_id] = reward_cfg_list[rand_item_id] +
                 (item_cfg.use_award[rand_item_id] * msg_data.use_item_cnt)
 
             if item_cfg.award_repetition == 1 then
@@ -2969,22 +2956,27 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log)
         return err_code
     end
 
-    if table.size(item_list) == 0 then
+    if table.size(reward_cfg_list) == 0 then
         err_code = ErrorCode.ConfigError
         return err_code
     end
 
+    local add_items, add_coins = {}, {}
+    ItemDefine.GetItemsFromCfg(reward_cfg_list, 1, false, add_items, add_coins)
+    err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items, 0)
+    if err_code ~= ErrorCode.None then
+        moon.error(string.format("User.OpenGift CheckEmptyEnough err:\n%s", json.pretty_encode(add_items)))
+        return err_code
+    end
+
     local stack_items, unstack_items, deal_coins = {}, {}, {}
-    local ok = ItemDefine.GetItemDataFromIdCount(item_list, {}, stack_items, unstack_items, deal_coins)
+    local ok = ItemDefine.GetItemDataFromIdCount(add_items, add_coins, stack_items, unstack_items, deal_coins)
     if not ok then
-        moon.error(string.format("User.OpenGift GetItemDataFromIdCount err:\n%s", json.pretty_encode(item_list)))
+        moon.error(string.format("User.OpenGift GetItemDataFromIdCount err:\n%s", json.pretty_encode(add_items)))
         err_code = ErrorCode.ConfigError
         return err_code
     end
-    err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, item_list, 0)
-    if err_code ~= ErrorCode.None then
-        return err_code
-    end
+    
     -- 添加道具
     if table.size(stack_items) + table.size(unstack_items) > 0 then
         err_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
