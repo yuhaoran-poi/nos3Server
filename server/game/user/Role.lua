@@ -2752,7 +2752,7 @@ function Role.PBRoleEquipmentStrongRepairReqCmd(req)
                 or table.size(cur_maintenance_cfg[repair_cost_key]) <= 0 then
                 return ErrorCode.ConfigError
             end
-            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], true, cost_items, cost_coins)
+            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], 1, true, cost_items, cost_coins)
 
         elseif smallType == ItemDefine.EItemSmallType.HumanDiagrams
             or smallType == ItemDefine.EItemSmallType.GhostDiagrams then
@@ -2767,7 +2767,7 @@ function Role.PBRoleEquipmentStrongRepairReqCmd(req)
                 or table.size(cur_maintenance_cfg[repair_cost_key]) <= 0 then
                 return ErrorCode.ConfigError
             end
-            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], true, cost_items, cost_coins)
+            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], 1, true, cost_items, cost_coins)
 
         elseif smallType == ItemDefine.EItemSmallType.SpaceRing then
             if item_data.special_info.space_ring.strong_value > 0 then
@@ -2781,7 +2781,7 @@ function Role.PBRoleEquipmentStrongRepairReqCmd(req)
                 or table.size(cur_maintenance_cfg[repair_cost_key]) <= 0 then
                 return ErrorCode.ConfigError
             end
-            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], true, cost_items, cost_coins)
+            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], 1, true, cost_items, cost_coins)
 
         else
             return ErrorCode.ItemTypeMismatch

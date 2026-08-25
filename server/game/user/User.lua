@@ -3091,8 +3091,7 @@ function User.PBUseItemReqCmd(req)
     -- 参数验证
     if not req.msg.use_item_id
         or not req.msg.use_item_cnt
-        or req.msg.use_item_cnt <= 0
-        or not req.msg.use_item_cnt <= 0 then
+        or req.msg.use_item_cnt <= 0 then
         return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
@@ -3702,8 +3701,8 @@ function User.PBClientStrongRepairReqCmd(req)
                 or table.size(cur_maintenance_cfg[repair_cost_key]) <= 0 then
                 return ErrorCode.ConfigError
             end
-            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], true, cost_items, cost_coins)
-        
+            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], 1, true, cost_items, cost_coins)
+
         elseif smallType == ItemDefine.EItemSmallType.HumanDiagrams
             or smallType == ItemDefine.EItemSmallType.GhostDiagrams then
             if item_data.special_info.diagrams_item.strong_value > 0 then
@@ -3717,8 +3716,8 @@ function User.PBClientStrongRepairReqCmd(req)
                 or table.size(cur_maintenance_cfg[repair_cost_key]) <= 0 then
                 return ErrorCode.ConfigError
             end
-            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], true, cost_items, cost_coins)
-        
+            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], 1, true, cost_items, cost_coins)
+
         elseif smallType == ItemDefine.EItemSmallType.SpaceRing then
             if item_data.special_info.space_ring.strong_value > 0 then
                 return ErrorCode.StrongNotZero
@@ -3731,7 +3730,7 @@ function User.PBClientStrongRepairReqCmd(req)
                 or table.size(cur_maintenance_cfg[repair_cost_key]) <= 0 then
                 return ErrorCode.ConfigError
             end
-            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], true, cost_items, cost_coins)
+            ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], 1, true, cost_items, cost_coins)
         
         else
             return ErrorCode.ItemTypeMismatch
