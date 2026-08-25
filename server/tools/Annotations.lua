@@ -595,6 +595,12 @@
 ---@field public cur_durability integer
 
 
+---@class PBInGameOpenPot
+---@field public open_cnt integer @开启次数
+---@field public pot_type integer @容器类型
+---@field public pot_quality integer @容器品质
+
+
 ---@class PBGameSettle
 ---@field public settle_data string @战报详情
 ---@field public account_experience integer @账户经验值
@@ -618,6 +624,14 @@
 ---@field public booty_coins table<integer, PBCoin> @局内获得的货币类战利品
 ---@field public booty_items table<integer, integer> @局内获得的道具战利品
 ---@field public booty_use_items PBDsUseItemInfo[] @局内获得的使用过道具战利品
+---@field public damage_value integer @伤害总量
+---@field public healing_value integer @治疗总量
+---@field public total_open_cnt PBInGameOpenPot[] @局内开启容器数据
+---@field public fall_down_cnt integer @倒地次数
+---@field public pull_up_cnt integer @拉起队友次数
+---@field public weight_use_rate integer @负重使用率
+---@field public is_team integer @是否是组队
+---@field public is_retreat integer @是否撤离
 
 
 ---@class PBEnterCityReqCmd
@@ -3771,6 +3785,7 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public self_trade_info PBSelfTradeData @自己的交易行数据
+---@field public now_sys_ts integer @当前服务器时间
 
 
 ---@class PBSearchTradeProductReqCmd

@@ -1828,7 +1828,7 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-«9
+¹<
 dsnode.protocommon.proto
 item.proto
 user.proto	bag.proto
@@ -1871,7 +1871,12 @@ monster_id (R	monsterId!
 	config_id (RconfigId
 
 item_count (R	itemCount%
-cur_durability (RcurDurability"š	
+cur_durability (RcurDurability"h
+PBInGameOpenPot
+open_cnt (RopenCnt
+pot_type (RpotType
+pot_quality (R
+potQuality"¾
 PBGameSettle
 settle_data (	R
 settleData-
@@ -1905,7 +1910,16 @@ isComplete>
 bootyCoins>
 booty_items (2.PBGameSettle.BootyItemsEntryR
 bootyItems8
-booty_use_items (2.PBDsUseItemInfoRbootyUseItems?
+booty_use_items (2.PBDsUseItemInfoRbootyUseItems!
+damage_value (RdamageValue#
+healing_value (RhealingValue6
+total_open_cnt (2.PBInGameOpenPotRtotalOpenCnt"
+fall_down_cnt (RfallDownCnt
+pull_up_cnt (R	pullUpCnt&
+weight_use_rate (RweightUseRate
+is_team (RisTeam
+
+is_retreat (R	isRetreat?
 GameMissionsEntry
 key (Rkey
 value (Rvalue:8F
@@ -3784,7 +3798,7 @@ master_uid (R	masterUid
 
 master_uid (R	masterUid
 team_id (RteamIdbproto3
-Ž,
+¬,
 trade.proto"d
 PBTradeData!
 single_price (RsinglePrice
@@ -3869,12 +3883,14 @@ simpleInfoD
 key (Rkey-
 value (2.PBTradeProductBaseDataRvalue:8"(
 PBGetTradeInfoReqCmd
-uid (Ruid"Œ
+uid (Ruid"ª
 PBGetTradeInfoRspCmd
 code (Rcode
 error (	Rerror
 uid (Ruid8
-self_trade_info (2.PBSelfTradeDataRselfTradeInfo"§
+self_trade_info (2.PBSelfTradeDataRselfTradeInfo
+
+now_sys_ts (RnowSysTs"§
 PBSearchTradeProductReqCmd
 uid (Ruid
 

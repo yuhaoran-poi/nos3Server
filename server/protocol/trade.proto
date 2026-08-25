@@ -101,6 +101,7 @@ message PBGetTradeInfoRspCmd
     string error = 2; // 错误信息
     int64 uid	= 3;
     PBSelfTradeData self_trade_info	= 4; //自己的交易行数据
+	int64 now_sys_ts	= 5;	//当前服务器时间
 }
 
 // 客户端搜索交易行商品

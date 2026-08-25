@@ -33,6 +33,13 @@ message PBDsUseItemInfo
     int32 cur_durability    = 3;
 }
 
+message PBInGameOpenPot
+{
+    int32 open_cnt  = 1;    //开启次数
+    int32 pot_type  = 2;    //容器类型
+    int32 pot_quality   = 3;    //容器品质
+}
+
 // DS结算数据
 message PBGameSettle
 {
@@ -58,6 +65,14 @@ message PBGameSettle
     map<int32, PBCoin>  booty_coins = 20;   //局内获得的货币类战利品
     map<int32, int64>   booty_items = 21;   //局内获得的道具战利品
     repeated PBDsUseItemInfo booty_use_items    = 22;   //局内获得的使用过道具战利品
+    int64 damage_value  = 23;   //伤害总量
+    int64 healing_value = 24;   //治疗总量
+    repeated PBInGameOpenPot total_open_cnt = 25;   //局内开启容器数据
+    int32 fall_down_cnt = 26;   //倒地次数
+    int32 pull_up_cnt   = 27;   //拉起队友次数
+    int32 weight_use_rate   = 28;   //负重使用率
+    int32 is_team   = 29;   //是否是组队
+    int32 is_retreat    = 30;   //是否撤离
 }
 
 // 玩家进入主城
