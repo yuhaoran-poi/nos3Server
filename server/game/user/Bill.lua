@@ -94,27 +94,32 @@ function Bill.DealOnOrder()
 
     local order_info = Database.loadbillorder(context.addr_db_user, bills.on_order_id)
     if not order_info then
+        moon.error("uid DealOnOrder 未知订单: ", context.uid, bills.on_order_id)
+        bills.on_order_id = 0
         return
     end
 
-    if order_info.state ~= BillDef.orderStatus.WAIT
-        and order_info.state ~= BillDef.orderStatus.PAID then
-        return
-    end
+    -- if order_info.state ~= BillDef.orderStatus.WAIT
+    --     and order_info.state ~= BillDef.orderStatus.PAID then
+    --     return
+    -- end
     
     local json_success, rsp_data = Bill.QueryOrder(bills.on_order_id, order_info.transid)
     if not json_success then
+        moon.error("uid DealOnOrder 查询订单失败: ", context.uid, rsp_data)
         return
     else
         if rsp_data.response.result == 'OK' then
             if rsp_data.response.params.status == 'Approved' then
                 order_info.state = BillDef.orderStatus.WAIT
                 Bill.on_order_info = order_info
+                clusterd.send(3999, "billmgr", "Billmgr.AddBill", order_info)
                 return
             elseif rsp_data.response.params.status == 'Succeeded' then
                 clusterd.send(3999, "billmgr", "Billmgr.DelBill", bills.on_order_id)
                 local bill_cfg = GameCfg.RechargeStoreConfig[Bill.on_order_info.bill_id]
                 if not bill_cfg then
+                    moon.error("uid DealOnOrder 未知充值配置: ", context.uid, Bill.on_order_info.bill_id)
                     bills.on_order_id = 0
                     Bill.on_order_info = nil
                     Bill.SaveBillsNow()
@@ -149,7 +154,7 @@ function Bill.DealOnOrder()
                 Bill.on_order_info = nil
                 Bill.SaveBillsNow()
             else
-                moon.error("DealOnOrder 未知订单状态: " .. rsp_data.response.params.status)
+                moon.error("uid DealOnOrder 未知订单状态: ", context.uid, rsp_data.response.params.status)
             end
         end
     end
@@ -439,7 +444,7 @@ function Bill.PBApplyBillOrderReqCmd(req)
         ['itemid[0]'] = req.msg.bill_id,
         ['qty[0]'] = req.msg.bill_num,
         ['amount[0]'] = amount,
-        ['description[0]'] = steamsdk_conf.description,
+        ['description[0]'] = bill_cfg.description or "test bill",
     }
     local response = httpc.post(serverconf.STEAM_CONF.create_order_url, order_form)
     print_r(response)

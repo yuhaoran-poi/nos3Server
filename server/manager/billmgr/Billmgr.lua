@@ -13,6 +13,7 @@ local protocol = require("common.protocol_pb")
 local ProtoEnum = require("tools.ProtoEnum")
 local UserAttrLogic = require("common.logic.UserAttrLogic")
 local BillDef = require("common.def.BillDef")
+local serverconf = require("serverconf")
 local jencode = json.encode
 local jdecode = json.decode
 
@@ -66,8 +67,8 @@ function Billmgr.CheckOrder()
         if check_data.check_ts == 0 or now_ts - check_data.check_ts >= 20 then
             -- 查询订单状态
             local order_form = {
-                key = steamsdk_conf.order_key,
-                appid = steamsdk_conf.appId,
+                key = serverconf.STEAM_CONF.order_key,
+                appid = serverconf.STEAM_CONF.appId,
                 orderid = check_data.order_info.orderid,
                 transid = check_data.order_info.transid,
             }
@@ -76,7 +77,7 @@ function Billmgr.CheckOrder()
                 table.insert(param_tbl, string.format("%s=%s", escape(k), escape(v)))
             end
             local param_str = table.concat(param_tbl, "&")
-            local get_url = steamsdk_conf.query_order_url .. "?" .. param_str
+            local get_url = serverconf.STEAM_CONF.query_order_url .. "?" .. param_str
             local response = httpc.get(get_url)
             print_r(response)
             local json_success, rsp_data = pcall(json.decode, response.body or "")
