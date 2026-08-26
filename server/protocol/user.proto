@@ -6,6 +6,7 @@ import "role.proto";
 import "ghost.proto";
 import "grade.proto";
 import "shop.proto";
+import "aweitem.proto";
 
 //----------------------------------新增协议----------------------------------//
 
@@ -249,6 +250,7 @@ message PBGetOtherDetailRspCmd
 	PBRoleData model_role_data	= 10; // 展示角色数据
 	PBUserImage show_images_data = 11; // 展示部分图鉴数据
 	PBAntiqueShowcaseDataS antique_showcase_data = 12; // 古董展示柜数据
+	PBUserAweItems aweitems_data = 13;	// 镇山之宝数据
 }
 
 // 客户端使用皮肤礼包

@@ -1411,12 +1411,12 @@ open_count (R	openCount(
 TreasureListEntry
 key (Rkey'
 value (2.PBTreasureSingleRvalue:8bproto3
-ûC
+ÀD
 
 user.protocommon.proto
 item.proto	bag.proto
 role.protoghost.protograde.proto
-shop.proto"ú
+shop.protoaweitem.proto"ú
 
 PBUserAttr
 uid (Ruid!
@@ -1562,7 +1562,7 @@ cost_items (2.PBItemSimpleR	costItems"I
 info (2.PBUserAttrRinfo"G
 PBGetOtherDetailReqCmd
 uid (Ruid
-	quest_uid (RquestUid"ø
+	quest_uid (RquestUid"®
 PBGetOtherDetailRspCmd
 code (Rcode
 error (	Rerror
@@ -1578,7 +1578,8 @@ consumeBag3
 model_role_data
  (2.PBRoleDataRmodelRoleData6
 show_images_data (2.PBUserImageRshowImagesDataK
-antique_showcase_data (2.PBAntiqueShowcaseDataSRantiqueShowcaseDataS
+antique_showcase_data (2.PBAntiqueShowcaseDataSRantiqueShowcaseData4
+aweitems_data (2.PBUserAweItemsRaweitemsDataS
 GradeShowInfosEntry
 key (Rkey&
 value (2.PBGradeShowInfoRvalue:8"@

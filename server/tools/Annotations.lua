@@ -4114,6 +4114,7 @@
 ---@field public model_role_data PBRoleData @展示角色数据
 ---@field public show_images_data PBUserImage @展示部分图鉴数据
 ---@field public antique_showcase_data PBAntiqueShowcaseDataS @古董展示柜数据
+---@field public aweitems_data PBUserAweItems @镇山之宝数据
 
 
 ---@class PBUseSkinGiftReqCmd
