@@ -4115,6 +4115,7 @@
 ---@field public show_images_data PBUserImage @展示部分图鉴数据
 ---@field public antique_showcase_data PBAntiqueShowcaseDataS @古董展示柜数据
 ---@field public aweitems_data PBUserAweItems @镇山之宝数据
+---@field public season_data PBSeasonPlayerData @赛季数据
 
 
 ---@class PBUseSkinGiftReqCmd

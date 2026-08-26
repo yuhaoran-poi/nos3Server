@@ -1411,12 +1411,60 @@ open_count (R	openCount(
 TreasureListEntry
 key (Rkey'
 value (2.PBTreasureSingleRvalue:8bproto3
-ÀD
+‰
+season.proto"ì
+PBSeasonData
+	season_id (RseasonId;
+
+battle_num (2.PBSeasonData.BattleNumEntryR	battleNumJ
+battle_complete (2!.PBSeasonData.BattleCompleteEntryRbattleComplete
+booty_value (R
+bootyValue"
+total_game_ts (RtotalGameTs(
+kill_monster_cnt (RkillMonsterCnt"
+season_beg_ts (RseasonBegTs"
+season_end_ts (RseasonEndTs<
+BattleNumEntry
+key (Rkey
+value (Rvalue:8A
+BattleCompleteEntry
+key (Rkey
+value (Rvalue:8"Ä
+PBSeasonPlayerData"
+cur_season_id (RcurSeasonIdG
+season_infos (2$.PBSeasonPlayerData.SeasonInfosEntryRseasonInfosT
+story_line_record (2(.PBSeasonPlayerData.StoryLineRecordEntryRstoryLineRecordT
+ghost_gate_record (2(.PBSeasonPlayerData.GhostGateRecordEntryRghostGateRecordW
+boss_battle_record (2).PBSeasonPlayerData.BossBattleRecordEntryRbossBattleRecordZ
+tower_battle_record (2*.PBSeasonPlayerData.TowerBattleRecordEntryRtowerBattleRecordM
+SeasonInfosEntry
+key (Rkey#
+value (2.PBSeasonDataRvalue:8B
+StoryLineRecordEntry
+key (Rkey
+value (Rvalue:8B
+GhostGateRecordEntry
+key (Rkey
+value (Rvalue:8C
+BossBattleRecordEntry
+key (Rkey
+value (Rvalue:8D
+TowerBattleRecordEntry
+key (Rkey
+value (Rvalue:8"+
+PBGetSeasonPlayerReqCmd
+uid (Ruid"
+PBGetSeasonPlayerRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid6
+season_datas (2.PBSeasonPlayerDataRseasonDatasbproto3
+„E
 
 user.protocommon.proto
 item.proto	bag.proto
 role.protoghost.protograde.proto
-shop.protoaweitem.proto"ú
+shop.protoaweitem.protoseason.proto"ú
 
 PBUserAttr
 uid (Ruid!
@@ -1562,7 +1610,7 @@ cost_items (2.PBItemSimpleR	costItems"I
 info (2.PBUserAttrRinfo"G
 PBGetOtherDetailReqCmd
 uid (Ruid
-	quest_uid (RquestUid"®
+	quest_uid (RquestUid"ä
 PBGetOtherDetailRspCmd
 code (Rcode
 error (	Rerror
@@ -1579,7 +1627,9 @@ consumeBag3
  (2.PBRoleDataRmodelRoleData6
 show_images_data (2.PBUserImageRshowImagesDataK
 antique_showcase_data (2.PBAntiqueShowcaseDataSRantiqueShowcaseData4
-aweitems_data (2.PBUserAweItemsRaweitemsDataS
+aweitems_data (2.PBUserAweItemsRaweitemsData4
+season_data (2.PBSeasonPlayerDataR
+seasonDataS
 GradeShowInfosEntry
 key (Rkey&
 value (2.PBGradeShowInfoRvalue:8"@
@@ -3662,54 +3712,6 @@ ds_address (	R	dsAddress
 error (	Rerror(
 	room_data (2.PBRoomInfoRroomData4
 member_datas (2.PBRoomMemberInfoRmemberDatasbproto3
-‰
-season.proto"ì
-PBSeasonData
-	season_id (RseasonId;
-
-battle_num (2.PBSeasonData.BattleNumEntryR	battleNumJ
-battle_complete (2!.PBSeasonData.BattleCompleteEntryRbattleComplete
-booty_value (R
-bootyValue"
-total_game_ts (RtotalGameTs(
-kill_monster_cnt (RkillMonsterCnt"
-season_beg_ts (RseasonBegTs"
-season_end_ts (RseasonEndTs<
-BattleNumEntry
-key (Rkey
-value (Rvalue:8A
-BattleCompleteEntry
-key (Rkey
-value (Rvalue:8"Ä
-PBSeasonPlayerData"
-cur_season_id (RcurSeasonIdG
-season_infos (2$.PBSeasonPlayerData.SeasonInfosEntryRseasonInfosT
-story_line_record (2(.PBSeasonPlayerData.StoryLineRecordEntryRstoryLineRecordT
-ghost_gate_record (2(.PBSeasonPlayerData.GhostGateRecordEntryRghostGateRecordW
-boss_battle_record (2).PBSeasonPlayerData.BossBattleRecordEntryRbossBattleRecordZ
-tower_battle_record (2*.PBSeasonPlayerData.TowerBattleRecordEntryRtowerBattleRecordM
-SeasonInfosEntry
-key (Rkey#
-value (2.PBSeasonDataRvalue:8B
-StoryLineRecordEntry
-key (Rkey
-value (Rvalue:8B
-GhostGateRecordEntry
-key (Rkey
-value (Rvalue:8C
-BossBattleRecordEntry
-key (Rkey
-value (Rvalue:8D
-TowerBattleRecordEntry
-key (Rkey
-value (Rvalue:8"+
-PBGetSeasonPlayerReqCmd
-uid (Ruid"
-PBGetSeasonPlayerRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid6
-season_datas (2.PBSeasonPlayerDataRseasonDatasbproto3
 »
 seasonpass.proto"l
 PBSeasonPassData

@@ -379,6 +379,7 @@ function User.GetUserDetails()
     local other_images_data = scripts.ItemImage.OtherGetImagesData()
     local showcase_result = scripts.AntiqueShowcase.GetAntiqueShowcaseInfo()
     local aweItems_result = scripts.AweItem.GetAweItemsInfo()
+    local season_data = scripts.UserModel.GetSeasons()
     return {
         user_attr = details_data,
         role_data = role_data,
@@ -389,6 +390,7 @@ function User.GetUserDetails()
         show_images_data = other_images_data,
         antique_showcase_data = showcase_result.antique_showcase_data,
         aweitems_data = aweItems_result,
+        season_data = season_data,
     }
 end
 
@@ -1972,6 +1974,7 @@ function User.PBGetOtherDetailReqCmd(req)
             show_images_data = res.show_images_data,
             antique_showcase_data = res.antique_showcase_data,
             aweitems_data = res.aweitems_data,
+            season_data = res.season_data,
         }, req.msg_context.stub_id)
     else
         return context.S2C(context.net_id, CmdCode.PBGetOtherDetailRspCmd, {
