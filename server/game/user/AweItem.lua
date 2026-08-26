@@ -472,7 +472,7 @@ function AweItem.AweItemUnlock(aweitem_id)
         end
     end
 
-    AweItem.SaveAweItemNow()
+    AweItem.SaveAndLog()
 
     return ErrorCode.None
 end
