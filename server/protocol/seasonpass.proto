@@ -44,7 +44,7 @@ message PBGetSeasonPassRewardReqCmd
 {
     int64 uid		= 1;
     int32 pass_id   = 2;
-    int32 page_id   = 3;
+    int32 cur_page_id   = 3;
     int32 reward_id = 4;
 }
 

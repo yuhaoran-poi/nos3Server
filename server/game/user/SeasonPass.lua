@@ -217,7 +217,7 @@ end
 
 function SeasonPass.PBGetSeasonPassRewardReqCmd(req)
     -- 参数验证
-    if not req.msg.uid or not req.msg.pass_id or not req.msg.page_id or not req.msg.reward_id then
+    if not req.msg.uid or not req.msg.pass_id or not req.msg.cur_page_id or not req.msg.reward_id then
         return context.S2C(context.net_id, CmdCode.PBGetSeasonPassRewardRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
@@ -262,7 +262,7 @@ function SeasonPass.PBGetSeasonPassRewardReqCmd(req)
         }, req.msg_context.stub_id)
     end
     if not seasonpass_cfg.group
-        or not seasonpass_cfg.group[req.msg.page_id] then
+        or not seasonpass_cfg.group[req.msg.cur_page_id] then
         return context.S2C(context.net_id, CmdCode.PBGetSeasonPassRewardRspCmd, {
             code = ErrorCode.ConfigError,
             error = "配置错误",
@@ -270,7 +270,7 @@ function SeasonPass.PBGetSeasonPassRewardReqCmd(req)
         }, req.msg_context.stub_id)
     end
     
-    local group_id = seasonpass_cfg.group[req.msg.page_id]
+    local group_id = seasonpass_cfg.group[req.msg.cur_page_id]
     local group_cfg = GameCfg.SeasonPassShopItemGroup[group_id]
     if not group_cfg or not group_cfg.group or table.size(group_cfg.group) == 0 then
         return context.S2C(context.net_id, CmdCode.PBGetSeasonPassRewardRspCmd, {

@@ -3523,7 +3523,7 @@
 ---@class PBGetSeasonPassRewardReqCmd
 ---@field public uid integer
 ---@field public pass_id integer
----@field public page_id integer
+---@field public cur_page_id integer
 ---@field public reward_id integer
 
 

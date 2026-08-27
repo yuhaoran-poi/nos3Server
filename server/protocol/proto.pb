@@ -3712,7 +3712,7 @@ ds_address (	R	dsAddress
 error (	Rerror(
 	room_data (2.PBRoomInfoRroomData4
 member_datas (2.PBRoomMemberInfoRmemberDatasbproto3
-»
+Ã
 seasonpass.proto"l
 PBSeasonPassData
 pass_id (RpassId
@@ -3738,11 +3738,11 @@ ds_address (	R	dsAddress
 code (Rcode
 error (	Rerror
 uid (Ruid;
-season_pass_data (2.PBSeasonPassDataRseasonPassData"~
+season_pass_data (2.PBSeasonPassDataRseasonPassData"…
 PBGetSeasonPassRewardReqCmd
 uid (Ruid
-pass_id (RpassId
-page_id (RpageId
+pass_id (RpassId
+cur_page_id (R	curPageId
 	reward_id (RrewardId"–
 PBGetSeasonPassRewardRspCmd
 code (Rcode
