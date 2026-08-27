@@ -1513,28 +1513,28 @@ function Roommgr.GetMasterAndChapter(room_id)
             conf_idx = idx
 
             -- 检查玩家账户经验是否满足
-            -- if tmp_conf.playerlvlimits and tmp_conf.playerlvlimits > 0 then
-            --     for _, player in pairs(room.players) do
-            --         if not player.mem_info.account_exp
-            --             or player.mem_info.account_exp < tmp_conf.playerlvlimits then
-            --             if not player.mem_info.account_exp then
-            --                 moon.error(string.format("player %d account_exp is nil mem_info: %s", player.mem_info.uid,
-            --                     json.pretty_encode(player.mem_info)))
-            --             end
-            --             return { code = ErrorCode.RoomPlayerAccountExpError, error = "房间内玩家账户经验不足" }
-            --         end
-            --     end
-            -- end
+            if tmp_conf.playerlvlimits and tmp_conf.playerlvlimits > 0 then
+                for _, player in pairs(room.players) do
+                    if not player.mem_info.account_exp
+                        or player.mem_info.account_exp < tmp_conf.playerlvlimits then
+                        if not player.mem_info.account_exp then
+                            moon.error(string.format("player %d account_exp is nil mem_info: %s", player.mem_info.uid,
+                                json.pretty_encode(player.mem_info)))
+                        end
+                        return { code = ErrorCode.RoomPlayerAccountExpError, error = "房间内玩家账户经验不足" }
+                    end
+                end
+            end
             
             break
         end
     end
 
     -- 检查所有玩家记录
-    -- local records_errcode = Roommgr.CheckRecords(room.room_data.chapter, room.room_data.difficulty, room.players)
-    -- if not records_errcode then
-    --     return { code = ErrorCode.BattleRecordsNotComplete, error = "检查玩家记录失败" }
-    -- end
+    local records_errcode = Roommgr.CheckRecords(room.room_data.chapter, room.room_data.difficulty, room.players)
+    if not records_errcode then
+        return { code = ErrorCode.BattleRecordsNotComplete, error = "检查玩家记录失败" }
+    end
 
     return { code = ErrorCode.None,
         error = "获取房主和章节成功",

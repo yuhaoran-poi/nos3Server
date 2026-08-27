@@ -736,57 +736,44 @@ function Room.PBStartGameRoomReqCmd(req)
     end
 
     -- 先扣除模式门票
-    local game_mode_cfgs = GameCfg.GameMode
-    if not game_mode_cfgs or table.size(game_mode_cfgs) <= 0 then
-        return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
-            code = ErrorCode.ServerInternalError,
-            error = "system error",
-        }, req.msg_context.stub_id)
-    end
     local bag_change_log = {}
-    for _, game_mode_cfg in pairs(game_mode_cfgs) do
-        if game_mode_cfg.begin_id <= front_res.chapter and game_mode_cfg.end_id >= front_res.chapter then
-            local err_code_coins = ErrorCode.None
-
-            if game_mode_cfg.cost1 and table.size(game_mode_cfg.cost1) > 0 then
-                local mode_cost_items, mode_cost_coins = {}, {}
-                ItemDefine.GetItemsFromCfg(game_mode_cfg.cost1, 1, true, mode_cost_items, mode_cost_coins)
-                err_code_coins = scripts.Bag.CheckCoinsEnough(mode_cost_coins)
-                if err_code_coins == ErrorCode.None then
-                    if table.size(mode_cost_coins) > 0 then
-                        err_code_coins = scripts.Bag.DealCoins(mode_cost_coins, bag_change_log)
-                        if err_code_coins ~= ErrorCode.None then
-                            scripts.Bag.RollBackWithChange(bag_change_log)
-                            return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
-                                code = err_code_coins,
-                                error = "消耗模式门票不足",
-                            }, req.msg_context.stub_id)
-                        end
-                    end
-                end
-            end
-
-            if err_code_coins ~= ErrorCode.None
-                and game_mode_cfg.cost2 and table.size(game_mode_cfg.cost2) > 0 then
-                local mode_cost_items, mode_cost_coins = {}, {}
-                ItemDefine.GetItemsFromCfg(game_mode_cfg.cost2, 1, true, mode_cost_items, mode_cost_coins)
-                err_code_coins = scripts.Bag.CheckCoinsEnough(mode_cost_coins)
+    local err_code_coins = ErrorCode.None
+    if game_chapter_cfg.cost1 and table.size(game_chapter_cfg.cost1) > 0 then
+        local mode_cost_items, mode_cost_coins = {}, {}
+        ItemDefine.GetItemsFromCfg(game_chapter_cfg.cost1, 1, true, mode_cost_items, mode_cost_coins)
+        err_code_coins = scripts.Bag.CheckCoinsEnough(mode_cost_coins)
+        if err_code_coins == ErrorCode.None then
+            if table.size(mode_cost_coins) > 0 then
+                err_code_coins = scripts.Bag.DealCoins(mode_cost_coins, bag_change_log)
                 if err_code_coins ~= ErrorCode.None then
+                    scripts.Bag.RollBackWithChange(bag_change_log)
                     return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
                         code = err_code_coins,
                         error = "消耗模式门票不足",
                     }, req.msg_context.stub_id)
                 end
-                if table.size(mode_cost_coins) > 0 then
-                    err_code_coins = scripts.Bag.DealCoins(mode_cost_coins, bag_change_log)
-                    if err_code_coins ~= ErrorCode.None then
-                        scripts.Bag.RollBackWithChange(bag_change_log)
-                        return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
-                            code = err_code_coins,
-                            error = "消耗模式门票不足",
-                        }, req.msg_context.stub_id)
-                    end
-                end
+            end
+        end
+    end
+    if err_code_coins ~= ErrorCode.None
+        and game_chapter_cfg.cost2 and table.size(game_chapter_cfg.cost2) > 0 then
+        local mode_cost_items, mode_cost_coins = {}, {}
+        ItemDefine.GetItemsFromCfg(game_chapter_cfg.cost2, 1, true, mode_cost_items, mode_cost_coins)
+        err_code_coins = scripts.Bag.CheckCoinsEnough(mode_cost_coins)
+        if err_code_coins ~= ErrorCode.None then
+            return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+                code = err_code_coins,
+                error = "消耗模式门票不足",
+            }, req.msg_context.stub_id)
+        end
+        if table.size(mode_cost_coins) > 0 then
+            err_code_coins = scripts.Bag.DealCoins(mode_cost_coins, bag_change_log)
+            if err_code_coins ~= ErrorCode.None then
+                scripts.Bag.RollBackWithChange(bag_change_log)
+                return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+                    code = err_code_coins,
+                    error = "消耗模式门票不足",
+                }, req.msg_context.stub_id)
             end
         end
     end
