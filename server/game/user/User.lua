@@ -2912,21 +2912,25 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log)
     elseif item_cfg.use_type == 6 then
         -- 随机礼包
         if not item_cfg.use_award or table.size(item_cfg.use_award) == 0 then
+            moon.error("use_award error")
             err_code = ErrorCode.ConfigError
             return err_code
         end
         if not item_cfg.award_count
             or item_cfg.award_count <= 0
             or item_cfg.award_count >= table.size(item_cfg.use_award) then
+            moon.error("award_count error")
             err_code = ErrorCode.ConfigError
             return err_code
         end
-        if not item_cfg.award_weight or table.size(item_cfg.award_weight) ~= item_cfg.award_count then
+        if not item_cfg.award_weight or table.size(item_cfg.award_weight) ~= table.size(item_cfg.use_award) then
+            moon.error("award_weight error")
             err_code = ErrorCode.ConfigError
             return err_code
         else
             for item_id, item_cnt in pairs(item_cfg.use_award) do
                 if not item_cfg.award_weight[item_id] then
+                    moon.error("award_weight item error")
                     err_code = ErrorCode.ConfigError
                     return err_code
                 end
@@ -2934,6 +2938,7 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log)
         end
         if not item_cfg.award_repetition
             or (item_cfg.award_repetition ~= 1 and item_cfg.award_repetition ~= 2) then
+            moon.error("award_repetition error")
             err_code = ErrorCode.ConfigError
             return err_code
         end
@@ -2941,10 +2946,12 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log)
         for i = 1, item_cfg.award_count do
             local rand_item_id = scripts.Item.RangeTags(id_weight)
             if rand_item_id == 0 then
+                moon.error("rand_item_id error")
                 err_code = ErrorCode.ConfigError
                 return err_code
             end
             if not item_cfg.use_award[rand_item_id] then
+                moon.error("use_award rand_item_id error")
                 err_code = ErrorCode.ConfigError
                 return err_code
             end
@@ -2963,6 +2970,7 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log)
     end
 
     if table.size(reward_cfg_list) == 0 then
+        moon.error("reward_cfg_list error")
         err_code = ErrorCode.ConfigError
         return err_code
     end
@@ -2992,9 +3000,16 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log)
                 json.pretty_encode(stack_items)))
             moon.error(string.format("User.OpenGift AddItems unstack_items err:\n%s",
                 json.pretty_encode(unstack_items)))
+            return err_code
         end
-
-        return err_code
+    end
+    if table.size(deal_coins) > 0 then
+        err_code = scripts.Bag.DealCoins(deal_coins, bag_change_log)
+        if err_code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            moon.error(string.format("User.OpenGift DealCoins err:\n%s", json.pretty_encode(deal_coins)))
+            return err_code
+        end
     end
 
     return err_code
@@ -3217,14 +3232,6 @@ function User.PBUseItemReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
-        code = ErrorCode.None,
-        error = "success",
-        uid = context.uid,
-        use_item_id = req.msg.use_item_id,
-        use_item_cnt = req.msg.use_item_cnt,
-    }, req.msg_context.stub_id)
-
     -- 存储背包变更
     if bag_change_log then
         if table.size(bag_change_log) > 0 then
@@ -3239,6 +3246,14 @@ function User.PBUseItemReqCmd(req)
     if table.size(update_user_attr) > 0 then
         User.SetUserAttr(update_user_attr, true)
     end
+
+    return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
+        code = ErrorCode.None,
+        error = "success",
+        uid = context.uid,
+        use_item_id = req.msg.use_item_id,
+        use_item_cnt = req.msg.use_item_cnt,
+    }, req.msg_context.stub_id)
 end
 
 -- 客户端请求--使用唯一道具
