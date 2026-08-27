@@ -109,7 +109,7 @@ end
 
 function SeasonPass.PBUnlockSeasonPassReqCmd(req)
     -- 参数验证
-    if not req.msg.uid or not req.msg.pass_id then
+    if not req.msg.uid or not req.msg.unlock_pass_id then
         return context.S2C(context.net_id, CmdCode.PBUnlockSeasonPassRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
@@ -122,16 +122,16 @@ function SeasonPass.PBUnlockSeasonPassReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBUnlockSeasonPassRspCmd,
             { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
     end
-    if season_pass.season_pass_infos[req.msg.pass_id] then
+    if season_pass.season_pass_infos[req.msg.unlock_pass_id] then
         return context.S2C(context.net_id, CmdCode.PBUnlockSeasonPassRspCmd, {
             code = ErrorCode.AlreadyUnlockSeasonPass,
             error = "已解锁",
             uid = context.uid,
-            season_pass_data = season_pass.season_pass_infos[req.msg.pass_id]
+            season_pass_data = season_pass.season_pass_infos[req.msg.unlock_pass_id]
         }, req.msg_context.stub_id)
     end
 
-    local seasonpass_cfg = GameCfg.SeasonPassShop[req.msg.pass_id]
+    local seasonpass_cfg = GameCfg.SeasonPassShop[req.msg.unlock_pass_id]
     if not seasonpass_cfg then
         return context.S2C(context.net_id, CmdCode.PBUnlockSeasonPassRspCmd, {
             code = ErrorCode.ConfigError,
