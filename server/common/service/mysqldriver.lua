@@ -70,13 +70,13 @@ if conf.name then
                 pool_stats.reconnects = pool_stats.reconnects + 1
                 pool_stats.last_recover_ts = moon.time()
                 moon.warn(string.format(
-                    "[%s] mysql reconnected (alive=%d/%d, total reconnects=%d)",
+                    "[%s]MYSQL_DRV mysql reconnected (alive=%d/%d, total reconnects=%d)",
                     conf.name, pool_stats.alive, pool_stats.total, pool_stats.reconnects))
                 backoff = 1
             else
                 pool_stats.last_err = new_db and new_db.message or tostring(new_db)
                 moon.error(string.format(
-                    "[%s] mysql reconnect failed, retry in %ds: %s",
+                    "[%s]MYSQL_DRV mysql reconnect failed, retry in %ds: %s",
                     conf.name, backoff, pool_stats.last_err))
                 moon.sleep(backoff * 1000)
                 backoff = math.min(backoff * 2, 60) -- 1→2→4→8→...→60 封顶
@@ -97,7 +97,7 @@ if conf.name then
                 pool_stats.alive = list.size(dbs)
             else
                 pool_stats.last_err = db and db.message or tostring(db)
-                moon.error(string.format("[%s] initial mysql connect failed: %s",
+                moon.error(string.format("[%s]MYSQL_DRV initial mysql connect failed: %s",
                     conf.name, pool_stats.last_err))
                 -- 占个位,等后台 worker 帮忙重连
                 list.push(pending_reconnect, { placeholder = true })
@@ -117,7 +117,7 @@ if conf.name then
                 local ok, ret = pcall(function() return db:ping() end)
                 if not ok or not ret or ret.server_status ~= 2 then
                     -- ping 失败:踢出主池,丢进待重连队列
-                    moon.warn(string.format("[%s] mysql ping failed, mark for reconnect: %s",
+                    moon.warn(string.format("[%s]MYSQL_DRV mysql ping failed, mark for reconnect: %s",
                         conf.name, json.pretty_encode(ret or { err = "ping_exception" })))
                     list.push(pending_reconnect, db)
                 else
@@ -132,7 +132,7 @@ if conf.name then
                     or moon.time() - pool_stats.last_empty_log_ts > 300 then
                     pool_stats.last_empty_log_ts = moon.time()
                     moon.warn(string.format(
-                        "[%s] pool empty, waiting reconnect (alive=%d/%d, pending=%d)",
+                        "[%s]MYSQL_DRV pool empty, waiting reconnect (alive=%d/%d, pending=%d)",
                         conf.name, list.size(dbs), pool_stats.total, list.size(pending_reconnect)))
                 end
             end
@@ -158,7 +158,7 @@ if conf.name then
                 last_recover_ts = pool_stats.last_recover_ts,
             }
             moon.info(string.format(
-                "[%s] _diag from sender=%s session=%d -> alive=%d/%d, pending=%d, reconnects=%d, slow=%d, threshold=%dms, last_err=%s",
+                "[%s]MYSQL_DRV _diag from sender=%s session=%d -> alive=%d/%d, pending=%d, reconnects=%d, slow=%d, threshold=%dms, last_err=%s",
                 conf.name, sender_hex, sessionid,
                 result.pool_alive, result.pool_total, result.pool_pending,
                 result.reconnects, result.slow_query_count, result.slow_threshold_ms,
@@ -178,7 +178,7 @@ if conf.name then
             end
             pool_stats.alive = 0
             moon.warn(string.format(
-                "[%s] _force_reconnect from sender=%s session=%d -> kicked %d connections (alive=0/%d, pending=%d)",
+                "[%s]MYSQL_DRV _force_reconnect from sender=%s session=%d -> kicked %d connections (alive=0/%d, pending=%d)",
                 conf.name, sender_hex, sessionid, count,
                 pool_stats.total, list.size(pending_reconnect)))
             return { ok = true, kicked = count }
@@ -188,7 +188,7 @@ if conf.name then
         local sql = op
         if type(sql) ~= "string" then
             moon.error(string.format(
-                "[%s] INVALID_SQL from sender=%s session=%d: op type=%s, payload type=%s",
+                "[%s]MYSQL_DRV INVALID_SQL from sender=%s session=%d: op type=%s, payload type=%s",
                 conf.name, sender_hex, sessionid, type(op), type(payload)))
             if sessionid ~= 0 then
                 moon.response("lua", sender, sessionid, {
@@ -237,7 +237,7 @@ if conf.name then
                     pool_stats.total, pending_cnt, wait_target, tostring(pool_stats.last_err)),
             }
             moon.error(string.format(
-                "[%s] POOL_EMPTY from sender=%s session=%d: waited=%dms, target=%dms, pending=%d, last_err=%s, sql_prefix=%.80s",
+                "[%s]MYSQL_DRV POOL_EMPTY from sender=%s session=%d: waited=%dms, target=%dms, pending=%d, last_err=%s, sql_prefix=%.80s",
                 conf.name, sender_hex, sessionid,
                 wait_cnt, wait_target, pending_cnt,
                 tostring(pool_stats.last_err),
@@ -245,10 +245,10 @@ if conf.name then
             -- 把当前正在执行的 N 条 SQL 全部 dump,前面标序号便于逐一核对
             if idx > 0 then
                 moon.error(string.format(
-                    "[%s] POOL_EMPTY inflight_count=%d (these SQLs are currently holding connections):",
+                    "[%s]MYSQL_DRV POOL_EMPTY inflight_count=%d (these SQLs are currently holding connections):",
                     conf.name, idx))
                 for i, dumped_sql in ipairs(inflight_dump) do
-                    moon.error(string.format("  [%d] %s", i, dumped_sql))
+                    moon.error(string.format("  MYSQL_DRV[%d] %s", i, dumped_sql))
                 end
             end
             if sessionid ~= 0 then
@@ -263,7 +263,7 @@ if conf.name then
         -- 拿到连接,但等待过久:打点日志(>50ms 视为异常,避免刷屏)
         if wait_cnt > 50 then
             moon.warn(string.format(
-                "[%s] pool contention from sender=%s session=%d: waited=%dms, target=%dms, pending=%d",
+                "[%s]MYSQL_DRV pool contention from sender=%s session=%d: waited=%dms, target=%dms, pending=%d",
                 conf.name, sender_hex, sessionid, wait_cnt, wait_target, pending_cnt))
         end
 
@@ -279,14 +279,14 @@ if conf.name then
             if #log_sql > 2048 then
                 log_sql = log_sql:sub(1, 2048) .. "...[truncated " .. (#sql - 2048) .. " bytes]"
             end
-            moon.warn(string.format("[%s] slow query %dms (threshold=%dms, total_slow=%d): %s",
+            moon.warn(string.format("[%s]MYSQL_DRV slow query %dms (threshold=%dms, total_slow=%d): %s",
                 conf.name, query_cost, SLOW_THRESHOLD_MS,
                 pool_stats.slow_query_count, log_sql))
         end
 
         if not ok then
             -- query 本身抛异常(连接被踢 / 协议错误),踢出重连
-            moon.error(string.format("[%s] mysql query exception from sender=%s session=%d: %s",
+            moon.error(string.format("[%s]MYSQL_DRV mysql query exception from sender=%s session=%d: %s",
                 conf.name, sender_hex, sessionid, tostring(res)))
             inflight[db] = nil
             list.push(pending_reconnect, db)
@@ -298,9 +298,9 @@ if conf.name then
             }
         elseif res and res.errno then
             -- MySQL 返回错误,连接本身可能还活着(语法错/约束冲突),放回池子
-            moon.error(string.format("[%s] mysql query failed from sender=%s session=%d: errno=%d, msg=%s",
+            moon.error(string.format("[%s]MYSQL_DRV mysql query failed from sender=%s session=%d: errno=%d, msg=%s",
                 conf.name, sender_hex, sessionid, res.errno, tostring(res.message)))
-            moon.error(string.format("[%s] mysql query sql: %s", conf.name, tostring(sql)))
+            moon.error(string.format("[%s]MYSQL_DRV mysql query sql: %s", conf.name, tostring(sql)))
             inflight[db] = nil
             list.push(dbs, db)
             res = {
