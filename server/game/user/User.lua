@@ -369,6 +369,7 @@ function User.GetUserDetails()
         ProtoEnum.UserAttrType.cur_show_ghost,
         ProtoEnum.UserAttrType.cur_model_role,
         ProtoEnum.UserAttrType.account_exp,
+        ProtoEnum.UserAttrType.battle_report_ids,
     }
     local details_data = User.GetOnlineUserAttr(details_fields)
     local role_data = scripts.Role.GetRoleInfo(details_data.cur_show_role.config_id)
@@ -914,6 +915,13 @@ function User.PBPingCmd(req)
         if change_day then
             -- 触发签到
             scripts.Mission.TriggerCondition(MissionDef.EConditionIds.SIGN_CNT, {}, 1)
+            -- 连续签到：昨天在线则累加，断签重置为1
+            -- local yesterday_ts = now_ts - 86400
+            -- if datetime.is_same_day(last_online_time, yesterday_ts) then
+            --     scripts.Mission.TriggerCondition(MissionDef.EConditionIds.CONTINUE_SIGN_CNT, { 1 }, 1)
+            -- else
+            --     scripts.Mission.TriggerCondition(MissionDef.EConditionIds.CONTINUE_SIGN_CNT, { 0 }, 1)
+            -- end
             -- 持续在线计入第二天登录
             Database.updatelogin(context.addr_db_user, context.uid)
         end

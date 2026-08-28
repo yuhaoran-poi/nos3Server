@@ -11,6 +11,7 @@ local TradeDef = require("common.def.TradeDef")
 local BagDef = require("common.def.BagDef")
 local ItemDef = require("common.def.ItemDef")
 local ItemDefine = require("common.logic.ItemDefine")
+local MissionDef = require("common.def.MissionDef")
 
 ---@type user_context
 local context = ...
@@ -250,6 +251,11 @@ function Trade.OnTradeLogSaleMail(trade_log, need_save)
         return
     end
     trade_log.send_mail = 1
+    -- 交易行收益金额
+    -- local earn_amount = trade_log.deal_price * trade_log.deal_num - trade_log.trade_tax
+    -- if earn_amount > 0 then
+    --     scripts.Mission.TriggerCondition(MissionDef.EConditionIds.TRADE_HOUSE_EARN, {}, earn_amount)
+    -- end
     -- 通知Trademgr更改邮件发送记录
     clusterd.send(3999, "trademgr", "Trademgr.UserDealTradeLog", trade_log.log_id)
 
@@ -493,7 +499,11 @@ function Trade.CheckOnSaleCnt(player_trade_data)
     local trade_cfg = GameCfg.TransactionConfig[1]
     if trade_cfg and trade_cfg.account_market and trade_cfg.refresh_time then
         if not datetime.is_same_day(player_trade_data.simple_info.update_ts, now_ts - trade_cfg.refresh_time) then
-            player_trade_data.simple_info.can_onsale_cnt = trade_cfg.account_market
+            local onsale_buff_cnt = 0
+            if scripts.AweItem and scripts.AweItem.GetOnSaleCntBuff then
+                onsale_buff_cnt = scripts.AweItem.GetOnSaleCntBuff()
+            end
+            player_trade_data.simple_info.can_onsale_cnt = trade_cfg.account_market + onsale_buff_cnt
             player_trade_data.simple_info.update_ts = moon.time()
             -- Trade.SaveTradeInfoNow()
             scripts.UserModel.AddDirtyModule("Trade")
@@ -515,6 +525,16 @@ function Trade.AddCapacity(add_num)
         return
     end
     player_trade_data.simple_info.box_capacity = player_trade_data.simple_info.box_capacity + add_num
+    scripts.UserModel.AddDirtyModule("Trade")
+end
+
+function Trade.AddOnSaleCnt(add_num)
+    local player_trade_data = scripts.UserModel.GetTradeData()
+    if not player_trade_data then
+        return
+    end
+    player_trade_data.simple_info.can_onsale_cnt = player_trade_data.simple_info.can_onsale_cnt + add_num
+    scripts.UserModel.AddDirtyModule("Trade")
 end
 
 function Trade.PBGetTradeInfoReqCmd(req)
@@ -731,6 +751,9 @@ function Trade.PBTradeSaleReqCmd(req)
         scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.TradeSale)
     end
     Trade.SaveTradeInfoNow()
+
+    -- 交易行上架数量
+    --scripts.Mission.TriggerCondition(MissionDef.EConditionIds.TRADE_HOUSE_SHELF_CNT, {}, 1)
 
     return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
         { code = ErrorCode.None, error = "寄售商品成功", uid = context.uid, trade_id = product_data.trade_id },

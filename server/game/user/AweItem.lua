@@ -125,6 +125,20 @@ function AweItem.GetRepairCostDiscount()
     return repair_discount
 end
 
+function AweItem.GetOnSaleCntBuff()
+    local aweitems = scripts.UserModel.GetAweItems()
+    if not aweitems then
+        return 0
+    end
+    local onsale_cnt = 0
+    for _, aweitem in pairs(aweitems.awe_item_map) do
+        if aweitem.buff_data and aweitem.buff_data.buff_effect == ProtoEnum.AccountBuffType.Buff_AuctionLimit then
+            onsale_cnt = onsale_cnt + aweitem.buff_data.coefficient
+        end
+    end
+    return onsale_cnt
+end
+
 function AweItem.PBAweItemsGetInfoReqCmd(req)
     local aweitems = scripts.UserModel.GetAweItems()
     if not aweitems then
@@ -285,6 +299,7 @@ local function AddAweItemBuff(aweitem, buff_id)
         scripts.Trade.AddCapacity(buff_cfg.buff_coefficient)
     elseif buff_cfg.buff_effect == ProtoEnum.AccountBuffType.Buff_AuctionLimit then
         -- 每日寄售总次数上限增加
+        scripts.Trade.AddOnSaleCnt(buff_cfg.buff_coefficient)
     elseif buff_cfg.buff_effect == ProtoEnum.AccountBuffType.Buff_Warehouse then
         local err_code, change_log = scripts.Bag.AddCapacity(BagDef.BagType.Cangku, 0, buff_cfg.buff_coefficient)
         local bag_data = {}
