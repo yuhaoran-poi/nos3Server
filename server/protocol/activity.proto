@@ -5,6 +5,10 @@ message PBActivityData
     int32 activity_id	= 1;
     int64 beg_ts		= 2;
     int64 end_ts		= 3;
+    int32 activity_type = 4;
+    repeated int32 now_mission_ids = 5;
+    repeated int32 complete_mission_ids = 6;
+    repeated int32 take_rewards_mission_ids = 7;
 }
 
 // 客户端请求活动数据

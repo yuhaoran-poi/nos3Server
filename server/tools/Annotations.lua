@@ -1289,6 +1289,7 @@
 ---@class PBGradeShowData
 ---@field public grade_id integer
 ---@field public now_grade_score integer
+---@field public highest_grade_score integer
 
 
 ---@class PBGradeShowInfo

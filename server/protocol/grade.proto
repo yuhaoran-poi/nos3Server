@@ -19,6 +19,7 @@ message PBGradeShowData
 {
 	int32 grade_id	= 1;
 	int32 now_grade_score	= 2;
+	int32 highest_grade_score	= 3;
 }
 
 message PBGradeShowInfo

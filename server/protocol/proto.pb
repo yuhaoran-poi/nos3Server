@@ -1244,7 +1244,7 @@ takeoffIdx"e
 uid (Ruid&
 ghost_config_id (RghostConfigId
 skin (Rskinbproto3
-Ë	
+ü	
 grade.proto"¤
 PBGradeData
 grade_id (RgradeId&
@@ -1257,10 +1257,11 @@ takeoffIdx"e
 PBGradeInfo
 	season_id (RseasonId+
 
-grade_data (2.PBGradeDataR	gradeData"T
+grade_data (2.PBGradeDataR	gradeData"„
 PBGradeShowData
 grade_id (RgradeId&
-now_grade_score (RnowGradeScore"h
+now_grade_score (RnowGradeScore.
+highest_grade_score (RhighestGradeScore"h
 PBGradeShowInfo
 	season_id (RseasonId8
 grade_show_data (2.PBGradeShowDataRgradeShowData"É
