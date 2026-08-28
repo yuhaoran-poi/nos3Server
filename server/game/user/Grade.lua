@@ -165,6 +165,13 @@ function Grade.ChangeScore(change_score)
     scripts.User.SetUserAttr(update_user_attr, true)
 end
 
+function Grade.GMChangeScore(change_score)
+    moon.warn("GMChangeScore", context.uid, change_score)
+    Grade.ChangeScore(change_score)
+
+    return true
+end
+
 function Grade.SeasonChange(new_season_id)
     local Grades = scripts.UserModel.GetGrades()
     if not Grades or not Grades.grade_infos then

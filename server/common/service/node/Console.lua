@@ -87,6 +87,7 @@ Command List:
 	add_trade_product <sale_config_id> <sale_num> <sale_price> <sale_ts> #添加交易行商品. 10001 10 100 3600 添加交易行商品10001,10个,单价100元,3600秒有效
 	close_start_game <close_reason> #关闭游戏开始. close_start_game 关闭游戏
 	open_start_game <open_reason> #打开游戏开始. open_start_game 打开游戏
+	add_grade_score <uid> <count> #增加段位积分. 1234567 999 给玩家1234567增加999段位积分
 	]]
 
 function Console.help()
@@ -502,6 +503,20 @@ function Console.open_start_game(open_reason)
 		return Response(444, err, string.format("%s", open_reason))
 	else
 		return Response(0, "OK")
+	end
+end
+
+function Console.add_grade_score(uid, add_score)
+	add_score = math.tointeger(add_score)
+	local res, err = context.call_user(uid, "Grade.GMChangeScore", add_score)
+	if err then
+		return Response(444, err, string.format("%d %d", uid, add_score))
+	end
+
+	if res then
+		return Response(0, "OK")
+	else
+		return Response(444, "Failed", string.format("%d %d", uid, add_score))
 	end
 end
 
