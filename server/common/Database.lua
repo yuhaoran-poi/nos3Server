@@ -1362,6 +1362,41 @@ function _M.ItemChangeLog(addr, uid, config_id, old_num, new_num, mod_uniqid, de
     moon.send("lua", addr, cmd)
 end
 
+-- 批量:每 chunk 合并为 1 条多 VALUES INSERT,大幅降低连接占用
+-- item 字段顺序:uid, config_id, old_num, new_num, mod_uniqid, del_uniqids, add_uniqids,
+--              old_item_data, new_item_data, relation_roleid, relation_ghostid,
+--              relation_ghost_uniqid, relation_imageid, change_type, change_reason, log_ts
+local LOG_BATCH_SIZE = 30  -- item_data JSON 较大,30 条 ≈ 60-150KB,远低于 max_allowed_packet 64MB
+function _M.ItemChangeLogList(addr, items)
+    if not items or #items == 0 then return end
+    local total = #items
+    local offset = 1
+    while offset <= total do
+        local chunk_end = math.min(offset + LOG_BATCH_SIZE - 1, total)
+        local values_parts = {}
+        for i = offset, chunk_end do
+            local ld = items[i]
+            local del_uniqids_str = jencode(ld.del_uniqids) or ""
+            local add_uniqids_str = jencode(ld.add_uniqids) or ""
+            local old_item_data_str = jencode(ld.old_item_data) or ""
+            local new_item_data_str = jencode(ld.new_item_data) or ""
+            table.insert(values_parts, string.format(
+                "(%d, %d, %d, %d, %d, '%s', '%s', '%s', '%s', %d, %d, %d, %d, %d, %d, %d)",
+                ld.uid, ld.config_id, ld.old_num, ld.new_num, ld.mod_uniqid,
+                del_uniqids_str, add_uniqids_str, old_item_data_str, new_item_data_str,
+                ld.relation_roleid, ld.relation_ghostid, ld.relation_ghost_uniqid,
+                ld.relation_imageid, ld.change_type, ld.change_reason, ld.log_ts))
+        end
+        local cmd = string.format([[
+            INSERT INTO mlog.bag_change_log (uid, config_id, old_num, new_num, mod_uniqid, del_uniqids,
+         add_uniqids, old_item_data, new_item_data, relation_roleid, relation_ghostid, relation_ghost_uniqid, relation_imageid, change_type, change_reason, log_ts)
+            VALUES %s;
+        ]], table.concat(values_parts, ","))
+        moon.send("lua", addr, cmd)
+        offset = chunk_end + 1
+    end
+end
+
 -- 记录角色变更日志
 function _M.RoleChangeLog(addr, uid, config_id, star_level, exp, role_data, reason, log_ts)
     local role_data_str = jencode(role_data) or ""
@@ -1370,6 +1405,34 @@ function _M.RoleChangeLog(addr, uid, config_id, star_level, exp, role_data, reas
         VALUES (%d, %d, %d, %d, '%s', '%s', %d);
     ]], uid, config_id, star_level, exp, role_data_str, reason, log_ts)
     moon.send("lua", addr, cmd)
+end
+
+-- 批量:每 chunk 合并为 1 条多 VALUES INSERT
+-- item 字段顺序:uid, config_id, star_level, exp, role_data, reason, log_ts
+function _M.RoleChangeLogList(addr, roles)
+    if not roles or #roles == 0 then return end
+    local total = #roles
+    local offset = 1
+    while offset <= total do
+        local chunk_end = math.min(offset + LOG_BATCH_SIZE - 1, total)
+        local values_parts = {}
+        for i = offset, chunk_end do
+            local ld = roles[i]
+            local role_data_str = jencode(ld.role_data) or ""
+            -- reason 是字符串(原版也未做转义),保持与单条版本一致
+            local reason_str = tostring(ld.reason or "")
+            table.insert(values_parts, string.format(
+                "(%d, %d, %d, %d, '%s', '%s', %d)",
+                ld.uid, ld.config_id, ld.star_level, ld.exp,
+                role_data_str, reason_str, ld.log_ts))
+        end
+        local cmd = string.format([[
+            INSERT INTO mlog.role_change_log (uid, config_id, star_level, exp, role_data, reason, log_ts)
+            VALUES %s;
+        ]], table.concat(values_parts, ","))
+        moon.send("lua", addr, cmd)
+        offset = chunk_end + 1
+    end
 end
 
 function _M.loadfriends(addr, uid)
@@ -2294,16 +2357,109 @@ function _M.updatetraderecord(addr, record_data, condition1, condition2, conditi
     local cmd = string.format([[
         INSERT INTO mgame.trade_record (trade_config_id, sale_num, sale_total_price, last_deal_price, update_ts, yes_sale_num, yes_sale_total_price, yes_average_price, min_price, min_price_num, now_total_num, condition1, condition2, condition3, condition4, condition5)
         VALUES (%d, %d, %d, %d, %d, %d, %d, %f, %d, %d, %d, %d, %d, %d, %d, %d)
-        ON DUPLICATE KEY UPDATE sale_num = %d, sale_total_price = %d, last_deal_price = %d, update_ts = %d, yes_sale_num = %d, yes_sale_total_price = %d, yes_average_price = %f, min_price = %d, min_price_num = %d, now_total_num = %d, condition1 = %d, condition2 = %d, condition3 = %d, condition4 = %d, condition5 = %d;
+        ON DUPLICATE KEY UPDATE sale_num = VALUES(sale_num), sale_total_price = VALUES(sale_total_price), last_deal_price = VALUES(last_deal_price), update_ts = VALUES(update_ts), yes_sale_num = VALUES(yes_sale_num), yes_sale_total_price = VALUES(yes_sale_total_price), yes_average_price = VALUES(yes_average_price), min_price = VALUES(min_price), min_price_num = VALUES(min_price_num), now_total_num = VALUES(now_total_num), condition1 = VALUES(condition1), condition2 = VALUES(condition2), condition3 = VALUES(condition3), condition4 = VALUES(condition4), condition5 = VALUES(condition5);
     ]], record_data.trade_config_id, record_data.sale_num, record_data.sale_total_price, record_data.last_deal_price,
         record_data.update_ts, record_data.yes_sale_num, record_data.yes_sale_total_price, record_data.yes_average_price,
         record_data.min_price, record_data.min_price_num, now_total_num, condition1, condition2, condition3, condition4,
-        condition5, record_data.sale_num, record_data.sale_total_price, record_data.last_deal_price, record_data.update_ts,
-        record_data.yes_sale_num, record_data.yes_sale_total_price, record_data.yes_average_price, record_data.min_price,
-        record_data.min_price_num, now_total_num, condition1, condition2, condition3, condition4, condition5)
-    moon.debug(cmd)
+        condition5)
+    -- moon.debug(cmd)
 
-    return moon.send("lua", addr, cmd)
+    -- 方案4:仅 updatetraderecord 走 moon.call + POOL_EMPTY 重试,其他 DB 操作保持原样
+    -- 改 moon.send -> moon.call 是为了拿到错误码;单次调用阻塞可接受(调用点都在 manager 定时器或一次性启动流程)
+    return _M._call_with_pool_retry(addr, cmd, 3, "updatetraderecord")
+end
+
+-- 仅供 _M.updatetraderecord和 _M.updatetraderecordlist 使用:捕获 POOL_EMPTY 短暂重试,其他错误立即返回
+function _M._call_with_pool_retry(addr, cmd, max_retry, tag)
+    max_retry = max_retry or 3
+    for i = 1, max_retry do
+        local res, err = moon.call("lua", addr, cmd)
+        if not err then
+            return res
+        end
+        local err_str = (err and (err.code or err.message)) or tostring(err)
+        -- 只对 POOL_EMPTY 重试,其他错误(语法/约束冲突等)立即返回
+        if not string.find(err_str, "POOL_EMPTY") then
+            moon.error(string.format("[%s] call failed (no retry): %s", tag or "db", err_str))
+            return nil, err
+        end
+        if i < max_retry then
+            moon.warn(string.format("[%s] POOL_EMPTY retry %d/%d: %s",
+                tag or "db", i, max_retry, err_str))
+            moon.sleep(50 * i) -- 50ms, 100ms 退避
+        end
+    end
+    moon.error(string.format("[%s] POOL_EMPTY after %d retries, give up", tag or "db", max_retry))
+    return nil, { code = "POOL_EMPTY_AFTER_RETRY" }
+end
+
+-- 方案1:批量 upsert,分块发送避免单条 SQL 过长
+-- 每个 chunk 最多 BATCH_SIZE 条(50 条 ≈ 10KB,远低于 max_allowed_packet 64MB)
+-- 单 chunk 内合并为 1 条 INSERT...ON DUPLICATE KEY UPDATE
+local UPDATERECORD_BATCH_SIZE = 50
+
+function _M.updatetraderecordlist(addr, record_data_list, conditions_list)
+    if not record_data_list or #record_data_list == 0 then
+        return true
+    end
+    assert(#record_data_list == #conditions_list, "updatetraderecordlist: list length mismatch")
+
+    local total = #record_data_list
+    local offset = 1
+    local any_fail = false
+
+    while offset <= total do
+        local chunk_end = math.min(offset + UPDATERECORD_BATCH_SIZE - 1, total)
+        local values_parts = {}
+
+        for i = offset, chunk_end do
+            local rd = record_data_list[i]
+            local c = conditions_list[i]
+            local now_total_num = 0
+            if rd.price_to_num then
+                for _, v in pairs(rd.price_to_num) do
+                    now_total_num = now_total_num + v.now_num
+                end
+            end
+            table.insert(values_parts, string.format(
+                "(%d, %d, %d, %d, %d, %d, %d, %f, %d, %d, %d, %d, %d, %d, %d, %d)",
+                rd.trade_config_id, rd.sale_num, rd.sale_total_price, rd.last_deal_price,
+                rd.update_ts, rd.yes_sale_num, rd.yes_sale_total_price, rd.yes_average_price,
+                rd.min_price, rd.min_price_num, now_total_num,
+                c[1], c[2], c[3], c[4], c[5]))
+        end
+
+        local cmd = string.format([[
+            INSERT INTO mgame.trade_record (trade_config_id, sale_num, sale_total_price, last_deal_price, update_ts, yes_sale_num, yes_sale_total_price, yes_average_price, min_price, min_price_num, now_total_num, condition1, condition2, condition3, condition4, condition5)
+            VALUES %s
+            ON DUPLICATE KEY UPDATE
+              sale_num = VALUES(sale_num),
+              sale_total_price = VALUES(sale_total_price),
+              last_deal_price = VALUES(last_deal_price),
+              update_ts = VALUES(update_ts),
+              yes_sale_num = VALUES(yes_sale_num),
+              yes_sale_total_price = VALUES(yes_sale_total_price),
+              yes_average_price = VALUES(yes_average_price),
+              min_price = VALUES(min_price),
+              min_price_num = VALUES(min_price_num),
+              now_total_num = VALUES(now_total_num),
+              condition1 = VALUES(condition1),
+              condition2 = VALUES(condition2),
+              condition3 = VALUES(condition3),
+              condition4 = VALUES(condition4),
+              condition5 = VALUES(condition5);
+        ]], table.concat(values_parts, ","))
+
+        -- 批量也走重试,任一 chunk 失败不影响已成功的
+        local res, err = _M._call_with_pool_retry(addr, cmd, 3, "updatetraderecordlist")
+        if err then
+            any_fail = true
+        end
+
+        offset = chunk_end + 1
+    end
+
+    return not any_fail
 end
 
 function _M.gettraderecordwithids(addr, ids, sort_describe)

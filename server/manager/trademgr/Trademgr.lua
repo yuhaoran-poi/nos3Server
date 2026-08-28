@@ -269,6 +269,8 @@ function Trademgr.Start()
             end
         end
     end
+    local record_list = {}
+    local conditions_list = {}
     for config_id, _ in pairs(need_mod_record) do
         local item_conf = GameCfg.Item[config_id]
         local record_data = Trademgr.trade_record_infos[config_id]
@@ -276,9 +278,15 @@ function Trademgr.Start()
             and item_conf.market[1] and item_conf.market[2] and item_conf.market[3]
             and item_conf.market[4] and item_conf.market[5] then
             moon.debug(string.format("UpdateTradeRecord config_id=%d record_data=%s", config_id, json.pretty_encode(record_data)))
-            Database.updatetraderecord(context.addr_db_game, record_data, item_conf.market[1], item_conf.market[2],
-                item_conf.market[3], item_conf.market[4], item_conf.market[5])
+            table.insert(record_list, record_data)
+            table.insert(conditions_list, {
+                item_conf.market[1], item_conf.market[2],
+                item_conf.market[3], item_conf.market[4], item_conf.market[5],
+            })
         end
+    end
+    if #record_list > 0 then
+        Database.updatetraderecordlist(context.addr_db_game, record_list, conditions_list)
     end
 
     Trademgr.load_finish = true
@@ -415,6 +423,9 @@ function Trademgr.UpdateChangeTradeRecords()
         return
     end
 
+    -- 方案1:批量收集,一次发 50 条,避免逐条 SQL 占用连接
+    local record_list = {}
+    local conditions_list = {}
     for config_id, _ in pairs(Trademgr.change_record_ids) do
         local item_conf = GameCfg.Item[config_id]
         local record_data = Trademgr.trade_record_infos[config_id]
@@ -422,9 +433,15 @@ function Trademgr.UpdateChangeTradeRecords()
             and item_conf.market[1] and item_conf.market[2] and item_conf.market[3]
             and item_conf.market[4] and item_conf.market[5] then
             moon.debug(string.format("UpdateTradeRecord config_id=%d record_data=%s", config_id, json.pretty_encode(record_data)))
-            Database.updatetraderecord(context.addr_db_game, record_data, item_conf.market[1], item_conf.market[2],
-                item_conf.market[3], item_conf.market[4], item_conf.market[5])
+            table.insert(record_list, record_data)
+            table.insert(conditions_list, {
+                item_conf.market[1], item_conf.market[2],
+                item_conf.market[3], item_conf.market[4], item_conf.market[5],
+            })
         end
+    end
+    if #record_list > 0 then
+        Database.updatetraderecordlist(context.addr_db_game, record_list, conditions_list)
     end
     Trademgr.change_record_ids = {}
 end

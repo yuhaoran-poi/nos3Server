@@ -59,13 +59,12 @@ function LogMgr.ItemChangeLog(write_log_datas)
         return
     end
     moon.warn(string.format("LogMgr.ItemChangeLog write_log_datas = %s", json.pretty_encode(write_log_datas)))
+    -- write_log_datas 是 dict 形式,转成 list 喂给批量函数(Database.ItemChangeLogList 用 ipairs)
+    local list = {}
     for _, log_data in pairs(write_log_datas) do
-        Database.ItemChangeLog(context.addr_db_log, log_data.uid, log_data.config_id, log_data.old_num,
-            log_data.new_num, log_data.mod_uniqid, log_data.del_uniqids, log_data.add_uniqids,
-            log_data.old_item_data, log_data.new_item_data, log_data.relation_roleid, log_data.relation_ghostid,
-            log_data.relation_ghost_uniqid, log_data.relation_imageid, log_data.change_type,
-            log_data.change_reason, log_data.log_ts)
+        list[#list + 1] = log_data
     end
+    Database.ItemChangeLogList(context.addr_db_log, list)
 end
 
 function LogMgr.RoleChangeLog(write_log_datas)
@@ -78,10 +77,11 @@ function LogMgr.RoleChangeLog(write_log_datas)
         return
     end
     moon.warn(string.format("LogMgr.RoleChangeLog write_log_datas = %s", json.pretty_encode(write_log_datas)))
+    local list = {}
     for _, log_data in pairs(write_log_datas) do
-        Database.RoleChangeLog(context.addr_db_log, log_data.uid, log_data.config_id, log_data.star_level, log_data.exp,
-            log_data.role_data, log_data.reason, log_data.log_ts)
+        list[#list + 1] = log_data
     end
+    Database.RoleChangeLogList(context.addr_db_log, list)
 end
 
 return LogMgr
