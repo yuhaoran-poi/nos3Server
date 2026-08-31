@@ -292,15 +292,16 @@ end
 function Shop.PBShopBuyReqCmd(req)
     -- 参数验证
     if not req.msg.with_car
-        or not req.msg.buy_id_num then
+        or not req.msg.buy_id_num
+        or table.size(req.msg.buy_id_num) <= 0 then
         return context.S2C(context.net_id, CmdCode.PBShopBuyRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
             uid = context.uid,
         }, req.msg_context.stub_id)
     end
-    for id, num in pairs(req.msg.buy_id_num) do
-        if num <= 0 then
+    for _, selecbuy in pairs(req.msg.buy_id_num) do
+        if not selecbuy.product_num or selecbuy.product_num <= 0 then
             return context.S2C(context.net_id, CmdCode.PBShopBuyRspCmd, {
                 code = ErrorCode.ParamInvalid,
                 error = "无效请求参数",
