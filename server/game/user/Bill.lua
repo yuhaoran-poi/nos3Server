@@ -351,7 +351,11 @@ function Bill.QueryOrder(orderid, transid)
     end
     local param_str = table.concat(param_tbl, "&")
     local get_url = serverconf.STEAM_CONF.query_order_url .. "?" .. param_str
-    local response = httpc.get(get_url)
+    local ok, response = pcall(httpc.get, get_url)
+    if not ok or not response then
+        moon.error(string.format("Bill query_order http failed: %s", tostring(response)))
+        return false, nil
+    end
     print_r(response)
     local json_success, rsp_data = pcall(json.decode, response.body or "")
     return json_success, rsp_data
@@ -446,7 +450,16 @@ function Bill.PBApplyBillOrderReqCmd(req)
         ['amount[0]'] = amount,
         ['description[0]'] = bill_cfg.description or "test bill",
     }
-    local response = httpc.post(serverconf.STEAM_CONF.create_order_url, order_form)
+    local response_ok, response = pcall(httpc.post_form,
+        serverconf.STEAM_CONF.create_order_url, order_form)
+    if not response_ok or not response then
+        moon.error(string.format("Bill create_order http failed: %s", tostring(response)))
+        return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
+            code = ErrorCode.OrderCreateFailed,
+            error = "支付服务暂时不可用,请稍后重试",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
     print_r(response)
     local json_success, rsp_data = pcall(json.decode, response.body or "")
     if not json_success then
@@ -466,7 +479,7 @@ function Bill.PBApplyBillOrderReqCmd(req)
             bill_num = req.msg.bill_num,
             bill_amount = amount,
             create_ts = moon.time(),
-            is_sandbox = 0,
+            is_sanbox = 0,
             state = BillDef.orderStatus.WAIT,
         }
         local ret_rows = Database.addbillorder(context.addr_db_user, order_info)
