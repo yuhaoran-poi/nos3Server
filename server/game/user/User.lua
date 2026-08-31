@@ -2919,6 +2919,11 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log)
         end
     elseif item_cfg.use_type == 6 then
         -- 随机礼包
+        if not msg_data.use_item_cnt or msg_data.use_item_cnt <= 0 or msg_data.use_item_cnt > 10 then
+            moon.error("msg_data.use_item_cnt error")
+            err_code = ErrorCode.ParamInvalid
+            return err_code
+        end
         if not item_cfg.use_award or table.size(item_cfg.use_award) == 0 then
             moon.error("use_award error")
             err_code = ErrorCode.ConfigError
@@ -2950,27 +2955,29 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log)
             err_code = ErrorCode.ConfigError
             return err_code
         end
-        local id_weight = table.copy(item_cfg.award_weight, true)
-        for i = 1, item_cfg.award_count do
-            local rand_item_id = scripts.Item.RangeTags(id_weight)
-            if rand_item_id == 0 then
-                moon.error("rand_item_id error")
-                err_code = ErrorCode.ConfigError
-                return err_code
-            end
-            if not item_cfg.use_award[rand_item_id] then
-                moon.error("use_award rand_item_id error")
-                err_code = ErrorCode.ConfigError
-                return err_code
-            end
-            if not reward_cfg_list[rand_item_id] then
-                reward_cfg_list[rand_item_id] = 0
-            end
-            reward_cfg_list[rand_item_id] = reward_cfg_list[rand_item_id] +
-                (item_cfg.use_award[rand_item_id] * msg_data.use_item_cnt)
+        
+        for i = 1, msg_data.use_item_cnt do
+            local id_weight = table.copy(item_cfg.award_weight, true)
+            for i = 1, item_cfg.award_count do
+                local rand_item_id = scripts.Item.RangeTags(id_weight)
+                if rand_item_id == 0 then
+                    moon.error("rand_item_id error")
+                    err_code = ErrorCode.ConfigError
+                    return err_code
+                end
+                if not item_cfg.use_award[rand_item_id] then
+                    moon.error("use_award rand_item_id error")
+                    err_code = ErrorCode.ConfigError
+                    return err_code
+                end
+                if not reward_cfg_list[rand_item_id] then
+                    reward_cfg_list[rand_item_id] = 0
+                end
+                reward_cfg_list[rand_item_id] = reward_cfg_list[rand_item_id] + item_cfg.use_award[rand_item_id]
 
-            if item_cfg.award_repetition == 1 then
-                id_weight[rand_item_id] = nil
+                if item_cfg.award_repetition == 1 then
+                    id_weight[rand_item_id] = nil
+                end
             end
         end
     else

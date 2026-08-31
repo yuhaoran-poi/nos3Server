@@ -585,6 +585,8 @@ local ErrorCode = {
     CreateOrderFailed = 2157,
     --- 充值订单不存在
     OrderNotFound = 2158,
+    --- 创建充值订单失败
+    OrderCreateFailed = 2159,
 
     --任务系统相关错误码
     --- 任务不存在

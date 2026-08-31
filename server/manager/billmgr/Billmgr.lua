@@ -82,7 +82,8 @@ function Billmgr.CheckOrder()
             print_r(response)
             local json_success, rsp_data = pcall(json.decode, response.body or "")
             if json_success and rsp_data and rsp_data.response.result == 'OK' then
-                if rsp_data.response.params.status == 'Approved' then
+                if rsp_data.response.params.status == 'Init'
+                    or rsp_data.response.params.status == 'Approved' then
                     moon.info("Billmgr.CheckOrder orderid = %s, status = %s", orderid, rsp_data.response.params.status)
                 elseif rsp_data.response.params.status == 'Succeeded' then
                     if check_data.order_info.state == BillDef.orderStatus.WAIT then
