@@ -312,7 +312,7 @@ function SeasonPass.PBGetSeasonPassRewardReqCmd(req)
         }, req.msg_context.stub_id)
     end
     local cost_coins = {}
-    cost_coins[GONGDE_COIN_ID] = { coin_id = GONGDE_COIN_ID, coin_count = reward_cfg.unlock_cost }
+    cost_coins[GONGDE_COIN_ID] = { coin_id = GONGDE_COIN_ID, coin_count = -reward_cfg.unlock_cost }
 
     -- 检查资源是否足够
     local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
