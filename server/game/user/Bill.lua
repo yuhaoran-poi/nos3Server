@@ -99,10 +99,12 @@ function Bill.DealOnOrder()
         return
     end
 
-    -- if order_info.state ~= BillDef.orderStatus.WAIT
-    --     and order_info.state ~= BillDef.orderStatus.PAID then
-    --     return
-    -- end
+    if order_info.state ~= BillDef.orderStatus.WAIT
+        and order_info.state ~= BillDef.orderStatus.PAID then
+        moon.error("uid DealOnOrder orderid 订单状态错误: ", context.uid, bills.on_order_id, order_info.state)
+        bills.on_order_id = 0
+        return
+    end
     
     local json_success, rsp_data = Bill.QueryOrder(bills.on_order_id, order_info.transid)
     if not json_success then
@@ -110,16 +112,17 @@ function Bill.DealOnOrder()
         return
     else
         if rsp_data.response.result == 'OK' then
-            if rsp_data.response.params.status == 'Approved' then
+            if rsp_data.response.params.status == 'Init' then
                 order_info.state = BillDef.orderStatus.WAIT
                 Bill.on_order_info = order_info
                 clusterd.send(3999, "billmgr", "Billmgr.AddBill", order_info)
                 return
-            elseif rsp_data.response.params.status == 'Succeeded' then
+            elseif rsp_data.response.params.status == 'Approved'
+                or  rsp_data.response.params.status == 'Succeeded' then
                 clusterd.send(3999, "billmgr", "Billmgr.DelBill", bills.on_order_id)
-                local bill_cfg = GameCfg.RechargeStoreConfig[Bill.on_order_info.bill_id]
+                local bill_cfg = GameCfg.RechargeStoreConfig[order_info.bill_id]
                 if not bill_cfg then
-                    moon.error("uid DealOnOrder 未知充值配置: ", context.uid, Bill.on_order_info.bill_id)
+                    moon.error("uid DealOnOrder 未知充值配置: ", context.uid, order_info.bill_id)
                     bills.on_order_id = 0
                     Bill.on_order_info = nil
                     Bill.SaveBillsNow()
@@ -149,7 +152,7 @@ function Bill.DealOnOrder()
                 -- 因涉嫌欺诈,该订单已被 Valve 退款
                 -- 因被认定为友好欺诈,该订单已被 Valve 退款
                 clusterd.send(3999, "billmgr", "Billmgr.DelBill", bills.on_order_id)
-                Bill.BillRefund(Bill.on_order_info) -- 充值退款,记录退款
+                Bill.BillRefund(order_info) -- 充值退款,记录退款
                 bills.on_order_id = 0
                 Bill.on_order_info = nil
                 Bill.SaveBillsNow()
@@ -175,10 +178,10 @@ function Bill.CheckBillAmount(bills)
         bills.month_bill_amount = 0
         is_change = true
     end
-    if not datetime.is_same_year(bills.update_ts, now_ts) then
-        bills.year_bill_amount = 0
-        is_change = true
-    end
+    -- if not datetime.is_same_year(bills.update_ts, now_ts) then
+    --     bills.year_bill_amount = 0
+    --     is_change = true
+    -- end
     if is_change then
         bills.update_ts = now_ts
         Bill.SaveBillsNow()
@@ -190,18 +193,18 @@ function Bill.AddBillAmount(bills, order_info, bill_cfg)
     -- 增加累充
     local amount_record = bill_cfg.price_record * order_info.bill_num
     local now_ts = moon.time()
-    if datetime.is_same_day(Bill.on_order_info.create_ts, now_ts) then
+    if datetime.is_same_day(order_info.create_ts, now_ts) then
         bills.day_bill_amount = bills.day_bill_amount + amount_record
     end
-    if datetime.is_same_week(Bill.on_order_info.create_ts, now_ts) then
+    if datetime.is_same_week(order_info.create_ts, now_ts) then
         bills.week_bill_amount = bills.week_bill_amount + amount_record
     end
-    if datetime.is_same_month(Bill.on_order_info.create_ts, now_ts) then
+    if datetime.is_same_month(order_info.create_ts, now_ts) then
         bills.month_bill_amount = bills.month_bill_amount + amount_record
     end
-    if datetime.is_same_year(Bill.on_order_info.create_ts, now_ts) then
-        bills.year_bill_amount = bills.year_bill_amount + amount_record
-    end
+    -- if datetime.is_same_year(order_info.create_ts, now_ts) then
+    --     bills.year_bill_amount = bills.year_bill_amount + amount_record
+    -- end
     bills.total_bill_amount = bills.total_bill_amount + amount_record
     -- 触发充值金额
     scripts.Mission.TriggerCondition(MissionDef.EConditionIds.RECHARGE_CNT, {}, amount_record)
@@ -209,8 +212,8 @@ function Bill.AddBillAmount(bills, order_info, bill_cfg)
     scripts.Mission.TriggerCondition(MissionDef.EConditionIds.TOTAL_RECHARGE_CNT, {}, bills.total_bill_amount)
 
     context.S2C(context.net_id, CmdCode.PBBillDoneSyncCmd, {
-        bill_id = Bill.on_order_info.bill_id,
-        bill_num = Bill.on_order_info.bill_num,
+        bill_id = order_info.bill_id,
+        bill_num = order_info.bill_num,
         bill_amount = amount_record,
     }, 0)
 end
@@ -530,7 +533,7 @@ function Bill.PBCheckBillOrderReqCmd(req)
     if bills.on_order_id ~= req.msg.on_order_id
         or not Bill.on_order_info
         or Bill.on_order_info.orderid ~= req.msg.on_order_id then
-        if Bill.on_order_info.orderid ~= bills.on_order_id then
+        if Bill.on_order_info and Bill.on_order_info.orderid ~= bills.on_order_id then
             bills.on_order_id = Bill.on_order_info.orderid
             Bill.SaveBillsNow()
         end
@@ -553,10 +556,11 @@ function Bill.PBCheckBillOrderReqCmd(req)
         }, req.msg_context.stub_id)
     else
         if rsp_data.response.result == 'OK' then
-            if rsp_data.response.params.status == 'Approved' then
+            if rsp_data.response.params.status == 'Init' then
                 Bill.on_order_info.state = BillDef.orderStatus.WAIT
                 ret_status = Bill.on_order_info.state
-            elseif rsp_data.response.params.status == 'Succeeded' then
+            elseif rsp_data.response.params.status == 'Approved'
+                or rsp_data.response.params.status == 'Succeeded' then
                 clusterd.send(3999, "billmgr", "Billmgr.DelBill", bills.on_order_id)
                 local bill_cfg = GameCfg.RechargeStoreConfig[Bill.on_order_info.bill_id]
                 if not bill_cfg then

@@ -52,9 +52,10 @@ function Billmgr.Start()
         moon.error("Billmgr.Start getmaxorderid failed")
         return
     end
-    if Billmgr.now_order_id == 0 then
-        Billmgr.now_order_id = 1
-    end
+    -- if Billmgr.now_order_id == 0 then
+    --     Billmgr.now_order_id = 1
+    -- end
+    Billmgr.now_order_id = Billmgr.now_order_id + 1
     return true
 end
 
@@ -82,12 +83,12 @@ function Billmgr.CheckOrder()
             print_r(response)
             local json_success, rsp_data = pcall(json.decode, response.body or "")
             if json_success and rsp_data and rsp_data.response.result == 'OK' then
-                if rsp_data.response.params.status == 'Init'
-                    or rsp_data.response.params.status == 'Approved' then
+                if rsp_data.response.params.status == 'Init' then
                     moon.info("Billmgr.CheckOrder orderid = %s, status = %s", orderid, rsp_data.response.params.status)
-                elseif rsp_data.response.params.status == 'Succeeded' then
+                elseif rsp_data.response.params.status == 'Approved'
+                    or rsp_data.response.params.status == 'Succeeded' then
                     if check_data.order_info.state == BillDef.orderStatus.WAIT then
-                        local ret = Database.updatebillorderstate(context.addr_db_user, check_data.order_info.orderid,
+                        local ret = Database.updatebillorderstate(context.addr_db_game, check_data.order_info.orderid,
                             check_data.order_info.state, BillDef.orderStatus.PAID, true)
                         if ret > 0 then
                             check_data.order_info.state = BillDef.orderStatus.PAID
@@ -96,7 +97,7 @@ function Billmgr.CheckOrder()
                     end
                     table.insert(del_orderids, orderid)
                 elseif rsp_data.response.params.status == 'Failed' then
-                    Database.updatebillorderstate(context.addr_db_user, check_data.order_info.orderid,
+                    Database.updatebillorderstate(context.addr_db_game, check_data.order_info.orderid,
                         check_data.order_info.state, BillDef.orderStatus.FAIL, false)
                     context.send_user(check_data.order_info.uid, "Bill.OnBillFailed", check_data.order_info)
                     table.insert(del_orderids, orderid)
@@ -105,7 +106,7 @@ function Billmgr.CheckOrder()
                     or rsp_data.response.params.status == 'Chargedback'
                     or rsp_data.response.params.status == 'RefundedSuspectedFraud'
                     or rsp_data.response.params.status == 'RefundedFriendlyFraud' then
-                    Database.updatebillorderstate(context.addr_db_user, check_data.order_info.orderid,
+                    Database.updatebillorderstate(context.addr_db_game, check_data.order_info.orderid,
                         check_data.order_info.state, BillDef.orderStatus.REFUND, true)
                     context.send_user(check_data.order_info.uid, "Bill.OnBillRefund", check_data.order_info)
                     table.insert(del_orderids, orderid)
