@@ -3379,7 +3379,7 @@ function _M.addbillorder(addr, order_info)
     local cmd = string.format([[
         INSERT INTO mgame.bill_order (orderid, transid, steamid, uid, bill_id, bill_num,
         bill_amount, create_ts, is_sanbox, state, update_ts)
-        VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d);
+        VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d);
     ]], order_info.orderid, order_info.transid, order_info.steamid, order_info.uid, order_info.bill_id,
         order_info.bill_num, order_info.bill_amount, order_info.create_ts, order_info.is_sanbox, order_info.state,
         moon.time())
