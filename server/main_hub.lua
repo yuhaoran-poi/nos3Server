@@ -18,6 +18,10 @@ if _G["__init__"] then
 end
 
 local moon = require("moon")
+-- Bridge OS env (HTTPS_PROXY/HTTP_PROXY/...) into moon.env so that
+-- moon's internal http client can read them. Must run before any
+-- outbound HTTPS request issued by services in this process.
+require("common.env_bridge").run()
 local json = require"json"
 local serverconf = require("serverconf")
 local socket = require("moon.socket")
