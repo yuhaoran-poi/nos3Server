@@ -22,6 +22,7 @@ local moon = require("moon")
 -- moon's internal http client can read them. Must run before any
 -- outbound HTTPS request issued by services in this process.
 require("common.env_bridge").run()
+moon.info("[env_bridge] HTTPS_PROXY=%s HTTP_PROXY=%s NO_PROXY=%s", tostring(moon.env("HTTPS_PROXY")), tostring(moon.env("HTTP_PROXY")), tostring(moon.env("NO_PROXY")))
 local json = require"json"
 local serverconf = require("serverconf")
 local socket = require("moon.socket")
