@@ -1,6 +1,8 @@
 return {
     ["AccountBuffConfig"] = "AccountBuffConfig.lua",
     ["AchievementMissionConfig"] = "AchievementMissionConfig.lua",
+    ["ActivityMissionConfig"] = "ActivityMissionConfig.lua",
+    ["ActivityMissionTypeConfig"] = "ActivityMissionTypeConfig.lua",
     ["AllTag"] = "AllTag.lua",
     ["AllTagPool"] = "AllTagPool.lua",
     ["AntiqueItem"] = "AntiqueItem.lua",
