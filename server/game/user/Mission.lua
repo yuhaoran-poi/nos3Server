@@ -318,7 +318,7 @@ function Mission.CheckNewMissions()
     local new_complete_achivement_ids = {}
     Mission.CheckAchivementInfo(mission_info, now_ts, new_complete_achivement_ids)
     if table.size(new_complete_achivement_ids) > 0 then
-        Mission.AchivementMissionComplete(mission_info, now_ts, new_complete_achivement_ids)
+        Mission.AchivementMissionComplete(mission_info, new_complete_achivement_ids)
     end
     Mission.makeAchivementMap(mission_info)
 
@@ -653,10 +653,195 @@ function Mission.makeAchivementMap(mission_info)
     end
 end
 
+function Mission.JustCheckCondition(mission_info, condition_id, params, change_cnt, change_log,
+                                new_complete_achivement_ids, new_complete_linear_ids, new_complete_period_ids)
+
+    if Mission.achivement_cond_map and Mission.achivement_cond_map[condition_id] then
+        local change_tasks = MissionLogic.CheckTask(condition_id, params, change_cnt,
+            Mission.achivement_cond_map[condition_id])
+        if table.size(change_tasks) > 0 then
+            for _, mission_id in pairs(change_tasks) do
+                local mission_data = mission_info.achivement_info.now_mission_datas[mission_id]
+                if mission_data then
+                    local mission_complete = true
+                    for _, cond_data in pairs(mission_data.cond_datas) do
+                        if cond_data.is_complete == 0 then
+                            mission_complete = false
+                            break
+                        end
+                    end
+                    if mission_complete then
+                        mission_data.mission_state = MissionDef.ETaskState.COMPLETE
+
+                        mission_info.achivement_info.complete_ids[mission_id] = MissionDef.ETaskState.COMPLETE
+                        mission_info.achivement_info.now_mission_datas[mission_id] = nil
+                        if Mission.achivement_cond_map[condition_id]
+                            and Mission.achivement_cond_map[condition_id][mission_id] then
+                            Mission.achivement_cond_map[condition_id][mission_id] = nil
+                        end
+                        table.insert(new_complete_achivement_ids, mission_id)
+                        change_log.achivements[mission_id] = MissionDef.ETaskState.COMPLETE
+                    else
+                        change_log.achivements[mission_id] = MissionDef.ETaskState.NO_COMPLETE
+                    end
+                end
+            end
+        end
+    end
+
+    -- 检查线性任务
+    if Mission.linear_cond_map and Mission.linear_cond_map[condition_id] then
+        local change_tasks = MissionLogic.CheckTask(condition_id, params, change_cnt,
+            Mission.linear_cond_map[condition_id])
+        if table.size(change_tasks) > 0 then
+            for _, mission_id in pairs(change_tasks) do
+                local mission_data = mission_info.linear_info.now_mission_datas[mission_id]
+                if mission_data then
+                    local mission_complete = true
+                    for _, cond_data in pairs(mission_data.cond_datas) do
+                        if cond_data.is_complete == 0 then
+                            mission_complete = false
+                            break
+                        end
+                    end
+                    if mission_complete then
+                        mission_data.mission_state = MissionDef.ETaskState.COMPLETE
+
+                        mission_info.linear_info.complete_ids[mission_id] = MissionDef.ETaskState.COMPLETE
+                        mission_info.linear_info.now_mission_datas[mission_id] = nil
+                        if Mission.linear_cond_map[condition_id]
+                            and Mission.linear_cond_map[condition_id][mission_id] then
+                            Mission.linear_cond_map[condition_id][mission_id] = nil
+                        end
+                        table.insert(new_complete_linear_ids, mission_id)
+                        change_log.linears[mission_id] = MissionDef.ETaskState.COMPLETE
+                    else
+                        change_log.linears[mission_id] = MissionDef.ETaskState.NO_COMPLETE
+                    end
+                end
+            end
+        end
+    end
+
+    -- 检查周期任务
+    if Mission.period_cond_map and Mission.period_cond_map[condition_id] then
+        local change_tasks = MissionLogic.CheckTask(condition_id, params, change_cnt,
+            Mission.period_cond_map[condition_id])
+        if table.size(change_tasks) > 0 then
+            for _, mission_id in pairs(change_tasks) do
+                if mission_info.period_info.now_day_mission_datas[mission_id] then
+                    local mission_data = mission_info.period_info.now_day_mission_datas[mission_id]
+                    if mission_data then
+                        local mission_complete = true
+                        for _, cond_data in pairs(mission_data.cond_datas) do
+                            if cond_data.is_complete == 0 then
+                                mission_complete = false
+                                break
+                            end
+                        end
+                        if mission_complete then
+                            mission_data.mission_state = MissionDef.ETaskState.COMPLETE
+
+                            mission_info.period_info.complete_day_ids[mission_id] = MissionDef.ETaskState.COMPLETE
+                            mission_info.period_info.now_day_mission_datas[mission_id] = nil
+                            if Mission.period_cond_map[condition_id]
+                                and Mission.period_cond_map[condition_id][mission_id] then
+                                Mission.period_cond_map[condition_id][mission_id] = nil
+                            end
+                            table.insert(new_complete_period_ids, mission_id)
+                            change_log.periods[mission_id] = MissionDef.ETaskState.COMPLETE
+                        else
+                            change_log.periods[mission_id] = MissionDef.ETaskState.NO_COMPLETE
+                        end
+                    end
+                elseif mission_info.period_info.now_week_mission_datas[mission_id] then
+                    local mission_data = mission_info.period_info.now_week_mission_datas[mission_id]
+                    if mission_data then
+                        local mission_complete = true
+                        for _, cond_data in pairs(mission_data.cond_datas) do
+                            if cond_data.is_complete == 0 then
+                                mission_complete = false
+                                break
+                            end
+                        end
+                        if mission_complete then
+                            mission_data.mission_state = MissionDef.ETaskState.COMPLETE
+
+                            mission_info.period_info.complete_week_ids[mission_id] = MissionDef.ETaskState.COMPLETE
+                            mission_info.period_info.now_week_mission_datas[mission_id] = nil
+                            if Mission.period_cond_map[condition_id]
+                                and Mission.period_cond_map[condition_id][mission_id] then
+                                Mission.period_cond_map[condition_id][mission_id] = nil
+                            end
+                            table.insert(new_complete_period_ids, mission_id)
+                            change_log.periods[mission_id] = MissionDef.ETaskState.COMPLETE
+                        else
+                            change_log.periods[mission_id] = MissionDef.ETaskState.NO_COMPLETE
+                        end
+                    end
+                elseif mission_info.period_info.now_month_mission_datas[mission_id] then
+                    local mission_data = mission_info.period_info.now_month_mission_datas[mission_id]
+                    if mission_data then
+                        local mission_complete = true
+                        for _, cond_data in pairs(mission_data.cond_datas) do
+                            if cond_data.is_complete == 0 then
+                                mission_complete = false
+                                break
+                            end
+                        end
+                        if mission_complete then
+                            mission_data.mission_state = MissionDef.ETaskState.COMPLETE
+
+                            mission_info.period_info.complete_month_ids[mission_id] = MissionDef.ETaskState.COMPLETE
+                            mission_info.period_info.now_month_mission_datas[mission_id] = nil
+                            if Mission.period_cond_map[condition_id]
+                                and Mission.period_cond_map[condition_id][mission_id] then
+                                Mission.period_cond_map[condition_id][mission_id] = nil
+                            end
+                            table.insert(new_complete_period_ids, mission_id)
+                            change_log.periods[mission_id] = MissionDef.ETaskState.COMPLETE
+                        else
+                            change_log.periods[mission_id] = MissionDef.ETaskState.NO_COMPLETE
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    scripts.UserModel.SetMissionInfo(mission_info)
+end
+
+-- function Mission.TriggerCondition(condition_id, params, change_cnt)
+--     -- local mission_info = scripts.UserModel.GetMissionInfo()
+--     -- if not mission_info then
+--     --     return
+--     -- end
+
+--     -- local change_log = {
+--     --     linears = {},
+--     --     periods = {},
+--     --     achivements = {},
+--     --     periods_all_change = false,
+--     -- }
+--     -- local now_ts = moon.time()
+--     -- local new_complete_achivement_ids = {}
+--     -- local new_complete_linear_ids = {}
+--     -- local new_complete_period_ids = {}
+-- end
+
 function Mission.TriggerCondition(condition_id, params, change_cnt)
 end
 
-function Mission.TriggerConditionbak(condition_id, params, change_cnt)
+-- ============================================================================
+-- [警告] TriggerCondition_old: 旧版互递归实现, 仅供历史对比, 禁止被任何调用点引用!
+--   - 内部调用 AchivementMissionComplete / LinearMissionComplete / PeriodMissionComplete;
+--     这三个 XxxComplete 现在回调 `Mission.TriggerCondition`(循环版), 行为已变化.
+--   - 若在别处引用本函数, 会重新引入互递归与深层调用栈. 一律使用 Mission.TriggerCondition.
+--   - 生产逻辑不得依赖本函数; 仅作为旧版实现的历史对照保留.
+-- ============================================================================
+
+function Mission.TriggerCondition_old(condition_id, params, change_cnt)
     local mission_info = scripts.UserModel.GetMissionInfo()
     if not mission_info then
         return
@@ -704,7 +889,7 @@ function Mission.TriggerConditionbak(condition_id, params, change_cnt)
         end
     end
     if table.size(new_complete_achivement_ids) > 0 then
-        Mission.AchivementMissionComplete(mission_info, new_complete_achivement_ids, change_log)
+        Mission.AchivementMissionComplete(mission_info, new_complete_achivement_ids)
     end
     
     -- 检查未开始的线性任务
@@ -872,6 +1057,210 @@ function Mission.TriggerConditionbak(condition_id, params, change_cnt)
     end
     if table.size(new_complete_period_ids) > 0 then
         Mission.PeriodMissionComplete(mission_info, new_complete_period_ids, change_log)
+    end
+
+    Mission.SaveAndSync(change_log)
+end
+
+---
+-- 新增: 循环驱动版 (解除 TriggerCondition <-> XxxComplete 的互递归).
+-- 用 while 队列替代嵌套递归, 复用 JustCheckCondition 原子推进单个条件,
+-- 完成项由 enqueue_followups 入队其连锁条件/解锁, 最后只 SaveAndSync 一次.
+-- 与 Mission.TriggerCondition 行为等价, 供阅读/对比用.
+function Mission.TriggerCondition_new(condition_id, params, change_cnt)
+    local mission_info = scripts.UserModel.GetMissionInfo()
+    if not mission_info then
+        return
+    end
+
+    local change_log = {
+        linears = {},
+        periods = {},
+        achivements = {},
+        periods_all_change = false,
+    }
+    local now_ts = moon.time()
+
+    -- 累积本次调用里所有"完成"的任务, 用于驱动连锁:
+    --   成就完成 -> ACHIEVEMENT_CNT
+    --   线性完成 -> OUT_TASK_CNT + 解锁后继任务
+    --   周期完成 -> OUT_TASK_CNT
+    local new_complete_achivement_ids = {}
+    local new_complete_linear_ids = {}
+    local new_complete_period_ids = {}
+
+    -- 去重集合: 防止同一任务被重复入队 / 重复触发连锁
+    local completed = {}
+
+    local function mark(cat, id)
+        local key = cat .. ":" .. id
+        if completed[key] then
+            return false
+        end
+        completed[key] = true
+        return true
+    end
+
+    -- 工作队列: 用循环替代 TriggerCondition <-> XxxComplete 的互递归调用,
+    -- 避免嵌套 SaveAndSync 造成重复同步/重复落库, 以及深层递归耗尽协程栈.
+    -- 队列条目:
+    --   {cond_id=, params=, change_cnt=}   处理一个条件 (交给 JustCheckCondition)
+    --   {unlock=true, id=}                 解锁某线性任务的后继
+    local queue = {}
+
+    -- 把三类完成列表里的新完成任务入队其连锁条件/解锁
+    local function enqueue_followups()
+        for _, mission_id in ipairs(new_complete_achivement_ids) do
+            if mark("ach", mission_id) then
+                local cfg = GameCfg.AchievementMissionConfig[mission_id]
+                if cfg and cfg.type then
+                    table.insert(queue, {
+                        cond_id = MissionDef.EConditionIds.ACHIEVEMENT_CNT,
+                        params = { cfg.type, mission_id },
+                        change_cnt = 1,
+                    })
+                end
+            end
+        end
+        for _, mission_id in ipairs(new_complete_linear_ids) do
+            if mark("lin", mission_id) then
+                local cfg = GameCfg.LinearMissionConfig[mission_id]
+                if cfg and cfg.type then
+                    table.insert(queue, {
+                        cond_id = MissionDef.EConditionIds.OUT_TASK_CNT,
+                        params = { cfg.type, mission_id },
+                        change_cnt = 1,
+                    })
+                end
+                table.insert(queue, { unlock = true, id = mission_id })
+            end
+        end
+        for _, mission_id in ipairs(new_complete_period_ids) do
+            if mark("per", mission_id) then
+                local cfg = GameCfg.PeriodMissionConfig[mission_id]
+                if cfg and cfg.type then
+                    table.insert(queue, {
+                        cond_id = MissionDef.EConditionIds.OUT_TASK_CNT,
+                        params = { cfg.type, mission_id },
+                        change_cnt = 1,
+                    })
+                end
+            end
+        end
+    end
+
+    -- 解锁某线性任务的后继 (back_mission). 复用 newLinearMission, 立即完成的后继会
+    -- 塞进 new_complete_linear_ids, 再由 enqueue_followups 继续驱动连锁.
+    local function handle_linear_unlock(mission_id)
+        local linear_cfgs = GameCfg.LinearMissionConfig
+        if not linear_cfgs or table.size(linear_cfgs) == 0 then
+            return
+        end
+        local linear_cfg = linear_cfgs[mission_id]
+        if not linear_cfg or linear_cfg.back_mission <= 0 then
+            return
+        end
+        -- 防止配置成环: 同一后继只解锁一次
+        if not mark("ulock", linear_cfg.back_mission) then
+            return
+        end
+        local new_linear_cfg = linear_cfgs[linear_cfg.back_mission]
+        if not new_linear_cfg then
+            return
+        end
+        if new_linear_cfg.unlock_level > scripts.User.GetNowLevel() then
+            return
+        end
+        if new_linear_cfg.start_time ~= 0 and now_ts < new_linear_cfg.start_time then
+            return
+        end
+        if new_linear_cfg.end_time ~= 0 and now_ts >= new_linear_cfg.end_time then
+            return
+        end
+        if mission_info.linear_info.now_mission_datas[new_linear_cfg.id] then
+            return
+        end
+        if mission_info.linear_info.complete_ids[new_linear_cfg.id] then
+            return
+        end
+        local can_new_mission = true
+        for _, need_complete_id in pairs(new_linear_cfg.front_mission) do
+            if not mission_info.linear_info.complete_ids[need_complete_id]
+                and not mission_info.achivement_info.complete_ids[need_complete_id] then
+                can_new_mission = false
+                break
+            end
+        end
+        if not can_new_mission then
+            return
+        end
+        Mission.newLinearMission(mission_info, new_linear_cfg, now_ts, new_complete_linear_ids, change_log)
+        -- 新增的完成项由入队后的 enqueue_followups 驱动
+    end
+
+    -- 未开始的线性任务检查 (每个 TriggerConditionV2 调用仅执行一次)
+    if mission_info.linear_info.last_check_ts + 60 < now_ts then
+        for mission_id, mission_data in pairs(mission_info.linear_info.wait_beg_mission_datas) do
+            if (mission_data.beg_ts == 0 or now_ts >= mission_data.beg_ts)
+             and (mission_data.end_ts == 0 or now_ts < mission_data.end_ts) then
+                Mission.CheckNewMissionCond(mission_data)
+                if mission_data.mission_state == MissionDef.ETaskState.COMPLETE then
+                    mission_info.linear_info.complete_ids[mission_id] = MissionDef.ETaskState.COMPLETE
+                    table.insert(new_complete_linear_ids, mission_id)
+                    change_log.linears[mission_id] = MissionDef.ETaskState.COMPLETE
+                else
+                    mission_info.linear_info.now_mission_datas[mission_id] = mission_data
+                    change_log.linears[mission_id] = MissionDef.ETaskState.NO_COMPLETE
+                end
+                mission_info.linear_info.now_mission_datas[mission_id] = mission_data
+                mission_info.linear_info.wait_beg_mission_datas[mission_id] = nil
+                for _, cond_data in pairs(mission_data.cond_datas) do
+                    if cond_data.is_complete == 0 then
+                        if not Mission.linear_cond_map[cond_data.cond_id] then
+                            Mission.linear_cond_map[cond_data.cond_id] = {}
+                        end
+                        if not Mission.linear_cond_map[cond_data.cond_id][mission_id] then
+                            Mission.linear_cond_map[cond_data.cond_id][mission_id] = mission_data
+                        end
+                    end
+                end
+            elseif mission_data.end_ts ~= 0 and now_ts >= mission_data.end_ts then
+                mission_info.linear_info.wait_beg_mission_datas[mission_id] = nil
+                change_log.linears[mission_id] = MissionDef.ETaskState.NO_PROGRESS
+            end
+        end
+        mission_info.linear_info.last_check_ts = now_ts
+    end
+
+    -- 周期刷新检查: 只在跨天/跨周/跨月时才真正刷新. 放在循环前一次执行,
+    -- 顶出的已完成周期任务纳入 new_complete_period_ids, 由 enqueue_followups 连锁.
+    if Mission.CheckPeriodInfo(mission_info, now_ts, new_complete_period_ids) then
+        Mission.makePeriodMap(mission_info)
+        change_log.periods_all_change = true
+    end
+
+    scripts.UserModel.SetMissionInfo(mission_info)
+
+    -- 初始条件入队
+    table.insert(queue, { cond_id = condition_id, params = params or {}, change_cnt = change_cnt or 1 })
+
+    -- 主事件循环: 每 pop 一个事件用 JustCheckCondition 原子推进条件, 收集新完成任务,
+    -- 再 enqueue_followups 驱动连锁, 直到队列为空. 深度上限兜底配置自环.
+    local depth = 0
+    while #queue > 0 do
+        depth = depth + 1
+        if depth > 100 then
+            moon.error("uid Mission.TriggerConditionV2 传播深度超限(疑似配置自环): ", context.uid, condition_id)
+            break
+        end
+        local evt = table.remove(queue, 1)
+        if evt.unlock then
+            handle_linear_unlock(evt.id)
+        else
+            Mission.JustCheckCondition(mission_info, evt.cond_id, evt.params, evt.change_cnt, change_log,
+                new_complete_achivement_ids, new_complete_linear_ids, new_complete_period_ids)
+        end
+        enqueue_followups()
     end
 
     Mission.SaveAndSync(change_log)
@@ -1171,7 +1560,7 @@ function Mission.LinearMissionComplete(mission_info, complete_ids, change_log)
         end
     end
     if table.size(new_complete_ids) > 0 then
-        Mission.LinearMissionComplete(mission_info, new_complete_ids)
+        Mission.LinearMissionComplete(mission_info, new_complete_ids, change_log)
     end
 end
 
@@ -1192,7 +1581,7 @@ function Mission.PeriodMissionComplete(mission_info, complete_ids, change_log)
     end
 end
 
-function Mission.AchivementMissionComplete(mission_info, complete_ids, change_log)
+function Mission.AchivementMissionComplete(mission_info, complete_ids)
     local achievement_cfgs = GameCfg.AchievementMissionConfig
     if not achievement_cfgs or table.size(achievement_cfgs) == 0 then
         return

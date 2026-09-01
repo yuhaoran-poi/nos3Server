@@ -65,7 +65,7 @@ function Billmgr.CheckOrder()
     local now_ts = moon.time()
     local del_orderids = {}
     for orderid, check_data in pairs(Billmgr.on_order_infos) do
-        if check_data.check_ts == 0 or now_ts - check_data.check_ts >= 20 then
+        if check_data.check_ts == 0 or now_ts - check_data.check_ts >= 10 then
             -- 查询订单状态
             local order_form = {
                 key = serverconf.STEAM_CONF.order_key,

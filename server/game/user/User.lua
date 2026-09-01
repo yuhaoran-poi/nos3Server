@@ -412,7 +412,7 @@ function User.Logout()
 end
 
 function User.InitCheckData()
-    -- scripts.Mission.CheckNewMissions()
+    -- scripts.Mission.CheckNewMissions() --暂未启动Mission模块
     User.CheckAccountLevel()
     User.NotifyGameSettle()
     User.NotifyGameReturnItems()
