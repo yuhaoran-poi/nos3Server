@@ -23,6 +23,134 @@ local data_version = 2
 --     Consume = 2,
 -- }
 
+--[[
+==========================================================================
+  Bag 模块硬约束 (Hard Constraint) — 数据修改路径必须保持纯同步
+==========================================================================
+
+进程模型背景:
+  - service_user.lua 由 Auth.lua:115 的 moon.new_service 动态生成, 每个玩家
+    独占一个 Lua service 实例 (name = "user" + uid)。
+  - 每个 user service 内部通过 moon.async 可以同时存在多个协程
+    (见 service_user.lua:82-92 的 raw_dispatch 处理器)。
+  - 但 moon 协程是协作式调度, 只在 yield 点 (moon.wait / moon.call /
+    moon.sleep / httpc.* / clusterd.*) 才切换。
+
+为什么 Bag.dataMap / baginfo.items / coinsdata.coins 在当前架构下是安全的:
+  - Bag 模块所有写函数对以上三个共享状态的修改, 都在单个 lua 段内完成,
+    没有任何 yield 点, 所以对同 service 内其他协程而言是原子的。
+  - Bag.dataMap 索引和 baginfo.items / coinsdata.coins 字段只在下列函数里
+    被修改, 这些函数必须保持 100% 同步:
+        Bag.AddItem / Bag.AddItems / Bag.AddUniqItem
+        Bag.AddAntique / Bag.AddDurabItem / Bag.AddMagicItem
+        Bag.AddDiagramsCard / Bag.AddSpaceRing / Bag.AddSkinCard
+        Bag.DelItem / Bag.DelItems / Bag.DelUniqItem
+        Bag.DealCoins
+        Bag.AddCapacity
+        Bag.SaveAndLog
+        Bag.RollBackWithChange
+        Bag.SyncBagInfo
+        Bag.SortOut / Bag.SortOutNew
+        Bag.StackItems / Bag.SplitItem / Bag.MoveItem
+        Bag.MutOneItemData / Bag.MutUniqItemData
+        Bag.AddLog
+
+禁止事项 (Breaking change, 会立刻导致 dataMap 与 baginfo 状态不一致):
+  1. 禁止在以上函数体内调用任何会 yield 的接口, 包括但不限于:
+        moon.wait / moon.call / moon.sleep
+        cluster.call / clusterd.call
+        httpc.get / httpc.post / httpc.post_form
+        socket.read / socket.write (阻塞变体)
+        Database.* (saveuserbags / loaduserbags / saveusercoins / loadusercoins)
+        context.send_user
+          ⚠️  隐藏陷阱: context.send_user 在 common/setup.lua 内部
+          第一步就要 cluster.call usermgr 解析 uid→addr, 是隐式 yield 点;
+          即使它底层 moon.send / cluster.send 本身不 yield, 整个包装也会
+          让出协程.
+        context.S2CX (同上, 入参是 uid, 内部 cluster.call 解析)
+        context.send_users (内部 cluster.call usermgr 拿在线列表)
+        context.call_user (内部 cluster.call 解析地址)
+        context.broadcast_gate (内部 cluster.call nodemgr)
+  2. 禁止引入新的模块级可被并发改写的状态; 如果必须, 走入参透传, 不要
+     落到模块作用域 (参考 Bill.on_order_info 的反例)。
+  3. Bag.AddLog / Bag.RollBackWithChange 也必须是纯同步 — 它们的调用方
+     依赖于执行过程不被打断, 否则 change_log 与实际数据状态会脱钩。
+
+允许的 API (经 Lua→C++ 源码级验证, 全链 0 yield):
+  ──────────────────────────────────────────────────────────────────────
+  moon.send / moon.raw_send
+    Lua:   lualib/moon.lua:121-140
+    C++:   lualib-src/lua_moon.cpp:167-184 (lmoon_send, 无 lua_yield)
+    server:moon/core/server.cpp:212-219 (server::send, 仅构造 message)
+    终点: moon/core/worker.cpp:177-189 (worker::send)
+            ├─ mq_.push_back (无锁 lock-free queue, 原子指针操作)
+            └─ asio::post 投递到 io_context, 立即返回, 不阻塞 sender
+    实际派发: worker 事件循环异步处理, 不在 sender Lua 协程上
+
+  cluster.send
+    cluster.lua:290-303 内部就是 moon.send, 同上链
+
+  context.S2C / context.R2C
+    底层走 common/setup.lua:592-595 (context.S2C) →
+    common/setup.lua:139-166 (forwardD2C) →
+    common/setup.lua:586-590 (context.D2C) → moon.raw_send
+    跨节点则走 cluster.send (cluster.lua:290-303)
+    → 不 yield (仅序列化 + 入队)
+    ⚠️  注意区分 S2C / S2CX: S2C 入参是 net_id, S2CX 入参是 uid
+
+  context.S2D / context.D2C / context.D2D / context.C2D
+    同上链路, 走 forwardD / forwardD2C 派发
+    → 不 yield (仅序列化 + 入队)
+
+  context.batch_invoke (无任何 RPC, 仅遍历 context.scripts 同步调用)
+
+  table.* / string.* / math.* / os.time / pcall
+  json.encode / json.decode
+  moon.info / moon.warn / moon.error / moon.debug  (仅写日志, 同步)
+  print
+
+  ──────────────────────────────────────────────────────────────────────
+  ⚠️  容易混淆的 yield / 非 yield 对照:
+        cluster.send       → 不 yield   (fire-and-forget, 入队即返回)
+        cluster.call       →    yield   (末尾 moon.wait(session))
+        context.send_user  →    yield   (内部先 cluster.call 解析地址)
+        context.S2C        → 不 yield   (走 moon.raw_send / cluster.send)
+        context.R2C        → 不 yield   (内部 S2C)
+        context.S2D        → 不 yield   (走 forwardD → D2D / cluster.send)
+        context.D2C        → 不 yield   (内部 moon.raw_send)
+        context.D2D        → 不 yield
+        context.C2D        → 不 yield
+        context.S2CX       →    yield   ⚠️ (入参是 uid, 内部先 cluster.call 解析)
+        context.send_users →    yield   (内部 cluster.call 拿在线列表)
+        context.call_user  →    yield   (内部 cluster.call 解析地址)
+        context.broadcast_gate →  yield (内部 cluster.call nodemgr)
+        moon.send          → 不 yield
+        moon.raw_send      → 不 yield
+        moon.call          →    yield   (内部 moon.wait)
+        moon.wait          →    yield
+        moon.sleep         →    yield
+        moon.async(fn)     → 不 yield   (启动即返回, 但 fn 内部 yield 算 fn 的)
+  ──────────────────────────────────────────────────────────────────────
+
+允许的 yield 点 (仅限启动 / 定时落库 / 跨进程 IO):
+  - Bag.Init 调用 Bag.LoadBags / Bag.LoadCoins 启动加载
+  - Bag.SaveBagsNow / Bag.SaveCoinsNow / Bag.TimingSave 由外部主协程
+    (User.SaveBagsNow) 调度, 在定时落库时 yield
+  - 这三个函数只能由非热路径调用, 绝不能在数据变更函数中间穿插
+
+回滚契约 (项目硬约束, 详见 project_memory.md):
+  - Bag.* 库函数在 err_code ~= ErrorCode.None 时, 不会自动回滚
+    baginfo.items / coinsdata.coins / dataMap 的部分写入。
+  - 调用方必须在收到非 None 错误码后立即调用
+        Bag.RollBackWithChange(change_log)
+    然后 return 错误码, 否则:
+        * baginfo.items / coinsdata.coins 出现部分写入
+        * dataMap[config_id] 不会被注册 / 撤销
+        * 后续 SaveAndLog 触发 dataMap[xxx] is nil 报错
+        * mlog.bag_change_log 缺失对应记录
+==========================================================================
+]]
+
 ---@class Bag
 local Bag = {}
 

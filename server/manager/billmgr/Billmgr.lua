@@ -38,7 +38,7 @@ function Billmgr.Init()
     -- -- 新增定时器轮询
     moon.async(function()
         while true do
-            moon.sleep(5000) -- 每5秒检查一次
+            moon.sleep(3000) -- 每3秒检查一次
             Billmgr.CheckOrder()
         end
     end)
@@ -78,15 +78,22 @@ function Billmgr.CheckOrder()
                 table.insert(param_tbl, string.format("%s=%s", escape(k), escape(v)))
             end
             local param_str = table.concat(param_tbl, "&")
-            local get_url = serverconf.STEAM_CONF.query_order_url .. "?" .. param_str
+            local use_url = serverconf.STEAM_CONF.query_order_url
+            if serverconf.STEAM_CONF.is_sandbox and serverconf.STEAM_CONF.is_sandbox == 1 then
+                use_url = serverconf.STEAM_CONF.sandbox_query_order_url
+            end
+            local get_url = use_url .. "?" .. param_str
             local response = httpc.get(get_url)
             print_r(response)
             local json_success, rsp_data = pcall(json.decode, response.body or "")
             if json_success and rsp_data and rsp_data.response.result == 'OK' then
                 if rsp_data.response.params.status == 'Init' then
                     moon.info("Billmgr.CheckOrder orderid = %s, status = %s", orderid, rsp_data.response.params.status)
-                elseif rsp_data.response.params.status == 'Approved'
-                    or rsp_data.response.params.status == 'Succeeded' then
+                elseif rsp_data.response.params.status == 'Approved' then
+                    context.send_user(check_data.order_info.uid, "Bill.FinalizeOrder", check_data.order_info.orderid)
+                    moon.info("Billmgr.CheckOrder Approved orderid = %s, status = %s", orderid,
+                        rsp_data.response.params.status)
+                elseif rsp_data.response.params.status == 'Succeeded' then
                     if check_data.order_info.state == BillDef.orderStatus.WAIT then
                         local ret = Database.updatebillorderstate(context.addr_db_game, check_data.order_info.orderid,
                             check_data.order_info.state, BillDef.orderStatus.PAID, true)
@@ -113,6 +120,10 @@ function Billmgr.CheckOrder()
                 end
             end
         end
+    end
+
+    for _, orderid in ipairs(del_orderids) do
+        Billmgr.DelBill(orderid)
     end
 end
 
