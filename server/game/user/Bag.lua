@@ -2228,6 +2228,7 @@ function Bag.CheckItemsEnough(bagType, del_items, del_unique_items)
 
     --检测扣除的道具是否足够
     local need_bound_items = {} -- 暂存转换的非绑道具
+    local replace_zero_item_ids = {} -- 暂存被替换为非绑道具后数量为零的绑定道具
     for itemid, item in pairs(del_items) do
         if item.count >= 0 then
             return ErrorCode.ParamInvalid
@@ -2257,6 +2258,9 @@ function Bag.CheckItemsEnough(bagType, del_items, del_unique_items)
                     else
                         -- 修改绑定道具消耗数量
                         item.count = -count
+                        if item.count == 0 then
+                            table.insert(replace_zero_item_ids, itemid)
+                        end
                         if not need_bound_items[item_cfg.bound_id] then
                             need_bound_items[item_cfg.bound_id] = {
                                 id = item_cfg.bound_id,
@@ -2276,6 +2280,7 @@ function Bag.CheckItemsEnough(bagType, del_items, del_unique_items)
             end
         end
     end
+
     for bound_id, bound_item in pairs(need_bound_items) do
         local need_count = bound_item.count
         if del_items[bound_id] then
@@ -2292,6 +2297,10 @@ function Bag.CheckItemsEnough(bagType, del_items, del_unique_items)
                 del_items[bound_id] = bound_item
             end
         end
+    end
+    -- 将被替换为绑定道具后数量为零的非绑道具置为空
+    for _, zero_id in ipairs(replace_zero_item_ids) do
+        del_items[zero_id] = nil
     end
 
     return ErrorCode.None
@@ -2356,6 +2365,7 @@ function Bag.CheckCoinsEnough(coins)
 
     --绑定货币不足时进行对应转换
     local mod_coins = {}
+    local replace_zero_coin_ids = {} -- 暂存被替换为非绑货币后数量为零的绑定货币
     for coinid, coin in pairs(coins) do
         if coin.coin_count < 0 then
             local coin_cfg = GameCfg.Coin[coinid]
@@ -2371,6 +2381,10 @@ function Bag.CheckCoinsEnough(coins)
                         mod_coins[coin_cfg.coin_bound] = 0
                     end
                     mod_coins[coin_cfg.coin_bound] = mod_coins[coin_cfg.coin_bound] + need_coin_bound_cnt
+                    coin.coin_count = coin.coin_count - need_coin_bound_cnt
+                    if coin.coin_count == 0 then
+                        table.insert(replace_zero_coin_ids, coinid)
+                    end
                 end
             end
         end
@@ -2383,6 +2397,10 @@ function Bag.CheckCoinsEnough(coins)
             }
         end
         coins[id].coin_count = coins[id].coin_count + cnt
+    end
+    -- 将被替换为绑定货币后数量为零的非绑货币置为空
+    for _, zero_id in ipairs(replace_zero_coin_ids) do
+        coins[zero_id] = nil
     end
     
     --检测扣除的道具是否足够
@@ -2551,6 +2569,7 @@ function Bag.DelItems(bagType, del_items, del_unique_items, change_log)
         for uniqid, uniqitem in pairs(del_unique_items) do
             err_code = Bag.DelUniqItem(bagType, baginfo, uniqitem.config_id, uniqitem.uniqid, uniqitem.pos, change_log[bagType])
             if err_code ~= ErrorCode.None then
+                moon.error("Bag.DelItems DelUniqItem failed, err_code=%s", uniqitem.config_id, uniqitem.uniqid, uniqitem.pos, err_code)
                 return err_code
             end
         end
@@ -2558,11 +2577,15 @@ function Bag.DelItems(bagType, del_items, del_unique_items, change_log)
 
     for itemid, item in pairs(del_items) do
         if item.count >= 0 then
+            moon.error("Bag.DelItems DelItem failed, err_code=%s", itemid, item.count, item.pos, err_code)
+            moon.info(string.format("Bag.DelItems DelItem del_items=%s", json.pretty_encode(del_items)))
             return ErrorCode.ParamInvalid
         end
 
         err_code = Bag.DelItem(bagType, baginfo, itemid, item.count, item.pos, change_log[bagType])
         if err_code ~= ErrorCode.None then
+            moon.error("Bag.DelItems DelItem failed, err_code=%s", itemid, item.count, item.pos, err_code)
+            moon.info(string.format("Bag.DelItems DelItem del_items=%s", json.pretty_encode(del_items)))
             return err_code
         end
     end
