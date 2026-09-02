@@ -85,6 +85,8 @@ local ErrorCode = {
     TreasureNotEnough = 516,
     ---宝箱发送邮件失败
     TreasureMailSendFailed = 517,
+    ---使用礼包数量错误
+    UseGiftNumError = 518,
 
     ---奖励已经领取过
     DailyTaskReceived = 701,
