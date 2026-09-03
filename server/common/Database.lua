@@ -2839,7 +2839,7 @@ function _M.loadplayerauctionlog(addr, uid)
             local pbdata = crypt.base64decode(res[i].item_data)
             local _, item_data = protocol.decodewithname("PBItemData", pbdata)
 
-            local auction_log = TradeDef.newAuctionLogData()
+            local auction_log = AuctionDef.newAuctionLogData()
             auction_log.log_id = res[i].log_id
             auction_log.auction_id = res[i].auction_id
             auction_log.config_id = res[i].config_id

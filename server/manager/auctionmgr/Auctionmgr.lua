@@ -259,6 +259,9 @@ function Auctionmgr.BuyAuctionProduct(buyer_uid, auction_id, uniqid, buy_price)
     if product_data.auction_data.cur_price > 0 then
         floor_price = math.ceil(product_data.auction_data.cur_price * auction_cfg.bid_percentage / 10000)
     end
+    if floor_price > product_data.auction_data.buyout_price then
+        floor_price = product_data.auction_data.buyout_price
+    end
     if buy_price < floor_price then
         return { code = ErrorCode.BuyPriceTooLow }
     end
