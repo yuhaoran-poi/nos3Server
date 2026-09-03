@@ -1373,6 +1373,10 @@ function Mission.TriggerCondition_new(condition_id, params, change_cnt)
         return true
     end
 
+    -- 已消费完成的偏移: 让 enqueue_followups 每次只扫描本次"新增"的完成项,
+    -- 避免每 pop 一个队列条目就全量遍历累计表(O(M*N) -> O(N)).
+    local done_ach, done_lin, done_per = 0, 0, 0
+
     -- 工作队列: 用循环替代 TriggerCondition <-> XxxComplete 的互递归调用,
     -- 避免嵌套 SaveAndSync 造成重复同步/重复落库, 以及深层递归耗尽协程栈.
     -- 队列条目:
@@ -1382,7 +1386,10 @@ function Mission.TriggerCondition_new(condition_id, params, change_cnt)
 
     -- 把三类完成列表里的新完成任务入队其连锁条件/解锁
     local function enqueue_followups()
-        for _, mission_id in ipairs(new_complete_achivement_ids) do
+        -- 只扫描本次"新增"的完成项: 偏移量记录上次已消费到的位置,
+        -- 每个条目最多被遍历一次, 将 O(M*N) 降为 O(N). 保留 mark 做防御性去重.
+        for i = done_ach + 1, #new_complete_achivement_ids do
+            local mission_id = new_complete_achivement_ids[i]
             if mark("ach", mission_id) then
                 local cfg = GameCfg.AchievementMissionConfig[mission_id]
                 if cfg and cfg.type then
@@ -1394,7 +1401,9 @@ function Mission.TriggerCondition_new(condition_id, params, change_cnt)
                 end
             end
         end
-        for _, mission_id in ipairs(new_complete_linear_ids) do
+        done_ach = #new_complete_achivement_ids
+        for i = done_lin + 1, #new_complete_linear_ids do
+            local mission_id = new_complete_linear_ids[i]
             if mark("lin", mission_id) then
                 local cfg = GameCfg.LinearMissionConfig[mission_id]
                 if cfg and cfg.type then
@@ -1407,7 +1416,9 @@ function Mission.TriggerCondition_new(condition_id, params, change_cnt)
                 table.insert(queue, { unlock = true, id = mission_id })
             end
         end
-        for _, mission_id in ipairs(new_complete_period_ids) do
+        done_lin = #new_complete_linear_ids
+        for i = done_per + 1, #new_complete_period_ids do
+            local mission_id = new_complete_period_ids[i]
             if mark("per", mission_id) then
                 local cfg = GameCfg.PeriodMissionConfig[mission_id]
                 if cfg and cfg.type then
@@ -1419,6 +1430,7 @@ function Mission.TriggerCondition_new(condition_id, params, change_cnt)
                 end
             end
         end
+        done_per = #new_complete_period_ids
     end
 
     -- 解锁某线性任务的后继 (back_mission). 复用 newLinearMission, 立即完成的后继会
@@ -1576,6 +1588,10 @@ function Mission.TriggerConditionList(condition_list, change_log, need_sync)
         return true
     end
 
+    -- 已消费完成的偏移: 让 enqueue_followups 每次只扫描本次"新增"的完成项,
+    -- 避免每 pop 一个队列条目就全量遍历累计表(O(M*N) -> O(N)).
+    local done_ach, done_lin, done_per = 0, 0, 0
+
     -- 工作队列: 用循环替代 TriggerCondition <-> XxxComplete 的互递归调用,
     -- 避免嵌套 SaveAndSync 造成重复同步/重复落库, 以及深层递归耗尽协程栈.
     -- 队列条目:
@@ -1585,7 +1601,10 @@ function Mission.TriggerConditionList(condition_list, change_log, need_sync)
 
     -- 把三类完成列表里的新完成任务入队其连锁条件/解锁
     local function enqueue_followups()
-        for _, mission_id in ipairs(new_complete_achivement_ids) do
+        -- 只扫描本次"新增"的完成项: 偏移量记录上次已消费到的位置,
+        -- 每个条目最多被遍历一次, 将 O(M*N) 降为 O(N). 保留 mark 做防御性去重.
+        for i = done_ach + 1, #new_complete_achivement_ids do
+            local mission_id = new_complete_achivement_ids[i]
             if mark("ach", mission_id) then
                 local cfg = GameCfg.AchievementMissionConfig[mission_id]
                 if cfg and cfg.type then
@@ -1597,7 +1616,9 @@ function Mission.TriggerConditionList(condition_list, change_log, need_sync)
                 end
             end
         end
-        for _, mission_id in ipairs(new_complete_linear_ids) do
+        done_ach = #new_complete_achivement_ids
+        for i = done_lin + 1, #new_complete_linear_ids do
+            local mission_id = new_complete_linear_ids[i]
             if mark("lin", mission_id) then
                 local cfg = GameCfg.LinearMissionConfig[mission_id]
                 if cfg and cfg.type then
@@ -1610,7 +1631,9 @@ function Mission.TriggerConditionList(condition_list, change_log, need_sync)
                 table.insert(queue, { unlock = true, id = mission_id })
             end
         end
-        for _, mission_id in ipairs(new_complete_period_ids) do
+        done_lin = #new_complete_linear_ids
+        for i = done_per + 1, #new_complete_period_ids do
+            local mission_id = new_complete_period_ids[i]
             if mark("per", mission_id) then
                 local cfg = GameCfg.PeriodMissionConfig[mission_id]
                 if cfg and cfg.type then
@@ -1622,6 +1645,7 @@ function Mission.TriggerConditionList(condition_list, change_log, need_sync)
                 end
             end
         end
+        done_per = #new_complete_period_ids
     end
 
     -- 解锁某线性任务的后继 (back_mission). 复用 newLinearMission, 立即完成的后继会
