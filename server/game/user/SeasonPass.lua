@@ -11,6 +11,7 @@ local ProtoEnum = require("tools.ProtoEnum")
 local ItemDefine = require("common.logic.ItemDefine")
 local BagDef = require("common.def.BagDef")
 local ItemDef = require("common.def.ItemDef")
+local RoleDef = require("common.def.RoleDef")
 
 local GONGDE_COIN_ID = 7
 
@@ -324,10 +325,44 @@ function SeasonPass.PBGetSeasonPassRewardReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
+    local reward_cfg_list = table.copy(reward_cfg.item, true)
+
+    -- 检测是否有角色
+    local add_roles = {}
+    for reward_id, reward_cnt in pairs(reward_cfg_list or {}) do
+        if RoleDef.RoleDefine.RoleID.Start <= reward_id
+            and reward_id <= RoleDef.RoleDefine.RoleID.End then
+            if reward_cnt > 1 or add_roles[reward_id] then
+                return context.S2C(context.net_id, CmdCode.PBGetSeasonPassRewardRspCmd, {
+                    code = ErrorCode.UseGiftNumError,
+                    error = "配置错误",
+                    uid = context.uid,
+                }, req.msg_context.stub_id)
+            end
+            add_roles[reward_id] = 1
+        end
+    end
+    -- 检测角色是否可以获得
+    if table.size(add_roles) > 0 then
+        local role_err_code = scripts.Role.CheckAddRoles(add_roles)
+        if role_err_code ~= ErrorCode.None then
+            return context.S2C(context.net_id, CmdCode.PBGetSeasonPassRewardRspCmd, {
+                code = role_err_code,
+                error = "角色已存在",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
+        end
+
+        -- 将角色从reward_cfg_list中移除
+        for role_id, _ in pairs(add_roles) do
+            reward_cfg_list[role_id] = nil
+        end
+    end
+
     -- 计算获得资源
     local add_items, add_coins = {}, {}
-    ItemDefine.GetItemsFromCfg(reward_cfg.item, 1, false, add_items, add_coins)
-    if table.size(add_items) + table.size(add_coins) <= 0 then
+    ItemDefine.GetItemsFromCfg(reward_cfg_list, 1, false, add_items, add_coins)
+    if table.size(add_items) + table.size(add_coins) + table.size(add_roles) <= 0 then
         return context.S2C(context.net_id, CmdCode.PBGetSeasonPassRewardRspCmd, {
             code = ErrorCode.ConfigError,
             error = "配置错误",
@@ -382,11 +417,32 @@ function SeasonPass.PBGetSeasonPassRewardReqCmd(req)
         end
     end
 
+    local change_roles = {}
+    -- 添加角色
+    if table.size(add_roles) then
+        for roleid, _ in pairs(add_roles) do
+            local role_err_code = scripts.Role.AddRole(roleid)
+            if role_err_code ~= ErrorCode.None then
+                scripts.Bag.RollBackWithChange(bag_change_log)
+                return context.S2C(context.net_id, CmdCode.PBGetSeasonPassRewardRspCmd, {
+                    code = ErrorCode.RoleAddFail,
+                    error = "添加角色失败",
+                    uid = context.uid,
+                }, req.msg_context.stub_id)
+            end
+            change_roles[roleid] = "AddRole"
+        end
+    end
+
     seasonpass_info.cost_coin = seasonpass_info.cost_coin + reward_cfg.unlock_cost
     table.insert(seasonpass_info.get_reward_id, req.msg.reward_id)
 
     -- 保存数据
     scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.SeasonPassGetReward)
+    -- 角色变更
+    if table.size(change_roles) > 0 then
+        scripts.Role.SaveAndLog(change_roles)
+    end
     SeasonPass.SaveSeasonPasssNow()
 
     return context.S2C(context.net_id, CmdCode.PBGetSeasonPassRewardRspCmd, {

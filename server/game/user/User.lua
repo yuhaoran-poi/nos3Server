@@ -871,6 +871,7 @@ function User.PBPingCmd(req)
     local mode_cfgs = GameCfg.GameMode
     if mode_cfgs and table.size(mode_cfgs) > 0 then
         local recover_list = {}
+        local day_cost_time = 24 * 60 * 60
         for _, mode_cfg in pairs(mode_cfgs) do
             if mode_cfg.recover_num and table.size(mode_cfg.recover_num) > 0 then
                 if last_fresh_mode_ts == 0 then
@@ -881,7 +882,7 @@ function User.PBPingCmd(req)
                         recover_list[recover_id] = recover_list[recover_id] + recover_cnt
                     end
                 else
-                    local drift_ts = mode_cfg.recover_week * 24 * 60 * 60 + mode_cfg.recover_time
+                    local drift_ts = mode_cfg.recover_week * day_cost_time + mode_cfg.recover_time
                     if not datetime.is_same_week(last_fresh_mode_ts - drift_ts, now_ts - drift_ts) then
                         for recover_id, recover_cnt in pairs(mode_cfg.recover_num) do
                             if not recover_list[recover_id] then
@@ -2876,7 +2877,7 @@ function User.PBModNickNameReqCmd(req)
     }, req.msg_context.stub_id)
 end
 
-function User.OpenGift(item_cfg, msg_data, bag_change_log)
+function User.OpenGift(item_cfg, msg_data, bag_change_log, add_roles)
     local err_code = ErrorCode.ItemTypeMismatch
     local reward_cfg_list = {}
     if item_cfg.use_type == 4 then
@@ -2988,6 +2989,29 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log)
         moon.error("reward_cfg_list error")
         err_code = ErrorCode.ConfigError
         return err_code
+    end
+
+    -- 检测是否有角色
+    for reward_id, reward_cnt in pairs(reward_cfg_list) do
+        if RoleDef.RoleDefine.RoleID.Start <= reward_id
+            and reward_id <= RoleDef.RoleDefine.RoleID.End then
+            if reward_cnt > 1 or add_roles[reward_id] then
+                return ErrorCode.UseGiftNumError
+            end
+            add_roles[reward_id] = 1
+        end
+    end
+    -- 检测角色是否可以获得
+    if table.size(add_roles) > 0 then
+        local role_err_code = scripts.Role.CheckAddRoles(add_roles)
+        if role_err_code ~= ErrorCode.None then
+            return role_err_code
+        end
+
+        -- 将角色从reward_cfg_list中移除
+        for role_id, _ in pairs(add_roles) do
+            reward_cfg_list[role_id] = nil
+        end
     end
 
     local add_items, add_coins = {}, {}
@@ -3172,6 +3196,7 @@ function User.PBUseItemReqCmd(req)
     -- 不同使用类型
     local change_image_ids = {}
     local bag_change_log = {}
+    local add_roles = {}
     local update_user_attr = {}
     local item_cfg = GameCfg.Item[req.msg.use_item_id]
     if item_cfg and item_cfg.use_type then
@@ -3192,7 +3217,7 @@ function User.PBUseItemReqCmd(req)
             or item_cfg.use_type == 5
             or item_cfg.use_type == 6 then
             -- 使用礼包
-            local err_code = User.OpenGift(item_cfg, req.msg, bag_change_log)
+            local err_code = User.OpenGift(item_cfg, req.msg, bag_change_log, add_roles)
             if err_code ~= ErrorCode.None then
                 return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
                     code = err_code,
@@ -3247,11 +3272,34 @@ function User.PBUseItemReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
+    local change_roles = {}
+    if table.size(add_roles) then
+        -- 添加角色
+        for roleid, _ in pairs(add_roles) do
+            local role_err_code = scripts.Role.AddRole(roleid)
+            if role_err_code ~= ErrorCode.None then
+                scripts.Bag.RollBackWithChange(bag_change_log)
+                return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
+                    code = ErrorCode.RoleAddFail,
+                    error = "添加角色失败",
+                    uid = context.uid,
+                    use_item_id = req.msg.use_item_id,
+                    use_item_cnt = req.msg.use_item_cnt,
+                }, req.msg_context.stub_id)
+            end
+            change_roles[roleid] = "AddRole"
+        end
+    end
+
     -- 存储背包变更
     if bag_change_log then
         if table.size(bag_change_log) > 0 then
             scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.UseItem, 0, 0, 0, 0)
         end
+    end
+    -- 角色变更
+    if table.size(change_roles) > 0 then
+        scripts.Role.SaveAndLog(change_roles)
     end
     -- 图鉴信息变更
     if table.size(change_image_ids) > 0 then
