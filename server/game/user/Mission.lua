@@ -2818,53 +2818,61 @@ function Mission.GetPeriodMissionReward(mission_info, period_ids)
 end
 
 function Mission.PBGetPlayerMissionInfoReqCmd(req)
-    if not req.msg.uid then
-        return context.S2C(context.net_id, CmdCode.PBGetPlayerMissionInfoRspCmd, {
-            code = ErrorCode.ParamInvalid,
-            error = "无效请求参数",
-            uid = context.uid,
-        }, req.msg_context.stub_id)
-    end
-
-    local mission_info = scripts.UserModel.GetMissionInfo()
-    if not mission_info then
-        return context.S2C(context.net_id, CmdCode.PBGetPlayerMissionInfoRspCmd, {
-            code = ErrorCode.ServerInternalError,
-            error = "获取玩家任务信息失败",
-            uid = context.uid,
-        }, req.msg_context.stub_id)
-    end
-
-    Mission.DelOverTimeLinearMission(mission_info)
-
-    local now_ts = moon.time()
-    local new_complete_period_ids = {}
-    if Mission.CheckPeriodInfo(mission_info, now_ts, new_complete_period_ids) then
-        if table.size(new_complete_period_ids) > 0 then
-            -- Mission.PeriodMissionComplete(mission_info, new_complete_period_ids)
-            Mission.PeriodMissionComplete_new(mission_info, new_complete_period_ids, nil, false)
-        end
-        Mission.makePeriodMap(mission_info)
-        Mission.SaveMissionsNow()
-    end
-
-    -- 检查活动任务
-    local new_complete_activity_ids = {}
-    if Mission.CheckActivityInfo(mission_info, now_ts, new_complete_activity_ids) then
-        if table.size(new_complete_activity_ids) > 0 then
-            -- Mission.ActivityMissionComplete(mission_info, new_complete_activity_ids)
-            Mission.ActivityMissionComplete_new(mission_info, new_complete_activity_ids, nil, false)
-        end
-        Mission.makeActivityMap(mission_info)
-        Mission.SaveMissionsNow()
-    end
-
+    -- 暂时直接返回
     return context.S2C(context.net_id, CmdCode.PBGetPlayerMissionInfoRspCmd, {
         code = ErrorCode.None,
         error = "获取玩家任务信息成功",
         uid = context.uid,
-        player_mission_info = mission_info,
+        player_mission_info = {},
     }, req.msg_context.stub_id)
+
+    -- if not req.msg.uid then
+    --     return context.S2C(context.net_id, CmdCode.PBGetPlayerMissionInfoRspCmd, {
+    --         code = ErrorCode.ParamInvalid,
+    --         error = "无效请求参数",
+    --         uid = context.uid,
+    --     }, req.msg_context.stub_id)
+    -- end
+
+    -- local mission_info = scripts.UserModel.GetMissionInfo()
+    -- if not mission_info then
+    --     return context.S2C(context.net_id, CmdCode.PBGetPlayerMissionInfoRspCmd, {
+    --         code = ErrorCode.ServerInternalError,
+    --         error = "获取玩家任务信息失败",
+    --         uid = context.uid,
+    --     }, req.msg_context.stub_id)
+    -- end
+
+    -- Mission.DelOverTimeLinearMission(mission_info)
+
+    -- local now_ts = moon.time()
+    -- local new_complete_period_ids = {}
+    -- if Mission.CheckPeriodInfo(mission_info, now_ts, new_complete_period_ids) then
+    --     if table.size(new_complete_period_ids) > 0 then
+    --         -- Mission.PeriodMissionComplete(mission_info, new_complete_period_ids)
+    --         Mission.PeriodMissionComplete_new(mission_info, new_complete_period_ids, nil, false)
+    --     end
+    --     Mission.makePeriodMap(mission_info)
+    --     Mission.SaveMissionsNow()
+    -- end
+
+    -- -- 检查活动任务
+    -- local new_complete_activity_ids = {}
+    -- if Mission.CheckActivityInfo(mission_info, now_ts, new_complete_activity_ids) then
+    --     if table.size(new_complete_activity_ids) > 0 then
+    --         -- Mission.ActivityMissionComplete(mission_info, new_complete_activity_ids)
+    --         Mission.ActivityMissionComplete_new(mission_info, new_complete_activity_ids, nil, false)
+    --     end
+    --     Mission.makeActivityMap(mission_info)
+    --     Mission.SaveMissionsNow()
+    -- end
+
+    -- return context.S2C(context.net_id, CmdCode.PBGetPlayerMissionInfoRspCmd, {
+    --     code = ErrorCode.None,
+    --     error = "获取玩家任务信息成功",
+    --     uid = context.uid,
+    --     player_mission_info = mission_info,
+    -- }, req.msg_context.stub_id)
 end
 
 function Mission.PBGetMissionRewardReqCmd(req)
