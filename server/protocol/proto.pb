@@ -1,11 +1,15 @@
 
-∂
-activity.proto"_
+Ô
+activity.proto"ó
 PBActivityData
 activity_id (R
 activityId
 beg_ts (RbegTs
-end_ts (RendTs"+
+end_ts (RendTs#
+activity_type (RactivityType&
+now_mission_ids (RnowMissionIds0
+complete_mission_ids (RcompleteMissionIds7
+take_rewards_mission_ids (RtakeRewardsMissionIds"+
 PBGetActivityInfoReqCmd
 uid (Ruid"ç
 PBGetActivityInfoRspCmd
@@ -1880,7 +1884,7 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-π<
+±=
 dsnode.protocommon.proto
 item.proto
 user.proto	bag.proto
@@ -1928,7 +1932,7 @@ item_count (R	itemCount%
 open_cnt (RopenCnt
 pot_type (RpotType
 pot_quality (R
-potQuality"æ
+potQuality"∂
 PBGameSettle
 settle_data (	R
 settleData-
@@ -1971,7 +1975,11 @@ bootyItems8
 weight_use_rate (RweightUseRate
 is_team (RisTeam
 
-is_retreat (R	isRetreat?
+is_retreat (R	isRetreat,
+main_task_complete (RmainTaskComplete 
+sub_task_cnt  (R
+subTaskCnt&
+kill_ghost_king! (RkillGhostKing?
 GameMissionsEntry
 key (Rkey
 value (Rvalue:8F
@@ -3154,7 +3162,7 @@ redTeamNum"
 #PBSelectionState_LRS_SelectionGhost#
 PBSelectionState_LRS_SetupGhost)
 %PBSelectionState_SH_Ghost_Select_Skinbproto3
-π
+ˇ"
 mission.proto"¬
 PBConditionData
 cond_id (RcondId!
@@ -3222,17 +3230,29 @@ cond_datas (2.PBConditionDataR	condDatas"™
 value (2.PBMissionDataRvalue:8>
 CompleteIdsEntry
 key (Rkey
-value (Rvalue:8"∆
+value (Rvalue:8"ˆ
+PBActivityMissionInfo$
+last_update_ts (RlastUpdateTsW
+now_mission_datas (2+.PBActivityMissionInfo.NowMissionDatasEntryRnowMissionDatasJ
+complete_ids (2'.PBActivityMissionInfo.CompleteIdsEntryRcompleteIdsR
+NowMissionDatasEntry
+key (Rkey$
+value (2.PBMissionDataRvalue:8>
+CompleteIdsEntry
+key (Rkey
+value (Rvalue:8"É
 PBPlayerMissionInfo5
 linear_info (2.PBLinearMissionInfoR
 linearInfo5
 period_info (2.PBPeriodMissionInfoR
 periodInfoA
-achivement_info (2.PBAchivementMissionInfoRachivementInfo"º
+achivement_info (2.PBAchivementMissionInfoRachivementInfo;
+activity_info (2.PBActivityMissionInfoRactivityInfo"Ü
 PBUpdateMissionSyncCmda
 update_mission_datas (2/.PBUpdateMissionSyncCmd.UpdateMissionDatasEntryRupdateMissionDatas^
 update_complete_ids (2..PBUpdateMissionSyncCmd.UpdateCompleteIdsEntryRupdateCompleteIdsB
-update_period_info (2.PBPeriodMissionInfoRupdatePeriodInfoU
+update_period_info (2.PBPeriodMissionInfoRupdatePeriodInfoH
+update_activity_info (2.PBActivityMissionInfoRupdateActivityInfoU
 UpdateMissionDatasEntry
 key (Rkey$
 value (2.PBMissionDataRvalue:8D
@@ -3245,14 +3265,15 @@ periodInfoA
 code (Rcode
 error (	Rerror
 uid (RuidD
-player_mission_info (2.PBPlayerMissionInfoRplayerMissionInfo"ë
+player_mission_info (2.PBPlayerMissionInfoRplayerMissionInfo"¥
 PBGetMissionRewardReqCmd
 uid (Ruid
 
 linear_ids (R	linearIds
 
 period_ids (R	periodIds%
-achivement_ids (RachivementIds"ª
+achivement_ids (RachivementIds!
+activity_ids (RactivityIds"ﬁ
 PBGetMissionRewardRspCmd
 code (Rcode
 error (	Rerror
@@ -3261,7 +3282,8 @@ period_ids (R	periodIds%
 linear_ids (R	linearIds
 
 period_ids (R	periodIds%
-achivement_ids (RachivementIds"Q
+achivement_ids (RachivementIds!
+activity_ids (RactivityIds"Q
 PBRrefreshMissionReqCmd
 uid (Ruid$
 old_mission_id (RoldMissionId"∑

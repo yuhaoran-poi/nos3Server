@@ -73,6 +73,9 @@ message PBGameSettle
     int32 weight_use_rate   = 28;   //负重使用率
     int32 is_team   = 29;   //是否是组队
     int32 is_retreat    = 30;   //是否撤离
+    int32 main_task_complete = 31; // 本局是否完成主线任务 0-未完成 1-完成
+    int32 sub_task_cnt  = 32;   // 本局完成支线任务数量
+    int32 kill_ghost_king   = 33;   // 本局是否击杀鬼王 0-否 1-是
 }
 
 // 玩家进入主城

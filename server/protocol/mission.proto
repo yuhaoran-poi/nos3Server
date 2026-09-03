@@ -45,11 +45,19 @@ message PBAchivementMissionInfo
 	map<int32, int32> complete_ids	= 2;
 }
 
+message PBActivityMissionInfo
+{
+	int64 last_update_ts	= 1;
+	map<int32, PBMissionData> now_mission_datas	= 2;
+	map<int32, int32> complete_ids	= 3;
+}
+
 message PBPlayerMissionInfo
 {
 	PBLinearMissionInfo linear_info	= 1;
 	PBPeriodMissionInfo period_info	= 2;
 	PBAchivementMissionInfo achivement_info	= 3;
+	PBActivityMissionInfo activity_info	= 4;
 }
 
 // 更新任务进度 通知玩家
@@ -58,6 +66,7 @@ message PBUpdateMissionSyncCmd
     map<int32, PBMissionData> update_mission_datas	= 1;
 	map<int32, int32> update_complete_ids	= 2;
 	PBPeriodMissionInfo update_period_info	= 3;
+	PBActivityMissionInfo update_activity_info	= 4;
 }
 
 message PBGetPlayerMissionInfoReqCmd
@@ -80,6 +89,7 @@ message PBGetMissionRewardReqCmd
 	repeated int32 linear_ids	= 2;
 	repeated int32 period_ids	= 3;
 	repeated int32 achivement_ids	= 4;
+	repeated int32 activity_ids	= 5;
 }
 
 message PBGetMissionRewardRspCmd
@@ -91,6 +101,7 @@ message PBGetMissionRewardRspCmd
 	repeated int32 linear_ids	= 4;
 	repeated int32 period_ids	= 5;
 	repeated int32 achivement_ids	= 6;
+	repeated int32 activity_ids	= 7;
 }
 
 message PBRrefreshMissionReqCmd

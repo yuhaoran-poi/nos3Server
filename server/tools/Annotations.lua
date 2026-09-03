@@ -7,6 +7,10 @@
 ---@field public activity_id integer
 ---@field public beg_ts integer
 ---@field public end_ts integer
+---@field public activity_type integer
+---@field public now_mission_ids integer[]
+---@field public complete_mission_ids integer[]
+---@field public take_rewards_mission_ids integer[]
 
 
 ---@class PBGetActivityInfoReqCmd
@@ -632,6 +636,9 @@
 ---@field public weight_use_rate integer @负重使用率
 ---@field public is_team integer @是否是组队
 ---@field public is_retreat integer @是否撤离
+---@field public main_task_complete integer @本局是否完成主线任务 0-未完成 1-完成
+---@field public sub_task_cnt integer @本局完成支线任务数量
+---@field public kill_ghost_king integer @本局是否击杀鬼王 0-否 1-是
 
 
 ---@class PBEnterCityReqCmd
@@ -2626,16 +2633,24 @@
 ---@field public complete_ids table<integer, integer>
 
 
+---@class PBActivityMissionInfo
+---@field public last_update_ts integer
+---@field public now_mission_datas table<integer, PBMissionData>
+---@field public complete_ids table<integer, integer>
+
+
 ---@class PBPlayerMissionInfo
 ---@field public linear_info PBLinearMissionInfo
 ---@field public period_info PBPeriodMissionInfo
 ---@field public achivement_info PBAchivementMissionInfo
+---@field public activity_info PBActivityMissionInfo
 
 
 ---@class PBUpdateMissionSyncCmd
 ---@field public update_mission_datas table<integer, PBMissionData>
 ---@field public update_complete_ids table<integer, integer>
 ---@field public update_period_info PBPeriodMissionInfo
+---@field public update_activity_info PBActivityMissionInfo
 
 
 ---@class PBGetPlayerMissionInfoReqCmd
@@ -2654,6 +2669,7 @@
 ---@field public linear_ids integer[]
 ---@field public period_ids integer[]
 ---@field public achivement_ids integer[]
+---@field public activity_ids integer[]
 
 
 ---@class PBGetMissionRewardRspCmd
@@ -2663,6 +2679,7 @@
 ---@field public linear_ids integer[]
 ---@field public period_ids integer[]
 ---@field public achivement_ids integer[]
+---@field public activity_ids integer[]
 
 
 ---@class PBRrefreshMissionReqCmd
@@ -4510,6 +4527,8 @@
 ---@class static_conf
 ---@field AccountBuffConfig AccountBuffConfig_cfg[]
 ---@field AchievementMissionConfig AchievementMissionConfig_cfg[]
+---@field ActivityMissionConfig ActivityMissionConfig_cfg[]
+---@field ActivityMissionTypeConfig ActivityMissionTypeConfig_cfg[]
 ---@field allconfigs allconfigs_cfg[]
 ---@field AllTag AllTag_cfg[]
 ---@field AllTagPool AllTagPool_cfg[]
