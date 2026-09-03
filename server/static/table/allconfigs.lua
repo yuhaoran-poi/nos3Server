@@ -1,5 +1,6 @@
 return {
     ["AccountBuffConfig"] = "AccountBuffConfig.lua",
+    ["AchievementAward"] = "AchievementAward.lua",
     ["AchievementMissionConfig"] = "AchievementMissionConfig.lua",
     ["ActivityMissionConfig"] = "ActivityMissionConfig.lua",
     ["ActivityMissionTypeConfig"] = "ActivityMissionTypeConfig.lua",
