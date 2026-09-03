@@ -450,7 +450,7 @@ function Mission.CheckNewMissions()
     Mission.CheckAchivementInfo(mission_info, now_ts, new_complete_achivement_ids)
     if table.size(new_complete_achivement_ids) > 0 then
         -- Mission.AchivementMissionComplete(mission_info, new_complete_achivement_ids)
-        Mission.AchivementMissionComplete_new(mission_info, new_complete_achivement_ids)
+        Mission.AchivementMissionComplete_new(mission_info, new_complete_achivement_ids, nil, false)
     end
     Mission.makeAchivementMap(mission_info)
 
@@ -458,7 +458,7 @@ function Mission.CheckNewMissions()
     Mission.CheckLinearInfo(mission_info, now_ts, new_complete_linear_ids)
     if table.size(new_complete_linear_ids) > 0 then
         -- Mission.LinearMissionComplete(mission_info, new_complete_linear_ids)
-        Mission.LinearMissionComplete_new(mission_info, new_complete_linear_ids)
+        Mission.LinearMissionComplete_new(mission_info, new_complete_linear_ids, nil, false)
     end
     Mission.makeLinearMap(mission_info)
 
@@ -466,7 +466,7 @@ function Mission.CheckNewMissions()
     Mission.CheckPeriodInfo(mission_info, now_ts, new_complete_period_ids)
     if table.size(new_complete_period_ids) > 0 then
         -- Mission.PeriodMissionComplete(mission_info, new_complete_period_ids)
-        Mission.PeriodMissionComplete_new(mission_info, new_complete_period_ids)
+        Mission.PeriodMissionComplete_new(mission_info, new_complete_period_ids, nil, false)
     end
     Mission.makePeriodMap(mission_info)
 
@@ -474,7 +474,7 @@ function Mission.CheckNewMissions()
     if Mission.CheckActivityInfo(mission_info, now_ts, new_complete_activity_ids) then
         if table.size(new_complete_activity_ids) > 0 then
             -- Mission.ActivityMissionComplete(mission_info, new_complete_activity_ids)
-            Mission.ActivityMissionComplete_new(mission_info, new_complete_activity_ids)
+            Mission.ActivityMissionComplete_new(mission_info, new_complete_activity_ids, nil, false)
         end
         Mission.makeActivityMap(mission_info)
     end
@@ -1538,7 +1538,7 @@ function Mission.TriggerCondition_new(condition_id, params, change_cnt)
     Mission.SaveAndSync(change_log)
 end
 
-function Mission.TriggerConditionList(condition_list, change_log)
+function Mission.TriggerConditionList(condition_list, change_log, need_sync)
     local mission_info = scripts.UserModel.GetMissionInfo()
     if not mission_info then
         return
@@ -1744,7 +1744,9 @@ function Mission.TriggerConditionList(condition_list, change_log)
         enqueue_followups()
     end
 
-    Mission.SaveAndSync(change_log)
+    if need_sync then
+        Mission.SaveAndSync(change_log)
+    end
 end
 
 function Mission.TriggerConditionSingleMission(condition_id, params, change_cnt, mission_data)
@@ -2125,13 +2127,13 @@ function Mission.LinearMissionComplete(mission_info, complete_ids)
     end
 end
 
-function Mission.LinearMissionComplete_new(mission_info, complete_ids, change_log)
+function Mission.LinearMissionComplete_new(mission_info, complete_ids, change_log, need_sync)
     local linear_cfgs = GameCfg.LinearMissionConfig
     if not linear_cfgs or table.size(linear_cfgs) == 0 then
         return
     end
 
-    if not change_log then
+    if not change_log or table.size(change_log) == 0 then
         change_log = {
             linears = {},
             periods = {},
@@ -2182,9 +2184,11 @@ function Mission.LinearMissionComplete_new(mission_info, complete_ids, change_lo
 
     scripts.UserModel.SetMissionInfo(mission_info)
     if table.size(new_condition_queue) > 0 then
-        Mission.TriggerConditionList(new_condition_queue, change_log)
+        Mission.TriggerConditionList(new_condition_queue, change_log, need_sync)
     else
-        Mission.SaveAndSync(change_log)
+        if need_sync then
+            Mission.SaveAndSync(change_log)
+        end
     end
 end
 
@@ -2205,13 +2209,13 @@ function Mission.PeriodMissionComplete(mission_info, complete_ids, change_log)
     end
 end
 
-function Mission.PeriodMissionComplete_new(mission_info, complete_ids, change_log)
+function Mission.PeriodMissionComplete_new(mission_info, complete_ids, change_log, need_sync)
     local period_cfgs = GameCfg.PeriodMissionConfig
     if not period_cfgs or table.size(period_cfgs) == 0 then
         return
     end
 
-    if not change_log then
+    if not change_log or table.size(change_log) == 0 then
         change_log = {
             linears = {},
             periods = {},
@@ -2222,7 +2226,6 @@ function Mission.PeriodMissionComplete_new(mission_info, complete_ids, change_lo
         }
     end
 
-    local now_ts = moon.time()
     local new_condition_queue = {} -- 条件队列
     while #complete_ids > 0 do
         local cur_mission_id = table.remove(complete_ids, 1)
@@ -2240,9 +2243,11 @@ function Mission.PeriodMissionComplete_new(mission_info, complete_ids, change_lo
 
     scripts.UserModel.SetMissionInfo(mission_info)
     if table.size(new_condition_queue) > 0 then
-        Mission.TriggerConditionList(new_condition_queue, change_log)
+        Mission.TriggerConditionList(new_condition_queue, change_log, need_sync)
     else
-        Mission.SaveAndSync(change_log)
+        if need_sync then
+            Mission.SaveAndSync(change_log)
+        end
     end
 end
 
@@ -2263,13 +2268,13 @@ function Mission.AchivementMissionComplete(mission_info, complete_ids)
     end
 end
 
-function Mission.AchivementMissionComplete_new(mission_info, complete_ids, change_log)
+function Mission.AchivementMissionComplete_new(mission_info, complete_ids, change_log, need_sync)
     local achievement_cfgs = GameCfg.AchievementMissionConfig
     if not achievement_cfgs or table.size(achievement_cfgs) == 0 then
         return
     end
 
-    if not change_log then
+    if not change_log or table.size(change_log) == 0 then
         change_log = {
             linears = {},
             periods = {},
@@ -2280,7 +2285,6 @@ function Mission.AchivementMissionComplete_new(mission_info, complete_ids, chang
         }
     end
 
-    local now_ts = moon.time()
     local new_condition_queue = {} -- 条件队列
     while #complete_ids > 0 do
         local cur_mission_id = table.remove(complete_ids, 1)
@@ -2298,9 +2302,11 @@ function Mission.AchivementMissionComplete_new(mission_info, complete_ids, chang
 
     scripts.UserModel.SetMissionInfo(mission_info)
     if table.size(new_condition_queue) > 0 then
-        Mission.TriggerConditionList(new_condition_queue, change_log)
+        Mission.TriggerConditionList(new_condition_queue, change_log, need_sync)
     else
-        Mission.SaveAndSync(change_log)
+        if need_sync then
+            Mission.SaveAndSync(change_log)
+        end
     end
 end
 
@@ -2321,13 +2327,13 @@ function Mission.ActivityMissionComplete(mission_info, complete_ids)
     end
 end
 
-function Mission.ActivityMissionComplete_new(mission_info, complete_ids, change_log)
+function Mission.ActivityMissionComplete_new(mission_info, complete_ids, change_log, need_sync)
     local activity_cfgs = GameCfg.ActivityMissionConfig
     if not activity_cfgs or table.size(activity_cfgs) == 0 then
         return
     end
 
-    if not change_log then
+    if not change_log or table.size(change_log) == 0 then
         change_log = {
             linears = {},
             periods = {},
@@ -2356,9 +2362,11 @@ function Mission.ActivityMissionComplete_new(mission_info, complete_ids, change_
 
     scripts.UserModel.SetMissionInfo(mission_info)
     if table.size(new_condition_queue) > 0 then
-        Mission.TriggerConditionList(new_condition_queue, change_log)
+        Mission.TriggerConditionList(new_condition_queue, change_log, need_sync)
     else
-        Mission.SaveAndSync(change_log)
+        if need_sync then
+            Mission.SaveAndSync(change_log)
+        end
     end
 end
 
@@ -2421,7 +2429,7 @@ function Mission.ReplaceMission(mission_info, old_mission_id)
     end
     if table.size(new_complete_period_ids) > 0 then
         -- Mission.PeriodMissionComplete(mission_info, new_complete_period_ids)
-        Mission.PeriodMissionComplete_new(mission_info, new_complete_period_ids)
+        Mission.PeriodMissionComplete_new(mission_info, new_complete_period_ids, nil, false)
     end
 
     return ErrorCode.None, replace_id
@@ -2810,7 +2818,7 @@ function Mission.PBGetPlayerMissionInfoReqCmd(req)
     if Mission.CheckPeriodInfo(mission_info, now_ts, new_complete_period_ids) then
         if table.size(new_complete_period_ids) > 0 then
             -- Mission.PeriodMissionComplete(mission_info, new_complete_period_ids)
-            Mission.PeriodMissionComplete_new(mission_info, new_complete_period_ids)
+            Mission.PeriodMissionComplete_new(mission_info, new_complete_period_ids, nil, false)
         end
         Mission.makePeriodMap(mission_info)
         Mission.SaveMissionsNow()
@@ -2821,7 +2829,7 @@ function Mission.PBGetPlayerMissionInfoReqCmd(req)
     if Mission.CheckActivityInfo(mission_info, now_ts, new_complete_activity_ids) then
         if table.size(new_complete_activity_ids) > 0 then
             -- Mission.ActivityMissionComplete(mission_info, new_complete_activity_ids)
-            Mission.ActivityMissionComplete_new(mission_info, new_complete_activity_ids)
+            Mission.ActivityMissionComplete_new(mission_info, new_complete_activity_ids, nil, false)
         end
         Mission.makeActivityMap(mission_info)
         Mission.SaveMissionsNow()
@@ -2921,7 +2929,7 @@ function Mission.PBGetMissionRewardReqCmd(req)
     if Mission.CheckPeriodInfo(mission_info, now_ts, new_complete_period_ids) then
         if table.size(new_complete_period_ids) > 0 then
             -- Mission.PeriodMissionComplete(mission_info, new_complete_period_ids)
-            Mission.PeriodMissionComplete_new(mission_info, new_complete_period_ids)
+            Mission.PeriodMissionComplete_new(mission_info, new_complete_period_ids, nil, false)
         end
         Mission.makePeriodMap(mission_info)
         change_log.periods_all_change = true
@@ -3016,7 +3024,7 @@ function Mission.PBRrefreshMissionReqCmd(req)
     if Mission.CheckPeriodInfo(mission_info, now_ts, new_complete_period_ids) then
         if table.size(new_complete_period_ids) > 0 then
             -- Mission.PeriodMissionComplete(mission_info, new_complete_period_ids)
-            Mission.PeriodMissionComplete_new(mission_info, new_complete_period_ids)
+            Mission.PeriodMissionComplete_new(mission_info, new_complete_period_ids, nil, false)
         end
         Mission.makePeriodMap(mission_info)
         Mission.SaveMissionsNow()
