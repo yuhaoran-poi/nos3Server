@@ -487,7 +487,8 @@ function AweItem.AweItemUnlock(aweitem_id)
         end
     end
 
-    AweItem.SyncAweItem()
+    -- 解锁成功后立即落库, 否则仅内存+同步客户端, 重启/下线会丢失(库中仍为空记录)
+    AweItem.SaveAweItemNow()
 
     return ErrorCode.None
 end
