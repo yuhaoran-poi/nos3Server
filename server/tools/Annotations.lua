@@ -3454,6 +3454,7 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public roomid integer
+---@field public error_uid integer @未准备玩家id
 
 
 ---@class PBEnterDsRoomSyncCmd
@@ -3649,6 +3650,233 @@
 ---@field public treasure_list table<integer, PBTreasureSingle>
 ---@field public total_get_count integer
 ---@field public total_open_count integer
+
+
+---@class PBSkinTradeData
+---@field public single_price integer @单价
+---@field public sale_num integer @售出数量
+---@field public now_num integer @现有数量
+
+
+---@class PBSkinTradeProductBaseData
+---@field public skin_trade_id integer @交易id
+---@field public seller_uid integer @卖家id
+---@field public config_id integer @道具的配置id
+---@field public total_num integer @上架道具的总数量
+---@field public beg_ts integer @商品上架时间
+---@field public end_ts integer @商品下架时间
+---@field public state integer
+---@field public skin_trade_data PBSkinTradeData @交易数据
+
+
+---@class PBSkinTradeLogData
+---@field public log_id integer
+---@field public skin_trade_id integer
+---@field public config_id integer @商品配置id
+---@field public deal_num integer @成交数量
+---@field public deal_price integer @成交价
+---@field public seller_uid integer @卖家id
+---@field public buyer_uid integer @买家id
+---@field public skin_trade_ts integer @交易时间
+---@field public skin_trade_tax integer @交易税
+---@field public send_mail integer @是否已发送邮件
+
+
+---@class PBSkinTradeSearchSimpleData
+---@field public config_id integer @道具的配置id
+---@field public min_price integer @当前最低价
+---@field public last_deal_price integer @最近成交价
+---@field public yes_average_price number @昨日成交平均价
+---@field public min_price_num integer @最低价数量
+---@field public now_total_num integer @当前在售总数量
+
+
+---@class PBSkinTradeSearchData
+---@field public skin_trade_sim_data PBSkinTradeSearchSimpleData
+---@field public price_num table<integer, integer> @价格-数量
+
+
+---@class PBSkinPriceAndNum
+---@field public price integer
+---@field public now_num integer
+---@field public skin_trade_id_list integer[]
+
+
+---@class PBSkinTradeRecordInfo
+---@field public skin_trade_config_id integer @道具的配置id
+---@field public sale_num integer
+---@field public sale_total_price integer
+---@field public last_deal_price integer
+---@field public update_ts integer
+---@field public yes_sale_num integer
+---@field public yes_sale_total_price integer
+---@field public yes_average_price number
+---@field public min_price integer
+---@field public min_price_num integer
+---@field public price_to_num table<integer, PBSkinPriceAndNum>
+
+
+---@class PBSelfSkinTradeInfo
+---@field public box_capacity integer @交易行货架数
+---@field public can_onsale_cnt integer @当前可上架次数
+---@field public update_ts integer @上架次数刷新时间
+---@field public skin_trade_ids integer[]
+---@field public log_ids integer[]
+---@field public focus_id_ts table<integer, integer> @关注id-关注时间
+
+
+---@class PBSelfSkinTradeData
+---@field public simple_info PBSelfSkinTradeInfo
+---@field public product_list table<integer, PBSkinTradeProductBaseData>
+---@field public log_list PBSkinTradeLogData[]
+
+
+---@class PBGetSkinTradeInfoReqCmd
+---@field public uid integer
+
+
+---@class PBGetSkinTradeInfoRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public self_skin_trade_info PBSelfSkinTradeData @自己的交易行数据
+---@field public now_sys_ts integer @当前服务器时间
+
+
+---@class PBSearchSkinTradeProductReqCmd
+---@field public uid integer
+---@field public config_ids integer[] @搜索的道具配置id,可以为空
+---@field public condition1 integer @条件1
+---@field public condition2 integer @条件2
+---@field public condition3 integer @条件3
+---@field public condition4 integer @条件4
+---@field public condition5 integer @条件5
+---@field public sort_type integer @排序类型
+---@field public start_idx integer @起始序号
+
+
+---@class PBSearchSkinTradeProductRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public search_products PBSkinTradeSearchSimpleData[] @搜索到的商品信息
+
+
+---@class PBGetSingleSkinTradeRecordReqCmd
+---@field public uid integer
+---@field public config_id integer
+
+
+---@class PBGetSingleSkinTradeRecordRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public skin_trade_record PBSkinTradeRecordInfo
+
+
+---@class PBSkinTradeSaleReqCmd
+---@field public uid integer
+---@field public config_id integer
+---@field public pos integer
+---@field public sale_num integer
+---@field public single_price integer
+---@field public sale_ts integer
+
+
+---@class PBSkinTradeSaleRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public skin_trade_id integer @交易号
+
+
+---@class PBSkinTradeBuyReqCmd
+---@field public uid integer
+---@field public config_id integer
+---@field public buy_num integer
+---@field public buy_max_price integer
+
+
+---@class PBSkinTradeBuyRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public buy_num integer
+---@field public buy_total_price integer
+
+
+---@class PBSkinTradeTakeOffProductReqCmd
+---@field public uid integer
+---@field public skin_trade_id integer
+
+
+---@class PBSkinTradeTakeOffProductRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public skin_trade_id integer
+
+
+---@class PBSkinTradeChangeFocusIdReqCmd
+---@field public uid integer
+---@field public focus_op integer @0--取消 1--关注
+---@field public focus_id integer
+
+
+---@class PBSkinTradeChangeFocusIdRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public focus_id_ts table<integer, integer>
+
+
+---@class PBSkinTradeGetAllYesAveragePriceReqCmd
+---@field public uid integer
+
+
+---@class PBSkinTradeGetAllYesAveragePriceRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public yes_average_price table<integer, number>
+
+
+---@class PBSkinBuySingle
+---@field public config_id integer
+---@field public buy_num integer
+---@field public buy_max_price integer
+
+
+---@class PBSkinTradeBuyComplexReqCmd
+---@field public uid integer
+---@field public buy_prods table<integer, PBSkinBuySingle>
+
+
+---@class PBSkinTradeBuyComplexRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public buy_id_num table<integer, integer>
+---@field public buy_total_price integer
+
+
+---@class PBSearchSkinTradeProductOnSaleReqCmd
+---@field public uid integer
+---@field public config_ids integer[] @搜索的道具配置id,可以为空
+---@field public condition1 integer @条件1
+---@field public condition2 integer @条件2
+---@field public condition3 integer @条件3
+---@field public condition4 integer @条件4
+---@field public condition5 integer @条件5
+---@field public sort_type integer @排序类型
+---@field public start_idx integer @起始序号
+
+
+---@class PBSearchSkinTradeProductOnSaleRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public search_products PBSkinTradeSearchSimpleData[] @搜索到的商品信息
 
 
 ---@class PBTeamInfo
@@ -4407,6 +4635,7 @@
 ---@field Season Season
 ---@field SeasonPass SeasonPass
 ---@field Shop Shop
+---@field SkinTrade SkinTrade
 ---@field Team Team
 ---@field Trade Trade
 ---@field User User
@@ -4506,6 +4735,10 @@
 ---@field Shopmgr Shopmgr
 
 
+---@class skintrademgr_scripts
+---@field SkinTrademgr SkinTrademgr
+
+
 ---@class teammgr_scripts
 ---@field Teammgr Teammgr
 
@@ -4526,6 +4759,7 @@
 
 ---@class static_conf
 ---@field AccountBuffConfig AccountBuffConfig_cfg[]
+---@field AchievementAward AchievementAward_cfg[]
 ---@field AchievementMissionConfig AchievementMissionConfig_cfg[]
 ---@field ActivityMissionConfig ActivityMissionConfig_cfg[]
 ---@field ActivityMissionTypeConfig ActivityMissionTypeConfig_cfg[]

@@ -362,6 +362,7 @@ message PBStartGameRoomRspCmd
     string error    = 2; // 错误信息
     int64 uid		= 3;
 	int64 roomid	= 4;
+    int64 error_uid  = 5; // 未准备玩家id
 }
 
 // 通知玩家进入ds

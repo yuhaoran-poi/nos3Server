@@ -645,6 +645,14 @@ function Room.PBStartGameRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
     if front_res.code ~= ErrorCode.None then
+        if front_res.code == ErrorCode.RoomNotAllReady and front_res.error_uid then
+            return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+                code = front_res.code,
+                error = front_res.error,
+                -- 添加未准备玩家id
+                error_uid = front_res.error_uid,
+            }, req.msg_context.stub_id)
+        end
         return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
             code = front_res.code,
             error = front_res.error,
@@ -782,6 +790,14 @@ function Room.PBStartGameRoomReqCmd(req)
     if err then
         scripts.Bag.RollBackWithChange(bag_change_log)
         moon.error(string.format("Roommgr.StartGame err:\n%s", json.pretty_encode(err)))
+        if res.code == ErrorCode.RoomNotAllReady and res.error_uid then
+            return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+                code = res.code,
+                error = res.error,
+                -- 添加未准备玩家id
+                error_uid = res.error_uid,
+            }, req.msg_context.stub_id)
+        end
         return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
             code = ErrorCode.ServerInternalError,
             error = "system error",

@@ -1503,6 +1503,11 @@ function Roommgr.GetMasterAndChapter(room_id)
 
     local mem_uids = {}
     for _, member in pairs(room.players) do
+        -- 检查所有玩家准备状态
+        if member.is_ready ~= 1 then
+            moon.warn("Roommgr.GetMasterAndChapter uid, is_ready", member.mem_info.uid, member.is_ready)
+            return { code = ErrorCode.RoomNotAllReady, error = "存在未准备玩家", error_uid = member.mem_info.uid }
+        end
         table.insert(mem_uids, member.mem_info.uid)
     end
 
@@ -1601,7 +1606,7 @@ function Roommgr.StartGame(req)
     for _, player in pairs(room.players) do
         if player.is_ready ~= 1 then
             moon.warn("Roommgr.StartGame uid, is_ready", player.mem_info.uid, player.is_ready)
-            return { code = ErrorCode.RoomNotAllReady, error = "存在未准备玩家" }
+            return { code = ErrorCode.RoomNotAllReady, error = "存在未准备玩家", error_uid = player.mem_info.uid }
         end
     end
 

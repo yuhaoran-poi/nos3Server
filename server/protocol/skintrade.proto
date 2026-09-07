@@ -1,0 +1,264 @@
+syntax = "proto3";
+
+message PBSkinTradeData
+{
+	int64 single_price = 1;	// 单价
+	int64 sale_num = 2;	// 售出数量
+	int64 now_num = 3; // 现有数量
+}
+
+message PBSkinTradeProductBaseData
+{
+	int64 skin_trade_id		= 1;	//交易id
+	int64 seller_uid	= 2;	//卖家id
+	int32 config_id		= 3;	//道具的配置id
+	int64 total_num		= 4;	//上架道具的总数量
+	int64 beg_ts		= 5;	//商品上架时间
+	int64 end_ts		= 6;	//商品下架时间
+	int32 state			= 7;
+	PBSkinTradeData skin_trade_data = 8;	//交易数据
+}
+
+message PBSkinTradeLogData
+{
+	int64 log_id	= 1;
+	int64 skin_trade_id	= 2;
+	int32 config_id	= 3;		//商品配置id
+	int64 deal_num	= 4;		//成交数量
+	int64 deal_price	= 5;	//成交价
+	int64 seller_uid	= 6;	//卖家id
+	int64 buyer_uid		= 7;	//买家id
+	int64 skin_trade_ts		= 8;	//交易时间
+	int32 skin_trade_tax		= 9;	//交易税
+	int32 send_mail		= 10;	//是否已发送邮件
+}
+
+message PBSkinTradeSearchSimpleData
+{
+	int32 config_id	= 1;	//道具的配置id
+	int64 min_price	= 2;	//当前最低价
+	int64 last_deal_price	= 3;	//最近成交价
+	float yes_average_price = 4;	//昨日成交平均价
+	int64 min_price_num		= 5;	//最低价数量
+	int64 now_total_num		= 6;	//当前在售总数量
+}
+
+message PBSkinTradeSearchData
+{
+	PBSkinTradeSearchSimpleData skin_trade_sim_data	= 1;
+	map<int64, int64> price_num	= 2;	//价格-数量
+}
+
+message PBSkinPriceAndNum
+{
+	int64 price		= 1;
+	int64 now_num	= 2;
+	repeated int64 skin_trade_id_list	= 3;
+}
+
+message PBSkinTradeRecordInfo
+{
+	int32 skin_trade_config_id	= 1;	//道具的配置id
+	int64 sale_num	= 2;
+	int64 sale_total_price	= 3;
+	int64 last_deal_price	= 4;
+	int64 update_ts			= 5;
+	int64 yes_sale_num		= 6;
+	int64 yes_sale_total_price	= 7;
+	float yes_average_price	= 8;
+	int64 min_price			= 9;
+	int64 min_price_num		= 10;
+	map<int64, PBSkinPriceAndNum> price_to_num	= 11;
+}
+
+message PBSelfSkinTradeInfo
+{
+	int32 box_capacity	= 1;	//交易行货架数
+	int32 can_onsale_cnt	= 2;	//当前可上架次数
+	int64 update_ts			= 3;	//上架次数刷新时间
+	repeated int64 skin_trade_ids	= 4;
+	repeated int64 log_ids	= 5;
+	map<int32, int64> focus_id_ts	= 6;	//关注id-关注时间
+}
+
+message PBSelfSkinTradeData
+{
+	PBSelfSkinTradeInfo simple_info	= 1;
+	map<int64, PBSkinTradeProductBaseData> product_list	= 2;
+	repeated PBSkinTradeLogData log_list	= 3;
+}
+
+// 客户端请求自己的交易行数据
+message PBGetSkinTradeInfoReqCmd
+{
+    int64 uid		= 1;
+}
+
+// 客户端请求自己的交易行数据 返回信息
+message PBGetSkinTradeInfoRspCmd
+{
+    int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    int64 uid	= 3;
+    PBSelfSkinTradeData self_skin_trade_info	= 4; //自己的交易行数据
+	int64 now_sys_ts	= 5;	//当前服务器时间
+}
+
+// 客户端搜索交易行商品
+message PBSearchSkinTradeProductReqCmd
+{
+	int64 uid	= 1;
+	repeated int32 config_ids	= 2;	//搜索的道具配置id,可以为空
+	int32 condition1	= 3;	//条件1
+	int32 condition2	= 4;	//条件2
+	int32 condition3	= 5;	//条件3
+	int32 condition4	= 6;	//条件4
+	int32 condition5	= 7;	//条件5
+	int32 sort_type		= 8;	//排序类型
+	int32 start_idx		= 9;	//起始序号
+}
+
+message PBSearchSkinTradeProductRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    int64 uid	= 3;
+	repeated PBSkinTradeSearchSimpleData search_products = 4;	//搜索到的商品信息
+}
+
+message PBGetSingleSkinTradeRecordReqCmd
+{
+	int64 uid	= 1;
+	int32 config_id	= 2;
+}
+
+message PBGetSingleSkinTradeRecordRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    int64 uid	= 3;
+	PBSkinTradeRecordInfo skin_trade_record	= 4;
+}
+
+// 上架交易行商品
+message PBSkinTradeSaleReqCmd
+{
+	int64 uid	= 1;
+	int32 config_id	= 2;
+	int32 pos	= 3;
+	int64 sale_num	= 4;
+	int64 single_price	= 5;
+	int64 sale_ts	= 6;
+}
+
+message PBSkinTradeSaleRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    int64 uid	= 3;
+	int64 skin_trade_id	= 4;	//交易号
+}
+
+// 购买交易行商品
+message PBSkinTradeBuyReqCmd
+{
+	int64 uid	= 1;
+	int32 config_id	= 2;
+	int64 buy_num	= 3;
+	int64 buy_max_price	= 4;
+}
+
+message PBSkinTradeBuyRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+	int64 uid	= 3;
+	int64 buy_num	= 4;
+	int64 buy_total_price	= 5;
+}
+
+// 下架交易行商品
+message PBSkinTradeTakeOffProductReqCmd
+{
+	int64 uid	= 1;
+	int64 skin_trade_id	= 2;
+}
+
+message PBSkinTradeTakeOffProductRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+	int64 uid	= 3;
+	int64 skin_trade_id	= 4;
+}
+
+message PBSkinTradeChangeFocusIdReqCmd
+{
+	int64 uid	= 1;
+	int32 focus_op	= 2;	//0--取消 1--关注
+	int32 focus_id	= 3;
+}
+
+message PBSkinTradeChangeFocusIdRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+	int64 uid	= 3;
+	map<int32, int64> focus_id_ts	= 4;
+}
+
+message PBSkinTradeGetAllYesAveragePriceReqCmd
+{
+	int64 uid	= 1;
+}
+
+message PBSkinTradeGetAllYesAveragePriceRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+	int64 uid	= 3;
+	map<int32, float> yes_average_price	= 4;
+}
+
+message PBSkinBuySingle
+{
+	int32 config_id	= 1;
+	int64 buy_num	= 2;
+	int64 buy_max_price	= 3;
+}
+
+message PBSkinTradeBuyComplexReqCmd
+{
+	int64 uid	= 1;
+	map<int32, PBSkinBuySingle> buy_prods = 2;
+}
+
+message PBSkinTradeBuyComplexRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+	int64 uid	= 3;
+	map<int32, int64> buy_id_num	= 4;
+	int64 buy_total_price	= 5;
+}
+
+message PBSearchSkinTradeProductOnSaleReqCmd
+{
+	int64 uid	= 1;
+	repeated int32 config_ids	= 2;	//搜索的道具配置id,可以为空
+	int32 condition1	= 3;	//条件1
+	int32 condition2	= 4;	//条件2
+	int32 condition3	= 5;	//条件3
+	int32 condition4	= 6;	//条件4
+	int32 condition5	= 7;	//条件5
+	int32 sort_type		= 8;	//排序类型
+	int32 start_idx		= 9;	//起始序号
+}
+
+message PBSearchSkinTradeProductOnSaleRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    int64 uid	= 3;
+	repeated PBSkinTradeSearchSimpleData search_products = 4;	//搜索到的商品信息
+}

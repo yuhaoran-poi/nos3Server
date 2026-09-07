@@ -407,4 +407,16 @@ function UserModel.SetSeasons(season_player_data)
     DBData.seasons = season_player_data
 end
 
+---@return PBSelfSkinTradeData ? nil
+function UserModel.GetSkinTradeData()
+    if DBData and DBData.skin_trade_data then
+        return DBData.skin_trade_data
+    end
+    return nil
+end
+
+function UserModel.SetSkinTradeData(trade_data)
+    DBData.skin_trade_data = trade_data
+end
+
 return UserModel

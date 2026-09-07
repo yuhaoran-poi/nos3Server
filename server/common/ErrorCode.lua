@@ -250,6 +250,8 @@ local ErrorCode = {
     UserOffline = 1205,
     --- 用户不存在
     UserNotExist = 1206,
+    --- 账户已被封禁
+    AccountBanned = 1207,
 
     --聊天相关错误码
     --- 聊天频道已经存在

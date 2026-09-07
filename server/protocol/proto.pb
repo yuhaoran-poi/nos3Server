@@ -3464,7 +3464,7 @@ RankReward
 RankType_GuildMoney
 RankType_GuildScore_Weekly
 RankType_GuildScore_Seasonbproto3
-ì0
+Š1
 
 room.proto
 user.proto"­
@@ -3717,12 +3717,13 @@ invite_uid (R	inviteUid
 member_datas (2.PBRoomMemberInfoRmemberDatas"A
 PBStartGameRoomReqCmd
 uid (Ruid
-roomid (Rroomid"k
+roomid (Rroomid"ˆ
 PBStartGameRoomRspCmd
 code (Rcode
 error (	Rerror
 uid (Ruid
-roomid (Rroomid"b
+roomid (Rroomid
+	error_uid (RerrorUid"b
 PBEnterDsRoomSyncCmd
 roomid (Rroomid
 
@@ -3772,6 +3773,231 @@ ds_address (	R	dsAddress
 error (	Rerror
 uid (Ruid;
 season_pass_data (2.PBSeasonPassDataRseasonPassDatabproto3
+ô.
+skintrade.proto"h
+PBSkinTradeData!
+single_price (RsinglePrice
+sale_num (RsaleNum
+now_num (RnowNum"—
+PBSkinTradeProductBaseData"
+skin_trade_id (RskinTradeId
+
+seller_uid (R	sellerUid
+	config_id (RconfigId
+	total_num (RtotalNum
+beg_ts (RbegTs
+end_ts (RendTs
+state (Rstate8
+skin_trade_data (2.PBSkinTradeDataRskinTradeData"É
+PBSkinTradeLogData
+log_id (RlogId"
+skin_trade_id (RskinTradeId
+	config_id (RconfigId
+deal_num (RdealNum
+
+deal_price (R	dealPrice
+
+seller_uid (R	sellerUid
+	buyer_uid (RbuyerUid"
+skin_trade_ts (RskinTradeTs$
+skin_trade_tax	 (RskinTradeTax
+	send_mail
+ (RsendMail"ó
+PBSkinTradeSearchSimpleData
+	config_id (RconfigId
+	min_price (RminPrice&
+last_deal_price (RlastDealPrice*
+yes_average_price (RyesAveragePrice"
+min_price_num (RminPriceNum"
+now_total_num (RnowTotalNum"ä
+PBSkinTradeSearchDataK
+skin_trade_sim_data (2.PBSkinTradeSearchSimpleDataRskinTradeSimDataA
+	price_num (2$.PBSkinTradeSearchData.PriceNumEntryRpriceNum;
+PriceNumEntry
+key (Rkey
+value (Rvalue:8"o
+PBSkinPriceAndNum
+price (Rprice
+now_num (RnowNum+
+skin_trade_id_list (RskinTradeIdList"¯
+PBSkinTradeRecordInfo/
+skin_trade_config_id (RskinTradeConfigId
+sale_num (RsaleNum(
+sale_total_price (RsaleTotalPrice&
+last_deal_price (RlastDealPrice
+	update_ts (RupdateTs 
+yes_sale_num (R
+yesSaleNum/
+yes_sale_total_price (RyesSaleTotalPrice*
+yes_average_price (RyesAveragePrice
+	min_price	 (RminPrice"
+min_price_num
+ (RminPriceNumH
+price_to_num (2&.PBSkinTradeRecordInfo.PriceToNumEntryR
+priceToNumQ
+PriceToNumEntry
+key (Rkey(
+value (2.PBSkinPriceAndNumRvalue:8"½
+PBSelfSkinTradeInfo!
+box_capacity (RboxCapacity$
+can_onsale_cnt (RcanOnsaleCnt
+	update_ts (RupdateTs$
+skin_trade_ids (RskinTradeIds
+log_ids (RlogIdsC
+focus_id_ts (2#.PBSelfSkinTradeInfo.FocusIdTsEntryR	focusIdTs<
+FocusIdTsEntry
+key (Rkey
+value (Rvalue:8"£
+PBSelfSkinTradeData5
+simple_info (2.PBSelfSkinTradeInfoR
+simpleInfoH
+product_list (2%.PBSelfSkinTradeData.ProductListEntryRproductList.
+log_list (2.PBSkinTradeLogDataRlogList[
+ProductListEntry
+key (Rkey1
+value (2.PBSkinTradeProductBaseDataRvalue:8",
+PBGetSkinTradeInfoReqCmd
+uid (Ruid"»
+PBGetSkinTradeInfoRspCmd
+code (Rcode
+error (	Rerror
+uid (RuidE
+self_skin_trade_info (2.PBSelfSkinTradeDataRselfSkinTradeInfo
+
+now_sys_ts (RnowSysTs"«
+PBSearchSkinTradeProductReqCmd
+uid (Ruid
+
+config_ids (R	configIds
+
+condition1 (R
+condition1
+
+condition2 (R
+condition2
+
+condition3 (R
+condition3
+
+condition4 (R
+condition4
+
+condition5 (R
+condition5
+	sort_type (RsortType
+	start_idx	 (RstartIdx"£
+PBSearchSkinTradeProductRspCmd
+code (Rcode
+error (	Rerror
+uid (RuidE
+search_products (2.PBSkinTradeSearchSimpleDataRsearchProducts"Q
+ PBGetSingleSkinTradeRecordReqCmd
+uid (Ruid
+	config_id (RconfigId"¢
+ PBGetSingleSkinTradeRecordRspCmd
+code (Rcode
+error (	Rerror
+uid (RuidB
+skin_trade_record (2.PBSkinTradeRecordInfoRskinTradeRecord"¯
+PBSkinTradeSaleReqCmd
+uid (Ruid
+	config_id (RconfigId
+pos (Rpos
+sale_num (RsaleNum!
+single_price (RsinglePrice
+sale_ts (RsaleTs"w
+PBSkinTradeSaleRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid"
+skin_trade_id (RskinTradeId"‚
+PBSkinTradeBuyReqCmd
+uid (Ruid
+	config_id (RconfigId
+buy_num (RbuyNum"
+buy_max_price (RbuyMaxPrice"“
+PBSkinTradeBuyRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+buy_num (RbuyNum&
+buy_total_price (RbuyTotalPrice"W
+PBSkinTradeTakeOffProductReqCmd
+uid (Ruid"
+skin_trade_id (RskinTradeId"
+PBSkinTradeTakeOffProductRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid"
+skin_trade_id (RskinTradeId"h
+PBSkinTradeChangeFocusIdReqCmd
+uid (Ruid
+focus_op (RfocusOp
+focus_id (RfocusId"ê
+PBSkinTradeChangeFocusIdRspCmd
+code (Rcode
+error (	Rerror
+uid (RuidN
+focus_id_ts (2..PBSkinTradeChangeFocusIdRspCmd.FocusIdTsEntryR	focusIdTs<
+FocusIdTsEntry
+key (Rkey
+value (Rvalue:8":
+&PBSkinTradeGetAllYesAveragePriceReqCmd
+uid (Ruid"’
+&PBSkinTradeGetAllYesAveragePriceRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruidh
+yes_average_price (2<.PBSkinTradeGetAllYesAveragePriceRspCmd.YesAveragePriceEntryRyesAveragePriceB
+YesAveragePriceEntry
+key (Rkey
+value (Rvalue:8"k
+PBSkinBuySingle
+	config_id (RconfigId
+buy_num (RbuyNum"
+buy_max_price (RbuyMaxPrice"Ç
+PBSkinTradeBuyComplexReqCmd
+uid (RuidG
+	buy_prods (2*.PBSkinTradeBuyComplexReqCmd.BuyProdsEntryRbuyProdsM
+BuyProdsEntry
+key (Rkey&
+value (2.PBSkinBuySingleRvalue:8"ˆ
+PBSkinTradeBuyComplexRspCmd
+code (Rcode
+error (	Rerror
+uid (RuidH
+
+buy_id_num (2*.PBSkinTradeBuyComplexRspCmd.BuyIdNumEntryRbuyIdNum&
+buy_total_price (RbuyTotalPrice;
+BuyIdNumEntry
+key (Rkey
+value (Rvalue:8"±
+$PBSearchSkinTradeProductOnSaleReqCmd
+uid (Ruid
+
+config_ids (R	configIds
+
+condition1 (R
+condition1
+
+condition2 (R
+condition2
+
+condition3 (R
+condition3
+
+condition4 (R
+condition4
+
+condition5 (R
+condition5
+	sort_type (RsortType
+	start_idx	 (RstartIdx"©
+$PBSearchSkinTradeProductOnSaleRspCmd
+code (Rcode
+error (	Rerror
+uid (RuidE
+search_products (2.PBSkinTradeSearchSimpleDataRsearchProductsbproto3
 Ž
 
 team.proto
