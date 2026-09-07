@@ -296,7 +296,12 @@ function MailLogic.DealSystemMail(send_info_str)
         all_user = 1
     end
 
-    return true, {mail_data = mail_info, all_user = all_user, recv_uids = send_info.uids}
+    local cover_new = 0
+    if send_info.cover_new and type(send_info.cover_new) == "number" and send_info.cover_new == 1 then
+        cover_new = 1
+    end
+
+    return true, {mail_data = mail_info, all_user = all_user, recv_uids = send_info.uids, cover_new = cover_new}
 end
 
 return MailLogic

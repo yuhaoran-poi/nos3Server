@@ -37,6 +37,18 @@ function Mailmgr.GetSystemMailIds(req_data)
     local add_mailids = Database.select_mailids(context.addr_db_game, req_data.uid, req_data.last_system_mail_id,
     req_data.now_ts)
     local del_mailids = Database.select_expire_mailids(context.addr_db_game, req_data.uid, req_data.now_ts)
+    if req_data.is_new then
+        local cover_new_mailids = Database.select_cover_new_mailids(context.addr_db_game, req_data.uid,
+            req_data.last_system_mail_id, req_data.now_ts)
+        if cover_new_mailids then
+            if not add_mailids then
+                add_mailids = {}
+            end
+            for mail_id, _ in pairs(cover_new_mailids) do
+                add_mailids[mail_id] = 1
+            end
+        end
+    end
     local res = {
         add_mailids = add_mailids,
         del_mailids = del_mailids,
@@ -54,7 +66,7 @@ end
 
 function Mailmgr.AddSystemMail(system_info)
     local ret_id = Database.add_system_mail(context.addr_db_game, system_info.mail_data, system_info.all_user,
-    system_info.recv_uids)
+    system_info.recv_uids, system_info.cover_new)
     if ret_id <= 0 then
         return {success = false, id = ret_id}
     end

@@ -38,7 +38,7 @@ function Mail.Init()
     end
 end
 
-function Mail.Start()
+function Mail.Start(is_new)
     local mails = scripts.UserModel.GetMails()
     if not mails then
         return
@@ -47,7 +47,7 @@ function Mail.Start()
     -- 检查并删除过期邮件
     Mail.CheckExpireMail()
     -- 获取离线期间的系统邮件
-    Mail.CheckSystemMail()
+    Mail.CheckSystemMail(is_new)
 
     Mail.SaveMailsNow()
 end
@@ -72,7 +72,7 @@ function Mail.CheckExpireMail()
     end
 end
 
-function Mail.CheckSystemMail()
+function Mail.CheckSystemMail(is_new)
     local mails = scripts.UserModel.GetMails()
     if not mails then
         return
@@ -82,7 +82,8 @@ function Mail.CheckSystemMail()
     local req_data = {
         uid = context.uid,
         last_system_mail_id = mails.last_system_mail_id,
-        now_ts = now_ts
+        now_ts = now_ts,
+        is_new = is_new,
     }
     local res, err = clusterd.call(3999, "mailmgr", "Mailmgr.GetSystemMailIds", req_data)
     if err then
@@ -102,7 +103,7 @@ function Mail.CheckSystemMail()
                 end
             end
             
-            -- 添加离线期间的系统邮件
+            -- 添加离线期间的系统邮件,新玩家包括cover_new_mailids
             local query_mail_ids = {}
             for mail_id, _ in pairs(res.add_mailids) do
                 -- 查询为接收的邮件详情

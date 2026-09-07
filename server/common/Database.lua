@@ -1553,6 +1553,27 @@ function _M.select_mailids(addr, uid, last_system_mail_id, now_ts)
     return nil
 end
 
+function _M.select_cover_new_mailids(addr, uid, last_system_mail_id, now_ts)
+    local cmd = string.format([[
+        SELECT mail_id FROM mgame.system_mail WHERE mail_id < %d AND end_ts > %d AND valid = 1 AND all_user = 1 AND cover_new = 1;
+    ]], last_system_mail_id, now_ts, uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("select_cover_new_mailids err = %s", json.pretty_encode(err)))
+        return nil
+    else
+        if res then
+            local mail_ids = {}
+            for _, row in pairs(res) do
+                mail_ids[row.mail_id] = 1
+            end
+            return mail_ids
+        end
+    end
+    print("select_cover_new_mailids failed", uid, err)
+    return nil
+end
+
 function _M.select_expire_mailids(addr, uid, now_ts)
     local cmd = string.format([[
         SELECT mail_id FROM mgame.system_mail WHERE end_ts > %d AND valid = 0 AND (all_user = 1 OR JSON_CONTAINS(recv_uids, CAST(%d AS JSON), '$'));
@@ -1574,7 +1595,7 @@ function _M.select_expire_mailids(addr, uid, now_ts)
     return nil
 end
 
-function _M.add_system_mail(addr, mail_info, all_user, recv_uids)
+function _M.add_system_mail(addr, mail_info, all_user, recv_uids, cover_new)
     local items_str = jencode(mail_info.items_simple)
     local item_datas_str = jencode(mail_info.item_datas)
     local coins_str = jencode(mail_info.coins)
@@ -1582,12 +1603,12 @@ function _M.add_system_mail(addr, mail_info, all_user, recv_uids)
     local _, pbdata = protocol.encodewithname("PBMailData", mail_info)
     local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
-        INSERT INTO mgame.system_mail (mail_type, beg_ts, end_ts, mail_title_id, mail_title, mail_icon_id, mail_content_id, mail_content, sign, items_simple, item_datas, coins, mail_data, all_user, recv_uids, valid)
-        VALUES (%d, %d, %d, %d, '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', %d);
+        INSERT INTO mgame.system_mail (mail_type, beg_ts, end_ts, mail_title_id, mail_title, mail_icon_id, mail_content_id, mail_content, sign, items_simple, item_datas, coins, mail_data, all_user, recv_uids, valid, cover_new)
+        VALUES (%d, %d, %d, %d, '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', %d, %d);
     ]], mail_info.simple_data.mail_type, mail_info.simple_data.beg_ts, mail_info.simple_data.end_ts,
     mail_info.simple_data.mail_title_id, mail_info.simple_data.mail_title, mail_info.mail_icon_id,
         mail_info.mail_content_id, mail_info.mail_content, mail_info.sign, items_str, item_datas_str,
-        coins_str, pbvalue, all_user, uids_str, 1)
+        coins_str, pbvalue, all_user, uids_str, 1, cover_new)
     moon.info("add_system_mail cmd: ", cmd)
 
     local res, err = moon.call("lua", addr, cmd)
