@@ -35,5 +35,5 @@ return {
 [17] = { id=17,exp2=29143,allexp2=233143,cost2=100,exp3=36429,allexp3=291429,cost3=100,exp4=43714,allexp4=349714,cost4=100,exp5=58286,allexp5=466286,cost5=100,exp6=87429,allexp6=699429,cost6=100 },
 [18] = { id=18,exp2=30857,allexp2=262286,cost2=100,exp3=38571,allexp3=327858,cost3=100,exp4=46286,allexp4=393428,cost4=100,exp5=61714,allexp5=524572,cost5=100,exp6=92571,allexp6=786858,cost6=100 },
 [19] = { id=19,exp2=32571,allexp2=293143,cost2=100,exp3=40714,allexp3=366429,cost3=100,exp4=48857,allexp4=439714,cost4=100,exp5=65143,allexp5=586286,cost5=100,exp6=97714,allexp6=879429,cost6=100 },
-[20] = { id=20,exp2=999999999,allexp2=325714,cost2=100,exp3=999999999,allexp3=407143,cost3=100,exp4=999999999,allexp4=488571,cost4=100,exp5=999999999,allexp5=651429,cost5=100,exp6=999999999,allexp6=977143,cost6=100 }
+[20] = { id=20,exp2=0,allexp2=325714,cost2=100,exp3=0,allexp3=407143,cost3=100,exp4=0,allexp4=488571,cost4=100,exp5=0,allexp5=651429,cost5=100,exp6=0,allexp6=977143,cost6=100 }
 }
