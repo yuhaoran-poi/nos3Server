@@ -242,30 +242,6 @@ function Rank.PBRankGetAllTypesReqCmd(req)
     return context.S2C(context.net_id, CmdCode.PBRankGetAllTypesRspCmd, rsp_msg, req.msg_context.stub_id)
 end
 
--- 获取所有排行榜类型
-function Rank.PBRankGetAllTypesReqCmd(req)
-    -- 调用排行榜服务获取所有类型
-    local types_data, err = clusterd.call(3004, "rank", "RankMgr.GetAllRankTypes", {})
-    if not types_data then
-        moon.error("Failed to get all rank types:", err)
-        return context.S2C(context.net_id, CmdCode.PBRankGetAllTypesRspCmd, {
-            code = ErrorCode.ServerInternalError,
-            error = "获取排行榜类型失败",
-            uid = context.uid,
-        }, req.msg_context.stub_id)
-    end
-
-    -- 构建响应
-    local rsp_msg = {
-        code = ErrorCode.None,
-        error = "",
-        uid = context.uid,
-        types = types_data,
-    }
-
-    return context.S2C(context.net_id, CmdCode.PBRankGetAllTypesRspCmd, rsp_msg, req.msg_context.stub_id)
-end
-
 -- 领取排行榜奖励
 function Rank.PBRankGetRewardReqCmd(req)
     local rank_type = req.msg.rank_type
