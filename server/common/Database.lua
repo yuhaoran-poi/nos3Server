@@ -1324,12 +1324,19 @@ end
 
 function _M.loadusercoins(addr, uid)
     local cmd = string.format([[
-        SELECT value, json FROM mgame.coins WHERE uid = %d;
+        SELECT value, json, data_version FROM mgame.coins WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
         local _, tmp_data = protocol.decodewithname("PBUserCoins", pbdata)
+        local lingshi_coin_id = 2
+        if res[1].data_version ~= 1 then
+            if tmp_data.coins[lingshi_coin_id] then
+                tmp_data.coins[lingshi_coin_id].coin_count = 0
+            end
+            _M.saveusercoins(addr, uid, tmp_data)
+        end
         return tmp_data
     end
     print("loadusercoins failed", uid, err)
@@ -1344,10 +1351,10 @@ function _M.saveusercoins(addr, uid, data)
     local _, pbdata = protocol.encodewithname("PBUserCoins", data)
     local pbvalue = crypt.base64encode(pbdata)
     local cmd = string.format([[
-        INSERT INTO mgame.coins (uid, value, json)
-        VALUES (%d, '%s', '%s')
-        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
-    ]], uid, pbvalue, data_str, pbvalue, data_str)
+        INSERT INTO mgame.coins (uid, value, json, data_version)
+        VALUES (%d, '%s', '%s', %d)
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s', data_version = %d;
+    ]], uid, pbvalue, data_str, 1, pbvalue, data_str, 1)
 
     moon.send("lua", addr, cmd)
 
