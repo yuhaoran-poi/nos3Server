@@ -1060,15 +1060,25 @@ function RankLogic.GetRankReward(rank_type, uid)
         return ErrorCode.RankRewardNotExist
     end
 
-    local reward_data = rank_reward_data[rank_type]
-
-    -- 查找玩家所在的子榜
+    -- rank_reward_data[rank_type] = { [period] = reward_data } (多期), reward_data.sr = 子榜列表
+    -- 遍历各期查找玩家所在的子榜
     local sub_rank_reward = nil
     local player_data = nil
-    for _, sub_rank in pairs(reward_data.sr) do
-        if sub_rank.ps[uid] then
-            sub_rank_reward = sub_rank
-            player_data = sub_rank.ps[uid]
+    local reward_data = nil
+    local reward_period = nil
+    for period, period_reward_data in pairs(rank_reward_data[rank_type]) do
+        if period_reward_data and period_reward_data.sr then
+            for _, sub_rank in pairs(period_reward_data.sr) do
+                if sub_rank.ps[uid] then
+                    reward_data = period_reward_data
+                    reward_period = period
+                    sub_rank_reward = sub_rank
+                    player_data = sub_rank.ps[uid]
+                    break
+                end
+            end
+        end
+        if sub_rank_reward then
             break
         end
     end
@@ -1126,13 +1136,16 @@ function RankLogic.GetRankReward(rank_type, uid)
         reward_data.sr[sub_rank_reward.rid] = nil
     end
 
-    -- 如果所有子榜奖励都已领取，清除奖励数据
-    if table.empty(reward_data.sr) then
-        rank_reward_data[rank_type] = nil
+    -- 如果该期所有子榜奖励都已领取，清除该期奖励数据
+    if reward_period and table.empty(reward_data.sr) then
+        rank_reward_data[rank_type][reward_period] = nil
+        if table.empty(rank_reward_data[rank_type]) then
+            rank_reward_data[rank_type] = nil
+        end
     end
 
-    -- 同步到Redis
-    RankLogic.SaveRankDataToRedis(rank_type)
+    -- 同步到Redis (清理的是 rank_reward_data 奖励快照, 需持久化到对应 key)
+    RankLogic.SaveRankRewardToRedis(rank_type)
 
     return ErrorCode.None, reward_pool_cfg.reward
 end

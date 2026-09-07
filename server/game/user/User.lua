@@ -412,7 +412,7 @@ function User.Logout()
 end
 
 function User.InitCheckData()
-    -- scripts.Mission.CheckNewMissions() --暂未启动Mission模块
+    -- scripts.Mission.CheckNewMissions()
     User.CheckAccountLevel()
     User.NotifyGameSettle()
     User.NotifyGameReturnItems()
@@ -432,11 +432,13 @@ function User.Online()
     scripts.UserModel.MutGet().logintime = moon.time()
 
     moon.info(string.format("[User] Online: player logged in, uid=%d nowTime=%d", context.uid, moon.time()))
-    moon.async(function()
-        moon.sleep(30000)
-        User.CheckUnclaimedRankRewards()
-        User.StartDailyCheck()
-    end)
+    -- 排行榜奖励改为玩家主动领取(PBRankGetRewardReqCmd), 不再登录后自动检查/邮件发放.
+    -- 保留 CheckUnclaimedRankRewards/StartDailyCheck 方法定义备用, 此处不触发.
+    -- moon.async(function()
+    --     moon.sleep(30000)
+    --     User.CheckUnclaimedRankRewards()
+    --     User.StartDailyCheck()
+    -- end)
 end
 
 function User.StartDailyCheck()
@@ -1498,7 +1500,7 @@ function User.PBClientItemUpLvReqCmd(req)
         -- 图鉴升级
         err_code, change_log = scripts.ItemImage.UpLvImage(req.msg.config_id, req.msg.add_exp)
     end
-    
+
     if err_code ~= ErrorCode.None then
         return context.S2C(context.net_id, CmdCode.PBClientItemUpLvRspCmd, {
             code = err_code,
@@ -2021,7 +2023,7 @@ function User.PBClientItemRepairReqCmd(req)
         --     moon.error("repair_func common_cfg is nil")
         --     return ErrorCode.ConfigError
         -- end
-        
+
         local maintenance_cfgs = GameCfg.MaintenanceCost1
         if not maintenance_cfgs or table.size(maintenance_cfgs) <= 0 then
             moon.error("repair_func maintenance_cfgs is nil", item_data.common_info.config_id)
@@ -2090,7 +2092,7 @@ function User.PBClientItemRepairReqCmd(req)
             -- add_durability = math.min(uniq_cfg.durability - item_data.special_info.diagrams_item.cur_durability,
             --     item_data.special_info.diagrams_item.strong_value)
             -- ItemDefine.GetItemsFromCfg(common_cfg.items, add_durability, true, cost_items, cost_coins)
-            
+
             if item_data.special_info.diagrams_item.cur_durability >= uniqitem_cfg.durability then
                 return ErrorCode.DurabilityMax
             end
@@ -2456,7 +2458,7 @@ function User.PBSureCompositeReqCmd(req)
             return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
         end
     end
-    
+
     -- 执行完成回复
     context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
 
@@ -2467,7 +2469,7 @@ function User.PBSureCompositeReqCmd(req)
     -- end
     -- scripts.Bag.SaveAndLog(save_bags, bag_change_log)
     scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.ItemComposite)
-    
+
     if table.size(change_roles) > 0 then
         scripts.Role.SaveAndLog(change_roles)
     end

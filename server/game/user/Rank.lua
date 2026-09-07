@@ -314,6 +314,16 @@ function Rank.PBRankGetRewardReqCmd(req)
         end
     end
 
+    -- 构造回显奖励列表 (RankReward[]: item_id/count/type)
+    local reward_data = {}
+    for item_id, item_cnt in pairs(reward_pool_cfg) do
+        table.insert(reward_data, {
+            item_id = item_id,
+            count = item_cnt,
+            type = "item",
+        })
+    end
+
     local rsp_msg = {
         code = ErrorCode.None,
         error = "",
