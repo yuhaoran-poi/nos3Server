@@ -467,139 +467,145 @@ function Bill.PBGetBillsReqCmd(req)
 end
 
 function Bill.PBApplyBillOrderReqCmd(req)
-    -- 参数验证
-    if not req.msg.bill_id
-        or not req.msg.bill_num
-        or req.msg.bill_num <= 0 then
-        return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
-            code = ErrorCode.ParamInvalid,
-            error = "无效请求参数",
-            uid = context.uid,
-        }, req.msg_context.stub_id)
-    end
+    -- 暂时屏蔽充值请求
+    return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
+        code = ErrorCode.None,
+        error = "",
+        uid = context.uid,
+    }, req.msg_context.stub_id)
+    -- -- 参数验证
+    -- if not req.msg.bill_id
+    --     or not req.msg.bill_num
+    --     or req.msg.bill_num <= 0 then
+    --     return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
+    --         code = ErrorCode.ParamInvalid,
+    --         error = "无效请求参数",
+    --         uid = context.uid,
+    --     }, req.msg_context.stub_id)
+    -- end
 
-    local bills = scripts.UserModel.GetBills()
-    if not bills then
-        return context.S2C(context.net_id, CmdCode.PBGetBillsRspCmd,
-            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
-    end
+    -- local bills = scripts.UserModel.GetBills()
+    -- if not bills then
+    --     return context.S2C(context.net_id, CmdCode.PBGetBillsRspCmd,
+    --         { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
+    -- end
 
-    local bill_cfg = GameCfg.RechargeStoreConfig[req.msg.bill_id]
-    if not bill_cfg then
-        return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
-            code = ErrorCode.BillIdInvalid,
-            error = "充值ID错误",
-            uid = context.uid,
-        }, req.msg_context.stub_id)
-    end
+    -- local bill_cfg = GameCfg.RechargeStoreConfig[req.msg.bill_id]
+    -- if not bill_cfg then
+    --     return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
+    --         code = ErrorCode.BillIdInvalid,
+    --         error = "充值ID错误",
+    --         uid = context.uid,
+    --     }, req.msg_context.stub_id)
+    -- end
 
-    if bills.on_order_id > 0 then
-        return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
-            code = ErrorCode.OnOrder,
-            error = "当前有订单中",
-            uid = context.uid,
-            on_order_id = bills.on_order_id,
-        }, req.msg_context.stub_id)
-    end
+    -- if bills.on_order_id > 0 then
+    --     return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
+    --         code = ErrorCode.OnOrder,
+    --         error = "当前有订单中",
+    --         uid = context.uid,
+    --         on_order_id = bills.on_order_id,
+    --     }, req.msg_context.stub_id)
+    -- end
 
-    local res, err = clusterd.call(3999, "billmgr", "Billmgr.GetNowOrderId")
-    if err or res <= 0 then
-        return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
-            code = ErrorCode.GetOrderIdFailed,
-            error = "获取订单ID失败",
-            uid = context.uid,
-        }, req.msg_context.stub_id)
-    end
+    -- local res, err = clusterd.call(3999, "billmgr", "Billmgr.GetNowOrderId")
+    -- if err or res <= 0 then
+    --     return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
+    --         code = ErrorCode.GetOrderIdFailed,
+    --         error = "获取订单ID失败",
+    --         uid = context.uid,
+    --     }, req.msg_context.stub_id)
+    -- end
 
-    local query_user_attr = {}
-    table.insert(query_user_attr, ProtoEnum.UserAttrType.plateform_id)
-    local query_res = scripts.User.QueryUserAttr(query_user_attr)
-    if not query_res.user_attr or not query_res.user_attr[ProtoEnum.UserAttrType.plateform_id] then
-        return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
-            code = ErrorCode.GetSteamIdFailed,
-            error = "获取用户steamid失败",
-            uid = context.uid,
-        }, req.msg_context.stub_id)
-    end
-    local steamid = tonumber(query_res.user_attr[ProtoEnum.UserAttrType.plateform_id])
-    local amount = req.msg.bill_num * bill_cfg.price
+    -- local query_user_attr = {}
+    -- table.insert(query_user_attr, ProtoEnum.UserAttrType.plateform_id)
+    -- local query_res = scripts.User.QueryUserAttr(query_user_attr)
+    -- if not query_res.user_attr or not query_res.user_attr[ProtoEnum.UserAttrType.plateform_id] then
+    --     return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
+    --         code = ErrorCode.GetSteamIdFailed,
+    --         error = "获取用户steamid失败",
+    --         uid = context.uid,
+    --     }, req.msg_context.stub_id)
+    -- end
+    -- local steamid = tonumber(query_res.user_attr[ProtoEnum.UserAttrType.plateform_id])
+    -- local amount = req.msg.bill_num * bill_cfg.price
 
-    local order_form = {
-        key = serverconf.STEAM_CONF.order_key,
-        orderid = res,
-        steamid = steamid,
-        appid = serverconf.STEAM_CONF.appId,
-        itemcount = req.msg.bill_num,
-        language = serverconf.STEAM_CONF.language,
-        currency = serverconf.STEAM_CONF.currency,
-        ['itemid[0]'] = req.msg.bill_id,
-        ['qty[0]'] = req.msg.bill_num,
-        ['amount[0]'] = amount,
-        ['description[0]'] = bill_cfg.description or "test bill",
-    }
-    local use_url = serverconf.STEAM_CONF.create_order_url
-    if serverconf.STEAM_CONF.is_sandbox and serverconf.STEAM_CONF.is_sandbox == 1 then
-        use_url = serverconf.STEAM_CONF.sandbox_create_order_url
-    end
-    local response_ok, response = pcall(httpc.post_form, use_url, order_form)
-    if not response_ok or not response then
-        moon.error(string.format("Bill create_order http failed: %s", tostring(response)))
-        return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
-            code = ErrorCode.OrderCreateFailed,
-            error = "支付服务暂时不可用,请稍后重试",
-            uid = context.uid,
-        }, req.msg_context.stub_id)
-    end
-    -- print_r(response)
-    moon.info("Bill create_order response: ", response)
-    local json_success, rsp_data = pcall(json.decode, response.body or "")
-    if not json_success then
-        return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
-            code = ErrorCode.OrderParsingFailed,
-            error = "解析订单响应失败",
-            uid = context.uid,
-        }, req.msg_context.stub_id)
-    end
-    if rsp_data.response.result == 'OK' then
-        local order_info = {
-            orderid = tonumber(rsp_data.response.params.orderid),
-            transid = tonumber(rsp_data.response.params.transid),
-            steamid = steamid,
-            uid = context.uid,
-            bill_id = req.msg.bill_id,
-            bill_num = req.msg.bill_num,
-            bill_amount = amount,
-            create_ts = moon.time(),
-            is_sanbox = serverconf.STEAM_CONF.is_sandbox or 0,
-            state = BillDef.orderStatus.WAIT,
-        }
-        local ret_rows = Database.addbillorder(context.addr_db_user, order_info)
-        if ret_rows <= 0 then
-            return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
-                code = ErrorCode.AddOrderFailed,
-                error = "添加订单失败",
-                uid = context.uid,
-            }, req.msg_context.stub_id)
-        end
+    -- local order_form = {
+    --     key = serverconf.STEAM_CONF.order_key,
+    --     orderid = res,
+    --     steamid = steamid,
+    --     appid = serverconf.STEAM_CONF.appId,
+    --     itemcount = req.msg.bill_num,
+    --     language = serverconf.STEAM_CONF.language,
+    --     currency = serverconf.STEAM_CONF.currency,
+    --     ['itemid[0]'] = req.msg.bill_id,
+    --     ['qty[0]'] = req.msg.bill_num,
+    --     ['amount[0]'] = amount,
+    --     ['description[0]'] = bill_cfg.description or "test bill",
+    -- }
+    -- local use_url = serverconf.STEAM_CONF.create_order_url
+    -- if serverconf.STEAM_CONF.is_sandbox and serverconf.STEAM_CONF.is_sandbox == 1 then
+    --     use_url = serverconf.STEAM_CONF.sandbox_create_order_url
+    -- end
+    -- local response_ok, response = pcall(httpc.post_form, use_url, order_form)
+    -- if not response_ok or not response then
+    --     moon.error(string.format("Bill create_order http failed: %s", tostring(response)))
+    --     return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
+    --         code = ErrorCode.OrderCreateFailed,
+    --         error = "支付服务暂时不可用,请稍后重试",
+    --         uid = context.uid,
+    --     }, req.msg_context.stub_id)
+    -- end
+    -- -- print_r(response)
+    -- moon.info("Bill create_order response: ", response)
+    -- local json_success, rsp_data = pcall(json.decode, response.body or "")
+    -- if not json_success then
+    --     return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
+    --         code = ErrorCode.OrderParsingFailed,
+    --         error = "解析订单响应失败",
+    --         uid = context.uid,
+    --     }, req.msg_context.stub_id)
+    -- end
+    -- if rsp_data.response.result == 'OK' then
+    --     local order_info = {
+    --         orderid = tonumber(rsp_data.response.params.orderid),
+    --         transid = tonumber(rsp_data.response.params.transid),
+    --         steamid = steamid,
+    --         uid = context.uid,
+    --         bill_id = req.msg.bill_id,
+    --         bill_num = req.msg.bill_num,
+    --         bill_amount = amount,
+    --         create_ts = moon.time(),
+    --         is_sanbox = serverconf.STEAM_CONF.is_sandbox or 0,
+    --         state = BillDef.orderStatus.WAIT,
+    --     }
+    --     local ret_rows = Database.addbillorder(context.addr_db_user, order_info)
+    --     if ret_rows <= 0 then
+    --         return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
+    --             code = ErrorCode.AddOrderFailed,
+    --             error = "添加订单失败",
+    --             uid = context.uid,
+    --         }, req.msg_context.stub_id)
+    --     end
 
-        bills.on_order_id = order_info.orderid
-        Bill.SetCurrentOrder(order_info, nil)   -- 首次写入, 无需 CAS
-        clusterd.send(3999, "billmgr", "Billmgr.AddBill", order_info)
-        Bill.SaveBillsNow()
+    --     bills.on_order_id = order_info.orderid
+    --     Bill.SetCurrentOrder(order_info, nil)   -- 首次写入, 无需 CAS
+    --     clusterd.send(3999, "billmgr", "Billmgr.AddBill", order_info)
+    --     Bill.SaveBillsNow()
 
-        return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
-            code = ErrorCode.None,
-            error = "",
-            uid = context.uid,
-            on_order_id = order_info.orderid,
-        }, req.msg_context.stub_id)
-    else
-        return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
-            code = ErrorCode.CreateOrderFailed,
-            error = "创建订单失败",
-            uid = context.uid,
-        }, req.msg_context.stub_id)
-    end
+    --     return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
+    --         code = ErrorCode.None,
+    --         error = "",
+    --         uid = context.uid,
+    --         on_order_id = order_info.orderid,
+    --     }, req.msg_context.stub_id)
+    -- else
+    --     return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
+    --         code = ErrorCode.CreateOrderFailed,
+    --         error = "创建订单失败",
+    --         uid = context.uid,
+    --     }, req.msg_context.stub_id)
+    -- end
 end
 
 function Bill.PBCheckBillOrderReqCmd(req)
