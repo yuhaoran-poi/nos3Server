@@ -84,7 +84,8 @@ function Billmgr.CheckOrder()
             end
             local get_url = use_url .. "?" .. param_str
             local response = httpc.get(get_url)
-            print_r(response)
+            -- print_r(response)
+            moon.info("Billmgr.CheckOrder query_order response:", response)
             local json_success, rsp_data = pcall(json.decode, response.body or "")
             if json_success and rsp_data and rsp_data.response.result == 'OK' then
                 if rsp_data.response.params.status == 'Init' then

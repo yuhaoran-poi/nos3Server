@@ -414,7 +414,8 @@ function Bill.QueryOrder(orderid, transid)
         moon.error(string.format("Bill query_order http failed: %s", tostring(response)))
         return false, nil
     end
-    print_r(response)
+    -- print_r(response)
+    moon.info("Bill query_order response: ", response)
     local json_success, rsp_data = pcall(json.decode, response.body or "")
     return json_success, rsp_data
 end
@@ -434,7 +435,8 @@ function Bill.FinalizeOrder(orderid)
         moon.error(string.format("Bill FinalizeOrder http failed: %s", tostring(response)))
         return false
     end
-    print_r(response)
+    -- print_r(response)
+    moon.info("Bill FinalizeOrder response: ", response)
     local json_success, rsp_data = pcall(json.decode, response.body or "")
     if not json_success then
         moon.error(string.format("Bill FinalizeOrder json decode failed: %s", tostring(rsp_data)))
@@ -548,7 +550,8 @@ function Bill.PBApplyBillOrderReqCmd(req)
             uid = context.uid,
         }, req.msg_context.stub_id)
     end
-    print_r(response)
+    -- print_r(response)
+    moon.info("Bill create_order response: ", response)
     local json_success, rsp_data = pcall(json.decode, response.body or "")
     if not json_success then
         return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
