@@ -88,6 +88,8 @@ Command List:
 	close_start_game <close_reason> #关闭游戏开始. close_start_game 关闭游戏
 	open_start_game <open_reason> #打开游戏开始. open_start_game 打开游戏
 	add_grade_score <uid> <count> #增加段位积分. 1234567 999 给玩家1234567增加999段位积分
+	set_user_bants <uid> <ban_end_ts> #设置玩家封禁时间. set_user_bants 1234567 3600 给玩家1234567封禁3600秒后解封
+	free_user_ban <uid> #解封玩家. free_user_ban 1234567 解封玩家1234567
 	]]
 
 function Console.help()
@@ -507,16 +509,45 @@ function Console.open_start_game(open_reason)
 end
 
 function Console.add_grade_score(uid, add_score)
-	add_score = math.tointeger(add_score)
-	local res, err = context.call_user(uid, "Grade.GMChangeScore", add_score)
+    add_score = math.tointeger(add_score)
+    local res, err = context.call_user(uid, "Grade.GMChangeScore", add_score)
+    if err then
+        return Response(444, err, string.format("%d %d", uid, add_score))
+    end
+
+    if res then
+        return Response(0, "OK")
+    else
+        return Response(444, "Failed", string.format("%d %d", uid, add_score))
+    end
+end
+
+function Console.set_user_bants(uid, ban_end_ts)
+    ban_end_ts = moon.time() + tonumber(ban_end_ts)
+    local res, err = clusterd.call(3999, "mailmgr", "Mailmgr.SetUserBants", uid, ban_end_ts)
+    if err then
+        return Response(444, err, uid)
+    end
+
+    if res then
+        -- 通知所有Gate
+        context.broadcast_gate("Gate.Kick", uid)
+        return Response(0, "OK")
+    else
+        return Response(444, "Failed", uid)
+    end
+end
+
+function Console.free_user_ban(uid)
+	local res, err = clusterd.call(3999, "mailmgr", "Mailmgr.SetUserBants", uid, 0)
 	if err then
-		return Response(444, err, string.format("%d %d", uid, add_score))
+		return Response(444, err, uid)
 	end
 
 	if res then
 		return Response(0, "OK")
 	else
-		return Response(444, "Failed", string.format("%d %d", uid, add_score))
+		return Response(444, "Failed", uid)
 	end
 end
 

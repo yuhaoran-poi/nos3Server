@@ -8,6 +8,7 @@ local TradeDef = require("common.def.TradeDef")
 local AuctionDef = require("common.def.AuctionDef")
 local ItemDef = require("common.def.ItemDef")
 local BagDef = require("common.def.BagDef")
+local SkinTradeDef = require("common.def.SkinTradeDef")
 -- local ItemDefine = require("common.logic.ItemDefine")
 local GameCfg = require("common.GameCfg")
 
@@ -319,9 +320,16 @@ end
 -- 获取用户ID方法
 function _M.getuserbyauthkey(addr, authkey)
     local cmd = string.format([[
-        SELECT user_id, username, password_hash, last_login FROM mgame.account WHERE authkey = '%s';
+        SELECT user_id, username, password_hash, last_login, ban_end_ts FROM mgame.account WHERE authkey = '%s';
     ]], authkey)
     return moon.call("lua", addr, cmd)
+end
+
+function _M.setuserbants(addr, user_id, ban_end_ts)
+    local cmd = string.format([[
+        UPDATE mgame.account SET ban_end_ts = %d WHERE user_id = %d;
+    ]], ban_end_ts, user_id)
+    moon.send("lua", addr, cmd)
 end
 
 -- 获取用户方法
@@ -2886,7 +2894,7 @@ function _M.getauctionlog(addr, log_id)
         local pbdata = crypt.base64decode(res[1].item_data)
         local _, item_data = protocol.decodewithname("PBItemData", pbdata)
 
-        local auction_log = TradeDef.newAuctionLogData()
+        local auction_log = AuctionDef.newAuctionLogData()
         auction_log.log_id = res[1].log_id
         auction_log.auction_id = res[1].auction_id
         auction_log.config_id = res[1].config_id
@@ -2919,7 +2927,7 @@ function _M.getgetauctionlognomail(addr, uid)
             local pbdata = crypt.base64decode(res[i].item_data)
             local _, item_data = protocol.decodewithname("PBItemData", pbdata)
 
-            local auction_log = TradeDef.newAuctionLogData()
+            local auction_log = AuctionDef.newAuctionLogData()
             auction_log.log_id = res[i].log_id
             auction_log.auction_id = res[i].auction_id
             auction_log.config_id = res[i].config_id
@@ -3727,6 +3735,794 @@ function _M.saveseasonsinfo(addr, uid, data)
     ]], uid, pbvalue, data_str, pbvalue, data_str)
 
     return moon.send("lua", addr, cmd)
+end
+
+function _M.loadskintradeinfo(addr, uid)
+    local cmd = string.format([[
+        SELECT value, json FROM mgame.skintrades WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local pbdata = crypt.base64decode(res[1].value)
+        local _, tmp_data = protocol.decodewithname("PBSelfSkinTradeInfo", pbdata)
+        return tmp_data
+    end
+    print("loadskintradeinfo failed", uid, err)
+    return nil
+end
+
+function _M.saveskintradeinfo(addr, uid, data)
+    assert(data)
+
+    local data_str = jencode(data)
+    local _, pbdata = protocol.encodewithname("PBSelfSkinTradeInfo", data)
+    local pbvalue = crypt.base64encode(pbdata)
+    local cmd = string.format([[
+        INSERT INTO mgame.skintrades (uid, value, json)
+        VALUES (%d, '%s', '%s')
+        ON DUPLICATE KEY UPDATE value = '%s', json = '%s';
+    ]], uid, pbvalue, data_str, pbvalue, data_str)
+
+    return moon.send("lua", addr, cmd)
+end
+
+function _M.getmaxskintradeid(addr)
+    local res, err = moon.call("lua", addr,
+        "SELECT MAX(skin_trade_id) as max_skin_trade_id FROM mgame.skin_trade_product;")
+    if err then
+        error("getmaxskintradeid failed:" .. tostring(err))
+        return -1
+    end
+    if res and res[1] then
+        return tonumber(res[1].max_skin_trade_id) or 0
+    end
+    return 0
+end
+
+function _M.addskintradeproduct(addr, product_data, condition1, condition2, condition3, condition4, condition5)
+    -- local item_data_str = jencode(product_data.item_data)
+    -- local _, pbdata = protocol.encodewithname("PBItemData", product_data.item_data)
+    -- local pbvalue = crypt.base64encode(pbdata)
+    local cmd = string.format([[
+        INSERT INTO mgame.skin_trade_product (skin_trade_id, config_id, total_num, seller_uid, beg_ts, end_ts,
+        single_price, sale_num, now_num, condition1, condition2,
+        condition3, condition4, condition5, state)
+        VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d);
+    ]], product_data.skin_trade_id, product_data.config_id, product_data.total_num,
+        product_data.seller_uid, product_data.beg_ts, product_data.end_ts,
+        product_data.skin_trade_data.single_price, product_data.skin_trade_data.sale_num,
+        product_data.skin_trade_data.now_num, condition1, condition2, condition3, condition4, condition5, product_data.state)
+
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("addskintradeproduct err = %s", json.pretty_encode(err)))
+        return 0
+    else
+        if res then
+            moon.debug(string.format("addskintradeproduct res = %s", json.pretty_encode(res)))
+            return res.affected_rows
+        end
+    end
+end
+
+function _M.getskintradeproductwithnum(addr, start_trade_id, state, num)
+    local cmd = string.format([[
+        SELECT skin_trade_id, config_id, total_num, seller_uid, beg_ts, end_ts, single_price, sale_num, now_num, state FROM mgame.skin_trade_product WHERE skin_trade_id >= %d AND state = %d ORDER BY skin_trade_id LIMIT %d;
+    ]], start_trade_id, state, num)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("getskintradeproductwithnum err = %s", json.pretty_encode(err)))
+        return nil
+    end
+
+    if res and #res > 0 then
+        local ret = {}
+        for i = 1, #res do
+            local skin_trade_product = SkinTradeDef.newSkinTradeProductBaseData()
+            skin_trade_product.skin_trade_id = res[i].skin_trade_id
+            skin_trade_product.config_id = res[i].config_id
+            skin_trade_product.total_num = res[i].total_num
+            skin_trade_product.seller_uid = res[i].seller_uid
+            skin_trade_product.beg_ts = res[i].beg_ts
+            skin_trade_product.end_ts = res[i].end_ts
+            skin_trade_product.state = res[i].state
+            skin_trade_product.skin_trade_data.single_price = res[i].single_price
+            skin_trade_product.skin_trade_data.sale_num = res[i].sale_num
+            skin_trade_product.skin_trade_data.now_num = res[i].now_num
+
+            table.insert(ret, skin_trade_product)
+        end
+        return ret
+    end
+    moon.error("getskintradeproductwithnum failed", start_trade_id, num, err)
+    return nil
+end
+
+function _M.getskintradeproductwithids(addr, trade_ids)
+    local where_str = ""
+    if #trade_ids == 1 then
+        where_str = "skin_trade_id = " .. trade_ids[1] .. " AND state=" .. SkinTradeDef.StateType.ON_SALE
+    else
+        where_str = "skin_trade_id IN ("
+        for i = 1, #trade_ids do
+            where_str = where_str .. trade_ids[i]
+            if i < #trade_ids then
+                where_str = where_str .. ","
+            end
+        end
+        where_str = where_str .. ") AND state=" .. SkinTradeDef.StateType.ON_SALE
+    end
+
+    local cmd = string.format([[
+        SELECT skin_trade_id, config_id, total_num, seller_uid, beg_ts, end_ts, single_price, sale_num, now_num, state FROM mgame.skin_trade_product WHERE %s;
+    ]], where_str)
+    moon.debug(string.format("getskintradeproductwithids cmd = %s", cmd))
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("getskintradeproductwithids err = %s", json.pretty_encode(err)))
+        return nil
+    end
+    moon.debug(string.format("getskintradeproductwithids res = %s", json.pretty_encode(res)))
+    if res and #res > 0 then
+        local ret = {}
+        for i = 1, #res do
+            local skin_trade_product = SkinTradeDef.newSkinTradeProductBaseData()
+            skin_trade_product.skin_trade_id = res[i].skin_trade_id
+            skin_trade_product.config_id = res[i].config_id
+            skin_trade_product.total_num = res[i].total_num
+            skin_trade_product.seller_uid = res[i].seller_uid
+            skin_trade_product.beg_ts = res[i].beg_ts
+            skin_trade_product.end_ts = res[i].end_ts
+            skin_trade_product.state = res[i].state
+            skin_trade_product.skin_trade_data.single_price = res[i].single_price
+            skin_trade_product.skin_trade_data.sale_num = res[i].sale_num
+            skin_trade_product.skin_trade_data.now_num = res[i].now_num
+
+            table.insert(ret, skin_trade_product)
+        end
+        return ret
+    end
+    moon.error("getskintradeproductwithids failed", where_str, err)
+    return nil
+end
+
+function _M.getskintradeproduct(addr, where_data, num)
+    local where_str = ""
+    local where_fields = {}
+    if where_data then
+        for field, value in pairs(where_data) do
+            if field == "skin_trade_id" or field == "config_id" or field == "seller_uid"
+                or field == "beg_ts" or field == "end_ts" or field == "single_price"
+                or field == "sale_num" or field == "now_num" or field == "state" then
+                -- 数值型字段
+                table.insert(where_fields, string.format("%s = %d", field, value))
+            else
+                -- 对于未知字段，可以选择忽略或报错
+                moon.error("getskintradeproduct: unknown field '%s', skipping", field)
+                return false
+            end
+        end
+    end
+    if #where_fields > 0 then
+        where_str = where_str .. table.concat(where_fields, " AND ")
+    end
+
+    local cmd = string.format([[
+        SELECT skin_trade_id, config_id, total_num, seller_uid, beg_ts, end_ts, single_price, sale_num, now_num, state FROM mgame.skin_trade_product WHERE %s LIMIT %d;
+    ]], where_str, num)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("getskintradeproduct err = %s", json.pretty_encode(err)))
+        return nil
+    end
+    if res and #res > 0 then
+        local ret = {}
+        for i = 1, #res do
+            local skin_trade_product = SkinTradeDef.newSkinTradeProductBaseData()
+            skin_trade_product.skin_trade_id = res[i].skin_trade_id
+            skin_trade_product.config_id = res[i].config_id
+            skin_trade_product.total_num = res[i].total_num
+            skin_trade_product.seller_uid = res[i].seller_uid
+            skin_trade_product.beg_ts = res[i].beg_ts
+            skin_trade_product.end_ts = res[i].end_ts
+            skin_trade_product.state = res[i].state
+            skin_trade_product.skin_trade_data.single_price = res[i].single_price
+            skin_trade_product.skin_trade_data.sale_num = res[i].sale_num
+            skin_trade_product.skin_trade_data.now_num = res[i].now_num
+
+            table.insert(ret, skin_trade_product)
+        end
+        return ret
+    end
+    -- moon.error("getskintradeproduct failed", where_str, err)
+    return nil
+end
+
+function _M.updateskintradeproductwithids(addr, trade_ids, where_data, update_data)
+    if not update_data or type(update_data) ~= "table" then
+        moon.error("updateskintradeproductwithids: update_data should be a table")
+        return false
+    end
+
+    local where_str = "skin_trade_id IN ("
+    for i = 1, #trade_ids do
+        where_str = where_str .. trade_ids[i]
+        if i < #trade_ids then
+            where_str = where_str .. ","
+        end
+    end
+    where_str = where_str .. ") "
+
+    local where_fields = {}
+    if where_data then
+        for field, value in pairs(where_data) do
+            if field == "state" then
+                -- 数值型字段
+                table.insert(where_fields, string.format("%s = %d", field, value))
+            else
+                -- 对于未知字段，可以选择忽略或报错
+                moon.error("updateskintradeproductwithids: unknown field '%s', skipping", field)
+                return false
+            end
+        end
+    end
+    if #where_fields > 0 then
+        where_str = where_str .. " AND " .. table.concat(where_fields, " AND ")
+    end
+
+    local update_fields = {}
+    for field, value in pairs(update_data) do
+        if field == "beg_ts" or field == "end_ts" or field == "single_price" or field == "sale_num"
+            or field == "now_num" or field == "state" or field == "condition1" or field == "condition2"
+            or field == "condition3" or field == "condition4" or field == "condition5" then
+            -- 数值型字段
+            table.insert(update_fields, string.format("%s = %d", field, value))
+        else
+            -- 对于未知字段，可以选择忽略或报错
+            moon.error("updateskintradeproductwithids: unknown field '%s', skipping", field)
+        end
+    end
+    if #update_fields == 0 then
+        moon.error("updateskintradeproductwithids: no valid fields to update")
+        return false
+    end
+
+    local cmd = string.format([[
+        UPDATE mgame.skin_trade_product SET %s WHERE %s;
+    ]], table.concat(update_fields, ", "), where_str)
+
+    return moon.send("lua", addr, cmd)
+end
+
+function _M.updateskintradeproduct(addr, skin_trade_id, where_data, update_data, need_ret)
+    if not update_data or type(update_data) ~= "table" then
+        moon.error("updateskintradeproduct: update_data should be a table")
+        return 0
+    end
+
+    local where_str = string.format("skin_trade_id = %d", skin_trade_id)
+
+    local where_fields = {}
+    if where_data then
+        for field, value in pairs(where_data) do
+            if field == "state" then
+                -- 数值型字段
+                table.insert(where_fields, string.format("%s = %d", field, value))
+            else
+                -- 对于未知字段，可以选择忽略或报错
+                moon.error("updateskintradeproduct: unknown field '%s', skipping", field)
+                return 0
+            end
+        end
+    end
+    if #where_fields > 0 then
+        where_str = where_str .. " AND " .. table.concat(where_fields, " AND ")
+    end
+
+    local update_fields = {}
+    for field, value in pairs(update_data) do
+        if field == "beg_ts" or field == "end_ts" or field == "single_price" or field == "sale_num"
+            or field == "now_num" or field == "state" or field == "condition1" or field == "condition2"
+            or field == "condition3" or field == "condition4" or field == "condition5" then
+            -- 数值型字段
+            table.insert(update_fields, string.format("%s = %d", field, value))
+        else
+            -- 对于未知字段，可以选择忽略或报错
+            moon.error("updateskintradeproduct: unknown field '%s', skipping", field)
+        end
+    end
+    if #update_fields == 0 then
+        moon.error("updateskintradeproduct: no valid fields to update")
+        return 0
+    end
+
+    local cmd = string.format([[
+        UPDATE mgame.skin_trade_product SET %s WHERE %s;
+    ]], table.concat(update_fields, ", "), where_str)
+    if need_ret then
+        local res, err = moon.call("lua", addr, cmd)
+        if err then
+            moon.error(string.format("updateskintradeproduct err = %s", json.pretty_encode(err)))
+            return 0
+        else
+            if res then
+                moon.debug(string.format("updateskintradeproduct res = %s", json.pretty_encode(res)))
+                return res.affected_rows
+            end
+        end
+        return 0
+    else
+        moon.send("lua", addr, cmd)
+        return 0
+    end
+end
+
+function _M.updateskintraderecord(addr, record_data, condition1, condition2, condition3, condition4, condition5)
+    assert(record_data)
+    moon.debug(string.format("updateskintraderecord: %s", json.pretty_encode(record_data)))
+
+    local now_total_num = 0
+    if record_data.price_to_num then
+        for price, value in pairs(record_data.price_to_num) do
+            now_total_num = now_total_num + value.now_num
+        end
+    end
+    local cmd = string.format([[
+        INSERT INTO mgame.skin_trade_record (skin_trade_config_id, sale_num, sale_total_price, last_deal_price, update_ts, yes_sale_num, yes_sale_total_price, yes_average_price, min_price, min_price_num, now_total_num, condition1, condition2, condition3, condition4, condition5)
+        VALUES (%d, %d, %d, %d, %d, %d, %d, %f, %d, %d, %d, %d, %d, %d, %d, %d)
+        ON DUPLICATE KEY UPDATE sale_num = VALUES(sale_num), sale_total_price = VALUES(sale_total_price), last_deal_price = VALUES(last_deal_price), update_ts = VALUES(update_ts), yes_sale_num = VALUES(yes_sale_num), yes_sale_total_price = VALUES(yes_sale_total_price), yes_average_price = VALUES(yes_average_price), min_price = VALUES(min_price), min_price_num = VALUES(min_price_num), now_total_num = VALUES(now_total_num), condition1 = VALUES(condition1), condition2 = VALUES(condition2), condition3 = VALUES(condition3), condition4 = VALUES(condition4), condition5 = VALUES(condition5);
+    ]], record_data.skin_trade_config_id, record_data.sale_num, record_data.sale_total_price, record_data.last_deal_price,
+        record_data.update_ts, record_data.yes_sale_num, record_data.yes_sale_total_price, record_data.yes_average_price,
+        record_data.min_price, record_data.min_price_num, now_total_num, condition1, condition2, condition3, condition4,
+        condition5)
+    -- moon.debug(cmd)
+
+    -- 方案4:仅 updateskintraderecord 走 moon.call + POOL_EMPTY 重试,其他 DB 操作保持原样
+    -- 改 moon.send -> moon.call 是为了拿到错误码;单次调用阻塞可接受(调用点都在 manager 定时器或一次性启动流程)
+    return _M._call_with_pool_retry(addr, cmd, 3, "updateskintraderecord")
+end
+
+function _M.updateskintraderecordlist(addr, record_data_list, conditions_list)
+    if not record_data_list or #record_data_list == 0 then
+        return true
+    end
+    assert(#record_data_list == #conditions_list, "updateskintraderecordlist: list length mismatch")
+
+    local total = #record_data_list
+    local offset = 1
+    local any_fail = false
+
+    while offset <= total do
+        local chunk_end = math.min(offset + UPDATERECORD_BATCH_SIZE - 1, total)
+        local values_parts = {}
+
+        for i = offset, chunk_end do
+            local rd = record_data_list[i]
+            local c = conditions_list[i]
+            local now_total_num = 0
+            if rd.price_to_num then
+                for _, v in pairs(rd.price_to_num) do
+                    now_total_num = now_total_num + v.now_num
+                end
+            end
+            table.insert(values_parts, string.format(
+                "(%d, %d, %d, %d, %d, %d, %d, %f, %d, %d, %d, %d, %d, %d, %d, %d)",
+                rd.skin_trade_config_id, rd.sale_num, rd.sale_total_price, rd.last_deal_price,
+                rd.update_ts, rd.yes_sale_num, rd.yes_sale_total_price, rd.yes_average_price,
+                rd.min_price, rd.min_price_num, now_total_num,
+                c[1], c[2], c[3], c[4], c[5]))
+        end
+
+        local cmd = string.format([[
+            INSERT INTO mgame.skin_trade_record (skin_trade_config_id, sale_num, sale_total_price, last_deal_price, update_ts, yes_sale_num, yes_sale_total_price, yes_average_price, min_price, min_price_num, now_total_num, condition1, condition2, condition3, condition4, condition5)
+            VALUES %s
+            ON DUPLICATE KEY UPDATE
+              sale_num = VALUES(sale_num),
+              sale_total_price = VALUES(sale_total_price),
+              last_deal_price = VALUES(last_deal_price),
+              update_ts = VALUES(update_ts),
+              yes_sale_num = VALUES(yes_sale_num),
+              yes_sale_total_price = VALUES(yes_sale_total_price),
+              yes_average_price = VALUES(yes_average_price),
+              min_price = VALUES(min_price),
+              min_price_num = VALUES(min_price_num),
+              now_total_num = VALUES(now_total_num),
+              condition1 = VALUES(condition1),
+              condition2 = VALUES(condition2),
+              condition3 = VALUES(condition3),
+              condition4 = VALUES(condition4),
+              condition5 = VALUES(condition5);
+        ]], table.concat(values_parts, ","))
+
+        -- 批量也走重试,任一 chunk 失败不影响已成功的
+        local res, err = _M._call_with_pool_retry(addr, cmd, 3, "updateskintraderecordlist")
+        if err then
+            any_fail = true
+        end
+
+        offset = chunk_end + 1
+    end
+
+    return not any_fail
+end
+
+function _M.getskintraderecordwithids(addr, ids, sort_describe)
+    local where_str = "skin_trade_config_id IN ("
+    for i = 1, #ids do
+        where_str = where_str .. ids[i]
+        if i < #ids then
+            where_str = where_str .. ","
+        end
+    end
+    where_str = where_str .. ")"
+
+    local cmd = string.format([[
+        SELECT skin_trade_config_id, last_deal_price, yes_average_price, min_price, min_price_num, now_total_num FROM mgame.skin_trade_record WHERE %s ORDER BY %s;
+    ]], where_str, sort_describe)
+    moon.debug(cmd)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("getskintraderecordwithids err = %s", json.pretty_encode(err)))
+        return nil
+    end
+    if res and #res > 0 then
+        local skin_trade_records = {}
+        for i = 1, #res do
+            local record = SkinTradeDef.newSkinTradeSearchSimpleData()
+            record.config_id = res[i].skin_trade_config_id
+            record.min_price = res[i].min_price
+            record.last_deal_price = res[i].last_deal_price
+            record.yes_average_price = res[i].yes_average_price
+            record.min_price_num = res[i].min_price_num
+            record.now_total_num = res[i].now_total_num
+            table.insert(skin_trade_records, record)
+        end
+        return skin_trade_records
+    end
+    moon.error("getskintraderecordwithids failed", where_str, err)
+    return nil
+end
+
+function _M.getskintraderecordswithconditions(addr, condition1, condition2, condition3, condition4, condition5
+    , sort_describe, start_idx, num)
+    local where_str = "WHERE "
+    if condition1 > 0 then
+        where_str = where_str .. string.format("condition1=%d", condition1)
+    end
+    if condition2 > 0 then
+        if where_str ~= "WHERE " then
+            where_str = where_str .. " AND "
+        end
+        where_str = where_str .. string.format("condition2=%d", condition2)
+    end
+    if condition3 > 0 then
+        if where_str ~= "WHERE " then
+            where_str = where_str .. " AND "
+        end
+        where_str = where_str .. string.format("condition3 = %d", condition3)
+    end
+    if condition4 > 0 then
+        if where_str ~= "WHERE " then
+            where_str = where_str .. " AND "
+        end
+        where_str = where_str .. string.format("condition4 = %d", condition4)
+    end
+    if condition5 > 0 then
+        if where_str ~= "WHERE " then
+            where_str = where_str .. " AND "
+        end
+        where_str = where_str .. string.format("condition5 = %d", condition5)
+    end
+
+    if where_str == "WHERE " then
+        where_str = ""
+    end
+
+    local cmd = string.format([[
+        SELECT skin_trade_config_id, last_deal_price, yes_average_price, min_price, min_price_num, now_total_num FROM mgame.skin_trade_record %s ORDER BY %s LIMIT %d OFFSET %d;
+    ]], where_str, sort_describe, num, start_idx)
+    moon.debug(cmd)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("getskintraderecordswithconditions err = %s", json.pretty_encode(err)))
+        return nil
+    end
+    moon.debug(string.format("getskintraderecordswithconditions res = %s", json.pretty_encode(res)))
+    if res and #res > 0 then
+        local skin_trade_records = {}
+        for i = 1, #res do
+            local record = SkinTradeDef.newSkinTradeSearchSimpleData()
+            record.config_id = res[i].skin_trade_config_id
+            record.min_price = res[i].min_price
+            record.last_deal_price = res[i].last_deal_price
+            record.yes_average_price = res[i].yes_average_price
+            record.min_price_num = res[i].min_price_num
+            record.now_total_num = res[i].now_total_num
+            table.insert(skin_trade_records, record)
+        end
+        return skin_trade_records
+    end
+    moon.error("getskintraderecordswithconditions failed", where_str, err)
+    return nil
+end
+
+function _M.getskintraderecordsonsale(addr, condition1, condition2, condition3, condition4, condition5
+    , sort_describe, start_idx, num)
+    local where_str = "WHERE "
+    if condition1 > 0 then
+        where_str = where_str .. string.format("condition1=%d", condition1)
+    end
+    if condition2 > 0 then
+        if where_str ~= "WHERE " then
+            where_str = where_str .. " AND "
+        end
+        where_str = where_str .. string.format("condition2=%d", condition2)
+    end
+    if condition3 > 0 then
+        if where_str ~= "WHERE " then
+            where_str = where_str .. " AND "
+        end
+        where_str = where_str .. string.format("condition3 = %d", condition3)
+    end
+    if condition4 > 0 then
+        if where_str ~= "WHERE " then
+            where_str = where_str .. " AND "
+        end
+        where_str = where_str .. string.format("condition4 = %d", condition4)
+    end
+    if condition5 > 0 then
+        if where_str ~= "WHERE " then
+            where_str = where_str .. " AND "
+        end
+        where_str = where_str .. string.format("condition5 = %d", condition5)
+    end
+
+    if where_str == "WHERE " then
+        where_str = "WHERE min_price_num > 0 AND now_total_num > 0"
+    else
+        where_str = where_str .. " AND min_price_num > 0 AND now_total_num > 0"
+    end
+
+    local cmd = string.format([[
+        SELECT skin_trade_config_id, last_deal_price, yes_average_price, min_price, min_price_num, now_total_num FROM mgame.skin_trade_record %s ORDER BY %s LIMIT %d OFFSET %d;
+    ]], where_str, sort_describe, num, start_idx)
+    moon.debug(cmd)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("getskintraderecordswithconditions err = %s", json.pretty_encode(err)))
+        return nil
+    end
+    moon.debug(string.format("getskintraderecordswithconditions res = %s", json.pretty_encode(res)))
+    if res and #res > 0 then
+        local skin_trade_records = {}
+        for i = 1, #res do
+            local record = SkinTradeDef.newSkinTradeSearchSimpleData()
+            record.config_id = res[i].skin_trade_config_id
+            record.min_price = res[i].min_price
+            record.last_deal_price = res[i].last_deal_price
+            record.yes_average_price = res[i].yes_average_price
+            record.min_price_num = res[i].min_price_num
+            record.now_total_num = res[i].now_total_num
+            table.insert(skin_trade_records, record)
+        end
+        return skin_trade_records
+    end
+    moon.error("getskintraderecordswithconditions failed", where_str, err)
+    return nil
+end
+
+function _M.getskintraderecordseq(addr, start_config_id, num)
+    local cmd = string.format([[
+        SELECT skin_trade_config_id, sale_num, sale_total_price, last_deal_price, update_ts, yes_sale_num, yes_sale_total_price, yes_average_price, min_price, min_price_num, now_total_num, condition1, condition2, condition3, condition4, condition5 FROM mgame.skin_trade_record WHERE skin_trade_config_id > %d ORDER BY skin_trade_config_id ASC LIMIT %d;
+    ]], start_config_id, num)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("getskintraderecordseq err = %s", json.pretty_encode(err)))
+        return nil
+    end
+    if res and #res > 0 then
+        local ret = {}
+        for i = 1, #res do
+            local record = {}
+            record.skin_trade_config_id = res[i].skin_trade_config_id
+            record.sale_num = res[i].sale_num
+            record.sale_total_price = res[i].sale_total_price
+            record.last_deal_price = res[i].last_deal_price
+            record.update_ts = res[i].update_ts
+            record.yes_sale_num = res[i].yes_sale_num
+            record.yes_sale_total_price = res[i].yes_sale_total_price
+            record.yes_average_price = res[i].yes_average_price
+            record.min_price = res[i].min_price
+            record.min_price_num = res[i].min_price_num
+            record.now_total_num = res[i].now_total_num
+            record.condition1 = res[i].condition1
+            record.condition2 = res[i].condition2
+            record.condition3 = res[i].condition3
+            record.condition4 = res[i].condition4
+            record.condition5 = res[i].condition5
+            table.insert(ret, record)
+        end
+        return ret
+    end
+    moon.error("getskintraderecordseq failed", start_config_id, num, err)
+    return nil
+end
+
+function _M.getskintraderecordaveragepriceseq(addr, start_config_id, num)
+    local cmd = string.format([[
+        SELECT skin_trade_config_id, yes_average_price FROM mgame.skin_trade_record WHERE skin_trade_config_id > %d ORDER BY skin_trade_config_id ASC LIMIT %d;
+    ]], start_config_id, num)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("getskintraderecordaveragepriceseq err = %s", json.pretty_encode(err)))
+        return nil
+    end
+    if res and #res > 0 then
+        local ret = {}
+        for i = 1, #res do
+            ret[res[i].skin_trade_config_id] = res[i].yes_average_price
+        end
+        return ret
+    end
+    moon.error("getskintraderecordaveragepriceseq failed", start_config_id, num, err)
+    return nil
+end
+
+function _M.getmaxskintradelogid(addr)
+    local res, err = moon.call("lua", addr, "SELECT MAX(log_id) as max_log_id FROM mgame.skin_trade_log;")
+    if err then
+        error("getmaxskintradelogid failed:" .. tostring(err))
+        return -1
+    end
+    if res and res[1] then
+        return tonumber(res[1].max_log_id) or 0
+    end
+    return 0
+end
+
+function _M.loadplayerskintradelog(addr, uid)
+    local cmd = string.format([[
+        SELECT log_id, skin_trade_id, config_id, deal_num, deal_price, seller_uid, buyer_uid, skin_trade_ts,
+        skin_trade_tax, send_mail FROM mgame.skin_trade_log WHERE (seller_uid = %d OR buyer_uid = %d)
+        ORDER BY skin_trade_ts DESC LIMIT 100;
+    ]], uid, uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local skin_trade_logs = {}
+        for i = 1, #res do
+            local skin_trade_log = SkinTradeDef.newSkinTradeLogData()
+            skin_trade_log.log_id = res[i].log_id
+            skin_trade_log.skin_trade_id = res[i].skin_trade_id
+            skin_trade_log.config_id = res[i].config_id
+            skin_trade_log.deal_num = res[i].deal_num
+            skin_trade_log.deal_price = res[i].deal_price
+            skin_trade_log.seller_uid = res[i].seller_uid
+            skin_trade_log.buyer_uid = res[i].buyer_uid
+            skin_trade_log.skin_trade_ts = res[i].skin_trade_ts
+            skin_trade_log.skin_trade_tax = res[i].skin_trade_tax
+            skin_trade_log.send_mail = res[i].send_mail
+            table.insert(skin_trade_logs, skin_trade_log)
+        end
+        return skin_trade_logs
+    end
+    -- moon.error("loadplayerskintradelog failed", uid, err)
+    return nil
+end
+
+function _M.addskintradelog(addr, trade_log)
+    local cmd = string.format([[
+        INSERT INTO mgame.skin_trade_log (log_id, skin_trade_id, config_id, deal_num, deal_price, seller_uid, buyer_uid,
+        skin_trade_ts, skin_trade_tax, send_mail)
+        VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d);
+    ]], trade_log.log_id, trade_log.skin_trade_id, trade_log.config_id, trade_log.deal_num, trade_log.deal_price,
+        trade_log.seller_uid, trade_log.buyer_uid, trade_log.skin_trade_ts, trade_log.skin_trade_tax, trade_log.send_mail)
+
+    return moon.send("lua", addr, cmd)
+end
+
+function _M.updateskintradelog(addr, log_id, send_mail)
+    local cmd = string.format([[
+        UPDATE mgame.skin_trade_log SET send_mail = %d WHERE log_id = %d;
+    ]], send_mail, log_id)
+    return moon.send("lua", addr, cmd)
+end
+
+function _M.updateskintradeloglist(addr, log_ids, send_mail)
+    local cmd = string.format([[
+        UPDATE mgame.skin_trade_log SET send_mail = %d WHERE log_id IN (%s);
+    ]], send_mail, table.concat(log_ids, ","))
+    moon.info("updateskintradeloglist execute cmd:", cmd)
+    return moon.send("lua", addr, cmd)
+end
+
+function _M.getskintradelog(addr, log_id)
+    local cmd = string.format([[
+        SELECT log_id, skin_trade_id, config_id, deal_num, deal_price, seller_uid, buyer_uid, skin_trade_ts,
+        skin_trade_tax, send_mail FROM mgame.skin_trade_log WHERE log_id = %d;
+    ]], log_id)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local pbdata = crypt.base64decode(res[1].item_data)
+        local _, item_data = protocol.decodewithname("PBItemData", pbdata)
+        local skin_trade_log = SkinTradeDef.newSkinTradeLogData()
+        skin_trade_log.log_id = res[1].log_id
+        skin_trade_log.skin_trade_id = res[1].skin_trade_id
+        skin_trade_log.config_id = res[1].config_id
+        skin_trade_log.deal_num = res[1].deal_num
+        skin_trade_log.deal_price = res[1].deal_price
+        skin_trade_log.seller_uid = res[1].seller_uid
+        skin_trade_log.buyer_uid = res[1].buyer_uid
+        skin_trade_log.skin_trade_ts = res[1].skin_trade_ts
+        skin_trade_log.skin_trade_tax = res[1].skin_trade_tax
+        skin_trade_log.send_mail = res[1].send_mail
+        return skin_trade_log
+    end
+    moon.error("getskintradelog failed", log_id, err)
+    return nil
+end
+
+function _M.getskintradelognomail(addr, uid)
+    local cmd = string.format([[
+        SELECT log_id, skin_trade_id, config_id, deal_num, deal_price, seller_uid, buyer_uid, skin_trade_ts,
+        skin_trade_tax, send_mail FROM mgame.skin_trade_log WHERE seller_uid = %d AND send_mail = 0;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        local skin_trade_logs = {}
+        for i = 1, #res do
+            local skin_trade_log = SkinTradeDef.newSkinTradeLogData()
+            skin_trade_log.log_id = res[i].log_id
+            skin_trade_log.skin_trade_id = res[i].skin_trade_id
+            skin_trade_log.config_id = res[i].config_id
+            skin_trade_log.deal_num = res[i].deal_num
+            skin_trade_log.deal_price = res[i].deal_price
+            skin_trade_log.seller_uid = res[i].seller_uid
+            skin_trade_log.buyer_uid = res[i].buyer_uid
+            skin_trade_log.skin_trade_ts = res[i].skin_trade_ts
+            skin_trade_log.skin_trade_tax = res[i].skin_trade_tax
+            skin_trade_log.send_mail = res[i].send_mail
+            skin_trade_logs[skin_trade_log.log_id] = skin_trade_log
+        end
+        return skin_trade_logs
+    end
+    -- moon.error("loadplayertradelog failed", uid, err)
+    return nil
+end
+
+-- 皮肤交易行数据前缀常量
+local SKIN_PRODUCT_DATA = "skin_trade_product_data"
+
+function _M.RedisGetSkinProductData(addr_db_redis, product_ids)
+    local res, err = redis_call(addr_db_redis, "HMGET", SKIN_PRODUCT_DATA, table.unpack(product_ids))
+    if err then
+        moon.error("RedisGetSkinProductData failed:" .. tostring(err))
+        return {}
+    end
+    local product_datas = {}
+    if res and next(res) then
+        moon.warn(string.format("RedisGetSkinProductData res = %s", json.pretty_encode(res)))
+        for _, raw_data in pairs(res) do
+            if raw_data and type(raw_data) == "string" and #raw_data > 0 then
+                local ok, decoded = pcall(json.decode, raw_data)
+                if ok and type(decoded) == "table" and decoded.skin_trade_id then
+                    product_datas[decoded.skin_trade_id] = decoded
+                end
+            end
+        end
+    end
+
+    return product_datas
+end
+
+function _M.RedisSetSkinProductData(addr_db_redis, product_data)
+    local tmp = {}
+    table.insert(tmp, product_data.skin_trade_id)
+    table.insert(tmp, json.encode(product_data))
+    redis_send(addr_db_redis, "HSET", SKIN_PRODUCT_DATA, table.unpack(tmp))
+end
+
+function _M.RedisDelSkinProductData(addr_db_redis, product_ids)
+    redis_send(addr_db_redis, "HDEL", SKIN_PRODUCT_DATA, table.unpack(product_ids))
 end
 
 return _M

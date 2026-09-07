@@ -408,6 +408,10 @@ Auth.PBClientLoginReqCmd = function(req)
                 context.openid_map[req.msg.login_data.authkey] = nil
                 return { code = ErrorCode.PasswordError, error = "INVALID_AUTHKEY" }
             end
+            if datas[1].ban_end_ts and datas[1].ban_end_ts > moon.time() then
+                context.openid_map[req.msg.login_data.authkey] = nil
+                return { code = ErrorCode.AccountBanned, error = "ACCOUNT_BANNED" }
+            end
             local data = datas[1]
 
             req.uid = data.user_id

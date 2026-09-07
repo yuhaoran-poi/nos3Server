@@ -82,6 +82,11 @@ function Mailmgr.InvalidSystemMail(mail_id)
     return true
 end
 
+function Mailmgr.SetUserBants(user_id, ban_end_ts)
+    Database.setuserbants(context.addr_db_game, user_id, ban_end_ts)
+    return true
+end
+
 function Mailmgr.Shutdown()
     -- for _, n in pairs(context.rooms) do
     --     socket.close(n.fd)
