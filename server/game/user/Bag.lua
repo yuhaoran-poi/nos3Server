@@ -1587,6 +1587,217 @@ function Bag.SortOutNew(bagType)
     return ErrorCode.None
 end
 
+-- 限定区间整理：仿照 Bag.SortOutNew，但只整理 baginfo.items 中
+-- pos ∈ [start_pos, end_pos] 的物品，区间外物品保持原格不动。
+-- 整理结果从 start_pos 起连续排布（可堆叠在前、唯一在后，按 config_id 升序）；
+-- 区间内堆叠只会减少格子占用，物品总数 <= 区间长度，故不会越过 end_pos。
+-- 与 SortOutNew 的差异：dataMap 由 SaveAndLog 逐格增量同步，区间外的
+-- pos_count/uniqid_pos/allCount 自动保留，无需（也不能）手动整体覆盖。
+---@param bagType string
+---@param start_pos number 区间起始格子号（含）
+---@param end_pos number 区间结束格子号（含）
+---@return ErrorCode
+function Bag.SortOutNewRange(bagType, start_pos, end_pos)
+    if bagType ~= BagDef.BagType.Cangku
+        and bagType ~= BagDef.BagType.Consume
+        and bagType ~= BagDef.BagType.Booty
+        and bagType ~= BagDef.BagType.Tool then
+        return ErrorCode.BagNotExist
+    end
+
+    if not start_pos or not end_pos or start_pos < 1 or end_pos < start_pos then
+        return ErrorCode.ParamInvalid
+    end
+
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata or not bagdata[bagType] then
+        return ErrorCode.BagNotExist
+    end
+
+    local baginfo = bagdata[bagType]
+    if not baginfo.items then
+        return ErrorCode.BagEmpty
+    end
+
+    -- 1) 收集区间内物品，拆分为可堆叠和不可堆叠两组（只统计 pos ∈ [start_pos,end_pos]）
+    local stackable_groups = {} -- config_id -> list of {pos, item, count}
+    local unique_items = {}     -- list of {pos, item, uniqid, config_id}
+    local range_old_items = {}  -- pos -> item，区间内旧格子（用于清理/日志）
+    for pos, item in pairs(baginfo.items) do
+        if pos >= start_pos and pos <= end_pos then
+            range_old_items[pos] = item
+            if not item or not item.common_info then
+                baginfo.items[pos] = nil
+            else
+                local cfg_id = item.common_info.config_id
+                local uniqid = item.common_info.uniqid
+                if uniqid and uniqid ~= 0 then
+                    table.insert(unique_items, {
+                        pos = pos,
+                        item = item,
+                        uniqid = uniqid,
+                        config_id = cfg_id,
+                    })
+                else
+                    if not stackable_groups[cfg_id] then
+                        stackable_groups[cfg_id] = {}
+                    end
+                    table.insert(stackable_groups[cfg_id], {
+                        pos = pos,
+                        item = item,
+                        count = item.common_info.item_count or 0,
+                    })
+                end
+            end
+        end
+    end
+
+    if table.size(range_old_items) <= 0 then
+        return ErrorCode.None -- 区间内无物品，无需整理
+    end
+
+    -- 2) 按 config_id 升序排序，确定区间内可堆叠物品的整理顺序
+    local sorted_cfg_ids = {}
+    for cfg_id, _ in pairs(stackable_groups) do
+        table.insert(sorted_cfg_ids, cfg_id)
+    end
+    table.sort(sorted_cfg_ids)
+
+    -- 3) 堆叠阶段：区间内同类物品按堆叠上限合并，记录变更日志
+    local stack_change_logs = { [bagType] = {} }
+    local need_rebuild = false
+    for _, cfg_id in ipairs(sorted_cfg_ids) do
+        local item_cfg = GameCfg.Item[cfg_id]
+        if item_cfg then
+            local group = stackable_groups[cfg_id]
+            table.sort(group, function(a, b)
+                return a.count > b.count
+            end)
+
+            for i = 1, #group - 1 do
+                local dest = group[i]
+                if dest.count < item_cfg.stack_count then
+                    for j = i + 1, #group do
+                        local src = group[j]
+                        if dest.count >= item_cfg.stack_count then
+                            break
+                        end
+                        if src.count > 0 then
+                            local space = item_cfg.stack_count - dest.count
+                            local move = math.min(space, src.count)
+                            if move > 0 then
+                                Bag.AddLog(stack_change_logs[bagType], dest.pos, dest.item)
+                                Bag.AddLog(stack_change_logs[bagType], src.pos, src.item)
+                                dest.item.common_info.item_count = dest.item.common_info.item_count + move
+                                src.item.common_info.item_count = src.item.common_info.item_count - move
+                                dest.count = dest.item.common_info.item_count
+                                src.count = src.item.common_info.item_count
+                                need_rebuild = true
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    if need_rebuild then
+        local success = Bag.SaveAndLog(stack_change_logs, ItemDef.ChangeReason.SortOutItems)
+        if not success then
+            return ErrorCode.BagSortOutFailed
+        end
+    end
+
+    -- 4) 区间内唯一物品按 config_id 分桶（桶内保持原顺序）
+    local unique_by_cfg = {}
+    for _, entry in ipairs(unique_items) do
+        if not unique_by_cfg[entry.config_id] then
+            unique_by_cfg[entry.config_id] = {}
+        end
+        table.insert(unique_by_cfg[entry.config_id], entry)
+    end
+
+    -- 合并「可堆叠 + 唯一」两类 config_id，重建时按此顺序遍历。
+    -- 若只用可堆叠的 sorted_cfg_ids，唯一物品将永远不被重写而被清空（数据丢失）。
+    local all_cfg_ids = {}
+    local all_seen = {}
+    for _, cfg_id in ipairs(sorted_cfg_ids) do
+        all_cfg_ids[#all_cfg_ids + 1] = cfg_id
+        all_seen[cfg_id] = true
+    end
+    for _, entry in ipairs(unique_items) do
+        if not all_seen[entry.config_id] then
+            all_cfg_ids[#all_cfg_ids + 1] = entry.config_id
+            all_seen[entry.config_id] = true
+        end
+    end
+    table.sort(all_cfg_ids)
+
+    -- 5) 从 start_pos 起连续重建区间内物品（区间外原格不动）
+    local now_items = baginfo.items
+    local written = {} -- pos -> true，标记区间内被写入的格子
+    local cur_pos = start_pos
+
+    for _, cfg_id in ipairs(all_cfg_ids) do
+        local group = stackable_groups[cfg_id]
+        if group then
+            for _, entry in ipairs(group) do
+                if entry.count > 0 and entry.item.common_info.item_count > 0 then
+                    if cur_pos > end_pos then
+                        return ErrorCode.BagSortOutFailed -- 防御：理论上不会越界
+                    end
+                    now_items[cur_pos] = entry.item
+                    written[cur_pos] = true
+                    cur_pos = cur_pos + 1
+                end
+            end
+        end
+        local u_items = unique_by_cfg[cfg_id]
+        if u_items then
+            for _, entry in ipairs(u_items) do
+                if cur_pos > end_pos then
+                    return ErrorCode.BagSortOutFailed -- 防御：理论上不会越界
+                end
+                now_items[cur_pos] = entry.item
+                written[cur_pos] = true
+                cur_pos = cur_pos + 1
+            end
+        end
+    end
+
+    -- 区间内未被写入的格子清空
+    for pos = start_pos, end_pos do
+        if not written[pos] then
+            now_items[pos] = nil
+        end
+    end
+
+    -- 6) 记录区间内移动日志并 SaveAndLog，dataMap 由 SaveAndLog 增量同步
+    local move_change_logs = { [bagType] = {} }
+    local need_save_move = false
+    for old_pos, old_item in pairs(range_old_items) do
+        if old_item and old_item.common_info then
+            Bag.AddLog(move_change_logs[bagType], old_pos, old_item)
+            need_save_move = true
+        end
+    end
+    for new_pos in pairs(written) do
+        if not move_change_logs[bagType][new_pos] then
+            Bag.AddLog(move_change_logs[bagType], new_pos, {})
+            need_save_move = true
+        end
+    end
+
+    if need_save_move then
+        local success = Bag.SaveAndLog(move_change_logs, ItemDef.ChangeReason.SortOutItems)
+        if not success then
+            return ErrorCode.BagSortOutFailed
+        end
+    end
+
+    return ErrorCode.None
+end
+
 -- 添加物品（支持自动堆叠）
 ---@param bagType string
 ---@param baginfo PBBag
@@ -2080,24 +2291,23 @@ function Bag.SyncBagInfo(bagType, sync_baginfo, change_log)
     end
     local now_baginfo = bagdata[bagType]
 
-    if sync_baginfo.capacity then
-        if sync_baginfo.capacity < now_baginfo.capacity then
-            moon.error("Bag.SyncBagInfo sync_baginfo.capacity error: ", sync_baginfo.capacity, now_baginfo.capacity)
-            return ErrorCode.BagNotExist
-        end
-        now_baginfo.capacity = sync_baginfo.capacity
-    end
+    -- if sync_baginfo.capacity then
+    --     if sync_baginfo.capacity < now_baginfo.capacity then
+    --         moon.error("Bag.SyncBagInfo sync_baginfo.capacity error: ", sync_baginfo.capacity, now_baginfo.capacity)
+    --         return ErrorCode.BagNotExist
+    --     end
+    --     now_baginfo.capacity = sync_baginfo.capacity
+    -- end
     if not change_log[bagType] then
         change_log[bagType] = {}
     end
-
     for pos, item_data in pairs(sync_baginfo.items) do
         if item_data.common_info.uniqid == 0
             and item_data.special_info
             and table.size(item_data.special_info) > 0 then
             moon.error(string.format(
                 "Bag.SyncBagInfo sync_itemdata.special_info error uid:%d sync_baginfo:%s",
-                now_baginfo.uid, item_data.special_info))
+                context.uid, json.pretty_encode(sync_baginfo)))
             return ErrorCode.ReportConsumeItemSyncError
         end
     end
