@@ -2087,40 +2087,65 @@ function Bag.SyncBagInfo(bagType, sync_baginfo, change_log)
         end
         now_baginfo.capacity = sync_baginfo.capacity
     end
-        
     if not change_log[bagType] then
         change_log[bagType] = {}
     end
+
     for i = 1, now_baginfo.capacity do
         local now_itemdata = now_baginfo.items[i]
         local sync_itemdata = sync_baginfo.items[i]
-
-        if now_itemdata and sync_itemdata then
-            if sync_itemdata.common_info.uniqid ~= now_itemdata.common_info.uniqid then
-                Bag.AddLog(change_log[bagType], i, now_itemdata)
+        if now_itemdata or sync_itemdata then
+            if not now_itemdata then
+                Bag.AddLog(change_log[bagType], i, {})
                 now_baginfo.items[i] = sync_itemdata
             else
-                if now_itemdata.common_info.uniqid == 0 then
-                    if now_itemdata.common_info.config_id ~= sync_itemdata.common_info.config_id
-                        or now_itemdata.common_info.item_count ~= sync_itemdata.common_info.item_count
-                        or now_itemdata.common_info.item_type ~= sync_itemdata.common_info.item_type
-                        or now_itemdata.common_info.trade_cnt ~= sync_itemdata.common_info.trade_cnt then
-                        Bag.AddLog(change_log[bagType], i, now_itemdata)
-                        now_baginfo.items[i] = sync_itemdata
+                Bag.AddLog(change_log[bagType], i, now_itemdata)
+                if sync_itemdata then
+                    now_baginfo.items[i] = sync_itemdata
+                    if sync_itemdata.common_info.uniqid == 0
+                        and sync_itemdata.special_info
+                        and table.size(sync_itemdata.special_info) > 0 then
+                        moon.error(string.format(
+                        "Bag.SyncBagInfo sync_itemdata.special_info error uid:%d sync_baginfo:%s",
+                            now_baginfo.uid, sync_itemdata.special_info))
                     end
                 else
-                    Bag.AddLog(change_log[bagType], i, now_itemdata)
-                    now_baginfo.items[i] = sync_itemdata
+                    now_baginfo.items[i] = nil
                 end
             end
-        elseif sync_itemdata then
-            Bag.AddLog(change_log[bagType], i, {})
-            now_baginfo.items[i] = sync_itemdata
-        elseif now_itemdata then
-            Bag.AddLog(change_log[bagType], i, now_itemdata)
-            now_baginfo.items[i] = nil
         end
     end
+
+    -- for i = 1, now_baginfo.capacity do
+    --     local now_itemdata = now_baginfo.items[i]
+    --     local sync_itemdata = sync_baginfo.items[i]
+
+    --     if now_itemdata and sync_itemdata then
+    --         if sync_itemdata.common_info.uniqid ~= now_itemdata.common_info.uniqid then
+    --             Bag.AddLog(change_log[bagType], i, now_itemdata)
+    --             now_baginfo.items[i] = sync_itemdata
+    --         else
+    --             if now_itemdata.common_info.uniqid == 0 then
+    --                 if now_itemdata.common_info.config_id ~= sync_itemdata.common_info.config_id
+    --                     or now_itemdata.common_info.item_count ~= sync_itemdata.common_info.item_count
+    --                     or now_itemdata.common_info.item_type ~= sync_itemdata.common_info.item_type
+    --                     or now_itemdata.common_info.trade_cnt ~= sync_itemdata.common_info.trade_cnt then
+    --                     Bag.AddLog(change_log[bagType], i, now_itemdata)
+    --                     now_baginfo.items[i] = sync_itemdata
+    --                 end
+    --             else
+    --                 Bag.AddLog(change_log[bagType], i, now_itemdata)
+    --                 now_baginfo.items[i] = sync_itemdata
+    --             end
+    --         end
+    --     elseif sync_itemdata then
+    --         Bag.AddLog(change_log[bagType], i, {})
+    --         now_baginfo.items[i] = sync_itemdata
+    --     elseif now_itemdata then
+    --         Bag.AddLog(change_log[bagType], i, now_itemdata)
+    --         now_baginfo.items[i] = nil
+    --     end
+    -- end
 
     return ErrorCode.None
 end
