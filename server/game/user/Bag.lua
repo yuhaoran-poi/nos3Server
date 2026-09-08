@@ -2091,6 +2091,17 @@ function Bag.SyncBagInfo(bagType, sync_baginfo, change_log)
         change_log[bagType] = {}
     end
 
+    for pos, item_data in pairs(sync_baginfo.items) do
+        if item_data.common_info.uniqid == 0
+            and item_data.special_info
+            and table.size(item_data.special_info) > 0 then
+            moon.error(string.format(
+                "Bag.SyncBagInfo sync_itemdata.special_info error uid:%d sync_baginfo:%s",
+                now_baginfo.uid, item_data.special_info))
+            return ErrorCode.ReportConsumeItemSyncError
+        end
+    end
+
     for i = 1, now_baginfo.capacity do
         local now_itemdata = now_baginfo.items[i]
         local sync_itemdata = sync_baginfo.items[i]
@@ -2102,13 +2113,6 @@ function Bag.SyncBagInfo(bagType, sync_baginfo, change_log)
                 Bag.AddLog(change_log[bagType], i, now_itemdata)
                 if sync_itemdata then
                     now_baginfo.items[i] = sync_itemdata
-                    if sync_itemdata.common_info.uniqid == 0
-                        and sync_itemdata.special_info
-                        and table.size(sync_itemdata.special_info) > 0 then
-                        moon.error(string.format(
-                        "Bag.SyncBagInfo sync_itemdata.special_info error uid:%d sync_baginfo:%s",
-                            now_baginfo.uid, sync_itemdata.special_info))
-                    end
                 else
                     now_baginfo.items[i] = nil
                 end

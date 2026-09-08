@@ -627,6 +627,8 @@ local ErrorCode = {
     -- 战报系统相关错误码
     --- 战报不存在
     ReportNotExist = 2301,
+    --- 战报消耗品同步错误
+    ReportConsumeItemSyncError = 2302,
 
     -- 赛季通行证相关错误码
     --- 未解锁赛季通行证
