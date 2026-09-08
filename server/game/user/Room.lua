@@ -1043,6 +1043,17 @@ function Room.GameSettle(settle_info)
                 return
             end
 
+            -- 从item_list中去除unstack_items中的item
+            for _, item_data in pairs(unstack_items) do
+                local cur_config_id = item_data.common_info.config_id
+                if item_list[cur_config_id] then
+                    item_list[cur_config_id].count = item_list[cur_config_id].count - item_data.common_info.item_count
+                    if item_list[cur_config_id].count <= 0 then
+                        item_list[cur_config_id] = nil
+                    end
+                end
+            end
+
             local bag_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, item_list, table.size(unstack_items))
             if bag_code ~= ErrorCode.None then
                 -- 仓库已满 发送邮件
