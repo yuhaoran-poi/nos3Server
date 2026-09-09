@@ -3885,4 +3885,13 @@ function User.PBClientStrongRepairReqCmd(req)
     }, req.msg_context.stub_id)
 end
 
+function User.PBTestBagReqCmd(req)
+    return context.S2C(context.net_id, CmdCode.PBTestBagRspCmd, {
+        code = ErrorCode.None,
+        error = "",
+        test_bag = req.msg.test_bag,
+        test_item = req.msg.test_item,
+    }, req.msg_context.stub_id)
+end
+
 return User

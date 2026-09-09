@@ -507,3 +507,17 @@ message PBClientStrongRepairRspCmd
 	int64 repair_uniqid	= 4;
 	int32 pos			= 5;	// 装备所在的格子号
 }
+
+message PBTestBagReqCmd
+{
+	PBBag test_bag	= 1;
+	PBItemData test_item	= 2;
+}
+
+message PBTestBagRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	PBBag test_bag	= 3;
+	PBItemData test_item	= 4;
+}

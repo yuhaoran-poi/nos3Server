@@ -7899,7 +7899,7 @@ bootyValue"
 "#
 
 "()bproto3
-Òá
+“ç
 
 user.protocommon.proto
 item.proto	bag.proto
@@ -8239,8 +8239,16 @@ open_count (R	openCount"¶
 error (	Rerror
 uid (Ruid#
 repair_uniqid (RrepairUniqid
-pos (RposJÊœ
-  ü
+pos (Rpos"^
+PBTestBagReqCmd!
+test_bag (2.PBBagRtestBag(
+	test_item (2.PBItemDataRtestItem"ˆ
+PBTestBagRspCmd
+code (Rcode
+error (	Rerror!
+test_bag (2.PBBagRtestBag(
+	test_item (2.PBItemDataRtestItemJ  
+  Š
 
   
 	
@@ -10703,7 +10711,66 @@ open_count (R	openCount"¶
 
 5û
 
-5û*+bproto3
+5û*+
+
+6ş ‚
+
+6ş
+
+6 €
+
+6 €
+
+6 €
+
+6 €
+
+6$
+
+6
+
+6
+
+6"#
+
+7„ Š
+
+7„
+:
+7 †$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+7 †
+
+7 †
+
+7 †"#
+
+7‡" é”™è¯¯ä¿¡æ¯
+
+
+7‡
+
+
+7‡
+
+7‡
+
+7ˆ
+
+7ˆ
+
+7ˆ
+
+7ˆ
+
+7‰$
+
+7‰
+
+7‰
+
+7‰"#bproto3
 ™—
 guild.proto
 item.proto

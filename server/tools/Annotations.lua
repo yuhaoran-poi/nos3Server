@@ -639,6 +639,7 @@
 ---@field public main_task_complete integer @本局是否完成主线任务 0-未完成 1-完成
 ---@field public sub_task_cnt integer @本局完成支线任务数量
 ---@field public kill_ghost_king integer @本局是否击杀鬼王 0-否 1-是
+---@field public out_uniq_items PBItemData[] @被放入战利品的局外带入的唯一道具
 
 
 ---@class PBEnterCityReqCmd
@@ -4571,6 +4572,18 @@
 ---@field public uid integer
 ---@field public repair_uniqid integer
 ---@field public pos integer @装备所在的格子号
+
+
+---@class PBTestBagReqCmd
+---@field public test_bag PBBag
+---@field public test_item PBItemData
+
+
+---@class PBTestBagRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public test_bag PBBag
+---@field public test_item PBItemData
 
 
 

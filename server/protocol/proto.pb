@@ -1464,7 +1464,7 @@ bootyValue"
 error (	Rerror
 uid (Ruid6
 season_datas (2.PBSeasonPlayerDataRseasonDatasbproto3
-„E
+ïF
 
 user.protocommon.proto
 item.proto	bag.proto
@@ -1804,7 +1804,15 @@ open_count (R	openCount"¶
 error (	Rerror
 uid (Ruid#
 repair_uniqid (RrepairUniqid
-pos (Rposbproto3
+pos (Rpos"^
+PBTestBagReqCmd!
+test_bag (2.PBBagRtestBag(
+	test_item (2.PBItemDataRtestItem"ˆ
+PBTestBagRspCmd
+code (Rcode
+error (	Rerror!
+test_bag (2.PBBagRtestBag(
+	test_item (2.PBItemDataRtestItembproto3
 ª
 
 gods.proto"9
@@ -1884,7 +1892,7 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-±=
+ä=
 dsnode.protocommon.proto
 item.proto
 user.proto	bag.proto
@@ -1932,7 +1940,7 @@ item_count (R	itemCount%
 open_cnt (RopenCnt
 pot_type (RpotType
 pot_quality (R
-potQuality"¶
+potQuality"é
 PBGameSettle
 settle_data (	R
 settleData-
@@ -1979,7 +1987,8 @@ is_retreat (R	isRetreat,
 main_task_complete (RmainTaskComplete 
 sub_task_cnt  (R
 subTaskCnt&
-kill_ghost_king! (RkillGhostKing?
+kill_ghost_king! (RkillGhostKing1
+out_uniq_items" (2.PBItemDataRoutUniqItems?
 GameMissionsEntry
 key (Rkey
 value (Rvalue:8F
