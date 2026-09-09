@@ -1003,39 +1003,43 @@ function Room.GameSettle(settle_info)
     -- end
 
     local mod_params = {}
-    if settle_info.booty_items or settle_info.booty_use_items then
+    if settle_info.booty_items or settle_info.booty_use_items or settle_info.remain_items then
         local item_list = {}
-        for item_id, item_count in pairs(settle_info.booty_items) do
-            if not item_list[item_id] then
-                item_list[item_id] = {
-                    id = item_id,
-                    count = 0,
-                    pos = 0,
-                }
+        if settle_info.booty_items and table.size(settle_info.booty_items) > 0 then
+            for item_id, item_count in pairs(settle_info.booty_items) do
+                if not item_list[item_id] then
+                    item_list[item_id] = {
+                        id = item_id,
+                        count = 0,
+                        pos = 0,
+                    }
+                end
+                item_list[item_id].count = item_list[item_id].count + item_count
             end
-            item_list[item_id].count = item_list[item_id].count + item_count
         end
-        for _, item_info in pairs(settle_info.booty_use_items) do
-            if not item_list[item_info.config_id] then
-                item_list[item_info.config_id] = {
-                    id = item_info.config_id,
-                    count = 0,
-                    pos = 0,
-                }
-            end
-            item_list[item_info.config_id].count = item_list[item_info.config_id].count + item_info.item_count
-            if not mod_params[item_info.config_id] then
-                mod_params[item_info.config_id] = {}
-            end
-            for i = 1, item_info.item_count do
-                table.insert(mod_params[item_info.config_id], {
-                    cur_durability = item_info.cur_durability,
-                })
+        if settle_info.booty_use_items and table.size(settle_info.booty_use_items) > 0 then
+            for _, item_info in pairs(settle_info.booty_use_items) do
+                if not item_list[item_info.config_id] then
+                    item_list[item_info.config_id] = {
+                        id = item_info.config_id,
+                        count = 0,
+                        pos = 0,
+                    }
+                end
+                item_list[item_info.config_id].count = item_list[item_info.config_id].count + item_info.item_count
+                if not mod_params[item_info.config_id] then
+                    mod_params[item_info.config_id] = {}
+                end
+                for i = 1, item_info.item_count do
+                    table.insert(mod_params[item_info.config_id], {
+                        cur_durability = item_info.cur_durability,
+                    })
+                end
             end
         end
 
+        local stack_items, unstack_items, deal_coins = {}, {}, {}
         if table.size(item_list) > 0 then
-            local stack_items, unstack_items, deal_coins = {}, {}, {}
             local ok = ItemDefine.GetItemDataFromIdCount(item_list, {}, stack_items, unstack_items, deal_coins,
                 mod_params)
             if not ok then
@@ -1053,34 +1057,47 @@ function Room.GameSettle(settle_info)
                     end
                 end
             end
+        end
 
-            local bag_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, item_list, table.size(unstack_items))
-            if bag_code ~= ErrorCode.None then
-                -- 仓库已满 发送邮件
-                local attach_items_simple = {}
-                for item_id, item in pairs(item_list) do
-                    local new_simple_item = ItemDef.newItemSimple()
-                    new_simple_item.config_id = item_id
-                    new_simple_item.item_count = item.count
-                    attach_items_simple[item_id] = new_simple_item
+        if settle_info.out_uniq_items and table.size(settle_info.out_uniq_items) > 0 then
+            for _, itemdata in pairs(settle_info.out_uniq_items) do
+                local itype = ItemDefine.GetItemType(itemdata.common_info.config_id)
+                local item_type = 0
+                local item_cfg = GameCfg.Item[itemdata.common_info.config_id]
+                if item_cfg then
+                    item_type = item_cfg.type1
                 end
-                local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, attach_items_simple, unstack_items, {})
-                if not mail_ret then
-                    moon.error(string.format("GameSettle RecvImmediateMail err:\n%s", json.pretty_encode(item_list)))
+                local after_check_itemdata = ItemDef.newItemDataFromData(itemdata, itype, item_type)
+                table.insert(unstack_items, after_check_itemdata)
+            end
+        end
+
+        local bag_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, item_list, table.size(unstack_items))
+        if bag_code ~= ErrorCode.None then
+            -- 仓库已满 发送邮件
+            local attach_items_simple = {}
+            for item_id, item in pairs(item_list) do
+                local new_simple_item = ItemDef.newItemSimple()
+                new_simple_item.config_id = item_id
+                new_simple_item.item_count = item.count
+                attach_items_simple[item_id] = new_simple_item
+            end
+            local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, attach_items_simple, unstack_items, {})
+            if not mail_ret then
+                moon.error(string.format("GameSettle RecvImmediateMail err:\n%s", json.pretty_encode(item_list)))
+                return
+            end
+        else
+            -- 添加道具
+            if table.size(stack_items) + table.size(unstack_items) > 0 then
+                bag_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
+                if bag_code ~= ErrorCode.None then
+                    scripts.Bag.RollBackWithChange(bag_change_log)
+                    moon.error(string.format("GameSettle AddItems stack_items err:\n%s",
+                        json.pretty_encode(stack_items)))
+                    moon.error(string.format("GameSettle AddItems unstack_items err:\n%s",
+                        json.pretty_encode(unstack_items)))
                     return
-                end
-            else
-                -- 添加道具
-                if table.size(stack_items) + table.size(unstack_items) > 0 then
-                    bag_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
-                    if bag_code ~= ErrorCode.None then
-                        scripts.Bag.RollBackWithChange(bag_change_log)
-                        moon.error(string.format("GameSettle AddItems stack_items err:\n%s",
-                            json.pretty_encode(stack_items)))
-                        moon.error(string.format("GameSettle AddItems unstack_items err:\n%s",
-                            json.pretty_encode(unstack_items)))
-                        return
-                    end
                 end
             end
         end
