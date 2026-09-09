@@ -134,6 +134,7 @@ local function doAuth(Auth, req, plateform_id)
         -- addr_user = u.addr_user
         -- req.addr_user = addr_user
         context.openid_map[req.msg.login_data.authkey] = nil
+        moon.warn(string.format("doAuth player online uid = %d context.uid_map = %s", req.uid, json.pretty_encode(context.uid_map)))
         return { code = 2005, error = "player online" }
     end
 
@@ -153,7 +154,7 @@ local function doAuth(Auth, req, plateform_id)
         authkey = plateform_id,
         openid = "",
         uid = req.uid,
-        logouttime = 0,
+        logouttime = moon.time(),
         online = true,
         net_id = req.net_id
     }
@@ -192,6 +193,8 @@ local function doAuth(Auth, req, plateform_id)
         net_id = u.net_id,
         uid = u.uid,
     }
+    u.logouttime = 0
+    context.uid_map[req.uid] = u
     return { code = 0, error = "sucess", res = res }
 end
 
