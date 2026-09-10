@@ -2632,6 +2632,8 @@
 ---@class PBAchivementMissionInfo
 ---@field public now_mission_datas table<integer, PBMissionData>
 ---@field public complete_ids table<integer, integer>
+---@field public total_vitality integer @累计成就点
+---@field public got_award_ids table<integer, integer> @已领取的成就点奖励档位id -> 领取时间戳
 
 
 ---@class PBActivityMissionInfo
@@ -2652,6 +2654,7 @@
 ---@field public update_complete_ids table<integer, integer>
 ---@field public update_period_info PBPeriodMissionInfo
 ---@field public update_activity_info PBActivityMissionInfo
+---@field public update_total_vitality table<integer, integer> @点数变化时同步(仅变化时携带): 点数类型 -> 当前累计点数
 
 
 ---@class PBGetPlayerMissionInfoReqCmd
@@ -2694,6 +2697,21 @@
 ---@field public uid integer
 ---@field public new_mission_data PBMissionData
 ---@field public new_complete_id integer
+
+
+---@class PBGetVitalityAwardReqCmd
+---@field public uid integer
+---@field public vitality_type integer @点数类型: 1成就点 2线性任务活跃点 3周期任务活跃点 4活动任务活跃点
+---@field public award_ids integer[] @对应类型奖励配置表档位id(当前成就点为AchievementAward表)
+
+
+---@class PBGetVitalityAwardRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public vitality_type integer @回显点数类型
+---@field public award_ids integer[] @本次领取成功的档位id
+---@field public total_vitality integer @领取后的该类型累计点数
 
 
 ---@class RankItemData
@@ -4648,7 +4666,6 @@
 ---@field Season Season
 ---@field SeasonPass SeasonPass
 ---@field Shop Shop
----@field SkinTrade SkinTrade
 ---@field Team Team
 ---@field Trade Trade
 ---@field User User
@@ -4746,10 +4763,6 @@
 
 ---@class shopmgr_scripts
 ---@field Shopmgr Shopmgr
-
-
----@class skintrademgr_scripts
----@field SkinTrademgr SkinTrademgr
 
 
 ---@class teammgr_scripts

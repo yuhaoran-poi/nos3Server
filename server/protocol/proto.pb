@@ -3171,7 +3171,7 @@ redTeamNum"
 #PBSelectionState_LRS_SelectionGhost#
 PBSelectionState_LRS_SetupGhost)
 %PBSelectionState_SH_Ghost_Select_Skinbproto3
-ÿ"
+•(
 mission.proto"Â
 PBConditionData
 cond_id (RcondId!
@@ -3230,14 +3230,19 @@ cond_datas (2.PBConditionDataR	condDatas"ª
 value (2.PBMissionDataRvalue:8C
 CompleteMonthIdsEntry
 key (Rkey
-value (Rvalue:8"Ö
+value (Rvalue:8"Œ
 PBAchivementMissionInfoY
 now_mission_datas (2-.PBAchivementMissionInfo.NowMissionDatasEntryRnowMissionDatasL
-complete_ids (2).PBAchivementMissionInfo.CompleteIdsEntryRcompleteIdsR
+complete_ids (2).PBAchivementMissionInfo.CompleteIdsEntryRcompleteIds%
+total_vitality (RtotalVitalityM
+got_award_ids (2).PBAchivementMissionInfo.GotAwardIdsEntryRgotAwardIdsR
 NowMissionDatasEntry
 key (Rkey$
 value (2.PBMissionDataRvalue:8>
 CompleteIdsEntry
+key (Rkey
+value (Rvalue:8>
+GotAwardIdsEntry
 key (Rkey
 value (Rvalue:8"ö
 PBActivityMissionInfo$
@@ -3256,16 +3261,20 @@ linearInfo5
 period_info (2.PBPeriodMissionInfoR
 periodInfoA
 achivement_info (2.PBAchivementMissionInfoRachivementInfo;
-activity_info (2.PBActivityMissionInfoRactivityInfo"†
+activity_info (2.PBActivityMissionInfoRactivityInfo"´
 PBUpdateMissionSyncCmda
 update_mission_datas (2/.PBUpdateMissionSyncCmd.UpdateMissionDatasEntryRupdateMissionDatas^
 update_complete_ids (2..PBUpdateMissionSyncCmd.UpdateCompleteIdsEntryRupdateCompleteIdsB
 update_period_info (2.PBPeriodMissionInfoRupdatePeriodInfoH
-update_activity_info (2.PBActivityMissionInfoRupdateActivityInfoU
+update_activity_info (2.PBActivityMissionInfoRupdateActivityInfod
+update_total_vitality (20.PBUpdateMissionSyncCmd.UpdateTotalVitalityEntryRupdateTotalVitalityU
 UpdateMissionDatasEntry
 key (Rkey$
 value (2.PBMissionDataRvalue:8D
 UpdateCompleteIdsEntry
+key (Rkey
+value (Rvalue:8F
+UpdateTotalVitalityEntry
 key (Rkey
 value (Rvalue:8"0
 PBGetPlayerMissionInfoReqCmd
@@ -3301,7 +3310,18 @@ period_ids (R	periodIds%
 error (	Rerror
 uid (Ruid8
 new_mission_data (2.PBMissionDataRnewMissionData&
-new_complete_id (RnewCompleteIdbproto3
+new_complete_id (RnewCompleteId"n
+PBGetVitalityAwardReqCmd
+uid (Ruid#
+vitality_type (RvitalityType
+	award_ids (RawardIds"¿
+PBGetVitalityAwardRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid#
+vitality_type (RvitalityType
+	award_ids (RawardIds%
+total_vitality (RtotalVitalitybproto3
 ½
 
 rank.proto"œ

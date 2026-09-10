@@ -43,6 +43,8 @@ message PBAchivementMissionInfo
 {
 	map<int32, PBMissionData> now_mission_datas	= 1;
 	map<int32, int32> complete_ids	= 2;
+	int32 total_vitality = 3;				// 累计成就点
+	map<int32, int32> got_award_ids	= 4;	// 已领取的成就点奖励档位id -> 领取时间戳
 }
 
 message PBActivityMissionInfo
@@ -67,6 +69,7 @@ message PBUpdateMissionSyncCmd
 	map<int32, int32> update_complete_ids	= 2;
 	PBPeriodMissionInfo update_period_info	= 3;
 	PBActivityMissionInfo update_activity_info	= 4;
+	map<int32, int32> update_total_vitality	= 5;	// 点数变化时同步(仅变化时携带): 点数类型 -> 当前累计点数
 }
 
 message PBGetPlayerMissionInfoReqCmd
@@ -118,4 +121,23 @@ message PBRrefreshMissionRspCmd
     int64 uid				= 3;
 	PBMissionData new_mission_data	= 4;
 	int32 new_complete_id	= 5;
+}
+
+// 领取点数(成就点/活跃点)达标奖励 通用协议
+message PBGetVitalityAwardReqCmd
+{
+	int64 uid = 1;
+	int32 vitality_type = 2;		// 点数类型: 1成就点 2线性任务活跃点 3周期任务活跃点 4活动任务活跃点
+	repeated int32 award_ids = 3;	// 对应类型奖励配置表档位id(当前成就点为AchievementAward表)
+}
+
+message PBGetVitalityAwardRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+    // 协议数据
+    int64 uid = 3;
+	int32 vitality_type = 4;		// 回显点数类型
+	repeated int32 award_ids = 5;	// 本次领取成功的档位id
+	int32 total_vitality = 6;		// 领取后的该类型累计点数
 }
