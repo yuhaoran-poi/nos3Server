@@ -239,6 +239,8 @@ function Trademgr.Start()
                     record_data.min_price_num = price_data.now_num
                 end
             end
+            -- 重算结果需落库，否则内存虽已修正，DB 仍停留在旧的 min_price/min_price_num
+            need_mod_record[config_id] = 1
         else
             local price_num = record_data.price_to_num[record_data.min_price]
             if record_data.min_price_num ~= price_num.now_num then
@@ -330,6 +332,12 @@ function Trademgr.ChangeTradeRecord(product_simple_data)
             table.remove(price_data.trade_id_list, idx)
             break
         end
+    end
+    -- 该档位数量归零则立即从 price_to_num 移除，
+    -- 否则零库存档位会残留在字典里，后续重算时被选为最低价，
+    -- 产生 min_price 有值但 min_price_num=0 的错数据。
+    if price_data.now_num <= 0 then
+        record_data.price_to_num[product_simple_data.trade_data.single_price] = nil
     end
     if record_data.min_price == price_data.price then
         record_data.min_price_num = price_data.now_num

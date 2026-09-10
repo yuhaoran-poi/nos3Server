@@ -30,6 +30,8 @@ local context = {
     net_id = 0,
     uid_addr_map = {},
     addr_dsnode = 0,
+    already_settle = {},
+    is_end = false,
 ---@diagnostic disable-next-line: missing-fields
     scripts = {},
     ---other service address

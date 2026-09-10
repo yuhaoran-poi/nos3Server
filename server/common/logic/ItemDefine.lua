@@ -44,7 +44,7 @@ local ItemDefine = {
     HeadSkin = { start = 1015000, End = 1015499 },
     HeadFrameSkin = { start = 1015500, End = 1015999 },
     AweItem = { start = 1016000, End = 1016499 },
-    TitleSkin = { start = 1016600, End = 1016999 },
+    TitleSkin = { start = 1016600, End = 1017599 },
     GhostSkin = { start = 1070000, End = 1119999 },
     TreasureChest = { start = 1120000, End = 1129999 },
     RoleSkin = { start = 1132000, End = 1301999 },

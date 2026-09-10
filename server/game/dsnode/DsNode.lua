@@ -8,7 +8,7 @@ local clusterd = require("cluster")
 local json = require "json"
 local UserAttrLogic = require("common.logic.UserAttrLogic")
 
----@type user_context
+---@type dsnode_context
 local context = ...
 local scripts = context.scripts
 
@@ -91,6 +91,7 @@ end
 
 function DsNode.Init()
     GameCfg.Load()
+    context.is_end = false
 end
 
 function DsNode.Start()
@@ -147,8 +148,12 @@ end
 function DsNode.Exit()
     -- 如果是副本则通知RoomMgr
     if context.dsid > 10000 then
-        clusterd.send(3999, "roommgr", "Roommgr.PlayEnd",
-            { roomid = context.dsid, nid = moon.env("NODE"), addr_dsnode = context.addr_dsnode })
+        if not context.is_end then
+            moon.warn("ds is play end", context.dsid)
+        else
+            clusterd.send(3999, "roommgr", "Roommgr.PlayEnd",
+                { roomid = context.dsid, nid = moon.env("NODE"), addr_dsnode = context.addr_dsnode })
+        end
     else
         clusterd.send(3999, "citymgr", "Citymgr.SetCityDestroy", context.dsid)
     end
@@ -615,6 +620,7 @@ function DsNode.PBDsNotifyPlayEndReqCmd(req)
 
     clusterd.send(3999, "roommgr", "Roommgr.PlayEnd",
         { roomid = req.msg.roomid, nid = moon.env("NODE"), addr_dsnode = context.addr_dsnode })
+    context.is_end = true
 
     local ret = {
         code = ErrorCode.None,
@@ -722,14 +728,15 @@ function DsNode.PBGetDsUserAntiqueReqCmd(req)
 end
 
 function DsNode.PBDsGetAllYesAveragePriceReqCmd(req)
-    if not req.msg.dsid then
-        local ret = {
-            code = ErrorCode.CityVerifyFailed,
-            error = "no cityid"
-        }
-        return context.S2D(context.net_id, CmdCode.PBDsGetAllYesAveragePriceRspCmd, ret, req.msg_context.stub_id)
-    end
-
+    -- moon.warn("PBDsGetAllYesAveragePriceReqCmd start")
+    -- if not req.msg.dsid then
+    --     local ret = {
+    --         code = ErrorCode.CityVerifyFailed,
+    --         error = "no cityid"
+    --     }
+    --     return context.S2D(context.net_id, CmdCode.PBDsGetAllYesAveragePriceRspCmd, ret, req.msg_context.stub_id)
+    -- end
+    -- moon.warn("PBDsGetAllYesAveragePriceReqCmd step 2")
     local start_config_id = 0
     local id_price_list = {}
     while true do
@@ -751,12 +758,12 @@ function DsNode.PBDsGetAllYesAveragePriceReqCmd(req)
     end
 
     --moon.warn(string.format("GetImagesInfo res = %s", json.pretty_encode(res)))
-
+    -- moon.warn("PBDsGetAllYesAveragePriceReqCmd step 3")
     local ret = {
         code = ErrorCode.None,
         error = "",
         dsid = context.dsid,
-        id_price_list = id_price_list,
+        yes_average_price = id_price_list,
     }
     return context.S2D(context.net_id, CmdCode.PBDsGetAllYesAveragePriceRspCmd, ret, req.msg_context.stub_id)
 end
