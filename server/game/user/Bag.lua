@@ -3797,6 +3797,22 @@ function Bag.Light(op_itemdata)
             for _, tag in pairs(cur_tags) do
                 if tag.tag_id == tag_id then
                     had_tag = true
+                    break
+                end
+
+            end
+            --去除互斥词条
+            if not had_tag and tag_cfg.exclusion and table.size(tag_cfg.exclusion) > 0 then
+                for _, ex_tag_id in pairs(tag_cfg.exclusion) do
+                    for _, tag in pairs(cur_tags) do
+                        if tag.tag_id == ex_tag_id then
+                            had_tag = true
+                            break
+                        end
+                    end
+                    if had_tag then
+                        break
+                    end
                 end
             end
 
