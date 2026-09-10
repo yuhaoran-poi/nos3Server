@@ -342,15 +342,21 @@ function Trade.OnTradeLogListSaleMail(trade_log_list, need_save)
     local total_skip_count = 0
     local total_process_count = 0
 
+    local add_coins = {}
+    local content_params = {}
+    local notify_log_ids = {}
+    local total_deal_num = 0
+    local total_deal_price = 0
     for config_id, price_map in pairs(id_price_map) do
         for price, trade_logs in pairs(price_map) do
-            local add_coins = {}
-            local content_params = {}
-            local notify_log_ids = {}
             local skip_log_ids = {}
-            table.insert(content_params, tostring(config_id))
-            local total_deal_num = 0
-            local total_deal_price = 0
+            local per_deal_num = 0
+            local per_deal_price = 0
+            local per_content_param = {
+                itemId = config_id,
+                num = 0,
+                price = price,
+            }
 
             for log_id, trade_log in pairs(trade_logs) do
                 local missing = missing_fields(trade_log)
@@ -364,9 +370,9 @@ function Trade.OnTradeLogListSaleMail(trade_log_list, need_save)
                         context.uid, log_id, trade_log.config_id, price, table.concat(missing, ","),
                         json.pretty_encode(trade_log)))
                 else
-                    total_deal_num = total_deal_num + trade_log.deal_num
-                    total_deal_price = total_deal_price + trade_log.deal_price * trade_log.deal_num
-                    total_deal_price = total_deal_price - trade_log.trade_tax
+                    per_deal_num = per_deal_num + trade_log.deal_num
+                    per_deal_price = per_deal_price + trade_log.deal_price * trade_log.deal_num
+                    per_deal_price = per_deal_price - trade_log.trade_tax
                     total_process_count = total_process_count + 1
                     table.insert(notify_log_ids, log_id)
                 end
@@ -381,59 +387,64 @@ function Trade.OnTradeLogListSaleMail(trade_log_list, need_save)
                 return
             end
 
-            table.insert(content_params, tostring(total_deal_num))
-            table.insert(content_params, tostring(total_deal_price))
-            add_coins[trade_cfg.order_currency] = {
-                coin_id = trade_cfg.order_currency,
-                coin_count = total_deal_price,
-            }
+            per_content_param.num = per_deal_num
+            per_content_param.price = per_deal_price
+            local per_content_param_str = json.encode(per_content_param)
+            table.insert(content_params, per_content_param_str)
 
-            local mail_ret = scripts.Mail.RecvImmediateMail(trade_cfg.sell_email, {}, {}, add_coins, content_params)
-            if not mail_ret then
-                moon.error(string.format("OnTradeLogListSaleMail mail_ret false price_map = %s",
-                    json.pretty_encode(price_map)))
-                return
-            end
+            total_deal_num = total_deal_num + per_deal_num
+            total_deal_price = total_deal_price + per_deal_price
+        end
+    end
 
-            -- 通知Trademgr更改邮件发送记录
-            clusterd.send(3999, "trademgr", "Trademgr.UserDealTradeLogList", notify_log_ids)
+    add_coins[trade_cfg.order_currency] = {
+        coin_id = trade_cfg.order_currency,
+        coin_count = total_deal_price,
+    }
+    local mail_ret = scripts.Mail.RecvImmediateMail(trade_cfg.sell_email, {}, {}, add_coins, content_params)
+    if not mail_ret then
+        moon.error(string.format("OnTradeLogListSaleMail mail_ret false id_price_map = %s",
+            json.pretty_encode(id_price_map)))
+        return
+    end
 
-            if need_save then
-                for log_id, trade_log in pairs(trade_logs) do
-                    if player_trade_data.product_list[trade_log.trade_id] then
-                        if not player_trade_data.product_list[trade_log.trade_id].trade_data then
-                            moon.error(string.format(
-                                "OnTradeLogListSaleMail trade_log.trade_id not found trade_log = %s",
-                                json.pretty_encode(trade_log)))
-                            moon.error(string.format(
-                                "OnTradeLogListSaleMail trade_log.trade_id not found player_trade_data = %s",
-                                json.pretty_encode(player_trade_data)))
-                            return
-                        end
-                        local now_num = player_trade_data.product_list[trade_log.trade_id].trade_data.now_num
-                        if now_num - trade_log.deal_num <= 0 then
-                            player_trade_data.product_list[trade_log.trade_id] = nil
-                            for idx, trade_id in pairs(player_trade_data.simple_info.trade_ids) do
-                                if trade_id == trade_log.trade_id then
-                                    table.remove(player_trade_data.simple_info.trade_ids, idx)
-                                    break
-                                end
-                            end
-                        else
-                            player_trade_data.product_list[trade_log.trade_id].trade_data.now_num = now_num -
-                                trade_log.deal_num
-                        end
-                    end
-                    table.insert(player_trade_data.log_list, trade_log)
-                    if table.size(player_trade_data.log_list) > TRADE_LOG_MAX_COUNT then
-                        table.remove(player_trade_data.log_list, 1)
-                    end
+    -- 通知Trademgr更改邮件发送记录
+    clusterd.send(3999, "trademgr", "Trademgr.UserDealTradeLogList", notify_log_ids)
+
+    if need_save then
+        for _, trade_log in pairs(trade_log_list) do
+            if player_trade_data.product_list[trade_log.trade_id] then
+                if not player_trade_data.product_list[trade_log.trade_id].trade_data then
+                    moon.error(string.format(
+                        "OnTradeLogListSaleMail trade_log.trade_id not found trade_log = %s",
+                        json.pretty_encode(trade_log)))
+                    moon.error(string.format(
+                        "OnTradeLogListSaleMail trade_log.trade_id not found player_trade_data = %s",
+                        json.pretty_encode(player_trade_data)))
+                    return
                 end
-
-                -- Trade.SaveTradeInfoNow()
-                scripts.UserModel.AddDirtyModule("Trade")
+                local now_num = player_trade_data.product_list[trade_log.trade_id].trade_data.now_num
+                if now_num - trade_log.deal_num <= 0 then
+                    player_trade_data.product_list[trade_log.trade_id] = nil
+                    for idx, trade_id in pairs(player_trade_data.simple_info.trade_ids) do
+                        if trade_id == trade_log.trade_id then
+                            table.remove(player_trade_data.simple_info.trade_ids, idx)
+                            break
+                        end
+                    end
+                else
+                    player_trade_data.product_list[trade_log.trade_id].trade_data.now_num = now_num -
+                        trade_log.deal_num
+                end
+            end
+            table.insert(player_trade_data.log_list, trade_log)
+            if table.size(player_trade_data.log_list) > TRADE_LOG_MAX_COUNT then
+                table.remove(player_trade_data.log_list, 1)
             end
         end
+
+        -- Trade.SaveTradeInfoNow()
+        scripts.UserModel.AddDirtyModule("Trade")
     end
 end
 
