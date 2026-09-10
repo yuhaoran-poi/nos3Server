@@ -52,6 +52,7 @@ return {
     ["MaintenanceInfo"] = "MaintenanceInfo.lua",
     ["MissionBox"] = "MissionBox.lua",
     ["OnlyOneItem"] = "OnlyOneItem.lua",
+    ["PeriodAward"] = "PeriodAward.lua",
     ["PeriodMissionConfig"] = "PeriodMissionConfig.lua",
     ["PropCompose"] = "PropCompose.lua",
     ["RandomComposite"] = "RandomComposite.lua",
