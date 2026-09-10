@@ -115,6 +115,8 @@ function Gate.BindUser(req)
     -- moon.warn(string.format("Gate.BindUser net_id = %d, c.net_id = %d", req.net_id, c.net_id))
     context.auth_watch[req.fd] = nil
     moon.info(string.format("BindUser fd:%d uid:%d net_id:%d serviceid:%08X", req.fd, req.uid, req.net_id, req.addr_user))
+
+    moon.send('lua', context.addr_auth, "Auth.BindGateSuccess", c.uid)
     return true
 end
 

@@ -193,8 +193,6 @@ local function doAuth(Auth, req, plateform_id)
         net_id = u.net_id,
         uid = u.uid,
     }
-    u.logouttime = 0
-    context.uid_map[req.uid] = u
     return { code = 0, error = "sucess", res = res }
 end
 
@@ -227,14 +225,20 @@ Auth.Init = function()
             local now = moon.time()
 
             local count = table.size(context.uid_map)
-            for _, u in pairs(context.uid_map) do
-                if count > mem_player_limit then
+            if count > mem_player_limit then
+                -- 先收集待清理的 uid，遍历结束后再统一 QuitOneUser，
+                -- 避免在 pairs 遍历 uid_map 的同时就地删除条目（QuitOneUser 内部清 uid_map）。
+                local to_quit = {}
+                for uid, u in pairs(context.uid_map) do
                     if u.logouttime > 0 and (now - u.logouttime) > min_online_time then
-                        QuitOneUser(u)
-                        count = count - 1
+                        table.insert(to_quit, uid)
                     end
-                else
-                    break
+                end
+                for _, uid in ipairs(to_quit) do
+                    local u = context.uid_map[uid]
+                    if u then
+                        QuitOneUser(u)
+                    end
                 end
             end
         end
@@ -605,7 +609,13 @@ function Auth.TrySendUser(uid, cmd, ...)
     if not u then
         return
     end
-    moon.send("lua", u.addr_user, cmd,...)
+    moon.send("lua", u.addr_user, cmd, ...)
+end
+
+function Auth.BindGateSuccess(uid)
+    if context.uid_map[uid] then
+        context.uid_map[uid].logouttime = 0
+    end
 end
 
 function Auth.Disconnect(uid)
@@ -613,9 +623,9 @@ function Auth.Disconnect(uid)
     -- moon.error(string.format("Auth.Disconnect begin context.uid_map = %s", json.pretty_encode(context.uid_map)))
     -- moon.error(string.format("Auth.Disconnect begin context.net_id_map = %s", json.pretty_encode(context.net_id_map)))
     if u then
+        u.logouttime = moon.time()
         QuitOneUser(u)
         --assert(moon.call("lua", u.addr_user, "User.Logout"))
-        u.logouttime = moon.time()
     end
     -- moon.error(string.format("Auth.Disconnect end context.uid_map = %s", json.pretty_encode(context.uid_map)))
     -- moon.error(string.format("Auth.Disconnect end context.net_id_map = %s", json.pretty_encode(context.net_id_map)))

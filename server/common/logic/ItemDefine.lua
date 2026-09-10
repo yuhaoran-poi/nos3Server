@@ -40,7 +40,7 @@ local ItemDefine = {
     HumanDiagrams = { start = 630000, End = 639999 },
     GhostDiagrams = { start = 640000, End = 649999 },
     SpaceRing = { start = 650000, End = 659999 },
-    SkinCard = { start = 661000, End = 679999 },
+    SkinCard = { start = 661000, End = 880999 },
     HeadSkin = { start = 1015000, End = 1015499 },
     HeadFrameSkin = { start = 1015500, End = 1015999 },
     AweItem = { start = 1016000, End = 1016499 },
