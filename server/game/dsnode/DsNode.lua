@@ -148,7 +148,7 @@ end
 function DsNode.Exit()
     -- 如果是副本则通知RoomMgr
     if context.dsid > 10000 then
-        if not context.is_end then
+        if context.is_end then
             moon.warn("ds is play end", context.dsid)
         else
             clusterd.send(3999, "roommgr", "Roommgr.PlayEnd",
