@@ -229,12 +229,17 @@ function Trademgr.Start()
     end
 
     for config_id, record_data in pairs(Trademgr.trade_record_infos) do
-        if not record_data.price_to_num[record_data.min_price] then
+        local min_price_data = record_data.price_to_num[record_data.min_price]
+        -- 最低价档位不存在、或该档位已无库存,都要重算:
+        -- 否则 min_price 会一直停留在零库存档位上,出现 min_price 有值但 min_price_num=0 的错数据
+        if not min_price_data or min_price_data.now_num <= 0 then
             record_data.min_price = 0
             record_data.min_price_num = 0
 
             for price, price_data in pairs(record_data.price_to_num) do
-                if record_data.min_price == 0 or price < record_data.min_price then
+                -- 零库存档位不参与最低价竞争
+                if price_data.now_num > 0
+                    and (record_data.min_price == 0 or price < record_data.min_price) then
                     record_data.min_price = price
                     record_data.min_price_num = price_data.now_num
                 end
@@ -242,9 +247,8 @@ function Trademgr.Start()
             -- 重算结果需落库，否则内存虽已修正，DB 仍停留在旧的 min_price/min_price_num
             need_mod_record[config_id] = 1
         else
-            local price_num = record_data.price_to_num[record_data.min_price]
-            if record_data.min_price_num ~= price_num.now_num then
-                record_data.min_price_num = price_num.now_num
+            if record_data.min_price_num ~= min_price_data.now_num then
+                record_data.min_price_num = min_price_data.now_num
                 need_mod_record[config_id] = 1
             end
         end
@@ -347,7 +351,8 @@ function Trademgr.ChangeTradeRecord(product_simple_data)
         record_data.min_price = 0
         record_data.price_to_num[product_simple_data.trade_data.single_price] = nil
         for price, value in pairs(record_data.price_to_num) do
-            if record_data.min_price == 0 or record_data.min_price > price then
+            -- 零库存档位不参与最低价竞争
+            if value.now_num > 0 and (record_data.min_price == 0 or record_data.min_price > price) then
                 record_data.min_price = price
                 record_data.min_price_num = value.now_num
             end
@@ -708,7 +713,7 @@ function Trademgr.BuyTradeProduct(buyer_uid, config_id, buy_num, buy_max_price, 
     local remain_coin = lock_coin_num
     local total_real_buy_num = 0
     local buy_list = {}
-    for _, price in pairs(price_list) do
+    for _, price in ipairs(price_list) do
         if price > buy_max_price or total_real_buy_num >= buy_num then
             break
         end
@@ -844,7 +849,8 @@ function Trademgr.BuyTradeProduct(buyer_uid, config_id, buy_num, buy_max_price, 
     -- 修改交易行商品分类表
     if is_min_price_sold_out then
         for price, price_data in pairs(record_info.price_to_num) do
-            if record_info.min_price == 0 or record_info.min_price > price then
+            -- 零库存档位不参与最低价竞争
+            if price_data.now_num > 0 and (record_info.min_price == 0 or record_info.min_price > price) then
                 record_info.min_price = price
                 record_info.min_price_num = price_data.now_num
             end

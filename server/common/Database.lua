@@ -1762,7 +1762,7 @@ end
 
 function _M.gettradeproductwithnum(addr, start_trade_id, state, num)
     local cmd = string.format([[
-        SELECT trade_id, config_id, total_num, seller_uid, beg_ts, end_ts, single_price, sale_num, now_num, state FROM mgame.trade_product WHERE trade_id >= %d AND state = %d ORDER BY trade_id LIMIT %d;
+        SELECT trade_id, config_id, total_num, seller_uid, beg_ts, end_ts, single_price, sale_num, now_num, state FROM mgame.trade_product WHERE trade_id > %d AND state = %d ORDER BY trade_id LIMIT %d;
     ]], start_trade_id, state, num)
     local res, err = moon.call("lua", addr, cmd)
     if err then
