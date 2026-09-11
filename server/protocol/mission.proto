@@ -37,6 +37,10 @@ message PBPeriodMissionInfo
 	map<int32, int32> complete_week_ids	= 5;
 	map<int32, PBMissionData> now_month_mission_datas	= 6;
 	map<int32, int32> complete_month_ids	= 7;
+	int32 day_total_vitality	= 8;				// 每日活跃点(领每日任务奖励累计,每日重置)
+	map<int32, int32> day_got_award_ids	= 9;		// 每日活跃奖励已领档位(PeriodAward表id) -> 领取时间戳
+	int32 week_total_vitality	= 10;				// 每周活跃点(领每日+每周任务奖励累计,每周重置)
+	map<int32, int32> week_got_award_ids	= 11;	// 每周活跃奖励已领档位(PeriodAward表id) -> 领取时间戳
 }
 
 message PBAchivementMissionInfo
@@ -52,6 +56,8 @@ message PBActivityMissionInfo
 	int64 last_update_ts	= 1;
 	map<int32, PBMissionData> now_mission_datas	= 2;
 	map<int32, int32> complete_ids	= 3;
+	map<int32, int32> total_vitality	= 4;	// 活动类型id -> 该活动累计活跃点
+	map<int32, int32> got_award_ids	= 5;		// 活动活跃奖励已领档位(组合id=活动类型id*1000+ActivityAward表id) -> 领取时间戳
 }
 
 message PBPlayerMissionInfo
@@ -127,8 +133,8 @@ message PBRrefreshMissionRspCmd
 message PBGetVitalityAwardReqCmd
 {
 	int64 uid = 1;
-	int32 vitality_type = 2;		// 点数类型: 1成就点 2线性任务活跃点 3周期任务活跃点 4活动任务活跃点
-	repeated int32 award_ids = 3;	// 对应类型奖励配置表档位id(当前成就点为AchievementAward表)
+	int32 vitality_type = 2;		// 点数类型: 1成就点 2线性任务活跃点(预留) 3每日活跃点 4每周活跃点 1000+N为活动N活跃点(N为ActivityMissionTypeConfig表id)
+	repeated int32 award_ids = 3;	// 档位id: 成就点为AchievementAward表id; 日/周活跃点为PeriodAward表id; 活动为ActivityAward表id
 }
 
 message PBGetVitalityAwardRspCmd

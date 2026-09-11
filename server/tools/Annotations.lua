@@ -2627,6 +2627,10 @@
 ---@field public complete_week_ids table<integer, integer>
 ---@field public now_month_mission_datas table<integer, PBMissionData>
 ---@field public complete_month_ids table<integer, integer>
+---@field public day_total_vitality integer @每日活跃点(领每日任务奖励累计,每日重置)
+---@field public day_got_award_ids table<integer, integer> @每日活跃奖励已领档位(PeriodAward表id) -> 领取时间戳
+---@field public week_total_vitality integer @每周活跃点(领每日+每周任务奖励累计,每周重置)
+---@field public week_got_award_ids table<integer, integer> @每周活跃奖励已领档位(PeriodAward表id) -> 领取时间戳
 
 
 ---@class PBAchivementMissionInfo
@@ -2640,6 +2644,8 @@
 ---@field public last_update_ts integer
 ---@field public now_mission_datas table<integer, PBMissionData>
 ---@field public complete_ids table<integer, integer>
+---@field public total_vitality table<integer, integer> @活动类型id -> 该活动累计活跃点
+---@field public got_award_ids table<integer, integer> @活动活跃奖励已领档位(组合id=活动类型id*1000+ActivityAward表id) -> 领取时间戳
 
 
 ---@class PBPlayerMissionInfo
@@ -2701,8 +2707,8 @@
 
 ---@class PBGetVitalityAwardReqCmd
 ---@field public uid integer
----@field public vitality_type integer @点数类型: 1成就点 2线性任务活跃点 3周期任务活跃点 4活动任务活跃点
----@field public award_ids integer[] @对应类型奖励配置表档位id(当前成就点为AchievementAward表)
+---@field public vitality_type integer @点数类型: 1成就点 2线性任务活跃点(预留) 3每日活跃点 4每周活跃点 1000+N为活动N活跃点(N为ActivityMissionTypeConfig表id)
+---@field public award_ids integer[] @档位id: 成就点为AchievementAward表id; 日/周活跃点为PeriodAward表id; 活动为ActivityAward表id
 
 
 ---@class PBGetVitalityAwardRspCmd
@@ -4787,6 +4793,7 @@
 ---@field AccountBuffConfig AccountBuffConfig_cfg[]
 ---@field AchievementAward AchievementAward_cfg[]
 ---@field AchievementMissionConfig AchievementMissionConfig_cfg[]
+---@field ActivityAward ActivityAward_cfg[]
 ---@field ActivityMissionConfig ActivityMissionConfig_cfg[]
 ---@field ActivityMissionTypeConfig ActivityMissionTypeConfig_cfg[]
 ---@field allconfigs allconfigs_cfg[]
@@ -4838,6 +4845,7 @@
 ---@field MaintenanceInfo MaintenanceInfo_cfg[]
 ---@field MissionBox MissionBox_cfg[]
 ---@field OnlyOneItem OnlyOneItem_cfg[]
+---@field PeriodAward PeriodAward_cfg[]
 ---@field PeriodMissionConfig PeriodMissionConfig_cfg[]
 ---@field PropCompose PropCompose_cfg[]
 ---@field RandomComposite RandomComposite_cfg[]

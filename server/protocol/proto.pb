@@ -3171,7 +3171,7 @@ redTeamNum"
 #PBSelectionState_LRS_SelectionGhost#
 PBSelectionState_LRS_SetupGhost)
 %PBSelectionState_SH_Ghost_Select_Skinbproto3
-•(
+È-
 mission.proto"Â
 PBConditionData
 cond_id (RcondId!
@@ -3204,7 +3204,7 @@ cond_datas (2.PBConditionDataR	condDatas"ª
 value (Rvalue:8V
 WaitBegMissionDatasEntry
 key (Rkey$
-value (2.PBMissionDataRvalue:8"À
+value (2.PBMissionDataRvalue:8"Ò
 PBPeriodMissionInfo$
 last_update_ts (RlastUpdateTs_
 now_day_mission_datas (2,.PBPeriodMissionInfo.NowDayMissionDatasEntryRnowDayMissionDatasR
@@ -3212,7 +3212,12 @@ cond_datas (2.PBConditionDataR	condDatas"ª
 now_week_mission_datas (2-.PBPeriodMissionInfo.NowWeekMissionDatasEntryRnowWeekMissionDatasU
 complete_week_ids (2).PBPeriodMissionInfo.CompleteWeekIdsEntryRcompleteWeekIdse
 now_month_mission_datas (2..PBPeriodMissionInfo.NowMonthMissionDatasEntryRnowMonthMissionDatasX
-complete_month_ids (2*.PBPeriodMissionInfo.CompleteMonthIdsEntryRcompleteMonthIdsU
+complete_month_ids (2*.PBPeriodMissionInfo.CompleteMonthIdsEntryRcompleteMonthIds,
+day_total_vitality (RdayTotalVitalityS
+day_got_award_ids	 (2(.PBPeriodMissionInfo.DayGotAwardIdsEntryRdayGotAwardIds.
+week_total_vitality
+ (RweekTotalVitalityV
+week_got_award_ids (2).PBPeriodMissionInfo.WeekGotAwardIdsEntryRweekGotAwardIdsU
 NowDayMissionDatasEntry
 key (Rkey$
 value (2.PBMissionDataRvalue:8A
@@ -3230,6 +3235,12 @@ cond_datas (2.PBConditionDataR	condDatas"ª
 value (2.PBMissionDataRvalue:8C
 CompleteMonthIdsEntry
 key (Rkey
+value (Rvalue:8A
+DayGotAwardIdsEntry
+key (Rkey
+value (Rvalue:8B
+WeekGotAwardIdsEntry
+key (Rkey
 value (Rvalue:8"Œ
 PBAchivementMissionInfoY
 now_mission_datas (2-.PBAchivementMissionInfo.NowMissionDatasEntryRnowMissionDatasL
@@ -3244,15 +3255,23 @@ cond_datas (2.PBConditionDataR	condDatas"ª
 value (Rvalue:8>
 GotAwardIdsEntry
 key (Rkey
-value (Rvalue:8"ö
+value (Rvalue:8"—
 PBActivityMissionInfo$
 last_update_ts (RlastUpdateTsW
 now_mission_datas (2+.PBActivityMissionInfo.NowMissionDatasEntryRnowMissionDatasJ
-complete_ids (2'.PBActivityMissionInfo.CompleteIdsEntryRcompleteIdsR
+complete_ids (2'.PBActivityMissionInfo.CompleteIdsEntryRcompleteIdsP
+total_vitality (2).PBActivityMissionInfo.TotalVitalityEntryRtotalVitalityK
+got_award_ids (2'.PBActivityMissionInfo.GotAwardIdsEntryRgotAwardIdsR
 NowMissionDatasEntry
 key (Rkey$
 value (2.PBMissionDataRvalue:8>
 CompleteIdsEntry
+key (Rkey
+value (Rvalue:8@
+TotalVitalityEntry
+key (Rkey
+value (Rvalue:8>
+GotAwardIdsEntry
 key (Rkey
 value (Rvalue:8"ƒ
 PBPlayerMissionInfo5
