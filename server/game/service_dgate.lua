@@ -103,11 +103,13 @@ moon.raw_dispatch("S2D", function(msg)
             return
         end
 
-        socket.write(c.fd, buf)
-
+        -- 注意: socket.write 会接管 buf 的所有权(内部按裸指针构造 shared_ptr),
+        -- 调用后 buf 可能已被释放, 因此日志必须放在 write 之前
         if moon.DEBUG() then
             protocol.print_message(net_id, buf,"S2D")
         end
+
+        socket.write(c.fd, buf)
     else
         local p = moon.ref_buffer(buf)
         for _, one in ipairs(net_id) do
@@ -132,11 +134,13 @@ moon.raw_dispatch("D2D",function(msg)
             return
         end
 
-        socket.write(c.fd, buf)
-
+        -- 注意: socket.write 会接管 buf 的所有权(内部按裸指针构造 shared_ptr),
+        -- 调用后 buf 可能已被释放, 因此日志必须放在 write 之前
         if moon.DEBUG() then
             protocol.print_message(net_id, buf,"D2D")
         end
+
+        socket.write(c.fd, buf)
     else
         local p = moon.ref_buffer(buf)
         for _, one in ipairs(net_id) do
@@ -161,11 +165,13 @@ moon.raw_dispatch("C2D",function(msg)
             return
         end
 
-        socket.write(c.fd, buf)
-
+        -- 注意: socket.write 会接管 buf 的所有权(内部按裸指针构造 shared_ptr),
+        -- 调用后 buf 可能已被释放, 因此日志必须放在 write 之前
         if moon.DEBUG() then
             protocol.print_message(net_id, buf,"C2D")
         end
+
+        socket.write(c.fd, buf)
     else
         local p = moon.ref_buffer(buf)
         for _, one in ipairs(net_id) do
