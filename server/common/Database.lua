@@ -1755,7 +1755,7 @@ function _M.addtradeproduct(addr, product_data, condition1, condition2, conditio
     else
         if res then
             moon.debug(string.format("addtradeproduct res = %s", json.pretty_encode(res)))
-            return res.affected_rows
+            return res.affected_rows or 0
         end
     end
 end
@@ -3814,12 +3814,12 @@ function _M.addskintradeproduct(addr, product_data, condition1, condition2, cond
     local cmd = string.format([[
         INSERT INTO mgame.skin_trade_product (skin_trade_id, config_id, total_num, seller_uid, beg_ts, end_ts,
         single_price, sale_num, now_num, condition1, condition2,
-        condition3, condition4, condition5, state)
-        VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d);
+        condition3, condition4, condition5, state, uniqid)
+        VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d);
     ]], product_data.skin_trade_id, product_data.config_id, product_data.total_num,
         product_data.seller_uid, product_data.beg_ts, product_data.end_ts,
         product_data.skin_trade_data.single_price, product_data.skin_trade_data.sale_num,
-        product_data.skin_trade_data.now_num, condition1, condition2, condition3, condition4, condition5, product_data.state)
+        product_data.skin_trade_data.now_num, condition1, condition2, condition3, condition4, condition5, product_data.state, product_data.uniqid)
 
     local res, err = moon.call("lua", addr, cmd)
     if err then
@@ -3835,7 +3835,7 @@ end
 
 function _M.getskintradeproductwithnum(addr, start_trade_id, state, num)
     local cmd = string.format([[
-        SELECT skin_trade_id, config_id, total_num, seller_uid, beg_ts, end_ts, single_price, sale_num, now_num, state FROM mgame.skin_trade_product WHERE skin_trade_id >= %d AND state = %d ORDER BY skin_trade_id LIMIT %d;
+        SELECT skin_trade_id, config_id, total_num, seller_uid, beg_ts, end_ts, single_price, sale_num, now_num, state, uniqid FROM mgame.skin_trade_product WHERE skin_trade_id >= %d AND state = %d ORDER BY skin_trade_id LIMIT %d;
     ]], start_trade_id, state, num)
     local res, err = moon.call("lua", addr, cmd)
     if err then
@@ -3857,6 +3857,7 @@ function _M.getskintradeproductwithnum(addr, start_trade_id, state, num)
             skin_trade_product.skin_trade_data.single_price = res[i].single_price
             skin_trade_product.skin_trade_data.sale_num = res[i].sale_num
             skin_trade_product.skin_trade_data.now_num = res[i].now_num
+            skin_trade_product.uniqid = res[i].uniqid
 
             table.insert(ret, skin_trade_product)
         end
@@ -3882,7 +3883,7 @@ function _M.getskintradeproductwithids(addr, trade_ids)
     end
 
     local cmd = string.format([[
-        SELECT skin_trade_id, config_id, total_num, seller_uid, beg_ts, end_ts, single_price, sale_num, now_num, state FROM mgame.skin_trade_product WHERE %s;
+        SELECT skin_trade_id, config_id, total_num, seller_uid, beg_ts, end_ts, single_price, sale_num, now_num, state, uniqid FROM mgame.skin_trade_product WHERE %s;
     ]], where_str)
     moon.debug(string.format("getskintradeproductwithids cmd = %s", cmd))
     local res, err = moon.call("lua", addr, cmd)
@@ -3905,6 +3906,7 @@ function _M.getskintradeproductwithids(addr, trade_ids)
             skin_trade_product.skin_trade_data.single_price = res[i].single_price
             skin_trade_product.skin_trade_data.sale_num = res[i].sale_num
             skin_trade_product.skin_trade_data.now_num = res[i].now_num
+            skin_trade_product.uniqid = res[i].uniqid
 
             table.insert(ret, skin_trade_product)
         end
@@ -3936,7 +3938,7 @@ function _M.getskintradeproduct(addr, where_data, num)
     end
 
     local cmd = string.format([[
-        SELECT skin_trade_id, config_id, total_num, seller_uid, beg_ts, end_ts, single_price, sale_num, now_num, state FROM mgame.skin_trade_product WHERE %s LIMIT %d;
+        SELECT skin_trade_id, config_id, total_num, seller_uid, beg_ts, end_ts, single_price, sale_num, now_num, state, uniqid FROM mgame.skin_trade_product WHERE %s LIMIT %d;
     ]], where_str, num)
     local res, err = moon.call("lua", addr, cmd)
     if err then
@@ -3957,6 +3959,7 @@ function _M.getskintradeproduct(addr, where_data, num)
             skin_trade_product.skin_trade_data.single_price = res[i].single_price
             skin_trade_product.skin_trade_data.sale_num = res[i].sale_num
             skin_trade_product.skin_trade_data.now_num = res[i].now_num
+            skin_trade_product.uniqid = res[i].uniqid
 
             table.insert(ret, skin_trade_product)
         end
@@ -4411,7 +4414,7 @@ end
 function _M.loadplayerskintradelog(addr, uid)
     local cmd = string.format([[
         SELECT log_id, skin_trade_id, config_id, deal_num, deal_price, seller_uid, buyer_uid, skin_trade_ts,
-        skin_trade_tax, send_mail FROM mgame.skin_trade_log WHERE (seller_uid = %d OR buyer_uid = %d)
+        skin_trade_tax, send_mail, uniqid FROM mgame.skin_trade_log WHERE (seller_uid = %d OR buyer_uid = %d)
         ORDER BY skin_trade_ts DESC LIMIT 100;
     ]], uid, uid)
     local res, err = moon.call("lua", addr, cmd)
@@ -4429,6 +4432,7 @@ function _M.loadplayerskintradelog(addr, uid)
             skin_trade_log.skin_trade_ts = res[i].skin_trade_ts
             skin_trade_log.skin_trade_tax = res[i].skin_trade_tax
             skin_trade_log.send_mail = res[i].send_mail
+            skin_trade_log.uniqid = res[i].uniqid
             table.insert(skin_trade_logs, skin_trade_log)
         end
         return skin_trade_logs
@@ -4466,7 +4470,7 @@ end
 function _M.getskintradelog(addr, log_id)
     local cmd = string.format([[
         SELECT log_id, skin_trade_id, config_id, deal_num, deal_price, seller_uid, buyer_uid, skin_trade_ts,
-        skin_trade_tax, send_mail FROM mgame.skin_trade_log WHERE log_id = %d;
+        skin_trade_tax, send_mail, uniqid FROM mgame.skin_trade_log WHERE log_id = %d;
     ]], log_id)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
@@ -4483,6 +4487,7 @@ function _M.getskintradelog(addr, log_id)
         skin_trade_log.skin_trade_ts = res[1].skin_trade_ts
         skin_trade_log.skin_trade_tax = res[1].skin_trade_tax
         skin_trade_log.send_mail = res[1].send_mail
+        skin_trade_log.uniqid = res[1].uniqid
         return skin_trade_log
     end
     moon.error("getskintradelog failed", log_id, err)
@@ -4509,6 +4514,7 @@ function _M.getskintradelognomail(addr, uid)
             skin_trade_log.skin_trade_ts = res[i].skin_trade_ts
             skin_trade_log.skin_trade_tax = res[i].skin_trade_tax
             skin_trade_log.send_mail = res[i].send_mail
+            skin_trade_log.uniqid = res[i].uniqid
             skin_trade_logs[skin_trade_log.log_id] = skin_trade_log
         end
         return skin_trade_logs

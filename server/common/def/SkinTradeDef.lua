@@ -49,6 +49,7 @@ local defaultPBSkinTradeProductBaseData = {
     end_ts = 0,
     state = SkinTradeDef.StateType.UNKNOWN,
     skin_trade_data = LuaExt.const(table.copy(defaultPBSkinTradeData)),
+    uniqid = 0,
 }
 
 local defaultPBAuctionProductBaseData = {
@@ -72,6 +73,7 @@ local defaultPBSkinTradeLogData = {
     skin_trade_ts = 0,
     skin_trade_tax = 0,
     send_mail = 0,
+    uniqid = 0,
 }
 
 local defaultPBAuctionLogData = {

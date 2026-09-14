@@ -599,7 +599,11 @@ function Trademgr.AddTradeProduct(req_data)
         return 0
     end
     local product_data = req_data.product_data
+    -- 先分配 trade_id 再落库: Database.addtradeproduct 内部是 moon.call, 会让出协程。
+    -- 若把自增放在调用之后, 并发寄售的两个请求会读到同一个 trade_id,
+    -- 第二条 INSERT 触发主键冲突(mysql errno 1062 Duplicate entry)
     product_data.trade_id = Trademgr.now_trade_id
+    Trademgr.now_trade_id = Trademgr.now_trade_id + 1
     -- 添加到交易行商品表
     local ret_rows = Database.addtradeproduct(context.addr_db_game, product_data, req_data.condition1, req_data.condition2,
         req_data.condition3, req_data.condition4, req_data.condition5)
@@ -609,7 +613,6 @@ function Trademgr.AddTradeProduct(req_data)
 
     local scope <close> = lock_trade_data()
 
-    Trademgr.now_trade_id = Trademgr.now_trade_id + 1
     Trademgr.product_endts[product_data.trade_id] = product_data.end_ts
     if Trademgr.min_endts > product_data.end_ts then
         Trademgr.min_endts = product_data.end_ts
