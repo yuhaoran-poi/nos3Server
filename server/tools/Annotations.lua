@@ -396,6 +396,20 @@
 ---@field public sell_items table<integer, PBItemSimple>
 
 
+---@class PBBagSortOutRangeReqCmd
+---@field public uid integer
+---@field public bag_name string
+---@field public start_pos integer
+---@field public end_pos integer
+
+
+---@class PBBagSortOutRangeRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public bag_name string
+
+
 ---@class PBBillData
 ---@field public day_bill_amount integer
 ---@field public week_bill_amount integer
@@ -3692,6 +3706,7 @@
 ---@field public end_ts integer @商品下架时间
 ---@field public state integer
 ---@field public skin_trade_data PBSkinTradeData @交易数据
+---@field public uniqid integer @唯一id
 
 
 ---@class PBSkinTradeLogData
@@ -3705,6 +3720,7 @@
 ---@field public skin_trade_ts integer @交易时间
 ---@field public skin_trade_tax integer @交易税
 ---@field public send_mail integer @是否已发送邮件
+---@field public uniqid integer @唯一id
 
 
 ---@class PBSkinTradeSearchSimpleData
@@ -3806,6 +3822,7 @@
 ---@field public sale_num integer
 ---@field public single_price integer
 ---@field public sale_ts integer
+---@field public uniqid integer
 
 
 ---@class PBSkinTradeSaleRspCmd
@@ -4672,6 +4689,7 @@
 ---@field Season Season
 ---@field SeasonPass SeasonPass
 ---@field Shop Shop
+---@field SkinTrade SkinTrade
 ---@field Team Team
 ---@field Trade Trade
 ---@field User User
@@ -4771,6 +4789,10 @@
 ---@field Shopmgr Shopmgr
 
 
+---@class skintrademgr_scripts
+---@field SkinTrademgr SkinTrademgr
+
+
 ---@class teammgr_scripts
 ---@field Teammgr Teammgr
 
@@ -4818,6 +4840,9 @@
 ---@field ExchangeStoreWaresConfig ExchangeStoreWaresConfig_cfg[]
 ---@field ExperienceLevel ExperienceLevel_cfg[]
 ---@field FallBox FallBox_cfg[]
+---@field FallBoxBossZhan FallBoxBossZhan_cfg[]
+---@field FallBoxGuiMenGuan FallBoxGuiMenGuan_cfg[]
+---@field FallBoxPaTa FallBoxPaTa_cfg[]
 ---@field FriendConfig FriendConfig_cfg[]
 ---@field GameChapter GameChapter_cfg[]
 ---@field GameMode GameMode_cfg[]

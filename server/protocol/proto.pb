@@ -590,7 +590,7 @@ aweItemMapI
 error (	Rerror
 uid (Ruid3
 awe_item_info (2.PBUserAweItemsRaweItemInfobproto3
-á
+˜
 	bag.proto
 item.proto"–
 PBBag"
@@ -729,7 +729,17 @@ sell_items (2#.PBItemSellNpcReqCmd.SellItemsEntryR	sellItemsK
 sell_items (2#.PBItemSellNpcRspCmd.SellItemsEntryR	sellItemsK
 SellItemsEntry
 key (Rkey#
-value (2.PBItemSimpleRvalue:8bproto3
+value (2.PBItemSimpleRvalue:8"|
+PBBagSortOutRangeReqCmd
+uid (Ruid
+bag_name (	RbagName
+	start_pos (RstartPos
+end_pos (RendPos"p
+PBBagSortOutRangeRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+bag_name (	RbagNamebproto3
 ˙
 
 Bill.proto"ù
@@ -3821,12 +3831,12 @@ ds_address (	R	dsAddress
 error (	Rerror
 uid (Ruid;
 season_pass_data (2.PBSeasonPassDataRseasonPassDatabproto3
-Ù.
+º/
 skintrade.proto"h
 PBSkinTradeData!
 single_price (RsinglePrice
 sale_num (RsaleNum
-now_num (RnowNum"ó
+now_num (RnowNum"Ø
 PBSkinTradeProductBaseData"
 skin_trade_id (RskinTradeId
 
@@ -3836,7 +3846,8 @@ seller_uid (R	sellerUid
 beg_ts (RbegTs
 end_ts (RendTs
 state (Rstate8
-skin_trade_data (2.PBSkinTradeDataRskinTradeData"…
+skin_trade_data (2.PBSkinTradeDataRskinTradeData
+uniqid	 (Runiqid"·
 PBSkinTradeLogData
 log_id (RlogId"
 skin_trade_id (RskinTradeId
@@ -3850,7 +3861,8 @@ seller_uid (R	sellerUid
 skin_trade_ts (RskinTradeTs$
 skin_trade_tax	 (RskinTradeTax
 	send_mail
- (RsendMail"Û
+ (RsendMail
+uniqid (Runiqid"Û
 PBSkinTradeSearchSimpleData
 	config_id (RconfigId
 	min_price (RminPrice&
@@ -3946,14 +3958,15 @@ condition5
 code (Rcode
 error (	Rerror
 uid (RuidB
-skin_trade_record (2.PBSkinTradeRecordInfoRskinTradeRecord"Ø
+skin_trade_record (2.PBSkinTradeRecordInfoRskinTradeRecord"«
 PBSkinTradeSaleReqCmd
 uid (Ruid
 	config_id (RconfigId
 pos (Rpos
 sale_num (RsaleNum!
 single_price (RsinglePrice
-sale_ts (RsaleTs"w
+sale_ts (RsaleTs
+uniqid (Runiqid"w
 PBSkinTradeSaleRspCmd
 code (Rcode
 error (	Rerror

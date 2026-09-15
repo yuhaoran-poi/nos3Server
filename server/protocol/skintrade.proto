@@ -17,6 +17,7 @@ message PBSkinTradeProductBaseData
 	int64 end_ts		= 6;	//商品下架时间
 	int32 state			= 7;
 	PBSkinTradeData skin_trade_data = 8;	//交易数据
+	int64 uniqid		= 9;	//唯一id
 }
 
 message PBSkinTradeLogData
@@ -31,6 +32,7 @@ message PBSkinTradeLogData
 	int64 skin_trade_ts		= 8;	//交易时间
 	int32 skin_trade_tax		= 9;	//交易税
 	int32 send_mail		= 10;	//是否已发送邮件
+	int64 uniqid	= 11;	//唯一id
 }
 
 message PBSkinTradeSearchSimpleData
@@ -149,6 +151,7 @@ message PBSkinTradeSaleReqCmd
 	int64 sale_num	= 4;
 	int64 single_price	= 5;
 	int64 sale_ts	= 6;
+	int64 uniqid	= 7;
 }
 
 message PBSkinTradeSaleRspCmd

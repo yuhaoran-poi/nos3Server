@@ -4509,4 +4509,41 @@ function Bag.PBItemSellNpcReqCmd(req)
     }, req.msg_context.stub_id)
 end
 
+function Bag.PBBagSortOutRangeReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid
+        or not req.msg.bag_name
+        or not req.msg.start_pos
+        or not req.msg.end_pos then
+        return context.S2C(context.net_id, CmdCode.PBBagSortOutRangeRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = req.msg.uid,
+            bag_name = req.msg.bag_name,
+        }, req.msg_context.stub_id)
+    end
+
+    if context.lock_item_role == 1 then
+        return context.S2C(context.net_id, CmdCode.PBBagSortOutRangeRspCmd,
+            { code = ErrorCode.LockItemRole, error = "变更操作被锁定", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local err_code = Bag.SortOutNewRange(req.msg.bag_name, req.msg.start_pos, req.msg.end_pos)
+    if err_code ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode.PBBagSortOutRangeRspCmd, {
+            code = err_code,
+            error = "整理失败",
+            uid = req.msg.uid,
+            bag_name = req.msg.bag_name,
+        }, req.msg_context.stub_id)
+    end
+
+    return context.S2C(context.net_id, CmdCode.PBBagSortOutRangeRspCmd, {
+        code = ErrorCode.None,
+        error = "整理成功",
+        uid = req.msg.uid,
+        bag_name = req.msg.bag_name,
+    }, req.msg_context.stub_id)
+end
+
 return Bag
