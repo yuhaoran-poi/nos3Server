@@ -38,9 +38,16 @@ function Citymgr.Init()
     moon.async(function()
         while true do
             moon.sleep(10000) -- 每10秒检查一次
-            local allocated_citys = Citymgr.CheckWaitDSCitys()
-            Citymgr.SetNewDsCitys(allocated_citys)
-            Citymgr.CheckCityRun()
+            -- 错误隔离: 轮询协程一旦抛出异常就会被 coresume 关闭且不会重启(moon.lua:108-116),
+            -- 主城扩容会因此永久停摆, 所以这里必须包一层 xpcall 保证异常后下一拍继续跑
+            local ok, err = xpcall(function()
+                local allocated_citys = Citymgr.CheckWaitDSCitys()
+                Citymgr.SetNewDsCitys(allocated_citys)
+                Citymgr.CheckCityRun()
+            end, debug.traceback)
+            if not ok then
+                moon.error("Citymgr polling error:\n", err)
+            end
         end
     end)
     return true
@@ -94,7 +101,12 @@ function Citymgr.CheckWaitDSCitys()
             
             if v.status == 0 then
                 moon.warn(string.format("allocate_url:\n%s", context.conf.allocate_url))
-                local response = httpc.post(context.conf.allocate_url, v.allocate_data)
+                -- pcall 只为保证这个轮询协程不因 httpc 异常而退出, 其余判定与失败处理逻辑保持原样
+                local request_ok, response = pcall(httpc.post, context.conf.allocate_url, v.allocate_data)
+                if not request_ok then
+                    moon.error(string.format("allocate request failed:\n%s", tostring(response)))
+                    response = {}
+                end
                 moon.warn(string.format("allocate response:\n%s", response))
                 --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 --local rsp_data = json.decode(response.body)
@@ -120,7 +132,12 @@ function Citymgr.CheckWaitDSCitys()
             elseif v.status == 1 then
                 local get_url = context.conf.query_url .. "?name=" .. v.region
                 moon.warn(string.format("query_url:\n%s", get_url))
-                local response = httpc.get(get_url)
+                -- 同 status==0: pcall 只为保证轮询协程不因 httpc 异常而退出, 其余逻辑保持原样
+                local request_ok, response = pcall(httpc.get, get_url)
+                if not request_ok then
+                    moon.error(string.format("query request failed:\n%s", tostring(response)))
+                    response = {}
+                end
                 local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 --local rsp_data = json.decode(response.body)
                 local json_success, rsp_data = pcall(json.decode, response.body or "")
@@ -235,16 +252,40 @@ function Citymgr.CheckCityRun()
         local canEnterRoom = {}
         for cityid, cityinfo in pairs(context.citys) do
             local get_url = context.conf.query_url .. "?name=" .. cityinfo.region
-            local response = httpc.get(get_url)
-            local rsp_data = json.decode(response.body)
-            local success, ret = query_cb(rsp_data)
-            if not success then
-                moon.error(string.format("CheckCityRun rsp_data:\n%s", json.pretty_encode(rsp_data)))
-                table.insert(dead_cityids, cityid)
-            else
-                if cityinfo.now_num < min_num then
-                    table.insert(canEnterRoom, cityid)
+            -- httpc 在连接失败时会把错误文本放进 response.body, 直接 json.decode 会抛错;
+            -- 抛错会让整个轮询协程永久退出(见 Init 的注释), 所以用 pcall 把失败收敛成一个判定结果。
+            -- 注意: pcall 只负责不让轮询协程死掉 + 留下日志, 判定语义不变 ——
+            -- 这个查询就是主城的存活探针: 查不到 / 响应不符合预期, 都判该城不可用并丢弃
+            local query_ok, response = pcall(httpc.get, get_url)
+            local rsp_data
+            if query_ok then
+                -- response 可能为 nil(httpc 某些失败路径不返回 table), 取 body 前必须先判空
+                local body = (response and response.body) or ""
+                local decode_ok, decoded = pcall(json.decode, body)
+                if decode_ok then
+                    rsp_data = decoded
+                else
+                    query_ok = false
+                    moon.error(string.format("CheckCityRun json.decode failed cityid:%d url:%s body:\n%s",
+                        cityid, get_url, tostring(body)))
                 end
+            else
+                moon.error(string.format("CheckCityRun httpc.get failed cityid:%d url:%s err:%s",
+                    cityid, get_url, tostring(response)))
+            end
+
+            local success = false
+            if query_ok then
+                success = query_cb(rsp_data)
+            end
+
+            if not success then
+                if rsp_data ~= nil then
+                    moon.error(string.format("CheckCityRun rsp_data:\n%s", json.pretty_encode(rsp_data)))
+                end
+                table.insert(dead_cityids, cityid)
+            elseif cityinfo.now_num < min_num then
+                table.insert(canEnterRoom, cityid)
             end
         end
 
