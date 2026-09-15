@@ -151,6 +151,10 @@ function DsNode.Exit()
         if context.is_end then
             moon.warn("ds is play end", context.dsid)
         else
+            -- 补发救场: 该 dsnode 未处理过结束上报(is_end=false)连接即断开。
+            -- 注意此路径假设"连接断开=对局死亡", 若 DS 只是闪断后重连, 会把进行中的
+            -- 对局拉回房间态(B 场景, 暂未做宽限期, 依赖此日志观察发生频率)
+            moon.warn("ds not play end, rescue playend roomid, net_id = ", context.dsid, context.net_id)
             clusterd.send(3999, "roommgr", "Roommgr.PlayEnd",
                 { roomid = context.dsid, nid = moon.env("NODE"), addr_dsnode = context.addr_dsnode })
         end

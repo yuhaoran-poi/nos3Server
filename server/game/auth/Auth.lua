@@ -205,7 +205,11 @@ end
 
 local function QuitOneDs(ds)
     moon.send("lua", ds.addr_dsnode, "DsNode.Exit")
-    context.dsid_map[ds.dsid] = nil
+    -- dsid_map 是单槽位(dsid=房间号), 可能已被同一 dsid 的更新登录覆盖,
+    -- 仅当槽位仍指向本记录时才清除, 避免误删当前连接在 dsid_map 上的注册
+    if context.dsid_map[ds.dsid] == ds then
+        context.dsid_map[ds.dsid] = nil
+    end
     context.net_id_map[ds.net_id] = nil
     moon.error(string.format("QuitOneDs net_id = %d", ds.net_id))
 end
@@ -631,13 +635,15 @@ function Auth.Disconnect(uid)
     -- moon.error(string.format("Auth.Disconnect end context.net_id_map = %s", json.pretty_encode(context.net_id_map)))
 end
 
-function Auth.DsDisconnect(dsid)
-    local ds = context.dsid_map[dsid]
+function Auth.DsDisconnect(net_id)
+    -- 必须按 net_id(具体哪条连接断开)定位记录。
+    -- 不能按 dsid 查 dsid_map: 它是单槽位, 永远指向该房间"最新一次登录"的记录,
+    -- 同一房间旧连接(如上一局 DS 在新局 DS 登录后才退出)的关闭会错杀当前局的
+    -- dsnode, 触发 DsNode.Exit 补发把进行中的新一局拉回房间态
+    local ds = context.net_id_map[net_id]
     if ds then
         QuitOneDs(ds)
     end
 end
 
 return Auth
-
-

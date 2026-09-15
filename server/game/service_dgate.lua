@@ -83,13 +83,18 @@ socket.on("close", function(fd, msg)
         return
     end
     context.fd_map[fd] = nil
-    if c.dsid then
+    -- dsid_map 是单槽位(dsid=房间号, 同房间每次 DS 登录都会覆盖):
+    -- 本连接关闭时槽位可能已指向同房间更新登录的记录, 仅当仍指向本连接时才清除
+    if c.dsid and context.dsid_map[c.dsid] == c then
         context.dsid_map[c.dsid] = nil -- body
     end
     if c.net_id then
         context.net_id_map[c.net_id] = nil
     end
-    moon.send('lua', context.addr_auth, "Auth.DsDisconnect", c.dsid)
+    -- 按 net_id(具体哪条连接断开)上报 auth, 不能按 dsid(房间号):
+    -- 同一房间上一局的 DS 在新局 DS 登录后才退出时, 按 dsid 上报会让 auth 取到
+    -- "最新登录"(当前局的 dsnode)并错杀当前局(DsNode.Exit 补发把进行中的新一局拉回房间态)
+    moon.send('lua', context.addr_auth, "Auth.DsDisconnect", c.net_id)
     print("GAME SERVER: close", fd, c.net_id, data)
 end)
 

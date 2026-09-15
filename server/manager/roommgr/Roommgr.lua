@@ -1769,17 +1769,21 @@ function Roommgr.PlayEnd(msg)
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
 
-    if room.room_data.state ~= 1 then
-        moon.error("Roommgr.PlayEnd room state error, roomid, state = ", msg.roomid, room.room_data.state)
-        return { code = ErrorCode.RoomInvalidState, error = "房间状态错误" }
-    end
-
     if not msg.nid or not msg.addr_dsnode then
+        moon.error("Roommgr.PlayEnd room ds link invalid(1), roomid = ", msg.roomid)
         return { code = ErrorCode.RoomDsLinkInvalid, error = "房间ds链接非法" }
     end
     local addr_dsnode = context.roomid_addr_dsnode[msg.roomid]
     if not addr_dsnode or addr_dsnode.nid ~= msg.nid or addr_dsnode.addr_dsnode ~= msg.addr_dsnode then
+        -- 多为 DsNode.Exit 的补发救场被拦: 发送者不是当前局的注册 dsnode(如上一局
+        -- 的旧 dsnode 延迟退出)。此前该分支静默, 无法区分"救场被拦"与"消息丢失"
+        moon.error("Roommgr.PlayEnd room ds link invalid(2), roomid = ", msg.roomid)
         return { code = ErrorCode.RoomDsLinkInvalid, error = "房间ds链接非法" }
+    end
+
+    if room.room_data.state ~= 1 then
+        moon.error("Roommgr.PlayEnd room state error, roomid, state = ", msg.roomid, room.room_data.state)
+        return { code = ErrorCode.RoomInvalidState, error = "房间状态错误" }
     end
 
     room.room_data.state = 0
