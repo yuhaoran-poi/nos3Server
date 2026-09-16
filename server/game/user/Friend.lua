@@ -218,7 +218,10 @@ end
 
 function Friend.LoadFriends()
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    local friends_data = Database.loadfriends(context.addr_db_user, context.uid)
+    local friends_data, db_err = Database.loadfriends(context.addr_db_user, context.uid)
+    if db_err then
+        context.db_init_failed = db_err -- 查询失败: 置登录失败标记, User.Load 检查点中止登录
+    end
     return friends_data
 end
 

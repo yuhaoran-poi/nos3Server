@@ -99,7 +99,10 @@ end
 
 function Bill.LoadBills()
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    local bills_data = Database.loadbillinfo(context.addr_db_user, context.uid)
+    local bills_data, db_err = Database.loadbillinfo(context.addr_db_user, context.uid)
+    if db_err then
+        context.db_init_failed = db_err -- 查询失败: 置登录失败标记, User.Load 检查点中止登录
+    end
     return bills_data
 end
 

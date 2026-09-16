@@ -366,7 +366,10 @@ function Bag.TimingSave(bagTypes)
 end
 
 function Bag.LoadBags(bagTypes)
-    local baginfos = Database.loaduserbags(context.addr_db_user, context.uid, bagTypes, data_version)
+    local baginfos, db_err = Database.loaduserbags(context.addr_db_user, context.uid, bagTypes, data_version)
+    if db_err then
+        context.db_init_failed = db_err -- 查询失败: 置登录失败标记, User.Load 检查点中止登录
+    end
     return baginfos
 end
 
@@ -381,7 +384,10 @@ function Bag.SaveCoinsNow()
 end
 
 function Bag.LoadCoins()
-    local coininfos = Database.loadusercoins(context.addr_db_user, context.uid)
+    local coininfos, db_err = Database.loadusercoins(context.addr_db_user, context.uid)
+    if db_err then
+        context.db_init_failed = db_err -- 查询失败: 置登录失败标记, User.Load 检查点中止登录
+    end
     return coininfos
 end
 

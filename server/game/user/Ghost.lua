@@ -70,7 +70,10 @@ function Ghost.SaveGhostsNow()
 end
 
 function Ghost.LoadGhosts()
-    local ghostinfos = Database.loaduserghosts(context.addr_db_user, context.uid)
+    local ghostinfos, db_err = Database.loaduserghosts(context.addr_db_user, context.uid)
+    if db_err then
+        context.db_init_failed = db_err -- 查询失败: 置登录失败标记, User.Load 检查点中止登录
+    end
     return ghostinfos
 end
 

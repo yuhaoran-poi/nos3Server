@@ -395,8 +395,12 @@ function _M.loaduser_attr(addr, uid)
     local cmd = string.format([[
         SELECT uid, value, json FROM mgame.user_attr WHERE uid = %d;
     ]], uid)
-
     local res, err = moon.call("lua", addr, cmd)
+    -- 查询失败(如 POOL_EMPTY/SOCKET 超时): 带 err 返回, 与"无数据"(返回 nil)区分,
+    -- 防止登录时老玩家被当成新号初始化而覆盖存档(其余 load 同)
+    if not res or res.badresult then
+        return nil, res or { code = "NO_RESPONSE" }
+    end
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
         local success, result = pcall(function()
@@ -853,6 +857,9 @@ function _M.loaduserbags(addr, uid, bags_id, data_version)
 
     str_sql = str_sql .. str_param1 .. ", data_version " .. " FROM mgame.userbag WHERE uid=" .. uid
     local sql_res, err = moon.call("lua", addr, str_sql)
+    if not sql_res or sql_res.badresult then
+        return nil, sql_res or { code = "NO_RESPONSE" }
+    end
     if not err and sql_res and #sql_res > 0 then
         local bag_res = {}
         if sql_res[1]["data_version"] ~= data_version then
@@ -861,6 +868,9 @@ function _M.loaduserbags(addr, uid, bags_id, data_version)
                 SELECT cangku_json, consume_json, booty_json, tool_json FROM mgame.userbag WHERE uid=%d;
             ]], uid)
             local fix_sql_res, fix_err = moon.call("lua", addr, fix_str_sql)
+            if not fix_sql_res or fix_sql_res.badresult then
+                return nil, fix_sql_res or { code = "NO_RESPONSE" }
+            end
             if not fix_err and fix_sql_res and #fix_sql_res > 0 then
                 local canku_json_tbl = jdecode(fix_sql_res[1]["cangku_json"])
                 local consume_json_tbl = jdecode(fix_sql_res[1]["consume_json"])
@@ -985,6 +995,9 @@ function _M.loaduserroles(addr, uid)
         SELECT value, json FROM mgame.roles WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
+    if not res or res.badresult then
+        return nil, res or { code = "NO_RESPONSE" }
+    end
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
         local _, tmp_data = protocol.decodewithname("PBUserRoleDatas", pbdata)
@@ -1014,6 +1027,9 @@ function _M.loaduserghosts(addr, uid)
         SELECT value, json FROM mgame.ghosts WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
+    if not res or res.badresult then
+        return nil, res or { code = "NO_RESPONSE" }
+    end
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
         local _, tmp_data = protocol.decodewithname("PBUserGhostDatas", pbdata)
@@ -1075,6 +1091,9 @@ function _M.loaduseritemimage(addr, uid)
         WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
+    if not res or res.badresult then
+        return nil, res or { code = "NO_RESPONSE" }
+    end
     if res and #res > 0 then
         local user_image_data = ItemDef.newUserImage()
         local ok_1, data_1 = protocol.decodewithname("PBCommonImageGroup", crypt.base64decode(res[1].item_value))
@@ -1327,6 +1346,9 @@ function _M.loadusercoins(addr, uid)
         SELECT value, json, data_version FROM mgame.coins WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
+    if not res or res.badresult then
+        return nil, res or { code = "NO_RESPONSE" }
+    end
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
         local _, tmp_data = protocol.decodewithname("PBUserCoins", pbdata)
@@ -1455,6 +1477,9 @@ function _M.loadfriends(addr, uid)
         SELECT value, json FROM mgame.friends WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
+    if not res or res.badresult then
+        return nil, res or { code = "NO_RESPONSE" }
+    end
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
         local _, tmp_data = protocol.decodewithname("PBUserFriendDatas", pbdata)
@@ -1514,6 +1539,9 @@ function _M.loadmails(addr, uid)
         SELECT value, json FROM mgame.mails WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
+    if not res or res.badresult then
+        return nil, res or { code = "NO_RESPONSE" }
+    end
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
         local _, tmp_data = protocol.decodewithname("PBUserMailBox", pbdata)
@@ -1698,6 +1726,9 @@ function _M.loadtradeinfo(addr, uid)
         SELECT value, json FROM mgame.trades WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
+    if not res or res.badresult then
+        return nil, res or { code = "NO_RESPONSE" }
+    end
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
         local _, tmp_data = protocol.decodewithname("PBSelfTradeInfo", pbdata)
@@ -2017,6 +2048,9 @@ function _M.loadauctioninfo(addr, uid)
         SELECT value, json FROM mgame.auctions WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
+    if not res or res.badresult then
+        return nil, res or { code = "NO_RESPONSE" }
+    end
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
         local _, tmp_data = protocol.decodewithname("PBSelfAuctionInfo", pbdata)
@@ -3064,6 +3098,10 @@ function _M.loadshopinfo(addr, uid)
         SELECT value, json, treasure_value, treasure_json FROM mgame.shops WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
+    -- 注意: 本函数成功时返回两个数据值, err 放在第三个返回值
+    if not res or res.badresult then
+        return nil, nil, res or { code = "NO_RESPONSE" }
+    end
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
         local _, tmp_data = protocol.decodewithname("PBShopPlayerData", pbdata)
@@ -3164,6 +3202,9 @@ function _M.loadusergods(addr, uid)
         SELECT value, json FROM mgame.gods WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
+    if not res or res.badresult then
+        return nil, res or { code = "NO_RESPONSE" }
+    end
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
         local _, tmp_data = protocol.decodewithname("PBUserGods", pbdata)
@@ -3194,6 +3235,9 @@ function _M.loaduserantiqueshowcase(addr, uid)
         SELECT value, json FROM mgame.antiqueshowcase WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
+    if not res or res.badresult then
+        return nil, res or { code = "NO_RESPONSE" }
+    end
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
         local _, tmp_data = protocol.decodewithname("PBAntiqueShowcaseDataS", pbdata)
@@ -3343,6 +3387,9 @@ function _M.loadgradeinfo(addr, uid)
         SELECT value, json FROM mgame.grades WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
+    if not res or res.badresult then
+        return nil, res or { code = "NO_RESPONSE" }
+    end
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
         local _, tmp_data = protocol.decodewithname("PBGradePlayerData", pbdata)
@@ -3373,6 +3420,9 @@ function _M.loadbillinfo(addr, uid)
         SELECT value, json FROM mgame.bills WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
+    if not res or res.badresult then
+        return nil, res or { code = "NO_RESPONSE" }
+    end
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
         local _, tmp_data = protocol.decodewithname("PBBillData", pbdata)
@@ -3578,6 +3628,9 @@ function _M.loaduseraweitem(addr, uid)
         SELECT value, json FROM mgame.aweitems WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
+    if not res or res.badresult then
+        return nil, res or { code = "NO_RESPONSE" }
+    end
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
         local _, tmp_data = protocol.decodewithname("PBUserAweItems", pbdata)
@@ -3690,6 +3743,9 @@ function _M.loadseasonpassinfo(addr, uid)
         SELECT value, json FROM mgame.seasonpass WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
+    if not res or res.badresult then
+        return nil, res or { code = "NO_RESPONSE" }
+    end
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
         local _, tmp_data = protocol.decodewithname("PBSeasonPassPlayerData", pbdata)
@@ -3741,6 +3797,9 @@ function _M.loadseasonsinfo(addr, uid)
         SELECT value, json FROM mgame.seasons WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
+    if not res or res.badresult then
+        return nil, res or { code = "NO_RESPONSE" }
+    end
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
         local _, tmp_data = protocol.decodewithname("PBSeasonPlayerData", pbdata)

@@ -61,8 +61,13 @@ end
 local User = {}
 function User.Load(req)
     local function fn()
+        -- 防丢档: 登录加载失败标记。任一模块 LoadXxx 时数据库查询失败会置位,
+        -- 由检查点0/1/2统一中止登录(return false -> Auth 2002), 绝不让失败结果
+        -- 流入"无数据 -> 新号初始化"分支覆盖真实存档
+        context.db_init_failed = nil
+
         -- 向Usermgr申请是否允许登录
-        local res, err = clusterd.call(3999, "usermgr", "Usermgr.ApplyLogin",
+        local res, mgr_err = clusterd.call(3999, "usermgr", "Usermgr.ApplyLogin",
             { uid = req.uid, nid = moon.env("NODE"), addr_user = req.addr_user })
 
         if res.error ~= "success" then
@@ -81,6 +86,12 @@ function User.Load(req)
 
         ---加载UserAttr数据
         local db_user_attr, err = Database.loaduser_attr(context.addr_db_user, req.uid)
+        -- 检查点0: 查询失败不是"无数据", 绝不能落入下方 isnew 分支
+        if err then
+            moon.error(string.format("User.Load abort, loaduser_attr failed (%s): %s, uid = %d",
+                tostring(err.code), tostring(err.message), req.uid))
+            return false
+        end
         if db_user_attr then
             data = {
                 user_id = db_user_attr.uid,
@@ -132,8 +143,30 @@ function User.Load(req)
 
         ---初始化自己数据
         context.batch_invoke_throw("Init", isnew)
+
+        -- 检查点1: Init 链上查询失败 -> 不进入 Start(Start 里的快照写如 SaveMailsNow
+        -- 不能把空数据写库), 直接中止登录
+        if context.db_init_failed then
+            local qerr = context.db_init_failed
+            if qerr and qerr.code and qerr.message then
+                moon.error(string.format("User.Load abort, init query failed (%s): %s, uid = %d",
+                    tostring(qerr.code), tostring(qerr.message), req.uid))
+            else
+                moon.error(string.format("User.Load abort, init query failed, uid = %d", req.uid))
+            end
+            return false
+        end
+
         ---初始化互相引用的数据
         context.batch_invoke_throw("Start", isnew)
+
+        -- 检查点2: Start 链上查询失败 -> 中止登录, 下方 redis/昵称写与 SaveRun 均不执行
+        if context.db_init_failed then
+            local qerr = context.db_init_failed
+            moon.error(string.format("User.Load abort, start query failed (%s): %s, uid = %d",
+                tostring(qerr.code), tostring(qerr.message), req.uid))
+            return false
+        end
         -- ---加载道具图鉴数据
         -- local image_res = scripts.ItemImage.Start()
         -- if image_res.code ~= ErrorCode.None then
@@ -872,36 +905,53 @@ function User.PBPingCmd(req)
     -- 恢复游戏模式货币
     local mode_cfgs = GameCfg.GameMode
     if mode_cfgs and table.size(mode_cfgs) > 0 then
-        local recover_list = {}
         local day_cost_time = 24 * 60 * 60
-        for _, mode_cfg in pairs(mode_cfgs) do
-            if mode_cfg.recover_num and table.size(mode_cfg.recover_num) > 0 then
-                if last_fresh_mode_ts == 0 then
-                    for recover_id, recover_cnt in pairs(mode_cfg.recover_num) do
-                        if not recover_list[recover_id] then
-                            recover_list[recover_id] = 0
-                        end
-                        recover_list[recover_id] = recover_list[recover_id] + recover_cnt
+        -- 周恢复短路: 上次结算时刻必然落在当周恢复点之后、下周一零点之前,
+        -- 距今不足最短恢复点偏移时不可能跨过任何配置的恢复点, 跳过整段检测
+        local need_recover_check = (last_fresh_mode_ts == 0)
+        if not need_recover_check then
+            local min_drift
+            for _, mode_cfg in pairs(mode_cfgs) do
+                if mode_cfg.recover_num and table.size(mode_cfg.recover_num) > 0 then
+                    local drift = (mode_cfg.recover_week - 1) * day_cost_time + mode_cfg.recover_time
+                    if not min_drift or drift < min_drift then
+                        min_drift = drift
                     end
-                else
-                    local drift_ts = mode_cfg.recover_week * day_cost_time + mode_cfg.recover_time
-                    if not datetime.is_same_week(last_fresh_mode_ts - drift_ts, now_ts - drift_ts) then
+                end
+            end
+            need_recover_check = (min_drift == nil) or (now_ts - last_fresh_mode_ts >= min_drift)
+        end
+        if need_recover_check then
+            local recover_list = {}
+            for _, mode_cfg in pairs(mode_cfgs) do
+                if mode_cfg.recover_num and table.size(mode_cfg.recover_num) > 0 then
+                    if last_fresh_mode_ts == 0 then
                         for recover_id, recover_cnt in pairs(mode_cfg.recover_num) do
                             if not recover_list[recover_id] then
                                 recover_list[recover_id] = 0
                             end
                             recover_list[recover_id] = recover_list[recover_id] + recover_cnt
                         end
+                    else
+                        local drift_ts = (mode_cfg.recover_week - 1) * day_cost_time + mode_cfg.recover_time
+                        if not datetime.is_same_week(last_fresh_mode_ts - drift_ts, now_ts - drift_ts) then
+                            for recover_id, recover_cnt in pairs(mode_cfg.recover_num) do
+                                if not recover_list[recover_id] then
+                                    recover_list[recover_id] = 0
+                                end
+                                recover_list[recover_id] = recover_list[recover_id] + recover_cnt
+                            end
+                        end
                     end
                 end
             end
-        end
-        if table.size(recover_list) > 0 then
-            local ok = User.RecoverGameModeItem(recover_list)
-            if ok then
-                local update_user_attr = {}
-                update_user_attr[ProtoEnum.UserAttrType.last_fresh_mode_ts] = now_ts
-                User.SetUserAttr(update_user_attr, false)
+            if table.size(recover_list) > 0 then
+                local ok = User.RecoverGameModeItem(recover_list)
+                if ok then
+                    local update_user_attr = {}
+                    update_user_attr[ProtoEnum.UserAttrType.last_fresh_mode_ts] = now_ts
+                    User.SetUserAttr(update_user_attr, false)
+                end
             end
         end
     end

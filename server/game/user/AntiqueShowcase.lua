@@ -77,7 +77,10 @@ function AntiqueShowcase.SaveShowcasesNow()
 end
 
 function AntiqueShowcase.LoadShowcases()
-    local showcaseInfos = Database.loaduserantiqueshowcase(context.addr_db_user, context.uid)
+    local showcaseInfos, db_err = Database.loaduserantiqueshowcase(context.addr_db_user, context.uid)
+    if db_err then
+        context.db_init_failed = db_err -- 查询失败: 置登录失败标记, User.Load 检查点中止登录
+    end
     return showcaseInfos
 end
 

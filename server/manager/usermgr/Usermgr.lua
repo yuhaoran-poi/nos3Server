@@ -76,7 +76,11 @@ function Usermgr.ApplyLogin(msg)
     end
 
     local old = context.user_node[msg.uid]
-    if old and old ~= msg.nid then
+    -- old 是 table, 原判断 old ~= msg.nid 是 table 与数字比较恒为 true, 任何残留注册
+    -- (如登录失败被杀的服务)都会把该玩家后续登录挡死在 "user already login";
+    -- 应比较 old.nid: 仅注册在其他节点(真正在线/顶号保护)时才拒绝, 同节点残留走
+    -- 下方覆盖注册, if not old 保证 user_num 不重复计数
+    if old and old.nid ~= msg.nid then
         local res = {
             nid = old.nid,
             addr_user = old.addr_user,
@@ -88,7 +92,7 @@ function Usermgr.ApplyLogin(msg)
         --     res.cport = now_node.port
         -- end
 
-        return { error = "user already login", res }
+        return { error = "user already login", res = res }
     end
 
     context.user_node[msg.uid] = { nid = msg.nid, addr_user = msg.addr_user }

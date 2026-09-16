@@ -89,7 +89,10 @@ function Gods.TimingSave()
 end
 
 function Gods.LoadGods()
-    local godsinfo = Database.loadusergods(context.addr_db_user, context.uid)
+    local godsinfo, db_err = Database.loadusergods(context.addr_db_user, context.uid)
+    if db_err then
+        context.db_init_failed = db_err -- 查询失败: 置登录失败标记, User.Load 检查点中止登录
+    end
     return godsinfo
 end
 

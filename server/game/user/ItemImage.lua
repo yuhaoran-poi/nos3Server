@@ -69,7 +69,10 @@ function ItemImage.SaveItemImagesNow(change_fields)
 end
 
 function ItemImage.LoadItemImages()
-    local itemImageinfos = Database.loaduseritemimage(context.addr_db_user, context.uid)
+    local itemImageinfos, db_err = Database.loaduseritemimage(context.addr_db_user, context.uid)
+    if db_err then
+        context.db_init_failed = db_err -- 查询失败: 置登录失败标记, User.Load 检查点中止登录
+    end
     return itemImageinfos
 end
 

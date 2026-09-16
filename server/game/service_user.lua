@@ -30,6 +30,7 @@ local context = {
     play_ds_node = {},
     lock_item_role = 0,
     last_send_sale_mail_ts = 0,
+    db_init_failed = nil,
 ---@diagnostic disable-next-line: missing-fields
     scripts = {},
     ---other service address

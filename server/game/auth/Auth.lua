@@ -123,6 +123,9 @@ local function doAuth(Auth, req, plateform_id)
         local ok, err = moon.call("lua", addr_user, "User.Load", req)
         if not ok then
             moon.error(string.format("doAuth User.Load err = %s", json.pretty_encode(err)))
+            -- User.Load 开头已向 usermgr 注册过 ApplyLogin, 杀服务前必须注销:
+            -- 否则 user_node[uid] 残留, 该玩家后续登录会被 "user already login" 拒绝
+            clusterd.send(3999, "usermgr", "Usermgr.NotifyLogout", { uid = req.uid, nid = NODE })
             moon.kill(addr_user)
             context.uid_map[req.uid] = nil
             context.openid_map[req.msg.login_data.authkey] = nil
@@ -143,6 +146,8 @@ local function doAuth(Auth, req, plateform_id)
     if not authkey then
         print(authkey, err)
         --moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd)
+        -- 同上: ApplyLogin 注册残留清理
+        clusterd.send(3999, "usermgr", "Usermgr.NotifyLogout", { uid = req.uid, nid = NODE })
         moon.kill(addr_user)
         context.uid_map[req.uid] = nil
         context.openid_map[req.msg.login_data.authkey] = nil
@@ -413,7 +418,6 @@ Auth.PBClientLoginReqCmd = function(req)
         else
             -- 登录验证（直接比较MD5）
             local datas, err = db.getuserbyauthkey(context.addr_db_game, plateform_id)
-            print("datas=\n" .. print_r(datas, true))
             -- 判断user_data是否为nil或空表
             if err or datas == nil or next(datas) == nil or not datas[1] or not datas[1].user_id then
                 context.openid_map[req.msg.login_data.authkey] = nil

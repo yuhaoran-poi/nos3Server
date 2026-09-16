@@ -41,6 +41,11 @@ local function _load(uid)
         WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", context.addr_db_user, sql)
+    if not res or (type(res) == "table" and res.badresult) then
+        -- 查询失败: 置登录失败标记, User.Load 检查点中止登录
+        context.db_init_failed = res or { code = "NO_RESPONSE" }
+        return
+    end
     if err then
         moon.error("load user_achievements failed ", uid, err)
         return

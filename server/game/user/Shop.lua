@@ -87,7 +87,10 @@ function Shop.TimingSave()
 end
 
 function Shop.LoadShopInfo()
-    local shop_info, treasure_info = Database.loadshopinfo(context.addr_db_user, context.uid)
+    local shop_info, treasure_info, db_err = Database.loadshopinfo(context.addr_db_user, context.uid)
+    if db_err then
+        context.db_init_failed = db_err -- 查询失败: 置登录失败标记, User.Load 检查点中止登录
+    end
     return shop_info, treasure_info
 end
 
@@ -609,7 +612,7 @@ function Shop.PBShopBuyReqCmd(req)
 
             scripts.Bag.RollBackWithChange(bag_change_log)
             clusterd.send(3999, "shopmgr", "Shopmgr.DelShopServerBuy", server_product_list)
-            return context.S2C(context.net_id, CmdCode.PBSureCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+            return context.S2C(context.net_id, CmdCode.PBShopBuyRspCmd, rsp_msg, req.msg_context.stub_id)
         end
 
         change_roles[roleid] = "AddRole"
