@@ -3181,7 +3181,7 @@ redTeamNum"
 #PBSelectionState_LRS_SelectionGhost#
 PBSelectionState_LRS_SetupGhost)
 %PBSelectionState_SH_Ghost_Select_Skinbproto3
-È-
+¥.
 mission.proto"Â
 PBConditionData
 cond_id (RcondId!
@@ -3265,13 +3265,15 @@ cond_datas (2.PBConditionDataR	condDatas"ª
 value (Rvalue:8>
 GotAwardIdsEntry
 key (Rkey
-value (Rvalue:8"—
+value (Rvalue:8"ô
 PBActivityMissionInfo$
 last_update_ts (RlastUpdateTsW
 now_mission_datas (2+.PBActivityMissionInfo.NowMissionDatasEntryRnowMissionDatasJ
 complete_ids (2'.PBActivityMissionInfo.CompleteIdsEntryRcompleteIdsP
 total_vitality (2).PBActivityMissionInfo.TotalVitalityEntryRtotalVitalityK
-got_award_ids (2'.PBActivityMissionInfo.GotAwardIdsEntryRgotAwardIdsR
+got_award_ids (2'.PBActivityMissionInfo.GotAwardIdsEntryRgotAwardIds*
+target_login_days (RtargetLoginDays/
+target_last_login_ts (RtargetLastLoginTsR
 NowMissionDatasEntry
 key (Rkey$
 value (2.PBMissionDataRvalue:8>

@@ -58,6 +58,8 @@ message PBActivityMissionInfo
 	map<int32, int32> complete_ids	= 3;
 	map<int32, int32> total_vitality	= 4;	// 活动类型id -> 该活动累计活跃点
 	map<int32, int32> got_award_ids	= 5;		// 活动活跃奖励已领档位(组合id=活动类型id*1000+ActivityAward表id) -> 领取时间戳
+	int32 target_login_days	= 6;	// 天师下山: 累积登录天数(按自然日计, 每日首次计入, 不要求连续)
+	int32 target_last_login_ts	= 7;	// 天师下山: 最后一次计入登录天数的自然日时间戳(用于当日去重)
 }
 
 message PBPlayerMissionInfo

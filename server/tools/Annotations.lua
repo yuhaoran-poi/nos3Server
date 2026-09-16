@@ -2660,6 +2660,8 @@
 ---@field public complete_ids table<integer, integer>
 ---@field public total_vitality table<integer, integer> @活动类型id -> 该活动累计活跃点
 ---@field public got_award_ids table<integer, integer> @活动活跃奖励已领档位(组合id=活动类型id*1000+ActivityAward表id) -> 领取时间戳
+---@field public target_login_days integer @天师下山: 累积登录天数(按自然日计, 每日首次计入, 不要求连续)
+---@field public target_last_login_ts integer @天师下山: 最后一次计入登录天数的自然日时间戳(用于当日去重)
 
 
 ---@class PBPlayerMissionInfo
@@ -4689,7 +4691,6 @@
 ---@field Season Season
 ---@field SeasonPass SeasonPass
 ---@field Shop Shop
----@field SkinTrade SkinTrade
 ---@field Team Team
 ---@field Trade Trade
 ---@field User User
@@ -4787,10 +4788,6 @@
 
 ---@class shopmgr_scripts
 ---@field Shopmgr Shopmgr
-
-
----@class skintrademgr_scripts
----@field SkinTrademgr SkinTrademgr
 
 
 ---@class teammgr_scripts
