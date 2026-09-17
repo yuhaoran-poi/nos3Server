@@ -419,6 +419,18 @@ function SeasonPass.PBGetSeasonPassRewardReqCmd(req)
             }, req.msg_context.stub_id)
         end
     end
+    -- 添加货币奖励
+    if table.size(deal_coins) > 0 then
+        local ret_code = scripts.Bag.DealCoins(deal_coins, bag_change_log)
+        if ret_code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode.PBGetSeasonPassRewardRspCmd, {
+                code = ret_code,
+                error = "添加货币失败",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
+        end
+    end
 
     local change_roles = {}
     -- 添加角色
