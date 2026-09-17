@@ -24,7 +24,7 @@ local context = ...
 local listenfd
 local MAX_SEARCH_NUM = 1000
 local GM_UID = 100
-local DELAY_SALE_MAIL_TIME = 60 * 20 -- 20分钟后发送销售邮件
+local DELAY_SALE_MAIL_TIME = 60 * 5 -- 5分钟后发送销售邮件
 
 ---@class Trademgr
 local Trademgr = {
