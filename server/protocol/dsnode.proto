@@ -77,6 +77,8 @@ message PBGameSettle
     int32 sub_task_cnt  = 32;   // 本局完成支线任务数量
     int32 kill_ghost_king   = 33;   // 本局是否击杀鬼王 0-否 1-是
     repeated PBItemData out_uniq_items = 34; // 被放入战利品的局外带入的唯一道具
+    map<int32, int32> game_collect_items = 35; // 局内收集的道具(局内道具id -> 数量, 局内id局外无配置, 仅用于任务埋点87)
+    map<int32, int32> game_consume_items = 36; // 局内消耗的道具(局内道具id -> 数量, 局内id局外无配置, 仅用于任务埋点88)
 }
 
 // 玩家进入主城

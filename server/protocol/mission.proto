@@ -60,6 +60,8 @@ message PBActivityMissionInfo
 	map<int32, int32> got_award_ids	= 5;		// 活动活跃奖励已领档位(组合id=活动类型id*1000+ActivityAward表id) -> 领取时间戳
 	int32 target_login_days	= 6;	// 天师下山: 累积登录天数(按自然日计, 每日首次计入, 不要求连续)
 	int32 target_last_login_ts	= 7;	// 天师下山: 最后一次计入登录天数的自然日时间戳(用于当日去重)
+	map<int32, int32> mailed_expire_types	= 8;	// 个人化活动(类型5道法精进/6天师下山): 活动过期后奖励已邮件补发的类型 -> 补发时间戳(防重发)
+	int32 season_id	= 9;	// 赛季制活动(类型1鬼门关/2鬼王入侵/3封魔塔): 活动数据所属赛季id, 与当前赛季不一致时补发并重置
 }
 
 message PBPlayerMissionInfo

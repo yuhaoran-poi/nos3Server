@@ -654,6 +654,8 @@
 ---@field public sub_task_cnt integer @本局完成支线任务数量
 ---@field public kill_ghost_king integer @本局是否击杀鬼王 0-否 1-是
 ---@field public out_uniq_items PBItemData[] @被放入战利品的局外带入的唯一道具
+---@field public game_collect_items table<integer, integer> @局内收集的道具(局内道具id -> 数量, 局内id局外无配置, 仅用于任务埋点87)
+---@field public game_consume_items table<integer, integer> @局内消耗的道具(局内道具id -> 数量, 局内id局外无配置, 仅用于任务埋点88)
 
 
 ---@class PBEnterCityReqCmd
@@ -2662,6 +2664,8 @@
 ---@field public got_award_ids table<integer, integer> @活动活跃奖励已领档位(组合id=活动类型id*1000+ActivityAward表id) -> 领取时间戳
 ---@field public target_login_days integer @天师下山: 累积登录天数(按自然日计, 每日首次计入, 不要求连续)
 ---@field public target_last_login_ts integer @天师下山: 最后一次计入登录天数的自然日时间戳(用于当日去重)
+---@field public mailed_expire_types table<integer, integer> @个人化活动(类型5道法精进/6天师下山): 活动过期后奖励已邮件补发的类型 -> 补发时间戳(防重发)
+---@field public season_id integer @赛季制活动(类型1鬼门关/2鬼王入侵/3封魔塔): 活动数据所属赛季id, 与当前赛季不一致时补发并重置
 
 
 ---@class PBPlayerMissionInfo

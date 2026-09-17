@@ -1902,7 +1902,7 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-ä=
+”@
 dsnode.protocommon.proto
 item.proto
 user.proto	bag.proto
@@ -1950,7 +1950,7 @@ item_count (R	itemCount%
 open_cnt (RopenCnt
 pot_type (RpotType
 pot_quality (R
-potQuality"é
+potQuality"™
 PBGameSettle
 settle_data (	R
 settleData-
@@ -1998,7 +1998,9 @@ is_retreat (R	isRetreat,
 sub_task_cnt  (R
 subTaskCnt&
 kill_ghost_king! (RkillGhostKing1
-out_uniq_items" (2.PBItemDataRoutUniqItems?
+out_uniq_items" (2.PBItemDataRoutUniqItemsQ
+game_collect_items# (2#.PBGameSettle.GameCollectItemsEntryRgameCollectItemsQ
+game_consume_items$ (2#.PBGameSettle.GameConsumeItemsEntryRgameConsumeItems?
 GameMissionsEntry
 key (Rkey
 value (Rvalue:8F
@@ -2007,7 +2009,13 @@ subTaskCnt&
 value (2.PBCoinRvalue:8=
 BootyItemsEntry
 key (Rkey
-value (Rvalue:8"=
+value (Rvalue:8C
+GameCollectItemsEntry
+key (Rkey
+value (Rvalue:8C
+GameConsumeItemsEntry
+key (Rkey
+value (Rvalue:8"=
 PBEnterCityReqCmd
 uid (Ruid
 cityid (Rcityid"=
@@ -3181,7 +3189,7 @@ redTeamNum"
 #PBSelectionState_LRS_SelectionGhost#
 PBSelectionState_LRS_SetupGhost)
 %PBSelectionState_SH_Ghost_Select_Skinbproto3
-¥.
+ç/
 mission.proto"Â
 PBConditionData
 cond_id (RcondId!
@@ -3265,7 +3273,7 @@ cond_datas (2.PBConditionDataR	condDatas"ª
 value (Rvalue:8>
 GotAwardIdsEntry
 key (Rkey
-value (Rvalue:8"ô
+value (Rvalue:8"¶
 PBActivityMissionInfo$
 last_update_ts (RlastUpdateTsW
 now_mission_datas (2+.PBActivityMissionInfo.NowMissionDatasEntryRnowMissionDatasJ
@@ -3273,7 +3281,9 @@ cond_datas (2.PBConditionDataR	condDatas"ª
 total_vitality (2).PBActivityMissionInfo.TotalVitalityEntryRtotalVitalityK
 got_award_ids (2'.PBActivityMissionInfo.GotAwardIdsEntryRgotAwardIds*
 target_login_days (RtargetLoginDays/
-target_last_login_ts (RtargetLastLoginTsR
+target_last_login_ts (RtargetLastLoginTs]
+mailed_expire_types (2-.PBActivityMissionInfo.MailedExpireTypesEntryRmailedExpireTypes
+	season_id	 (RseasonIdR
 NowMissionDatasEntry
 key (Rkey$
 value (2.PBMissionDataRvalue:8>
@@ -3284,6 +3294,9 @@ cond_datas (2.PBConditionDataR	condDatas"ª
 key (Rkey
 value (Rvalue:8>
 GotAwardIdsEntry
+key (Rkey
+value (Rvalue:8D
+MailedExpireTypesEntry
 key (Rkey
 value (Rvalue:8"ƒ
 PBPlayerMissionInfo5
