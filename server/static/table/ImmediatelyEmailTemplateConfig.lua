@@ -24,5 +24,6 @@ return {
 [2000018] = { id=2000018,icon=4,type=4,title=2018,content=5018,signature=9002,validity_period=2592000,read_validity_period=604800,is_active=true,custom=1 },
 [2000020] = { id=2000020,icon=0,type=1,title=2020,content=5020,signature=9000,validity_period=2592000,read_validity_period=604800,is_active=true,custom=0 },
 [2000021] = { id=2000021,icon=0,type=1,title=2021,content=5021,signature=9000,validity_period=2592000,read_validity_period=604800,is_active=true,custom=0 },
-[2000022] = { id=2000022,icon=0,type=1,title=2022,content=5022,signature=9000,validity_period=2592000,read_validity_period=604800,is_active=true,custom=0 }
+[2000022] = { id=2000022,icon=0,type=1,title=2022,content=5022,signature=9000,validity_period=2592000,read_validity_period=604800,is_active=true,custom=0 },
+[2000023] = { id=2000023,icon=0,type=1,title=2023,content=5023,signature=9000,validity_period=2592000,read_validity_period=604800,is_active=true,custom=0 }
 }
