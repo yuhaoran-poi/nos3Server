@@ -340,13 +340,27 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
         end
 
         for tag_id, weight in pairs(a_t_p_cfg.all_tag) do
-            if not existing_tag_ids[tag_id] then
+            -- 去除已有词条及与已有词条互斥的词条
+            local is_excluded = existing_tag_ids[tag_id]
+            if not is_excluded then
+                local tag_cfg = GameCfg.AllTag[tag_id]
+                if tag_cfg and tag_cfg.exclusion then
+                    for _, ex_tag_id in pairs(tag_cfg.exclusion) do
+                        if existing_tag_ids[ex_tag_id] then
+                            is_excluded = true
+                            break
+                        end
+                    end
+                end
+            end
+
+            if not is_excluded then
                 tag_weight_map[tag_id] = weight
             end
         end
 
         if next(tag_weight_map) == nil then
-            return ErrorCode.TagDuplicate, "词条已全部获得，无法鉴定出新词条"
+            return ErrorCode.TagDuplicate, "词条已全部获得或互斥，无法鉴定出新词条"
         end
 
         local r_w_code, tag_id = scripts.Bag.RandomWeightedIndex(tag_weight_map)
@@ -387,6 +401,12 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
 
     -- 触发鉴定古董次数
     scripts.Mission.TriggerCondition(MissionDef.EConditionIds.APPRAISE_ANTIQUE_CNT, { a_cfg.quality }, 1)
+
+    -- 成功鉴定：完成所有鉴定次数且非赝品
+    -- if rsp_remain_identify_num <= 0 and rsp_is_fake ~= 1 then
+    --     scripts.Mission.TriggerCondition(MissionDef.EConditionIds.APPRAISE_SUCCESS_CNT, { a_cfg.quality }, 1)
+    -- end
+
     if(rsp_price > 0) then
         -- 更新古董榜
         scripts.Rank.UpdateRank_Antique(real_config_id, rsp_price)
