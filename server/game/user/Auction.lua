@@ -16,7 +16,6 @@ local ItemDefine = require("common.logic.ItemDefine")
 local context = ...
 local scripts = context.scripts
 
-local MAX_SALE_CAPACITY = 50
 local MAX_SEARCH_IDS_COUNT = 10
 local TRADE_LOG_MAX_COUNT = 100
 
@@ -96,7 +95,10 @@ function Auction.SaveAuctionInfoNow()
 end
 
 function Auction.LoadAuctionInfo()
-    local auction_info = Database.loadauctioninfo(context.addr_db_user, context.uid)
+    local auction_info, db_err = Database.loadauctioninfo(context.addr_db_user, context.uid)
+    if db_err then
+        context.db_init_failed = db_err -- 查询失败: 置登录失败标记, User.Load 检查点中止登录
+    end
     return auction_info
 end
 
@@ -267,6 +269,11 @@ function Auction.OnAuctionLogBuyMail(auction_log)
         return
     end
 
+    -- 扣减道具的可交易次数
+    if auction_log.item_data.common_info.trade_cnt > 0 then
+        auction_log.item_data.common_info.trade_cnt = auction_log.item_data.common_info.trade_cnt - 1
+    end
+    
     local items_data = {}
     table.insert(items_data, auction_log.item_data)
     -- 发送邮件
@@ -362,7 +369,10 @@ function Auction.PBAuctionSaleReqCmd(req)
         or not req.msg.uniqid
         or not req.msg.pos
         or not req.msg.start_price
+        or req.msg.start_price <= 0
         or not req.msg.buyout_price
+        or req.msg.buyout_price <= 0
+        or req.msg.start_price > req.msg.buyout_price
         or not req.msg.sale_ts then
         return context.S2C(context.net_id, CmdCode.PBAuctionSaleRspCmd, {
             code = ErrorCode.ParamInvalid,
@@ -391,14 +401,15 @@ function Auction.PBAuctionSaleReqCmd(req)
     local auction_cfg = GameCfg.TransactionConfig[2]
     if not auction_cfg
         or not auction_cfg.service_charge_type
-        or not auction_cfg.order_percentage
+        -- or not auction_cfg.order_percentage
         or not auction_cfg.order_time
         or not auction_cfg.order_time[req.msg.sale_ts] then
         return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
             { code = ErrorCode.ConfigError, error = "交易上架费用配置不存在", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    if player_auction_data.simple_info.box_capacity + 1 > MAX_SALE_CAPACITY then
+
+    if table.size(player_auction_data.simple_info.auction_ids) + 1 > player_auction_data.simple_info.box_capacity then
         return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
             { code = ErrorCode.TradeCapacityNotEnough, error = "交易容量不足", uid = context.uid }, req.msg_context.stub_id)
     end
@@ -449,12 +460,9 @@ function Auction.PBAuctionSaleReqCmd(req)
             { code = ErrorCode.ItemNotExist, error = "物品不存在", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    local item_type = ItemDefine.GetItemType(req.msg.config_id)
-    if item_type ~= ItemDefine.EItemSmallType.SkinCard then
-        if item_data.common_info.trade_cnt == 0 then
-            return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
-                { code = ErrorCode.TradeCntNotEnough, error = "交易次数不足", uid = context.uid }, req.msg_context.stub_id)
-        end
+    if item_data.common_info.trade_cnt == 0 then
+        return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
+            { code = ErrorCode.TradeCntNotEnough, error = "交易次数不足", uid = context.uid }, req.msg_context.stub_id)
     end
 
     local bag_change_log = {}
@@ -468,12 +476,16 @@ function Auction.PBAuctionSaleReqCmd(req)
     local auction_cost_coins = {}
     auction_cost_coins[auction_cfg.service_charge_type] = {
         coin_id = auction_cfg.service_charge_type,
-        coin_count = -auction_cfg.order_time[req.msg.sale_ts],
+        -- coin_count = -auction_cfg.order_time[req.msg.sale_ts],
+        coin_count = 0,
     }
     -- 向上取整auction_rate_coin_count
-    local auction_rate_coin_count = math.ceil((auction_cfg.order_percentage * req.msg.buyout_price) / 10000)
-    auction_cost_coins[auction_cfg.service_charge_type].coin_count = auction_cost_coins[auction_cfg.service_charge_type]
-        .coin_count - auction_rate_coin_count
+    local auction_rate = auction_cfg.order_time[req.msg.sale_ts]
+    local auction_rate_coin_count = math.ceil((auction_rate * req.msg.buyout_price) / 10000)
+    auction_cost_coins[auction_cfg.service_charge_type].coin_count = -auction_rate_coin_count
+    -- local auction_rate_coin_count = math.ceil((auction_cfg.order_percentage * req.msg.buyout_price) / 10000)
+    -- auction_cost_coins[auction_cfg.service_charge_type].coin_count = auction_cost_coins[auction_cfg.service_charge_type]
+    --     .coin_count - auction_rate_coin_count
     
     local err_code = scripts.Bag.CheckItemsEnoughPos(BagDef.BagType.Cangku, auction_cost_items)
     if err_code ~= ErrorCode.None then
@@ -539,6 +551,8 @@ function Auction.PBAuctionSaleReqCmd(req)
     if table.size(uniqitem_conf.market) >= 5 then
         sale_data.condition5 = uniqitem_conf.market[5]
     end
+    
+    local item_type = ItemDefine.GetItemType(req.msg.config_id)
     if item_type ~= ItemDefine.EItemSmallType.SkinCard and item_data.special_info then
         if item_data.special_info.magic_item then
             if table.size(item_data.special_info.magic_item.tags) > 0 then
@@ -653,8 +667,9 @@ function Auction.PBSearchAuctionProductReqCmd(req)
             }, req.msg_context.stub_id)
         end
 
-        local errcode, auction_products = Auction.SearchAuctionWitchConditions(req.msg.condition1, req.msg.condition2,
-            req.msg.condition3, req.msg.condition4, req.msg.condition5, req.msg.sort_type, req.msg.start_idx)
+        local errcode, auction_products = Auction.SearchAuctionWitchConditions(AuctionDef.StateType.ON_SALE,
+            req.msg.condition1, req.msg.condition2, req.msg.condition3, req.msg.condition4, req.msg.condition5,
+            req.msg.custom_conditions1, req.msg.custom_condition2, req.msg.sort_type, req.msg.start_idx, 100)
         if errcode ~= ErrorCode.None then
             return context.S2C(context.net_id, CmdCode.PBSearchAuctionProductRspCmd, {
                 code = errcode,
@@ -677,7 +692,8 @@ function Auction.PBAuctionBuyReqCmd(req)
     -- 参数验证
     if not req.msg.auction_id
         or not req.msg.uniqid
-        or not req.msg.buy_price then
+        or not req.msg.buy_price
+        or req.msg.buy_price <= 0 then
         return context.S2C(context.net_id, CmdCode.PBAuctionBuyRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
@@ -767,6 +783,7 @@ function Auction.PBAuctionBuyReqCmd(req)
         error = "购买商品成功",
         uid = context.uid,
         real_buy_price = res.real_buy_price,
+        auction_id = req.msg.auction_id,
     }, req.msg_context.stub_id)
 end
 
