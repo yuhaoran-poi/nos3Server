@@ -671,7 +671,7 @@ function Roommgr.EnterRoom(req)
 end
 
 function Roommgr.ReturnRoom(req)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local roomid = context.uid_roomid[req.uid]
     if not roomid then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }

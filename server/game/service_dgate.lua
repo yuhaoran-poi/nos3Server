@@ -46,7 +46,7 @@ socket.on("message", function(fd, msg)
                 stub_id =    MessagePack.stub_id,
                 msg_type =   MessagePack.msg_type
             }
-            local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+            -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
            local subname,submsg = protocol.DecodeMessagePack(MessagePack)
             --先校验协议版本号
             if subname == "PBDSLoginReqCmd" then
@@ -67,7 +67,7 @@ socket.on("message", function(fd, msg)
             local buf = moon.decode(msg, "B")
             protocol.print_message(c.net_id, buf, "message", 1)
         end
-        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         c.last_ping_time = moon.time()
         redirect(msg, c.addr_dsnode, GameDef.PTYPE_D2S, 0, 0)
     end
@@ -99,7 +99,7 @@ socket.on("close", function(fd, msg)
 end)
 
 moon.raw_dispatch("S2D", function(msg)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local buf = moon.decode(msg, "L")
     local net_id = seri.unpack_one(buf, true)
     if type(net_id) == "number" then

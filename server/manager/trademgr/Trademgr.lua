@@ -218,7 +218,7 @@ function Trademgr.Start()
     end
 
     -- moon.info(string.format("1 trade_record_infos=%s", json.pretty_encode(Trademgr.trade_record_infos)))
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local del_product_ids = {}
     for trade_id, sold_out_data in pairs(sold_out_trade_ids) do
         Database.updatetradeproduct(context.addr_db_game, trade_id, nil, sold_out_data, false)

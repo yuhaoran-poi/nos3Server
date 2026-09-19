@@ -456,7 +456,7 @@ end
 
 -- 房间频道移除玩家
 function ChatMgr.RemoveRoomChannelPlayer(room_id, uid)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_ROOM][room_id]
     if not channel then
         return { code = ErrorCode.ChannelNotExists, error = "room chat channel not found" }

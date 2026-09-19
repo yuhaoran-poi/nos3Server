@@ -121,7 +121,7 @@ end
 function MatchMgr.MatchTeam(all_teams, match_type, mapMatching)
     --- @type table<number, MatchRoomDataClass> 匹配房间列表，key为房间ID，value为房间信息
     local mapRoomData = {}
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 没有鬼直接退出
     if table.size(all_teams[6]) == 0 then return mapRoomData end
     local all_teams_bk = table.copy(all_teams, true)
@@ -146,7 +146,7 @@ function MatchMgr.MatchTeam(all_teams, match_type, mapMatching)
                 -- 开始找人
                 local ret = MatchMgr.FindFitTeam(now_count, need_human, min_score, max_score, all_teams_bk, used_teams,
                     match_teams, true)
-                local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+                -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
                 if not ret then
                     break
                 end

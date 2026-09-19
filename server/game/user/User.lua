@@ -1698,7 +1698,7 @@ function User.PBUseItemUpLvReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 检查经验增加
     local err_code, up_exp_cnt, real_cost_items = ErrorCode.None, 0, {}
     if RoleDef.RoleDefine.RoleID.Start <= req.msg.target_id
@@ -3244,7 +3244,7 @@ function User.PBUseItemReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 不同使用类型
     local change_image_ids = {}
     local bag_change_log = {}

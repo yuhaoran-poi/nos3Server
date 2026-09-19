@@ -689,7 +689,7 @@ function Role.ChangeEquipment(battle_role_id, model_role_id, role_info, config_i
             role_info.magic_item = {}
         end
         
-        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         -- 同步到玩家属性上
         if battle_role_id == role_info.config_id or model_role_id == role_info.config_id then
             local show_role = RoleDef.newSimpleRoleData()
@@ -1435,7 +1435,7 @@ function Role.PBRoleTakeOffEquipReqCmd(req)
             { code = ErrorCode.RoleNotExist, error = "角色不存在", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local bag_change_log = {}
     local err_code = ErrorCode.None
     local item_small_type, takeoff_item_data = Role.GetRoleEquipment(role_info, req.msg.takeoff_config_id,

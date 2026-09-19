@@ -177,7 +177,7 @@ end
 function Room.OnRoomInfoSync(sync_msg)
     -- moon.error("OnRoomInfoSync")
     -- print_r(sync_msg)
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if sync_msg.sync_type == RoomDef.SyncType.PlayerEnter
      and sync_msg.sync_info and sync_msg.sync_info.players then
         for _, player_info in pairs(sync_msg.sync_info.players) do

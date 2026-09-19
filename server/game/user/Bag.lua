@@ -3964,7 +3964,7 @@ function Bag.PBDecomposeReqCmd(req)
     end
 
     local function decompose_func()
-        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         local cost_items = {}
         local add_items, add_coins = {}, {}
         for _, value in pairs(req.msg.decompose_items) do
@@ -4130,7 +4130,7 @@ function Bag.PBBagAddCapacityReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     -- 数据存储更新
     if change_log then
         -- local save_bags = {}
