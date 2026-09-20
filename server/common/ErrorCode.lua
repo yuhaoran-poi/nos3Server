@@ -158,7 +158,7 @@ local ErrorCode = {
     BattleRecordsNotComplete = 917,
     ---房间ds链接非法
     RoomDsLinkInvalid = 918,
-    ---房间内玩家账户经验不足
+    ---玩家账户等级不满足难度要求
     RoomPlayerAccountExpError = 919,
     ---开始游戏被关闭
     RoomStartClose = 920,
@@ -605,6 +605,10 @@ local ErrorCode = {
     MissionOverTime = 2205,
     --- 任务类型太多
     MissionManyType = 2206,
+    --- 成就点不足
+    MissionVitalityNotEnough = 2207,
+    --- 点数类型无效或未开通
+    MissionVitalityTypeInvalid = 2208,
 
     --镇山之宝系统相关错误码
     --- 镇山之宝已解锁
