@@ -645,11 +645,11 @@ function Room.PBStartGameRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
     if front_res.code ~= ErrorCode.None then
-        if front_res.code == ErrorCode.RoomNotAllReady and front_res.error_uid then
+        if front_res.error_uid then
             return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
                 code = front_res.code,
                 error = front_res.error,
-                -- 添加未准备玩家id
+                -- 添加错误对应玩家id
                 error_uid = front_res.error_uid,
             }, req.msg_context.stub_id)
         end

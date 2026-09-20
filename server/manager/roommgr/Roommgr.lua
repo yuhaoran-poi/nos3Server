@@ -1526,7 +1526,7 @@ function Roommgr.GetMasterAndChapter(room_id)
                             moon.error(string.format("player %d account_exp is nil mem_info: %s", player.mem_info.uid,
                                 json.pretty_encode(player.mem_info)))
                         end
-                        return { code = ErrorCode.RoomPlayerAccountExpError, error = "玩家账户等级不满足难度要求" }
+                        return { code = ErrorCode.RoomPlayerAccountExpError, error = "玩家账户等级不满足难度要求", error_uid = player.mem_info.uid }
                     end
                 end
             end
