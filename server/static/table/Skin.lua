@@ -12,6 +12,8 @@ return {
 [1015005] = { id=1015005,type=19,color=4,belong=0 },
 [1015006] = { id=1015006,type=19,color=4,belong=0 },
 [1015007] = { id=1015007,type=19,color=4,belong=0 },
+[1015008] = { id=1015008,type=19,color=4,belong=0 },
+[1015009] = { id=1015009,type=19,color=4,belong=0 },
 [1015500] = { id=1015500,type=20,color=4,belong=0 },
 [1015501] = { id=1015501,type=20,color=4,belong=0 },
 [1015502] = { id=1015502,type=20,color=4,belong=0 },
