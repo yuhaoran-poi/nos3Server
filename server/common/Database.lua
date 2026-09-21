@@ -1590,8 +1590,8 @@ end
 
 function _M.select_cover_new_mailids(addr, uid, last_system_mail_id, now_ts)
     local cmd = string.format([[
-        SELECT mail_id FROM mgame.system_mail WHERE mail_id < %d AND end_ts > %d AND valid = 1 AND all_user = 1 AND cover_new = 1;
-    ]], last_system_mail_id, now_ts, uid)
+        SELECT mail_id FROM mgame.system_mail WHERE mail_id <= %d AND end_ts > %d AND valid = 1 AND all_user = 1 AND cover_new = 1;
+    ]], last_system_mail_id, now_ts)
     local res, err = moon.call("lua", addr, cmd)
     if err then
         moon.error(string.format("select_cover_new_mailids err = %s", json.pretty_encode(err)))
