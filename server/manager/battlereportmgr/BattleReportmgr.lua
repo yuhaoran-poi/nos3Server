@@ -46,8 +46,8 @@ function BattleReportmgr.DeleteSimpleReport(report_id)
     Database.RedisDelBattleReportSimple(context.addr_db_redis, report_id)
 end
 
-function BattleReportmgr.SaveDetailReport(uid, report_id, start_ts, report_data)
-    Database.addbattlereport(context.addr_db_game, report_id, uid, start_ts, report_data)
+function BattleReportmgr.SaveDetailReport(uid, report_id, start_ts, report_data, cur_role_id, fall_down_cnt, chapter_id, difficulty)
+    Database.addbattlereport(context.addr_db_game, report_id, uid, start_ts, report_data, cur_role_id, fall_down_cnt, chapter_id, difficulty)
 end
 
 function BattleReportmgr.SaveTotalSettleInfo(uid, report_id, start_ts, settle_info)

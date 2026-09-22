@@ -3686,13 +3686,13 @@ function _M.RedisDelBattleReportSimple(addr_db_redis, report_id)
     redis_send(addr_db_redis, "HDEL", BATTLE_REPORT_SIMPLE_INFO, report_id)
 end
 
-function _M.addbattlereport(addr, report_id, uid, start_ts, report_data)
-    assert(report_id and uid and start_ts and report_data)
+function _M.addbattlereport(addr, report_id, uid, start_ts, report_data, cur_role_id, fall_down_cnt, chapter_id, difficulty)
+    assert(report_id and uid and start_ts and report_data and cur_role_id and fall_down_cnt and chapter_id and difficulty)
 
     local cmd = string.format([[
-        INSERT INTO mgame.battle_report (report_id, uid, start_ts, report_data)
-        VALUES (%d, %d, %d, '%s');
-    ]], report_id, uid, start_ts, report_data)
+        INSERT INTO mgame.battle_report (report_id, uid, start_ts, report_data, cur_role_id, fall_down_cnt, chapter_id, difficulty)
+        VALUES (%d, %d, %d, '%s', %d, %d, %d, %d);
+    ]], report_id, uid, start_ts, report_data, cur_role_id, fall_down_cnt, chapter_id, difficulty)
 
     return moon.send("lua", addr, cmd)
 end

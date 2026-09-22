@@ -1181,10 +1181,12 @@ function Room.GameSettle(settle_info)
         scripts.User.AddAccountExp(settle_info.account_experience)
     end
 
+    local cur_role_id = 0
     if settle_info.game_role_change and table.size(settle_info.game_role_change) > 0 then
         local change_roles = {}
         local change_image_ids = {}
         for _, role_change in pairs(settle_info.game_role_change) do
+            cur_role_id = role_change.roleid
             if role_change.roleid and role_change.roleid > 0 then
                 -- 增加角色经验
                 if role_change.add_role_exp and role_change.add_role_exp > 0 then
@@ -1405,7 +1407,8 @@ function Room.GameSettle(settle_info)
     if settle_info.settle_data and report_id > 0 then
         -- 保存详细战报
         clusterd.send(3999, "battlereportmgr", "BattleReportmgr.SaveDetailReport", context.uid, report_id,
-            settle_info.start_game_ts, settle_info.settle_data)
+            settle_info.start_game_ts, settle_info.settle_data, cur_role_id, settle_info.fall_down_cnt or 0,
+            settle_info.chapter_id or 0, settle_info.difficulty or 0)
     end
     if settle_info.settle_simple_data and report_id > 0 then
         local user_attr = scripts.User.GetOnlineUserAttr({ ProtoEnum.UserAttrType.battle_report_ids })
