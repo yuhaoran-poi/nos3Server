@@ -35,6 +35,7 @@ return {
     ["GameMode"] = "GameMode.lua",
     ["GameModeBoss"] = "GameModeBoss.lua",
     ["GamePropUpLv"] = "GamePropUpLv.lua",
+    ["GameTagPool"] = "GameTagPool.lua",
     ["GhostEquipmentUpLv"] = "GhostEquipmentUpLv.lua",
     ["GhostInfo"] = "GhostInfo.lua",
     ["GhostUpLv"] = "GhostUpLv.lua",
