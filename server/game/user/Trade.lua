@@ -254,11 +254,6 @@ function Trade.OnTradeLogSaleMail(trade_log, need_save)
         return
     end
     trade_log.send_mail = 1
-    -- 交易行收益金额
-    -- local earn_amount = trade_log.deal_price * trade_log.deal_num - trade_log.trade_tax
-    -- if earn_amount > 0 then
-    --     scripts.Mission.TriggerCondition(MissionDef.EConditionIds.TRADE_HOUSE_EARN, {}, earn_amount)
-    -- end
     -- 通知Trademgr更改邮件发送记录
     clusterd.send(3999, "trademgr", "Trademgr.UserDealTradeLog", trade_log.log_id)
 
@@ -409,6 +404,11 @@ function Trade.OnTradeLogListSaleMail(trade_log_list, need_save)
         moon.error(string.format("OnTradeLogListSaleMail mail_ret false id_price_map = %s",
             json.pretty_encode(id_price_map)))
         return
+    end
+
+    -- 交易行收益金额(批量汇总的净收益,邮件发送成功后计)
+    if total_deal_price > 0 then
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.TRADE_HOUSE_EARN, {}, total_deal_price)
     end
 
     -- 通知Trademgr更改邮件发送记录
@@ -767,7 +767,7 @@ function Trade.PBTradeSaleReqCmd(req)
     Trade.SaveTradeInfoNow()
 
     -- 交易行上架数量
-    --scripts.Mission.TriggerCondition(MissionDef.EConditionIds.TRADE_HOUSE_SHELF_CNT, {}, 1)
+    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.TRADE_HOUSE_SHELF_CNT, {}, 1)
 
     return context.S2C(context.net_id, CmdCode["PBTradeSaleRspCmd"],
         { code = ErrorCode.None, error = "寄售商品成功", uid = context.uid, trade_id = product_data.trade_id },

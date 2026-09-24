@@ -90,6 +90,7 @@ Command List:
 	add_grade_score <uid> <count> #增加段位积分. 1234567 999 给玩家1234567增加999段位积分
 	set_user_bants <uid> <ban_end_ts> #设置玩家封禁时间. set_user_bants 1234567 3600 给玩家1234567封禁3600秒后解封
 	free_user_ban <uid> #解封玩家. free_user_ban 1234567 解封玩家1234567
+	trigger_mission <uid> <cond_id> (params) (change_cnt) #触发任务埋点. 1234567 44 "{}" 1 给玩家1234567触发条件44埋点增加1次, params为json数组如"[5,0]"
 	]]
 
 function Console.help()
@@ -551,4 +552,32 @@ function Console.free_user_ban(uid)
 	end
 end
 
+-- 触发任务埋点，用于测试任务进度
+function Console.trigger_mission(uid, cond_id, params_str, change_cnt)
+	cond_id = math.tointeger(cond_id)
+	change_cnt = math.tointeger(change_cnt or 1)
+	if not cond_id or cond_id <= 0 then
+		return Response(444, "Invalid cond_id", string.format("%s %s", tostring(uid), tostring(cond_id)))
+	end
+
+	local params = {}
+	if params_str and params_str ~= "" then
+		local ok, decoded = pcall(json.decode, params_str)
+		if not ok or type(decoded) ~= "table" then
+			return Response(444, "Invalid params, need json array", params_str)
+		end
+		params = decoded
+	end
+
+	local res, err = context.call_user(uid, "Mission.TriggerCondition", cond_id, params, change_cnt)
+	if err then
+		return Response(444, err, string.format("%d %d", uid, cond_id))
+	end
+
+	if res ~= false then
+		return Response(0, "OK")
+	else
+		return Response(444, "Failed", string.format("%d %d", uid, cond_id))
+	end
+end
 return Console

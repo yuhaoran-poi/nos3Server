@@ -249,10 +249,11 @@ function Bill.AddBillAmount(bills, order_info, bill_cfg)
     --     bills.year_bill_amount = bills.year_bill_amount + amount_record
     -- end
     bills.total_bill_amount = bills.total_bill_amount + amount_record
-    -- 触发充值金额
-    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.RECHARGE_CNT, {}, amount_record)
-    -- 触发累计充值金额
-    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.TOTAL_RECHARGE_CNT, {}, bills.total_bill_amount)
+    -- 触发充值任务(攒批触发, 仅一次任务同步)
+    scripts.Mission.TriggerConditionList({
+        { cond_id = MissionDef.EConditionIds.RECHARGE_CNT, params = {}, change_cnt = amount_record },
+        { cond_id = MissionDef.EConditionIds.TOTAL_RECHARGE_CNT, params = {}, change_cnt = bills.total_bill_amount },
+    }, nil, true)
 
     context.S2C(context.net_id, CmdCode.PBBillDoneSyncCmd, {
         bill_id = order_info.bill_id,

@@ -399,13 +399,20 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
         scripts.Bag.SaveAndLog(change_logs, ItemDef.ChangeReason.AntiqueIdentify)
     end
 
-    -- 触发鉴定古董次数
-    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.APPRAISE_ANTIQUE_CNT, { a_cfg.quality }, 1)
+    -- 触发鉴定相关任务(攒批触发, 仅一次任务同步)
+    local condition_list = {
+        { cond_id = MissionDef.EConditionIds.APPRAISE_ANTIQUE_CNT, params = { a_cfg.quality }, change_cnt = 1 },
+    }
 
     -- 成功鉴定：完成所有鉴定次数且非赝品
-    -- if rsp_remain_identify_num <= 0 and rsp_is_fake ~= 1 then
-    --     scripts.Mission.TriggerCondition(MissionDef.EConditionIds.APPRAISE_SUCCESS_CNT, { a_cfg.quality }, 1)
-    -- end
+    if rsp_remain_identify_num <= 0 and rsp_is_fake ~= 1 then
+        table.insert(condition_list, {
+            cond_id = MissionDef.EConditionIds.APPRAISE_SUCCESS_CNT,
+            params = { a_cfg.quality },
+            change_cnt = 1,
+        })
+    end
+    scripts.Mission.TriggerConditionList(condition_list, nil, true)
 
     if(rsp_price > 0) then
         -- 更新古董榜

@@ -274,16 +274,43 @@ function ItemImage.AddItemImage(config_id, change_image_ids, use_item)
         return ErrorCode.ItemNotExist
     end
 
+    -- 触发皮肤解锁任务(攒批触发, 仅一次任务同步)
+    local condition_list = {}
+    -- 按皮肤类型解锁总数（Skin表type字段）
+    local skin_cfg = GameCfg.Skin[config_id]
+    if skin_cfg and skin_cfg.type then
+        table.insert(condition_list, {
+            cond_id = MissionDef.EConditionIds.UNLOCK_SKIN_CNT,
+            params = { skin_cfg.type },
+            change_cnt = 1,
+        })
+    end
+
     if item_type == ItemDefine.EItemSmallType.RoleSkin then
-        -- 触发角色皮肤数量
+        -- 角色皮肤数量
         local now_cnt, _ = ItemImage.GetSkinTypeCnt(itemImages)
-        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.UNLOCK_ROLE_SKIN_CNT, {}, now_cnt)
-        -- 触发指定皮肤解锁
-        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.UNLOCK_ROLE_SKIN, { config_id }, 1)
+        table.insert(condition_list, {
+            cond_id = MissionDef.EConditionIds.UNLOCK_ROLE_SKIN_CNT,
+            params = {},
+            change_cnt = now_cnt,
+        })
+        -- 指定皮肤解锁
+        table.insert(condition_list, {
+            cond_id = MissionDef.EConditionIds.UNLOCK_ROLE_SKIN,
+            params = { config_id },
+            change_cnt = 1,
+        })
     elseif item_type == ItemDefine.EItemSmallType.ItemSkin then
-        -- 触发道具皮肤数量
+        -- 道具皮肤数量
         local _, now_cnt = ItemImage.GetSkinTypeCnt(itemImages)
-        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.UNLOCK_ITEM_SKIN_CNT, {}, now_cnt)
+        table.insert(condition_list, {
+            cond_id = MissionDef.EConditionIds.UNLOCK_ITEM_SKIN_CNT,
+            params = {},
+            change_cnt = now_cnt,
+        })
+    end
+    if table.size(condition_list) > 0 then
+        scripts.Mission.TriggerConditionList(condition_list, nil, true)
     end
     return ErrorCode.None
 end
@@ -573,6 +600,38 @@ function ItemImage.UpLvImage(config_id, add_exp)
         end
     end
 
+    -- 触发装备强化任务(攒批触发, 仅一次任务同步)
+    local eqp_cfg = GameCfg.UniqueItem[config_id]
+    if not eqp_cfg then
+        eqp_cfg = GameCfg.Item[config_id]
+    end
+    if eqp_cfg and eqp_cfg.type2 then
+        local eqp_type = eqp_cfg.type1 or 0
+        local condition_list = {
+            { cond_id = MissionDef.EConditionIds.STRENGTHEN_EQP_CNT, params = { eqp_cfg.type2, eqp_type }, change_cnt = 1 },
+        }
+        if eqp_cfg.table_lvup then
+            local up_exp_cfgs = GameCfg[eqp_cfg.table_lvup]
+            if up_exp_cfgs then
+                local allexp_key = "allexp" .. eqp_cfg.type2
+                local cur_level = 0
+                for _, cfg in pairs(up_exp_cfgs) do
+                    if cfg[allexp_key] and cfg[allexp_key] <= image_data.exp then
+                        cur_level = cur_level + 1
+                    end
+                end
+                if cur_level > 0 then
+                    table.insert(condition_list, {
+                        cond_id = MissionDef.EConditionIds.EQP_MAX_LEVEL,
+                        params = { eqp_cfg.type2, eqp_type },
+                        change_cnt = cur_level,
+                    })
+                end
+            end
+        end
+        scripts.Mission.TriggerConditionList(condition_list, nil, true)
+    end
+
     return ErrorCode.None, change_log
 end
 
@@ -814,6 +873,19 @@ function ItemImage.UpStarImage(config_id)
         -- 增加星星
         image_data.star_level = image_data.star_level + 1
         image_data.star_fail_cnt = 0
+        -- 触发装备升星任务
+        local star_cfg2 = GameCfg.UniqueItem[config_id]
+        if not star_cfg2 then
+            star_cfg2 = GameCfg.Item[config_id]
+        end
+        if star_cfg2 and star_cfg2.type2 then
+            local eqp_type = star_cfg2.type1 or 0
+            -- 触发装备升星任务(攒批触发, 仅一次任务同步)
+            scripts.Mission.TriggerConditionList({
+                { cond_id = MissionDef.EConditionIds.UPSTAR_EQP_CNT, params = { star_cfg2.type2, eqp_type }, change_cnt = 1 },
+                { cond_id = MissionDef.EConditionIds.EQP_MAX_STAR, params = { star_cfg2.type2, eqp_type }, change_cnt = image_data.star_level },
+            }, nil, true)
+        end
         return ErrorCode.None, change_log
     end
 end

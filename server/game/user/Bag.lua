@@ -1146,23 +1146,19 @@ function Bag.SaveAndLog(change_logs, change_reason,
             scripts.Item.SendLog(write_log_datas)
         end
 
-        -- 触发道具任务
+        -- 触发道具任务(批量收集后一次性同步,避免循环内逐条推送)
+        local condition_list = {}
         for _, write_log in pairs(write_log_datas) do
+            local cond_id
+            local change_cnt = 0
             if write_log.new_num > write_log.old_num then
-                local param1 = 0
-                local item_cfg = GameCfg.Item[write_log.config_id]
-                if item_cfg then
-                    param1 = item_cfg.type1
-                end
-                if param1 == 0 then
-                    local uniq_cfg = GameCfg.UniqueItem[write_log.config_id]
-                    if uniq_cfg then
-                        param1 = uniq_cfg.type1
-                    end
-                end
-                scripts.Mission.TriggerCondition(MissionDef.EConditionIds.GET_ITEM_CNT,
-                    { param1, write_log.config_id, change_reason }, write_log.new_num - write_log.old_num)
+                cond_id = MissionDef.EConditionIds.GET_ITEM_CNT
+                change_cnt = write_log.new_num - write_log.old_num
             elseif write_log.new_num < write_log.old_num then
+                cond_id = MissionDef.EConditionIds.CONSUME_ITEM_CNT
+                change_cnt = write_log.old_num - write_log.new_num
+            end
+            if cond_id then
                 local param1 = 0
                 local item_cfg = GameCfg.Item[write_log.config_id]
                 if item_cfg then
@@ -1174,9 +1170,25 @@ function Bag.SaveAndLog(change_logs, change_reason,
                         param1 = uniq_cfg.type1
                     end
                 end
-                scripts.Mission.TriggerCondition(MissionDef.EConditionIds.CONSUME_ITEM_CNT,
-                    { param1, write_log.config_id, change_reason }, write_log.old_num - write_log.new_num)
+                table.insert(condition_list, {
+                    cond_id = cond_id,
+                    params = { param1, write_log.config_id, change_reason },
+                    change_cnt = change_cnt,
+                })
+                -- 累计获得灵币数量(coin_id=1,任何渠道入账均计入)
+                if cond_id == MissionDef.EConditionIds.GET_ITEM_CNT
+                    and write_log.config_id == 1
+                    and ItemDefine.GetItemType(write_log.config_id) == ItemDefine.EItemSmallType.Coin then
+                    table.insert(condition_list, {
+                        cond_id = MissionDef.EConditionIds.GET_LINGBI_COIN_CNT,
+                        params = {},
+                        change_cnt = change_cnt,
+                    })
+                end
             end
+        end
+        if table.size(condition_list) > 0 then
+            scripts.Mission.TriggerConditionList(condition_list, nil, true)
         end
     end
 

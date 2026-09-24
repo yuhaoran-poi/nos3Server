@@ -744,44 +744,57 @@ function Room.PBStartGameRoomReqCmd(req)
     end
 
     -- 先扣除模式门票
+    local game_mode_cfgs = GameCfg.GameMode
+    if not game_mode_cfgs or table.size(game_mode_cfgs) <= 0 then
+        return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+            code = ErrorCode.ServerInternalError,
+            error = "system error",
+        }, req.msg_context.stub_id)
+    end
     local bag_change_log = {}
-    local err_code_coins = ErrorCode.None
-    if game_chapter_cfg.cost1 and table.size(game_chapter_cfg.cost1) > 0 then
-        local mode_cost_items, mode_cost_coins = {}, {}
-        ItemDefine.GetItemsFromCfg(game_chapter_cfg.cost1, 1, true, mode_cost_items, mode_cost_coins)
-        err_code_coins = scripts.Bag.CheckCoinsEnough(mode_cost_coins)
-        if err_code_coins == ErrorCode.None then
-            if table.size(mode_cost_coins) > 0 then
-                err_code_coins = scripts.Bag.DealCoins(mode_cost_coins, bag_change_log)
+    for _, game_mode_cfg in pairs(game_mode_cfgs) do
+        if game_mode_cfg.begin_id <= front_res.chapter and game_mode_cfg.end_id >= front_res.chapter then
+            local err_code_coins = ErrorCode.None
+
+            if game_mode_cfg.cost1 and table.size(game_mode_cfg.cost1) > 0 then
+                local mode_cost_items, mode_cost_coins = {}, {}
+                ItemDefine.GetItemsFromCfg(game_mode_cfg.cost1, 1, true, mode_cost_items, mode_cost_coins)
+                err_code_coins = scripts.Bag.CheckCoinsEnough(mode_cost_coins)
+                if err_code_coins == ErrorCode.None then
+                    if table.size(mode_cost_coins) > 0 then
+                        err_code_coins = scripts.Bag.DealCoins(mode_cost_coins, bag_change_log)
+                        if err_code_coins ~= ErrorCode.None then
+                            scripts.Bag.RollBackWithChange(bag_change_log)
+                            return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+                                code = err_code_coins,
+                                error = "消耗模式门票不足",
+                            }, req.msg_context.stub_id)
+                        end
+                    end
+                end
+            end
+
+            if err_code_coins ~= ErrorCode.None
+                and game_mode_cfg.cost2 and table.size(game_mode_cfg.cost2) > 0 then
+                local mode_cost_items, mode_cost_coins = {}, {}
+                ItemDefine.GetItemsFromCfg(game_mode_cfg.cost2, 1, true, mode_cost_items, mode_cost_coins)
+                err_code_coins = scripts.Bag.CheckCoinsEnough(mode_cost_coins)
                 if err_code_coins ~= ErrorCode.None then
-                    scripts.Bag.RollBackWithChange(bag_change_log)
                     return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
                         code = err_code_coins,
                         error = "消耗模式门票不足",
                     }, req.msg_context.stub_id)
                 end
-            end
-        end
-    end
-    if err_code_coins ~= ErrorCode.None
-        and game_chapter_cfg.cost2 and table.size(game_chapter_cfg.cost2) > 0 then
-        local mode_cost_items, mode_cost_coins = {}, {}
-        ItemDefine.GetItemsFromCfg(game_chapter_cfg.cost2, 1, true, mode_cost_items, mode_cost_coins)
-        err_code_coins = scripts.Bag.CheckCoinsEnough(mode_cost_coins)
-        if err_code_coins ~= ErrorCode.None then
-            return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
-                code = err_code_coins,
-                error = "消耗模式门票不足",
-            }, req.msg_context.stub_id)
-        end
-        if table.size(mode_cost_coins) > 0 then
-            err_code_coins = scripts.Bag.DealCoins(mode_cost_coins, bag_change_log)
-            if err_code_coins ~= ErrorCode.None then
-                scripts.Bag.RollBackWithChange(bag_change_log)
-                return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
-                    code = err_code_coins,
-                    error = "消耗模式门票不足",
-                }, req.msg_context.stub_id)
+                if table.size(mode_cost_coins) > 0 then
+                    err_code_coins = scripts.Bag.DealCoins(mode_cost_coins, bag_change_log)
+                    if err_code_coins ~= ErrorCode.None then
+                        scripts.Bag.RollBackWithChange(bag_change_log)
+                        return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
+                            code = err_code_coins,
+                            error = "消耗模式门票不足",
+                        }, req.msg_context.stub_id)
+                    end
+                end
             end
         end
     end
@@ -1352,25 +1365,45 @@ function Room.GameSettle(settle_info)
         settle_info.end_game_ts - settle_info.start_game_ts, kill_monster_cnt, settle_info.chapter_id,
         settle_info.difficulty)
 
+    -- 结算埋点统一收集: 循环与单发均攒入 condition_list, 最后一次性 TriggerConditionList 同步
+    local condition_list = {}
+    local function add_condition(cond_id, params, change_cnt)
+        table.insert(condition_list, { cond_id = cond_id, params = params, change_cnt = change_cnt })
+    end
+
     if settle_info.game_missions and table.size(settle_info.game_missions) > 0 then
         -- 局内完成任务
         for mission_id, complete_cnt in pairs(settle_info.game_missions) do
-            scripts.Mission.TriggerCondition(MissionDef.EConditionIds.IN_TASK_CNT, { mission_id }, complete_cnt)
+            add_condition(MissionDef.EConditionIds.IN_TASK_CNT, { mission_id }, complete_cnt)
+            add_condition(MissionDef.EConditionIds.SINGLE_IN_TASK_CNT, { mission_id }, complete_cnt)
         end
     end
 
     if settle_info.kill_monsters and table.size(settle_info.kill_monsters) > 0 then
         -- 击杀怪物
         for _, kill_monster in pairs(settle_info.kill_monsters) do
-            scripts.Mission.TriggerCondition(MissionDef.EConditionIds.KILL_MONSTER_CNT,
+            add_condition(MissionDef.EConditionIds.KILL_MONSTER_CNT,
                 { kill_monster.monster_type, kill_monster.monster_id }, kill_monster.kill_cnt)
+            add_condition(MissionDef.EConditionIds.SINGLE_KILL_MONSTER_CNT,
+                { kill_monster.monster_type, kill_monster.monster_id }, kill_monster.kill_cnt)
+            -- 组队击杀怪物数量(仅队伍人数>=2统计)
+            if settle_info.is_team and settle_info.is_team == 1 then
+                add_condition(MissionDef.EConditionIds.TEAM_KILL_MONSTER_CNT,
+                    { kill_monster.monster_type, kill_monster.monster_id }, kill_monster.kill_cnt)
+            end
         end
     end
 
-    if settle_info.chapter_id and settle_info.difficulty then
+    if settle_info.chapter_id and settle_info.difficulty and settle_info.is_complete == 1 then
         -- 完成章节难度
-        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.BATTLE_CHAPTER_CNT,
+        add_condition(MissionDef.EConditionIds.BATTLE_CHAPTER_CNT,
             { settle_info.chapter_id, settle_info.difficulty }, 1)
+
+        -- 组队完成章节难度次数(以结算成功为准, 仅队伍人数>=2统计)
+        if settle_info.is_team and settle_info.is_team == 1 then
+            add_condition(MissionDef.EConditionIds.TEAM_BATTLE_CHAPTER_CNT,
+                { settle_info.chapter_id, settle_info.difficulty }, 1)
+        end
 
         -- 检查是否为主线章节
         local now_time = moon.time()
@@ -1389,15 +1422,222 @@ function Room.GameSettle(settle_info)
     if settle_info.battle_god_ids and table.size(settle_info.battle_god_ids) > 0 then
         -- 参战神明
         for _, god_id in pairs(settle_info.battle_god_ids) do
-            scripts.Mission.TriggerCondition(MissionDef.EConditionIds.GOD_ENTER_BATTLE_CNT, { god_id }, 1)
+            add_condition(MissionDef.EConditionIds.GOD_ENTER_BATTLE_CNT, { god_id }, 1)
         end
     end
 
     if settle_info.booty_value and settle_info.booty_value > 0
         and settle_info.chapter_id and settle_info.difficulty then
         -- 增加战利品价值
-        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.GET_BOOTY_VALUE_CNT,
+        add_condition(MissionDef.EConditionIds.GET_BOOTY_VALUE_CNT,
             { settle_info.chapter_id, settle_info.difficulty }, settle_info.booty_value)
+        -- 单局从X章节Y难度带出Z价值战利品(覆盖型,取单局值)
+        add_condition(MissionDef.EConditionIds.SINGLE_BOOTY_VALUE_CNT,
+            { settle_info.chapter_id, settle_info.difficulty }, settle_info.booty_value)
+    end
+
+    -- 对局完成次数
+    add_condition(MissionDef.EConditionIds.BATTLE_FINISH_CNT, {}, 1)
+
+    if settle_info.is_retreat and settle_info.is_retreat == 1 then
+        -- 成功撤离次数
+        add_condition(MissionDef.EConditionIds.SUCCESS_LEAVE_CNT, {}, 1)
+
+        -- 组队成功撤离次数(仅队伍人数>=2统计)
+        if settle_info.is_team and settle_info.is_team == 1 then
+            add_condition(MissionDef.EConditionIds.TEAM_SUCCESS_LEAVE_CNT, {}, 1)
+        end
+    end
+
+    if (not settle_info.is_complete or settle_info.is_complete == 0)
+        and (not settle_info.is_retreat or settle_info.is_retreat == 0) then
+        -- 累计失败次数(非通关且非撤离的对局计1次)
+        add_condition(MissionDef.EConditionIds.TOTAL_FAIL_CNT, {}, 1)
+    end
+
+    -- 完美通关次数：主线模式击杀鬼王并完成结算，没有失败也没有撤离计1次（限定主线模式+击杀鬼王）
+    if settle_info.chapter_id and settle_info.chapter_id >= MIN_MAINLINE_CHAPTERID
+        and settle_info.chapter_id <= MAX_MAINLINE_CHAPTERID
+        and settle_info.kill_ghost_king and settle_info.kill_ghost_king == 1
+        and settle_info.is_complete and settle_info.is_complete == 1
+        and (not settle_info.is_retreat or settle_info.is_retreat == 0) then
+        add_condition(MissionDef.EConditionIds.PERFECT_CLEAR_CNT, {}, 1)
+    end
+
+    if settle_info.main_task_complete and settle_info.main_task_complete == 1 then
+        -- 累计完成主线任务次数（结算时该局完成主线计1次）
+        add_condition(MissionDef.EConditionIds.MAIN_TASK_COMPLETE_CNT, {}, 1)
+    end
+
+    if settle_info.sub_task_cnt and settle_info.sub_task_cnt > 0 then
+        -- 累计完成支线任务次数（结算时累加该局支线任务完成数量）
+        add_condition(MissionDef.EConditionIds.SUB_TASK_COMPLETE_CNT, {}, settle_info.sub_task_cnt)
+    end
+
+    if settle_info.chapter_id and settle_info.kill_monsters and table.size(settle_info.kill_monsters) > 0 then
+        -- 通关X章节并击杀Y类型Z怪物次数
+        for _, kill_monster in pairs(settle_info.kill_monsters) do
+            add_condition(MissionDef.EConditionIds.CLEAR_KILL_CNT,
+                { settle_info.chapter_id, kill_monster.monster_type, kill_monster.monster_id }, 1)
+        end
+    end
+
+    if settle_info.is_team and settle_info.is_team == 1 then
+        -- 组队对局完成次数
+        add_condition(MissionDef.EConditionIds.TEAM_BATTLE_FINISH_CNT, {}, 1)
+    end
+
+    if settle_info.damage_value and settle_info.damage_value > 0 then
+        -- 单局伤害总量达到阈值
+        add_condition(MissionDef.EConditionIds.SINGLE_DAMAGE_REACH, {}, settle_info.damage_value)
+        -- 累计局内伤害总量
+        add_condition(MissionDef.EConditionIds.TOTAL_DAMAGE, {}, settle_info.damage_value)
+    end
+
+    if settle_info.healing_value and settle_info.healing_value > 0 then
+        -- 单局治疗总量达到阈值
+        add_condition(MissionDef.EConditionIds.SINGLE_HEAL_REACH, {}, settle_info.healing_value)
+        -- 累计局内治疗总量
+        add_condition(MissionDef.EConditionIds.TOTAL_HEAL, {}, settle_info.healing_value)
+    end
+
+    if settle_info.total_open_cnt and table.size(settle_info.total_open_cnt) > 0 then
+        -- 局内开启容器数量
+        for _, container in pairs(settle_info.total_open_cnt) do
+            add_condition(MissionDef.EConditionIds.OPEN_CONTAINER_CNT,
+                { container.pot_type, container.pot_quality }, container.open_cnt)
+            add_condition(MissionDef.EConditionIds.TOTAL_OPEN_CONTAINER_CNT,
+                { container.pot_type, container.pot_quality }, container.open_cnt)
+        end
+    end
+
+    if settle_info.fall_down_cnt and settle_info.fall_down_cnt > 0 then
+        -- 本局倒地次数不超过param1计1次
+        add_condition(MissionDef.EConditionIds.FALL_LIMIT_CNT, {}, settle_info.fall_down_cnt)
+        -- 累计倒地次数
+        add_condition(MissionDef.EConditionIds.TOTAL_FALL_CNT, {}, settle_info.fall_down_cnt)
+    end
+
+    if settle_info.pull_up_cnt and settle_info.pull_up_cnt > 0 then
+        -- 累计救人次数
+        add_condition(MissionDef.EConditionIds.TOTAL_RESCUE_CNT, {}, settle_info.pull_up_cnt)
+    end
+
+    if settle_info.start_game_ts and settle_info.end_game_ts then
+        local game_time = settle_info.end_game_ts - settle_info.start_game_ts
+        if game_time > 0 then
+            -- 累计游戏时长
+            add_condition(MissionDef.EConditionIds.TOTAL_GAME_TIME, {}, game_time)
+
+            -- 成功通关且有章节信息时, 判断通关时长(仅统计成功通关的对局时长)
+            if settle_info.is_complete and settle_info.is_complete == 1
+                and settle_info.chapter_id and settle_info.difficulty then
+                -- 是否完美通关(与埋点83 PERFECT_CLEAR_CNT同口径: 主线+击杀鬼王+通关+未撤离)
+                local is_perfect = 0
+                if settle_info.chapter_id >= MIN_MAINLINE_CHAPTERID
+                    and settle_info.chapter_id <= MAX_MAINLINE_CHAPTERID
+                    and settle_info.kill_ghost_king and settle_info.kill_ghost_king == 1
+                    and (not settle_info.is_retreat or settle_info.is_retreat == 0) then
+                    is_perfect = 1
+                end
+                -- params: {1=本局通关时长秒, 2=是否完美通关, 3=章节id}
+                add_condition(MissionDef.EConditionIds.CLEAR_TIME_LIMIT,
+                    { game_time, is_perfect, settle_info.chapter_id }, 1)
+            end
+        end
+    end
+
+    if settle_info.bring_out_items and table.size(settle_info.bring_out_items) > 0 then
+        -- 单局带出材料数量 / 累计带出材料数量
+        for _, item in pairs(settle_info.bring_out_items) do
+            local bring_cnt = item.item_count or item.count or 1
+            add_condition(MissionDef.EConditionIds.BRING_OUT_ITEM_CNT,
+                { item.item_type, item.quality }, bring_cnt)
+            add_condition(MissionDef.EConditionIds.TOTAL_BRING_OUT_ITEM_CNT,
+                { item.item_type, item.quality }, bring_cnt)
+        end
+    end
+
+    if settle_info.game_collect_items and table.size(settle_info.game_collect_items) > 0 then
+        -- 累计收集局内指定道具数量(局内id,局外无配置)
+        for item_id, item_cnt in pairs(settle_info.game_collect_items) do
+            add_condition(MissionDef.EConditionIds.GAME_COLLECT_ITEM_CNT,
+                { 0, item_id }, item_cnt)
+        end
+    end
+
+    if settle_info.booty_items and table.size(settle_info.booty_items) > 0 then
+        -- 单局获得道具战利品(覆盖型,取单局值; 类型查局外表type1,查不到为0)
+        for item_id, item_count in pairs(settle_info.booty_items) do
+            local param1 = 0
+            local item_cfg = GameCfg.Item[item_id]
+            if item_cfg then
+                param1 = item_cfg.type1
+            else
+                local uniq_cfg = GameCfg.UniqueItem[item_id]
+                if uniq_cfg then
+                    param1 = uniq_cfg.type1
+                end
+            end
+            add_condition(MissionDef.EConditionIds.SINGLE_GET_ITEM_CNT,
+                { 0, param1, item_id }, item_count)
+        end
+    end
+
+    if settle_info.booty_coins and table.size(settle_info.booty_coins) > 0 then
+        -- 单局获得货币战利品(覆盖型,取单局值; 货币无类型,type传0)
+        for _, coin in pairs(settle_info.booty_coins) do
+            if coin.coin_id and coin.coin_count and coin.coin_count > 0 then
+                add_condition(MissionDef.EConditionIds.SINGLE_GET_ITEM_CNT,
+                    { 0, 0, coin.coin_id }, coin.coin_count)
+            end
+        end
+    end
+
+    if settle_info.game_consume_items and table.size(settle_info.game_consume_items) > 0 then
+        -- 累计消耗局内指定道具数量(局内id,局外无配置)
+        for item_id, item_cnt in pairs(settle_info.game_consume_items) do
+            add_condition(MissionDef.EConditionIds.GAME_CONSUME_ITEM_CNT,
+                { 0, item_id }, item_cnt)
+        end
+    end
+
+    if settle_info.game_role_change and table.size(settle_info.game_role_change) > 0 then
+        -- 指定角色完成对局次数
+        for _, role_change in pairs(settle_info.game_role_change) do
+            if role_change.roleid and role_change.roleid > 0 then
+                add_condition(MissionDef.EConditionIds.SPECIFY_ROLE_BATTLE_CNT, { role_change.roleid }, 1)
+            end
+        end
+    end
+
+    if settle_info.weight_use_rate and settle_info.weight_use_rate > 0 then
+        -- 单局负重使用量
+        add_condition(MissionDef.EConditionIds.BATTLE_WEIGHT_LOAD, {}, settle_info.weight_use_rate)
+    end
+
+    if settle_info.account_experience and settle_info.account_experience > 0 then
+        -- 累计获取账户经验
+        add_condition(MissionDef.EConditionIds.TOTAL_ACCOUNT_EXP, {}, settle_info.account_experience)
+    end
+
+    if settle_info.game_role_change and table.size(settle_info.game_role_change) > 0 then
+        -- 累计获取角色经验
+        for _, role_change in pairs(settle_info.game_role_change) do
+            if role_change.add_role_exp and role_change.add_role_exp > 0 then
+                add_condition(MissionDef.EConditionIds.TOTAL_ROLE_EXP, {}, role_change.add_role_exp)
+            end
+        end
+    end
+
+    if settle_info.change_score and settle_info.change_score > 0 then
+        -- 累计获取段位积分
+        add_condition(MissionDef.EConditionIds.TOTAL_GRADE_SCORE, {}, settle_info.change_score)
+    end
+
+    -- 一次性触发并同步(单条 PBUpdateMissionSyncCmd + 一次落库)
+    if table.size(condition_list) > 0 then
+        scripts.Mission.TriggerConditionList(condition_list, nil, true)
     end
 
     local report_id = 0
@@ -1429,26 +1669,6 @@ function Room.GameSettle(settle_info)
         -- 保存简略战报
         clusterd.send(3999, "battlereportmgr", "BattleReportmgr.SaveSimpleReport", report_id,
             settle_info.settle_simple_data)
-    end
-
-    if settle_info.chapter_id and settle_info.difficulty then
-        -- 完成章节难度
-        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.BATTLE_CHAPTER_CNT,
-            { settle_info.chapter_id, settle_info.difficulty }, 1)
-    end
-
-    if settle_info.battle_god_ids and table.size(settle_info.battle_god_ids) > 0 then
-        -- 参战神明
-        for _, god_id in pairs(settle_info.battle_god_ids) do
-            scripts.Mission.TriggerCondition(MissionDef.EConditionIds.GOD_ENTER_BATTLE_CNT, { god_id }, 1)
-        end
-    end
-
-    if settle_info.booty_value and settle_info.booty_value > 0
-        and settle_info.chapter_id and settle_info.difficulty then
-        -- 增加战利品价值
-        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.GET_BOOTY_VALUE_CNT,
-            { settle_info.chapter_id, settle_info.difficulty }, settle_info.booty_value)
     end
 
     -- 临时增加战报整体记录

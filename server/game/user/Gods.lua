@@ -313,10 +313,11 @@ function Gods.PBGodsUnlockReqCmd(req)
     scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.GodsUnlock)
     Gods.SaveAndSync({ [god_cfg.id] = 1 }, nil)
 
-    -- 触发解锁神明总数
-    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.UNLOCK_GOD_CNT, {}, table.size(gods.gods_image))
-    -- 触发解锁指定神明
-    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.UNLOCK_GOD, { god_cfg.id }, 1)
+    -- 触发解锁神明任务(攒批触发, 仅一次任务同步)
+    scripts.Mission.TriggerConditionList({
+        { cond_id = MissionDef.EConditionIds.UNLOCK_GOD_CNT, params = {}, change_cnt = table.size(gods.gods_image) },
+        { cond_id = MissionDef.EConditionIds.UNLOCK_GOD, params = { god_cfg.id }, change_cnt = 1 },
+    }, nil, true)
 
     return context.S2C(context.net_id, CmdCode.PBGodsUnlockRspCmd, {
         code = ErrorCode.None,

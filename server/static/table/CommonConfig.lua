@@ -31,7 +31,7 @@ return {
 [25] = { id=25,name="DungeonAwardEmailId",value=2000021,items={} },
 [26] = { id=26,name="UpStarAdditionRate",value=500,items={} },
 [27] = { id=27,name="TreasureBoxEmail",value=2000020,items={} },
-[29] = { id=29,name="DailyTaskCount",value=3,items={} },
+[29] = { id=29,name="DailyTaskCount",value=5,items={} },
 [30] = { id=30,name="WeeklyTaskCount",value=3,items={} },
 [31] = { id=31,name="ReplaceableDailyMission",value=5,items={} },
 [32] = { id=32,name="ActivityExpireMail",value=2000023,items={} }

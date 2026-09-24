@@ -3580,7 +3580,7 @@ end
 -- 任务数据
 function _M.loadmissioninfo(addr, uid)
     local cmd = string.format([[
-        SELECT linear_value, linear_json, period_value, period_json, achv_value, achv_json FROM mgame.missions WHERE uid = %d;
+        SELECT linear_value, linear_json, period_value, period_json, achv_value, achv_json, activity_value, activity_json FROM mgame.missions WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
@@ -3595,13 +3595,18 @@ function _M.loadmissioninfo(addr, uid)
             period_info = tmp_period_data,
             achivement_info = tmp_achv_data,
         }
+        if res[1].activity_value and res[1].activity_value ~= "" then
+            local pb_activity_data = crypt.base64decode(res[1].activity_value)
+            local _, tmp_activity_data = protocol.decodewithname("PBActivityMissionInfo", pb_activity_data)
+            player_mission_info.activity_info = tmp_activity_data
+        end
         return player_mission_info
     end
     moon.error("loadmissioninfo failed", uid, err)
     return nil
 end
 
-function _M.savemissioninfo(addr, uid, linear_data, period_data, achv_data)
+function _M.savemissioninfo(addr, uid, linear_data, period_data, achv_data, activity_data)
     assert(linear_data and period_data and achv_data)
 
     local linear_data_str = jencode(linear_data)
@@ -3613,12 +3618,21 @@ function _M.savemissioninfo(addr, uid, linear_data, period_data, achv_data)
     local achv_data_str = jencode(achv_data)
     local _, pb_achv_data = protocol.encodewithname("PBAchivementMissionInfo", achv_data)
     local pb_achv_value = crypt.base64encode(pb_achv_data)
+    local activity_data_str = ""
+    local pb_activity_value = ""
+    if activity_data then
+        activity_data_str = jencode(activity_data)
+        local _, pb_activity_data = protocol.encodewithname("PBActivityMissionInfo", activity_data)
+        pb_activity_value = crypt.base64encode(pb_activity_data)
+    end
     local cmd = string.format([[
-        INSERT INTO mgame.missions (uid, linear_value, linear_json, period_value, period_json, achv_value, achv_json)
-        VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s')
-        ON DUPLICATE KEY UPDATE linear_value = '%s', linear_json = '%s', period_value = '%s', period_json = '%s', achv_value = '%s', achv_json = '%s';
+        INSERT INTO mgame.missions (uid, linear_value, linear_json, period_value, period_json, achv_value, achv_json, activity_value, activity_json)
+        VALUES (%d, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')
+        ON DUPLICATE KEY UPDATE linear_value = '%s', linear_json = '%s', period_value = '%s', period_json = '%s', achv_value = '%s', achv_json = '%s', activity_value = '%s', activity_json = '%s';
     ]], uid, pb_linear_value, linear_data_str, pb_period_value, period_data_str, pb_achv_value, achv_data_str,
-        pb_linear_value, linear_data_str, pb_period_value, period_data_str, pb_achv_value, achv_data_str)
+        pb_activity_value, activity_data_str,
+        pb_linear_value, linear_data_str, pb_period_value, period_data_str, pb_achv_value, achv_data_str,
+        pb_activity_value, activity_data_str)
 
     return moon.send("lua", addr, cmd)
 end

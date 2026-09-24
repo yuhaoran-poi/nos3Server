@@ -222,14 +222,31 @@ function Role.CheckAddRoles(roleids)
     return ErrorCode.None
 end
 
-function Role.GetSkillNum(role_info, skillids)
+function Role.GetSkillNum(role_info, skillids, condition_list)
     local num = table.size(role_info.main_skill) + table.size(role_info.minor_skill1) +
         table.size(role_info.minor_skill2) + table.size(role_info.passive_skill)
 
+    -- 条件追加进传入队列, 由调用方攒批触发(仅一次任务同步); 未传队列时自行触发
+    local is_owner = false
+    if not condition_list then
+        condition_list = {}
+        is_owner = true
+    end
     -- 触发角色解锁技能数量
-    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_UNLOCK_SKILL_CNT, { role_info.config_id }, num)
+    table.insert(condition_list, {
+        cond_id = MissionDef.EConditionIds.ROLE_UNLOCK_SKILL_CNT,
+        params = { role_info.config_id },
+        change_cnt = num,
+    })
     for _, skillid in pairs(skillids) do
-        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_UNLOCK_SKILL, { role_info.config_id, skillid }, 1)
+        table.insert(condition_list, {
+            cond_id = MissionDef.EConditionIds.ROLE_UNLOCK_SKILL,
+            params = { role_info.config_id, skillid },
+            change_cnt = 1,
+        })
+    end
+    if is_owner then
+        scripts.Mission.TriggerConditionList(condition_list, nil, true)
     end
 end
 
@@ -432,11 +449,22 @@ function Role.AddRole(roleid)
 
     roles.role_list[roleid] = role_info
 
-    Role.GetSkillNum(role_info, skillids)
+    -- 触发角色解锁相关任务(攒批触发, 仅一次任务同步)
+    local condition_list = {}
+    Role.GetSkillNum(role_info, skillids, condition_list)
     -- 触发角色数量
-    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.UNLOCK_ROLE_CNT, {}, table.size(roles.role_list))
+    table.insert(condition_list, {
+        cond_id = MissionDef.EConditionIds.UNLOCK_ROLE_CNT,
+        params = {},
+        change_cnt = table.size(roles.role_list),
+    })
     -- 触发指定角色解锁
-    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.UNLOCK_ROLE, { roleid }, 1)
+    table.insert(condition_list, {
+        cond_id = MissionDef.EConditionIds.UNLOCK_ROLE,
+        params = { roleid },
+        change_cnt = 1,
+    })
+    scripts.Mission.TriggerConditionList(condition_list, nil, true)
 
     return ErrorCode.None
 end
@@ -837,6 +865,8 @@ function Role.GetLvMoreThanNum(target_role_id, target_lv_exps)
         return
     end
 
+    -- 触发角色等级任务(攒批触发, 仅一次任务同步)
+    local condition_list = {}
     for _, lv_exp in pairs(target_lv_exps) do
         local num = 0
         for roleid, role_info in pairs(roles.role_list) do
@@ -845,8 +875,25 @@ function Role.GetLvMoreThanNum(target_role_id, target_lv_exps)
             end
         end
         -- 触发角色达到指定等级的数量
-        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_LEVEL_CNT, { lv_exp.lv }, num + 1)
-        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_LEVEL, { target_role_id }, lv_exp.lv)
+        table.insert(condition_list, {
+            cond_id = MissionDef.EConditionIds.ROLE_LEVEL_CNT,
+            params = { lv_exp.lv },
+            change_cnt = num + 1,
+        })
+        table.insert(condition_list, {
+            cond_id = MissionDef.EConditionIds.ROLE_LEVEL,
+            params = { target_role_id },
+            change_cnt = lv_exp.lv,
+        })
+        -- 触发角色最高等级
+        table.insert(condition_list, {
+            cond_id = MissionDef.EConditionIds.ROLE_MAX_LEVEL,
+            params = { target_role_id },
+            change_cnt = lv_exp.lv,
+        })
+    end
+    if table.size(condition_list) > 0 then
+        scripts.Mission.TriggerConditionList(condition_list, nil, true)
     end
 
     for roleid, role_info in pairs(roles.role_list) do
@@ -881,7 +928,7 @@ function Role.GetMaxExpRoleid()
 
     local max_exp, cur_roleid = 0, 0
     for roleid, role_info in pairs(roles.role_list) do
-        if role_info.exp > max_exp then
+        if role_info.exp >= max_exp then
             max_exp = role_info.exp
             cur_roleid = roleid
         end
@@ -1244,10 +1291,13 @@ function Role.UpStar(roleid)
         role_info.star_level = role_info.star_level + 1
         role_info.star_fail_cnt = 0
 
-        -- 触发角色达到星级的数量
+        -- 触发角色星级任务(攒批触发, 仅一次任务同步)
         local num = Role.GetStarMoreThanNum(roleid, role_info.star_level)
-        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_STAR_CNT, { role_info.star_level }, num + 1)
-        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_STAR, { roleid }, role_info.star_level)
+        scripts.Mission.TriggerConditionList({
+            { cond_id = MissionDef.EConditionIds.ROLE_STAR_CNT, params = { role_info.star_level }, change_cnt = num + 1 },
+            { cond_id = MissionDef.EConditionIds.ROLE_STAR, params = { roleid }, change_cnt = role_info.star_level },
+            { cond_id = MissionDef.EConditionIds.ROLE_MAX_STAR, params = { roleid }, change_cnt = role_info.star_level },
+        }, nil, true)
 
         return ErrorCode.None, change_log
     end
@@ -1815,6 +1865,14 @@ function Role.PBRoleSkillUpStarReqCmd(req)
             end
         end
 
+        -- 触发技能最高等级/星级(攒批触发, 仅一次任务同步)
+        scripts.Mission.TriggerConditionList({
+            { cond_id = MissionDef.EConditionIds.SKILL_MAX_LEVEL,
+                params = { req.msg.roleid, req.msg.skill_id }, change_cnt = skill_star },
+            { cond_id = MissionDef.EConditionIds.SKILL_MAX_STAR,
+                params = { req.msg.roleid, req.msg.skill_id }, change_cnt = skill_star },
+        }, nil, true)
+
         context.S2C(context.net_id, CmdCode.PBRoleSkillUpStarRspCmd, {
             code = ErrorCode.None,
             error = "",
@@ -2239,7 +2297,10 @@ function Role.PBRoleSkillCompositeReqCmd(req)
 
     if table.size(change_roles) > 0 then
         scripts.Role.SaveAndLog(change_roles)
-        Role.GetSkillNum(role_info, { req.msg.composite_id })
+        -- 触发技能解锁任务(攒批触发, 仅一次任务同步)
+        local condition_list = {}
+        Role.GetSkillNum(role_info, { req.msg.composite_id }, condition_list)
+        scripts.Mission.TriggerConditionList(condition_list, nil, true)
     end
 end
 

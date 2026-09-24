@@ -23,38 +23,38 @@ local TRADE_LOG_MAX_COUNT = 100
 local Auction = {}
 
 function Auction.Init()
-    -- local auction_info = Auction.LoadAuctionInfo()
-    -- if auction_info then
-    --     local auction_data = AuctionDef.newSelfAuctionData()
-    --     auction_data.simple_info = auction_info
-    --     scripts.UserModel.SetAuctionData(auction_data)
-    -- end
+    local auction_info = Auction.LoadAuctionInfo()
+    if auction_info then
+        local auction_data = AuctionDef.newSelfAuctionData()
+        auction_data.simple_info = auction_info
+        scripts.UserModel.SetAuctionData(auction_data)
+    end
 
-    -- local player_auction_data = scripts.UserModel.GetAuctionData()
-    -- if not player_auction_data then
-    --     player_auction_data = AuctionDef.newSelfAuctionData()
-    --     local auction_cfg = GameCfg.TransactionConfig[2]
-    --     if auction_cfg and auction_cfg.order_num and auction_cfg.account_market then
-    --         player_auction_data.simple_info.box_capacity = auction_cfg.order_num
-    --         player_auction_data.simple_info.can_onsale_cnt = auction_cfg.account_market
-    --         player_auction_data.simple_info.update_ts = moon.time()
-    --     end
-    --     scripts.UserModel.SetAuctionData(player_auction_data)
-    -- end
+    local player_auction_data = scripts.UserModel.GetAuctionData()
+    if not player_auction_data then
+        player_auction_data = AuctionDef.newSelfAuctionData()
+        local auction_cfg = GameCfg.TransactionConfig[2]
+        if auction_cfg and auction_cfg.order_num and auction_cfg.account_market then
+            player_auction_data.simple_info.box_capacity = auction_cfg.order_num
+            player_auction_data.simple_info.can_onsale_cnt = auction_cfg.account_market
+            player_auction_data.simple_info.update_ts = moon.time()
+        end
+        scripts.UserModel.SetAuctionData(player_auction_data)
+    end
 end
 
 function Auction.Start()
-    -- local player_auction_data = scripts.UserModel.GetAuctionData()
-    -- if not player_auction_data then
-    --     return
-    -- end
+    local player_auction_data = scripts.UserModel.GetAuctionData()
+    if not player_auction_data then
+        return
+    end
 
-    -- Auction.CheckData()
-    -- Auction.DealOfflineAuctionLog()
-    -- Auction.DealOfflineAuctionTakeDown()
-    -- Auction.DealOfflineAuctionFailMail()
+    Auction.CheckData()
+    Auction.DealOfflineAuctionLog()
+    Auction.DealOfflineAuctionTakeDown()
+    Auction.DealOfflineAuctionFailMail()
 
-    -- Auction.SaveAuctionInfoNow()
+    Auction.SaveAuctionInfoNow()
 end
 
 function Auction.CheckData()

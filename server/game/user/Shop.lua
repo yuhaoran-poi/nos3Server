@@ -955,9 +955,11 @@ function Shop.OpenTreasure(config_id, num)
     treasures.treasure_list[config_id] = treasure_data
     treasures.total_open_count = treasures.total_open_count + num
 
-    -- 触发获得宝箱数量
-    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.OPEN_TREASURE_CNT, { config_id }, treasure_data.open_count)
-    scripts.Mission.TriggerCondition(MissionDef.EConditionIds.OPEN_TREASURE_CNT, { 0 }, treasures.total_open_count)
+    -- 触发开宝箱任务(攒批触发, 仅一次任务同步)
+    scripts.Mission.TriggerConditionList({
+        { cond_id = MissionDef.EConditionIds.OPEN_TREASURE_CNT, params = { config_id }, change_cnt = treasure_data.open_count },
+        { cond_id = MissionDef.EConditionIds.OPEN_TREASURE_CNT, params = { 0 }, change_cnt = treasures.total_open_count },
+    }, nil, true)
 
     Shop.SaveShopsNow()
     scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.TreasureOpen)

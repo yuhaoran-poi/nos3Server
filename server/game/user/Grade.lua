@@ -7,6 +7,7 @@ local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
 local Database = common.Database
 local GradeDef = require("common.def.GradeDef")
+local MissionDef = require("common.def.MissionDef")
 local ItemDefine = require("common.logic.ItemDefine")
 local BagDef = require("common.def.BagDef")
 local ItemDef = require("common.def.ItemDef")
@@ -150,8 +151,16 @@ function Grade.ChangeScore(change_score)
         grade_info.grade_data.now_grade_score = grade_info.grade_data.now_grade_score + change_score
     end
 
+    local is_new_highest = false
     if grade_info.grade_data.highest_grade_score < grade_info.grade_data.now_grade_score then
         grade_info.grade_data.highest_grade_score = grade_info.grade_data.now_grade_score
+        is_new_highest = true
+    end
+
+    -- 触发"账户历史最高段位积分"任务(覆盖型, 传账户历史最高分)
+    if is_new_highest and scripts.Mission then
+        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.HISTORY_MAX_GRADE_SCORE, {},
+            Grade.GetHistoryMaxScore())
     end
 
     -- 更新段位榜
@@ -209,6 +218,25 @@ function Grade.GetCurSeasonScore()
     end
 
     return grade_data.now_grade_score
+end
+
+-- 账户历史最高段位积分: 取所有赛季单赛季最高分的最大值(跨赛季永久保留)
+function Grade.GetHistoryMaxScore()
+    local Grades = scripts.UserModel.GetGrades()
+    if not Grades or not Grades.grade_infos then
+        return 0
+    end
+
+    local max_score = 0
+    for _, grade_info in pairs(Grades.grade_infos) do
+        if grade_info and grade_info.grade_data
+            and grade_info.grade_data.highest_grade_score
+            and grade_info.grade_data.highest_grade_score > max_score then
+            max_score = grade_info.grade_data.highest_grade_score
+        end
+    end
+
+    return max_score
 end
 
 function Grade.PBGetGradeDataReqCmd(req)

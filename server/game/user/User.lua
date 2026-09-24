@@ -445,7 +445,7 @@ function User.Logout()
 end
 
 function User.InitCheckData()
-    -- scripts.Mission.CheckNewMissions()
+    scripts.Mission.CheckNewMissions()
     User.CheckAccountLevel()
     User.NotifyGameSettle()
     User.NotifyGameReturnItems()
@@ -965,21 +965,40 @@ function User.PBPingCmd(req)
         change_day = true
     end
     if change_day or add_time >= 60 then
+        -- 触发签到/在线任务(攒批触发, 仅一次任务同步)
+        local condition_list = {}
         if change_day then
             -- 触发签到
-            scripts.Mission.TriggerCondition(MissionDef.EConditionIds.SIGN_CNT, {}, 1)
+            table.insert(condition_list, {
+                cond_id = MissionDef.EConditionIds.SIGN_CNT,
+                params = {},
+                change_cnt = 1,
+            })
             -- 连续签到：昨天在线则累加，断签重置为1
-            -- local yesterday_ts = now_ts - 86400
-            -- if datetime.is_same_day(last_online_time, yesterday_ts) then
-            --     scripts.Mission.TriggerCondition(MissionDef.EConditionIds.CONTINUE_SIGN_CNT, { 1 }, 1)
-            -- else
-            --     scripts.Mission.TriggerCondition(MissionDef.EConditionIds.CONTINUE_SIGN_CNT, { 0 }, 1)
-            -- end
+            local yesterday_ts = now_ts - 86400
+            if datetime.is_same_day(last_online_time, yesterday_ts) then
+                table.insert(condition_list, {
+                    cond_id = MissionDef.EConditionIds.CONTINUE_SIGN_CNT,
+                    params = { 1 },
+                    change_cnt = 1,
+                })
+            else
+                table.insert(condition_list, {
+                    cond_id = MissionDef.EConditionIds.CONTINUE_SIGN_CNT,
+                    params = { 0 },
+                    change_cnt = 1,
+                })
+            end
             -- 持续在线计入第二天登录
             Database.updatelogin(context.addr_db_user, context.uid)
         end
         -- 触发在线时间累计
-        scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ONLINE_TIME, {}, add_time)
+        table.insert(condition_list, {
+            cond_id = MissionDef.EConditionIds.ONLINE_TIME,
+            params = {},
+            change_cnt = add_time,
+        })
+        scripts.Mission.TriggerConditionList(condition_list, nil, true)
 
         local update_user_attr = {}
         update_user_attr[ProtoEnum.UserAttrType.online_time] = now_ts

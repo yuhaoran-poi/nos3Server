@@ -133,6 +133,11 @@ function Season.ChangeSeason(new_season_id)
     scripts.Grade.SeasonChange(new_season_id)
 
     Seasons.cur_season_id = new_season_id
+
+    -- 重置分组周任务: 赛季内按周解锁的周任务(week_num>0)从第1组重新开始
+    -- 必须在 cur_season_id 更新后调用: OnSeasonChange 内部按新赛季开始时间计算周序号
+    scripts.Mission.OnSeasonChange()
+
     Season.SaveSeasonsNow()
 end
 
