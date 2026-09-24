@@ -134,7 +134,7 @@ return {
 [124] = { id=124,tips="天阶8-1",rank=4,pin=8,star=1,lock=0,exp=12400,reward=2 },
 [125] = { id=125,tips="天阶8-2",rank=4,pin=8,star=2,lock=0,exp=12500,reward=3 },
 [126] = { id=126,tips="天阶8-3",rank=4,pin=8,star=3,lock=0,exp=12600,reward=4 },
-[127] = { id=127,tips="",rank=4,pin=8,star=4,lock=0,exp=12700,reward=5 },
+[127] = { id=127,tips="天阶8-4",rank=4,pin=8,star=4,lock=0,exp=12700,reward=5 },
 [128] = { id=128,tips="天阶7-0",rank=4,pin=7,star=0,lock=0,exp=12800,reward=1 },
 [129] = { id=129,tips="天阶7-1",rank=4,pin=7,star=1,lock=0,exp=12900,reward=2 },
 [130] = { id=130,tips="天阶7-2",rank=4,pin=7,star=2,lock=0,exp=13000,reward=3 },
