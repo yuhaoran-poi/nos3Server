@@ -1045,7 +1045,7 @@ function Role.GameAddExp(roleid, add_exp)
     if up_exp_cfgs[#up_exp_cfgs] and up_exp_cfgs[#up_exp_cfgs].allexp then
         last_lv_exp = up_exp_cfgs[#up_exp_cfgs].allexp
     end
-    if role_info.exp + add_exp >= last_lv_exp then
+    if role_info.exp >= last_lv_exp then
         return ErrorCode.RoleMaxExp
     end
     add_exp = math.min(add_exp, last_lv_exp - role_info.exp)
@@ -1139,9 +1139,21 @@ function Role.UpExp(roleid, exp_cnt)
     end
 
     local role_info = roles.role_list[roleid]
-    local new_lv_exp = {}
 
     local up_exp_cfgs = GameCfg.RoleUpLv
+    if not up_exp_cfgs then
+        return ErrorCode.ConfigError
+    end
+    local last_lv_exp = 0
+    if up_exp_cfgs[#up_exp_cfgs] and up_exp_cfgs[#up_exp_cfgs].allexp then
+        last_lv_exp = up_exp_cfgs[#up_exp_cfgs].allexp
+    end
+    if role_info.exp >= last_lv_exp then
+        return ErrorCode.RoleMaxExp
+    end
+    exp_cnt = math.min(exp_cnt, last_lv_exp - role_info.exp)
+    
+    local new_lv_exp = {}
     if up_exp_cfgs then
         for _, cfg in pairs(up_exp_cfgs) do
             if cfg.allexp > role_info.exp then
