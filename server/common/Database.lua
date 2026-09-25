@@ -3074,7 +3074,13 @@ function _M.RedisGetAuctionProductData(addr_db_redis, product_ids)
     if res and #res > 0 then
         moon.warn(string.format("RedisGetAuctionProductData res = %s", json.pretty_encode(res)))
         for i = 1, #res do
-            product_datas[product_ids[i]] = json.decode(res[i] or "null")
+            -- HMGET 缺失槽位 json.decode("null") 返回 json.null 哨兵(userdata),
+            -- 落表会导致下游取字段崩溃(Auction "attempt to index a userdata value"),
+            -- 缺失槽位不落表, 交由调用方按"无该拍卖品"处理
+            local data = json.decode(res[i] or "null")
+            if data ~= json.null then
+                product_datas[product_ids[i]] = data
+            end
         end
     end
 
