@@ -321,7 +321,7 @@ private:
     size_t error_count_ = 0;
     std::string logfile_;
     size_t written_bytes_ = 0;
-    size_t max_file_size_ = size_t(1024) * 1024; // 1024KB
+    size_t max_file_size_ = size_t(1024) * 1024 * 512; // 512MB
     uint32_t rotate_index_ = 0;
     std::unique_ptr<std::FILE, file_deleter> fp_;
     std::thread thread_;
