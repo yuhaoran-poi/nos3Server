@@ -54,6 +54,7 @@ public:
                 moon::format("open log file '%s' failed. errno %d.", logfile.data(), err)
             )
             fp_.reset(fp);
+            logfile_ = logfile;
         }
         state_.store(state::ready, std::memory_order_release);
     }
@@ -155,6 +156,38 @@ public:
     }
 
 private:
+    // Rotate when a log file reaches max_file_size_: create <logfile>.1,
+    // <logfile>.2 ... and keep writing; old files are kept.
+    // Only called from the log writer thread, no lock needed.
+    void rotate() {
+        if (nullptr == fp_)
+            return;
+        std::fflush(fp_.get());
+        std::fclose(fp_.release());
+        std::string newfile = moon::format("%s.%u", logfile_.data(), ++rotate_index_);
+#if TARGET_PLATFORM == PLATFORM_WINDOWS
+        FILE* fp = _fsopen(newfile.data(), "w", _SH_DENYWR);
+#else
+        FILE* fp = std::fopen(newfile.data(), "w");
+#endif
+        if (nullptr != fp) {
+            fp_.reset(fp);
+            written_bytes_ = 0;
+            return;
+        }
+        // Open new file failed (e.g. disk full): append back to the old file
+#if TARGET_PLATFORM == PLATFORM_WINDOWS
+        fp = _fsopen(logfile_.data(), "a", _SH_DENYWR);
+#else
+        fp = std::fopen(logfile_.data(), "a");
+#endif
+        if (nullptr != fp) {
+            fp_.reset(fp);
+            written_bytes_ = 0;
+        }
+        // Still failed: fp_ is null, logs go to console only
+    }
+
     size_t format_header(char* buf, LogLevel level, uint64_t serviceid) const {
         size_t offset = 0;
         // Format the timestamp
@@ -214,11 +247,17 @@ private:
 
             if (fp_) {
                 std::fwrite(str.data(), str.size(), 1, fp_.get());
-                if (str.back() != '\n')
+                written_bytes_ += str.size();
+                if (str.back() != '\n') {
                     std::fputc('\n', fp_.get());
+                    ++written_bytes_;
+                }
                 if (level <= LogLevel::Error) {
                     std::cout << std::endl;
                     std::fflush(fp_.get());
+                }
+                if (written_bytes_ >= max_file_size_) {
+                    rotate();
                 }
             }
             --size_;
@@ -280,6 +319,10 @@ private:
     std::atomic_uint32_t size_ = 0;
     std::atomic<LogLevel> level_ = LogLevel::Debug;
     size_t error_count_ = 0;
+    std::string logfile_;
+    size_t written_bytes_ = 0;
+    size_t max_file_size_ = size_t(1024) * 1024; // 1024KB
+    uint32_t rotate_index_ = 0;
     std::unique_ptr<std::FILE, file_deleter> fp_;
     std::thread thread_;
     queue_type log_queue_;
