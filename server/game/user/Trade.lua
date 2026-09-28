@@ -1019,9 +1019,17 @@ function Trade.PBTradeBuyReqCmd(req)
     end
 
     if not is_gm then
+        local get_itemid = req.msg.config_id
+        if GameCfg.TradeItemBindConfig then
+            local bind_cfg = GameCfg.TradeItemBindConfig[get_itemid]
+            if bind_cfg and bind_cfg.id_bind and bind_cfg.id_bind > 0 then
+                get_itemid = bind_cfg.id_bind
+            end
+        end
+
         local add_list = {}
-        add_list[req.msg.config_id] = {
-            id = req.msg.config_id,
+        add_list[get_itemid] = {
+            id = get_itemid,
             count = res.data.total_real_buy_num,
             pos = 0,
         }
