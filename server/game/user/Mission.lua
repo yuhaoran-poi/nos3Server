@@ -76,7 +76,20 @@ function Mission.SaveMissionsNow()
         return false
     end
 
-    local success = Database.savemissioninfo(context.addr_db_user, context.uid, mission_info.linear_info, mission_info.period_info, mission_info.achivement_info, mission_info.activity_info)
+    local success = Database.savemissioninfo(context.addr_db_user, context.uid, mission_info.linear_info,
+        mission_info.period_info, mission_info.achivement_info, mission_info.activity_info)
+    scripts.UserModel.RemoveDirtyModule("Mission")
+    return success
+end
+
+function Mission.TimingSave()
+    local mission_info = scripts.UserModel.GetMissionInfo()
+    if not mission_info then
+        return false
+    end
+
+    local success = Database.savemissioninfo(context.addr_db_user, context.uid, mission_info.linear_info,
+        mission_info.period_info, mission_info.achivement_info, mission_info.activity_info)
     return success
 end
 
@@ -85,7 +98,7 @@ function Mission.LoadMissionInfo()
     return player_mission_info
 end
 
-function Mission.SaveAndSync(change_log)
+function Mission.SaveAndSync(change_log, right_now)
     local mission_info = scripts.UserModel.GetMissionInfo()
     if not mission_info then
         return
@@ -187,7 +200,12 @@ function Mission.SaveAndSync(change_log)
         and table.size(update_msg.update_mission_datas) <= 0
         and table.size(update_msg.update_period_info) <= 0 then
         scripts.UserModel.SetMissionInfo(mission_info)
-        Mission.SaveMissionsNow()
+        -- Mission.SaveMissionsNow()
+        if right_now then
+            Mission.SaveMissionsNow()
+        else
+            scripts.UserModel.AddDirtyModule("Mission")
+        end
         return
     end
 
@@ -195,7 +213,12 @@ function Mission.SaveAndSync(change_log)
 
     scripts.UserModel.SetMissionInfo(mission_info)
 
-    Mission.SaveMissionsNow()
+    -- Mission.SaveMissionsNow()
+    if right_now then
+        Mission.SaveMissionsNow()
+    else
+        scripts.UserModel.AddDirtyModule("Mission")
+    end
 end
 
 function Mission.newLinearMission(mission_info, linear_cfg, now_ts, new_complete_ids, change_log)
@@ -509,7 +532,8 @@ function Mission.CheckNewMissions()
         Mission.makeActivityMap(mission_info)
     end
 
-    Mission.SaveMissionsNow()
+    -- Mission.SaveMissionsNow()
+    scripts.UserModel.AddDirtyModule("Mission")
 end
 
 function Mission.CheckLinearInfo(mission_info, now_ts, new_complete_linear_ids)
@@ -3057,7 +3081,8 @@ function Mission.DelOverTimeLinearMission(mission_info)
         for _, mission_id in pairs(del_ids) do
             mission_info.linear_info.now_mission_datas[mission_id] = nil
         end
-        Mission.SaveMissionsNow()
+        -- Mission.SaveMissionsNow()
+        scripts.UserModel.AddDirtyModule("Mission")
     end
 end
 
@@ -3873,7 +3898,7 @@ function Mission.PBGetMissionRewardReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    Mission.SaveAndSync(change_log)
+    Mission.SaveAndSync(change_log, true)
 
     return context.S2C(context.net_id, CmdCode.PBGetMissionRewardRspCmd, {
         code = ErrorCode.None,
@@ -3992,7 +4017,7 @@ function Mission.PBRrefreshMissionReqCmd(req)
         achivements = {},
         activitys = {},
         periods_all_change = true,
-    })
+    }, true)
 
     return context.S2C(context.net_id, CmdCode.PBRrefreshMissionRspCmd, {
         code = ErrorCode.None,
