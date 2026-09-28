@@ -76,7 +76,7 @@ moon.raw_dispatch("C2S", function(msg)
             forward(msg_name, reqmsg)
         else
             local subname, submsg = protocol.DecodeMessagePack(MessagePack)
-            moon.debug(string.format("recv Message:\n%s", json.pretty_encode(submsg)))
+            -- moon.debug(string.format("recv Message:\n%s", json.pretty_encode(submsg)))
             reqmsg.msg = submsg
 
             local fn = command[subname]
