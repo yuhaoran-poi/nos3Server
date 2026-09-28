@@ -3735,7 +3735,8 @@ function _M.getbattlereports(addr, uid, start_idx, end_idx)
     local report_infos = {}
     if res and #res > 0 then
         for i = 1, #res do
-            report_infos[res[i].report_id] = res[i]
+            -- 协议 map<int64, string>: value 必须是战报数据字符串, 不能塞整行记录 table
+            report_infos[res[i].report_id] = res[i].report_data
         end
     else
         moon.error("getbattlereports failed", uid, err)
