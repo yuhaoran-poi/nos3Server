@@ -3769,29 +3769,35 @@ function User.PBGetBattleReportSimpleReqCmd(req)
 end
 
 function User.PBGetBattleReportDetailReqCmd(req)
-    if not req.msg.uid
-        or not req.msg.start_idx
+    if not req.msg.start_idx
         or not req.msg.end_idx then
         return context.S2C(context.net_id, CmdCode.PBGetBattleReportDetailRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
-            uid = context.uid,
+            uid = req.msg.uid or context.uid,
         }, req.msg_context.stub_id)
     end
 
-    local report_infos = Database.getbattlereports(context.addr_db_user, context.uid, req.msg.start_idx, req.msg.end_idx)
+    -- 查询目标: uid 传 0/不传 = 查自己, 传其他玩家 uid = 查该玩家(战报公开)
+    local target_uid = req.msg.uid or context.uid
+    if target_uid <= 0 then
+        target_uid = context.uid
+    end
+
+    local report_infos = Database.getbattlereports(context.addr_db_user, target_uid, req.msg.start_idx, req.msg.end_idx,
+        req.msg.chapter_id or 0, req.msg.difficulty or 0, req.msg.season_id or 0)
     if not report_infos or table.size(report_infos) == 0 then
         return context.S2C(context.net_id, CmdCode.PBGetBattleReportDetailRspCmd, {
             code = ErrorCode.ReportNotExist,
             error = "战报不存在",
-            uid = context.uid,
+            uid = target_uid,
         }, req.msg_context.stub_id)
     end
 
     return context.S2C(context.net_id, CmdCode.PBGetBattleReportDetailRspCmd, {
         code = ErrorCode.None,
         error = "获取战报成功",
-        uid = context.uid,
+        uid = target_uid,
         battle_report_infos = report_infos,
     }, req.msg_context.stub_id)
 end

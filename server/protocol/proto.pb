@@ -1474,7 +1474,7 @@ bootyValue"
 error (	Rerror
 uid (Ruid6
 season_datas (2.PBSeasonPlayerDataRseasonDatasbproto3
-ÔF
+ÃG
 
 user.protocommon.proto
 item.proto	bag.proto
@@ -1792,11 +1792,17 @@ open_count (R	openCount"∂
 battle_report_infos (25.PBGetBattleReportSimpleRspCmd.BattleReportInfosEntryRbattleReportInfosD
 BattleReportInfosEntry
 key (Rkey
-value (	Rvalue:8"g
+value (	Rvalue:8"√
 PBGetBattleReportDetailReqCmd
 uid (Ruid
 	start_idx (RstartIdx
-end_idx (RendIdx"à
+end_idx (RendIdx
+
+chapter_id (R	chapterId
+
+difficulty (R
+difficulty
+	season_id (RseasonId"à
 PBGetBattleReportDetailRspCmd
 code (Rcode
 error (	Rerror

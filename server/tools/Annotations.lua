@@ -4598,6 +4598,9 @@
 ---@field public uid integer
 ---@field public start_idx integer
 ---@field public end_idx integer
+---@field public chapter_id integer @筛选章节: 传区间内任意id按千段查(1-1000/1001-2000...), 0 = 不筛选
+---@field public difficulty integer @筛选难度id, 0 = 不筛选
+---@field public season_id integer @筛选赛季id, 0 = 不筛选
 
 
 ---@class PBGetBattleReportDetailRspCmd
@@ -4821,6 +4824,7 @@
 ---@field ActivityMissionTypeConfig ActivityMissionTypeConfig_cfg[]
 ---@field allconfigs allconfigs_cfg[]
 ---@field AllTag AllTag_cfg[]
+---@field AllTagGhost AllTagGhost_cfg[]
 ---@field AllTagPool AllTagPool_cfg[]
 ---@field AntiqueItem AntiqueItem_cfg[]
 ---@field AntiquePreset AntiquePreset_cfg[]
@@ -4849,6 +4853,7 @@
 ---@field GameMode GameMode_cfg[]
 ---@field GameModeBoss GameModeBoss_cfg[]
 ---@field GamePropUpLv GamePropUpLv_cfg[]
+---@field GameTagPool GameTagPool_cfg[]
 ---@field GhostEquipmentUpLv GhostEquipmentUpLv_cfg[]
 ---@field GhostInfo GhostInfo_cfg[]
 ---@field GhostUpLv GhostUpLv_cfg[]
@@ -4890,6 +4895,7 @@
 ---@field SpaceRingUpLv SpaceRingUpLv_cfg[]
 ---@field StoreConfig StoreConfig_cfg[]
 ---@field ToolBackpackExpansion ToolBackpackExpansion_cfg[]
+---@field TradeItemBindConfig TradeItemBindConfig_cfg[]
 ---@field TransactionConfig TransactionConfig_cfg[]
 ---@field TreasureChest TreasureChest_cfg[]
 ---@field TreasureChestRewards TreasureChestRewards_cfg[]

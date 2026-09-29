@@ -481,6 +481,9 @@ message PBGetBattleReportDetailReqCmd
 	int64 uid	= 1;
 	int32 start_idx	= 2;
 	int32 end_idx	= 3;
+	int32 chapter_id	= 4;	// 筛选章节: 传区间内任意id按千段查(1-1000/1001-2000...), 0 = 不筛选
+	int32 difficulty	= 5;	// 筛选难度id, 0 = 不筛选
+	int32 season_id	= 6;		// 筛选赛季id, 0 = 不筛选
 }
 
 message PBGetBattleReportDetailRspCmd

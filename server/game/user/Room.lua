@@ -1645,10 +1645,16 @@ function Room.GameSettle(settle_info)
         report_id = generate_battle_report_id(context.uid, settle_info.start_game_ts)
     end
     if settle_info.settle_data and report_id > 0 then
+        -- 战报归属赛季id(玩家当前赛季)
+        local cur_season_id = 0
+        local seasons = scripts.UserModel.GetSeasons()
+        if seasons and seasons.cur_season_id then
+            cur_season_id = seasons.cur_season_id
+        end
         -- 保存详细战报
         clusterd.send(3999, "battlereportmgr", "BattleReportmgr.SaveDetailReport", context.uid, report_id,
             settle_info.start_game_ts, settle_info.settle_data, cur_role_id, settle_info.fall_down_cnt or 0,
-            settle_info.chapter_id or 0, settle_info.difficulty or 0)
+            settle_info.chapter_id or 0, settle_info.difficulty or 0, cur_season_id)
     end
     if settle_info.settle_simple_data and report_id > 0 then
         local user_attr = scripts.User.GetOnlineUserAttr({ ProtoEnum.UserAttrType.battle_report_ids })

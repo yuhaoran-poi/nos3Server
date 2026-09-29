@@ -3706,27 +3706,47 @@ function _M.RedisDelBattleReportSimple(addr_db_redis, report_id)
     redis_send(addr_db_redis, "HDEL", BATTLE_REPORT_SIMPLE_INFO, report_id)
 end
 
-function _M.addbattlereport(addr, report_id, uid, start_ts, report_data, cur_role_id, fall_down_cnt, chapter_id, difficulty)
+function _M.addbattlereport(addr, report_id, uid, start_ts, report_data, cur_role_id, fall_down_cnt, chapter_id, difficulty, season_id)
     assert(report_id and uid and start_ts and report_data and cur_role_id and fall_down_cnt and chapter_id and difficulty)
 
+    -- base64 编码后入库(与 battle_settle_info 一致): 规避战报 JSON 含单引号导致 SQL 语法错误
+    local datavalue = crypt.base64encode(report_data)
+    -- 注意: 列名为 roleid(与线上表结构一致), 不是 cur_role_id
     local cmd = string.format([[
-        INSERT INTO mgame.battle_report (report_id, uid, start_ts, report_data, cur_role_id, fall_down_cnt, chapter_id, difficulty)
-        VALUES (%d, %d, %d, '%s', %d, %d, %d, %d);
-    ]], report_id, uid, start_ts, report_data, cur_role_id, fall_down_cnt, chapter_id, difficulty)
+        INSERT INTO mgame.battle_report (report_id, uid, start_ts, report_data, roleid, fall_down_cnt, chapter_id, difficulty, season_id)
+        VALUES (%d, %d, %d, '%s', %d, %d, %d, %d, %d);
+    ]], report_id, uid, start_ts, datavalue, cur_role_id, fall_down_cnt, chapter_id, difficulty, season_id or 0)
 
     return moon.send("lua", addr, cmd)
 end
 
-function _M.getbattlereports(addr, uid, start_idx, end_idx)
+-- chapter_id: 千段区间筛选, 传 1-1000 内任意值查 1-1000, 传 1001-2000 内任意值查 1001-2000, 以此类推; 0 = 不筛选
+-- difficulty/season_id: 筛选条件, 0 = 不筛选
+function _M.getbattlereports(addr, uid, start_idx, end_idx, chapter_id, difficulty, season_id)
     -- start_idx: 起始索引（从0开始）
     -- end_idx: 结束索引
     -- 实际查询数量 = end_idx - start_idx + 1
     local limit_num = end_idx - start_idx + 1
 
+    -- 章节千段区间: 1-1000, 1001-2000, ...
+    local chapter_min, chapter_max = 0, 0
+    if chapter_id and chapter_id > 0 then
+        chapter_min = math.floor((chapter_id - 1) / 1000) * 1000 + 1
+        chapter_max = chapter_min + 999
+    end
+
     local cmd = string.format([[
         SELECT report_id, uid, start_ts, report_data FROM mgame.battle_report
-        WHERE uid = %d ORDER BY start_ts DESC LIMIT %d OFFSET %d;]],
-        uid, limit_num, start_idx)
+        WHERE uid = %d
+          AND (%d = 0 OR chapter_id BETWEEN %d AND %d)
+          AND (%d = 0 OR difficulty = %d)
+          AND (%d = 0 OR season_id = %d)
+        ORDER BY start_ts DESC, report_id DESC LIMIT %d OFFSET %d;]],
+        uid,
+        chapter_min, chapter_min, chapter_max,
+        difficulty or 0, difficulty or 0,
+        season_id or 0, season_id or 0,
+        limit_num, start_idx)
     local res, err = moon.call("lua", addr, cmd)
     if err then
         error("getbattlereports failed:" .. tostring(err))
@@ -3736,7 +3756,15 @@ function _M.getbattlereports(addr, uid, start_idx, end_idx)
     if res and #res > 0 then
         for i = 1, #res do
             -- 协议 map<int64, string>: value 必须是战报数据字符串, 不能塞整行记录 table
-            report_infos[res[i].report_id] = res[i].report_data
+            -- 新数据为 base64(以'e'开头,'{'的base64前缀), 旧数据为明文 JSON(以'{'开头), 读取时兼容两种
+            local raw = res[i].report_data
+            if raw and raw:sub(1, 1) ~= "{" then
+                local decoded = crypt.base64decode(raw)
+                if decoded then
+                    raw = decoded
+                end
+            end
+            report_infos[res[i].report_id] = raw
         end
     else
         moon.error("getbattlereports failed", uid, err)
