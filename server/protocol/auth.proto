@@ -33,6 +33,7 @@ message PBClientLoginRspCmd
     int64 uid         = 3; // 用户ID
     int32 net_id      = 4; // 用户网络id
     string reconn_key = 5; // 用户重连key
+    int32 queue_waiting = 6; // 登录排队中(code=LoginQueuing=2451)时: 前方排队人数
 }
 
 // DS登录网关数据
@@ -60,6 +61,16 @@ message PBDSLoginRspCmd
     string error      = 2; // 错误信息
     int32 dsid        = 3; // 服务器ID
     int32 net_id      = 4; // DS网络id
+}
+
+// 客户端登陆排队同步信息
+message PBClientLoginQueueSyncCmd
+{
+    int64 uid         = 1; // 用户ID
+    int32 net_id      = 2; // 用户网络id
+    int32 queue_waiting = 3; // 登录排队中(code=LoginQueuing=2451)时: 前方排队人数
+    int32 code      = 4;
+    string error    = 5;
 }
 
 

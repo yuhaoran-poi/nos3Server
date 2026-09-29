@@ -83,8 +83,6 @@ function _M.saveGloabalDsGnId(addr_db, data)
     return res
 end
 
-
-
 function _M.queryuserid(addr_db, authkey)
     local res, err = redis_call(addr_db, "hget", "openidmap", authkey)
     if res == false then
@@ -125,7 +123,7 @@ end
 -- end
 
 if moon.queryservice("db_game") > 0 then
-        ---async
+    ---async
     ---@param db integer
     ---@param uid integer
     ---@return UserData?
@@ -166,15 +164,15 @@ if moon.queryservice("db_game") > 0 then
 end
 
 function _M.LoadUserMail(addr_db, uid)
-    local res, err = redis_call(addr_db, "HGETALL", "mail_"..uid)
+    local res, err = redis_call(addr_db, "HGETALL", "mail_" .. uid)
     if err then
         moon.error("LoadUserMail failed ", uid, err)
         return false
     end
     local maillist = {}
-    assert(#res%2==0, tostring(uid))
-    for i=1,#res,2 do
-        local mail = json.decode(res[i+1])
+    assert(#res % 2 == 0, tostring(uid))
+    for i = 1, #res, 2 do
+        local mail = json.decode(res[i + 1])
         maillist[tonumber(res[i])] = mail
     end
     return maillist
@@ -185,23 +183,23 @@ end
 ---@param mailId integer
 ---@param mail MailData
 function _M.SaveUserMail(addr_db, uid, mailId, mail)
-    redis_send(addr_db, "HSET", "mail_"..uid, mailId, json.encode(mail))
+    redis_send(addr_db, "HSET", "mail_" .. uid, mailId, json.encode(mail))
 end
 
 ---@param addr_db integer
 ---@param uid integer
 ---@param mailIdList integer[]
 function _M.DelUserMail(addr_db, uid, mailIdList)
-    redis_send(addr_db, "HDEL", "mail_"..uid, table.unpack(mailIdList))
+    redis_send(addr_db, "HDEL", "mail_" .. uid, table.unpack(mailIdList))
 end
 
 function _M.query_rank(addr_db, uid)
-    local res, err = redis_call(addr_db, "HGETALL", "rank_"..uid)
+    local res, err = redis_call(addr_db, "HGETALL", "rank_" .. uid)
     if res == false then
-        error("query_rank failed:"..tostring(err))
+        error("query_rank failed:" .. tostring(err))
     end
-    
-    local rank_data = {ghost = 0, human = 0}
+
+    local rank_data = { ghost = 0, human = 0 }
     if res and #res > 0 then
         rank_data.ghost = tonumber(res[2]) or 0
         rank_data.human = tonumber(res[4]) or 0
@@ -210,12 +208,12 @@ function _M.query_rank(addr_db, uid)
 end
 
 function _M.query_role(addr_db, uid)
-    local res, err = redis_call(addr_db, "HGETALL", "role_"..uid)
+    local res, err = redis_call(addr_db, "HGETALL", "role_" .. uid)
     if res == false then
-        error("query_role failed:"..tostring(err))
+        error("query_role failed:" .. tostring(err))
     end
-    
-    local role_data = {equipped_id = 0, unlocked_skins = {}}
+
+    local role_data = { equipped_id = 0, unlocked_skins = {} }
     if res and #res > 0 then
         role_data.equipped_id = tonumber(res[2]) or 0
         role_data.unlocked_skins = json.decode(res[4] or "[]")
@@ -227,7 +225,7 @@ function _M.RedisGetUserAttr(addr_db, uid, fields)
     local user_attr = {}
     if fields and type(fields) == "table" and table.size(fields) > 0 then
         local res, err = redis_call(addr_db, "HMGET", "user_attr_" .. uid, table.unpack(fields))
-        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         if err then
             error("RedisGetUserAttr failed:" .. tostring(err))
         end
@@ -288,8 +286,8 @@ end
 
 -- 新增分布式会话管理（核心改造点）
 function _M.create_session(addr_db, uid)
-    local session_id = moon.md5(tostring(uid)..moon.time()) -- 使用框架API生成全局唯一会话ID
-    redis_send(addr_db, "HSET", "sessions", uid, session_id) -- 使用现有redis_send基础能力
+    local session_id = moon.md5(tostring(uid) .. moon.time()) -- 使用框架API生成全局唯一会话ID
+    redis_send(addr_db, "HSET", "sessions", uid, session_id)  -- 使用现有redis_send基础能力
     return session_id
 end
 
@@ -298,23 +296,27 @@ function _M.validate_session(addr_db, uid, session_id)
     return res == session_id
 end
 
--- 检查账号是否存在
-function _M.checkuser(addr, authkey)
+-- 登录建号/取号一条流(多语句合包, 替代 checkuser+createuser/getuserbyauthkey 两连发):
+-- 语句1 ODKU: 新号 INSERT 拿自增uid; 老号撞 uk_authkey 由 LAST_INSERT_ID(user_id)
+-- 把已存在uid塞回 OK 包 insert_id, 不做任何写入, 与 sql_mode 无关。
+-- 语句2 顺带取回封禁字段(老号1行/新号0行)。
+-- 两条语句共用一条保留连接、一次 moon.call, 不做第二次池等待。
+-- 依赖(必须满足, 否则老号重登会插出重复行或串号):
+-- 1) account.authkey 必须有唯一索引 uk_authkey;
+-- 2) username 不能有唯一索引——运行期会被昵称同步覆盖(updateusernickname),
+--    若保留唯一索引, 新号INSERT可能撞到"昵称恰好等于他人authkey"的行,
+--    ODKU会误登他人账号(全库实测 username 已全部不等于 authkey 且无业务消费方)。
+-- 返回: 成功为 multiresultset = { [1]=OK包(含insert_id), [2]=行集,
+-- multiresultset=true }; 失败为 badresult 表(POOL_EMPTY/MYSQL_ERROR等)。
+function _M.loginuser(addr, authkey)
     local cmd = string.format([[
-        SELECT user_id FROM mgame.account WHERE authkey = '%s';
-    ]], authkey)
-    return moon.call("lua", addr, cmd)
-end
-
--- 创建用户方法
-function _M.createuser(addr, plateform_id, password_hash)
-    if not password_hash then
-        password_hash = ""
-    end
-    local cmd = string.format([[
-        INSERT INTO mgame.account (authkey, username, password_hash) VALUES ('%s','%s','%s');
-    ]], plateform_id, plateform_id, password_hash)
-    return moon.call("lua", addr, cmd)
+        INSERT INTO mgame.account (authkey, username, password_hash)
+        VALUES ('%s','%s','%s')
+        ON DUPLICATE KEY UPDATE user_id = LAST_INSERT_ID(user_id);
+        SELECT user_id, ban_end_ts FROM mgame.account WHERE authkey = '%s';
+    ]], authkey, authkey, "", authkey)
+    -- "_reserved": 登录前置校验专用保留连接, 突增登录业务池被 User.Load 打满时仍秒回
+    return moon.call("lua", addr, "_reserved", cmd)
 end
 
 -- 获取用户ID方法
@@ -322,7 +324,7 @@ function _M.getuserbyauthkey(addr, authkey)
     local cmd = string.format([[
         SELECT user_id, username, password_hash, last_login, ban_end_ts FROM mgame.account WHERE authkey = '%s';
     ]], authkey)
-    return moon.call("lua", addr, cmd)
+    return moon.call("lua", addr, "_reserved", cmd)
 end
 
 function _M.setuserbants(addr, user_id, ban_end_ts)
@@ -407,13 +409,13 @@ function _M.loaduser_attr(addr, uid)
             local _, tmp_data = protocol.decodewithname("PBUserAttr", pbdata)
             return tmp_data
         end)
-        
+
         if success then
             return result
         else
             -- 解码失败，可能是协议格式不兼容，尝试修复
             moon.error(string.format("Failed to decode PBUserAttr for uid %d: %s", uid, result))
-            
+
             -- 尝试使用旧的解码方式或其他修复逻辑
             -- 这里可以根据具体情况实现数据迁移逻辑
             -- 目前返回默认值，让系统重新初始化
@@ -615,7 +617,7 @@ function _M.clear_all_room_keys(addr_db)
 
     moon.info("All room keys and indexes have been cleared")
 end
- 
+
 -- 加载所有公会id
 function _M.load_guildids(addr)
     local cmd = [[
@@ -632,6 +634,7 @@ function _M.load_guildids(addr)
     print("load_guildids failed", err)
     return {}
 end
+
 -- 加载公会信息
 function _M.load_guildinfo(addr, guild_id)
     local cmd = string.format([[
@@ -646,6 +649,7 @@ function _M.load_guildinfo(addr, guild_id)
     print("load_guildinfo failed", guild_id, err)
     return nil
 end
+
 function _M.load_guildshop(addr, guild_id)
     local cmd = string.format([[
         SELECT value, json FROM mgame.c_guild_shop WHERE guildId = %d;
@@ -659,10 +663,11 @@ function _M.load_guildshop(addr, guild_id)
     print("load_guildshop failed", guild_id, err)
     return nil
 end
+
 function _M.load_guildbag(addr, guild_id)
     local cmd = string.format([[
         SELECT value, json FROM mgame.c_guild_bag WHERE guildId = %d;
-    ]],guild_id)
+    ]], guild_id)
     local res, err = moon.call("lua", addr, cmd)
     if res and #res > 0 then
         local pbdata = crypt.base64decode(res[1].value)
@@ -672,6 +677,7 @@ function _M.load_guildbag(addr, guild_id)
     print("load_guildbag failed", guild_id, err)
     return nil
 end
+
 function _M.load_guildrecord(addr, guild_id)
     local cmd = string.format([[
         SELECT value, json FROM mgame.c_guild_record WHERE guildId = %d;
@@ -685,6 +691,7 @@ function _M.load_guildrecord(addr, guild_id)
     print("load_guildrecord failed", guild_id, err)
     return nil
 end
+
 function _M.save_guildinfo(addr, guild_id, data)
     assert(data)
 
@@ -698,6 +705,7 @@ function _M.save_guildinfo(addr, guild_id, data)
     ]], guild_id, pbvalue, data_str, pbvalue, data_str)
     return moon.call("lua", addr, cmd)
 end
+
 function _M.save_guildshop(addr, guild_id, data)
     assert(data)
 
@@ -771,10 +779,10 @@ function _M.saveuserbags(addr, uid, bags_data, data_version)
             local pbvalue = crypt.base64encode(pbdata)
             had_param = true
 
-            str_param1 = str_param1 .. ", " .. bagTypeName .. ", " .. bagTypeName.. "_json"
+            str_param1 = str_param1 .. ", " .. bagTypeName .. ", " .. bagTypeName .. "_json"
             str_param2 = str_param2 .. ", '" .. pbvalue .. "', '" .. data_str .. "'"
             if str_param3 ~= "" then
-                str_param3 = str_param3.. ", "
+                str_param3 = str_param3 .. ", "
             end
             str_param3 = str_param3 ..
                 " " .. bagTypeName .. "='" .. pbvalue .. "', " .. bagTypeName .. "_json='" .. data_str .. "'"
@@ -789,7 +797,8 @@ function _M.saveuserbags(addr, uid, bags_data, data_version)
         str_param2 = str_param2 .. ", " .. data_version
         str_param3 = str_param3 .. ", data_version = " .. data_version
     end
-    str_sql = str_sql .. str_param1 .. ") VALUES (" .. uid .. str_param2 .. ")" .. "ON DUPLICATE KEY UPDATE" .. str_param3 .. ";"
+    str_sql = str_sql ..
+        str_param1 .. ") VALUES (" .. uid .. str_param2 .. ")" .. "ON DUPLICATE KEY UPDATE" .. str_param3 .. ";"
     moon.send("lua", addr, str_sql)
     -- moon.error("saveuserbags str_sql: " .. str_sql)
 
@@ -1110,14 +1119,16 @@ function _M.loaduseritemimage(addr, uid)
             print("loaduseritemimage magic_item_value failed", uid, err)
             return nil
         end
-        local ok_3, data_3 = protocol.decodewithname("PBCommonImageGroup", crypt.base64decode(res[1].human_diagrams_value))
+        local ok_3, data_3 = protocol.decodewithname("PBCommonImageGroup",
+            crypt.base64decode(res[1].human_diagrams_value))
         if ok_3 then
             user_image_data.human_diagrams_image = data_3.common_image
         else
             print("loaduseritemimage human_diagrams_value failed", uid, err)
             return nil
         end
-        local ok_4, data_4 = protocol.decodewithname("PBCommonImageGroup", crypt.base64decode(res[1].ghost_diagrams_value))
+        local ok_4, data_4 = protocol.decodewithname("PBCommonImageGroup",
+            crypt.base64decode(res[1].ghost_diagrams_value))
         if ok_4 then
             user_image_data.ghost_diagrams_image = data_4.common_image
         else
@@ -1152,7 +1163,7 @@ function _M.loaduseritemimage(addr, uid)
             print("loaduseritemimage composite_formula_value failed", uid, err)
             return nil
         end
-        
+
         return user_image_data
     end
     print("loaduseritemimage failed", uid, err)
@@ -1385,7 +1396,8 @@ end
 
 -- 记录背包道具变更日志
 function _M.ItemChangeLog(addr, uid, config_id, old_num, new_num, mod_uniqid, del_uniqids, add_uniqids,
-                          old_item_data, new_item_data, relation_roleid, relation_ghostid, relation_ghost_uniqid, relation_imageid, change_type, change_reason, log_ts)
+                          old_item_data, new_item_data, relation_roleid, relation_ghostid, relation_ghost_uniqid,
+                          relation_imageid, change_type, change_reason, log_ts)
     local del_uniqids_str = jencode(del_uniqids) or ""
     local add_uniqids_str = jencode(add_uniqids) or ""
     local old_item_data_str = jencode(old_item_data) or ""
@@ -1395,7 +1407,8 @@ function _M.ItemChangeLog(addr, uid, config_id, old_num, new_num, mod_uniqid, de
      add_uniqids, old_item_data, new_item_data, relation_roleid, relation_ghostid, relation_ghost_uniqid, relation_imageid, change_type, change_reason, log_ts)
         VALUES (%d, %d, %d, %d, %d, '%s', '%s', '%s', '%s', %d, %d, %d, %d, %d, %d, %d);
     ]], uid, config_id, old_num, new_num, mod_uniqid, del_uniqids_str, add_uniqids_str, old_item_data_str,
-        new_item_data_str, relation_roleid, relation_ghostid, relation_ghost_uniqid, relation_imageid, change_type, change_reason, log_ts)
+        new_item_data_str, relation_roleid, relation_ghostid, relation_ghost_uniqid, relation_imageid, change_type,
+        change_reason, log_ts)
     moon.send("lua", addr, cmd)
 end
 
@@ -1403,7 +1416,7 @@ end
 -- item 字段顺序:uid, config_id, old_num, new_num, mod_uniqid, del_uniqids, add_uniqids,
 --              old_item_data, new_item_data, relation_roleid, relation_ghostid,
 --              relation_ghost_uniqid, relation_imageid, change_type, change_reason, log_ts
-local LOG_BATCH_SIZE = 30  -- item_data JSON 较大,30 条 ≈ 60-150KB,远低于 max_allowed_packet 64MB
+local LOG_BATCH_SIZE = 30 -- item_data JSON 较大,30 条 ≈ 60-150KB,远低于 max_allowed_packet 64MB
 function _M.ItemChangeLogList(addr, items)
     if not items or #items == 0 then return end
     local total = #items
@@ -1641,7 +1654,7 @@ function _M.add_system_mail(addr, mail_info, all_user, recv_uids, cover_new)
         INSERT INTO mgame.system_mail (mail_type, beg_ts, end_ts, mail_title_id, mail_title, mail_icon_id, mail_content_id, mail_content, sign, items_simple, item_datas, coins, mail_data, all_user, recv_uids, valid, cover_new)
         VALUES (%d, %d, %d, %d, '%s', %d, %d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', %d, %d);
     ]], mail_info.simple_data.mail_type, mail_info.simple_data.beg_ts, mail_info.simple_data.end_ts,
-    mail_info.simple_data.mail_title_id, mail_info.simple_data.mail_title, mail_info.mail_icon_id,
+        mail_info.simple_data.mail_title_id, mail_info.simple_data.mail_title, mail_info.mail_icon_id,
         mail_info.mail_content_id, mail_info.mail_content, mail_info.sign, items_str, item_datas_str,
         coins_str, pbvalue, all_user, uids_str, 1, cover_new)
     moon.info("add_system_mail cmd: ", cmd)
@@ -2101,7 +2114,7 @@ function _M.addauctionproduct(addr, product_data, condition1, condition2, condit
         product_data.auction_data.cur_price, product_data.auction_data.buyer_uid, condition1, condition2, condition3,
         condition4, condition5, custome_condition_str, custom_condition2, product_data.state)
     moon.warn("addauctionproduct cmd", cmd)
-        
+
     local res, err = moon.call("lua", addr, cmd)
     if err then
         moon.error(string.format("addauctionproduct err = %s", json.pretty_encode(err)))
@@ -2385,11 +2398,11 @@ function _M.updateauctionproduct(addr, auction_id, where_data, update_data, need
             table.insert(update_fields, string.format("%s = %d", field, value))
         else
             -- 对于未知字段，可以选择忽略或报错
-            moon.error("updatetradeproduct: unknown field '%s', skipping", field)
+            moon.error("updateauctionproduct: unknown field '%s', skipping", field)
         end
     end
     if #update_fields == 0 then
-        moon.error("updatetradeproduct: no valid fields to update")
+        moon.error("updateauctionproduct: no valid fields to update")
         return 0
     end
 
@@ -2399,11 +2412,11 @@ function _M.updateauctionproduct(addr, auction_id, where_data, update_data, need
     if need_ret then
         local res, err = moon.call("lua", addr, cmd)
         if err then
-            moon.error(string.format("updatetradeproduct err = %s", json.pretty_encode(err)))
+            moon.error(string.format("updateauctionproduct err = %s", json.pretty_encode(err)))
             return 0
         else
             if res then
-                moon.debug(string.format("updatetradeproduct res = %s", json.pretty_encode(res)))
+                moon.debug(string.format("updateauctionproduct res = %s", json.pretty_encode(res)))
                 return res.affected_rows
             end
         end
@@ -3304,6 +3317,7 @@ local BATTLE_RETURN_INFO = "battle_return_"
 function _M.GetBattleSettleKey()
     return BATTLE_SETTLE_INFO
 end
+
 function _M.GetBattleReturnKey()
     return BATTLE_RETURN_INFO
 end
@@ -3380,7 +3394,7 @@ function _M.BattleDeleteEmptyList(addr_db, key, uid)
         end
         return 0
     ]]
-    
+
     local res, err = redis_send(addr_db, "EVAL", script, 1, key .. uid)
     if err then
         moon.error("DeleteEmptyList failed:" .. tostring(err) .. uid)
@@ -3492,7 +3506,7 @@ function _M.updatebillorderstate(addr, orderid, before_state, update_state, need
     local cmd = string.format([[
         UPDATE mgame.bill_order SET update_ts = %d, state = %d WHERE orderid = %d and state = %d;
     ]], moon.time(), update_state, orderid, before_state)
-    
+
     if need_ret then
         local res, err = moon.call("lua", addr, cmd)
         if err then
@@ -3706,7 +3720,8 @@ function _M.RedisDelBattleReportSimple(addr_db_redis, report_id)
     redis_send(addr_db_redis, "HDEL", BATTLE_REPORT_SIMPLE_INFO, report_id)
 end
 
-function _M.addbattlereport(addr, report_id, uid, start_ts, report_data, cur_role_id, fall_down_cnt, chapter_id, difficulty, season_id)
+function _M.addbattlereport(addr, report_id, uid, start_ts, report_data, cur_role_id, fall_down_cnt, chapter_id,
+                            difficulty, season_id)
     assert(report_id and uid and start_ts and report_data and cur_role_id and fall_down_cnt and chapter_id and difficulty)
 
     -- base64 编码后入库(与 battle_settle_info 一致): 规避战报 JSON 含单引号导致 SQL 语法错误
@@ -3927,7 +3942,8 @@ function _M.addskintradeproduct(addr, product_data, condition1, condition2, cond
     ]], product_data.skin_trade_id, product_data.config_id, product_data.total_num,
         product_data.seller_uid, product_data.beg_ts, product_data.end_ts,
         product_data.skin_trade_data.single_price, product_data.skin_trade_data.sale_num,
-        product_data.skin_trade_data.now_num, condition1, condition2, condition3, condition4, condition5, product_data.state, product_data.uniqid)
+        product_data.skin_trade_data.now_num, condition1, condition2, condition3, condition4, condition5,
+        product_data.state, product_data.uniqid)
 
     local res, err = moon.call("lua", addr, cmd)
     if err then
@@ -4210,7 +4226,8 @@ function _M.updateskintraderecord(addr, record_data, condition1, condition2, con
         INSERT INTO mgame.skin_trade_record (skin_trade_config_id, sale_num, sale_total_price, last_deal_price, update_ts, yes_sale_num, yes_sale_total_price, yes_average_price, min_price, min_price_num, now_total_num, condition1, condition2, condition3, condition4, condition5)
         VALUES (%d, %d, %d, %d, %d, %d, %d, %f, %d, %d, %d, %d, %d, %d, %d, %d)
         ON DUPLICATE KEY UPDATE sale_num = VALUES(sale_num), sale_total_price = VALUES(sale_total_price), last_deal_price = VALUES(last_deal_price), update_ts = VALUES(update_ts), yes_sale_num = VALUES(yes_sale_num), yes_sale_total_price = VALUES(yes_sale_total_price), yes_average_price = VALUES(yes_average_price), min_price = VALUES(min_price), min_price_num = VALUES(min_price_num), now_total_num = VALUES(now_total_num), condition1 = VALUES(condition1), condition2 = VALUES(condition2), condition3 = VALUES(condition3), condition4 = VALUES(condition4), condition5 = VALUES(condition5);
-    ]], record_data.skin_trade_config_id, record_data.sale_num, record_data.sale_total_price, record_data.last_deal_price,
+    ]], record_data.skin_trade_config_id, record_data.sale_num, record_data.sale_total_price, record_data
+        .last_deal_price,
         record_data.update_ts, record_data.yes_sale_num, record_data.yes_sale_total_price, record_data.yes_average_price,
         record_data.min_price, record_data.min_price_num, now_total_num, condition1, condition2, condition3, condition4,
         condition5)
@@ -4555,7 +4572,8 @@ function _M.addskintradelog(addr, trade_log)
         skin_trade_ts, skin_trade_tax, send_mail)
         VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d, %d);
     ]], trade_log.log_id, trade_log.skin_trade_id, trade_log.config_id, trade_log.deal_num, trade_log.deal_price,
-        trade_log.seller_uid, trade_log.buyer_uid, trade_log.skin_trade_ts, trade_log.skin_trade_tax, trade_log.send_mail)
+        trade_log.seller_uid, trade_log.buyer_uid, trade_log.skin_trade_ts, trade_log.skin_trade_tax, trade_log
+        .send_mail)
 
     return moon.send("lua", addr, cmd)
 end

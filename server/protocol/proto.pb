@@ -463,7 +463,7 @@ auction_id (R	auctionId"f
 FocusIdTsEntry
 key (Rkey
 value (Rvalue:8bproto3
-Í
+ˆ
 
 auth.proto"È
 PBUserLoginData
@@ -481,14 +481,15 @@ pb_version (	R	pbVersion"ƒ
 login_data (2.PBUserLoginDataR	loginData
 is_register (R
 isRegister
-password (	Rpassword"‡
+password (	Rpassword"¬
 PBClientLoginRspCmd
 code (Rcode
 error (	Rerror
 uid (Ruid
 net_id (RnetId
 
-reconn_key (	R	reconnKey"±
+reconn_key (	R	reconnKey#
+queue_waiting (RqueueWaiting"±
 PBDSLoginData
 authkey (	Rauthkey
 auth_ticket (	R
@@ -505,7 +506,13 @@ login_data (2.PBDSLoginDataR	loginData"f
 code (Rcode
 error (	Rerror
 dsid (Rdsid
-net_id (RnetIdbproto3
+net_id (RnetId"“
+PBClientLoginQueueSyncCmd
+uid (Ruid
+net_id (RnetId#
+queue_waiting (RqueueWaiting
+code (Rcode
+error (	Rerrorbproto3
 Ð
 common.proto"“
 PBMessagePack
@@ -871,7 +878,7 @@ ds_address (	R	dsAddress
 CityNumListEntry
 key (Rkey
 value (Rvalue:8bproto3
-6
+é;
 
 role.proto
 item.proto"4
@@ -890,7 +897,7 @@ start_time (R	startTime
 
 SkinsEntry
 key (Rkey
-value (Rvalue:8"ú
+value (Rvalue:8"â
 
 PBRoleData
 	config_id (RconfigId
@@ -920,7 +927,17 @@ main_skill (2.PBRoleData.MainSkillEntryR	mainSkill-
 up_lv_rewards (2.PBRoleData.UpLvRewardsEntryRupLvRewards*
 
 space_ring (2.PBItemDataR	spaceRing"
-star_fail_cnt (RstarFailCntL
+star_fail_cnt (RstarFailCnt)
+cur_big_skill1_id (RcurBigSkill1Id9
+
+big_skill1 (2.PBRoleData.BigSkill1EntryR	bigSkill1)
+cur_big_skill2_id (RcurBigSkill2Id9
+
+big_skill2 (2.PBRoleData.BigSkill2EntryR	bigSkill21
+cur_reserve_skill1_id (RcurReserveSkill1IdE
+reserve_skill1 (2.PBRoleData.ReserveSkill1EntryRreserveSkill11
+cur_reserve_skill2_id (RcurReserveSkill2IdE
+reserve_skill2 (2.PBRoleData.ReserveSkill2EntryRreserveSkill2L
 DigramsCardsEntry
 key (Rkey!
 value (2.PBItemDataRvalue:8=
@@ -948,7 +965,19 @@ SkinsEntry
 value (2.PBSkillRvalue:8>
 UpLvRewardsEntry
 key (Rkey
-value (Rvalue:8"â
+value (Rvalue:8F
+BigSkill1Entry
+key (Rkey
+value (2.PBSkillRvalue:8F
+BigSkill2Entry
+key (Rkey
+value (2.PBSkillRvalue:8J
+ReserveSkill1Entry
+key (Rkey
+value (2.PBSkillRvalue:8J
+ReserveSkill2Entry
+key (Rkey
+value (2.PBSkillRvalue:8"â
 PBUserRoleDatas$
 battle_role_id (RbattleRoleId"
 model_role_id (RmodelRoleId;
@@ -1146,7 +1175,7 @@ skill_type (R	skillType
 	config_id (RconfigId
 uniqid (Runiqid
 pos (Rposbproto3
-—
+þ
 ghost.proto
 item.proto"I
 PBSimpleGhostData
@@ -1174,19 +1203,25 @@ star_level (R	starLevel
 cur_skin_id (R	curSkinId 
 skin_id_list (R
 skinIdList"
-star_fail_cnt (RstarFailCnt"š
+star_fail_cnt (RstarFailCnt"+
+PBMonsterTags
+tags (2.PBTagRtags"Â
 PBUserGhostDatas&
 battle_ghost_id (RbattleGhostId.
 battle_ghost_uniqid (RbattleGhostUniqid?
 
 ghost_list (2 .PBUserGhostDatas.GhostListEntryR	ghostListO
-ghost_image_list (2%.PBUserGhostDatas.GhostImageListEntryRghostImageListJ
+ghost_image_list (2%.PBUserGhostDatas.GhostImageListEntryRghostImageListR
+mode_monster_tags (2&.PBUserGhostDatas.ModeMonsterTagsEntryRmodeMonsterTagsJ
 GhostListEntry
 key (Rkey"
 value (2.PBGhostDataRvalue:8P
 GhostImageListEntry
 key (Rkey#
-value (2.PBGhostImageRvalue:8"€
+value (2.PBGhostImageRvalue:8R
+ModeMonsterTagsEntry
+key (Rkey$
+value (2.PBMonsterTagsRvalue:8"€
 PBGourd
 gourd_id (RgourdId
 	nick_name (	RnickName
@@ -1257,7 +1292,16 @@ takeoffIdx"e
 error (	Rerror
 uid (Ruid&
 ghost_config_id (RghostConfigId
-skin (Rskinbproto3
+skin (Rskin"\
+PBRefreshMonsterTagsReqCmd
+uid (Ruid,
+mode_difficulty_id (RmodeDifficultyId"±
+PBRefreshMonsterTagsRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid,
+mode_difficulty_id (RmodeDifficultyId)
+now_tags (2.PBMonsterTagsRnowTagsbproto3
 ü	
 grade.proto"¤
 PBGradeData
@@ -1908,7 +1952,7 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-”@
+ÌA
 dsnode.protocommon.proto
 item.proto
 user.proto	bag.proto
@@ -2161,13 +2205,17 @@ belong_uid (R	belongUid.
 	quest_uid (RquestUidK
 antique_showcase_data (2.PBAntiqueShowcaseDataSRantiqueShowcaseData"5
 PBDsGetAllYesAveragePriceReqCmd
-dsid (Rdsid"†
+dsid (Rdsid"¾
 PBDsGetAllYesAveragePriceRspCmd
 code (Rcode
 error (	Rerror
 dsid (Rdsida
-yes_average_price (25.PBDsGetAllYesAveragePriceRspCmd.YesAveragePriceEntryRyesAveragePriceB
+yes_average_price (25.PBDsGetAllYesAveragePriceRspCmd.YesAveragePriceEntryRyesAveragePricen
+skin_yes_average_price (29.PBDsGetAllYesAveragePriceRspCmd.SkinYesAveragePriceEntryRskinYesAveragePriceB
 YesAveragePriceEntry
+key (Rkey
+value (Rvalue:8F
+SkinYesAveragePriceEntry
 key (Rkey
 value (Rvalue:8"O
 PBGetDsUserAccountBuffReqCmd
@@ -3543,10 +3591,10 @@ RankReward
 RankType_GuildMoney
 RankType_GuildScore_Weekly
 RankType_GuildScore_Seasonbproto3
-Š1
+¿2
 
 room.proto
-user.proto"­
+user.protoghost.proto"­
 PBRoomSearchInfo
 roomid (Rroomid
 chapter (Rchapter
@@ -3561,7 +3609,7 @@ masterName
 	needcheck (R	needcheck
 needpwd	 (Rneedpwd
 describe
- (	Rdescribe"ž
+ (	Rdescribe"Æ
 PBRoomMemberInfo
 seat_idx (RseatIdx
 is_ready (RisReady&
@@ -3571,7 +3619,9 @@ masterName
 story_line_record (2&.PBRoomMemberInfo.StoryLineRecordEntryRstoryLineRecordR
 ghost_gate_record (2&.PBRoomMemberInfo.GhostGateRecordEntryRghostGateRecordU
 boss_battle_record (2'.PBRoomMemberInfo.BossBattleRecordEntryRbossBattleRecordX
-tower_battle_record	 (2(.PBRoomMemberInfo.TowerBattleRecordEntryRtowerBattleRecordB
+tower_battle_record	 (2(.PBRoomMemberInfo.TowerBattleRecordEntryRtowerBattleRecordR
+mode_monster_tags
+ (2&.PBRoomMemberInfo.ModeMonsterTagsEntryRmodeMonsterTagsB
 StoryLineRecordEntry
 key (Rkey
 value (Rvalue:8B
@@ -3583,7 +3633,10 @@ masterName
 value (Rvalue:8D
 TowerBattleRecordEntry
 key (Rkey
-value (Rvalue:8"¡
+value (Rvalue:8R
+ModeMonsterTagsEntry
+key (Rkey$
+value (2.PBMonsterTagsRvalue:8"¡
 
 PBRoomInfo
 roomid (Rroomid

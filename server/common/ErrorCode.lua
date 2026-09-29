@@ -653,6 +653,12 @@ local ErrorCode = {
     RankTypeNotExist = 2403,
     --- 排行榜数据不存在
     RankDataNotExist = 2404,
+
+    --登录排队相关错误码
+    --- 登录排队中(非终态): 客户端应展示前方人数并节流重发登录请求查询位置
+    LoginQueuing = 2451,
+    --- 服务器繁忙(排队已满或排队超时): 客户端应提示稍后重试
+    ServerBusy = 2452,
 }
 
 return ErrorCode

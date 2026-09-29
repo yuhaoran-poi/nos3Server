@@ -17,6 +17,8 @@ local RoleDef = {
         MinorSkill_2 = 2, -- 小技能2
         PassiveSkill = 3, -- 被动技能
         MainSkill = 4, -- 主技能
+        BigSkill_1 = 5, -- 大技能1
+        BigSkill_2 = 6, -- 大技能2
     },
     InlayType = 1000,
 }
@@ -56,6 +58,14 @@ local defaultPBRoleData = {
     up_lv_rewards = {},
     space_ring = {},
     star_fail_cnt = 0,
+    cur_big_skill1_id = 0,
+    big_skill1 = {},
+    cur_big_skill2_id = 0,
+    big_skill2 = {},
+    cur_reserve_skill1_id = 0,
+    reserve_skill1 = {},
+    cur_reserve_skill2_id = 0,
+    reserve_skill2 = {},
 }
 
 local defaultPBUserRoleDatas = {

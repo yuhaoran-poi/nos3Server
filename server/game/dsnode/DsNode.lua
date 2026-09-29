@@ -761,6 +761,26 @@ function DsNode.PBDsGetAllYesAveragePriceReqCmd(req)
         end
     end
 
+    local skin_start_config_id = 0
+    local skin_id_price_list = {}
+    while true do
+        local records = Database.getskintraderecordaveragepriceseq(context.addr_db_user, skin_start_config_id, 1000)
+        if not records or table.size(records) <= 0 then
+            moon.error("Trademgr.Start getskintraderecordaveragepriceseq failed", skin_start_config_id, 1000)
+            break
+        end
+        for id, price in pairs(records) do
+            if id > skin_start_config_id then
+                skin_start_config_id = id
+            end
+            skin_id_price_list[id] = price
+        end
+
+        if table.size(records) < 1000 then
+            break
+        end
+    end
+
     --moon.warn(string.format("GetImagesInfo res = %s", json.pretty_encode(res)))
     -- moon.warn("PBDsGetAllYesAveragePriceReqCmd step 3")
     local ret = {
@@ -768,6 +788,7 @@ function DsNode.PBDsGetAllYesAveragePriceReqCmd(req)
         error = "",
         dsid = context.dsid,
         yes_average_price = id_price_list,
+        skin_yes_average_price = skin_id_price_list,
     }
     return context.S2D(context.net_id, CmdCode.PBDsGetAllYesAveragePriceRspCmd, ret, req.msg_context.stub_id)
 end

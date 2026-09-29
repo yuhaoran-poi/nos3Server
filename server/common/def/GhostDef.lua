@@ -38,6 +38,7 @@ local defaultPBUserGhostDatas = {
     battle_ghost_uniqid = 0,
     ghost_list = {},
     ghost_image_list = {},
+    mode_monster_tags = {},
 }
 
 ---@return PBSimpleGhostData

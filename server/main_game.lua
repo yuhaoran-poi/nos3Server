@@ -85,7 +85,13 @@ local function run(node_conf)
             name = "db_game",
             file = "common/service/mysqldriver.lua",
             threadid = 2,
-            poolsize = 5,
+            -- 登录链每玩家约25条串行SQL, 大量并发登录时5连接吞吐不足会触发POOL_EMPTY,
+            -- 调大到30提高并发吞吐(需确认MySQL max_connections余量, 默认151)
+            poolsize = 30,
+            -- 登录前置校验(loginuser 多语句合包)专用保留连接数: 每登录占用连接~2ms,
+            -- 2条≈1000登录/s排空能力, 保留池专用等待窗1500ms可接纳~1500登录/波;
+            -- 再大只会在doAuth排队前面堆连接, 挤占MySQL连接预算
+            reservedsize = 2,
             opts = db_conf.mysql
         },
         {

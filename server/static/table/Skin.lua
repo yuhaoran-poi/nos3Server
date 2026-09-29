@@ -199,6 +199,7 @@ return {
 [1202036] = { id=1202036,type=8,color=3,belong=1000003 },
 [1202037] = { id=1202037,type=8,color=3,belong=1000001 },
 [1202039] = { id=1202039,type=8,color=4,belong=1000003 },
+[1202041] = { id=1202041,type=8,color=4,belong=1000005 },
 [1212005] = { id=1212005,type=9,color=4,belong=1000001 },
 [1212009] = { id=1212009,type=9,color=4,belong=1000001 },
 [1212013] = { id=1212013,type=9,color=4,belong=1000002 },

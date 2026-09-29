@@ -27,6 +27,207 @@ local auth_queue = context.auth_queue
 --local temp_openid = {}
 local NODE = math.tointeger(moon.env("NODE"))
 
+--------------------------------------------------------------------------
+-- 登录重载段并发限流(轮询式排队)
+-- 登录分两段: 前置校验(steam/loginuser一条流ODKU, 走
+-- mysqldriver 保留连接秒回)立即执行, 失败立即返回不占队列;
+-- 重载段 doAuth(User.Load ~25条SQL+RPC)排队限流, 突增时超出的立即返回
+-- "排队中"+前方人数, 客户端节流重发登录请求即查询排队位置。
+-- 槽位数与 db_game 业务连接数(poolsize=20)匹配: 并发20时每时刻恰好
+-- 20条in-flight SQL, 再多只会互相排队空耗协程。
+--------------------------------------------------------------------------
+-- 槽数与db_game业务连接数的关系: LOGIN_MAX_CONCURRENT = poolsize - 在线业务余量
+-- (SaveRun存档/各模块save/业务查询也消费业务池, 登录突发不能挤占否则存档POOL_EMPTY;
+--  当前poolsize=30, 留10条余量给在线业务, 8节点×31连接 < MySQL max_connections=500)
+--------------------------------------------------------------------------
+local LOGIN_MAX_CONCURRENT = 10      -- 同时执行的登录重载段(doAuth)数上限
+local LOGIN_QUEUE_LIMIT = 2000       -- 排队长度上限, 超限直接拒绝(每项约1KB, 2000项≈2MB)
+local LOGIN_QUEUE_ITEM_TIMEOUT = 7200 -- 队列项存活秒数(2小时): 仅用于作废断线玩家的残留项,
+                                      -- 不限制排队本身; 推送周期性下行流量可保活NAT连接
+local LOGIN_QUEUE_PUSH_INTERVAL = 15 -- 排队位置推送间隔(秒)
+local LOGIN_DEAD_CHECK_AFTER = 60    -- 队列项等待超过该秒数后, 出队执行前后检测连接存活,
+                                     -- 死连接直接作废, 不白跑User.Load不留幽灵会话
+
+local login_loading = 0             -- 当前正在执行的登录重载段数
+local login_waitings = {}           -- FIFO: {req, authkey, pid, run, enqueue_ts}
+local login_queuing_map = {}        -- map<plateform_id, true>: 去重标记(该玩家是否在队列), 队列项本体只在login_waitings
+
+-- 登录响应(直接执行/排队异步执行/超时清理共用)
+-- 排队响应(LoginQueuing)不踢线, 客户端还要靠这条连接轮询; 其余失败照旧Kick
+local function login_respond(target_net_id, target_fd, target_stub_id, res)
+    local ret =
+    {
+        code = res.code,
+        error = res.error or "",
+        uid = res.res and res.res.uid or 0,
+        net_id = res.res and res.res.net_id or 0,
+        queue_waiting = res.queue_waiting or 0,
+    }
+    context.S2C(target_net_id, CmdCode.PBClientLoginRspCmd, ret, target_stub_id)
+    if res.code ~= ErrorCode.None and res.code ~= ErrorCode.LoginQueuing then
+        moon.send("lua", context.addr_gate, "Gate.Kick", 0, target_fd) -- body
+    end
+end
+
+-- 登录排队后续同步(队列位置推送/出队终态/排队超时):
+-- 排队中的连接已回过Rsp(2451), 入队后的一切通知一律走SyncCmd,
+-- 保证每个PBClientLoginReqCmd恰好收到一条PBClientLoginRspCmd
+local function login_queue_sync(target_net_id, res)
+    local ret =
+    {
+        uid = res.uid or 0,
+        net_id = res.net_id or 0,
+        queue_waiting = res.queue_waiting or 0,
+        code = res.code or ErrorCode.ServerInternalError,
+        error = res.error or "",
+    }
+    context.S2C(target_net_id, CmdCode.PBClientLoginQueueSyncCmd, ret, 0)
+end
+
+-- 查询玩家当前排队位置(1=队首)与队列项; 不在队列返回0
+-- login_queuing_map仅做plateform_id去重(O(1)快速判存), 队列项定位靠pid匹配
+local function login_queue_position(plateform_id)
+    if not login_queuing_map[plateform_id] then
+        return 0
+    end
+    for i, w in ipairs(login_waitings) do
+        if w.pid == plateform_id then
+            return i, w
+        end
+    end
+    return 0
+end
+
+-- 调度: 用空槽逐个异步执行队首登录(前置声明, 执行核内回调驱动)
+local login_dispatch
+-- 用户会话清理函数(前置声明, 定义在下方; 出队后检测到死连接时在dispatch协程内使用)
+local QuitOneUser
+
+-- 登录重载段执行核(调用前必须已占槽): 执行doAuth→释放槽→驱动队列,
+-- 返回终态res(直接路径由外层发Rsp, 排队出队路径发Sync)
+local function login_execute_inslot(run, authkey)
+    local ok, res = pcall(run)
+    login_loading = login_loading - 1
+    -- 先驱动队列再发终态通知: 即使通知环节出错, 槽位补位链也不会断
+    login_dispatch()
+    if ok then
+        return res
+    end
+    -- 原本会传播到xpcall兜底; 这里本地兜底并顺带清理openid_map, 不影响该玩家重试
+    moon.error(string.format("login doAuth error: authkey=%s err=%s", tostring(authkey), tostring(res)))
+    context.openid_map[authkey] = nil
+    return { code = ErrorCode.ServerInternalError, error = "LOGIN_INTERNAL_ERROR" }
+end
+
+login_dispatch = function()
+    while login_loading < LOGIN_MAX_CONCURRENT and #login_waitings > 0 do
+        local wait = table.remove(login_waitings, 1)
+        -- 键为plateform_id(稳定标识), authkey仅存队列项内用于openid_map的配对清理
+        login_queuing_map[wait.pid] = nil
+        -- 同步占槽后再启动协程: while的计数判断不依赖moon.async的调度语义
+        login_loading = login_loading + 1
+        moon.async(function()
+            -- 执行前活性检测(仅长等待项): 排队中断开的玩家视同超时作废,
+            -- 不白跑User.Load、不留幽灵会话; 检测在协程内yield,
+            -- 不影响dispatch的while循环对loading的同步判断
+            if moon.time() - wait.enqueue_ts > LOGIN_DEAD_CHECK_AFTER then
+                local alive = moon.call("lua", context.addr_gate, "Gate.CheckFdAlive", wait.fd)
+                if not alive then
+                    login_loading = login_loading - 1
+                    context.openid_map[wait.authkey] = nil
+                    moon.warn(string.format("login queue item dead before exec, uid=%s pid=%s waited=%ds",
+                        tostring(wait.uid), tostring(wait.pid), moon.time() - wait.enqueue_ts))
+                    login_dispatch() -- 补位下一个
+                    return
+                end
+            end
+            local res = login_execute_inslot(wait.run, wait.authkey)
+            -- 执行后活性检测: doAuth成功但连接已死则立即清理本次登录产生的会话
+            -- (user服务/uid_map/usermgr注册), 不等60秒定时清理, 该玩家可立刻重登
+            if res.code == ErrorCode.None then
+                local alive = moon.call("lua", context.addr_gate, "Gate.CheckFdAlive", wait.fd)
+                if not alive then
+                    local u = context.uid_map[wait.uid]
+                    if u then
+                        QuitOneUser(u) -- User.Exit(user服务自会保存+usermgr注销) + 清uid_map/net_id_map
+                    end
+                    context.openid_map[wait.authkey] = nil
+                    moon.warn(string.format("login dead after exec, cleanup session uid=%s", tostring(wait.uid)))
+                    return
+                end
+            end
+            -- 出队终态属于"入队后的后续通知", 走Sync(该Req的Rsp已由入队响应消耗);
+            -- doAuth返回结构为{code,error,res={uid,net_id}}, 此处转平铺
+            login_queue_sync(wait.net_id, {
+                uid = res.res and res.res.uid or 0,
+                net_id = res.res and res.res.net_id or 0,
+                code = res.code or 0,
+                error = res.error or "",
+            })
+            -- 终态失败踢线, 成功保持连接进入游戏
+            if res.code ~= ErrorCode.None then
+                moon.send("lua", context.addr_gate, "Gate.Kick", 0, wait.fd)
+            end
+        end)
+    end
+end
+
+-- 直接执行路径(未入队, processLogin协程内同步执行):
+-- 占槽→执行核→返回res由外层login_respond发Rsp
+local function login_execute(run, authkey)
+    login_loading = login_loading + 1
+    return login_execute_inslot(run, authkey)
+end
+
+-- 定时清理超时队列项(玩家排队中断线且重发未命中时, 防陈旧项堆积占满队列)
+moon.async(function()
+    while true do
+        moon.sleep(10 * 1000)
+        local now_ts = moon.time()
+        while #login_waitings > 0 do
+            local wait = login_waitings[1]
+            if now_ts - wait.enqueue_ts <= LOGIN_QUEUE_ITEM_TIMEOUT then
+                break
+            end
+            table.remove(login_waitings, 1)
+            -- 键为plateform_id(稳定标识), authkey仅用于openid_map的配对清理
+            login_queuing_map[wait.pid] = nil
+            context.openid_map[wait.authkey] = nil
+            -- 排队超时属于"入队后的后续通知", 走Sync + 踢线
+            login_queue_sync(wait.net_id, {
+                uid = wait.uid,
+                net_id = wait.net_id,
+                code = ErrorCode.ServerBusy,
+                error = "LOGIN_QUEUE_TIMEOUT",
+            })
+            moon.send("lua", context.addr_gate, "Gate.Kick", 0, wait.fd)
+        end
+    end
+end)
+
+-- 统一定时推送排队位置(单协程, 不随入队数增长):
+-- gate对登录中连接(BindGnId后BindUser前)的上行消息会被redirect到nil,
+-- 客户端同连接轮询到不了auth, 由服务端周期性推送2451+当前位置,
+-- 下行走gate的net_id_map->fd不受影响; 出队/超时的队列项不在遍历
+-- 范围内, 自然不再收到推送
+moon.async(function()
+    while true do
+        moon.sleep(LOGIN_QUEUE_PUSH_INTERVAL * 1000)
+        -- 先快照再推送, 避免推送过程中队列被并发修改
+        -- local pushes = {}
+        for i, wait in ipairs(login_waitings) do
+            -- pushes[#pushes + 1] = { req = wait.req, pos = i }
+            login_queue_sync(wait.net_id, {
+                uid = wait.uid,
+                net_id = wait.net_id,
+                queue_waiting = i,
+                code = ErrorCode.LoginQueuing,
+                error = "",
+            })
+        end
+    end
+end)
+
 local function doDSAuth(req)
     local u = context.net_id_map[req.net_id]
     local addr_dsnode
@@ -101,7 +302,7 @@ local function doDSAuth(req)
     return { code = 0, error = "sucess", res = res }
 end
 
-local function doAuth(Auth, req, plateform_id)
+local function doAuth(req, plateform_id)
     local u = context.uid_map[req.uid]
     -- moon.warn(string.format("req.uid %d", req.uid))
     -- moon.error(string.format("doAuth context.uid_map = %s", json.pretty_encode(context.uid_map)))
@@ -201,10 +402,17 @@ local function doAuth(Auth, req, plateform_id)
     return { code = 0, error = "sucess", res = res }
 end
 
-local function QuitOneUser(u)
+QuitOneUser = function(u)
     moon.send("lua", u.addr_user, "User.Exit")
-    context.uid_map[u.uid] = nil
-    context.net_id_map[u.net_id] = nil
+    -- 条件删除: 同uid可能有新会话已覆盖注册(出队执行中的旧doAuth清理时,
+    -- 重连的新doAuth可能刚写入uid_map; 顶号/断线清理同理), 按key盲删会
+    -- 误杀新会话导致其"假在线"(收code=0但S2C按uid_map路由全部丢失)
+    if context.uid_map[u.uid] == u then
+        context.uid_map[u.uid] = nil
+    end
+    if context.net_id_map[u.net_id] == u then
+        context.net_id_map[u.net_id] = nil
+    end
     moon.error(string.format("QuitOneUser net_id = %d", u.net_id))
 end
 
@@ -260,15 +468,21 @@ Auth.Init = function()
     local ok, err = moon.call("lua", context.addr_db_game, [[
         CREATE TABLE IF NOT EXISTS account (
             user_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            authkey VARCHAR(64) NOT NULL,
             username VARCHAR(64) NOT NULL,
-            password_hash CHAR(32) NOT NULL,
+            password_hash CHAR(32) NOT NULL DEFAULT '',
+            ban_end_ts BIGINT NOT NULL DEFAULT 0,
             create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP NULL,
             PRIMARY KEY (user_id),
-            UNIQUE INDEX (username)
+            UNIQUE INDEX uk_authkey (authkey)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
     ]])
-    assert(ok, "Failed to create account table: " .. tostring(err)) -- 增强错误提示
+    -- 注意: mysqldriver失败时返回的是badresult表(truthy)而非nil,
+    -- 不能用assert(ok)判断, 必须检查badresult标记
+    if not ok or ok.badresult then
+        error("Failed to create account table: " .. tostring(ok and ok.message or err))
+    end
 
     fishsteam.CheckFishSteam()
     local rgubTicket =
@@ -384,7 +598,7 @@ Auth.PBClientLoginReqCmd = function(req)
     end
     
     local function processLogin()
-        local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+        -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         local plateform_id = req.msg.login_data.authkey
         if plateform_id and string.sub(plateform_id, 1, 5) == "robot" then
             moon.debug("robot login ", plateform_id)
@@ -397,44 +611,82 @@ Auth.PBClientLoginReqCmd = function(req)
             plateform_id = tostring(steam_id)
         end
 
-        local check_res, check_err = db.checkuser(context.addr_db_game, plateform_id)
-        if check_err then
+        -- 排队查询(重发登录/断线重连): plateform_id是稳定标识(robot原串/
+        -- steam校验后的steam_id), 同一玩家换新ticket也能命中;
+        -- 命中即返回位置, 不再做checkuser等前置查询, 并清当前请求占位
+        local queue_pos, queue_wait = login_queue_position(plateform_id)
+        if queue_pos > 0 then
+            -- 队列项跟随新连接: 后续Sync推送与终态/Kick走新连接;
+            -- 并原地更新被run_doauth闭包捕获的旧req对象的连接字段
+            -- (net_id/fd/sign/msg_context), 否则出队doAuth仍按首连身份
+            -- 做BindUser等绑定, 重连玩家的会话会绑到已断开的旧连接
+            if queue_wait then
+                queue_wait.net_id = req.net_id
+                queue_wait.fd = req.fd
+                if queue_wait.req then
+                    -- 原地复写旧req的字段而非替换引用: run_doauth闭包的upvalue
+                    -- 固定指向入队时的req表, 替换wait.req字段对闭包不可见;
+                    -- sign/msg_context必须一并跟随, 否则出队doAuth的Gate.BindUser
+                    -- 用旧sign校验新fd必失败——服务端在线但gate未绑定, 玩家假在线
+                    queue_wait.req.net_id = req.net_id
+                    queue_wait.req.fd = req.fd
+                    queue_wait.req.sign = req.sign
+                    queue_wait.req.msg_context = req.msg_context
+                end
+            end
+
             context.openid_map[req.msg.login_data.authkey] = nil
-            return { code = ErrorCode.NicknameAlreadyExist, error = "USERNAME_EXISTS" }
-        end
-        
-        if not check_res or next(check_res) == nil then
-            local create_res, create_err = db.createuser(
-                context.addr_db_game,
-                plateform_id
-            )
-            --
-            if create_err or not create_res.insert_id then
-                context.openid_map[req.msg.login_data.authkey] = nil
-                return { code = ErrorCode.CreateAccountFailed, error = "CREATE_ACCOUNT_FAILED" }
-            end
-
-            req.uid = create_res.insert_id
-        else
-            -- 登录验证（直接比较MD5）
-            local datas, err = db.getuserbyauthkey(context.addr_db_game, plateform_id)
-            -- 判断user_data是否为nil或空表
-            if err or datas == nil or next(datas) == nil or not datas[1] or not datas[1].user_id then
-                context.openid_map[req.msg.login_data.authkey] = nil
-                return { code = ErrorCode.PasswordError, error = "INVALID_AUTHKEY" }
-            end
-            if datas[1].ban_end_ts and datas[1].ban_end_ts > moon.time() then
-                context.openid_map[req.msg.login_data.authkey] = nil
-                return { code = ErrorCode.AccountBanned, error = "ACCOUNT_BANNED" }
-            end
-            local data = datas[1]
-
-            req.uid = data.user_id
-            -- --强制登录
-            -- req.uid = 1060
+            return { code = ErrorCode.LoginQueuing, error = "LOGIN_QUEUING", queue_waiting = queue_pos }
         end
 
-        return doAuth(Auth, req, plateform_id)
+        -- 建号/取号一条流(多语句合包): 语句1 ODKU 建号或取号,
+        -- 新号拿自增uid, 老号撞uk_authkey带回原uid(LAST_INSERT_ID技巧),
+        -- 语句2 带回封禁字段; 共用一条保留连接一次往返, 不二次等池
+        local login_res = db.loginuser(context.addr_db_game, plateform_id)
+        local okp = (login_res and login_res.multiresultset) and login_res[1] or login_res
+        local rows = (login_res and login_res.multiresultset) and login_res[2] or nil
+        if not okp or okp.badresult or not okp.insert_id then
+            context.openid_map[req.msg.login_data.authkey] = nil
+            return { code = ErrorCode.CreateAccountFailed, error = "CREATE_ACCOUNT_FAILED" }
+        end
+
+        -- 老号封禁检查(新号 rows 为空, 直接跳过)
+        if rows and rows[1] and rows[1].ban_end_ts and rows[1].ban_end_ts > moon.time() then
+            context.openid_map[req.msg.login_data.authkey] = nil
+            return { code = ErrorCode.AccountBanned, error = "ACCOUNT_BANNED" }
+        end
+
+        req.uid = okp.insert_id
+
+        -- 登录重载段并发限流: 前置校验(走保留连接)已完成, req.uid已确定,
+        -- 仅对 doAuth(User.Load ~25条SQL+RPC)排队。
+        -- 注意必须包装成函数延迟执行: 入队路径在出队后才调用,
+        -- 直接执行路径在login_execute占槽后才调用, 二者都依赖闭包
+        local function run_doauth()
+            return doAuth(req, plateform_id)
+        end
+        local authkey = req.msg.login_data.authkey
+        if login_loading >= LOGIN_MAX_CONCURRENT then
+            if #login_waitings >= LOGIN_QUEUE_LIMIT then
+                context.openid_map[authkey] = nil
+                return { code = ErrorCode.ServerBusy, error = "SERVER_BUSY" }
+            end
+            local wait = {
+                req = req,              -- 入队请求对象: 重连时原地更新其连接字段(run闭包共享此表)
+                uid = req.uid,
+                net_id = req.net_id,
+                fd = req.fd,
+                authkey = authkey,     -- 入队请求的ticket: 超时/出队时清openid_map用
+                pid = plateform_id,    -- 稳定标识: 新ticket重发时查位置用
+                enqueue_ts = moon.time(),
+                run = run_doauth,
+            }
+            table.insert(login_waitings, wait)
+            login_queuing_map[plateform_id] = true -- 仅做去重标记, 队列项本体在login_waitings
+            return { code = ErrorCode.LoginQueuing, error = "LOGIN_QUEUING", queue_waiting = #login_waitings }
+        end
+
+        return login_execute(run_doauth, authkey)
     end
 
     local function func()
@@ -450,51 +702,42 @@ Auth.PBClientLoginReqCmd = function(req)
         req.net_id = Auth.AllocGateNetId(0)
         moon.send("lua", context.addr_gate, "Gate.BindGnId", req)
 
-        -- if serverconf.CLIENT_VERSION ~= "" and req.msg.login_data.version ~= serverconf.CLIENT_VERSION then
-        --     moon.error("client version mismatch: client=", req.msg.login_data.version, " server=",
-        --         serverconf.CLIENT_VERSION)
-        --     return { code = ErrorCode.ProtoError, error = "CLIENT_VERSION_MISMATCH" }
-        -- end
+        if serverconf.CLIENT_VERSION ~= "" and req.msg.login_data.version ~= serverconf.CLIENT_VERSION then
+            moon.error("client version mismatch: client=", req.msg.login_data.version, " server=",
+                serverconf.CLIENT_VERSION)
+            return { code = ErrorCode.ProtoError, error = "CLIENT_VERSION_MISMATCH" }
+        end
         
-        -- if SERVER_PB_VERSION ~= "" and req.msg.login_data.pb_version ~= SERVER_PB_VERSION then
-        --     moon.error("PB version mismatch: client=", req.msg.login_data.pb_version, " server=", SERVER_PB_VERSION)
-        --     return { code = ErrorCode.ProtoError, error = "PB_VERSION_MISMATCH" }
-        -- end
+        if SERVER_PB_VERSION ~= "" and req.msg.login_data.pb_version ~= SERVER_PB_VERSION then
+            moon.error("PB version mismatch: client=", req.msg.login_data.pb_version, " server=", SERVER_PB_VERSION)
+            return { code = ErrorCode.ProtoError, error = "PB_VERSION_MISMATCH" }
+        end
 
         local fd = context.openid_map[req.msg.login_data.authkey]
         if not fd then
             ---避免同一个玩家瞬间发送大量登录请求
             context.openid_map[req.msg.login_data.authkey] = req.fd
-            -- local tmp = temp_openid[req.msg.login_data.authkey]
-            -- if tmp then
-            --     moon.error("user logining", req.fd, req.msg.login_data.authkey)
-            --     return { code = 1007, error = "USER_LOGINING" }
-            -- end
-            -- temp_openid[req.msg.login_data.authkey] = 1
         else
-            moon.error("user logining", req.fd, req.uid)
-            return { code = ErrorCode.UserAlreadyLogin, error = "USER_LOGINING" }
+            -- 占位连接已断开: 登录中途断开(排队等待/加载中)的陈旧占位残留,
+            -- gate的close事件此时无uid可通知auth清理; 同ticket重连(ticket
+            -- 有效期内不变)被残留占位拦截会反复USER_LOGINING直到队列项出队。
+            -- 检测占位fd存活, 死亡则覆盖占位放行
+            local alive = moon.call("lua", context.addr_gate, "Gate.CheckFdAlive", fd)
+            if not alive then
+                context.openid_map[req.msg.login_data.authkey] = req.fd
+            else
+                moon.error("user logining", req.fd, req.uid)
+                return { code = ErrorCode.UserAlreadyLogin, error = "USER_LOGINING" }
+            end
         end
 
         return processLogin()
     end
-    
-    local res = func()
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    local ret =
-    {
-        code = res.code,
-        error = res.error or "",
-        uid = res.res and res.res.uid or 0,
-        net_id = res.res and res.res.net_id or 0,
-    }
-    context.S2C(req.net_id, CmdCode["PBClientLoginRspCmd"], ret, req.msg_context.stub_id)
 
-    if res.code ~= 0 then
-        moon.send("lua", context.addr_gate, "Gate.Kick", 0, req.fd) -- body
-    end
+    local res = func()
+    login_respond(req.net_id, req.fd, req.msg_context.stub_id, res)
 end
- 
+
 Auth.PBDSLoginReqCmd = function(req)
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local function processLogin()
@@ -522,16 +765,16 @@ Auth.PBDSLoginReqCmd = function(req)
         req.net_id = Auth.AllocGateNetId(1)
         moon.send("lua", context.addr_dgate, "DGate.BindGnId", req)
 
-        -- if serverconf.CLIENT_VERSION ~= "" and req.msg.login_data.version ~= serverconf.CLIENT_VERSION then
-        --     moon.error("client version mismatch: client=", req.msg.login_data.version, " server=",
-        --         serverconf.CLIENT_VERSION)
-        --     return { code = ErrorCode.ProtoError, error = "CLIENT_VERSION_MISMATCH" }
-        -- end
+        if serverconf.CLIENT_VERSION ~= "" and req.msg.login_data.version ~= serverconf.CLIENT_VERSION then
+            moon.error("client version mismatch: client=", req.msg.login_data.version, " server=",
+                serverconf.CLIENT_VERSION)
+            return { code = ErrorCode.ProtoError, error = "CLIENT_VERSION_MISMATCH" }
+        end
         
-        -- if SERVER_PB_VERSION ~= "" and req.msg.login_data.pb_version ~= SERVER_PB_VERSION then
-        --     moon.error("PB version mismatch: client=", req.msg.login_data.pb_version, " server=", SERVER_PB_VERSION)
-        --     return { code = ErrorCode.ProtoError, error = "PB_VERSION_MISMATCH" }
-        -- end
+        if SERVER_PB_VERSION ~= "" and req.msg.login_data.pb_version ~= SERVER_PB_VERSION then
+            moon.error("PB version mismatch: client=", req.msg.login_data.pb_version, " server=", SERVER_PB_VERSION)
+            return { code = ErrorCode.ProtoError, error = "PB_VERSION_MISMATCH" }
+        end
 
         local dsid = context.openid_map[req.msg.login_data.authkey]
         if dsid then

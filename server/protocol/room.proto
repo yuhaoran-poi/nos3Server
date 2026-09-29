@@ -1,5 +1,6 @@
 syntax = "proto3";
 import "user.proto";
+import "ghost.proto";
 
 //message PBRoomApplyData
 //{
@@ -38,6 +39,7 @@ message PBRoomMemberInfo
     map<int32, int32> ghost_gate_record = 7;
     map<int32, int32> boss_battle_record    = 8;
     map<int32, int32> tower_battle_record   = 9;
+    map<int32, PBMonsterTags> mode_monster_tags	= 10;   // 战斗中敌方怪物的词条
 }
 
 message PBRoomInfo

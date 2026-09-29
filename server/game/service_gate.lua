@@ -61,10 +61,16 @@ socket.on("message", function(fd, msg)
                 reqmsg.isDS = false
                 moon.send("lua", context.addr_auth, subname, reqmsg)
             else
-                print("client: message", fd, subname, submsg)
+                moon.error("client: message", fd, subname, submsg)
             end
         end
     else
+        if not c.addr_user then
+            -- 登录中连接(BindGnId后BindUser前, 含登录排队等待): 无user服务可转发,
+            -- 显式丢弃, 避免redirect(nil)每条消息抛Lua错误刷error日志;
+            -- 同连接重发的登录请求也在此丢弃(排队位置由auth定时Sync推送)
+            return
+        end
         if moon.DEBUG() then
             local buf = moon.decode(msg, "B")
             protocol.print_message(c.net_id, buf,"message",1)

@@ -130,6 +130,12 @@ function Gate.BindGnId(req)
     moon.warn(string.format("BindGnId fd:%d net_id:%d ", req.fd, req.net_id))
     return true
 end
+
+-- 连接活性检测(供auth登录队列使用, moon.call调用):
+-- fd_map条目在socket close事件中清除, 存在即连接存活
+function Gate.CheckFdAlive(fd)
+    return context.fd_map[fd] ~= nil
+end
 function Gate.ForwardD2C(GnId, MessagePack)
     context.D2C(GnId, MessagePack)
 end

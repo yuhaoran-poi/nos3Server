@@ -329,6 +329,7 @@ message PBDsGetAllYesAveragePriceRspCmd
     string error = 2; // 错误信息
 	int32 dsid			= 3;
 	map<int32, float> yes_average_price	= 4;
+	map<int32, float> skin_yes_average_price	= 5;
 }
 
 // DS获取玩家账户buff数据

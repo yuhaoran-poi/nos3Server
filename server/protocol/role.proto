@@ -48,6 +48,14 @@ message PBRoleData
 	map<int32, int32> up_lv_rewards		= 19;	//已领取的升级奖励
 	PBItemData space_ring	= 20;	//空间戒指
 	int32 star_fail_cnt		= 21;	//升星失败次数
+	int32 cur_big_skill1_id			= 22;	//选定大技能1id
+	map<int32, PBSkill> big_skill1	= 23;	//可选大技能1
+	int32 cur_big_skill2_id			= 24;	//选定大技能2id
+	map<int32, PBSkill> big_skill2	= 25;	//可选大技能2
+	int32 cur_reserve_skill1_id			= 26;	//预留技能1id
+	map<int32, PBSkill> reserve_skill1	= 27;	//预留技能1
+	int32 cur_reserve_skill2_id			= 28;	//预留技能2id
+	map<int32, PBSkill> reserve_skill2	= 29;	//预留技能2
 }
 
 // 角色数据

@@ -13,7 +13,8 @@ local RoomDef = {
         PlayerChangeRoleInfo = 9, -- 玩家变更出战角色
         PlayerSwitchCity = 10,    -- 玩家切换主城
         GameEnd = 11,             -- 游戏结束
-        PlayerEarlyRetreat = 12, -- 玩家提前退出
+        PlayerEarlyRetreat = 12,  -- 玩家提前退出
+        PlayerChangeModeMonsterTags = 13, -- 玩家变更模式怪物词条
     },
     GameMode = {
         STORY_MODE = 1,
@@ -76,6 +77,20 @@ end
 ---@return PBRoomWholeInfo
 function RoomDef.newRoomWholeInfo()
     return LuaExt.const(table.copy(defaultPBRoomWholeInfo))
+end
+
+function RoomDef.GetModeIdFromChapterId(chapter_id)
+    if chapter_id >= 1 and chapter_id <= 1000 then
+        return RoomDef.GameMode.STORY_MODE
+    elseif chapter_id >= 1001 and chapter_id <= 2000 then
+        return RoomDef.GameMode.GHOST_GATE_MODE
+    elseif chapter_id >= 2001 and chapter_id <= 3000 then
+        return RoomDef.GameMode.BOSS_MODE
+    elseif chapter_id >= 3001 and chapter_id <= 4000 then
+        return RoomDef.GameMode.TOWER_MODE
+    else
+        return 0
+    end
 end
 
 return RoomDef

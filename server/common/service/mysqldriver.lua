@@ -31,11 +31,19 @@ local LONG_WAIT_MS = 1500 -- 有 pending 时上限(给重连 worker 充分时间
 if conf.name then
     local list = require("list")
     local dbs = list.new()
+    -- 登录前置校验保留连接池(不占业务池, 条数可配 conf.reservedsize):
+    -- 突增登录时业务池被 User.Load 打满, 保留连接保证
+    -- loginuser(ODKU建号取号一条SQL)秒回, 不与业务池竞争。
+    -- 容量参考: 每登录1条SQL(~1ms/条), 4条 ≈ 4000登录/s的排空能力,
+    -- 且500ms等待窗内可接纳 ~4x500=2000登录/波, 匹配2000并发压测目标
+    local reserved_dbs = list.new()
     -- 需要重连的连接队列(被踢出主池,后台重连后回流)
     local pending_reconnect = list.new()
     -- 正在执行的 SQL 追踪(连接句柄 -> SQL),用于 POOL_EMPTY 时定位占着连接不放的语句
     local inflight = {}
-    pool_stats.total = conf.poolsize or 1
+    -- 业务池 poolsize 条 + 保留池 reservedsize 条(默认1, 兼容旧配置)
+    local reserved_size = conf.reservedsize or 1
+    pool_stats.total = (conf.poolsize or 1) + reserved_size
 
     -- conf 覆盖(可选,运维想调阈值不用改代码)
     if conf.slow_threshold_ms and type(conf.slow_threshold_ms) == "number" then
@@ -65,13 +73,20 @@ if conf.name then
             -- 尝试重建连接
             local ok, new_db = pcall(mysql.connect, conf.opts)
             if ok and new_db and not new_db.code then
-                list.push(dbs, new_db)
-                pool_stats.alive = list.size(dbs)
+                -- 按旧连接的池标记回流:保留连接重连后必须回保留池,否则保留池会被慢慢掏空
+                local is_reserved = db_or_err and db_or_err.__reserved
+                new_db.__reserved = is_reserved
+                if is_reserved then
+                    list.push(reserved_dbs, new_db)
+                else
+                    list.push(dbs, new_db)
+                end
+                pool_stats.alive = list.size(dbs) + list.size(reserved_dbs)
                 pool_stats.reconnects = pool_stats.reconnects + 1
                 pool_stats.last_recover_ts = moon.time()
                 moon.warn(string.format(
-                    "[%s]MYSQL_DRV mysql reconnected (alive=%d/%d, total reconnects=%d)",
-                    conf.name, pool_stats.alive, pool_stats.total, pool_stats.reconnects))
+                    "[%s]MYSQL_DRV mysql reconnected (alive=%d/%d, total reconnects=%d, reserved=%s)",
+                    conf.name, pool_stats.alive, pool_stats.total, pool_stats.reconnects, tostring(is_reserved and true or false)))
                 backoff = 1
             else
                 pool_stats.last_err = new_db and new_db.message or tostring(new_db)
@@ -90,11 +105,27 @@ if conf.name then
 
     -- 初始化连接池(后台异步,启动不阻塞)
     moon.async(function()
-        for _ = 1, pool_stats.total do
+        -- 保留池:登录前置校验专用连接(reservedsize 条)
+        for _ = 1, reserved_size do
+            local ok, db = pcall(mysql.connect, conf.opts)
+            if ok and db and not db.code then
+                db.__reserved = true
+                list.push(reserved_dbs, db)
+            else
+                pool_stats.last_err = db and db.message or tostring(db)
+                moon.error(string.format("[%s]MYSQL_DRV initial reserved mysql connect failed: %s",
+                    conf.name, pool_stats.last_err))
+                -- 占个位,等后台 worker 帮忙重连(标记reserved,回流保留池)
+                list.push(pending_reconnect, { placeholder = true, __reserved = true })
+            end
+            pool_stats.alive = list.size(dbs) + list.size(reserved_dbs)
+        end
+        -- 业务池
+        for _ = 1, (conf.poolsize or 1) do
             local ok, db = pcall(mysql.connect, conf.opts)
             if ok and db and not db.code then
                 list.push(dbs, db)
-                pool_stats.alive = list.size(dbs)
+                pool_stats.alive = list.size(dbs) + list.size(reserved_dbs)
             else
                 pool_stats.last_err = db and db.message or tostring(db)
                 moon.error(string.format("[%s]MYSQL_DRV initial mysql connect failed: %s",
@@ -105,35 +136,36 @@ if conf.name then
         end
     end)
 
-    -- 周期 ping 健康检查(L25-39 升级版)
+    -- 周期 ping 健康检查(L25-39 升级版), 业务池与保留池都检查
     moon.async(function()
         while true do
             moon.sleep(30000) -- 30 秒一轮
-
-            -- 原子 pop:不先做 size 检查,直接 pop,根据结果分支
-            -- 避免与 SQL handler / force_reconnect 并发时 size>0 但 pop 出 nil 的 race
-            local db = list.pop(dbs)
-            if db then
-                local ok, ret = pcall(function() return db:ping() end)
-                if not ok or not ret or ret.server_status ~= 2 then
-                    -- ping 失败:踢出主池,丢进待重连队列
-                    moon.warn(string.format("[%s]MYSQL_DRV mysql ping failed, mark for reconnect: %s",
-                        conf.name, json.pretty_encode(ret or { err = "ping_exception" })))
-                    list.push(pending_reconnect, db)
-                else
-                    -- 正常,放回
-                    list.push(dbs, db)
-                end
-                pool_stats.alive = list.size(dbs)
-            elseif list.size(pending_reconnect) > 0 then
-                -- 池子是空的但有 pending,说明正在重连,打点日志
-                -- (避免每 30 秒被空日志刷屏,只在第一次空时打)
-                if pool_stats.last_empty_log_ts == 0
-                    or moon.time() - pool_stats.last_empty_log_ts > 300 then
-                    pool_stats.last_empty_log_ts = moon.time()
-                    moon.warn(string.format(
-                        "[%s]MYSQL_DRV pool empty, waiting reconnect (alive=%d/%d, pending=%d)",
-                        conf.name, list.size(dbs), pool_stats.total, list.size(pending_reconnect)))
+            for _, pool in ipairs({ dbs, reserved_dbs }) do
+                -- 原子 pop:不先做 size 检查,直接 pop,根据结果分支
+                -- 避免与 SQL handler / force_reconnect 并发时 size>0 但 pop 出 nil 的 race
+                local db = list.pop(pool)
+                if db then
+                    local ok, ret = pcall(function() return db:ping() end)
+                    if not ok or not ret or ret.server_status ~= 2 then
+                        -- ping 失败:踢出主池,丢进待重连队列
+                        moon.warn(string.format("[%s]MYSQL_DRV mysql ping failed, mark for reconnect: %s",
+                            conf.name, json.pretty_encode(ret or { err = "ping_exception" })))
+                        list.push(pending_reconnect, db)
+                    else
+                        -- 正常,放回
+                        list.push(pool, db)
+                    end
+                    pool_stats.alive = list.size(dbs) + list.size(reserved_dbs)
+                elseif list.size(pending_reconnect) > 0 then
+                    -- 池子是空的但有 pending,说明正在重连,打点日志
+                    -- (避免每 30 秒被空日志刷屏,只在第一次空时打)
+                    if pool_stats.last_empty_log_ts == 0
+                        or moon.time() - pool_stats.last_empty_log_ts > 300 then
+                        pool_stats.last_empty_log_ts = moon.time()
+                        moon.warn(string.format(
+                            "[%s]MYSQL_DRV pool empty, waiting reconnect (alive=%d/%d, pending=%d)",
+                            conf.name, pool_stats.alive, pool_stats.total, list.size(pending_reconnect)))
+                    end
                 end
             end
         end
@@ -149,7 +181,8 @@ if conf.name then
             local result = {
                 name = conf.name,
                 pool_total = pool_stats.total,
-                pool_alive = list.size(dbs),
+                pool_alive = list.size(dbs) + list.size(reserved_dbs),
+                reserved_alive = list.size(reserved_dbs),
                 pool_pending = list.size(pending_reconnect),
                 reconnects = pool_stats.reconnects,
                 slow_query_count = pool_stats.slow_query_count,
@@ -158,9 +191,9 @@ if conf.name then
                 last_recover_ts = pool_stats.last_recover_ts,
             }
             moon.info(string.format(
-                "[%s]MYSQL_DRV _diag from sender=%s session=%d -> alive=%d/%d, pending=%d, reconnects=%d, slow=%d, threshold=%dms, last_err=%s",
+                "[%s]MYSQL_DRV _diag from sender=%s session=%d -> alive=%d/%d (reserved=%d), pending=%d, reconnects=%d, slow=%d, threshold=%dms, last_err=%s",
                 conf.name, sender_hex, sessionid,
-                result.pool_alive, result.pool_total, result.pool_pending,
+                result.pool_alive, result.pool_total, result.reserved_alive, result.pool_pending,
                 result.reconnects, result.slow_query_count, result.slow_threshold_ms,
                 tostring(result.last_err)))
             return result
@@ -170,11 +203,13 @@ if conf.name then
         if op == "_force_reconnect" then
             -- 原子 pop 循环:不再先 size 检查,直接 pop,pop 出 nil 说明池子空了
             local count = 0
-            while true do
-                local db = list.pop(dbs)
-                if not db then break end
-                list.push(pending_reconnect, db)
-                count = count + 1
+            for _, kick_pool in ipairs({ dbs, reserved_dbs }) do
+                while true do
+                    local db = list.pop(kick_pool)
+                    if not db then break end
+                    list.push(pending_reconnect, db)
+                    count = count + 1
+                end
             end
             pool_stats.alive = 0
             moon.warn(string.format(
@@ -186,6 +221,15 @@ if conf.name then
 
         -- SQL 查询路径(向下兼容原签名,op 即为 sql 字符串)
         local sql = op
+        local pool = dbs
+        local pool_name = "normal"
+        if op == "_reserved" then
+            -- 保留连接:登录前置校验专用(checkuser/createuser/getuserbyauthkey),
+            -- payload 为 SQL,从保留池取连接,不与业务池竞争
+            sql = payload
+            pool = reserved_dbs
+            pool_name = "reserved"
+        end
         if type(sql) ~= "string" then
             moon.error(string.format(
                 "[%s]MYSQL_DRV INVALID_SQL from sender=%s session=%d: op type=%s, payload type=%s",
@@ -209,12 +253,19 @@ if conf.name then
             -- 每个 pending 额外加 100ms,但不超过 LONG_WAIT_MS
             wait_target = math.min(SHORT_WAIT_MS + pending_cnt * 100, LONG_WAIT_MS)
         end
+        -- 保留池(登录前置校验)专用等待窗: prechk 都是毫秒级短查询,
+        -- 突发登录打满保留池时多等一会儿(默认1500ms)换准入容量:
+        -- 容量=连接数x等待窗/每登录SQL占用, 4条x1500ms/2ms=3000登录/波,
+        -- 避免像业务池那样500ms就快速拒绝(拒绝码1202)
+        if pool == reserved_dbs then
+            wait_target = math.max(wait_target, conf.reserved_wait_ms or 1500)
+        end
 
         -- 原子 pop-in-wait:在等待循环内直接尝试 pop,避免 size>0 但 pop 失败的 race
         local db
         local wait_cnt = 0
         while wait_cnt < wait_target do
-            db = list.pop(dbs)
+            db = list.pop(pool)
             if db then break end
             moon.sleep(1)
             wait_cnt = wait_cnt + 1
@@ -233,12 +284,12 @@ if conf.name then
                 badresult = true,
                 code = "POOL_EMPTY",
                 message = string.format(
-                    "no available mysql connection (alive=0/%d, pending=%d, wait=%dms, last_err=%s)",
-                    pool_stats.total, pending_cnt, wait_target, tostring(pool_stats.last_err)),
+                    "no available mysql connection (pool=%s, alive=0/%d, pending=%d, wait=%dms, last_err=%s)",
+                    pool_name, pool_stats.total, pending_cnt, wait_target, tostring(pool_stats.last_err)),
             }
             moon.error(string.format(
-                "[%s]MYSQL_DRV POOL_EMPTY from sender=%s session=%d: waited=%dms, target=%dms, pending=%d, last_err=%s, sql_prefix=%.80s",
-                conf.name, sender_hex, sessionid,
+                "[%s]MYSQL_DRV POOL_EMPTY(pool=%s) from sender=%s session=%d: waited=%dms, target=%dms, pending=%d, last_err=%s, sql_prefix=%.80s",
+                conf.name, pool_name, sender_hex, sessionid,
                 wait_cnt, wait_target, pending_cnt,
                 tostring(pool_stats.last_err),
                 sql:sub(1, 80)))
@@ -290,7 +341,7 @@ if conf.name then
                 conf.name, sender_hex, sessionid, tostring(res)))
             inflight[db] = nil
             list.push(pending_reconnect, db)
-            pool_stats.alive = list.size(dbs)
+            pool_stats.alive = list.size(dbs) + list.size(reserved_dbs)
             res = {
                 badresult = true,
                 code = "QUERY_EXCEPTION",
@@ -302,7 +353,7 @@ if conf.name then
                 conf.name, sender_hex, sessionid, res.errno, tostring(res.message)))
             moon.error(string.format("[%s]MYSQL_DRV mysql query sql: %s", conf.name, tostring(sql)))
             inflight[db] = nil
-            list.push(dbs, db)
+            list.push(pool, db)
             res = {
                 badresult = true,
                 code = "MYSQL_ERROR",
@@ -312,7 +363,7 @@ if conf.name then
         else
             -- 正常,放回池子
             inflight[db] = nil
-            list.push(dbs, db)
+            list.push(pool, db)
         end
 
         if sessionid ~= 0 then

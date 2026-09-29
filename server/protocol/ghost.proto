@@ -33,6 +33,11 @@ message PBGhostImage
 	int32 star_fail_cnt		= 6;	//升星失败次数
 }
 
+message PBMonsterTags
+{
+	repeated PBTag tags	= 1;
+}
+
 // 鬼宠数据
 message PBUserGhostDatas
 {
@@ -40,6 +45,7 @@ message PBUserGhostDatas
 	int64 battle_ghost_uniqid		= 2;	//出战的鬼宠唯一id
 	map<int64, PBGhostData> ghost_list	= 3;	//	有key则覆盖
 	map<int32, PBGhostImage> ghost_image_list	= 4;	//	有key则覆盖
+	map<int32, PBMonsterTags> mode_monster_tags	= 5;
 }
 
 // 鬼宠葫芦
@@ -144,4 +150,20 @@ message PBGhostWearSkinRspCmd
 	int64 uid		= 3;
 	int32 ghost_config_id	= 4; // 鬼宠id
 	int32 skin	= 5;// 穿戴皮肤
+}
+
+// 刷新敌方战斗怪物词条
+message PBRefreshMonsterTagsReqCmd
+{
+	int64 uid		= 1;
+	int32 mode_difficulty_id	= 2;
+}
+
+message PBRefreshMonsterTagsRspCmd
+{
+	int32 code		= 1; // 服务器验证返回,0成功,其他失败
+    string error	= 2; // 错误信息
+	int64 uid		= 3;
+	int32 mode_difficulty_id	= 4;
+	PBMonsterTags now_tags	= 5;
 }

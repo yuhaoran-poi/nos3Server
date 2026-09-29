@@ -387,7 +387,13 @@ function Mail.MergeAttachment(mail_info, attach_items, attach_item_datas, attach
     end
     for coin_id, coin in pairs(mail_info.coins) do
         if not attach_coins[coin_id] then
-            attach_coins[coin_id] = coin
+            -- 必须拷贝对象: 直接引用邮件自身的coin, 下方else分支的原地累加会把
+            -- 后续邮件的金额写进首封邮件的coins(领取后邮件仍留邮箱并落库,
+            -- 表现为该邮件coins虚大于content_params, 如批量领取售出邮件)
+            attach_coins[coin_id] = {
+                coin_id = coin.coin_id,
+                coin_count = coin.coin_count,
+            }
         else
             attach_coins[coin_id].coin_count = attach_coins[coin_id].coin_count + coin.coin_count
         end
@@ -613,7 +619,18 @@ function Mail.PBGetRewardReqCmd(req)
     }
     --local stack_items, unstack_items, stack_coins = {}, {}, {}
     local attach_items, attach_item_datas, attach_coins = {}, {}, {}
+    -- 请求级去重: is_get在全部循环结束后才置位, 同一请求里若同一mail_id
+    -- 出现两次(改包可构造), 第二次仍能通过已领检查, 附件被统计两遍,
+    -- 货币双倍入账。先过滤出唯一id, 后续只处理一次
+    local claimed_mail_ids = {}
+    local unique_mail_ids = {}
     for _, mail_id in pairs(req.msg.mail_ids) do
+        if not claimed_mail_ids[mail_id] then
+            claimed_mail_ids[mail_id] = true
+            table.insert(unique_mail_ids, mail_id)
+        end
+    end
+    for _, mail_id in pairs(unique_mail_ids) do
         local mail_info = mails.mails_info[mail_id]
         if not mail_info then
             rsp.code = ErrorCode.MailNotExist
@@ -746,7 +763,7 @@ function Mail.PBGetRewardReqCmd(req)
 
     -- 数据存储更新
     local now_ts = moon.time()
-    for _, mail_id in pairs(req.msg.mail_ids) do
+    for _, mail_id in pairs(unique_mail_ids) do
         local mail_info = mails.mails_info[mail_id]
         if mail_info then
             mail_info.simple_data.is_read = 1

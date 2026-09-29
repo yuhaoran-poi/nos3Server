@@ -72,6 +72,7 @@ local ItemDef = {
         UseItem = 53, --使用道具
         UnlockAntiquePreset = 54,   -- 解锁古董预设
         UseAntiquePreset = 55,     -- 使用古董预设
+        RefreshMonsterTags = 56, -- 刷新敌方战斗怪物词条
     },
     TabooWordInlay = {
         RoleType = 1000,

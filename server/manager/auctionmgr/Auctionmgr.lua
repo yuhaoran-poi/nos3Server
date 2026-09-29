@@ -187,6 +187,7 @@ function Auctionmgr.TakeDownProduct()
                 AuctionDef.StateType.TAKE_DOWNING, false)
         end
     end
+    Auctionmgr.take_down_auction_ids = {}
 end
 
 function Auctionmgr.AddAuctionLog()

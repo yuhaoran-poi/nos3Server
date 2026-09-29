@@ -59,6 +59,42 @@ function Role.Start(isnew)
 
         -- Role.SaveRolesNow()
         scripts.UserModel.AddDirtyModule("Role")
+    else
+        -- 补充初始化角色大技能
+        for roleid, role_info in pairs(roles.role_list) do
+            if (not role_info.cur_big_skill1_id or role_info.cur_big_skill1_id == 0)
+                and (not role_info.big_skill1 or table.size(role_info.big_skill1) == 0) then
+                local role_cfg = GameCfg.HumanRole[roleid]
+                if role_cfg then
+                    role_info.cur_big_skill1_id = role_cfg.init_mainq_skill
+                    for _, skillid in pairs(role_cfg.mainq_skill) do
+                        local skill_info = ItemDef.newSkill()
+                        skill_info.config_id = skillid
+                        skill_info.star = -1
+                        if skillid == role_info.cur_big_skill1_id then
+                            skill_info.star = 0
+                        end
+                        role_info.big_skill1[skillid] = skill_info
+                    end
+                end
+            end
+            if (not role_info.cur_big_skill2_id or role_info.cur_big_skill2_id == 0)
+                and (not role_info.big_skill2 or table.size(role_info.big_skill2) == 0) then
+                local role_cfg = GameCfg.HumanRole[roleid]
+                if role_cfg then
+                    role_info.cur_big_skill2_id = role_cfg.init_maine_skill
+                    for _, skillid in pairs(role_cfg.maine_skill) do
+                        local skill_info = ItemDef.newSkill()
+                        skill_info.config_id = skillid
+                        skill_info.star = -1
+                        if skillid == role_info.cur_big_skill2_id then
+                            skill_info.star = 0
+                        end
+                        role_info.big_skill2[skillid] = skill_info
+                    end
+                end
+            end
+        end
     end
 end
 
@@ -224,7 +260,8 @@ end
 
 function Role.GetSkillNum(role_info, skillids, condition_list)
     local num = table.size(role_info.main_skill) + table.size(role_info.minor_skill1) +
-        table.size(role_info.minor_skill2) + table.size(role_info.passive_skill)
+        table.size(role_info.minor_skill2) + table.size(role_info.passive_skill) +
+        table.size(role_info.big_skill1) + table.size(role_info.big_skill2)
 
     -- 条件追加进传入队列, 由调用方攒批触发(仅一次任务同步); 未传队列时自行触发
     local is_owner = false
@@ -259,7 +296,8 @@ function Role.GetMaxSkillNum()
     local max_skill_num, cur_roleid = 0, 0
     for roleid, role_info in pairs(roles.role_list) do
         local num = table.size(role_info.main_skill) + table.size(role_info.minor_skill1) +
-            table.size(role_info.minor_skill2) + table.size(role_info.passive_skill)
+            table.size(role_info.minor_skill2) + table.size(role_info.passive_skill) +
+            table.size(role_info.big_skill1) + table.size(role_info.big_skill2)
         if num > max_skill_num then
             max_skill_num = num
             cur_roleid = roleid
@@ -337,6 +375,28 @@ function Role.AddRole(roleid)
             skill_info.star = 0
         end
         role_info.passive_skill[skillid] = skill_info
+        table.insert(skillids, skillid)
+    end
+    role_info.cur_big_skill1_id = role_cfg.init_mainq_skill
+    for _, skillid in pairs(role_cfg.mainq_skill) do
+        local skill_info = ItemDef.newSkill()
+        skill_info.config_id = skillid
+        skill_info.star = -1
+        if skillid == role_info.cur_big_skill1_id then
+            skill_info.star = 0
+        end
+        role_info.big_skill1[skillid] = skill_info
+        table.insert(skillids, skillid)
+    end
+    role_info.cur_big_skill2_id = role_cfg.init_maine_skill
+    for _, skillid in pairs(role_cfg.maine_skill) do
+        local skill_info = ItemDef.newSkill()
+        skill_info.config_id = skillid
+        skill_info.star = -1
+        if skillid == role_info.cur_big_skill2_id then
+            skill_info.star = 0
+        end
+        role_info.big_skill2[skillid] = skill_info
         table.insert(skillids, skillid)
     end
     -- 初始化法器
@@ -559,7 +619,7 @@ function Role.GetRolesInfo(roleids)
             res.roles_info[roleid] = role_info
         end
     end
-    
+
     return res
 end
 
@@ -659,7 +719,7 @@ function Role.PBClientGetRoleInfoReqCmd(req)
             { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid, roleid = req.msg.roleid },
             req.msg_context.stub_id)
     end
-    
+
     if not roles.role_list[req.msg.roleid] then
         return context.S2C(context.net_id, CmdCode["PBClientGetRoleInfoRspCmd"],
             { code = ErrorCode.RoleNotExist, error = "角色不存在", uid = context.uid, roleid = req.msg.roleid },
@@ -716,7 +776,7 @@ function Role.ChangeEquipment(battle_role_id, model_role_id, role_info, config_i
         else
             role_info.magic_item = {}
         end
-        
+
         -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         -- 同步到玩家属性上
         if battle_role_id == role_info.config_id or model_role_id == role_info.config_id then
@@ -962,7 +1022,7 @@ function Role.UpLv(roleid, add_exp)
                 exps[cfg.cost] = exps[cfg.cost] + canAdd
                 remain_exp = remain_exp - canAdd
 
-                table.insert(new_lv_exp, {lv = cfg.id, exp = cfg.allexp})
+                table.insert(new_lv_exp, { lv = cfg.id, exp = cfg.allexp })
                 break
             else
                 if not exps[cfg.cost] then
@@ -1054,7 +1114,7 @@ function Role.GameAddExp(roleid, add_exp)
     for _, cfg in pairs(up_exp_cfgs) do
         if cfg.allexp > role_info.exp then
             if role_info.exp + add_exp >= cfg.allexp then
-                table.insert(new_lv_exp, {lv = cfg.id, exp = cfg.allexp})
+                table.insert(new_lv_exp, { lv = cfg.id, exp = cfg.allexp })
             else
                 break
             end
@@ -1139,7 +1199,6 @@ function Role.UpExp(roleid, exp_cnt)
     end
 
     local role_info = roles.role_list[roleid]
-
     local up_exp_cfgs = GameCfg.RoleUpLv
     if not up_exp_cfgs then
         return ErrorCode.ConfigError
@@ -1152,7 +1211,7 @@ function Role.UpExp(roleid, exp_cnt)
         return ErrorCode.RoleMaxExp
     end
     exp_cnt = math.min(exp_cnt, last_lv_exp - role_info.exp)
-    
+
     local new_lv_exp = {}
     if up_exp_cfgs then
         for _, cfg in pairs(up_exp_cfgs) do
@@ -1165,7 +1224,6 @@ function Role.UpExp(roleid, exp_cnt)
             end
         end
     end
-
     -- 增加经验
     role_info.exp = role_info.exp + exp_cnt
 
@@ -1307,8 +1365,8 @@ function Role.UpStar(roleid)
         local num = Role.GetStarMoreThanNum(roleid, role_info.star_level)
         scripts.Mission.TriggerConditionList({
             { cond_id = MissionDef.EConditionIds.ROLE_STAR_CNT, params = { role_info.star_level }, change_cnt = num + 1 },
-            { cond_id = MissionDef.EConditionIds.ROLE_STAR, params = { roleid }, change_cnt = role_info.star_level },
-            { cond_id = MissionDef.EConditionIds.ROLE_MAX_STAR, params = { roleid }, change_cnt = role_info.star_level },
+            { cond_id = MissionDef.EConditionIds.ROLE_STAR,     params = { roleid },               change_cnt = role_info.star_level },
+            { cond_id = MissionDef.EConditionIds.ROLE_MAX_STAR, params = { roleid },               change_cnt = role_info.star_level },
         }, nil, true)
 
         return ErrorCode.None, change_log
@@ -1417,7 +1475,8 @@ function Role.PBRoleWearEquipReqCmd(req)
     end
 
     -- 角色穿戴新装备
-    Role.ChangeEquipment(roles.battle_role_id, roles.model_role_id, role_info, item_data.common_info.config_id, req.msg.equip_idx, item_data)
+    Role.ChangeEquipment(roles.battle_role_id, roles.model_role_id, role_info, item_data.common_info.config_id,
+        req.msg.equip_idx, item_data)
 
     -- 保存数据并同步给客户端
     -- local save_bags = {}
@@ -1537,7 +1596,8 @@ function Role.PBRoleTakeOffEquipReqCmd(req)
     end
 
     -- 角色卸下新装备
-    Role.ChangeEquipment(roles.battle_role_id, roles.model_role_id, role_info, req.msg.takeoff_config_id, req.msg.takeoff_idx, nil)
+    Role.ChangeEquipment(roles.battle_role_id, roles.model_role_id, role_info, req.msg.takeoff_config_id,
+        req.msg.takeoff_idx, nil)
 
     -- 保存数据并同步给客户端
     -- local save_bags = {}
@@ -1698,7 +1758,8 @@ function Role.PBChangeBattleRoleReqCmd(req)
     -- Role.SaveRolesNow()
     scripts.UserModel.AddDirtyModule("Role")
     return context.S2C(context.net_id, CmdCode["PBChangeBattleRoleRspCmd"],
-        { code = ErrorCode.None, error = "success", uid = context.uid, roleid = req.msg.roleid }, req.msg_context.stub_id)
+        { code = ErrorCode.None, error = "success", uid = context.uid, roleid = req.msg.roleid }, req.msg_context
+        .stub_id)
 end
 
 function Role.PBChangeModelRoleReqCmd(req)
@@ -1718,9 +1779,9 @@ function Role.PBChangeModelRoleReqCmd(req)
     -- Role.SaveRolesNow()
     scripts.UserModel.AddDirtyModule("Role")
     return context.S2C(context.net_id, CmdCode.PBChangeModelRoleRspCmd,
-        { code = ErrorCode.None, error = "success", uid = context.uid, roleid = req.msg.roleid }, req.msg_context.stub_id)
+        { code = ErrorCode.None, error = "success", uid = context.uid, roleid = req.msg.roleid }, req.msg_context
+        .stub_id)
 end
-
 
 function Role.PBRoleSkillUpStarReqCmd(req)
     local roles = scripts.UserModel.GetRoles()
@@ -1777,6 +1838,26 @@ function Role.PBRoleSkillUpStarReqCmd(req)
             end
         end
     end
+    if skill_star < 0 then
+        for id, skill in pairs(role_info.big_skill1) do
+            if id == req.msg.skill_id then
+                skill_star = skill.star
+                skill_name = "big_skill1"
+                skill_star_fail_cnt = skill.star_fail_cnt
+                break
+            end
+        end
+    end
+    if skill_star < 0 then
+        for id, skill in pairs(role_info.big_skill2) do
+            if id == req.msg.skill_id then
+                skill_star = skill.star
+                skill_name = "big_skill2"
+                skill_star_fail_cnt = skill.star_fail_cnt
+                break
+            end
+        end
+    end
     if skill_star < 0 or skill_name == "none" then
         return context.S2C(context.net_id, CmdCode["PBRoleSkillUpStarRspCmd"],
             { code = ErrorCode.SkillNotExist, error = "技能不存在", uid = context.uid }, req.msg_context.stub_id)
@@ -1824,7 +1905,8 @@ function Role.PBRoleSkillUpStarReqCmd(req)
     local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
     if err_code_coins ~= ErrorCode.None then
         return context.S2C(context.net_id, CmdCode["PBRoleSkillUpStarRspCmd"],
-            { code = err_code_coins, error = "金币不足", uid = context.uid, skill_id = req.msg.skill_id }, req.msg_context.stub_id)
+            { code = err_code_coins, error = "金币不足", uid = context.uid, skill_id = req.msg.skill_id },
+            req.msg_context.stub_id)
     end
 
     -- 扣除消耗
@@ -1879,10 +1961,16 @@ function Role.PBRoleSkillUpStarReqCmd(req)
 
         -- 触发技能最高等级/星级(攒批触发, 仅一次任务同步)
         scripts.Mission.TriggerConditionList({
-            { cond_id = MissionDef.EConditionIds.SKILL_MAX_LEVEL,
-                params = { req.msg.roleid, req.msg.skill_id }, change_cnt = skill_star },
-            { cond_id = MissionDef.EConditionIds.SKILL_MAX_STAR,
-                params = { req.msg.roleid, req.msg.skill_id }, change_cnt = skill_star },
+            {
+                cond_id = MissionDef.EConditionIds.SKILL_MAX_LEVEL,
+                params = { req.msg.roleid, req.msg.skill_id },
+                change_cnt = skill_star
+            },
+            {
+                cond_id = MissionDef.EConditionIds.SKILL_MAX_STAR,
+                params = { req.msg.roleid, req.msg.skill_id },
+                change_cnt = skill_star
+            },
         }, nil, true)
 
         context.S2C(context.net_id, CmdCode.PBRoleSkillUpStarRspCmd, {
@@ -2228,6 +2316,40 @@ function Role.PBRoleSkillCompositeReqCmd(req)
             rsp_msg.error = "技能不匹配"
             return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
         end
+    elseif composite_cfg.type == RoleDef.SkillType.BigSkill_1 then
+        if role_info.big_skill1[composite_cfg.id]
+            and role_info.big_skill1[composite_cfg.id].star >= 0 then
+            rsp_msg.code = ErrorCode.RoleSkillAlreadyActive
+            rsp_msg.error = "技能已激活"
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+        for _, skill_id in pairs(role_cfg.mainq_skill) do
+            if skill_id == req.msg.composite_id then
+                _find = true
+            end
+        end
+        if not _find then
+            rsp_msg.code = ErrorCode.RoleSkillNotMatch
+            rsp_msg.error = "技能不匹配"
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    elseif composite_cfg.type == RoleDef.SkillType.BigSkill_2 then
+        if role_info.big_skill2[composite_cfg.id]
+            and role_info.big_skill2[composite_cfg.id].star >= 0 then
+            rsp_msg.code = ErrorCode.RoleSkillAlreadyActive
+            rsp_msg.error = "技能已激活"
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+        for _, skill_id in pairs(role_cfg.maine_skill) do
+            if skill_id == req.msg.composite_id then
+                _find = true
+            end
+        end
+        if not _find then
+            rsp_msg.code = ErrorCode.RoleSkillNotMatch
+            rsp_msg.error = "技能不匹配"
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillCompositeRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
     else
         rsp_msg.code = ErrorCode.ConfigError
         rsp_msg.error = "配置不存在"
@@ -2288,6 +2410,16 @@ function Role.PBRoleSkillCompositeReqCmd(req)
         skill_info.config_id = req.msg.composite_id
 
         role_info.main_skill[req.msg.composite_id] = skill_info
+    elseif composite_cfg.type == RoleDef.SkillType.BigSkill_1 then
+        local skill_info = ItemDef.newSkill()
+        skill_info.config_id = req.msg.composite_id
+
+        role_info.big_skill1[req.msg.composite_id] = skill_info
+    elseif composite_cfg.type == RoleDef.SkillType.BigSkill_2 then
+        local skill_info = ItemDef.newSkill()
+        skill_info.config_id = req.msg.composite_id
+
+        role_info.big_skill2[req.msg.composite_id] = skill_info
     else
         rsp_msg.code = ErrorCode.ConfigError
         rsp_msg.error = "配置不存在"
@@ -2369,6 +2501,20 @@ function Role.PBRoleSkillSwitchReqCmd(req)
                 { code = ErrorCode.RoleSkillNotExist, error = "角色技能不存在", uid = req.msg.uid }, req.msg_context.stub_id)
         end
         role_info.cur_main_skill_id = req.msg.skill_id
+    elseif req.msg.skill_type == RoleDef.SkillType.BigSkill_1 then
+        if not role_info.big_skill1[req.msg.skill_id]
+            or role_info.big_skill1[req.msg.skill_id].star < 0 then
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillSwitchRspCmd,
+                { code = ErrorCode.RoleSkillNotExist, error = "角色技能不存在", uid = req.msg.uid }, req.msg_context.stub_id)
+        end
+        role_info.cur_big_skill1_id = req.msg.skill_id
+    elseif req.msg.skill_type == RoleDef.SkillType.BigSkill_2 then
+        if not role_info.big_skill2[req.msg.skill_id]
+            or role_info.big_skill2[req.msg.skill_id].star < 0 then
+            return context.S2C(context.net_id, CmdCode.PBRoleSkillSwitchRspCmd,
+                { code = ErrorCode.RoleSkillNotExist, error = "角色技能不存在", uid = req.msg.uid }, req.msg_context.stub_id)
+        end
+        role_info.cur_big_skill2_id = req.msg.skill_id
     else
         return context.S2C(context.net_id, CmdCode.PBRoleSkillSwitchRspCmd,
             { code = ErrorCode.RoleSkillNotExist, error = "角色技能不存在", uid = req.msg.uid }, req.msg_context.stub_id)
@@ -2536,7 +2682,8 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
                     if coin_data.coin_count then
                         coin_data.coin_count = discounted_count
                     end
-                    moon.info(string.format("role_repair_func: uid=%d, coin_id=%d, original=%d, discounted=%d, discount=%d",
+                    moon.info(string.format(
+                        "role_repair_func: uid=%d, coin_id=%d, original=%d, discounted=%d, discount=%d",
                         context.uid, coin_id, original_count, discounted_count, repair_discount))
                 end
             end
@@ -2829,7 +2976,6 @@ function Role.PBRoleEquipmentStrongRepairReqCmd(req)
                 return ErrorCode.ConfigError
             end
             ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], 1, true, cost_items, cost_coins)
-
         elseif smallType == ItemDefine.EItemSmallType.HumanDiagrams
             or smallType == ItemDefine.EItemSmallType.GhostDiagrams then
             if item_data.special_info.diagrams_item.strong_value > 0 then
@@ -2844,7 +2990,6 @@ function Role.PBRoleEquipmentStrongRepairReqCmd(req)
                 return ErrorCode.ConfigError
             end
             ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], 1, true, cost_items, cost_coins)
-
         elseif smallType == ItemDefine.EItemSmallType.SpaceRing then
             if item_data.special_info.space_ring.strong_value > 0 then
                 return ErrorCode.StrongNotZero
@@ -2858,7 +3003,6 @@ function Role.PBRoleEquipmentStrongRepairReqCmd(req)
                 return ErrorCode.ConfigError
             end
             ItemDefine.GetItemsFromCfg(cur_maintenance_cfg[repair_cost_key], 1, true, cost_items, cost_coins)
-
         else
             return ErrorCode.ItemTypeMismatch
         end

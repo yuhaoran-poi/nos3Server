@@ -185,6 +185,7 @@
 ---@field public uid integer @用户ID
 ---@field public net_id integer @用户网络id
 ---@field public reconn_key string @用户重连key
+---@field public queue_waiting integer @登录排队中(code=LoginQueuing=2451)时: 前方排队人数
 
 
 ---@class PBDSLoginData
@@ -205,6 +206,14 @@
 ---@field public error string @错误信息
 ---@field public dsid integer @服务器ID
 ---@field public net_id integer @DS网络id
+
+
+---@class PBClientLoginQueueSyncCmd
+---@field public uid integer @用户ID
+---@field public net_id integer @用户网络id
+---@field public queue_waiting integer @登录排队中(code=LoginQueuing=2451)时: 前方排队人数
+---@field public code integer
+---@field public error string
 
 
 ---@class PBAweItem
@@ -852,6 +861,7 @@
 ---@field public error string @错误信息
 ---@field public dsid integer
 ---@field public yes_average_price table<integer, number>
+---@field public skin_yes_average_price table<integer, number>
 
 
 ---@class PBGetDsUserAccountBuffReqCmd
@@ -1104,11 +1114,16 @@
 ---@field public star_fail_cnt integer @升星失败次数
 
 
+---@class PBMonsterTags
+---@field public tags PBTag[]
+
+
 ---@class PBUserGhostDatas
 ---@field public battle_ghost_id integer @出战的鬼宠配置id
 ---@field public battle_ghost_uniqid integer @出战的鬼宠唯一id
 ---@field public ghost_list table<integer, PBGhostData> @有key则覆盖
 ---@field public ghost_image_list table<integer, PBGhostImage> @有key则覆盖
+---@field public mode_monster_tags table<integer, PBMonsterTags>
 
 
 ---@class PBGourd
@@ -1195,6 +1210,19 @@
 ---@field public uid integer
 ---@field public ghost_config_id integer @鬼宠id
 ---@field public skin integer @穿戴皮肤
+
+
+---@class PBRefreshMonsterTagsReqCmd
+---@field public uid integer
+---@field public mode_difficulty_id integer
+
+
+---@class PBRefreshMonsterTagsRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public mode_difficulty_id integer
+---@field public now_tags PBMonsterTags
 
 
 ---@class PBGodImage
@@ -2959,6 +2987,14 @@
 ---@field public up_lv_rewards table<integer, integer> @已领取的升级奖励
 ---@field public space_ring PBItemData @空间戒指
 ---@field public star_fail_cnt integer @升星失败次数
+---@field public cur_big_skill1_id integer @选定大技能1id
+---@field public big_skill1 table<integer, PBSkill> @可选大技能1
+---@field public cur_big_skill2_id integer @选定大技能2id
+---@field public big_skill2 table<integer, PBSkill> @可选大技能2
+---@field public cur_reserve_skill1_id integer @预留技能1id
+---@field public reserve_skill1 table<integer, PBSkill> @预留技能1
+---@field public cur_reserve_skill2_id integer @预留技能2id
+---@field public reserve_skill2 table<integer, PBSkill> @预留技能2
 
 
 ---@class PBUserRoleDatas
@@ -3231,6 +3267,7 @@
 ---@field public ghost_gate_record table<integer, integer>
 ---@field public boss_battle_record table<integer, integer>
 ---@field public tower_battle_record table<integer, integer>
+---@field public mode_monster_tags table<integer, PBMonsterTags> @战斗中敌方怪物的词条
 
 
 ---@class PBRoomInfo
@@ -4698,6 +4735,7 @@
 ---@field Season Season
 ---@field SeasonPass SeasonPass
 ---@field Shop Shop
+---@field SkinTrade SkinTrade
 ---@field Team Team
 ---@field Trade Trade
 ---@field User User
@@ -4795,6 +4833,10 @@
 
 ---@class shopmgr_scripts
 ---@field Shopmgr Shopmgr
+
+
+---@class skintrademgr_scripts
+---@field SkinTrademgr SkinTrademgr
 
 
 ---@class teammgr_scripts
