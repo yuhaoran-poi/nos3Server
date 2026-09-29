@@ -1041,6 +1041,14 @@ function ItemImage.PBImageUnLockReqCmd(req)
             item_config_id = req.msg.item_config_id,
         }, req.msg_context.stub_id)
     end
+    if unlock_cfg.unlock_lv and scripts.User.GetNowExp() < unlock_cfg.unlock_lv then
+        return context.S2C(context.net_id, CmdCode.PBImageUnLockRspCmd, {
+            code = ErrorCode.UpExpNotEnough,
+            error = "等级经验不足",
+            uid = req.msg.uid,
+            item_config_id = req.msg.item_config_id,
+        }, req.msg_context.stub_id)
+    end
 
     -- 计算消耗资源
     local cost_items = {}
@@ -1144,6 +1152,14 @@ function ItemImage.PBFormulaUnLockReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBFormulaUnLockRspCmd, {
             code = ErrorCode.ConfigError,
             error = "配方不存在",
+            uid = req.msg.uid,
+            formula_id = req.msg.formula_id,
+        }, req.msg_context.stub_id)
+    end
+    if unlock_cfg.unlock_lv and scripts.User.GetNowExp() < unlock_cfg.unlock_lv then
+        return context.S2C(context.net_id, CmdCode.PBFormulaUnLockRspCmd, {
+            code = ErrorCode.UpExpNotEnough,
+            error = "等级经验不足",
             uid = req.msg.uid,
             formula_id = req.msg.formula_id,
         }, req.msg_context.stub_id)
