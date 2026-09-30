@@ -93,7 +93,7 @@ return {
 [88] = { id=88,unlock_cost=240,item={[36]=5000} },
 [89] = { id=89,unlock_cost=240,item={[37]=5000} },
 [90] = { id=90,unlock_cost=400,item={[354020]=1} },
-[2001] = { id=2001,unlock_cost=500,item={[1000004]=1} },
+[2001] = { id=2001,unlock_cost=500,item={[1000007]=1} },
 [2002] = { id=2002,unlock_cost=100,item={[44502]=1} },
 [2003] = { id=2003,unlock_cost=100,item={[354007]=1} },
 [2004] = { id=2004,unlock_cost=150,item={[3]=680} },

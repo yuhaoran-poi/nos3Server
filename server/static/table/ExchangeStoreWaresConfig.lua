@@ -178,5 +178,6 @@ return {
 [1000002] = { id=1000002,price1={[1]=3},price2={[3]=1},prop={[1000002]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=2,quota_num=1,limited_type=1,limited_num=0,default_price1={},default_price2={} },
 [1000003] = { id=1000003,price1={[1]=4},price2={[3]=1},prop={[1000003]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=2,quota_num=1,limited_type=1,limited_num=0,default_price1={},default_price2={} },
 [1000004] = { id=1000004,price1={[1]=5},price2={[3]=1},prop={[1000004]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=2,quota_num=1,limited_type=1,limited_num=0,default_price1={},default_price2={} },
-[1000005] = { id=1000005,price1={[1]=5},price2={[3]=1},prop={[1000004]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=2,quota_num=1,limited_type=1,limited_num=0,default_price1={},default_price2={} }
+[1000005] = { id=1000005,price1={[1]=5},price2={[3]=1},prop={[1000004]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=2,quota_num=1,limited_type=1,limited_num=0,default_price1={},default_price2={} },
+[1000007] = { id=1000007,price1={[1]=5},price2={[3]=1},prop={[1000007]=1},treasurechest={},validity_time_stamp={1764570414,1806560814},quota_type=2,quota_num=1,limited_type=1,limited_num=0,default_price1={},default_price2={} }
 }
