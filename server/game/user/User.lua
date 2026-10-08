@@ -918,53 +918,85 @@ function User.PBPingCmd(req)
     -- 恢复游戏模式货币
     local mode_cfgs = GameCfg.GameMode
     if mode_cfgs and table.size(mode_cfgs) > 0 then
-        local day_cost_time = 24 * 60 * 60
-        -- 周恢复短路: 上次结算时刻必然落在当周恢复点之后、下周一零点之前,
-        -- 距今不足最短恢复点偏移时不可能跨过任何配置的恢复点, 跳过整段检测
-        local need_recover_check = (last_fresh_mode_ts == 0)
-        if not need_recover_check then
-            local min_drift
-            for _, mode_cfg in pairs(mode_cfgs) do
-                if mode_cfg.recover_num and table.size(mode_cfg.recover_num) > 0 then
-                    local drift = (mode_cfg.recover_week - 1) * day_cost_time + mode_cfg.recover_time
-                    if not min_drift or drift < min_drift then
-                        min_drift = drift
+        -- local day_cost_time = 24 * 60 * 60
+        -- -- 周恢复短路: 上次结算时刻必然落在当周恢复点之后、下周一零点之前,
+        -- -- 距今不足最短恢复点偏移时不可能跨过任何配置的恢复点, 跳过整段检测
+        -- local need_recover_check = (last_fresh_mode_ts == 0)
+        -- if not need_recover_check then
+        --     local min_drift
+        --     for _, mode_cfg in pairs(mode_cfgs) do
+        --         if mode_cfg.recover_num and table.size(mode_cfg.recover_num) > 0 then
+        --             local drift = (mode_cfg.recover_week - 1) * day_cost_time + mode_cfg.recover_time
+        --             if not min_drift or drift < min_drift then
+        --                 min_drift = drift
+        --             end
+        --         end
+        --     end
+        --     need_recover_check = (min_drift == nil) or (now_ts - last_fresh_mode_ts >= min_drift)
+        -- end
+        -- if need_recover_check then
+        --     local recover_list = {}
+        --     for _, mode_cfg in pairs(mode_cfgs) do
+        --         if mode_cfg.recover_num and table.size(mode_cfg.recover_num) > 0 then
+        --             if last_fresh_mode_ts == 0 then
+        --                 for recover_id, recover_cnt in pairs(mode_cfg.recover_num) do
+        --                     if not recover_list[recover_id] then
+        --                         recover_list[recover_id] = 0
+        --                     end
+        --                     recover_list[recover_id] = recover_list[recover_id] + recover_cnt
+        --                 end
+        --             else
+        --                 local drift_ts = (mode_cfg.recover_week - 1) * day_cost_time + mode_cfg.recover_time
+        --                 if not datetime.is_same_week(last_fresh_mode_ts - drift_ts, now_ts - drift_ts) then
+        --                     for recover_id, recover_cnt in pairs(mode_cfg.recover_num) do
+        --                         if not recover_list[recover_id] then
+        --                             recover_list[recover_id] = 0
+        --                         end
+        --                         recover_list[recover_id] = recover_list[recover_id] + recover_cnt
+        --                     end
+        --                 end
+        --             end
+        --         end
+        --     end
+        --     if table.size(recover_list) > 0 then
+        --         local ok = User.RecoverGameModeItem(recover_list)
+        --         if ok then
+        --             local update_user_attr = {}
+        --             update_user_attr[ProtoEnum.UserAttrType.last_fresh_mode_ts] = now_ts
+        --             User.SetUserAttr(update_user_attr, false)
+        --         end
+        --     end
+        -- end
+
+        -- 改为每日恢复
+        local recover_list = {}
+        for _, mode_cfg in pairs(mode_cfgs) do
+            if mode_cfg.recover_num and table.size(mode_cfg.recover_num) > 0 then
+                if last_fresh_mode_ts == 0 then
+                    for recover_id, recover_cnt in pairs(mode_cfg.recover_num) do
+                        if not recover_list[recover_id] then
+                            recover_list[recover_id] = 0
+                        end
+                        recover_list[recover_id] = recover_list[recover_id] + recover_cnt
                     end
-                end
-            end
-            need_recover_check = (min_drift == nil) or (now_ts - last_fresh_mode_ts >= min_drift)
-        end
-        if need_recover_check then
-            local recover_list = {}
-            for _, mode_cfg in pairs(mode_cfgs) do
-                if mode_cfg.recover_num and table.size(mode_cfg.recover_num) > 0 then
-                    if last_fresh_mode_ts == 0 then
+                else
+                    if not datetime.is_same_day(last_fresh_mode_ts - mode_cfg.recover_time, now_ts - mode_cfg.recover_time) then
                         for recover_id, recover_cnt in pairs(mode_cfg.recover_num) do
                             if not recover_list[recover_id] then
                                 recover_list[recover_id] = 0
                             end
                             recover_list[recover_id] = recover_list[recover_id] + recover_cnt
                         end
-                    else
-                        local drift_ts = (mode_cfg.recover_week - 1) * day_cost_time + mode_cfg.recover_time
-                        if not datetime.is_same_week(last_fresh_mode_ts - drift_ts, now_ts - drift_ts) then
-                            for recover_id, recover_cnt in pairs(mode_cfg.recover_num) do
-                                if not recover_list[recover_id] then
-                                    recover_list[recover_id] = 0
-                                end
-                                recover_list[recover_id] = recover_list[recover_id] + recover_cnt
-                            end
-                        end
                     end
                 end
             end
-            if table.size(recover_list) > 0 then
-                local ok = User.RecoverGameModeItem(recover_list)
-                if ok then
-                    local update_user_attr = {}
-                    update_user_attr[ProtoEnum.UserAttrType.last_fresh_mode_ts] = now_ts
-                    User.SetUserAttr(update_user_attr, false)
-                end
+        end
+        if table.size(recover_list) > 0 then
+            local ok = User.RecoverGameModeItem(recover_list)
+            if ok then
+                local update_user_attr = {}
+                update_user_attr[ProtoEnum.UserAttrType.last_fresh_mode_ts] = now_ts
+                User.SetUserAttr(update_user_attr, false)
             end
         end
     end

@@ -1780,7 +1780,7 @@ function Room.PBModMasterReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local res_code, err = clusterd.call(3999, "roommgr", "Roommgr.ModMasterReqCmd", req.msg.uid, req.msg.roomid,
+    local res_code, err = clusterd.call(3999, "roommgr", "Roommgr.ModMaster", req.msg.uid, req.msg.roomid,
         req.msg.mod_master_id)
     if err then
         return context.S2C(context.net_id, CmdCode.PBModMasterRspCmd, {
