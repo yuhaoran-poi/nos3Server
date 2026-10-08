@@ -347,6 +347,19 @@ function User.GetNowLevel()
     end
 end
 
+function User.GetNowExp()
+    local db_user_attr = scripts.UserModel.GetUserAttr()
+    if not db_user_attr then
+        return -1
+    end
+
+    if db_user_attr.account_exp then
+        return db_user_attr.account_exp
+    else
+        return 0
+    end
+end
+
 function User.GetLastOnlineTime()
     local db_user_attr = scripts.UserModel.GetUserAttr()
     if not db_user_attr then
