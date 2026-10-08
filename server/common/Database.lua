@@ -3774,9 +3774,15 @@ function _M.getbattlereports(addr, uid, start_idx, end_idx, chapter_id, difficul
             -- 新数据为 base64(以'e'开头,'{'的base64前缀), 旧数据为明文 JSON(以'{'开头), 读取时兼容两种
             local raw = res[i].report_data
             if raw and raw:sub(1, 1) ~= "{" then
-                local decoded = crypt.base64decode(raw)
-                if decoded then
+                -- base64decode对非法输入不是返回nil而是直接error,
+                -- 脏行/截断数据会让整个战报列表请求被打挂, 必须pcall兜底,
+                -- 解码失败时原样返回(退回base64入库前的行为)
+                local ok, decoded = pcall(crypt.base64decode, raw)
+                if ok and decoded then
                     raw = decoded
+                else
+                    -- 留痕: 不打挂请求, 但记录哪条战报解不开, 便于事后定位脏行
+                    moon.warn("getbattlereports base64decode failed, report_id:", res[i].report_id, "uid:", res[i].uid, decoded)
                 end
             end
             report_infos[res[i].report_id] = raw
