@@ -47,11 +47,11 @@ return {
 [39] = { id=39,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
 [40] = { id=40,max_num=3600,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
 [101] = { id=101,max_num=1000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
-[102] = { id=102,max_num=3,day_num=10000,weak_num=50000,year_num=100000,coin_bound=101 },
+[102] = { id=102,max_num=7,day_num=10000,weak_num=50000,year_num=100000,coin_bound=101 },
 [103] = { id=103,max_num=1000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
-[104] = { id=104,max_num=3,day_num=10000,weak_num=50000,year_num=100000,coin_bound=103 },
+[104] = { id=104,max_num=7,day_num=10000,weak_num=50000,year_num=100000,coin_bound=103 },
 [105] = { id=105,max_num=1000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
-[106] = { id=106,max_num=3,day_num=10000,weak_num=50000,year_num=100000,coin_bound=105 },
+[106] = { id=106,max_num=7,day_num=10000,weak_num=50000,year_num=100000,coin_bound=105 },
 [107] = { id=107,max_num=1000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
-[108] = { id=108,max_num=3,day_num=10000,weak_num=50000,year_num=100000,coin_bound=107 }
+[108] = { id=108,max_num=7,day_num=10000,weak_num=50000,year_num=100000,coin_bound=107 }
 }
