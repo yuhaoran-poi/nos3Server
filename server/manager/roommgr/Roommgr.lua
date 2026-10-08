@@ -200,7 +200,11 @@ function Roommgr.NotifyDsRooms(allocated_rooms, fail_rooms)
                 roomid = roomid,
                 ds_address = allocate_info.ds_address,
                 ds_ip = allocate_info.ds_ip,
-            })
+                }, {
+                master_id = room.room_data.master_id,
+                chapter = room.room_data.chapter,
+                difficulty = room.room_data.difficulty,
+                })
         end
     end
 
@@ -802,6 +806,32 @@ function Roommgr.ExitRoom(req)
             room.master_id = room.players[1].mem_info.uid
             room.master_name = room.players[1].mem_info.nick_name
             room.players[1].is_ready = 1
+
+            -- 广播状态更新
+            if room.players[1].mode_monster_tags then
+                local notify_uids = {}
+                for _, player in pairs(room.players) do
+                    table.insert(notify_uids, player.mem_info.uid)
+                end
+                if #notify_uids > 0 then
+                    local sync_msg = {
+                        roomid = room.room_data.roomid,
+                        sync_type = RoomDef.SyncType.PlayerChangeModeMonsterTags,
+                        sync_info = {
+                            room_data = room.room_data,
+                            players = {},
+                        }
+                    }
+                    table.insert(sync_msg.sync_info.players, {
+                        seat_idx = 1,
+                        mem_info = {
+                            uid = room.players[1].mem_info.uid
+                        },
+                        mode_monster_tags = room.players[1].mode_monster_tags,
+                    })
+                    context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
+                end
+            end
         end
     end
 
@@ -1080,6 +1110,32 @@ function Roommgr.SystemKickMember(roomid, kick_uid)
             room.master_id = room.players[1].mem_info.uid
             room.master_name = room.players[1].mem_info.nick_name
             room.players[1].is_ready = 1
+
+            -- 广播状态更新
+            if room.players[1].mode_monster_tags then
+                local notify_uids = {}
+                for _, player in pairs(room.players) do
+                    table.insert(notify_uids, player.mem_info.uid)
+                end
+                if #notify_uids > 0 then
+                    local sync_msg = {
+                        roomid = room.room_data.roomid,
+                        sync_type = RoomDef.SyncType.PlayerChangeModeMonsterTags,
+                        sync_info = {
+                            room_data = room.room_data,
+                            players = {},
+                        }
+                    }
+                    table.insert(sync_msg.sync_info.players, {
+                        seat_idx = 1,
+                        mem_info = {
+                            uid = room.players[1].mem_info.uid
+                        },
+                        mode_monster_tags = room.players[1].mode_monster_tags,
+                    })
+                    context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
+                end
+            end
         end
     end
 
@@ -1692,7 +1748,7 @@ function Roommgr.StartGame(req)
             table.concat(notify_uids, "p") ..
             "&CHAPTER=" .. room.room_data.chapter .. "&DIFFICULTY=" .. room.room_data.difficulty
         moon.info("Roommgr.StartGame test_url", test_url)
-        print_r(httpc.get(test_url))
+        -- print_r(httpc.get(test_url))
 
         Roommgr.notify_uids = {}
         for _, player in pairs(room.players) do
@@ -1710,6 +1766,13 @@ function Roommgr.StartGame(req)
                 roomid = req.roomid,
                 ds_address = "192.168.2.31-" .. test_port,
                 ds_ip = "192.168.2.31",
+                master_id = room.room_data.master_id,
+                chapter = room.room_data.chapter,
+                difficulty = room.room_data.difficulty,
+            }, {
+                master_id = room.room_data.master_id,
+                chapter = room.room_data.chapter,
+                difficulty = room.room_data.difficulty,
             })
         end)
         -----临时通知所有玩家进入DS------------
@@ -1996,6 +2059,136 @@ function Roommgr.UpdatePlayerRecord(update_data)
     room.players[member_index].ghost_gate_record = update_data.records.ghost_gate_record
     room.players[member_index].boss_battle_record = update_data.records.boss_battle_record
     room.players[member_index].tower_battle_record = update_data.records.tower_battle_record
+end
+
+function Roommgr.UpdatePlayerModeTags(update_data)
+    local room = context.rooms[update_data.roomid]
+    if not room then
+        return
+    end
+
+    -- 查找玩家在房间中的位置
+    local member_index = nil
+    for i, member in pairs(room.players) do
+        if member.mem_info.uid == update_data.uid then
+            member_index = i
+            break
+        end
+    end
+    if not member_index then
+        return
+    end
+
+    -- 更新mode_monster_tags
+    room.players[member_index].mode_monster_tags = update_data.mode_monster_tags
+
+    if room.room_data.master_id == update_data.uid then
+        -- 广播状态更新
+        local notify_uids = {}
+        for _, player in pairs(room.players) do
+            table.insert(notify_uids, player.mem_info.uid)
+        end
+        if #notify_uids > 0 then
+            local sync_msg = {
+                roomid = room.room_data.roomid,
+                sync_type = RoomDef.SyncType.PlayerChangeModeMonsterTags,
+                sync_info = {
+                    room_data = room.room_data,
+                    players = {},
+                }
+            }
+            table.insert(sync_msg.sync_info.players, {
+                seat_idx = member_index,
+                mem_info = {
+                    uid = update_data.uid
+                },
+                mode_monster_tags = update_data.mode_monster_tags,
+            })
+            context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
+        end
+    end
+end
+
+function Roommgr.ModMaster(now_master_id, roomid, mod_master_id)
+    local room = context.rooms[roomid]
+    if not room then
+        return ErrorCode.RoomNotFound
+    end
+    if room.room_data.state ~= 0 then
+        return ErrorCode.RoomInGame
+    end
+    if now_master_id == mod_master_id then
+        return ErrorCode.RoomMemberNotFound
+    end
+
+    if room.room_data.master_id ~= now_master_id then
+        return ErrorCode.RoomPermissionDenied
+    end
+
+    local now_master_seat_idx = 0
+    local notify_uids = {}
+    for idx, player in pairs(room.players) do
+        if player.mem_info.uid == mod_master_id then
+            now_master_seat_idx = idx
+        end
+        table.insert(notify_uids, player.mem_info.uid)
+    end
+    if now_master_seat_idx == 0 then
+        return ErrorCode.RoomMemberNotFound
+    end
+
+    -- 修改房主
+    room.room_data.master_id = room.players[now_master_seat_idx].mem_info.uid
+    room.master_id = room.players[now_master_seat_idx].mem_info.uid
+    room.master_name = room.players[now_master_seat_idx].mem_info.nick_name
+    room.players[now_master_seat_idx].is_ready = 1
+
+    if #notify_uids > 0 then
+        local sync_msg = {
+            roomid = room.room_data.roomid,
+            sync_type = RoomDef.SyncType.MasterChange,
+            sync_info = {
+                master_id = room.master_id,
+            }
+        }
+        context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
+    end
+
+    -- 广播房间词条更新
+    if room.players[now_master_seat_idx].mode_monster_tags then
+        if #notify_uids > 0 then
+            local sync_msg = {
+                roomid = room.room_data.roomid,
+                sync_type = RoomDef.SyncType.PlayerChangeModeMonsterTags,
+                sync_info = {
+                    room_data = room.room_data,
+                    players = {},
+                }
+            }
+            table.insert(sync_msg.sync_info.players, {
+                seat_idx = now_master_seat_idx,
+                mem_info = {
+                    uid = room.players[now_master_seat_idx].mem_info.uid
+                },
+                mode_monster_tags = room.players[now_master_seat_idx].mode_monster_tags,
+            })
+            context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
+        end
+    end
+
+    local room_tags = {
+        is_open = room.room_data.is_open,
+        chapter = room.room_data.chapter,
+        difficulty = room.room_data.difficulty,
+    }
+    local redis_data = table.copy(room.room_data, true)
+    redis_data.pwd = nil
+    redis_data.playercnt = #room.players
+    redis_data.master_id = room.master_id
+    redis_data.master_name = room.master_name
+    Database.upsert_room(context.addr_db_server, room.room_data.roomid, room_tags, redis_data)
+
+    return ErrorCode.None
 end
 
 function Roommgr.StartGameIsClose(is_close)

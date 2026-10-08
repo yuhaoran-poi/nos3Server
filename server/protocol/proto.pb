@@ -3591,7 +3591,7 @@ RankReward
 RankType_GuildMoney
 RankType_GuildScore_Weekly
 RankType_GuildScore_Seasonbproto3
-ø2
+ù4
 
 room.proto
 user.protoghost.proto"≠
@@ -3867,7 +3867,16 @@ ds_address (	R	dsAddress
 code (Rcode
 error (	Rerror(
 	room_data (2.PBRoomInfoRroomData4
-member_datas (2.PBRoomMemberInfoRmemberDatasbproto3
+member_datas (2.PBRoomMemberInfoRmemberDatas"a
+PBModMasterReqCmd
+uid (Ruid
+roomid (Rroomid"
+mod_master_id (RmodMasterId"y
+PBModMasterRspCmd
+code (Rcode
+error (	Rerror
+roomid (Rroomid"
+mod_master_id (RmodMasterIdbproto3
 √
 seasonpass.proto"l
 PBSeasonPassData

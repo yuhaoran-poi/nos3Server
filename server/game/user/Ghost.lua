@@ -1,6 +1,7 @@
 local moon = require "moon"
 local common = require "common"
 local uuid = require "uuid"
+local clusterd = require("cluster")
 local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
@@ -11,6 +12,7 @@ local ProtoEnum = require("tools.ProtoEnum")
 local ItemDefine = require("common.logic.ItemDefine")
 local ItemDef = require("common.def.ItemDef")
 local CommonCfgDef = require("common.def.CommonCfgDef")
+local RoomDef = require("common.def.RoomDef")
 
 ---@type user_context
 local context = ...
@@ -53,6 +55,12 @@ function Ghost.Start(isnew)
                     Ghost.SetGhostBattle(ret.uniqid, false)
                 end
             end
+        end
+
+        Ghost.SaveGhostsNow()
+    else
+        if not ghosts.mode_monster_tags then
+            ghosts.mode_monster_tags = {}
         end
 
         Ghost.SaveGhostsNow()
@@ -672,7 +680,7 @@ function Ghost.PBGhostWearEquipReqCmd(req)
         image = {},
     }
     change_ghosts.ghost[req.msg.ghost_uniqid] = "WearEquipment"
-    scripts.Ghost.SaveAndLog(change_ghosts)
+    Ghost.SaveAndLog(change_ghosts)
 
     local rsp_msg = {
         code = ErrorCode.None,
@@ -750,7 +758,7 @@ function Ghost.PBGhostTakeOffEquipReqCmd(req)
         image = {},
     }
     change_ghosts.ghost[req.msg.ghost_uniqid] = "TakeOffEquipment"
-    scripts.Ghost.SaveAndLog(change_ghosts)
+    Ghost.SaveAndLog(change_ghosts)
 
     local rsp_msg = {
         code = ErrorCode.None,
@@ -826,7 +834,184 @@ function Ghost.PBGhostWearSkinReqCmd(req)
         image = {},
     }
     change_ghosts.image[req.msg.ghost_config_id] = "WearSkin"
-    scripts.Ghost.SaveAndLog(change_ghosts)
+    Ghost.SaveAndLog(change_ghosts)
+end
+
+function Ghost.GetNowModeTags()
+    local ghosts = scripts.UserModel.GetGhosts()
+    if not ghosts then
+        return {}
+    end
+    if not ghosts.mode_monster_tags then
+        ghosts.mode_monster_tags = {}
+    end
+    if table.size(ghosts.mode_monster_tags) < table.size(GameCfg.GameTagPool) then
+        for cfg_id, cfg_val in pairs(GameCfg.GameTagPool) do
+            if not ghosts.mode_monster_tags[cfg_id] then
+                local tag_code, new_tags = Ghost.GetNewModeTags(cfg_val)
+                if tag_code == ErrorCode.None then
+                    ghosts.mode_monster_tags[cfg_id] = new_tags
+                end
+            end
+        end
+        Ghost.SaveGhostsNow()
+    end
+
+    return ghosts.mode_monster_tags
+end
+
+function Ghost.SetNewModeTags(set_modeid, new_tags)
+    local ghosts = scripts.UserModel.GetGhosts()
+    if not ghosts then
+        return ErrorCode.ServerInternalError
+    end
+    if not ghosts.mode_monster_tags then
+        ghosts.mode_monster_tags = {}
+    end
+
+    ghosts.mode_monster_tags[set_modeid] = new_tags
+    return ErrorCode.None
+end
+
+function Ghost.GetNewModeTags(cur_chapter_cfg)
+    local ghosts = scripts.UserModel.GetGhosts()
+    if not ghosts then
+        return ErrorCode.ServerInternalError
+    end
+    if not ghosts.mode_monster_tags then
+        ghosts.mode_monster_tags = {}
+    end
+    if not cur_chapter_cfg then
+        moon.error("cur_chapter_cfg not found")
+        return ErrorCode.ConfigError
+    end
+
+    local id_weight = table.copy(cur_chapter_cfg.pool, true)
+    local new_tags = {}
+    for i = 1, cur_chapter_cfg.maxtag do
+        local new_tag_id = scripts.Item.RangeTags(id_weight)
+        if new_tag_id == 0 then
+            return ErrorCode.TagDuplicate
+        end
+        local tag_cfg = GameCfg.AllTag[new_tag_id]
+        if not tag_cfg then
+            moon.error("tag_id not found", new_tag_id)
+            return ErrorCode.TagNotExist
+        end
+        local new_tag_value = math.random(tag_cfg.min, tag_cfg.max)
+        table.insert(new_tags, {
+            tag_id = new_tag_id,
+            tag_value = new_tag_value,
+        })
+
+        --现有词条去重
+        id_weight[new_tag_id] = nil
+        --去除互斥词条
+        if tag_cfg.exclusion and table.size(tag_cfg.exclusion) > 0 then
+            for _, ex_tag_id in pairs(tag_cfg.exclusion) do
+                id_weight[ex_tag_id] = nil
+            end
+        end
+    end
+
+    return ErrorCode.None, new_tags
+end
+
+function Ghost.PBRefreshMonsterTagsReqCmd(req)
+    if not req.msg.mode_difficulty_id then
+        return context.S2C(context.net_id, CmdCode.PBRefreshMonsterTagsRspCmd,
+            {
+                code = ErrorCode.ParamInvalid,
+                error = "参数错误",
+                uid = context.uid,
+                mode_difficulty_id = req.msg.mode_difficulty_id,
+            }, req.msg_context.stub_id)
+    end
+
+    local ghosts = scripts.UserModel.GetGhosts()
+    if not ghosts then
+        return context.S2C(context.net_id, CmdCode.PBRefreshMonsterTagsRspCmd,
+            {
+                code = ErrorCode.ServerInternalError,
+                error = "",
+                uid = context.uid,
+                mode_difficulty_id = req.msg.mode_difficulty_id,
+            }, req.msg_context.stub_id)
+    end
+
+    local cur_cfg = GameCfg.GameTagPool[req.msg.mode_difficulty_id]
+    if not cur_cfg then
+        moon.error("mode_difficulty_id cfg not found", req.msg.mode_difficulty_id)
+        return context.S2C(context.net_id, CmdCode.PBRefreshMonsterTagsRspCmd,
+            {
+                code = ErrorCode.ConfigError,
+                error = "配置错误",
+                uid = context.uid,
+                mode_difficulty_id = req.msg.mode_difficulty_id,
+            }, req.msg_context.stub_id)
+    end
+
+    local rsp_msg = {
+        code = ErrorCode.None,
+        error = "",
+        uid = req.msg.uid,
+        chapter_id = req.msg.chapter_id,
+        difficulty = req.msg.difficulty,
+        tags = {},
+    }
+
+    local cost_items = {}
+    local cost_coins = {}
+    ItemDefine.GetItemsFromCfg(cur_cfg.tagcost, 1, true, cost_items, cost_coins)
+    -- 检测道具是否足够
+    rsp_msg.code = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
+    if rsp_msg.code ~= ErrorCode.None then
+        rsp_msg.error = "道具不足"
+        return context.S2C(context.net_id, CmdCode.PBRefreshMonsterTagsRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
+    rsp_msg.code = scripts.Bag.CheckCoinsEnough(cost_coins)
+    if rsp_msg.code ~= ErrorCode.None then
+        rsp_msg.error = "货币不足"
+        return context.S2C(context.net_id, CmdCode.PBRefreshMonsterTagsRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
+
+    local tag_code, new_tags = Ghost.GetNewModeTags(cur_cfg)
+    if tag_code ~= ErrorCode.None then
+        rsp_msg.code = tag_code
+        rsp_msg.error = "刷新词条失败"
+        return context.S2C(context.net_id, CmdCode.PBRefreshMonsterTagsRspCmd, rsp_msg, req.msg_context.stub_id)
+    end
+
+    local bag_change_log = {}
+    -- 扣除道具消耗
+    if table.size(cost_items) > 0 then
+        rsp_msg.code = scripts.Bag.DelItems(req.msg.bag_name, cost_items, {}, bag_change_log)
+        if rsp_msg.code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode.PBRefreshMonsterTagsRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    end
+    if table.size(cost_coins) > 0 then
+        rsp_msg.code = scripts.Bag.DealCoins(cost_coins, bag_change_log)
+        if rsp_msg.code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode.PBRefreshMonsterTagsRspCmd, rsp_msg, req.msg_context.stub_id)
+        end
+    end
+
+    ghosts.mode_monster_tags[cur_cfg.id] = new_tags
+    rsp_msg.tags = new_tags
+
+    Ghost.SaveGhostsNow()
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.RefreshMonsterTags)
+    context.S2C(context.net_id, CmdCode.PBRefreshMonsterTagsRspCmd, rsp_msg, req.msg_context.stub_id)
+
+    local mode_monster_tags = Ghost.GetNowModeTags()
+    clusterd.send(3999, "roommgr", "Roommgr.UpdatePlayerModeTags", {
+        roomid = context.roomid,
+        uid = context.uid,
+        mode_monster_tags = mode_monster_tags,
+    })
 end
 
 return Ghost

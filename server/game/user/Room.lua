@@ -89,6 +89,13 @@ function Room.PBCreateRoomReqCmd(req)
             records = records,
         })
 
+        local mode_monster_tags = scripts.Ghost.GetNowModeTags()
+        clusterd.send(3999, "roommgr", "Roommgr.UpdatePlayerModeTags", {
+            roomid = context.roomid,
+            uid = context.uid,
+            mode_monster_tags = mode_monster_tags,
+        })
+
         -- 加入队伍频道
         local chat_ret = ChatLogic.JoinRoomChannel(context.roomid, context.uid)
         if chat_ret.code ~= ErrorCode.None then
@@ -179,7 +186,7 @@ function Room.OnRoomInfoSync(sync_msg)
     -- print_r(sync_msg)
     -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     if sync_msg.sync_type == RoomDef.SyncType.PlayerEnter
-     and sync_msg.sync_info and sync_msg.sync_info.players then
+        and sync_msg.sync_info and sync_msg.sync_info.players then
         for _, player_info in pairs(sync_msg.sync_info.players) do
             if player_info.mem_info and player_info.mem_info.uid == context.uid then
                 context.roomid = sync_msg.roomid
@@ -190,6 +197,13 @@ function Room.OnRoomInfoSync(sync_msg)
                     roomid = context.roomid,
                     uid = context.uid,
                     records = records,
+                })
+
+                local mode_monster_tags = scripts.Ghost.GetNowModeTags()
+                clusterd.send(3999, "roommgr", "Roommgr.UpdatePlayerModeTags", {
+                    roomid = context.roomid,
+                    uid = context.uid,
+                    mode_monster_tags = mode_monster_tags,
                 })
 
                 -- 加入队伍频道
@@ -205,7 +219,7 @@ function Room.OnRoomInfoSync(sync_msg)
             end
         end
     elseif sync_msg.sync_type == RoomDef.SyncType.PlayerExit
-     and sync_msg.sync_info and sync_msg.sync_info.players then
+        and sync_msg.sync_info and sync_msg.sync_info.players then
         for _, player_info in pairs(sync_msg.sync_info.players) do
             if player_info.mem_info and player_info.mem_info.uid == context.uid then
                 context.roomid = nil
@@ -214,14 +228,15 @@ function Room.OnRoomInfoSync(sync_msg)
             end
         end
     elseif sync_msg.sync_type == RoomDef.SyncType.PlayerKick
-     and sync_msg.sync_info and sync_msg.sync_info.players then
+        and sync_msg.sync_info and sync_msg.sync_info.players then
         for _, player_info in pairs(sync_msg.sync_info.players) do
             if player_info.mem_info and player_info.mem_info.uid == context.uid then
                 -- 退出队伍频道
                 local chat_ret = ChatLogic.LeaveRoomChannel(context.roomid, context.uid)
                 if not chat_ret or chat_ret.code ~= ErrorCode.None then
                     moon.error(string.format("LeaveRoomChannel uid:%d, roomid:%s, code:%s, error:%s", context.uid,
-                        tostring(context.roomid), tostring(chat_ret and chat_ret.code), tostring(chat_ret and chat_ret.error)))
+                        tostring(context.roomid), tostring(chat_ret and chat_ret.code),
+                        tostring(chat_ret and chat_ret.error)))
                 end
                 -- 同步退出房间状态
                 local update_user_attr = {}
@@ -288,7 +303,7 @@ function Room.PBApplyRoomReqCmd(req)
             error = "system error",
         }, req.msg_context.stub_id)
     end
-    
+
     return context.S2C(context.net_id, CmdCode["PBApplyRoomRspCmd"], res, req.msg_context.stub_id)
 end
 
@@ -365,6 +380,13 @@ function Room.PBEnterRoomReqCmd(req)
             roomid = context.roomid,
             uid = context.uid,
             records = records,
+        })
+
+        local mode_monster_tags = scripts.Ghost.GetNowModeTags()
+        clusterd.send(3999, "roommgr", "Roommgr.UpdatePlayerModeTags", {
+            roomid = context.roomid,
+            uid = context.uid,
+            mode_monster_tags = mode_monster_tags,
         })
     end
 
@@ -701,7 +723,7 @@ function Room.PBStartGameRoomReqCmd(req)
                 error = "getOnlineUsers failed",
             }, req.msg_context.stub_id)
         end
-        
+
         local fail_uid = 0
         for uid, info in pairs(online_uids) do
             local query_node, query_addr_user = info.nid, info.addr_user
@@ -735,7 +757,7 @@ function Room.PBStartGameRoomReqCmd(req)
             }, req.msg_context.stub_id)
         end
     end
-    local cost_code = Room.GameStartCheckCost({cost_items = all_cost_items, cost_coins = all_cost_coins})
+    local cost_code = Room.GameStartCheckCost({ cost_items = all_cost_items, cost_coins = all_cost_coins })
     if cost_code ~= ErrorCode.None then
         return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
             code = cost_code,
@@ -753,9 +775,9 @@ function Room.PBStartGameRoomReqCmd(req)
     -- end
     local bag_change_log = {}
     -- for _, game_mode_cfg in pairs(game_mode_cfgs) do
-    --     if game_mode_cfg.begin_id <= front_res.chapter and game_mode_cfg.end_id >= front_res.chapter then       
+    --     if game_mode_cfg.begin_id <= front_res.chapter and game_mode_cfg.end_id >= front_res.chapter then
 
-            
+    
     --     end
     -- end
     local err_code_coins = ErrorCode.None
@@ -840,10 +862,24 @@ function Room.PBStartGameRoomReqCmd(req)
     return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, res, req.msg_context.stub_id)
 end
 
-function Room.OnEnterDs(res)
+function Room.OnEnterDs(res, room_res)
     -- 加入DS广播
     moon.warn("OnEnterDs ", context.net_id, context.uid)
     context.S2C(context.net_id, CmdCode["PBEnterDsRoomSyncCmd"], res, 0)
+
+    -- 重新随机模式怪物词条
+    if room_res and room_res.master_id == context.uid
+        and room_res.chapter and room_res.difficulty then
+        local mode_id = room_res.chapter * 100 + room_res.difficulty
+        local tag_cfg = GameCfg.GameTagPool[mode_id]
+        if tag_cfg then
+            local tag_code, new_tags = scripts.Ghost.GetNewModeTags(tag_cfg)
+            if tag_code == ErrorCode.None then
+                scripts.Ghost.SetNewModeTags(mode_id, new_tags)
+                scripts.Ghost.SaveGhostsNow()
+            end
+        end
+    end
 end
 
 function Room.PBCheckReturnRoomReqCmd(req)
@@ -872,6 +908,13 @@ function Room.PBCheckReturnRoomReqCmd(req)
             roomid = context.roomid,
             uid = context.uid,
             records = records,
+        })
+
+        local mode_monster_tags = scripts.Ghost.GetNowModeTags()
+        clusterd.send(3999, "roommgr", "Roommgr.UpdatePlayerModeTags", {
+            roomid = context.roomid,
+            uid = context.uid,
+            mode_monster_tags = mode_monster_tags,
         })
     end
     return context.S2C(context.net_id, CmdCode["PBCheckReturnRoomRspCmd"], res, req.msg_context.stub_id)
@@ -1296,7 +1339,8 @@ function Room.GameSettle(settle_info)
     if settle_info.reward_boxs and table.size(settle_info.reward_boxs) > 0 then
         -- 按照宝箱处理
         for _, item_simple in pairs(settle_info.reward_boxs) do
-            moon.info(string.format("GameSettle AddTreasure uid=%d config_id=%d item_count=%d", context.uid, item_simple.config_id, item_simple.item_count))
+            moon.info(string.format("GameSettle AddTreasure uid=%d config_id=%d item_count=%d", context.uid,
+                item_simple.config_id, item_simple.item_count))
             scripts.Shop.AddTreasure(item_simple.config_id, item_simple.item_count)
         end
 
@@ -1411,11 +1455,11 @@ function Room.GameSettle(settle_info)
         local clear_time = now_time - settle_info.start_game_ts
         if clear_time > 0 then
             if settle_info.chapter_id >= MIN_MAINLINE_CHAPTERID and settle_info.chapter_id <= MAX_MAINLINE_CHAPTERID then
-            -- 主线榜更新
-            scripts.Rank.UpdateRank_Mainline(settle_info.difficulty, settle_info.chapter_id, clear_time)
+                -- 主线榜更新
+                scripts.Rank.UpdateRank_Mainline(settle_info.difficulty, settle_info.chapter_id, clear_time)
             elseif settle_info.chapter_id >= MIN_FENGTA_CHAPTERID and settle_info.chapter_id <= MAX_FENGTA_CHAPTERID then
-            -- 封塔榜更新
-            scripts.Rank.UpdateRank_Fengta(settle_info.chapter_id, settle_info.difficulty, clear_time)
+                -- 封塔榜更新
+                scripts.Rank.UpdateRank_Fengta(settle_info.chapter_id, settle_info.difficulty, clear_time)
             end
         end
     end
@@ -1680,7 +1724,8 @@ function Room.GameSettle(settle_info)
 
     -- 临时增加战报整体记录
     moon.info("SaveTotalSettleInfo report_id ", report_id)
-    clusterd.send(3999, "battlereportmgr", "BattleReportmgr.SaveTotalSettleInfo", context.uid, report_id, settle_info.start_game_ts,
+    clusterd.send(3999, "battlereportmgr", "BattleReportmgr.SaveTotalSettleInfo", context.uid, report_id,
+        settle_info.start_game_ts,
         settle_info)
 end
 
@@ -1707,8 +1752,49 @@ end
 function Room.SyncRoleInfo(role_info)
     if context.roomid then
         clusterd.send(3999, "roommgr", "Roommgr.MemberChangeRoleInfo",
-        { roomid = context.roomid, uid = context.uid, role_info = role_info })
+            { roomid = context.roomid, uid = context.uid, role_info = role_info })
     end
+end
+
+function Room.PBModMasterReqCmd(req)
+    if not req.msg.uid or req.msg.uid ~= context.uid
+        or not req.msg.roomid or not req.msg.mod_master_id then
+        return context.S2C(context.net_id, CmdCode.PBModMasterRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "uid or roomid or mod_master_id is nil",
+        }, req.msg_context.stub_id)
+    end
+
+    if not context.roomid
+        or context.roomid ~= req.msg.roomid then
+        return context.S2C(context.net_id, CmdCode.PBModMasterRspCmd, {
+            code = ErrorCode.RoomNotFound,
+            error = "roomid not found",
+        }, req.msg_context.stub_id)
+    end
+
+    if context.uid == req.msg.mod_master_id then
+        return context.S2C(context.net_id, CmdCode.PBModMasterRspCmd, {
+            code = ErrorCode.RoomPermissionDenied,
+            error = "mod_master_id is self",
+        }, req.msg_context.stub_id)
+    end
+
+    local res_code, err = clusterd.call(3999, "roommgr", "Roommgr.ModMasterReqCmd", req.msg.uid, req.msg.roomid,
+        req.msg.mod_master_id)
+    if err then
+        return context.S2C(context.net_id, CmdCode.PBModMasterRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = err,
+        }, req.msg_context.stub_id)
+    end
+
+    return context.S2C(context.net_id, CmdCode.PBModMasterRspCmd, {
+        code = res_code,
+        error = "",
+        roomid = req.msg.roomid,
+        mod_master_id = req.msg.mod_master_id,
+    }, req.msg_context.stub_id)
 end
 
 return Room

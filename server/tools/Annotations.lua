@@ -3556,6 +3556,19 @@
 ---@field public member_datas PBRoomMemberInfo[]
 
 
+---@class PBModMasterReqCmd
+---@field public uid integer
+---@field public roomid integer
+---@field public mod_master_id integer
+
+
+---@class PBModMasterRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public roomid integer
+---@field public mod_master_id integer
+
+
 ---@class PBSeasonData
 ---@field public season_id integer
 ---@field public battle_num table<integer, integer> @不同模式的对局数量
