@@ -1,5 +1,5 @@
 syntax = "proto3";
-
+import "ghost.proto";
 
 
 // The serialized message and the context of it.
@@ -35,6 +35,7 @@ message PBDsCreateData
 	string server_ip    = 6;
 	int32 server_port	= 7;
 	repeated int64 uids = 8;
+    PBMonsterTags mode_monster_tags = 9;
 }
 
 // 客户端和服务器直接通信的消息

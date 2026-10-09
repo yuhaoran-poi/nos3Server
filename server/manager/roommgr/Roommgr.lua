@@ -1678,6 +1678,7 @@ function Roommgr.StartGame(req)
     -- end
 
     -- 准备进入DS
+    local mode_key = room.room_data.chapter * 100 + room.room_data.difficulty
     local room_info = {
         ds_id = room.room_data.roomid,
         chapter = room.room_data.chapter,
@@ -1692,6 +1693,13 @@ function Roommgr.StartGame(req)
     }
     for _, player in pairs(room.players) do
         table.insert(room_info.uids, player.mem_info.uid)
+        if player.mem_info.uid == room.master_id then
+            if player.mode_monster_tags and player.mode_monster_tags[mode_key] then
+                room_info.mode_monster_tags = player.mode_monster_tags[mode_key]
+            else
+                room_info.mode_monster_tags = {}
+            end
+        end
     end
     local _, pbdata = protocol.encodewithname("PBDsCreateData", room_info)
     local room_str = crypt.base64encode(pbdata)
@@ -1791,6 +1799,8 @@ function Roommgr.GetRoomCreateData(req)
     if not room then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
+    
+    local mode_key = room.room_data.chapter * 100 + room.room_data.difficulty
     local room_info = {
         ds_id = room.room_data.roomid,
         chapter = room.room_data.chapter,
@@ -1803,6 +1813,13 @@ function Roommgr.GetRoomCreateData(req)
     }
     for _, player in pairs(room.players) do
         table.insert(room_info.uids, player.mem_info.uid)
+        if player.mem_info.uid == room.master_id then
+            if player.mode_monster_tags and player.mode_monster_tags[mode_key] then
+                room_info.mode_monster_tags = player.mode_monster_tags[mode_key]
+            else
+                room_info.mode_monster_tags = {}
+            end
+        end
     end
     local _, pbdata = protocol.encodewithname("PBDsCreateData", room_info)
     local room_str = crypt.base64encode(pbdata)

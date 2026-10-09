@@ -513,14 +513,141 @@ login_data (2.PBDSLoginDataR	loginData"f
 queue_waiting (RqueueWaiting
 code (Rcode
 error (	Rerrorbproto3
-–
-common.proto"ì
+˛
+ghost.proto
+item.proto"I
+PBSimpleGhostData
+	config_id (RconfigId
+skin_id (RskinId"¢
+PBGhostData
+	config_id (RconfigId
+uniqid (Runiqid
+
+star_level (R	starLevel
+exp (RexpC
+digrams_cards (2.PBGhostData.DigramsCardsEntryRdigramsCards/
+passive_skills (2.PBSkillRpassiveSkills-
+active_skills (2.PBSkillRactiveSkills"
+attrs (2.PBAttributeRattrs
+nature	 (RnatureL
+DigramsCardsEntry
+key (Rkey!
+value (2.PBItemDataRvalue:8"¬
+PBGhostImage
+	config_id (RconfigId
+
+star_level (R	starLevel
+exp (Rexp
+cur_skin_id (R	curSkinId 
+skin_id_list (R
+skinIdList"
+star_fail_cnt (RstarFailCnt"+
+PBMonsterTags
+tags (2.PBTagRtags"¬
+PBUserGhostDatas&
+battle_ghost_id (RbattleGhostId.
+battle_ghost_uniqid (RbattleGhostUniqid?
+
+ghost_list (2 .PBUserGhostDatas.GhostListEntryR	ghostListO
+ghost_image_list (2%.PBUserGhostDatas.GhostImageListEntryRghostImageListR
+mode_monster_tags (2&.PBUserGhostDatas.ModeMonsterTagsEntryRmodeMonsterTagsJ
+GhostListEntry
+key (Rkey"
+value (2.PBGhostDataRvalue:8P
+GhostImageListEntry
+key (Rkey#
+value (2.PBGhostImageRvalue:8R
+ModeMonsterTagsEntry
+key (Rkey$
+value (2.PBMonsterTagsRvalue:8"Ä
+PBGourd
+gourd_id (RgourdId
+	nick_name (	RnickName
+up_level (RupLevel
+up_exp (RupExp!
+total_talent (RtotalTalent
+
+cur_talent (R	curTalent-
+talent_attr (2.PBAttributeR
+talentAttr
+	cd_end_ts	 (RcdEndTs"3
+PBGourdS'
+
+gourd_list (2.PBGourdR	gourdList"2
+PBClientGetUsrGhostsInfoReqCmd
+uid (Ruid"ê
+PBClientGetUsrGhostsInfoRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid2
+ghosts_info (2.PBUserGhostDatasR
+ghostsInfo"H
+PBGhostInfoSyncCmd2
+ghosts_info (2.PBUserGhostDatasR
+ghostsInfo"‚
+PBGhostWearEquipReqCmd
+uid (Ruid!
+ghost_uniqid (RghostUniqid
+bag_name (	RbagName
+pos (Rpos&
+equip_config_id (RequipConfigId!
+equip_uniqid (RequipUniqid
+	equip_idx (RequipIdx"å
+PBGhostWearEquipRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid!
+ghost_uniqid (RghostUniqid
+bag_name (	RbagName
+pos (Rpos&
+equip_config_id (RequipConfigId!
+equip_uniqid (RequipUniqid
+	equip_idx	 (RequipIdx"ﬂ
+PBGhostTakeOffEquipReqCmd
+uid (Ruid!
+ghost_uniqid (RghostUniqid
+bag_name (	RbagName*
+takeoff_config_id (RtakeoffConfigId%
+takeoff_uniqid (RtakeoffUniqid
+takeoff_idx (R
+takeoffIdx"â
+PBGhostTakeOffEquipRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid!
+ghost_uniqid (RghostUniqid
+bag_name (	RbagName*
+takeoff_config_id (RtakeoffConfigId%
+takeoff_uniqid (RtakeoffUniqid
+takeoff_idx (R
+takeoffIdx"e
+PBGhostWearSkinReqCmd
+uid (Ruid&
+ghost_config_id (RghostConfigId
+skin (Rskin"è
+PBGhostWearSkinRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid&
+ghost_config_id (RghostConfigId
+skin (Rskin"\
+PBRefreshMonsterTagsReqCmd
+uid (Ruid,
+mode_difficulty_id (RmodeDifficultyId"±
+PBRefreshMonsterTagsRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid,
+mode_difficulty_id (RmodeDifficultyId)
+now_tags (2.PBMonsterTagsRnowTagsbproto3
+ô
+common.protoghost.proto"ì
 PBMessagePack
 net_id (RnetId
 	broadcast (R	broadcast
 stub_id (RstubId
 msg_type (RmsgType
-msg_body (RmsgBody"·
+msg_body (RmsgBody"ù
 PBDsCreateData
 ds_id (RdsId
 chapter (Rchapter
@@ -532,7 +659,8 @@ difficulty
 	server_ip (	RserverIp
 server_port (R
 serverPort
-uids (Ruids"9
+uids (Ruids:
+mode_monster_tags	 (2.PBMonsterTagsRmodeMonsterTags"9
 PBPacketCmd*
 messages (2.PBMessagePackRmessages"
 	PBPingCmd
@@ -1175,133 +1303,6 @@ skill_type (R	skillType
 	config_id (RconfigId
 uniqid (Runiqid
 pos (Rposbproto3
-˛
-ghost.proto
-item.proto"I
-PBSimpleGhostData
-	config_id (RconfigId
-skin_id (RskinId"¢
-PBGhostData
-	config_id (RconfigId
-uniqid (Runiqid
-
-star_level (R	starLevel
-exp (RexpC
-digrams_cards (2.PBGhostData.DigramsCardsEntryRdigramsCards/
-passive_skills (2.PBSkillRpassiveSkills-
-active_skills (2.PBSkillRactiveSkills"
-attrs (2.PBAttributeRattrs
-nature	 (RnatureL
-DigramsCardsEntry
-key (Rkey!
-value (2.PBItemDataRvalue:8"¬
-PBGhostImage
-	config_id (RconfigId
-
-star_level (R	starLevel
-exp (Rexp
-cur_skin_id (R	curSkinId 
-skin_id_list (R
-skinIdList"
-star_fail_cnt (RstarFailCnt"+
-PBMonsterTags
-tags (2.PBTagRtags"¬
-PBUserGhostDatas&
-battle_ghost_id (RbattleGhostId.
-battle_ghost_uniqid (RbattleGhostUniqid?
-
-ghost_list (2 .PBUserGhostDatas.GhostListEntryR	ghostListO
-ghost_image_list (2%.PBUserGhostDatas.GhostImageListEntryRghostImageListR
-mode_monster_tags (2&.PBUserGhostDatas.ModeMonsterTagsEntryRmodeMonsterTagsJ
-GhostListEntry
-key (Rkey"
-value (2.PBGhostDataRvalue:8P
-GhostImageListEntry
-key (Rkey#
-value (2.PBGhostImageRvalue:8R
-ModeMonsterTagsEntry
-key (Rkey$
-value (2.PBMonsterTagsRvalue:8"Ä
-PBGourd
-gourd_id (RgourdId
-	nick_name (	RnickName
-up_level (RupLevel
-up_exp (RupExp!
-total_talent (RtotalTalent
-
-cur_talent (R	curTalent-
-talent_attr (2.PBAttributeR
-talentAttr
-	cd_end_ts	 (RcdEndTs"3
-PBGourdS'
-
-gourd_list (2.PBGourdR	gourdList"2
-PBClientGetUsrGhostsInfoReqCmd
-uid (Ruid"ê
-PBClientGetUsrGhostsInfoRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid2
-ghosts_info (2.PBUserGhostDatasR
-ghostsInfo"H
-PBGhostInfoSyncCmd2
-ghosts_info (2.PBUserGhostDatasR
-ghostsInfo"‚
-PBGhostWearEquipReqCmd
-uid (Ruid!
-ghost_uniqid (RghostUniqid
-bag_name (	RbagName
-pos (Rpos&
-equip_config_id (RequipConfigId!
-equip_uniqid (RequipUniqid
-	equip_idx (RequipIdx"å
-PBGhostWearEquipRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid!
-ghost_uniqid (RghostUniqid
-bag_name (	RbagName
-pos (Rpos&
-equip_config_id (RequipConfigId!
-equip_uniqid (RequipUniqid
-	equip_idx	 (RequipIdx"ﬂ
-PBGhostTakeOffEquipReqCmd
-uid (Ruid!
-ghost_uniqid (RghostUniqid
-bag_name (	RbagName*
-takeoff_config_id (RtakeoffConfigId%
-takeoff_uniqid (RtakeoffUniqid
-takeoff_idx (R
-takeoffIdx"â
-PBGhostTakeOffEquipRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid!
-ghost_uniqid (RghostUniqid
-bag_name (	RbagName*
-takeoff_config_id (RtakeoffConfigId%
-takeoff_uniqid (RtakeoffUniqid
-takeoff_idx (R
-takeoffIdx"e
-PBGhostWearSkinReqCmd
-uid (Ruid&
-ghost_config_id (RghostConfigId
-skin (Rskin"è
-PBGhostWearSkinRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid&
-ghost_config_id (RghostConfigId
-skin (Rskin"\
-PBRefreshMonsterTagsReqCmd
-uid (Ruid,
-mode_difficulty_id (RmodeDifficultyId"±
-PBRefreshMonsterTagsRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid,
-mode_difficulty_id (RmodeDifficultyId)
-now_tags (2.PBMonsterTagsRnowTagsbproto3
 ¸	
 grade.proto"§
 PBGradeData

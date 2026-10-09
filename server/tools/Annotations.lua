@@ -576,6 +576,7 @@
 ---@field public server_ip string
 ---@field public server_port integer
 ---@field public uids integer[]
+---@field public mode_monster_tags PBMonsterTags
 
 
 ---@class PBPacketCmd
