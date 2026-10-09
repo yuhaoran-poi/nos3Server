@@ -2,6 +2,7 @@ local moon = require "moon"
 local common = require "common"
 local uuid = require "uuid"
 local clusterd = require("cluster")
+local json = require "json"
 local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local CmdCode = common.CmdCode
@@ -838,6 +839,7 @@ function Ghost.PBGhostWearSkinReqCmd(req)
 end
 
 function Ghost.GetNowModeTags()
+    moon.info("GetNowModeTags beg")
     local ghosts = scripts.UserModel.GetGhosts()
     if not ghosts then
         return {}
@@ -849,6 +851,7 @@ function Ghost.GetNowModeTags()
         for cfg_id, cfg_val in pairs(GameCfg.GameTagPool) do
             if not ghosts.mode_monster_tags[cfg_id] then
                 local tag_code, new_tags = Ghost.GetNewModeTags(cfg_val)
+                moon.info("GetNowModeTags tag_code", tag_code)
                 if tag_code == ErrorCode.None then
                     ghosts.mode_monster_tags[cfg_id] = new_tags
                 end
@@ -874,6 +877,7 @@ function Ghost.SetNewModeTags(set_modeid, new_tags)
 end
 
 function Ghost.GetNewModeTags(cur_chapter_cfg)
+    moon.info("GetNewModeTags beg")
     local ghosts = scripts.UserModel.GetGhosts()
     if not ghosts then
         return ErrorCode.ServerInternalError
@@ -882,11 +886,12 @@ function Ghost.GetNewModeTags(cur_chapter_cfg)
         ghosts.mode_monster_tags = {}
     end
     if not cur_chapter_cfg then
-        moon.error("cur_chapter_cfg not found")
+        moon.error("GetNewModeTags cur_chapter_cfg not found")
         return ErrorCode.ConfigError
     end
 
     local id_weight = table.copy(cur_chapter_cfg.pool, true)
+    moon.info(string.format("GetNewModeTags id_weight: %s", json.pretty_encode(id_weight)))
     local new_tags = {}
     for i = 1, cur_chapter_cfg.maxtag do
         local new_tag_id = scripts.Item.RangeTags(id_weight)
@@ -895,7 +900,7 @@ function Ghost.GetNewModeTags(cur_chapter_cfg)
         end
         local tag_cfg = GameCfg.AllTag[new_tag_id]
         if not tag_cfg then
-            moon.error("tag_id not found", new_tag_id)
+            moon.error("GetNewModeTags tag_id not found", new_tag_id)
             return ErrorCode.TagNotExist
         end
         local new_tag_value = math.random(tag_cfg.min, tag_cfg.max)
