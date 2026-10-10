@@ -1556,11 +1556,15 @@ function Room.GameSettle(settle_info)
         end
     end
 
-    if settle_info.fall_down_cnt and settle_info.fall_down_cnt > 0 then
-        -- 本局倒地次数不超过param1计1次
+    if settle_info.fall_down_cnt then
+        -- 本局倒地次数不超过param1计1次: 判定为 change_cnt <= param1, 零倒地的局(如成就10384
+        -- "不倒地完成一局", param1=0)同样计1局, 必须上报0——之前 >0 的门把零倒地的局挡掉,
+        -- 导致此类成就/任务永不推进
         add_condition(MissionDef.EConditionIds.FALL_LIMIT_CNT, {}, settle_info.fall_down_cnt)
-        -- 累计倒地次数
-        add_condition(MissionDef.EConditionIds.TOTAL_FALL_CNT, {}, settle_info.fall_down_cnt)
+        -- 累计倒地次数: 纯累加, 0无增量, 仅>0时上报
+        if settle_info.fall_down_cnt > 0 then
+            add_condition(MissionDef.EConditionIds.TOTAL_FALL_CNT, {}, settle_info.fall_down_cnt)
+        end
     end
 
     if settle_info.pull_up_cnt and settle_info.pull_up_cnt > 0 then

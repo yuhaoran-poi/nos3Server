@@ -614,10 +614,16 @@ function ItemImage.UpLvImage(config_id, add_exp)
             local up_exp_cfgs = GameCfg[eqp_cfg.table_lvup]
             if up_exp_cfgs then
                 local allexp_key = "allexp" .. eqp_cfg.type2
+                -- 门槛必须严格递增才计入等级: 防御配表"空行导出为0"的占位行
+                -- (如SpaceRingUpLv的allexp2只配到30级, 31~50行allexp2=0, 0<=exp恒真
+                --  会被误计入导致等级/成就进度虚高; 0不大于前一门槛, 永不计入)
                 local cur_level = 0
+                local last_allexp = -1
                 for _, cfg in pairs(up_exp_cfgs) do
-                    if cfg[allexp_key] and cfg[allexp_key] <= image_data.exp then
+                    local allexp = cfg[allexp_key]
+                    if allexp and allexp > last_allexp and allexp <= image_data.exp then
                         cur_level = cur_level + 1
+                        last_allexp = allexp
                     end
                 end
                 if cur_level > 0 then
