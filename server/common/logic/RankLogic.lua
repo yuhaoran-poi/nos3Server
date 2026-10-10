@@ -22,6 +22,11 @@ local rank_data = {}
 -- 结构: {rank_type = {period = reward_data, ...}}
 local rank_reward_data = {}
 
+-- 领奖进行中标记(两段式领奖防重复): claiming_rewards[rank_type.."_"..uid] = 标记时间
+local claiming_rewards = {}
+-- 领奖标记超时时间(秒): 游戏侧异常中断未确认/未取消时, 超时后允许玩家重新领取
+local CLAIM_PENDING_TIMEOUT = 60
+
 -- 最大保留期数（超过此数自动清理过期数据）
 local MAX_RETAIN_PERIODS = 4  -- 保留4期（约1个月）
 
@@ -1054,10 +1059,19 @@ function RankLogic.LoadRankDataFromRedis()
     return ErrorCode.None, loaded_rank_types
 end
 
--- 玩家领取排行榜奖励
+-- 玩家领取排行榜奖励(两段式第一段: 预取)
+-- 只返回奖励内容并打上领取标记, 不移除快照;
+-- 由游戏侧入包成功后调用 ConfirmRankReward 确认移除, 失败则调用 CancelRankRewardClaim 回滚
 function RankLogic.GetRankReward(rank_type, uid)
     if not rank_reward_data[rank_type] then
         return ErrorCode.RankRewardNotExist
+    end
+
+    -- 上一次领取请求仍在进行中(且未超时), 拒绝重复领取
+    local claim_key = rank_type .. "_" .. uid
+    local pending_time = claiming_rewards[claim_key]
+    if pending_time and (moon.time() - pending_time) < CLAIM_PENDING_TIMEOUT then
+        return ErrorCode.RankRewardClaiming
     end
 
     -- rank_reward_data[rank_type] = { [period] = reward_data } (多期), reward_data.sr = 子榜列表
@@ -1125,29 +1139,39 @@ function RankLogic.GetRankReward(rank_type, uid)
         return ErrorCode.RankRewardNotExist
     end
 
-    -- 发放奖励
-    -- 这里需要调用奖励发放相关的函数
+    -- 只打领取标记, 不移除快照; 待游戏侧入包成功后由 ConfirmRankReward 确认移除
+    claiming_rewards[claim_key] = moon.time()
 
-    -- 标记奖励已领取（从子榜奖励数据中移除）
-    sub_rank_reward.ps[uid] = nil
+    return ErrorCode.None, reward_pool_cfg.reward
+end
 
-    -- 如果该子榜所有奖励都已领取，清除子榜数据
-    if table.empty(sub_rank_reward.ps) then
-        reward_data.sr[sub_rank_reward.rid] = nil
+-- 确认领取(两段式第二段): 游戏侧奖励入包成功后调用, 从奖励快照中移除玩家并落库
+function RankLogic.ConfirmRankReward(rank_type, uid)
+    claiming_rewards[rank_type .. "_" .. uid] = nil
+
+    if not rank_reward_data[rank_type] then
+        return ErrorCode.None
     end
 
-    -- 如果该期所有子榜奖励都已领取，清除该期奖励数据
-    if reward_period and table.empty(reward_data.sr) then
-        rank_reward_data[rank_type][reward_period] = nil
-        if table.empty(rank_reward_data[rank_type]) then
-            rank_reward_data[rank_type] = nil
+    for period, period_reward_data in pairs(rank_reward_data[rank_type]) do
+        if period_reward_data and period_reward_data.sr then
+            for _, sub_rank in pairs(period_reward_data.sr) do
+                if sub_rank.ps[uid] then
+                    RankLogic.RemovePlayerFromRewardData(rank_type, period, uid)
+                    return ErrorCode.None
+                end
+            end
         end
     end
 
-    -- 同步到Redis (清理的是 rank_reward_data 奖励快照, 需持久化到对应 key)
-    RankLogic.SaveRankRewardToRedis(rank_type)
+    -- 快照中已无该玩家(可能已被确认过), 幂等返回成功
+    return ErrorCode.None
+end
 
-    return ErrorCode.None, reward_pool_cfg.reward
+-- 取消领取(两段式回滚): 游戏侧奖励入包失败时调用, 清除领取标记以便玩家重试
+function RankLogic.CancelRankRewardClaim(rank_type, uid)
+    claiming_rewards[rank_type .. "_" .. uid] = nil
+    return ErrorCode.None
 end
 
 -- 将排行榜更新请求放入队列（不立即处理）

@@ -242,6 +242,29 @@ function Rank.PBRankGetAllTypesReqCmd(req)
     return context.S2C(context.net_id, CmdCode.PBRankGetAllTypesRspCmd, rsp_msg, req.msg_context.stub_id)
 end
 
+-- 确认领取排行榜奖励(两段式第二段: 奖励入包成功后通知rank服务移除快照)
+local function confirmRankRewardClaim(rank_type, uid)
+    local ok, err = pcall(clusterd.call, 3004, "rank", "RankMgr.ConfirmRankReward", {
+        rank_type = rank_type,
+        uid = uid,
+    })
+    if not ok then
+        -- 确认失败仅记录日志(快照残留可重新领取), 不影响已入包的奖励
+        moon.error(string.format("[Rank] ConfirmRankReward failed: uid=%d, rank_type=%d, err=%s", uid, rank_type, tostring(err)))
+    end
+end
+
+-- 取消领取排行榜奖励(两段式回滚: 入包失败时清除领取标记, 允许玩家重试)
+local function cancelRankRewardClaim(rank_type, uid)
+    local ok, err = pcall(clusterd.call, 3004, "rank", "RankMgr.CancelRankRewardClaim", {
+        rank_type = rank_type,
+        uid = uid,
+    })
+    if not ok then
+        moon.error(string.format("[Rank] CancelRankRewardClaim failed: uid=%d, rank_type=%d, err=%s", uid, rank_type, tostring(err)))
+    end
+end
+
 -- 领取排行榜奖励
 function Rank.PBRankGetRewardReqCmd(req)
     local rank_type = req.msg.rank_type
@@ -254,7 +277,7 @@ function Rank.PBRankGetRewardReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    -- 调用排行榜服务领取奖励
+    -- 调用排行榜服务预取奖励(两段式第一段: 只返回奖励内容并打领取标记, 不移除快照)
     local err, reward_pool_cfg = clusterd.call(3004, "rank", "RankMgr.GetRankReward", {rank_type = rank_type, uid = context.uid})
     if err ~= ErrorCode.None then
         moon.error("Failed to get rank reward:", err)
@@ -283,6 +306,7 @@ function Rank.PBRankGetRewardReqCmd(req)
     if table.size(add_items) > 0 then
         local ok = ItemDefine.GetItemDataFromIdCount(add_items, {}, stack_items, unstack_items, deal_coins)
         if not ok then
+            cancelRankRewardClaim(rank_type, context.uid)
             return context.S2C(context.net_id, CmdCode.PBRankGetRewardRspCmd,{
                  code = ErrorCode.ConfigError,
                  error = "排行榜奖励配置不存在",
@@ -292,6 +316,7 @@ function Rank.PBRankGetRewardReqCmd(req)
     end
     local bag_err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, stack_items, table.size(unstack_items))
     if bag_err_code ~= ErrorCode.None then
+        cancelRankRewardClaim(rank_type, context.uid)
         return context.S2C(context.net_id, CmdCode.PBRankGetRewardRspCmd,
             { code = bag_err_code, error = "背包空间不足", uid = context.uid }, req.msg_context.stub_id)
     end
@@ -301,6 +326,7 @@ function Rank.PBRankGetRewardReqCmd(req)
         bag_err_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
         if bag_err_code ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(bag_change_log)
+            cancelRankRewardClaim(rank_type, context.uid)
             return context.S2C(context.net_id, CmdCode.PBRankGetRewardRspCmd,
                 { code = bag_err_code, error = "背包空间不足", uid = context.uid }, req.msg_context.stub_id)
         end
@@ -309,10 +335,14 @@ function Rank.PBRankGetRewardReqCmd(req)
         bag_err_code = scripts.Bag.DealCoins(deal_coins, bag_change_log)
         if bag_err_code ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(bag_change_log)
+            cancelRankRewardClaim(rank_type, context.uid)
             return context.S2C(context.net_id, CmdCode.PBRankGetRewardRspCmd,
                 { code = bag_err_code, error = "添加货币失败", uid = context.uid }, req.msg_context.stub_id)
         end
     end
+
+    -- 奖励已入包, 确认领取(通知rank服务从快照中移除)
+    confirmRankRewardClaim(rank_type, context.uid)
 
     -- 构造回显奖励列表 (RankReward[]: item_id/count/type)
     local reward_data = {}
@@ -640,7 +670,7 @@ end
 -- 主线榜更新请求处理
 function Rank.PBRankUpdateMainlineReqCmd(req)
     local chapterid = req.msg.character_id
-    local difficulty difficulty = req.msg.difficulty
+    local difficulty = req.msg.difficulty
     local clear_time = req.msg.clear_time
     if not chapterid or not difficulty or not clear_time then
         return context.S2C(context.net_id, CmdCode.PBRankUpdateMainlineRspCmd, {

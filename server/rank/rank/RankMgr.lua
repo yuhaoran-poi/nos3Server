@@ -2,6 +2,7 @@ local moon = require("moon")
 local json = require("json")
 local common = require("common")
 local ErrorCode = common.ErrorCode
+local Database = common.Database
 
 local RankLogic = require("common.logic.RankLogic")
 local RankDef = require("common.def.RankDef")
@@ -12,6 +13,48 @@ local context = ...
 ---@class RankMgr
 local RankMgr = {}
 
+-- 记录上次刷新时间(启动时从Redis恢复, 避免跨周/跨月重启后漏刷)
+local lastRefreshWeek
+local lastRefreshMonth
+local lastRefreshDay = moon.time()
+
+-- 周/月刷新标记在Redis中的持久化key
+local RANK_REFRESH_MARK_KEY = "rank:refresh_mark"
+
+-- 从Redis恢复周/月刷新标记
+local function loadRefreshMark()
+    local addr_db = moon.queryservice("db_server")
+    if not addr_db or addr_db == 0 then
+        return nil
+    end
+
+    local res, mark_json = pcall(Database.loadserverdata_with_key, addr_db, RANK_REFRESH_MARK_KEY)
+    if not res or not mark_json or mark_json == "" then
+        return nil
+    end
+
+    local ok, mark = pcall(json.decode, mark_json)
+    if not ok or type(mark) ~= "table" then
+        moon.error("[RankMgr] Failed to decode rank refresh mark")
+        return nil
+    end
+    return mark
+end
+
+-- 周期刷新完成后持久化刷新标记
+local function saveRefreshMark()
+    local addr_db = moon.queryservice("db_server")
+    if not addr_db or addr_db == 0 then
+        return
+    end
+
+    local mark = { week = lastRefreshWeek, month = lastRefreshMonth }
+    local res, err = pcall(Database.saveserverdata_with_key, addr_db, RANK_REFRESH_MARK_KEY, json.encode(mark))
+    if not res then
+        moon.error("[RankMgr] Save rank refresh mark failed:", err)
+    end
+end
+
 function RankMgr.Init()
     context.addr_db_server = moon.queryservice("db_server")
     context.addr_db_user = moon.queryservice("db_user")
@@ -20,6 +63,14 @@ function RankMgr.Init()
 
     RankLogic.Init(context)
     RankLogic.StartQueueProcessor()
+
+    -- 恢复刷新标记: 若停服跨越了周/月边界, 重启后30秒内即可补刷, 不会整周漏刷
+    local mark = loadRefreshMark()
+    lastRefreshWeek = tonumber(mark and mark.week) or moon.time()
+    lastRefreshMonth = tonumber(mark and mark.month) or moon.time()
+    moon.info(string.format("[RankMgr] Refresh mark restored: week=%s, month=%s",
+        tostring(lastRefreshWeek), tostring(lastRefreshMonth)))
+
     RankMgr.setupRefreshTasks()
     RankMgr.setupSyncTasks()
     moon.info("RankMgr initialized")
@@ -51,6 +102,16 @@ function RankMgr.GetRankReward(msg)
     local uid = msg.uid
     -- local period = msg.period
     return RankLogic.GetRankReward(rank_type, uid)
+end
+
+-- 确认领取奖励(两段式第二段: 游戏侧入包成功后调用)
+function RankMgr.ConfirmRankReward(msg)
+    return RankLogic.ConfirmRankReward(msg.rank_type, msg.uid)
+end
+
+-- 取消领取奖励(两段式回滚: 游戏侧入包失败时调用)
+function RankMgr.CancelRankRewardClaim(msg)
+    return RankLogic.CancelRankRewardClaim(msg.rank_type, msg.uid)
 end
 
 function RankMgr.GetUnclaimedRewards(msg)
@@ -159,11 +220,6 @@ local monthlyRanks = {
     RankDef.RankType.Fadian_Monthly,
 }
 
--- 记录上次刷新时间
-local lastRefreshWeek = moon.time()
-local lastRefreshMonth = moon.time()
-local lastRefreshDay = moon.time()
-
 function RankMgr.setupRefreshTasks()
     -- 每周刷新任务（现为了做测试暂时改为每天刷新）
     moon.async(function()
@@ -176,6 +232,7 @@ function RankMgr.setupRefreshTasks()
                 end
                 moon.info(string.format("[RankMgr] Weekly rank refresh completed"))
                 lastRefreshWeek = moon.time()
+                saveRefreshMark()
             end
         end
     end)
@@ -190,6 +247,7 @@ function RankMgr.setupRefreshTasks()
                     RankLogic.RefreshRankData(rank_type)
                 end
                 lastRefreshMonth = moon.time()
+                saveRefreshMark()
             end
         end
     end)

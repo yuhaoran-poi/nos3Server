@@ -653,6 +653,8 @@ local ErrorCode = {
     RankTypeNotExist = 2403,
     --- 排行榜数据不存在
     RankDataNotExist = 2404,
+    --- 排行榜奖励领取处理中(上一次领取请求尚未完成)
+    RankRewardClaiming = 2405,
 
     --登录排队相关错误码
     --- 登录排队中(非终态): 客户端应展示前方人数并节流重发登录请求查询位置

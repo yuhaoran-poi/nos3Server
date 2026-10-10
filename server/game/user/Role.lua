@@ -927,6 +927,7 @@ function Role.GetLvMoreThanNum(target_role_id, target_lv_exps)
 
     -- 触发角色等级任务(攒批触发, 仅一次任务同步)
     local condition_list = {}
+    local max_lv = nil
     for _, lv_exp in pairs(target_lv_exps) do
         local num = 0
         for roleid, role_info in pairs(roles.role_list) do
@@ -934,32 +935,39 @@ function Role.GetLvMoreThanNum(target_role_id, target_lv_exps)
                 num = num + 1
             end
         end
-        -- 触发角色达到指定等级的数量
+        -- 触发角色达到指定等级的数量(不同等级params不同, 需逐级触发)
         table.insert(condition_list, {
             cond_id = MissionDef.EConditionIds.ROLE_LEVEL_CNT,
             params = { lv_exp.lv },
             change_cnt = num + 1,
         })
+        if not max_lv or lv_exp.lv > max_lv.lv then
+            max_lv = lv_exp
+        end
+    end
+
+    if max_lv then
+        -- 角色等级/最高等级为覆盖型(取最大值), 只发最终等级一条即可, 无需逐级触发
         table.insert(condition_list, {
             cond_id = MissionDef.EConditionIds.ROLE_LEVEL,
             params = { target_role_id },
-            change_cnt = lv_exp.lv,
+            change_cnt = max_lv.lv,
         })
-        -- 触发角色最高等级
         table.insert(condition_list, {
             cond_id = MissionDef.EConditionIds.ROLE_MAX_LEVEL,
             params = { target_role_id },
-            change_cnt = lv_exp.lv,
+            change_cnt = max_lv.lv,
         })
     end
+
     if table.size(condition_list) > 0 then
         scripts.Mission.TriggerConditionList(condition_list, nil, true)
     end
 
     for roleid, role_info in pairs(roles.role_list) do
-        if roleid == target_role_id then
-            -- 角色榜更新
-            scripts.Rank.UpdateRank_Role(roleid, target_lv_exps.lv, role_info.skins)
+        if roleid == target_role_id and max_lv then
+            -- 角色榜更新(修正: 原target_lv_exps.lv恒为nil)
+            scripts.Rank.UpdateRank_Role(roleid, max_lv.lv, role_info.skins)
         end
     end
 end
@@ -2666,25 +2674,41 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
 
         local change_cost_items = table.copy(old_cost_items, true)
         local change_cost_coins = table.copy(old_cost_coins, true)
-        moon.info(string.format("role_repair_func 1 change_cost_coins = %s", json.pretty_encode(change_cost_items)))
+        -- 记录累加前的货币数量: 折扣只作用于本次新增消耗,
+        -- 多件装备循环修理时避免对已折扣部分重复打折(折上折)
+        local prev_coin_counts = {}
+        for coin_id, coin_data in pairs(change_cost_coins) do
+            prev_coin_counts[coin_id] = coin_data.coin_count or coin_data.count or 0
+        end
+        moon.info(string.format("role_repair_func 1 change_cost_coins = %s", json.pretty_encode(change_cost_coins)))
         -- ItemDefine.GetItemsFromCfg(common_cfg.items, fix_durability, true, change_cost_items, change_cost_coins)
         ItemDefine.GetItemsFromCfg(cur_maintenance_cfg.cost, fix_durability, true, change_cost_items, change_cost_coins)
 
         -- 获取镇山之宝修复耐久度货币消耗折扣
         local repair_discount = scripts.AweItem.GetRepairCostDiscount()
 
-        -- 应用折扣到货币消耗
+        -- 应用折扣到货币消耗(仅对本次新增部分打折)
         if repair_discount > 0 and change_cost_coins then
             for coin_id, coin_data in pairs(change_cost_coins) do
-                local original_count = coin_data.coin_count or coin_data.count
-                if original_count then
-                    local discounted_count = math.floor(original_count * (10000 - repair_discount) / 10000)
-                    if coin_data.coin_count then
-                        coin_data.coin_count = discounted_count
+                local now_count = coin_data.coin_count or coin_data.count
+                if now_count then
+                    local prev_count = prev_coin_counts[coin_id] or 0
+                    local add_count = now_count - prev_count
+                    if add_count ~= 0 then
+                        -- 负值表示扣除: 按绝对值取整后保持符号, 避免floor负数向多扣方向取整
+                        local sign = add_count < 0 and -1 or 1
+                        local discounted_add = sign
+                            * math.floor(math.abs(add_count) * (10000 - repair_discount) / 10000)
+                        local new_count = prev_count + discounted_add
+                        if coin_data.coin_count then
+                            coin_data.coin_count = new_count
+                        else
+                            coin_data.count = new_count
+                        end
+                        moon.info(string.format(
+                            "role_repair_func: uid=%d, coin_id=%d, prev=%d, add=%d, discounted_add=%d, total=%d, discount=%d",
+                            context.uid, coin_id, prev_count, add_count, discounted_add, new_count, repair_discount))
                     end
-                    moon.info(string.format(
-                        "role_repair_func: uid=%d, coin_id=%d, original=%d, discounted=%d, discount=%d",
-                        context.uid, coin_id, original_count, discounted_count, repair_discount))
                 end
             end
         end
@@ -2698,7 +2722,7 @@ function Role.PBRoleEquipmentRepairReqCmd(req)
         if errcode ~= ErrorCode.None then
             return errcode, 0
         end
-        moon.info(string.format("role_repair_func 2 change_cost_coins = %s", json.pretty_encode(change_cost_items)))
+        moon.info(string.format("role_repair_func 2 change_cost_coins = %s", json.pretty_encode(change_cost_coins)))
 
         return ErrorCode.None, fix_durability, change_cost_items, change_cost_coins
     end

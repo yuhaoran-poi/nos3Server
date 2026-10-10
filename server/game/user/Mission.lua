@@ -22,6 +22,11 @@ local scripts = context.scripts
 ---@class Mission
 local Mission = {}
 
+-- [临时开关] 暂停所有新任务下发: 四类任务(线性/周期/成就/活动)创建入口直接返回,
+-- 玩家不再获得新任务; 存量任务数据保留、进度推进与领奖不受影响.
+-- 各类Check的过期清理/赛季重置等逻辑照常执行. 恢复任务下发时改回 false.
+local MISSION_CREATE_DISABLED = false
+
 function Mission.Init()
     --加载任务数据
     local player_mission_info = Mission.LoadMissionInfo()
@@ -222,6 +227,9 @@ function Mission.SaveAndSync(change_log, right_now)
 end
 
 function Mission.newLinearMission(mission_info, linear_cfg, now_ts, new_complete_ids, change_log)
+    if MISSION_CREATE_DISABLED then
+        return
+    end
     local new_mission_data = MissionDef.newMissionData()
     new_mission_data.mission_id = linear_cfg.id
     new_mission_data.mission_type = linear_cfg.type
@@ -283,6 +291,9 @@ function Mission.newLinearMission(mission_info, linear_cfg, now_ts, new_complete
 end
 
 function Mission.newPeriodMission(mission_info, period_cfg, now_ts, new_complete_ids)
+    if MISSION_CREATE_DISABLED then
+        return
+    end
     local new_mission_data = MissionDef.newMissionData()
     new_mission_data.mission_id = period_cfg.id
     new_mission_data.mission_type = period_cfg.cyclical_date
@@ -357,6 +368,9 @@ function Mission.newPeriodMission(mission_info, period_cfg, now_ts, new_complete
 end
 
 function Mission.newAchivementMission(mission_info, achivement_cfg, now_ts, new_complete_ids)
+    if MISSION_CREATE_DISABLED then
+        return
+    end
     local new_mission_data = MissionDef.newMissionData()
     new_mission_data.mission_id = achivement_cfg.id
     new_mission_data.mission_type = achivement_cfg.type
@@ -409,6 +423,9 @@ function Mission.newAchivementMission(mission_info, achivement_cfg, now_ts, new_
 end
 
 function Mission.newActivityMission(mission_info, activity_cfg, now_ts, new_complete_ids)
+    if MISSION_CREATE_DISABLED then
+        return
+    end
     -- 类型未开启则跳过
     if not Mission.IsActivityTypeOpen(activity_cfg.type) then
         return
@@ -532,8 +549,93 @@ function Mission.CheckNewMissions()
         Mission.makeActivityMap(mission_info)
     end
 
+    -- 登录校准: 按当前实际状态刷新未完成任务的进度, 修复事件在cond_map空窗期
+    -- 丢失导致的进度停滞(如角色升级事件丢失后等级任务永久卡住)
+    if Mission.CalibrateStateConditions(mission_info) then
+        -- 校准可能使任务完成, 重建条件映射以移出已完成任务
+        Mission.makeAchivementMap(mission_info)
+        Mission.makeLinearMap(mission_info)
+        Mission.makePeriodMap(mission_info)
+        Mission.makeActivityMap(mission_info)
+    end
+
     -- Mission.SaveMissionsNow()
     scripts.UserModel.AddDirtyModule("Mission")
+end
+
+-- 登录时校准状态型任务进度:
+-- 对所有分类容器中未完成的任务, 复用创建回填逻辑(CheckNewMissionCond)按玩家
+-- 当前实际状态(等级/星级/解锁数量/累计值等)刷新条件进度.
+-- 幂等性: 涉及条件在CheckCondition中均为覆盖型(当前值>now_value才更新),
+-- 已完成条件直接跳过; 累加型条件(UNLOCK_SKIN_CNT)由for_calibrate参数排除.
+-- 完成的任务按JustCheckCondition的口径移入complete容器并走对应完成连锁.
+-- @return boolean 是否有任务被校准完成
+function Mission.CalibrateStateConditions(mission_info)
+    if not mission_info then
+        return false
+    end
+
+    -- 各分类容器 -> 对应完成容器与完成连锁处理
+    local calibrate_targets = {
+        {
+            datas = mission_info.linear_info.now_mission_datas,
+            completes = mission_info.linear_info.complete_ids,
+            on_complete = Mission.LinearMissionComplete_new,
+        },
+        {
+            datas = mission_info.period_info.now_day_mission_datas,
+            completes = mission_info.period_info.complete_day_ids,
+            on_complete = Mission.PeriodMissionComplete_new,
+        },
+        {
+            datas = mission_info.period_info.now_week_mission_datas,
+            completes = mission_info.period_info.complete_week_ids,
+            on_complete = Mission.PeriodMissionComplete_new,
+        },
+        {
+            datas = mission_info.period_info.now_month_mission_datas,
+            completes = mission_info.period_info.complete_month_ids,
+            on_complete = Mission.PeriodMissionComplete_new,
+        },
+        {
+            datas = mission_info.achivement_info.now_mission_datas,
+            completes = mission_info.achivement_info.complete_ids,
+            on_complete = Mission.AchivementMissionComplete_new,
+        },
+        {
+            datas = mission_info.activity_info.now_mission_datas,
+            completes = mission_info.activity_info.complete_ids,
+            on_complete = Mission.ActivityMissionComplete_new,
+        },
+    }
+
+    local total_completed = 0
+    for _, target in ipairs(calibrate_targets) do
+        local complete_ids = {}
+        for mission_id, mission_data in pairs(target.datas) do
+            if mission_data and mission_data.cond_datas then
+                local prev_state = mission_data.mission_state
+                -- 按当前实际状态推进条件(幂等, 只升不降)
+                Mission.CheckNewMissionCond(mission_data, true)
+                if mission_data.mission_state == MissionDef.ETaskState.COMPLETE
+                    and prev_state ~= MissionDef.ETaskState.COMPLETE then
+                    target.datas[mission_id] = nil
+                    target.completes[mission_id] = MissionDef.ETaskState.COMPLETE
+                    table.insert(complete_ids, mission_id)
+                end
+            end
+        end
+        if table.size(complete_ids) > 0 then
+            total_completed = total_completed + table.size(complete_ids)
+            target.on_complete(mission_info, complete_ids, nil, false)
+        end
+    end
+
+    if total_completed > 0 then
+        moon.info(string.format("[Mission] CalibrateStateConditions: uid=%d, %d missions completed",
+            context.uid, total_completed))
+    end
+    return total_completed > 0
 end
 
 function Mission.CheckLinearInfo(mission_info, now_ts, new_complete_linear_ids)
@@ -2344,24 +2446,23 @@ function Mission.TriggerConditionList(condition_list, change_log, need_sync)
         Mission.makeAchivementMap(mission_info)
     end
 
-    -- 初始条件入队
+    -- 初始条件入队(标记initial: 初始事件数量由调用方给定且有限, 不计入防自环深度;
+    -- 否则批量事件会被depth上限误伤, 如一颗经验丹跨99级产生297个事件, 处理到
+    -- 第100个即break, 后续等级事件全部丢失, 任务进度卡在断点等级)
     for _, cond_info in ipairs(condition_list) do
         table.insert(queue, {
             cond_id = cond_info.cond_id,
             params = cond_info.params or {},
             change_cnt = cond_info.change_cnt or 1,
+            initial = true,
         })
     end
 
     -- 主事件循环: 每 pop 一个事件用 JustCheckCondition 原子推进条件, 收集新完成任务,
-    -- 再 enqueue_followups 驱动连锁, 直到队列为空. 深度上限兜底配置自环.
+    -- 再 enqueue_followups 驱动连锁, 直到队列为空. 深度上限只统计连锁产生的事件
+    -- (完成任务触发的followup/解锁后继), 用于兜底配置自环; 初始事件不占预算.
     local depth = 0
     while #queue > 0 do
-        depth = depth + 1
-        if depth > 100 then
-            moon.error(string.format("uid=%d Mission.TriggerConditionList 传播深度超限(疑似配置自环):%s", context.uid, json.pretty_encode(condition_list)))
-            break
-        end
         local evt = table.remove(queue, 1)
         if evt.unlock then
             handle_linear_unlock(evt.id)
@@ -2371,6 +2472,13 @@ function Mission.TriggerConditionList(condition_list, change_log, need_sync)
                 new_complete_activity_ids)
         end
         enqueue_followups()
+        if not evt.initial then
+            depth = depth + 1
+            if depth > 100 then
+                moon.error(string.format("uid=%d Mission.TriggerConditionList 连锁传播深度超限(疑似配置自环):%s", context.uid, json.pretty_encode(condition_list)))
+                break
+            end
+        end
     end
 
     if need_sync then
@@ -2394,7 +2502,10 @@ function Mission.TriggerConditionSingleMission(condition_id, params, change_cnt,
     end
 end
 
-function Mission.CheckNewMissionCond(new_mission_data)
+-- 按玩家当前实际状态回填任务条件进度(状态型条件: 等级/星级/解锁数/累计值等)
+-- 创建任务时回填一次; for_calibrate=true 时供登录校准复用(CalibrateStateConditions),
+-- 此时会跳过累加型条件(如UNLOCK_SKIN_CNT, 重复触发会重复计数)
+function Mission.CheckNewMissionCond(new_mission_data, for_calibrate)
     for _, cond_data in pairs(new_mission_data.cond_datas) do
         if cond_data.cond_id == MissionDef.EConditionIds.ACCOUNT_LEVEL then
             Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.ACCOUNT_LEVEL, {},
@@ -2627,24 +2738,28 @@ function Mission.CheckNewMissionCond(new_mission_data)
                 scripts.Bill.GetTotalAmount(), new_mission_data)
         elseif cond_data.cond_id == MissionDef.EConditionIds.UNLOCK_SKIN_CNT then
             -- 累积解锁X类型皮肤总数：按Skin表type字段统计当前已永久解锁的皮肤
-            if table.size(cond_data.params) >= 1 then
-                local target_type = cond_data.params[1]
-                local itemImages = scripts.UserModel.GetItemImages()
-                local skin_cnt = 0
-                if itemImages and itemImages.skin_image then
-                    for config_id, skin in pairs(itemImages.skin_image) do
-                        if skin.valid_ts == 0 then
-                            local skin_cfg = GameCfg.Skin[config_id]
-                            if skin_cfg and skin_cfg.type
-                                and (target_type == 0 or skin_cfg.type == target_type) then
-                                skin_cnt = skin_cnt + 1
+            -- 注意: 该条件在CheckCondition中为累加型(+change_cnt), 仅创建任务时回填一次;
+            -- 登录校准(for_calibrate)跳过, 否则每次登录都会重复累计
+            if not for_calibrate then
+                if table.size(cond_data.params) >= 1 then
+                    local target_type = cond_data.params[1]
+                    local itemImages = scripts.UserModel.GetItemImages()
+                    local skin_cnt = 0
+                    if itemImages and itemImages.skin_image then
+                        for config_id, skin in pairs(itemImages.skin_image) do
+                            if skin.valid_ts == 0 then
+                                local skin_cfg = GameCfg.Skin[config_id]
+                                if skin_cfg and skin_cfg.type
+                                    and (target_type == 0 or skin_cfg.type == target_type) then
+                                    skin_cnt = skin_cnt + 1
+                                end
                             end
                         end
                     end
-                end
-                if skin_cnt > 0 then
-                    Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.UNLOCK_SKIN_CNT,
-                        { target_type }, skin_cnt, new_mission_data)
+                    if skin_cnt > 0 then
+                        Mission.TriggerConditionSingleMission(MissionDef.EConditionIds.UNLOCK_SKIN_CNT,
+                            { target_type }, skin_cnt, new_mission_data)
+                    end
                 end
             end
         elseif cond_data.cond_id == MissionDef.EConditionIds.ROLE_MAX_LEVEL then
