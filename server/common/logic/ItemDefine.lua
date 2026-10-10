@@ -378,6 +378,7 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                             local cur_param = mod_params[item_cfg.id][1]
                             if cur_param and cur_param.cur_durability then
                                 new_item.special_info.durab_item.cur_durability = cur_param.cur_durability
+                                table.remove(mod_params[item_cfg.id], 1)
                             end
                         end
                         table.insert(unstack_items, new_item)
@@ -446,6 +447,7 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                             local params = mod_params[uniqitem_cfg.id][1]
                             if params[1].cur_durability then
                                 new_item.special_info.diagrams_item.cur_durability = params[1].cur_durability
+                                table.remove(mod_params[uniqitem_cfg.id], 1)
                             end
                         end
                         -- end
@@ -486,6 +488,7 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                             local params = mod_params[uniqitem_cfg.id][1]
                             if params[1].cur_durability then
                                 new_item.special_info.magic_item.cur_durability = params[1].cur_durability
+                                table.remove(mod_params[uniqitem_cfg.id], 1)
                             end
                         end
                         -- end
@@ -556,6 +559,7 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                             local params = mod_params[uniqitem_cfg.id][1]
                             if params[1].cur_durability then
                                 new_item.special_info.space_ring.cur_durability = params[1].cur_durability
+                                table.remove(mod_params[uniqitem_cfg.id], 1)
                             end
                         end
                         -- end
