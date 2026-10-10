@@ -296,25 +296,31 @@ function _M.validate_session(addr_db, uid, session_id)
     return res == session_id
 end
 
--- 登录建号/取号一条流(多语句合包, 替代 checkuser+createuser/getuserbyauthkey 两连发):
--- 语句1 ODKU: 新号 INSERT 拿自增uid; 老号撞 uk_authkey 由 LAST_INSERT_ID(user_id)
--- 把已存在uid塞回 OK 包 insert_id, 不做任何写入, 与 sql_mode 无关。
--- 语句2 顺带取回封禁字段(老号1行/新号0行)。
--- 两条语句共用一条保留连接、一次 moon.call, 不做第二次池等待。
+-- 登录取号/建号一条流(单次call合包, 老号零自增消耗, 根治登录跳号):
+-- 语句1 INSERT...SELECT...WHERE NOT EXISTS + ODKU:
+--   老号: NOT EXISTS 不满足 → INSERT 影响 0 行 → 不分配自增号
+--        (预分配烧号只发生在VALUES形式的"尝试插入"; INSERT...SELECT按实际
+--         插入行数分配, 0行插入零消耗, 挂ODKU不破坏该性质);
+--   新号: 插入成功拿自增uid(OK包insert_id);
+--   并发首登竞态: 双双通过NOT EXISTS后一成一败, 败者撞uk_authkey由ODKU
+--   兜底——LAST_INSERT_ID(user_id)把已存在uid塞回, 不做任何写入
+--   (该场景烧1号, 罕见且可接受)。
+-- 语句2 取回uid+封禁字段: 新老号统一从行集取uid(老号OK包insert_id为0)。
 -- 依赖(必须满足, 否则老号重登会插出重复行或串号):
 -- 1) account.authkey 必须有唯一索引 uk_authkey;
 -- 2) username 不能有唯一索引——运行期会被昵称同步覆盖(updateusernickname),
 --    若保留唯一索引, 新号INSERT可能撞到"昵称恰好等于他人authkey"的行,
 --    ODKU会误登他人账号(全库实测 username 已全部不等于 authkey 且无业务消费方)。
--- 返回: 成功为 multiresultset = { [1]=OK包(含insert_id), [2]=行集,
--- multiresultset=true }; 失败为 badresult 表(POOL_EMPTY/MYSQL_ERROR等)。
+-- 返回: 成功为 multiresultset = { [1]=OK包, [2]=行集(必含uid行),
+-- multiresultset=true }; 失败为 badresult 表/nil(调用方走CreateAccountFailed重试)。
 function _M.loginuser(addr, authkey)
     local cmd = string.format([[
         INSERT INTO mgame.account (authkey, username, password_hash)
-        VALUES ('%s','%s','%s')
+        SELECT '%s','%s','%s' FROM DUAL
+        WHERE NOT EXISTS (SELECT 1 FROM mgame.account WHERE authkey = '%s')
         ON DUPLICATE KEY UPDATE user_id = LAST_INSERT_ID(user_id);
         SELECT user_id, ban_end_ts FROM mgame.account WHERE authkey = '%s';
-    ]], authkey, authkey, "", authkey)
+    ]], authkey, authkey, "", authkey, authkey)
     -- "_reserved": 登录前置校验专用保留连接, 突增登录业务池被 User.Load 打满时仍秒回
     return moon.call("lua", addr, "_reserved", cmd)
 end
