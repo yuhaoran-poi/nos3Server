@@ -251,13 +251,31 @@ static inline size_t array_size(lua_State* L, int index) {
         * (border == 0 or t[border] ~= nil) and t[border + 1] == nil
         */
         auto len = (lua_Integer)lua_rawlen(L, index);
-        lua_pushinteger(L, len);
-        if (lua_next(L, index)) // has more fields?
-        {
+        // Array only if every key is an integer in [1, len] and the total
+        // key count equals len. The previous "no more fields after len" check
+        // used lua_next, which follows hash traversal order, NOT numeric
+        // order: sparse tables like {1, 2, [6] = x} passed the check when key
+        // `len` happened to be the last in traversal order, and then
+        // encode_table_array silently dropped every key greater than len.
+        lua_Integer count = 0;
+        bool is_array = true;
+        lua_pushnil(L);
+        while (lua_next(L, index) != 0) {
+            if (lua_isinteger(L, -2)) {
+                lua_Integer x = lua_tointeger(L, -2);
+                if (x >= 1 && x <= len) {
+                    ++count;
+                    lua_pop(L, 1);
+                    continue;
+                }
+            }
+            is_array = false;
             lua_pop(L, 2);
-            return 0;
+            break;
         }
-        return len;
+        if (is_array && count == len)
+            return len;
+        return 0;
     }
 
     auto len = (lua_Integer)lua_rawlen(L, index);

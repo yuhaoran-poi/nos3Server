@@ -1349,12 +1349,12 @@ static int Lpb_field(lua_State *L) {
     return lpb_pushfield(L, t, lpb_field(L, 2, t));
 }
 
-// 在Lpb_field函数之后添加Lpb_has_field函数
+// Lpb_has_field: check whether a message field is explicitly set (non-default)
 static int Lpb_has_field(lua_State *L)
 {
     lpb_State *LS = lpb_lstate(L);
     const pb_Type *t = lpb_type(L, LS, lpb_checkslice(L, 1));
-    luaL_checktype(L, 2, LUA_TTABLE); // 消息表
+    luaL_checktype(L, 2, LUA_TTABLE); // message table
     const pb_Field *f = lpb_field(L, 3, t);
 
     if (f == NULL)
@@ -1364,15 +1364,15 @@ static int Lpb_has_field(lua_State *L)
         return 2;
     }
 
-    // 检查字段是否存在于消息表中
+    // check the field exists in the message table
     if (lua53_getfield(L, 2, (const char *)f->name) == LUA_TNIL)
     {
         lua_pop(L, 1);
-        lua_pushboolean(L, 0); // 字段不存在，返回false
+        lua_pushboolean(L, 0); // field missing, return false
         return 1;
     }
 
-    // 字段存在，检查其值是否为默认值
+    // field exists, check whether its value equals the default value
     int is_default = 0;
     lpb_Value v;
 
@@ -1411,15 +1411,15 @@ static int Lpb_has_field(lua_State *L)
     }
     break;
     case PB_Tmessage:
-        // 对于消息类型，只要存在就认为不是默认值
+        // message fields are always considered explicitly set
         is_default = 0;
         break;
     default:
-        is_default = 0; // 未知类型，默认认为不是默认值
+        is_default = 0; // unknown type, treat as explicitly set
     }
 
     lua_pop(L, 1);
-    lua_pushboolean(L, !is_default); // 返回true表示字段被显式设置（非默认值）
+    lua_pushboolean(L, !is_default); // true means the field is explicitly set (non-default)
     return 1;
 }
 
@@ -2200,7 +2200,7 @@ LUALIB_API int luaopen_pb(lua_State *L) {
         ENTRY(fields),
         ENTRY(type),
         ENTRY(field),
-        ENTRY(has_field), // 添加新函数
+        ENTRY(has_field), // new function entry
         ENTRY(typefmt),
         ENTRY(enum),
         ENTRY(defaults),
