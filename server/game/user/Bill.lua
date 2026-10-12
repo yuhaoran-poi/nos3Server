@@ -29,6 +29,9 @@ end
 ---@class Bill
 local Bill = {}
 
+-- 在途订单对账窗口: 登录对账回看7天内的WAIT/PAID单
+local RECONCILE_WINDOW_SEC = 7 * 24 * 3600
+
 -- 模块级 in-memory cache, 用于避免 PBCheckBillOrderReqCmd 等场景下重复
 -- Database.loadbillorder 的 RPC 调用. 因为 service_user 是 per-user 多协程
 -- 模型, 跨协程访问需通过下列 helper 走 CAS 通道, 不可直接读/写.
@@ -115,95 +118,115 @@ function Bill.GetTotalAmount()
     return bills.total_bill_amount
 end
 
+-- 单笔在途订单对账: 以Steam实时状态推进. 发货唯一入口是Bill.BillDeliver,
+-- 其内部的DB条件UPDATE(WHERE state=旧值)保证同一订单只有一个赢家, 不会重复发货
+local function ReconcileOrder(bills, order_info)
+    local json_success, rsp_data = Bill.QueryOrder(order_info.orderid, order_info.transid)
+    if not json_success then
+        moon.error("uid ReconcileOrder 查询订单失败: ", order_info.uid, order_info.orderid, tostring(rsp_data))
+        return
+    end
+    if not rsp_data or not rsp_data.response or rsp_data.response.result ~= 'OK' then
+        return
+    end
+    local status = rsp_data.response.params and rsp_data.response.params.status
+
+    if status == 'Init' then
+        -- 未支付: 重新挂回billmgr轮询(AddBill丢失/重启清名单的在此补上)
+        clusterd.send(3999, "billmgr", "Billmgr.AddBill", order_info)
+
+    elseif status == 'Approved' then
+        Bill.FinalizeOrder(order_info.orderid)
+        -- finalize后由billmgr轮询收尾(下轮查到Succeeded即发货)
+        clusterd.send(3999, "billmgr", "Billmgr.AddBill", order_info)
+
+    elseif status == 'Succeeded' then
+        clusterd.send(3999, "billmgr", "Billmgr.DelBill", order_info.orderid)
+        local bill_cfg = GameCfg.RechargeStoreConfig[order_info.bill_id]
+        if not bill_cfg then
+            moon.error("uid ReconcileOrder 未知充值配置: ", order_info.uid, order_info.bill_id)
+            if bills.on_order_id == order_info.orderid then
+                bills.on_order_id = 0
+                Bill.SetCurrentOrder(nil, order_info.orderid)
+                Bill.SaveBillsNow()
+            end
+            return
+        end
+        local ret_status = Bill.BillDeliver(order_info, bill_cfg)
+        if ret_status == BillDef.orderStatus.DONE then
+            Bill.AddBillAmount(bills, order_info, bill_cfg)
+        end
+        if bills.on_order_id == order_info.orderid then
+            bills.on_order_id = 0
+            Bill.SetCurrentOrder(nil, order_info.orderid)
+            Bill.SaveBillsNow()
+        end
+
+    elseif status == 'Failed' then
+        clusterd.send(3999, "billmgr", "Billmgr.DelBill", order_info.orderid)
+        Bill.BillFailed(order_info)
+        if bills.on_order_id == order_info.orderid then
+            bills.on_order_id = 0
+            Bill.SetCurrentOrder(nil, order_info.orderid)
+            Bill.SaveBillsNow()
+        end
+
+    elseif status == 'Refunded'
+        or status == 'PartialRefund'
+        or status == 'Chargedback'
+        or status == 'RefundedSuspectedFraud'
+        or status == 'RefundedFriendlyFraud' then
+        clusterd.send(3999, "billmgr", "Billmgr.DelBill", order_info.orderid)
+        Bill.BillRefund(order_info)
+        if bills.on_order_id == order_info.orderid then
+            bills.on_order_id = 0
+            Bill.SetCurrentOrder(nil, order_info.orderid)
+            Bill.SaveBillsNow()
+        end
+    end
+end
+
+-- 登录对账: 直接扫DB取本uid全部在途(WAIT/PAID)订单逐笔对账,
+-- 不依赖bills.on_order_id指针与任何进程内存——指针丢失/名单丢失/重启清空
+-- 造成的孤儿订单(已付款未发货)在此自动补发货
 function Bill.DealOnOrder()
     local bills = scripts.UserModel.GetBills()
     if not bills then
         return
     end
-    if not bills.on_order_id or bills.on_order_id == 0 then
-        return
+
+    local order_infos = Database.loadprocessingbillorders(context.addr_db_user, context.uid,
+        moon.time() - RECONCILE_WINDOW_SEC)
+    if not order_infos then
+        return -- DB查询失败, 保留现状, 下次登录再试
     end
 
-    local order_info = Database.loadbillorder(context.addr_db_user, bills.on_order_id)
-    if not order_info then
-        moon.error("uid DealOnOrder 未知订单: ", context.uid, bills.on_order_id)
-        bills.on_order_id = 0
-        return
-    end
-
-    if order_info.state ~= BillDef.orderStatus.WAIT
-        and order_info.state ~= BillDef.orderStatus.PAID then
-        moon.error("uid DealOnOrder orderid 订单状态错误: ", context.uid, bills.on_order_id, order_info.state)
-        bills.on_order_id = 0
-        return
-    end
-    
-    local json_success, rsp_data = Bill.QueryOrder(bills.on_order_id, order_info.transid)
-    if not json_success then
-        moon.error("uid DealOnOrder 查询订单失败: ", context.uid, rsp_data)
-        return
-    else
-        if rsp_data.response.result == 'OK' then
-            if rsp_data.response.params.status == 'Init' then
-                order_info.state = BillDef.orderStatus.WAIT
-                Bill.SetCurrentOrder(order_info, order_info.orderid)
-                clusterd.send(3999, "billmgr", "Billmgr.AddBill", order_info)
-                return
-
-            elseif rsp_data.response.params.status == 'Approved' then
-                Bill.FinalizeOrder(order_info.orderid)
-
-                order_info.state = BillDef.orderStatus.WAIT
-                Bill.SetCurrentOrder(order_info, order_info.orderid)
-                clusterd.send(3999, "billmgr", "Billmgr.UpdateBill", order_info)
-                return
-
-            elseif rsp_data.response.params.status == 'Succeeded' then
-                clusterd.send(3999, "billmgr", "Billmgr.DelBill", bills.on_order_id)
-                local bill_cfg = GameCfg.RechargeStoreConfig[order_info.bill_id]
-                if not bill_cfg then
-                    moon.error("uid DealOnOrder 未知充值配置: ", context.uid, order_info.bill_id)
-                    bills.on_order_id = 0
-                    Bill.SetCurrentOrder(nil, order_info.orderid)
-                    Bill.SaveBillsNow()
-                    return
-                end
-                local ret_status = Bill.BillDeliver(order_info, bill_cfg) -- 充值成功,发货
-                if ret_status == BillDef.orderStatus.DONE then
-                    Bill.AddBillAmount(bills, order_info, bill_cfg)
-                end
-                bills.on_order_id = 0
-                Bill.SetCurrentOrder(nil, order_info.orderid)
-                Bill.SaveBillsNow()
-
-            elseif rsp_data.response.params.status == 'Failed' then
-                clusterd.send(3999, "billmgr", "Billmgr.DelBill", bills.on_order_id)
-                Bill.BillFailed(order_info) -- 充值失败,记录失败
-                bills.on_order_id = 0
-                Bill.SetCurrentOrder(nil, order_info.orderid)
-                Bill.SaveBillsNow()
-
-            elseif rsp_data.response.params.status == 'Refunded'
-                or rsp_data.response.params.status == 'PartialRefund'
-                or rsp_data.response.params.status == 'Chargedback'
-                or rsp_data.response.params.status == 'RefundedSuspectedFraud'
-                or rsp_data.response.params.status == 'RefundedFriendlyFraud' then
-                -- 订单已退款
-                -- 购物车中的一个或多个物品已退款
-                -- 订单存在欺诈或争议
-                -- 因涉嫌欺诈,该订单已被 Valve 退款
-                -- 因被认定为友好欺诈,该订单已被 Valve 退款
-                clusterd.send(3999, "billmgr", "Billmgr.DelBill", bills.on_order_id)
-                Bill.BillRefund(order_info) -- 充值退款,记录退款
-                bills.on_order_id = 0
-                Bill.SetCurrentOrder(nil, order_info.orderid)
-                Bill.SaveBillsNow()
-
-            else
-                moon.error("uid DealOnOrder 未知订单状态: ", context.uid, rsp_data.response.params.status)
-            end
+    if #order_infos == 0 then
+        if bills.on_order_id ~= 0 then
+            -- DB已无在途单而指针非0: 悬空指针校正
+            bills.on_order_id = 0
+            Bill.SetCurrentOrder(nil, nil)
+            Bill.SaveBillsNow()
         end
+        return
     end
+
+    for _, order_info in ipairs(order_infos) do
+        ReconcileOrder(bills, order_info)
+    end
+
+    -- 对账后按DB剩余在途单重置指针(期间并发新下的单也会被这次查询覆盖到)
+    local remains = Database.loadprocessingbillorders(context.addr_db_user, context.uid,
+        moon.time() - RECONCILE_WINDOW_SEC)
+    if remains and #remains > 0 then
+        local latest = remains[#remains]
+        bills.on_order_id = latest.orderid
+        Bill.SetCurrentOrder(latest, nil)
+    else
+        bills.on_order_id = 0
+        Bill.SetCurrentOrder(nil, nil)
+    end
+    Bill.SaveBillsNow()
 end
 
 function Bill.CheckBillAmount(bills)

@@ -3545,6 +3545,23 @@ function _M.loadbillorder(addr, orderid)
     return nil
 end
 
+-- 对账查询: 指定玩家全部在途订单(state IN (0=WAIT, 1=PAID)),
+-- 不依赖 bills.on_order_id 指针——指针/内存名单丢失造成的孤儿单靠它找回
+function _M.loadprocessingbillorders(addr, uid, min_create_ts)
+    local cmd = string.format([[
+        SELECT orderid, transid, steamid, uid, bill_id, bill_num,
+        bill_amount, create_ts, is_sanbox, state FROM mgame.bill_order
+        WHERE uid = %d AND state IN (0, 1) AND create_ts >= %d
+        ORDER BY create_ts;
+    ]], uid, min_create_ts)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error("loadprocessingbillorders failed", uid, err)
+        return nil
+    end
+    return res or {}
+end
+
 local AUCTION_WAIT_MAIL_KEY = "auction_wait_mail"
 
 function _M.RedisGetAuctionWaitMail(addr_db_redis, uid, auction_id, price)
