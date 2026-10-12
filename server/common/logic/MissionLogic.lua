@@ -181,10 +181,14 @@ function MissionLogic.CheckCondition(condition_id, params, change_cnt, cond_data
             elseif condition_id == MissionDef.EConditionIds.LIGHT_EQP_CNT then
                 if table.size(params) >= 2 and table.size(condition.params) >= 2 then
                     local is_match_arr_param = false
-                    for _, c_param in pairs(condition.arr_params) do
-                        if c_param == 0 or condition.params[2] == c_param then
-                            is_match_arr_param = true
-                            break
+                    if not condition.arr_params or table.size(condition.arr_params) == 0 then
+                        is_match_arr_param = true
+                    else
+                        for _, c_param in pairs(condition.arr_params) do
+                            if c_param == 0 or params[2] == c_param then
+                                is_match_arr_param = true
+                                break
+                            end
                         end
                     end
                     if is_match_arr_param
@@ -199,10 +203,14 @@ function MissionLogic.CheckCondition(condition_id, params, change_cnt, cond_data
             elseif condition_id == MissionDef.EConditionIds.APPRAISE_ANTIQUE_CNT then
                 if table.size(params) >= 1 and table.size(condition.params) >= 1 then
                     local is_match_arr_param = false
-                    for _, c_param in pairs(condition.arr_params) do
-                        if c_param == 0 or condition.params[1] == c_param then
-                            is_match_arr_param = true
-                            break
+                    if not condition.arr_params or table.size(condition.arr_params) == 0 then
+                        is_match_arr_param = true
+                    else
+                        for _, c_param in pairs(condition.arr_params) do
+                            if c_param == 0 or params[1] == c_param then
+                                is_match_arr_param = true
+                                break
+                            end
                         end
                     end
                     if is_match_arr_param then
@@ -292,10 +300,14 @@ function MissionLogic.CheckCondition(condition_id, params, change_cnt, cond_data
             elseif condition_id == MissionDef.EConditionIds.INLAY_TABOO_WORD_CNT then
                 if table.size(params) >= 2 and table.size(condition.params) >= 2 then
                     local is_match_arr_param = false
-                    for _, c_param in pairs(condition.arr_params) do
-                        if c_param == 0 or condition.params[2] == c_param then
-                            is_match_arr_param = true
-                            break
+                    if not condition.arr_params or table.size(condition.arr_params) == 0 then
+                        is_match_arr_param = true
+                    else
+                        for _, c_param in pairs(condition.arr_params) do
+                            if c_param == 0 or params[2] == c_param then
+                                is_match_arr_param = true
+                                break
+                            end
                         end
                     end
                     if is_match_arr_param
@@ -419,10 +431,14 @@ function MissionLogic.CheckCondition(condition_id, params, change_cnt, cond_data
             elseif condition_id == MissionDef.EConditionIds.GET_BOOTY_VALUE_CNT then
                 if table.size(params) >= 2 and table.size(condition.params) >= 2 then
                     local is_match_arr_param = false
-                    for _, c_param in pairs(condition.arr_params) do
-                        if c_param == 0 or condition.params[2] == c_param then
-                            is_match_arr_param = true
-                            break
+                    if not condition.arr_params or table.size(condition.arr_params) == 0 then
+                        is_match_arr_param = true
+                    else
+                        for _, c_param in pairs(condition.arr_params) do
+                            if c_param == 0 or params[2] == c_param then
+                                is_match_arr_param = true
+                                break
+                            end
                         end
                     end
                     if is_match_arr_param
@@ -608,8 +624,10 @@ function MissionLogic.CheckCondition(condition_id, params, change_cnt, cond_data
                 end
             elseif condition_id == MissionDef.EConditionIds.BRING_OUT_ITEM_CNT then
                 if table.size(params) >= 2 and table.size(condition.params) >= 2 then
-                    if (condition.params[1] == 0 or params[1] == condition.params[1])
-                        and (condition.params[2] == 0 or params[2] == condition.params[2]) then
+                    -- 配置约定: param1=品质(param2=0不限), param2=类型(param1=0不限)
+                    -- 事件上报: params[1]=类型(type1), params[2]=品质(type2)
+                    if (condition.params[2] == 0 or params[1] == condition.params[2])
+                        and (condition.params[1] == 0 or params[2] == condition.params[1]) then
                         condition.now_value = change_cnt
                         if condition.now_value >= condition.target_value then
                             condition.is_complete = 1
@@ -619,8 +637,10 @@ function MissionLogic.CheckCondition(condition_id, params, change_cnt, cond_data
                 end
             elseif condition_id == MissionDef.EConditionIds.TOTAL_BRING_OUT_ITEM_CNT then
                 if table.size(params) >= 2 and table.size(condition.params) >= 2 then
-                    if (condition.params[1] == 0 or params[1] == condition.params[1])
-                        and (condition.params[2] == 0 or params[2] == condition.params[2]) then
+                    -- 配置约定: param1=品质(param2=0不限), param2=类型(param1=0不限)
+                    -- 事件上报: params[1]=类型(type1), params[2]=品质(type2)
+                    if (condition.params[2] == 0 or params[1] == condition.params[2])
+                        and (condition.params[1] == 0 or params[2] == condition.params[1]) then
                         condition.now_value = condition.now_value + change_cnt
                         if condition.now_value >= condition.target_value then
                             condition.is_complete = 1
@@ -698,10 +718,14 @@ function MissionLogic.CheckCondition(condition_id, params, change_cnt, cond_data
             elseif condition_id == MissionDef.EConditionIds.SINGLE_GET_ITEM_CNT then
                 if table.size(params) >= 3 and table.size(condition.params) >= 2 then
                     local is_match_arr_param = false
-                    for _, c_param in pairs(condition.arr_params) do
-                        if c_param == 0 or params[1] == c_param then
-                            is_match_arr_param = true
-                            break
+                    if not condition.arr_params or table.size(condition.arr_params) == 0 then
+                        is_match_arr_param = true
+                    else
+                        for _, c_param in pairs(condition.arr_params) do
+                            if c_param == 0 or params[1] == c_param then
+                                is_match_arr_param = true
+                                break
+                            end
                         end
                     end
                     if is_match_arr_param
@@ -747,10 +771,14 @@ function MissionLogic.CheckCondition(condition_id, params, change_cnt, cond_data
             elseif condition_id == MissionDef.EConditionIds.SINGLE_BOOTY_VALUE_CNT then
                 if table.size(params) >= 2 then
                     local is_match_arr_param = false
-                    for _, c_param in pairs(condition.arr_params) do
-                        if c_param == 0 or params[1] == c_param then
-                            is_match_arr_param = true
-                            break
+                    if not condition.arr_params or table.size(condition.arr_params) == 0 then
+                        is_match_arr_param = true
+                    else
+                        for _, c_param in pairs(condition.arr_params) do
+                            if c_param == 0 or params[1] == c_param then
+                                is_match_arr_param = true
+                                break
+                            end
                         end
                     end
                     if is_match_arr_param
@@ -867,10 +895,14 @@ function MissionLogic.CheckCondition(condition_id, params, change_cnt, cond_data
             elseif condition_id == MissionDef.EConditionIds.APPRAISE_SUCCESS_CNT then
                 if table.size(params) >= 1 then
                     local is_match_arr_param = false
-                    for _, c_param in pairs(condition.arr_params) do
-                        if c_param == 0 or params[1] == c_param then
-                            is_match_arr_param = true
-                            break
+                    if not condition.arr_params or table.size(condition.arr_params) == 0 then
+                        is_match_arr_param = true
+                    else
+                        for _, c_param in pairs(condition.arr_params) do
+                            if c_param == 0 or params[1] == c_param then
+                                is_match_arr_param = true
+                                break
+                            end
                         end
                     end
                     if is_match_arr_param then

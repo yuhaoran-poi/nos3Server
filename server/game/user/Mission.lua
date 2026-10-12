@@ -3210,6 +3210,7 @@ function Mission.GetLinearMissionReward(mission_info, linear_ids)
     local now_ts = moon.time()
     local add_list = {}
     local add_vitality = 0
+    local add_treasures = {}
     for _, mission_id in pairs(linear_ids) do
         local mission_state = mission_info.linear_info.complete_ids[mission_id]
         if not mission_state then
@@ -3232,6 +3233,16 @@ function Mission.GetLinearMissionReward(mission_info, linear_ids)
                 add_list[re_id] = add_list[re_id] + re_cnt
             end
         end
+        -- 聚合宝箱奖励(局外宝箱系统)
+        if linear_cfg.treasure_chest then
+            for chest_id, chest_cnt in pairs(linear_cfg.treasure_chest) do
+                if not add_treasures[chest_id] then
+                    add_treasures[chest_id] = chest_cnt
+                else
+                    add_treasures[chest_id] = add_treasures[chest_id] + chest_cnt
+                end
+            end
+        end
         if linear_cfg.vitality > 0 then
             add_vitality = add_vitality + linear_cfg.vitality
         end
@@ -3240,7 +3251,7 @@ function Mission.GetLinearMissionReward(mission_info, linear_ids)
     -- 整理道具奖励
     local add_items, add_coins = {}, {}
     ItemDefine.GetItemsFromCfg(add_list, 1, false, add_items, add_coins)
-    if table.size(add_items) + table.size(add_coins) <= 0 then
+    if table.size(add_items) + table.size(add_coins) <= 0 and table.size(add_treasures) <= 0 then
         moon.error(string.format("ItemDefine.GetItemsFromCfg config error add_list=%s", json.pretty_encode(add_list)))
         return ErrorCode.ConfigError
     end
@@ -3277,6 +3288,11 @@ function Mission.GetLinearMissionReward(mission_info, linear_ids)
         end
     end
     scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.TakeMissionReward)
+
+    -- 发放宝箱奖励(局外宝箱系统): 放在入包成功之后, 背包失败不白给宝箱
+    for chest_id, chest_cnt in pairs(add_treasures) do
+        scripts.Shop.AddTreasure(chest_id, chest_cnt)
+    end
 
     -- 触发添加活跃度
     Mission.TriggerCondition(MissionDef.EConditionIds.ACTIVITY_CNT, {}, add_vitality)
@@ -3388,6 +3404,7 @@ function Mission.GetVitalityAwardReward(mission_info, vitality_type, award_ids)
     end
 
     local add_list = {}
+    local add_treasures = {}
     for _, award_id in pairs(award_ids) do
         local award_cfg = registry.get_award(award_id, sub_type)
         if not award_cfg or not award_cfg.award then
@@ -3410,12 +3427,22 @@ function Mission.GetVitalityAwardReward(mission_info, vitality_type, award_ids)
                 add_list[re_id] = add_list[re_id] + re_cnt
             end
         end
+        -- 聚合宝箱奖励(局外宝箱系统)
+        if award_cfg.treasure_chest then
+            for chest_id, chest_cnt in pairs(award_cfg.treasure_chest) do
+                if not add_treasures[chest_id] then
+                    add_treasures[chest_id] = chest_cnt
+                else
+                    add_treasures[chest_id] = add_treasures[chest_id] + chest_cnt
+                end
+            end
+        end
     end
 
     -- 整理道具奖励
     local add_items, add_coins = {}, {}
     ItemDefine.GetItemsFromCfg(add_list, 1, false, add_items, add_coins)
-    if table.size(add_items) + table.size(add_coins) <= 0 then
+    if table.size(add_items) + table.size(add_coins) <= 0 and table.size(add_treasures) <= 0 then
         moon.error(string.format("GetVitalityAwardReward config error add_list=%s", json.pretty_encode(add_list)))
         return ErrorCode.ConfigError
     end
@@ -3450,6 +3477,11 @@ function Mission.GetVitalityAwardReward(mission_info, vitality_type, award_ids)
     end
     scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.TakeMissionReward)
 
+    -- 发放宝箱奖励(局外宝箱系统): 放在入包成功之后, 背包失败不白给宝箱
+    for chest_id, chest_cnt in pairs(add_treasures) do
+        scripts.Shop.AddTreasure(chest_id, chest_cnt)
+    end
+
     -- 记录已领取档位
     local now_ts = moon.time()
     for _, award_id in pairs(award_ids) do
@@ -3473,6 +3505,7 @@ function Mission.GetActivityMissionReward(mission_info, activity_ids)
     local add_list = {}
     local add_vitality = 0
     local add_activity_vitality = {}
+    local add_treasures = {}
     for _, mission_id in pairs(activity_ids) do
         local mission_state = mission_info.activity_info.complete_ids[mission_id]
         if not mission_state then
@@ -3492,11 +3525,30 @@ function Mission.GetActivityMissionReward(mission_info, activity_ids)
         if activity_cfg.end_time and activity_cfg.end_time ~= 0 and now_ts > activity_cfg.end_time then
             return ErrorCode.MissionOverTime
         end
+        -- 赛季类任务(鬼门关/鬼王入侵/封魔塔)只允许领取当前赛季的:
+        -- 旧赛季已完成未领的任务统一由 check_season_activity_reset 转邮件补发,
+        -- 防止赛季切换后在线玩家(重置仅登录时执行)直接跨赛季领取旧赛季奖励
+        if SEASON_ACTIVITY_TYPES[activity_cfg.type] then
+            local cur_season = get_cur_season_id(now_ts)
+            if cur_season > 0 and (mission_info.activity_info.season_id or 0) ~= cur_season then
+                return ErrorCode.MissionOverTime
+            end
+        end
         for re_id, re_cnt in pairs(activity_cfg.rewards) do
             if not add_list[re_id] then
                 add_list[re_id] = re_cnt
             else
                 add_list[re_id] = add_list[re_id] + re_cnt
+            end
+        end
+        -- 聚合宝箱奖励(局外宝箱系统)
+        if activity_cfg.treasure_chest then
+            for chest_id, chest_cnt in pairs(activity_cfg.treasure_chest) do
+                if not add_treasures[chest_id] then
+                    add_treasures[chest_id] = chest_cnt
+                else
+                    add_treasures[chest_id] = add_treasures[chest_id] + chest_cnt
+                end
             end
         end
         if activity_cfg.vitality > 0 then
@@ -3512,7 +3564,7 @@ function Mission.GetActivityMissionReward(mission_info, activity_ids)
     -- 整理道具奖励
     local add_items, add_coins = {}, {}
     ItemDefine.GetItemsFromCfg(add_list, 1, false, add_items, add_coins)
-    if table.size(add_items) + table.size(add_coins) <= 0 then
+    if table.size(add_items) + table.size(add_coins) <= 0 and table.size(add_treasures) <= 0 then
         moon.error(string.format("ItemDefine.GetItemsFromCfg config error add_list=%s", json.pretty_encode(add_list)))
         return ErrorCode.ConfigError
     end
@@ -3549,6 +3601,11 @@ function Mission.GetActivityMissionReward(mission_info, activity_ids)
         end
     end
     scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.TakeMissionReward)
+
+    -- 发放宝箱奖励(局外宝箱系统): 放在入包成功之后, 背包失败不白给宝箱
+    for chest_id, chest_cnt in pairs(add_treasures) do
+        scripts.Shop.AddTreasure(chest_id, chest_cnt)
+    end
 
     -- 累加活动活跃点(按活动类型分池)
     local activity_info = mission_info.activity_info
@@ -3576,6 +3633,7 @@ function Mission.GetAchievementMissionReward(mission_info, achivement_ids)
     local now_ts = moon.time()
     local add_list = {}
     local add_vitality = 0
+    local add_treasures = {}
     for _, mission_id in pairs(achivement_ids) do
         local mission_state = mission_info.achivement_info.complete_ids[mission_id]
         if not mission_state then
@@ -3595,6 +3653,16 @@ function Mission.GetAchievementMissionReward(mission_info, achivement_ids)
                 add_list[re_id] = add_list[re_id] + re_cnt
             end
         end
+        -- 聚合宝箱奖励(局外宝箱系统)
+        if achievement_cfg.treasure_chest then
+            for chest_id, chest_cnt in pairs(achievement_cfg.treasure_chest) do
+                if not add_treasures[chest_id] then
+                    add_treasures[chest_id] = chest_cnt
+                else
+                    add_treasures[chest_id] = add_treasures[chest_id] + chest_cnt
+                end
+            end
+        end
         if achievement_cfg.vitality > 0 then
             add_vitality = add_vitality + achievement_cfg.vitality
         end
@@ -3603,7 +3671,7 @@ function Mission.GetAchievementMissionReward(mission_info, achivement_ids)
     -- 整理道具奖励
     local add_items, add_coins = {}, {}
     ItemDefine.GetItemsFromCfg(add_list, 1, false, add_items, add_coins)
-    if table.size(add_items) + table.size(add_coins) <= 0 then
+    if table.size(add_items) + table.size(add_coins) <= 0 and table.size(add_treasures) <= 0 then
         moon.error(string.format("ItemDefine.GetItemsFromCfg config error add_list=%s", json.pretty_encode(add_list)))
         return ErrorCode.ConfigError
     end
@@ -3640,6 +3708,11 @@ function Mission.GetAchievementMissionReward(mission_info, achivement_ids)
         end
     end
     scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.TakeMissionReward)
+
+    -- 发放宝箱奖励(局外宝箱系统): 放在入包成功之后, 背包失败不白给宝箱
+    for chest_id, chest_cnt in pairs(add_treasures) do
+        scripts.Shop.AddTreasure(chest_id, chest_cnt)
+    end
 
     -- 累加成就点
     if add_vitality > 0 then

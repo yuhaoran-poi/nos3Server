@@ -71,8 +71,8 @@ local MissionDef = {
         TOTAL_RESCUE_CNT = 57,           -- 累计救人次数
         TOTAL_GAME_TIME = 58,            -- 累计游戏时长
         CLEAR_TIME_LIMIT = 59,           -- 通关param_arr章节(0=任意)且完美通关(param2=1时要求)且时长<=param1秒的次数(仅统计成功通关的对局时长)
-        BRING_OUT_ITEM_CNT = 60,         -- 单局带出X类型Y品质材料数量
-        TOTAL_BRING_OUT_ITEM_CNT = 61,   -- 累计带出X类型Y品质材料数量
+        BRING_OUT_ITEM_CNT = 60,         -- 单局带出X品质(param1,0=不限)Y类型(param2,0=不限)材料数量
+        TOTAL_BRING_OUT_ITEM_CNT = 61,   -- 累计带出X品质(param1,0=不限)Y类型(param2,0=不限)材料数量
         SPECIFY_ROLE_BATTLE_CNT = 62,    -- 指定X角色完成对局次数
         BATTLE_WEIGHT_LOAD = 63,         -- 单局负重使用量
         TRADE_HOUSE_EARN = 64,           -- 交易行收益金额

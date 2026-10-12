@@ -1596,14 +1596,40 @@ function Room.GameSettle(settle_info)
         end
     end
 
-    if settle_info.bring_out_items and table.size(settle_info.bring_out_items) > 0 then
-        -- 单局带出材料数量 / 累计带出材料数量
-        for _, item in pairs(settle_info.bring_out_items) do
-            local bring_cnt = item.item_count or item.count or 1
+    -- 带出材料任务埋点(单局/累计): 协议PBGameSettle无bring_out_items字段,
+    -- 由局内战利品booty_items换算(item_id → 局外表 type1=类型 / type2=品质)
+    if settle_info.booty_items and table.size(settle_info.booty_items) > 0 then
+        -- 先按 类型+品质 聚合: 单局条件是覆盖型, 同品质多种材料需合计后再报,
+        -- 否则逐事件覆盖会丢失前面的计数
+        local bring_agg = {}
+        for item_id, item_count in pairs(settle_info.booty_items) do
+            local item_type, quality = 0, 0
+            local item_cfg = GameCfg.Item[item_id]
+            if item_cfg then
+                item_type = item_cfg.type1 or 0
+                quality = item_cfg.type2 or 0
+            else
+                local uniq_cfg = GameCfg.UniqueItem[item_id]
+                if uniq_cfg then
+                    item_type = uniq_cfg.type1 or 0
+                    quality = uniq_cfg.type2 or 0
+                end
+            end
+            local agg_key = item_type * 100 + quality
+            local agg = bring_agg[agg_key]
+            if not agg then
+                agg = { item_type = item_type, quality = quality, cnt = 0 }
+                bring_agg[agg_key] = agg
+            end
+            agg.cnt = agg.cnt + item_count
+        end
+        for _, agg in pairs(bring_agg) do
+            -- 单局带出X类型Y品质材料数量(覆盖型,取单局值)
             add_condition(MissionDef.EConditionIds.BRING_OUT_ITEM_CNT,
-                { item.item_type, item.quality }, bring_cnt)
+                { agg.item_type, agg.quality }, agg.cnt)
+            -- 累计带出X类型Y品质材料数量
             add_condition(MissionDef.EConditionIds.TOTAL_BRING_OUT_ITEM_CNT,
-                { item.item_type, item.quality }, bring_cnt)
+                { agg.item_type, agg.quality }, agg.cnt)
         end
     end
 
