@@ -1565,7 +1565,18 @@ function Mission.IsActivityTypeOpen(activity_type)
     if not type_cfg then
         return true
     end
-    return type_cfg.type2 == 1
+    if type_cfg.type2 ~= 1 then
+        return false
+    end
+    -- 类型级时间窗(0=不限): 限制赛季活动(鬼门关/鬼王入侵/封魔塔)等任务的可执行与领取区间,
+    -- 边界语义与任务级一致: [start_time, end_time);
+    -- 不影响赛季刷新/重置(仍由赛季号驱动), 窗口外已完成未领奖励由赛季切换邮件补发
+    local now_ts = moon.time()
+    if (type_cfg.start_time and type_cfg.start_time ~= 0 and now_ts < type_cfg.start_time)
+        or (type_cfg.end_time and type_cfg.end_time ~= 0 and now_ts >= type_cfg.end_time) then
+        return false
+    end
+    return true
 end
 
 function Mission.CheckActivityInfo(mission_info, now_ts, new_complete_activity_ids)
@@ -3307,7 +3318,8 @@ local function get_period_award(award_id, expect_type)
         or not cfg.award_target or cfg.award_target <= 0 or not cfg.award then
         return nil
     end
-    return { award_target = cfg.award_target, award = cfg.award }
+    -- treasure_chest 必须透传, 否则领奖处的宝箱聚合永远拿到 nil
+    return { award_target = cfg.award_target, award = cfg.award, treasure_chest = cfg.treasure_chest }
 end
 
 -- 点数类型解析: 静态表直接命中; >ActivityBase 解析为活动registry+活动类型id
@@ -3334,7 +3346,7 @@ Mission.vitality_registries = {
             if not cfg or not cfg.award_target or not cfg.award then
                 return nil
             end
-            return { award_target = cfg.award_target, award = cfg.award }
+            return { award_target = cfg.award_target, award = cfg.award, treasure_chest = cfg.treasure_chest }
         end,
     },
     [MissionDef.EVitalityType.PeriodDay] = {
@@ -3365,7 +3377,7 @@ Mission.vitality_registries = {
             if not cfg or cfg.type ~= activity_type or not cfg.award_target or not cfg.award then
                 return nil
             end
-            return { award_target = cfg.award_target, award = cfg.award }
+            return { award_target = cfg.award_target, award = cfg.award, treasure_chest = cfg.treasure_chest }
         end,
         get_total = function(vitality_info, activity_type)
             return ((vitality_info and vitality_info.total_vitality) or {})[activity_type] or 0
