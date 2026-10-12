@@ -210,8 +210,8 @@ function Auction.OnAuctionLogSaleMail(auction_log, need_save)
     end
 
     local auction_cfg = GameCfg.TransactionConfig[2]
-    if not auction_cfg or not auction_cfg.sell_email or not auction_cfg.order_currency then
-        moon.error("OnAuctionLogSaleMail auction_cfg.sell_email or auction_cfg.order_currency not found = %s")
+    if not auction_cfg or not auction_cfg.sell_email or not auction_cfg.sell_currency then
+        moon.error("OnAuctionLogSaleMail auction_cfg.sell_email or auction_cfg.sell_currency not found = %s")
         return
     end
     local player_auction_data = scripts.UserModel.GetAuctionData()
@@ -220,8 +220,8 @@ function Auction.OnAuctionLogSaleMail(auction_log, need_save)
     end
 
     local add_coins = {}
-    add_coins[auction_cfg.order_currency] = {
-        coin_id = auction_cfg.order_currency,
+    add_coins[auction_cfg.sell_currency] = {
+        coin_id = auction_cfg.sell_currency,
         coin_count = auction_log.deal_price - auction_log.auction_tax,
     }
     -- 发送邮件
