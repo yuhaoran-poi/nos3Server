@@ -36,6 +36,10 @@ function Season.Init()
         end
         Seasons = SeasonDef.newSeasonPlayerData()
         local cur_season_id = res
+        -- 必须显式绑定当前赛季号: newSeasonPlayerData 默认 cur_season_id=0,
+        -- 漏设会导致 Season.Start 误判"0→1赛季切换"并触发 Gods.SeasonChange
+        -- 把新号刚初始化的神明等级清零(全量新号神像 lv=0 的根因)
+        Seasons.cur_season_id = cur_season_id
         local season_data = SeasonDef.newSeasonData()
         season_data.season_id = cur_season_id
         season_data.season_beg_ts = moon.time()

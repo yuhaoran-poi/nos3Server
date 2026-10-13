@@ -32,6 +32,21 @@ function Gods.Init()
         gods = GodsDef.newUserGods()
         scripts.UserModel.SetGods(gods)
     end
+
+    -- 存量校准: 历史数据(旧默认值/赛季重置bug)存在 lv=0 的神像,
+    -- 0 级查不到 GodLevel[0] 无法升级, 统一校准为初始 1 级
+    if gods.gods_image then
+        local calibrated = false
+        for _, god_image in pairs(gods.gods_image) do
+            if (god_image.lv or 0) < 1 then
+                god_image.lv = 1
+                calibrated = true
+            end
+        end
+        if calibrated then
+            scripts.UserModel.AddDirtyModule("Gods")
+        end
+    end
 end
 
 function Gods.Start(isnew)
@@ -191,7 +206,9 @@ function Gods.SeasonChange()
     end
 
     for _, god_image in pairs(gods.gods_image) do
-        god_image.lv = 0
+        -- 重置到初始 1 级而不是 0 级: GodLevel 表从 1 开始, 0 级会因
+        -- GodLevel[0] 不存在导致升级永远报"配置不存在"
+        god_image.lv = 1
     end
     for _, god_block in pairs(gods.gods_block) do
         god_block.burn_incense_id = 0
