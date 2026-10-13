@@ -377,7 +377,7 @@ function SeasonPass.PBGetSeasonPassRewardReqCmd(req)
         if ret_code ~= ErrorCode.None then
             return context.S2C(context.net_id, CmdCode.PBGetSeasonPassRewardRspCmd, {
                 code = ret_code,
-                error = "尝试添加道具失败",
+                error = "仓库已满,领取失败",
                 uid = context.uid,
             }, req.msg_context.stub_id)
         end

@@ -494,7 +494,7 @@ function Shop.PBShopBuyReqCmd(req)
                 use_mail = true
             else
                 rsp_msg.code = ret_code
-                rsp_msg.error = "尝试添加道具失败"
+                rsp_msg.error = "仓库已满，领取失败"
                 return context.S2C(context.net_id, CmdCode.PBShopBuyRspCmd, rsp_msg, req.msg_context.stub_id)
             end
         end
