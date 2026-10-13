@@ -344,6 +344,14 @@ function Auction.CheckOnSaleCnt(player_auction_data)
             Auction.SaveAuctionInfoNow()
         end
     end
+
+    -- 基线单向校准: 与 Trade.CheckOnSaleCnt 同步, 配置上调 order_num 后
+    -- 老玩家容量快照低于新基线时自动抬升(只增不减)
+    if auction_cfg and auction_cfg.order_num
+        and player_auction_data.simple_info.box_capacity < auction_cfg.order_num then
+        player_auction_data.simple_info.box_capacity = auction_cfg.order_num
+        Auction.SaveAuctionInfoNow()
+    end
 end
 
 function Auction.PBGetAuctionInfoReqCmd(req)

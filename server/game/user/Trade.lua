@@ -524,13 +524,14 @@ function Trade.CheckOnSaleCnt(player_trade_data)
         end
     end
 
-    -- -- 临时增加交易容量,后续再调整
-    -- if player_trade_data.simple_info.box_capacity ~= trade_cfg.order_num then
-    --     player_trade_data.simple_info.box_capacity = trade_cfg.order_num
-    --     player_trade_data.simple_info.can_onsale_cnt = trade_cfg.account_market
-    --     -- Trade.SaveTradeInfoNow()
-    --     scripts.UserModel.AddDirtyModule("Trade")
-    -- end
+    -- 基线单向校准: 配置上调 order_num 后, 老玩家的容量快照低于新基线时自动抬升.
+    -- 只增不减(<判断), 不会覆盖镇山之宝等渠道加出的容量; 上架校验读玩家 box_capacity,
+    -- 不校准的话改配置只对新号生效, 老玩家永远是初始化时的快照值
+    if trade_cfg and trade_cfg.order_num
+        and player_trade_data.simple_info.box_capacity < trade_cfg.order_num then
+        player_trade_data.simple_info.box_capacity = trade_cfg.order_num
+        scripts.UserModel.AddDirtyModule("Trade")
+    end
 end
 
 function Trade.AddCapacity(add_num)
