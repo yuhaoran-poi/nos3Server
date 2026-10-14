@@ -1092,6 +1092,11 @@ function Role.UpLv(roleid, add_exp)
     end
 
     if table.size(new_lv_exp) > 0 then
+        if roleid == roles.battle_role_id then
+            -- 同步给房间其他人
+            scripts.Room.SyncRoleInfo(role_info)
+        end
+
         Role.GetLvMoreThanNum(roleid, new_lv_exp)
     end
 
@@ -1134,6 +1139,11 @@ function Role.GameAddExp(roleid, add_exp)
     role_info.exp = new_exp
 
     if table.size(new_lv_exp) > 0 then
+        if roleid == roles.battle_role_id then
+            -- 同步给房间其他人
+            scripts.Room.SyncRoleInfo(role_info)
+        end
+
         Role.GetLvMoreThanNum(roleid, new_lv_exp)
     end
 
@@ -1236,6 +1246,11 @@ function Role.UpExp(roleid, exp_cnt)
     role_info.exp = role_info.exp + exp_cnt
 
     if table.size(new_lv_exp) > 0 then
+        if roleid == roles.battle_role_id then
+            -- 同步给房间其他人
+            scripts.Room.SyncRoleInfo(role_info)
+        end
+
         Role.GetLvMoreThanNum(roleid, new_lv_exp)
     end
 
