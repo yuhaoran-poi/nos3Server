@@ -64,8 +64,8 @@ local MissionDef = {
         TOTAL_DAMAGE = 50,               -- 累计局内伤害总量
         SINGLE_HEAL_REACH = 51,          -- 单局治疗总量达到阈值
         TOTAL_HEAL = 52,                 -- 累计局内治疗总量
-        OPEN_CONTAINER_CNT = 53,         -- 局内开启X类型Y品质容器数量
-        TOTAL_OPEN_CONTAINER_CNT = 54,   -- 累计开启X类型Y品质容器数量
+        OPEN_CONTAINER_CNT = 53,         -- 局内开启X品质(param1,0=不限)Y类型(param2,0=不限)容器数量
+        TOTAL_OPEN_CONTAINER_CNT = 54,   -- 累计开启X品质(param1,0=不限)Y类型(param2,0=不限)容器数量
         FALL_LIMIT_CNT = 55,             -- 本局倒地次数不超过param1计1次
         TOTAL_FALL_CNT = 56,             -- 累计倒地次数
         TOTAL_RESCUE_CNT = 57,           -- 累计救人次数
