@@ -377,14 +377,16 @@ function Gods.PBGodsUpLvReqCmd(req)
             uid = context.uid,
         }, req.msg_context.stub_id)
     end
-    local cur_season_score = scripts.Grade.GetCurSeasonScore()
-    if cur_season_score < level_cfg.unlock_rank then
-        return context.S2C(context.net_id, CmdCode.PBGodsUpLvRspCmd, {
-            code = ErrorCode.GodUnlockRankNotEnough,
-            error = "段位不足",
-            uid = context.uid,
-        }, req.msg_context.stub_id)
-    end
+    -- [临时] 注释段位限制: 赛季/段位系统尚未接通, 玩家积分普遍为0会被全部拦在神明升级外;
+    -- 赛季接通后恢复此校验(注意恢复时与策划确认 unlock_rank 语义: 段位积分值 vs 段位等级)
+    -- local cur_season_score = scripts.Grade.GetCurSeasonScore()
+    -- if cur_season_score < level_cfg.unlock_rank then
+    --     return context.S2C(context.net_id, CmdCode.PBGodsUpLvRspCmd, {
+    --         code = ErrorCode.GodUnlockRankNotEnough,
+    --         error = "段位不足",
+    --         uid = context.uid,
+    --     }, req.msg_context.stub_id)
+    -- end
 
     -- 计算消耗资源
     local cost_items = {}
