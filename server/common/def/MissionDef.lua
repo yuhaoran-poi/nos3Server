@@ -31,7 +31,7 @@ local MissionDef = {
         RECHARGE_CNT = 14,       -- 充值金额
         GET_TREASURE_CNT = 15,   -- 累计获得宝箱数量
         OPEN_TREASURE_CNT = 16,  -- 累计开启宝箱数量
-        LIGHT_EQP_CNT = 17,      -- 开光X品质Y类型装备次数
+        LIGHT_EQP_CNT = 17,      -- 开光param_arr品质(0/空=不限,白蓝紫金红)param1类型(0=不限)装备次数
         APPRAISE_ANTIQUE_CNT = 18, -- 鉴定X品质Y类型古董次数
         ROLE_STAR_CNT = 22,        -- 角色达到X星级的数量
         ROLE_LEVEL_CNT = 23,        -- 角色达到X等级的数量

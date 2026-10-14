@@ -549,10 +549,10 @@ function MissionLogic.CheckCondition(condition_id, params, change_cnt, cond_data
                 is_change = true
             elseif condition_id == MissionDef.EConditionIds.OPEN_CONTAINER_CNT then
                 -- 策划约定: param1=品质(0=不限,1白~5红), param2=类型(0=全部,1盒子~6宝藏)
-                -- 事件上报: params[1]=pot_type(类型), params[2]=pot_quality(品质)
+                -- 事件上报(Room.lua)与参数同序: params[1]=品质, params[2]=类型
                 if table.size(params) >= 2 and table.size(condition.params) >= 2 then
-                    if (condition.params[2] == 0 or params[1] == condition.params[2])
-                        and (condition.params[1] == 0 or params[2] == condition.params[1]) then
+                    if (condition.params[1] == 0 or params[1] == condition.params[1])
+                        and (condition.params[2] == 0 or params[2] == condition.params[2]) then
                         condition.now_value = change_cnt
                         if condition.now_value >= condition.target_value then
                             condition.is_complete = 1
@@ -562,10 +562,10 @@ function MissionLogic.CheckCondition(condition_id, params, change_cnt, cond_data
                 end
             elseif condition_id == MissionDef.EConditionIds.TOTAL_OPEN_CONTAINER_CNT then
                 -- 策划约定: param1=品质(0=不限,1白~5红), param2=类型(0=全部,1盒子~6宝藏)
-                -- 事件上报: params[1]=pot_type(类型), params[2]=pot_quality(品质)
+                -- 事件上报(Room.lua)与参数同序: params[1]=品质, params[2]=类型
                 if table.size(params) >= 2 and table.size(condition.params) >= 2 then
-                    if (condition.params[2] == 0 or params[1] == condition.params[2])
-                        and (condition.params[1] == 0 or params[2] == condition.params[1]) then
+                    if (condition.params[1] == 0 or params[1] == condition.params[1])
+                        and (condition.params[2] == 0 or params[2] == condition.params[2]) then
                         condition.now_value = condition.now_value + change_cnt
                         if condition.now_value >= condition.target_value then
                             condition.is_complete = 1

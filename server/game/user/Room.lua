@@ -1548,11 +1548,12 @@ function Room.GameSettle(settle_info)
 
     if settle_info.total_open_cnt and table.size(settle_info.total_open_cnt) > 0 then
         -- 局内开启容器数量
+        -- 上报顺序与策划参数同序: params[1]=pot_quality(品质), params[2]=pot_type(类型)
         for _, container in pairs(settle_info.total_open_cnt) do
             add_condition(MissionDef.EConditionIds.OPEN_CONTAINER_CNT,
-                { container.pot_type, container.pot_quality }, container.open_cnt)
+                { container.pot_quality, container.pot_type }, container.open_cnt)
             add_condition(MissionDef.EConditionIds.TOTAL_OPEN_CONTAINER_CNT,
-                { container.pot_type, container.pot_quality }, container.open_cnt)
+                { container.pot_quality, container.pot_type }, container.open_cnt)
         end
     end
 
