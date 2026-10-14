@@ -709,7 +709,7 @@ function Gods.PBGodsBurnIncenseReqCmd(req)
     -- 检查资源是否足够
     local err_code_items = scripts.Bag.CheckItemsEnough(BagDef.BagType.Cangku, cost_items, {})
     if err_code_items ~= ErrorCode.None then
-        return context.S2C(context.net_id, CmdCode.PBGodsBlockUnlockRspCmd, {
+        return context.S2C(context.net_id, CmdCode.PBGodsBurnIncenseRspCmd, {
             code = ErrorCode.ItemNotExist,
             error = "消耗不足",
             uid = context.uid,
@@ -717,7 +717,7 @@ function Gods.PBGodsBurnIncenseReqCmd(req)
     end
     local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
     if err_code_coins ~= ErrorCode.None then
-        return context.S2C(context.net_id, CmdCode.PBGodsBlockUnlockRspCmd, {
+        return context.S2C(context.net_id, CmdCode.PBGodsBurnIncenseRspCmd, {
             code = ErrorCode.CoinNotExist,
             error = "消耗不足",
             uid = context.uid,
@@ -735,7 +735,7 @@ function Gods.PBGodsBurnIncenseReqCmd(req)
         err_code_del = scripts.Bag.DelItems(BagDef.BagType.Cangku, cost_items, {}, change_log)
         if err_code_del ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(change_log)
-            return context.S2C(context.net_id, CmdCode.PBGodsBlockUnlockRspCmd, {
+            return context.S2C(context.net_id, CmdCode.PBGodsBurnIncenseRspCmd, {
                 code = ErrorCode.ItemNotExist,
                 error = "消耗不足",
                 uid = context.uid,
@@ -746,7 +746,7 @@ function Gods.PBGodsBurnIncenseReqCmd(req)
         err_code_del = scripts.Bag.DealCoins(cost_coins, change_log)
         if err_code_del ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(change_log)
-            return context.S2C(context.net_id, CmdCode.PBGodsBlockUnlockRspCmd, {
+            return context.S2C(context.net_id, CmdCode.PBGodsBurnIncenseRspCmd, {
                 code = ErrorCode.CoinNotExist,
                 error = "消耗不足",
                 uid = context.uid,
