@@ -916,6 +916,13 @@ function Room.PBCheckReturnRoomReqCmd(req)
             uid = context.uid,
             mode_monster_tags = mode_monster_tags,
         })
+
+        -- 加入队伍频道
+        local chat_ret = ChatLogic.JoinRoomChannel(context.roomid, context.uid)
+        if chat_ret.code ~= ErrorCode.None then
+            moon.error(string.format("JoinRoomChannel uid:%d, roomid:%d, code:%d, error:%s", context.uid,
+                context.roomid, chat_ret.code, chat_ret.error))
+        end
     end
     return context.S2C(context.net_id, CmdCode["PBCheckReturnRoomRspCmd"], res, req.msg_context.stub_id)
 end
