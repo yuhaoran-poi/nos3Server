@@ -3183,7 +3183,7 @@ function User.OpenUniqueGift(item_cfg, msg_data, bag_change_log)
             if not reward_cfg_list[item_id] then
                 reward_cfg_list[item_id] = 0
             end
-            reward_cfg_list[item_id] = reward_cfg_list[item_id] + (item_cnt * msg_data.use_item_cnt)
+            reward_cfg_list[item_id] = reward_cfg_list[item_id] + item_cnt
         end
     end
 
