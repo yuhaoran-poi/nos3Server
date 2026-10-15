@@ -4461,6 +4461,7 @@
 ---@field public antique_showcase_data PBAntiqueShowcaseDataS @古董展示柜数据
 ---@field public aweitems_data PBUserAweItems @镇山之宝数据
 ---@field public season_data PBSeasonPlayerData @赛季数据
+---@field public gods_data PBUserGods @神明数据
 
 
 ---@class PBUseSkinGiftReqCmd
@@ -4749,7 +4750,6 @@
 ---@field Season Season
 ---@field SeasonPass SeasonPass
 ---@field Shop Shop
----@field SkinTrade SkinTrade
 ---@field Team Team
 ---@field Trade Trade
 ---@field User User
@@ -4847,10 +4847,6 @@
 
 ---@class shopmgr_scripts
 ---@field Shopmgr Shopmgr
-
-
----@class skintrademgr_scripts
----@field SkinTrademgr SkinTrademgr
 
 
 ---@class teammgr_scripts

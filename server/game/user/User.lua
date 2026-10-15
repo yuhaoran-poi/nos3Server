@@ -427,6 +427,7 @@ function User.GetUserDetails()
     local showcase_result = scripts.AntiqueShowcase.GetAntiqueShowcaseInfo()
     local aweItems_result = scripts.AweItem.GetAweItemsInfo()
     local season_data = scripts.UserModel.GetSeasons()
+    local gods_data = scripts.UserModel.GetGods()
     return {
         user_attr = details_data,
         role_data = role_data,
@@ -438,6 +439,7 @@ function User.GetUserDetails()
         antique_showcase_data = showcase_result.antique_showcase_data,
         aweitems_data = aweItems_result,
         season_data = season_data,
+        gods_data = gods_data,
     }
 end
 
@@ -2100,6 +2102,7 @@ function User.PBGetOtherDetailReqCmd(req)
             antique_showcase_data = res.antique_showcase_data,
             aweitems_data = res.aweitems_data,
             season_data = res.season_data,
+            gods_data = res.gods_data,
         }, req.msg_context.stub_id)
     else
         return context.S2C(context.net_id, CmdCode.PBGetOtherDetailRspCmd, {

@@ -922,6 +922,7 @@ return {
 [100462] = { id=100462,color=7,min=439000,max=527000,exclusion={100456,100457,100458,100459,100460,100461,100462},attribute="StuntCdData_B_F" },
 [1000100] = { id=1000100,color=2,min=3,max=12,exclusion={},attribute="" },
 [1000101] = { id=1000101,color=3,min=3,max=12,exclusion={},attribute="" },
+[1000102] = { id=1000102,color=4,min=3,max=12,exclusion={},attribute="" },
 [1000103] = { id=1000103,color=4,min=3,max=12,exclusion={},attribute="" },
 [1000104] = { id=1000104,color=2,min=3,max=12,exclusion={},attribute="" },
 [1000105] = { id=1000105,color=5,min=3,max=12,exclusion={},attribute="" },

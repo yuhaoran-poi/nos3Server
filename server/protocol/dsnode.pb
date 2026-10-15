@@ -8194,2911 +8194,6 @@ bootyValue"
 "#
 
 "()bproto3
-¹ê
-
-user.protocommon.proto
-item.proto	bag.proto
-role.protoghost.protograde.proto
-shop.protoaweitem.protoseason.proto"ú
-
-PBUserAttr
-uid (Ruid!
-plateform_id (	RplateformId
-	nick_name (	RnickName
-	head_icon (RheadIcon
-sex (Rsex
-
-praise_num (R	praiseNum
-
-head_frame (R	headFrame.
-account_create_time (RaccountCreateTime#
-account_level	 (RaccountLevel
-account_exp
- (R
-accountExp
-guild_id (RguildId
-
-guild_name (	R	guildName8
-grade_show_info (2.PBGradeShowInfoRgradeShowInfo5
-cur_show_role (2.PBSimpleRoleDataRcurShowRole8
-pinch_face_data (2.PBPinchFaceDataRpinchFaceData
-title (Rtitle
-player_flag (R
-playerFlag
-online_time (R
-onlineTime&
-sum_online_time (RsumOnlineTime8
-cur_show_ghost (2.PBSimpleGhostDataRcurShowGhost
-	is_online (RisOnline
-chat_ban (RchatBan"
-chat_ban_time (RchatBanTime$
-last_chat_time (RlastChatTime9
-
-buff_datas (2.PBUserAttr.BuffDatasEntryR	buffDatas*
-battle_report_ids (RbattleReportIds7
-cur_model_role (2.PBSimpleRoleDataRcurModelRole+
-last_fresh_mode_ts (RlastFreshModeTsI
-BuffDatasEntry
-key (Rkey!
-value (2.PBBuffDataRvalue:8"/
-PBClientGetUsrSimInfoReqCmd
-uid (Ruid"z
-PBClientGetUsrSimInfoRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-info (2.PBUserAttrRinfo"0
-PBClientGetAllUserAttrReqCmd
-uid (Ruid"{
-PBClientGetAllUserAttrRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-info (2.PBUserAttrRinfo"Q
-PBSetUserAttrReqCmd
-uid (Ruid
-type (Rtype
-value (Rvalue"i
-PBSetUserAttrRspCmd
-code (Rcode
-error (	Rerror
-type (Rtype
-value (Rvalue"4
-PBUserAttrSyncCmd
-attr (2.PBUserAttrRattr"0
-PBClientGetUsrBagsInfoReqCmd
-uid (Ruid"­
-PBClientGetUsrBagsInfoRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid$
-	bags_info (2.PBBagsRbagsInfo+
-
-coins_info (2.PBUserCoinsR	coinsInfo"»
-PBClientLightReqCmd
-uid (Ruid
-roleid (Rroleid
-ghostid (Rghostid
-bag_name (	RbagName
-pos (Rpos
-	config_id (RconfigId
-uniqid (Runiqid"å
-PBClientLightRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-roleid (Rroleid
-ghostid (Rghostid
-bag_name (	RbagName
-pos (Rpos
-	config_id (RconfigId
-uniqid	 (Runiqid"`
-PBClientItemUpLvReqCmd
-uid (Ruid
-	config_id (RconfigId
-add_exp (RaddExp"Š
-PBClientItemUpLvRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-	config_id (RconfigId
-add_exp (RaddExp"r
-PBUseItemUpLvReqCmd
-uid (Ruid
-	target_id (RtargetId,
-
-cost_items (2.PBItemSimpleR	costItems"œ
-PBUseItemUpLvRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-	target_id (RtargetId,
-
-cost_items (2.PBItemSimpleR	costItems"I
-PBClientItemUpStarReqCmd
-uid (Ruid
-	config_id (RconfigId"s
-PBClientItemUpStarRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-	config_id (RconfigId"c
-PBClientItemRepairReqCmd
-uid (Ruid#
-repair_uniqid (RrepairUniqid
-pos (Rpos"
-PBClientItemRepairRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid#
-repair_uniqid (RrepairUniqid
-pos (Rpos"d
-PBGetOtherSimpleReqCmd
-uid (Ruid
-	quest_uid (RquestUid
-	nick_name (	RnickName"’
-PBGetOtherSimpleRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-	quest_uid (RquestUid
-info (2.PBUserAttrRinfo"G
-PBGetOtherDetailReqCmd
-uid (Ruid
-	quest_uid (RquestUid"ä
-PBGetOtherDetailRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-	quest_uid (RquestUid
-info (2.PBUserAttrRinfo(
-	role_data (2.PBRoleDataRroleData+
-
-ghost_data (2.PBGhostDataR	ghostDataU
-grade_show_infos (2+.PBGetOtherDetailRspCmd.GradeShowInfosEntryRgradeShowInfos'
-consume_bag	 (2.PBBagR
-consumeBag3
-model_role_data
- (2.PBRoleDataRmodelRoleData6
-show_images_data (2.PBUserImageRshowImagesDataK
-antique_showcase_data (2.PBAntiqueShowcaseDataSRantiqueShowcaseData4
-aweitems_data (2.PBUserAweItemsRaweitemsData4
-season_data (2.PBSeasonPlayerDataR
-seasonDataS
-GradeShowInfosEntry
-key (Rkey&
-value (2.PBGradeShowInfoRvalue:8"@
-PBUseSkinGiftReqCmd
-uid (Ruid
-gift_id (RgiftId"j
-PBUseSkinGiftRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-gift_id (RgiftId"q
-PBSureCompositeReqCmd
-uid (Ruid!
-composite_id (RcompositeId#
-composite_cnt (RcompositeCnt"›
-PBSureCompositeRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid!
-composite_id (RcompositeId#
-composite_cnt (RcompositeCnt"s
-PBRandomCompositeReqCmd
-uid (Ruid!
-composite_id (RcompositeId#
-composite_cnt (RcompositeCnt"
-PBRandomCompositeRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid!
-composite_id (RcompositeId#
-composite_cnt (RcompositeCnt"¿
-PBInlayTabooWordReqCmd
-uid (Ruid
-roleid (Rroleid!
-ghost_uniqid (RghostUniqid
-
-inlay_type (R	inlayType
-uniqid (Runiqid!
-tabooword_id (RtaboowordId"é
-PBInlayTabooWordRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-roleid (Rroleid!
-ghost_uniqid (RghostUniqid
-
-inlay_type (R	inlayType
-uniqid (Runiqid!
-tabooword_id (RtaboowordId"D
-PBModNickNameReqCmd
-uid (Ruid
-	nick_name (	RnickName"n
-PBModNickNameRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-	nick_name (	RnickName"ô
-PBUseItemReqCmd
-uid (Ruid
-use_item_id (R	useItemId 
-use_item_cnt (R
-useItemCntK
-choose_item_ids (2#.PBUseItemReqCmd.ChooseItemIdsEntryRchooseItemIds@
-ChooseItemIdsEntry
-key (Rkey
-value (Rvalue:8"
-PBUseItemRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-use_item_id (R	useItemId 
-use_item_cnt (R
-useItemCnt"
-PBUseUniqItemReqCmd
-uid (Ruid
-use_item_id (R	useItemId
-
-use_uniqid (R	useUniqid
-use_pos (RusePos"©
-PBUseUniqItemRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-use_item_id (R	useItemId
-
-use_uniqid (R	useUniqid
-use_pos (RusePos"D
-PBRefuseReturnRoomReqCmd
-uid (Ruid
-roomid (Rroomid"n
-PBRefuseReturnRoomRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-roomid (Rroomid"i
-PBItemChangeSkinReqCmd
-uid (Ruid$
-item_config_id (RitemConfigId
-skin_id (RskinId"“
-PBItemChangeSkinRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid$
-item_config_id (RitemConfigId
-skin_id (RskinId"•
- PBHeadFrameTitleChangeHeadReqCmd
-uid (Ruid 
-head_icon_id (R
-headIconId"
-head_frame_id (RheadFrameId
-title_id (RtitleId"¿
- PBHeadFrameTitleChangeHeadRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid 
-head_icon_id (R
-headIconId"
-head_frame_id (RheadFrameId
-title_id (RtitleId"+
-PBGetTreasureInfoReqCmd
-uid (Ruid"“
-PBGetTreasureInfoRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid<
-treasure_datas (2.PBTreasurePlayerDataRtreasureDatas"q
-PBOpenTreasureReqCmd
-uid (Ruid(
-open_treasure_id (RopenTreasureId
-
-open_count (R	openCount"¶
-PBOpenTreasureRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid6
-treasure_data (2.PBTreasureSingleRtreasureData*
-	add_items (2.PBItemSimpleRaddItems"]
-PBGetBattleReportSimpleReqCmd
-uid (Ruid*
-battle_report_ids (RbattleReportIds"ˆ
-PBGetBattleReportSimpleRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruide
-battle_report_infos (25.PBGetBattleReportSimpleRspCmd.BattleReportInfosEntryRbattleReportInfosD
-BattleReportInfosEntry
-key (Rkey
-value (	Rvalue:8"Ã
-PBGetBattleReportDetailReqCmd
-uid (Ruid
-	start_idx (RstartIdx
-end_idx (RendIdx
-
-chapter_id (R	chapterId
-
-difficulty (R
-difficulty
-	season_id (RseasonId"ˆ
-PBGetBattleReportDetailRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruide
-battle_report_infos (25.PBGetBattleReportDetailRspCmd.BattleReportInfosEntryRbattleReportInfosD
-BattleReportInfosEntry
-key (Rkey
-value (	Rvalue:8"e
-PBClientStrongRepairReqCmd
-uid (Ruid#
-repair_uniqid (RrepairUniqid
-pos (Rpos"
-PBClientStrongRepairRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid#
-repair_uniqid (RrepairUniqid
-pos (Rpos"^
-PBTestBagReqCmd!
-test_bag (2.PBBagRtestBag(
-	test_item (2.PBItemDataRtestItem"ˆ
-PBTestBagRspCmd
-code (Rcode
-error (	Rerror!
-test_bag (2.PBBagRtestBag(
-	test_item (2.PBItemDataRtestItemJé¢
-  
-
-  
-	
-  
-	
- 
-	
- 
-	
- 
-	
- 
-	
- 
-	
- 
-	
- 
-	
-	 
-{
-  1 ç©å®¶è´¦å·å±æ€§ä¿¡æ¯
-2S----------------------------------æ–°å¢åè®®----------------------------------//
-
-
-
- 
-
-  "
-
-  
-
-  
-
-   !
-
- 
-
- 
-
-
- 
-
- 
-
- #
-
- 
-
- 
-
- !"
-
- 
-
- 	
-
- 
-
-
- 
-#
- " 0-æœªé€‰ 1-ç”· 2-å¥³
-
-
- 	
-
- 
-
-
- 
-
- " ç‚¹èµ
-
-
- 	
-
- 
-
-
- 
-
- " å¤´åƒæ¡†
-
-
- 	
-
- 
-
-
- 
-!
- "" è´¦æˆ·åˆ›å»ºæ—¶é—´
-
-
- 	
-
- 
-
-
-  !
-(
-  è´¦æˆ·ç»éªŒ è´¦æˆ·ç­‰çº§
-
-
- 	
-
- 
-
-
- 
-
- 	
-
- 		
-
- 	
-
-
- 	
-
- 
-
- æˆ˜é˜ŸID
-
-
- 
-	
-
- 
-
-
-
- 
-
-
-  
-
- 
-
-
- 
-
- 
-1
- - æ®µä½ç®€ç•¥ä¿¡æ¯
-"	è¦†ç›–æ›´æ–°
-
-
- 
-
- '
-
- *,
-(
-  ("	è¦†ç›–æ›´æ–° æˆ˜æ–—è§’è‰²
-
-
-  
-
-  "
-
-  %'
-(
- !)" æè„¸æ•°æ®	è¦†ç›–æ›´æ–°
-
-
- !
-
- !#
-
- !&(
-#
- ""å½“å‰ä½©æˆ´çš„ç§°å·
-
-
- "
-
- "
-
- "
-
- # "ç©å®¶æ ‡ç­¾
-
-
- #
-
- #
-
- #
-&
- $!"æœ€åä¸€æ¬¡åœ¨çº¿æ—¶é—´
-
-
- $
-
- $
-
- $ 
-*
- %#"ç´¯è®¡åœ¨çº¿æ—¶é•¿ å•ä½ç§’
-
-
- %
-
- %
-
- % "
-
- &5"	è¦†ç›–æ›´æ–°
-
-
- &
-
- &(
-
- &24
-
- '"æ˜¯å¦åœ¨çº¿
-
-
- '
-
- '
-
- '
-1
- ) èŠå¤©ç¦è¨€ç›¸å…³
-" æ˜¯å¦ç¦è¨€
-
-
- )
-
- )
-
- )
-)
- *!" ç¦è¨€æ—¶é—´(ç»“æŸæ—¶é—´)
-
-
- *
-
- *
-
- * 
-!
- +"" ä¸Šæ¬¡å‘è¨€æ—¶é—´
-
-
- +
-
- +
-
- +!
-7
- -5 è´¦æˆ·åŠ æˆç›¸å…³
-" è´¦æˆ·åŠ æˆæ•°æ®
-
-
- -
-
- -)
-
- -24
-
- .5"
- æˆ˜æŠ¥id
-
-
- .
-
- .
-
- .)
-
- .24
-(
- /5" è¦†ç›–æ›´æ–° å±•ç¤ºè§’è‰²
-
-
- /
-
- /'
-
- /24
-6
- 0=") æœ€åä¸€æ¬¡æ›´æ–°æ¸¸æˆæ¨¡å¼ç¥¨æ—¶é—´
-
-
- 0
-
- 0 
-
- 0:<
-)
-4 8 å®¢æˆ·ç«¯è¯·æ±‚ç®€ç•¥æ•°æ®
-
-
-
-4#
-
- 7 åè®®æ•°æ®
-
-
- 7	
-
- 7
-
-
- 7
-6
-; A* å®¢æˆ·ç«¯è¯·æ±‚ç®€ç•¥æ•°æ® è¿”å›ä¿¡æ¯
-
-
-
-;#
-9
- =", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
- =	
-
- =
-
-
- =
-
->" é”™è¯¯ä¿¡æ¯
-
-
->
-
-
->
-
->
-
-?"
- ç”¨æˆ·ID
-
-
-?	
-
-?
-
-
-?
-
-@" ç®€ç•¥ä¿¡æ¯
-
-
-@
-
-@
-
-@
-2
-D H& å®¢æˆ·ç«¯è¯·æ±‚è´¦å·å±æ€§å…¨æ•°æ®
-
-
-
-D$
-
- G åè®®æ•°æ®
-
-
- G	
-
- G
-
-
- G
-?
-K Q3 å®¢æˆ·ç«¯è¯·æ±‚è´¦å·å±æ€§å…¨æ•°æ® è¿”å›ä¿¡æ¯
-
-
-
-K$
-9
- M", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
- M	
-
- M
-
-
- M
-
-N" é”™è¯¯ä¿¡æ¯
-
-
-N
-
-
-N
-
-N
-
-O"
- ç”¨æˆ·ID
-
-
-O	
-
-O
-
-
-O
-
-P" ç®€ç•¥ä¿¡æ¯
-
-
-P
-
-P
-
-P
-=
-T Y1 å®¢æˆ·ç«¯ä¿®æ”¹ä¸ªäººä¿¡æ¯æ•°æ®--ç±»å‹å—é™
-
-
-
-T
-
- V
-
- V
-
- V
-
- V
-7
-W"* ä¸ªäººä¿¡æ¯ç±»å‹ @see PBPersonInfoType
-
-
-W
-
-W
-
-W
-
-X" ä¸ªäººä¿¡æ¯å€¼
-
-
-X
-
-X
-
-X
-
-
-[ a
-
-
-[
-9
- ]", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
- ]
-
- ]
-
- ]
-
-^" é”™è¯¯ä¿¡æ¯
-
-
-^
-
-^
-
-^
-7
-_"* ä¸ªäººä¿¡æ¯ç±»å‹ @see PBPersonInfoType
-
-
-_
-
-_
-
-_
-
-`" ä¸ªäººä¿¡æ¯å€¼
-
-
-`
-
-`
-
-`
-/
-d f# æœåŠ¡å™¨åŒæ­¥ç©å®¶å±æ€§ä¿¡æ¯
-
-
-
-d
-
- e
-
- e
-
- e
-
- e
-/
-i m# å®¢æˆ·ç«¯è¯·æ±‚æ‰€æœ‰èƒŒåŒ…æ•°æ®
-
-
-
-i$
-
- l åè®®æ•°æ®
-
-
- l	
-
- l
-
-
- l
-
-
-	o v
-
-
-	o$
-9
-	 q", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
-	 q	
-
-	 q
-
-
-	 q
-
-	r" é”™è¯¯ä¿¡æ¯
-
-
-	r
-
-
-	r
-
-	r
-
-	s"
- ç”¨æˆ·ID
-
-
-	s	
-
-	s
-
-
-	s
-!
-	t$" æ‰€æœ‰èƒŒåŒ…æ•°æ®
-
-
-	t
-
-
-	t
-
-	t"#
-!
-	u$" æ‰€æœ‰è´§å¸æ•°æ®
-
-
-	u
-
-	u
-
-	u"#
-,
-
-y ‚ å®¢æˆ·ç«¯è¯·æ±‚--è£…å¤‡å¼€å…‰
-
-
-
-
-y
-
-
- {$
-
-
- {
-
-
- {
-
-
- {"#
-
-
-|
-
-
-|
-
-
-|
-
-
-|
-
-
-}
-
-
-}
-
-
-}
-
-
-}
-
-
-~
-
-
-~
-
-
-~
-
-
-~
-
-
-$
-
-
-
-
-
-
-
-
-"#
-
-
-€
-
-
-€
-
-
-€
-
-
-€
-
-
-
-
-
-
-
-
-
-
-
-
-
-„ 
-
-„
-:
- †$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
- †
-
- †
-
- †"#
-
-‡" é”™è¯¯ä¿¡æ¯
-
-
-‡
-
-
-‡
-
-‡
-
-ˆ$
-
-ˆ
-
-ˆ
-
-ˆ"#
-
-‰
-
-‰
-
-‰
-
-‰
-
-Š
-
-Š
-
-Š
-
-Š
-
-‹
-
-‹
-
-‹
-
-‹
-
-Œ$
-
-Œ
-
-Œ
-
-Œ"#
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-?
-’ —1 å®¢æˆ·ç«¯è¯·æ±‚--é“å…·ã€è§’è‰²ã€é¬¼å® å‡çº§
-
-
-’
-
- ”$
-
- ”
-
- ”
-
- ”"#
-
-•
-
-•
-
-•
-
-•
-
-–
-
-–
-
-–
-
-–
-
-™  
-
-™
-:
- ›$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
- ›
-
- ›
-
- ›"#
-
-œ" é”™è¯¯ä¿¡æ¯
-
-
-œ
-
-
-œ
-
-œ
-
-$
-
-
-
-
-
-"#
-
-
-
-
-
-
-
-
-
-Ÿ
-
-Ÿ
-
-Ÿ
-
-Ÿ
-3
-£ ¨% å®¢æˆ·ç«¯è¯·æ±‚--ä½¿ç”¨é“å…·å‡çº§
-
-
-£
-
- ¥$
-
- ¥
-
- ¥
-
- ¥"#
-
-¦
-
-¦
-
-¦
-
-¦
-
-§4
-
-§
-
-§
-
-§(
-
-§23
-
-ª ±
-
-ª
-:
- ¬$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
- ¬
-
- ¬
-
- ¬"#
-
-­" é”™è¯¯ä¿¡æ¯
-
-
-­
-
-
-­
-
-­
-
-®$
-
-®
-
-®
-
-®"#
-
-¯
-
-¯
-
-¯
-
-¯
-
-°4
-
-°
-
-°
-
-°(
-
-°23
--
-´ ¸ å®¢æˆ·ç«¯è¯·æ±‚--é“å…·å‡æ˜Ÿ
-
-
-´ 
-
- ¶$
-
- ¶
-
- ¶
-
- ¶"#
-
-·
-
-·
-
-·
-
-·
-
-º À
-
-º 
-:
- ¼$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
- ¼
-
- ¼
-
- ¼"#
-
-½" é”™è¯¯ä¿¡æ¯
-
-
-½
-
-
-½
-
-½
-
-¾$
-
-¾
-
-¾
-
-¾"#
-
-¿
-
-¿
-
-¿
-
-¿
--
-Ã È å®¢æˆ·ç«¯è¯·æ±‚--é“å…·ç»´ä¿®
-
-
-Ã 
-
- Å,
-
- Å
-
- Å
-
- Å*+
-*
-Æ$" è¦ä¿®å¤çš„è£…å¤‡å”¯ä¸€id
-
-
-Æ
-
-Æ
-
-Æ"#
-(
-Ç," è£…å¤‡æ‰€åœ¨çš„æ ¼å­å·
-
-
-Ç
-
-Ç
-
-Ç*+
-
-Ê Ñ
-
-Ê 
-:
- Ì$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
- Ì
-
- Ì
-
- Ì"#
-
-Í" é”™è¯¯ä¿¡æ¯
-
-
-Í
-
-
-Í
-
-Í
-
-Î,
-
-Î
-
-Î
-
-Î*+
-
-Ï$
-
-Ï
-
-Ï
-
-Ï"#
-(
-Ğ," è£…å¤‡æ‰€åœ¨çš„æ ¼å­å·
-
-
-Ğ
-
-Ğ
-
-Ğ*+
-1
-Ô Ú# å®¢æˆ·ç«¯è¯·æ±‚ä»–äººç®€ç•¥ä¿¡æ¯
-
-
-Ô
-
- × åè®®æ•°æ®
-
-
- ×	
-
- ×
-
-
- ×
-
-Ø
-
-Ø
-
-Ø
-
-Ø
-
-Ù$
-
-Ù
-
-Ù
-
-Ù"#
->
-İ ä0 å®¢æˆ·ç«¯è¯·æ±‚ä»–äººç®€ç•¥ä¿¡æ¯ è¿”å›ä¿¡æ¯
-
-
-İ
-:
- ß$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
- ß	
-
- ß
-
-
- ß"#
-
-à$" é”™è¯¯ä¿¡æ¯
-
-
-à
-
-
-à
-
-à"#
-
-á$" è‡ªå·±çš„uid
-
-
-á	
-
-á
-
-
-á"#
-
-â$" ä»–äººuid
-
-
-â
-
-â
-
-â"#
-
-ã$" ç®€ç•¥ä¿¡æ¯
-
-
-ã
-
-ã
-
-ã"#
-1
-ç ì# å®¢æˆ·ç«¯è¯·æ±‚ä»–äººè¯¦ç»†ä¿¡æ¯
-
-
-ç
-
- ê åè®®æ•°æ®
-
-
- ê	
-
- ê
-
-
- ê
-
-ë
-
-ë
-
-ë
-
-ë
->
-ï ÿ0 å®¢æˆ·ç«¯è¯·æ±‚ä»–äººè¯¦ç»†ä¿¡æ¯ è¿”å›ä¿¡æ¯
-
-
-ï
-:
- ñ$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
- ñ	
-
- ñ
-
-
- ñ"#
-
-ò$" é”™è¯¯ä¿¡æ¯
-
-
-ò
-
-
-ò
-
-ò"#
-
-ó$" è‡ªå·±çš„uid
-
-
-ó	
-
-ó
-
-
-ó"#
-
-ô$" ä»–äººuid
-
-
-ô
-
-ô
-
-ô"#
-
-õ$" è´¦å·ä¿¡æ¯
-
-
-õ
-
-õ
-
-õ"#
-
-ö$" è§’è‰²æ•°æ®
-
-
-ö
-
-ö
-
-ö"#
-
-÷$" é¬¼å® æ•°æ®
-
-
-÷
-
-÷
-
-÷"#
-
-ø<" æ®µä½ä¿¡æ¯
-
-
-ø#
-
-ø$4
-
-ø:;
-
-ù$" æ¶ˆè€—å“èƒŒåŒ…
-
-
-ù
-
-ù
-
-ù"#
-"
-	ú-" å±•ç¤ºè§’è‰²æ•°æ®
-
-
-	ú
-
-	ú"
-
-	ú*,
-(
-
-û*" å±•ç¤ºéƒ¨åˆ†å›¾é‰´æ•°æ®
-
-
-
-û
-
-
-û$
-
-
-û')
-%
-ü:" å¤è‘£å±•ç¤ºæŸœæ•°æ®
-
-
-ü
-
-ü4
-
-ü79
-"
-ı*" é•‡å±±ä¹‹å®æ•°æ®
-
-
-ı
-
-ı$
-
-ı')
-
-ş," èµ›å­£æ•°æ®
-
-
-ş
-
-ş&
-
-ş)+
-+
-‚ † å®¢æˆ·ç«¯ä½¿ç”¨çš®è‚¤ç¤¼åŒ…
-
-
-‚
-
- „$" è‡ªå·±çš„uid
-
-
- „	
-
- „
-
-
- „"#
-
-…$"
- ç¤¼åŒ…id
-
-
-…	
-
-…
-
-
-…"#
-
-ˆ 
-
-ˆ
-:
- Š$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
- Š	
-
- Š
-
-
- Š"#
-
-‹$" é”™è¯¯ä¿¡æ¯
-
-
-‹
-
-
-‹
-
-‹"#
-
-Œ$" è‡ªå·±çš„uid
-
-
-Œ	
-
-Œ
-
-
-Œ"#
-
-$"
- ç¤¼åŒ…id
-
-
-	
-
-
-
-
-"#
-%
-‘ – å®¢æˆ·ç«¯å›ºå®šåˆæˆ
-
-
-‘
-
- “,
-
- “
-
- “
-
- “*+
-
-”$"
- åˆæˆid
-
-
-”
-
-”
-
-”"#
-
-•$" åˆæˆæ•°é‡
-
-
-•
-
-•
-
-•"#
-
-˜ Ÿ
-
-˜
-:
- š,", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
- š
-
- š
-
- š*+
-
-›$" é”™è¯¯ä¿¡æ¯
-
-
-›
-
-
-›
-
-›"#
-
-œ,
-
-œ
-
-œ
-
-œ*+
-
-$"
- åˆæˆid
-
-
-
-
-
-
-"#
-
-$" åˆæˆæ•°é‡
-
-
-
-
-
-
-"#
-%
-¢ § å®¢æˆ·ç«¯éšæœºåˆæˆ
-
-
-¢
-
- ¤,
-
- ¤
-
- ¤
-
- ¤*+
-
-¥$"
- åˆæˆid
-
-
-¥
-
-¥
-
-¥"#
-
-¦$" åˆæˆæ•°é‡
-
-
-¦
-
-¦
-
-¦"#
-
-© °
-
-©
-:
- «,", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
- «
-
- «
-
- «*+
-
-¬$" é”™è¯¯ä¿¡æ¯
-
-
-¬
-
-
-¬
-
-¬"#
-
-­,
-
-­
-
-­
-
-­*+
-
-®$"
- åˆæˆid
-
-
-®
-
-®
-
-®"#
-
-¯$" åˆæˆæ•°é‡
-
-
-¯
-
-¯
-
-¯"#
-1
-³ »# æ³•å™¨æˆ–è€…å…«å¦ç‰Œé•¶åµŒè®³å­—
-
-
-³
-
- µ
-
- µ	
-
- µ
-
-
- µ
-
-¶"	è§’è‰²id
-
-
-¶
-
-¶
-
-¶
-
-·$"é¬¼å® å”¯ä¸€id
-
-
-·
-
-·
-
-·"#
-#
-¸$"1-æ³•å™¨ 2-å…«å¦ç‰Œ
-
-
-¸
-
-¸
-
-¸"#
-
-¹"	é“å…·id
-
-
-¹
-
-¹
-
-¹
-
-º$"	è®³å­—id
-
-
-º
-
-º
-
-º"#
-
-½ Ç
-
-½
-:
- ¿", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
- ¿	
-
- ¿
-
- ¿
-
-À" é”™è¯¯ä¿¡æ¯
-
-
-À
-
-
-À
-
-À
-
-Á
-
-Á	
-
-Á
-
-Á
-
-Â"	è§’è‰²id
-
-
-Â
-
-Â
-
-Â
-
-Ã$"é¬¼å® å”¯ä¸€id
-
-
-Ã
-
-Ã
-
-Ã"#
-#
-Ä$"1-æ³•å™¨ 2-å…«å¦ç‰Œ
-
-
-Ä
-
-Ä
-
-Ä"#
-
-Å"	é“å…·id
-
-
-Å
-
-Å
-
-Å
-
-Æ$"	è®³å­—id
-
-
-Æ
-
-Æ
-
-Æ"#
-
- Ê Î ä¿®æ”¹æ˜µç§°
-
-
- Ê
-
-  Ì
-
-  Ì
-
-  Ì
-
-  Ì
-
- Í#
-
- Í
-
- Í
-
- Í!"
-
-!Ğ Ö
-
-!Ğ
-:
-! Ò", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
-! Ò
-
-! Ò
-
-! Ò
-
-!Ó" é”™è¯¯ä¿¡æ¯
-
-
-!Ó
-
-
-!Ó
-
-!Ó
-
-!Ô
-
-!Ô
-
-!Ô
-
-!Ô
-
-!Õ#
-
-!Õ
-
-!Õ
-
-!Õ!"
-%
-"Ù ß å®¢æˆ·ç«¯ä½¿ç”¨é“å…·
-
-
-"Ù
-
-" Û
-
-" Û
-
-" Û
-
-" Û
-
-"Ü$
-
-"Ü
-
-"Ü
-
-"Ü"#
-
-"İ$
-
-"İ
-
-"İ
-
-"İ"#
-
-"Ş4
-
-"Ş
-
-"Ş)
-
-"Ş23
-
-#á è
-
-#á
-:
-# ã", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
-# ã
-
-# ã
-
-# ã
-
-#ä" é”™è¯¯ä¿¡æ¯
-
-
-#ä
-
-
-#ä
-
-#ä
-
-#å
-
-#å
-
-#å
-
-#å
-
-#æ$
-
-#æ
-
-#æ
-
-#æ"#
-
-#ç$
-
-#ç
-
-#ç
-
-#ç"#
-+
-$ë ñ å®¢æˆ·ç«¯ä½¿ç”¨å”¯ä¸€é“å…·
-
-
-$ë
-
-$ í
-
-$ í
-
-$ í
-
-$ í
-
-$î$
-
-$î
-
-$î
-
-$î"#
-
-$ï$
-
-$ï
-
-$ï
-
-$ï"#
-
-$ğ$
-
-$ğ
-
-$ğ
-
-$ğ"#
-
-%ó û
-
-%ó
-:
-% õ", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
-% õ
-
-% õ
-
-% õ
-
-%ö" é”™è¯¯ä¿¡æ¯
-
-
-%ö
-
-
-%ö
-
-%ö
-
-%÷
-
-%÷
-
-%÷
-
-%÷
-
-%ø$
-
-%ø
-
-%ø
-
-%ø"#
-
-%ù$
-
-%ù
-
-%ù
-
-%ù"#
-
-%ú$
-
-%ú
-
-%ú
-
-%ú"#
-%
-&ş ‚ æ‹’ç»é‡è¿å›æˆ˜æ–—
-
-
-&ş 
-
-& €
-
-& €
-
-& €
-
-& €
-
-&
-
-&
-
-&
-
-&
-
-'„ Š
-
-'„ 
-:
-' †", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
-' †
-
-' †
-
-' †
-
-'‡" é”™è¯¯ä¿¡æ¯
-
-
-'‡
-
-
-'‡
-
-'‡
-
-'ˆ
-
-'ˆ
-
-'ˆ
-
-'ˆ
-
-'‰
-
-'‰
-
-'‰
-
-'‰
-%
-( ’ ç»™é“å…·æ›´æ¢çš®è‚¤
-
-
-(
-
-( 
-
-( 
-
-( 
-
-( 
-
-($
-
-(
-
-(
-
-("#
-
-(‘,
-
-(‘
-
-(‘
-
-(‘*+
-
-)” ›
-
-)”
-:
-) –", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
-) –
-
-) –
-
-) –
-
-)—" é”™è¯¯ä¿¡æ¯
-
-
-)—
-
-
-)—
-
-)—
-
-)˜$
-
-)˜
-
-)˜
-
-)˜"#
-
-)™$
-
-)™
-
-)™
-
-)™"#
-
-)š,
-
-)š
-
-)š
-
-)š*+
-1
-* ¤# ç»™ç©å®¶æ›´æ¢å¤´åƒå’Œå¤´åƒæ¡†
-
-
-*(
-
-*  
-
-*  
-
-*  
-
-*  
-
-*¡$
-
-*¡
-
-*¡
-
-*¡"#
-
-*¢$
-
-*¢
-
-*¢
-
-*¢"#
-
-*£$
-
-*£
-
-*£
-
-*£"#
-
-+¦ ®
-
-+¦(
-:
-+ ¨", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
-+ ¨
-
-+ ¨
-
-+ ¨
-
-+©" é”™è¯¯ä¿¡æ¯
-
-
-+©
-
-
-+©
-
-+©
-
-+ª$
-
-+ª
-
-+ª
-
-+ª"#
-
-+«$
-
-+«
-
-+«
-
-+«"#
-
-+¬$
-
-+¬
-
-+¬
-
-+¬"#
-
-+­$
-
-+­
-
-+­
-
-+­"#
-
-,° ³
-
-,°
-
-, ²
-
-, ²
-
-, ²
-
-, ²
-
--µ »
-
--µ
-:
-- ·", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
-- ·
-
-- ·
-
-- ·
-
--¸" é”™è¯¯ä¿¡æ¯
-
-
--¸
-
-
--¸
-
--¸
-
--¹$
-
--¹
-
--¹
-
--¹"#
-
--º4
-
--º
-
--º+
-
--º23
-
-.¾ Ã å¼€å¯å®ç®±
-
-
-.¾
-
-. À
-
-. À
-
-. À
-
-. À
-
-.Á$
-
-.Á
-
-.Á
-
-.Á"#
-
-.Â$
-
-.Â
-
-.Â
-
-.Â"#
-
-/Å Ì
-
-/Å
-:
-/ Ç", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
-/ Ç
-
-/ Ç
-
-/ Ç
-
-/È" é”™è¯¯ä¿¡æ¯
-
-
-/È
-
-
-/È
-
-/È
-
-/É
-
-/É
-
-/É
-
-/É
-
-/Ê,
-
-/Ê
-
-/Ê&
-
-/Ê*+
-
-/Ë,
-
-/Ë
-
-/Ë
-
-/Ë'
-
-/Ë*+
--
-0Ï Ó æŒ‰æˆ˜æŠ¥idè·å–ç®€ç•¥æˆ˜æŠ¥
-
-
-0Ï%
-
-0 Ñ
-
-0 Ñ
-
-0 Ñ
-
-0 Ñ
-
-0Ò4"
- æˆ˜æŠ¥id
-
-
-0Ò
-
-0Ò
-
-0Ò)
-
-0Ò23
-
-1Õ Û
-
-1Õ%
-:
-1 ×", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
-1 ×
-
-1 ×
-
-1 ×
-
-1Ø" é”™è¯¯ä¿¡æ¯
-
-
-1Ø
-
-
-1Ø
-
-1Ø
-
-1Ù
-
-1Ù
-
-1Ù
-
-1Ù
-
-1Ú<
-
-1Ú
-
-1Ú 3
-
-1Ú:;
-@
-2Ş æ2 æŒ‰å¼€å§‹æ—¶é—´å€’åºæŸ¥è¯¢è‡ªå·±çš„è¯¦ç»†æˆ˜æŠ¥
-
-
-2Ş%
-
-2 à
-
-2 à
-
-2 à
-
-2 à
-
-2á
-
-2á
-
-2á
-
-2á
-
-2â
-
-2â
-
-2â
-
-2â
-b
-2ã$"T ç­›é€‰ç« èŠ‚: ä¼ åŒºé—´å†…ä»»æ„idæŒ‰åƒæ®µæŸ¥(1-1000/1001-2000...), 0 = ä¸ç­›é€‰
-
-
-2ã
-
-2ã
-
-2ã"#
--
-2ä$" ç­›é€‰éš¾åº¦id, 0 = ä¸ç­›é€‰
-
-
-2ä
-
-2ä
-
-2ä"#
--
-2å" ç­›é€‰èµ›å­£id, 0 = ä¸ç­›é€‰
-
-
-2å
-
-2å
-
-2å
-
-3è î
-
-3è%
-:
-3 ê", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
-3 ê
-
-3 ê
-
-3 ê
-
-3ë" é”™è¯¯ä¿¡æ¯
-
-
-3ë
-
-
-3ë
-
-3ë
-
-3ì
-
-3ì
-
-3ì
-
-3ì
-
-3í<
-
-3í
-
-3í 3
-
-3í:;
-0
-4ñ ö" å®¢æˆ·ç«¯è¯·æ±‚--åšå›ºå€¼ç»´ä¿®
-
-
-4ñ"
-
-4 ó,
-
-4 ó
-
-4 ó
-
-4 ó*+
-*
-4ô$" è¦ä¿®å¤çš„è£…å¤‡å”¯ä¸€id
-
-
-4ô
-
-4ô
-
-4ô"#
-(
-4õ," è£…å¤‡æ‰€åœ¨çš„æ ¼å­å·
-
-
-4õ
-
-4õ
-
-4õ*+
-
-5ø ÿ
-
-5ø"
-:
-5 ú$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
-5 ú
-
-5 ú
-
-5 ú"#
-
-5û" é”™è¯¯ä¿¡æ¯
-
-
-5û
-
-
-5û
-
-5û
-
-5ü,
-
-5ü
-
-5ü
-
-5ü*+
-
-5ı$
-
-5ı
-
-5ı
-
-5ı"#
-(
-5ş," è£…å¤‡æ‰€åœ¨çš„æ ¼å­å·
-
-
-5ş
-
-5ş
-
-5ş*+
-
-6 …
-
-6
-
-6 ƒ
-
-6 ƒ
-
-6 ƒ
-
-6 ƒ
-
-6„$
-
-6„
-
-6„
-
-6„"#
-
-7‡ 
-
-7‡
-:
-7 ‰$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
-
-
-7 ‰
-
-7 ‰
-
-7 ‰"#
-
-7Š" é”™è¯¯ä¿¡æ¯
-
-
-7Š
-
-
-7Š
-
-7Š
-
-7‹
-
-7‹
-
-7‹
-
-7‹
-
-7Œ$
-
-7Œ
-
-7Œ
-
-7Œ"#bproto3
 ÷)
 
 gods.proto"9
@@ -11705,6 +8800,2925 @@ unlock_idx (R	unlockIdx"
 u
 
 u"#bproto3
+Éë
+
+user.protocommon.proto
+item.proto	bag.proto
+role.protoghost.protograde.proto
+shop.protoaweitem.protoseason.proto
+gods.proto"ú
+
+PBUserAttr
+uid (Ruid!
+plateform_id (	RplateformId
+	nick_name (	RnickName
+	head_icon (RheadIcon
+sex (Rsex
+
+praise_num (R	praiseNum
+
+head_frame (R	headFrame.
+account_create_time (RaccountCreateTime#
+account_level	 (RaccountLevel
+account_exp
+ (R
+accountExp
+guild_id (RguildId
+
+guild_name (	R	guildName8
+grade_show_info (2.PBGradeShowInfoRgradeShowInfo5
+cur_show_role (2.PBSimpleRoleDataRcurShowRole8
+pinch_face_data (2.PBPinchFaceDataRpinchFaceData
+title (Rtitle
+player_flag (R
+playerFlag
+online_time (R
+onlineTime&
+sum_online_time (RsumOnlineTime8
+cur_show_ghost (2.PBSimpleGhostDataRcurShowGhost
+	is_online (RisOnline
+chat_ban (RchatBan"
+chat_ban_time (RchatBanTime$
+last_chat_time (RlastChatTime9
+
+buff_datas (2.PBUserAttr.BuffDatasEntryR	buffDatas*
+battle_report_ids (RbattleReportIds7
+cur_model_role (2.PBSimpleRoleDataRcurModelRole+
+last_fresh_mode_ts (RlastFreshModeTsI
+BuffDatasEntry
+key (Rkey!
+value (2.PBBuffDataRvalue:8"/
+PBClientGetUsrSimInfoReqCmd
+uid (Ruid"z
+PBClientGetUsrSimInfoRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+info (2.PBUserAttrRinfo"0
+PBClientGetAllUserAttrReqCmd
+uid (Ruid"{
+PBClientGetAllUserAttrRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+info (2.PBUserAttrRinfo"Q
+PBSetUserAttrReqCmd
+uid (Ruid
+type (Rtype
+value (Rvalue"i
+PBSetUserAttrRspCmd
+code (Rcode
+error (	Rerror
+type (Rtype
+value (Rvalue"4
+PBUserAttrSyncCmd
+attr (2.PBUserAttrRattr"0
+PBClientGetUsrBagsInfoReqCmd
+uid (Ruid"­
+PBClientGetUsrBagsInfoRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid$
+	bags_info (2.PBBagsRbagsInfo+
+
+coins_info (2.PBUserCoinsR	coinsInfo"»
+PBClientLightReqCmd
+uid (Ruid
+roleid (Rroleid
+ghostid (Rghostid
+bag_name (	RbagName
+pos (Rpos
+	config_id (RconfigId
+uniqid (Runiqid"å
+PBClientLightRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+roleid (Rroleid
+ghostid (Rghostid
+bag_name (	RbagName
+pos (Rpos
+	config_id (RconfigId
+uniqid	 (Runiqid"`
+PBClientItemUpLvReqCmd
+uid (Ruid
+	config_id (RconfigId
+add_exp (RaddExp"Š
+PBClientItemUpLvRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+	config_id (RconfigId
+add_exp (RaddExp"r
+PBUseItemUpLvReqCmd
+uid (Ruid
+	target_id (RtargetId,
+
+cost_items (2.PBItemSimpleR	costItems"œ
+PBUseItemUpLvRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+	target_id (RtargetId,
+
+cost_items (2.PBItemSimpleR	costItems"I
+PBClientItemUpStarReqCmd
+uid (Ruid
+	config_id (RconfigId"s
+PBClientItemUpStarRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+	config_id (RconfigId"c
+PBClientItemRepairReqCmd
+uid (Ruid#
+repair_uniqid (RrepairUniqid
+pos (Rpos"
+PBClientItemRepairRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid#
+repair_uniqid (RrepairUniqid
+pos (Rpos"d
+PBGetOtherSimpleReqCmd
+uid (Ruid
+	quest_uid (RquestUid
+	nick_name (	RnickName"’
+PBGetOtherSimpleRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+	quest_uid (RquestUid
+info (2.PBUserAttrRinfo"G
+PBGetOtherDetailReqCmd
+uid (Ruid
+	quest_uid (RquestUid"
+PBGetOtherDetailRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+	quest_uid (RquestUid
+info (2.PBUserAttrRinfo(
+	role_data (2.PBRoleDataRroleData+
+
+ghost_data (2.PBGhostDataR	ghostDataU
+grade_show_infos (2+.PBGetOtherDetailRspCmd.GradeShowInfosEntryRgradeShowInfos'
+consume_bag	 (2.PBBagR
+consumeBag3
+model_role_data
+ (2.PBRoleDataRmodelRoleData6
+show_images_data (2.PBUserImageRshowImagesDataK
+antique_showcase_data (2.PBAntiqueShowcaseDataSRantiqueShowcaseData4
+aweitems_data (2.PBUserAweItemsRaweitemsData4
+season_data (2.PBSeasonPlayerDataR
+seasonData(
+	gods_data (2.PBUserGodsRgodsDataS
+GradeShowInfosEntry
+key (Rkey&
+value (2.PBGradeShowInfoRvalue:8"@
+PBUseSkinGiftReqCmd
+uid (Ruid
+gift_id (RgiftId"j
+PBUseSkinGiftRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+gift_id (RgiftId"q
+PBSureCompositeReqCmd
+uid (Ruid!
+composite_id (RcompositeId#
+composite_cnt (RcompositeCnt"›
+PBSureCompositeRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid!
+composite_id (RcompositeId#
+composite_cnt (RcompositeCnt"s
+PBRandomCompositeReqCmd
+uid (Ruid!
+composite_id (RcompositeId#
+composite_cnt (RcompositeCnt"
+PBRandomCompositeRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid!
+composite_id (RcompositeId#
+composite_cnt (RcompositeCnt"¿
+PBInlayTabooWordReqCmd
+uid (Ruid
+roleid (Rroleid!
+ghost_uniqid (RghostUniqid
+
+inlay_type (R	inlayType
+uniqid (Runiqid!
+tabooword_id (RtaboowordId"é
+PBInlayTabooWordRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+roleid (Rroleid!
+ghost_uniqid (RghostUniqid
+
+inlay_type (R	inlayType
+uniqid (Runiqid!
+tabooword_id (RtaboowordId"D
+PBModNickNameReqCmd
+uid (Ruid
+	nick_name (	RnickName"n
+PBModNickNameRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+	nick_name (	RnickName"ô
+PBUseItemReqCmd
+uid (Ruid
+use_item_id (R	useItemId 
+use_item_cnt (R
+useItemCntK
+choose_item_ids (2#.PBUseItemReqCmd.ChooseItemIdsEntryRchooseItemIds@
+ChooseItemIdsEntry
+key (Rkey
+value (Rvalue:8"
+PBUseItemRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+use_item_id (R	useItemId 
+use_item_cnt (R
+useItemCnt"
+PBUseUniqItemReqCmd
+uid (Ruid
+use_item_id (R	useItemId
+
+use_uniqid (R	useUniqid
+use_pos (RusePos"©
+PBUseUniqItemRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+use_item_id (R	useItemId
+
+use_uniqid (R	useUniqid
+use_pos (RusePos"D
+PBRefuseReturnRoomReqCmd
+uid (Ruid
+roomid (Rroomid"n
+PBRefuseReturnRoomRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+roomid (Rroomid"i
+PBItemChangeSkinReqCmd
+uid (Ruid$
+item_config_id (RitemConfigId
+skin_id (RskinId"“
+PBItemChangeSkinRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid$
+item_config_id (RitemConfigId
+skin_id (RskinId"•
+ PBHeadFrameTitleChangeHeadReqCmd
+uid (Ruid 
+head_icon_id (R
+headIconId"
+head_frame_id (RheadFrameId
+title_id (RtitleId"¿
+ PBHeadFrameTitleChangeHeadRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid 
+head_icon_id (R
+headIconId"
+head_frame_id (RheadFrameId
+title_id (RtitleId"+
+PBGetTreasureInfoReqCmd
+uid (Ruid"“
+PBGetTreasureInfoRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid<
+treasure_datas (2.PBTreasurePlayerDataRtreasureDatas"q
+PBOpenTreasureReqCmd
+uid (Ruid(
+open_treasure_id (RopenTreasureId
+
+open_count (R	openCount"¶
+PBOpenTreasureRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid6
+treasure_data (2.PBTreasureSingleRtreasureData*
+	add_items (2.PBItemSimpleRaddItems"]
+PBGetBattleReportSimpleReqCmd
+uid (Ruid*
+battle_report_ids (RbattleReportIds"ˆ
+PBGetBattleReportSimpleRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruide
+battle_report_infos (25.PBGetBattleReportSimpleRspCmd.BattleReportInfosEntryRbattleReportInfosD
+BattleReportInfosEntry
+key (Rkey
+value (	Rvalue:8"Ã
+PBGetBattleReportDetailReqCmd
+uid (Ruid
+	start_idx (RstartIdx
+end_idx (RendIdx
+
+chapter_id (R	chapterId
+
+difficulty (R
+difficulty
+	season_id (RseasonId"ˆ
+PBGetBattleReportDetailRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruide
+battle_report_infos (25.PBGetBattleReportDetailRspCmd.BattleReportInfosEntryRbattleReportInfosD
+BattleReportInfosEntry
+key (Rkey
+value (	Rvalue:8"e
+PBClientStrongRepairReqCmd
+uid (Ruid#
+repair_uniqid (RrepairUniqid
+pos (Rpos"
+PBClientStrongRepairRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid#
+repair_uniqid (RrepairUniqid
+pos (Rpos"^
+PBTestBagReqCmd!
+test_bag (2.PBBagRtestBag(
+	test_item (2.PBItemDataRtestItem"ˆ
+PBTestBagRspCmd
+code (Rcode
+error (	Rerror!
+test_bag (2.PBBagRtestBag(
+	test_item (2.PBItemDataRtestItemJÃ£
+  
+
+  
+	
+  
+	
+ 
+	
+ 
+	
+ 
+	
+ 
+	
+ 
+	
+ 
+	
+ 
+	
+	 
+	
+	
+ 
+{
+  2 ç©å®¶è´¦å·å±æ€§ä¿¡æ¯
+2S----------------------------------æ–°å¢åè®®----------------------------------//
+
+
+
+ 
+
+  "
+
+  
+
+  
+
+   !
+
+ 
+
+ 
+
+
+ 
+
+ 
+
+ #
+
+ 
+
+ 
+
+ !"
+
+ 
+
+ 	
+
+ 
+
+
+ 
+#
+ " 0-æœªé€‰ 1-ç”· 2-å¥³
+
+
+ 	
+
+ 
+
+
+ 
+
+ " ç‚¹èµ
+
+
+ 	
+
+ 
+
+
+ 
+
+ " å¤´åƒæ¡†
+
+
+ 	
+
+ 
+
+
+ 
+!
+ "" è´¦æˆ·åˆ›å»ºæ—¶é—´
+
+
+ 	
+
+ 
+
+
+  !
+(
+  è´¦æˆ·ç»éªŒ è´¦æˆ·ç­‰çº§
+
+
+ 	
+
+ 
+
+
+ 
+
+ 	
+
+ 		
+
+ 	
+
+
+ 	
+
+ 
+
+ æˆ˜é˜ŸID
+
+
+ 
+	
+
+ 
+
+
+
+ 
+
+
+  
+
+ 
+
+
+ 
+
+ 
+1
+  - æ®µä½ç®€ç•¥ä¿¡æ¯
+"	è¦†ç›–æ›´æ–°
+
+
+  
+
+  '
+
+  *,
+(
+ !("	è¦†ç›–æ›´æ–° æˆ˜æ–—è§’è‰²
+
+
+ !
+
+ !"
+
+ !%'
+(
+ ")" æè„¸æ•°æ®	è¦†ç›–æ›´æ–°
+
+
+ "
+
+ "#
+
+ "&(
+#
+ #"å½“å‰ä½©æˆ´çš„ç§°å·
+
+
+ #
+
+ #
+
+ #
+
+ $ "ç©å®¶æ ‡ç­¾
+
+
+ $
+
+ $
+
+ $
+&
+ %!"æœ€åä¸€æ¬¡åœ¨çº¿æ—¶é—´
+
+
+ %
+
+ %
+
+ % 
+*
+ &#"ç´¯è®¡åœ¨çº¿æ—¶é•¿ å•ä½ç§’
+
+
+ &
+
+ &
+
+ & "
+
+ '5"	è¦†ç›–æ›´æ–°
+
+
+ '
+
+ '(
+
+ '24
+
+ ("æ˜¯å¦åœ¨çº¿
+
+
+ (
+
+ (
+
+ (
+1
+ * èŠå¤©ç¦è¨€ç›¸å…³
+" æ˜¯å¦ç¦è¨€
+
+
+ *
+
+ *
+
+ *
+)
+ +!" ç¦è¨€æ—¶é—´(ç»“æŸæ—¶é—´)
+
+
+ +
+
+ +
+
+ + 
+!
+ ,"" ä¸Šæ¬¡å‘è¨€æ—¶é—´
+
+
+ ,
+
+ ,
+
+ ,!
+7
+ .5 è´¦æˆ·åŠ æˆç›¸å…³
+" è´¦æˆ·åŠ æˆæ•°æ®
+
+
+ .
+
+ .)
+
+ .24
+
+ /5"
+ æˆ˜æŠ¥id
+
+
+ /
+
+ /
+
+ /)
+
+ /24
+(
+ 05" è¦†ç›–æ›´æ–° å±•ç¤ºè§’è‰²
+
+
+ 0
+
+ 0'
+
+ 024
+6
+ 1=") æœ€åä¸€æ¬¡æ›´æ–°æ¸¸æˆæ¨¡å¼ç¥¨æ—¶é—´
+
+
+ 1
+
+ 1 
+
+ 1:<
+)
+5 9 å®¢æˆ·ç«¯è¯·æ±‚ç®€ç•¥æ•°æ®
+
+
+
+5#
+
+ 8 åè®®æ•°æ®
+
+
+ 8	
+
+ 8
+
+
+ 8
+6
+< B* å®¢æˆ·ç«¯è¯·æ±‚ç®€ç•¥æ•°æ® è¿”å›ä¿¡æ¯
+
+
+
+<#
+9
+ >", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+ >	
+
+ >
+
+
+ >
+
+?" é”™è¯¯ä¿¡æ¯
+
+
+?
+
+
+?
+
+?
+
+@"
+ ç”¨æˆ·ID
+
+
+@	
+
+@
+
+
+@
+
+A" ç®€ç•¥ä¿¡æ¯
+
+
+A
+
+A
+
+A
+2
+E I& å®¢æˆ·ç«¯è¯·æ±‚è´¦å·å±æ€§å…¨æ•°æ®
+
+
+
+E$
+
+ H åè®®æ•°æ®
+
+
+ H	
+
+ H
+
+
+ H
+?
+L R3 å®¢æˆ·ç«¯è¯·æ±‚è´¦å·å±æ€§å…¨æ•°æ® è¿”å›ä¿¡æ¯
+
+
+
+L$
+9
+ N", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+ N	
+
+ N
+
+
+ N
+
+O" é”™è¯¯ä¿¡æ¯
+
+
+O
+
+
+O
+
+O
+
+P"
+ ç”¨æˆ·ID
+
+
+P	
+
+P
+
+
+P
+
+Q" ç®€ç•¥ä¿¡æ¯
+
+
+Q
+
+Q
+
+Q
+=
+U Z1 å®¢æˆ·ç«¯ä¿®æ”¹ä¸ªäººä¿¡æ¯æ•°æ®--ç±»å‹å—é™
+
+
+
+U
+
+ W
+
+ W
+
+ W
+
+ W
+7
+X"* ä¸ªäººä¿¡æ¯ç±»å‹ @see PBPersonInfoType
+
+
+X
+
+X
+
+X
+
+Y" ä¸ªäººä¿¡æ¯å€¼
+
+
+Y
+
+Y
+
+Y
+
+
+\ b
+
+
+\
+9
+ ^", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+ ^
+
+ ^
+
+ ^
+
+_" é”™è¯¯ä¿¡æ¯
+
+
+_
+
+_
+
+_
+7
+`"* ä¸ªäººä¿¡æ¯ç±»å‹ @see PBPersonInfoType
+
+
+`
+
+`
+
+`
+
+a" ä¸ªäººä¿¡æ¯å€¼
+
+
+a
+
+a
+
+a
+/
+e g# æœåŠ¡å™¨åŒæ­¥ç©å®¶å±æ€§ä¿¡æ¯
+
+
+
+e
+
+ f
+
+ f
+
+ f
+
+ f
+/
+j n# å®¢æˆ·ç«¯è¯·æ±‚æ‰€æœ‰èƒŒåŒ…æ•°æ®
+
+
+
+j$
+
+ m åè®®æ•°æ®
+
+
+ m	
+
+ m
+
+
+ m
+
+
+	p w
+
+
+	p$
+9
+	 r", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+	 r	
+
+	 r
+
+
+	 r
+
+	s" é”™è¯¯ä¿¡æ¯
+
+
+	s
+
+
+	s
+
+	s
+
+	t"
+ ç”¨æˆ·ID
+
+
+	t	
+
+	t
+
+
+	t
+!
+	u$" æ‰€æœ‰èƒŒåŒ…æ•°æ®
+
+
+	u
+
+
+	u
+
+	u"#
+!
+	v$" æ‰€æœ‰è´§å¸æ•°æ®
+
+
+	v
+
+	v
+
+	v"#
+,
+
+z ƒ å®¢æˆ·ç«¯è¯·æ±‚--è£…å¤‡å¼€å…‰
+
+
+
+
+z
+
+
+ |$
+
+
+ |
+
+
+ |
+
+
+ |"#
+
+
+}
+
+
+}
+
+
+}
+
+
+}
+
+
+~
+
+
+~
+
+
+~
+
+
+~
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+€$
+
+
+€
+
+
+€
+
+
+€"#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+‚
+
+
+‚
+
+
+‚
+
+
+‚
+
+… 
+
+…
+:
+ ‡$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+ ‡
+
+ ‡
+
+ ‡"#
+
+ˆ" é”™è¯¯ä¿¡æ¯
+
+
+ˆ
+
+
+ˆ
+
+ˆ
+
+‰$
+
+‰
+
+‰
+
+‰"#
+
+Š
+
+Š
+
+Š
+
+Š
+
+‹
+
+‹
+
+‹
+
+‹
+
+Œ
+
+Œ
+
+Œ
+
+Œ
+
+$
+
+
+
+
+
+"#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+?
+“ ˜1 å®¢æˆ·ç«¯è¯·æ±‚--é“å…·ã€è§’è‰²ã€é¬¼å® å‡çº§
+
+
+“
+
+ •$
+
+ •
+
+ •
+
+ •"#
+
+–
+
+–
+
+–
+
+–
+
+—
+
+—
+
+—
+
+—
+
+š ¡
+
+š
+:
+ œ$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+ œ
+
+ œ
+
+ œ"#
+
+" é”™è¯¯ä¿¡æ¯
+
+
+
+
+
+
+
+
+
+$
+
+
+
+
+
+"#
+
+Ÿ
+
+Ÿ
+
+Ÿ
+
+Ÿ
+
+ 
+
+ 
+
+ 
+
+ 
+3
+¤ ©% å®¢æˆ·ç«¯è¯·æ±‚--ä½¿ç”¨é“å…·å‡çº§
+
+
+¤
+
+ ¦$
+
+ ¦
+
+ ¦
+
+ ¦"#
+
+§
+
+§
+
+§
+
+§
+
+¨4
+
+¨
+
+¨
+
+¨(
+
+¨23
+
+« ²
+
+«
+:
+ ­$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+ ­
+
+ ­
+
+ ­"#
+
+®" é”™è¯¯ä¿¡æ¯
+
+
+®
+
+
+®
+
+®
+
+¯$
+
+¯
+
+¯
+
+¯"#
+
+°
+
+°
+
+°
+
+°
+
+±4
+
+±
+
+±
+
+±(
+
+±23
+-
+µ ¹ å®¢æˆ·ç«¯è¯·æ±‚--é“å…·å‡æ˜Ÿ
+
+
+µ 
+
+ ·$
+
+ ·
+
+ ·
+
+ ·"#
+
+¸
+
+¸
+
+¸
+
+¸
+
+» Á
+
+» 
+:
+ ½$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+ ½
+
+ ½
+
+ ½"#
+
+¾" é”™è¯¯ä¿¡æ¯
+
+
+¾
+
+
+¾
+
+¾
+
+¿$
+
+¿
+
+¿
+
+¿"#
+
+À
+
+À
+
+À
+
+À
+-
+Ä É å®¢æˆ·ç«¯è¯·æ±‚--é“å…·ç»´ä¿®
+
+
+Ä 
+
+ Æ,
+
+ Æ
+
+ Æ
+
+ Æ*+
+*
+Ç$" è¦ä¿®å¤çš„è£…å¤‡å”¯ä¸€id
+
+
+Ç
+
+Ç
+
+Ç"#
+(
+È," è£…å¤‡æ‰€åœ¨çš„æ ¼å­å·
+
+
+È
+
+È
+
+È*+
+
+Ë Ò
+
+Ë 
+:
+ Í$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+ Í
+
+ Í
+
+ Í"#
+
+Î" é”™è¯¯ä¿¡æ¯
+
+
+Î
+
+
+Î
+
+Î
+
+Ï,
+
+Ï
+
+Ï
+
+Ï*+
+
+Ğ$
+
+Ğ
+
+Ğ
+
+Ğ"#
+(
+Ñ," è£…å¤‡æ‰€åœ¨çš„æ ¼å­å·
+
+
+Ñ
+
+Ñ
+
+Ñ*+
+1
+Õ Û# å®¢æˆ·ç«¯è¯·æ±‚ä»–äººç®€ç•¥ä¿¡æ¯
+
+
+Õ
+
+ Ø åè®®æ•°æ®
+
+
+ Ø	
+
+ Ø
+
+
+ Ø
+
+Ù
+
+Ù
+
+Ù
+
+Ù
+
+Ú$
+
+Ú
+
+Ú
+
+Ú"#
+>
+Ş å0 å®¢æˆ·ç«¯è¯·æ±‚ä»–äººç®€ç•¥ä¿¡æ¯ è¿”å›ä¿¡æ¯
+
+
+Ş
+:
+ à$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+ à	
+
+ à
+
+
+ à"#
+
+á$" é”™è¯¯ä¿¡æ¯
+
+
+á
+
+
+á
+
+á"#
+
+â$" è‡ªå·±çš„uid
+
+
+â	
+
+â
+
+
+â"#
+
+ã$" ä»–äººuid
+
+
+ã
+
+ã
+
+ã"#
+
+ä$" ç®€ç•¥ä¿¡æ¯
+
+
+ä
+
+ä
+
+ä"#
+1
+è í# å®¢æˆ·ç«¯è¯·æ±‚ä»–äººè¯¦ç»†ä¿¡æ¯
+
+
+è
+
+ ë åè®®æ•°æ®
+
+
+ ë	
+
+ ë
+
+
+ ë
+
+ì
+
+ì
+
+ì
+
+ì
+>
+ğ 0 å®¢æˆ·ç«¯è¯·æ±‚ä»–äººè¯¦ç»†ä¿¡æ¯ è¿”å›ä¿¡æ¯
+
+
+ğ
+:
+ ò$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+ ò	
+
+ ò
+
+
+ ò"#
+
+ó$" é”™è¯¯ä¿¡æ¯
+
+
+ó
+
+
+ó
+
+ó"#
+
+ô$" è‡ªå·±çš„uid
+
+
+ô	
+
+ô
+
+
+ô"#
+
+õ$" ä»–äººuid
+
+
+õ
+
+õ
+
+õ"#
+
+ö$" è´¦å·ä¿¡æ¯
+
+
+ö
+
+ö
+
+ö"#
+
+÷$" è§’è‰²æ•°æ®
+
+
+÷
+
+÷
+
+÷"#
+
+ø$" é¬¼å® æ•°æ®
+
+
+ø
+
+ø
+
+ø"#
+
+ù<" æ®µä½ä¿¡æ¯
+
+
+ù#
+
+ù$4
+
+ù:;
+
+ú$" æ¶ˆè€—å“èƒŒåŒ…
+
+
+ú
+
+ú
+
+ú"#
+"
+	û-" å±•ç¤ºè§’è‰²æ•°æ®
+
+
+	û
+
+	û"
+
+	û*,
+(
+
+ü*" å±•ç¤ºéƒ¨åˆ†å›¾é‰´æ•°æ®
+
+
+
+ü
+
+
+ü$
+
+
+ü')
+%
+ı:" å¤è‘£å±•ç¤ºæŸœæ•°æ®
+
+
+ı
+
+ı4
+
+ı79
+"
+ş*" é•‡å±±ä¹‹å®æ•°æ®
+
+
+ş
+
+ş$
+
+ş')
+
+ÿ," èµ›å­£æ•°æ®
+
+
+ÿ
+
+ÿ&
+
+ÿ)+
+
+€"" ç¥æ˜æ•°æ®
+
+
+€
+
+€
+
+€!
++
+„ ˆ å®¢æˆ·ç«¯ä½¿ç”¨çš®è‚¤ç¤¼åŒ…
+
+
+„
+
+ †$" è‡ªå·±çš„uid
+
+
+ †	
+
+ †
+
+
+ †"#
+
+‡$"
+ ç¤¼åŒ…id
+
+
+‡	
+
+‡
+
+
+‡"#
+
+Š 
+
+Š
+:
+ Œ$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+ Œ	
+
+ Œ
+
+
+ Œ"#
+
+$" é”™è¯¯ä¿¡æ¯
+
+
+
+
+
+
+
+"#
+
+$" è‡ªå·±çš„uid
+
+
+	
+
+
+
+
+"#
+
+$"
+ ç¤¼åŒ…id
+
+
+	
+
+
+
+
+"#
+%
+“ ˜ å®¢æˆ·ç«¯å›ºå®šåˆæˆ
+
+
+“
+
+ •,
+
+ •
+
+ •
+
+ •*+
+
+–$"
+ åˆæˆid
+
+
+–
+
+–
+
+–"#
+
+—$" åˆæˆæ•°é‡
+
+
+—
+
+—
+
+—"#
+
+š ¡
+
+š
+:
+ œ,", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+ œ
+
+ œ
+
+ œ*+
+
+$" é”™è¯¯ä¿¡æ¯
+
+
+
+
+
+
+
+"#
+
+,
+
+
+
+
+
+*+
+
+Ÿ$"
+ åˆæˆid
+
+
+Ÿ
+
+Ÿ
+
+Ÿ"#
+
+ $" åˆæˆæ•°é‡
+
+
+ 
+
+ 
+
+ "#
+%
+¤ © å®¢æˆ·ç«¯éšæœºåˆæˆ
+
+
+¤
+
+ ¦,
+
+ ¦
+
+ ¦
+
+ ¦*+
+
+§$"
+ åˆæˆid
+
+
+§
+
+§
+
+§"#
+
+¨$" åˆæˆæ•°é‡
+
+
+¨
+
+¨
+
+¨"#
+
+« ²
+
+«
+:
+ ­,", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+ ­
+
+ ­
+
+ ­*+
+
+®$" é”™è¯¯ä¿¡æ¯
+
+
+®
+
+
+®
+
+®"#
+
+¯,
+
+¯
+
+¯
+
+¯*+
+
+°$"
+ åˆæˆid
+
+
+°
+
+°
+
+°"#
+
+±$" åˆæˆæ•°é‡
+
+
+±
+
+±
+
+±"#
+1
+µ ½# æ³•å™¨æˆ–è€…å…«å¦ç‰Œé•¶åµŒè®³å­—
+
+
+µ
+
+ ·
+
+ ·	
+
+ ·
+
+
+ ·
+
+¸"	è§’è‰²id
+
+
+¸
+
+¸
+
+¸
+
+¹$"é¬¼å® å”¯ä¸€id
+
+
+¹
+
+¹
+
+¹"#
+#
+º$"1-æ³•å™¨ 2-å…«å¦ç‰Œ
+
+
+º
+
+º
+
+º"#
+
+»"	é“å…·id
+
+
+»
+
+»
+
+»
+
+¼$"	è®³å­—id
+
+
+¼
+
+¼
+
+¼"#
+
+¿ É
+
+¿
+:
+ Á", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+ Á	
+
+ Á
+
+ Á
+
+Â" é”™è¯¯ä¿¡æ¯
+
+
+Â
+
+
+Â
+
+Â
+
+Ã
+
+Ã	
+
+Ã
+
+Ã
+
+Ä"	è§’è‰²id
+
+
+Ä
+
+Ä
+
+Ä
+
+Å$"é¬¼å® å”¯ä¸€id
+
+
+Å
+
+Å
+
+Å"#
+#
+Æ$"1-æ³•å™¨ 2-å…«å¦ç‰Œ
+
+
+Æ
+
+Æ
+
+Æ"#
+
+Ç"	é“å…·id
+
+
+Ç
+
+Ç
+
+Ç
+
+È$"	è®³å­—id
+
+
+È
+
+È
+
+È"#
+
+ Ì Ğ ä¿®æ”¹æ˜µç§°
+
+
+ Ì
+
+  Î
+
+  Î
+
+  Î
+
+  Î
+
+ Ï#
+
+ Ï
+
+ Ï
+
+ Ï!"
+
+!Ò Ø
+
+!Ò
+:
+! Ô", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+! Ô
+
+! Ô
+
+! Ô
+
+!Õ" é”™è¯¯ä¿¡æ¯
+
+
+!Õ
+
+
+!Õ
+
+!Õ
+
+!Ö
+
+!Ö
+
+!Ö
+
+!Ö
+
+!×#
+
+!×
+
+!×
+
+!×!"
+%
+"Û á å®¢æˆ·ç«¯ä½¿ç”¨é“å…·
+
+
+"Û
+
+" İ
+
+" İ
+
+" İ
+
+" İ
+
+"Ş$
+
+"Ş
+
+"Ş
+
+"Ş"#
+
+"ß$
+
+"ß
+
+"ß
+
+"ß"#
+
+"à4
+
+"à
+
+"à)
+
+"à23
+
+#ã ê
+
+#ã
+:
+# å", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+# å
+
+# å
+
+# å
+
+#æ" é”™è¯¯ä¿¡æ¯
+
+
+#æ
+
+
+#æ
+
+#æ
+
+#ç
+
+#ç
+
+#ç
+
+#ç
+
+#è$
+
+#è
+
+#è
+
+#è"#
+
+#é$
+
+#é
+
+#é
+
+#é"#
++
+$í ó å®¢æˆ·ç«¯ä½¿ç”¨å”¯ä¸€é“å…·
+
+
+$í
+
+$ ï
+
+$ ï
+
+$ ï
+
+$ ï
+
+$ğ$
+
+$ğ
+
+$ğ
+
+$ğ"#
+
+$ñ$
+
+$ñ
+
+$ñ
+
+$ñ"#
+
+$ò$
+
+$ò
+
+$ò
+
+$ò"#
+
+%õ ı
+
+%õ
+:
+% ÷", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+% ÷
+
+% ÷
+
+% ÷
+
+%ø" é”™è¯¯ä¿¡æ¯
+
+
+%ø
+
+
+%ø
+
+%ø
+
+%ù
+
+%ù
+
+%ù
+
+%ù
+
+%ú$
+
+%ú
+
+%ú
+
+%ú"#
+
+%û$
+
+%û
+
+%û
+
+%û"#
+
+%ü$
+
+%ü
+
+%ü
+
+%ü"#
+%
+&€ „ æ‹’ç»é‡è¿å›æˆ˜æ–—
+
+
+&€ 
+
+& ‚
+
+& ‚
+
+& ‚
+
+& ‚
+
+&ƒ
+
+&ƒ
+
+&ƒ
+
+&ƒ
+
+'† Œ
+
+'† 
+:
+' ˆ", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+' ˆ
+
+' ˆ
+
+' ˆ
+
+'‰" é”™è¯¯ä¿¡æ¯
+
+
+'‰
+
+
+'‰
+
+'‰
+
+'Š
+
+'Š
+
+'Š
+
+'Š
+
+'‹
+
+'‹
+
+'‹
+
+'‹
+%
+( ” ç»™é“å…·æ›´æ¢çš®è‚¤
+
+
+(
+
+( ‘
+
+( ‘
+
+( ‘
+
+( ‘
+
+(’$
+
+(’
+
+(’
+
+(’"#
+
+(“,
+
+(“
+
+(“
+
+(“*+
+
+)– 
+
+)–
+:
+) ˜", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+) ˜
+
+) ˜
+
+) ˜
+
+)™" é”™è¯¯ä¿¡æ¯
+
+
+)™
+
+
+)™
+
+)™
+
+)š$
+
+)š
+
+)š
+
+)š"#
+
+)›$
+
+)›
+
+)›
+
+)›"#
+
+)œ,
+
+)œ
+
+)œ
+
+)œ*+
+1
+*  ¦# ç»™ç©å®¶æ›´æ¢å¤´åƒå’Œå¤´åƒæ¡†
+
+
+* (
+
+* ¢
+
+* ¢
+
+* ¢
+
+* ¢
+
+*£$
+
+*£
+
+*£
+
+*£"#
+
+*¤$
+
+*¤
+
+*¤
+
+*¤"#
+
+*¥$
+
+*¥
+
+*¥
+
+*¥"#
+
++¨ °
+
++¨(
+:
++ ª", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
++ ª
+
++ ª
+
++ ª
+
++«" é”™è¯¯ä¿¡æ¯
+
+
++«
+
+
++«
+
++«
+
++¬$
+
++¬
+
++¬
+
++¬"#
+
++­$
+
++­
+
++­
+
++­"#
+
++®$
+
++®
+
++®
+
++®"#
+
++¯$
+
++¯
+
++¯
+
++¯"#
+
+,² µ
+
+,²
+
+, ´
+
+, ´
+
+, ´
+
+, ´
+
+-· ½
+
+-·
+:
+- ¹", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+- ¹
+
+- ¹
+
+- ¹
+
+-º" é”™è¯¯ä¿¡æ¯
+
+
+-º
+
+
+-º
+
+-º
+
+-»$
+
+-»
+
+-»
+
+-»"#
+
+-¼4
+
+-¼
+
+-¼+
+
+-¼23
+
+.À Å å¼€å¯å®ç®±
+
+
+.À
+
+. Â
+
+. Â
+
+. Â
+
+. Â
+
+.Ã$
+
+.Ã
+
+.Ã
+
+.Ã"#
+
+.Ä$
+
+.Ä
+
+.Ä
+
+.Ä"#
+
+/Ç Î
+
+/Ç
+:
+/ É", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+/ É
+
+/ É
+
+/ É
+
+/Ê" é”™è¯¯ä¿¡æ¯
+
+
+/Ê
+
+
+/Ê
+
+/Ê
+
+/Ë
+
+/Ë
+
+/Ë
+
+/Ë
+
+/Ì,
+
+/Ì
+
+/Ì&
+
+/Ì*+
+
+/Í,
+
+/Í
+
+/Í
+
+/Í'
+
+/Í*+
+-
+0Ñ Õ æŒ‰æˆ˜æŠ¥idè·å–ç®€ç•¥æˆ˜æŠ¥
+
+
+0Ñ%
+
+0 Ó
+
+0 Ó
+
+0 Ó
+
+0 Ó
+
+0Ô4"
+ æˆ˜æŠ¥id
+
+
+0Ô
+
+0Ô
+
+0Ô)
+
+0Ô23
+
+1× İ
+
+1×%
+:
+1 Ù", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+1 Ù
+
+1 Ù
+
+1 Ù
+
+1Ú" é”™è¯¯ä¿¡æ¯
+
+
+1Ú
+
+
+1Ú
+
+1Ú
+
+1Û
+
+1Û
+
+1Û
+
+1Û
+
+1Ü<
+
+1Ü
+
+1Ü 3
+
+1Ü:;
+@
+2à è2 æŒ‰å¼€å§‹æ—¶é—´å€’åºæŸ¥è¯¢è‡ªå·±çš„è¯¦ç»†æˆ˜æŠ¥
+
+
+2à%
+
+2 â
+
+2 â
+
+2 â
+
+2 â
+
+2ã
+
+2ã
+
+2ã
+
+2ã
+
+2ä
+
+2ä
+
+2ä
+
+2ä
+b
+2å$"T ç­›é€‰ç« èŠ‚: ä¼ åŒºé—´å†…ä»»æ„idæŒ‰åƒæ®µæŸ¥(1-1000/1001-2000...), 0 = ä¸ç­›é€‰
+
+
+2å
+
+2å
+
+2å"#
+-
+2æ$" ç­›é€‰éš¾åº¦id, 0 = ä¸ç­›é€‰
+
+
+2æ
+
+2æ
+
+2æ"#
+-
+2ç" ç­›é€‰èµ›å­£id, 0 = ä¸ç­›é€‰
+
+
+2ç
+
+2ç
+
+2ç
+
+3ê ğ
+
+3ê%
+:
+3 ì", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+3 ì
+
+3 ì
+
+3 ì
+
+3í" é”™è¯¯ä¿¡æ¯
+
+
+3í
+
+
+3í
+
+3í
+
+3î
+
+3î
+
+3î
+
+3î
+
+3ï<
+
+3ï
+
+3ï 3
+
+3ï:;
+0
+4ó ø" å®¢æˆ·ç«¯è¯·æ±‚--åšå›ºå€¼ç»´ä¿®
+
+
+4ó"
+
+4 õ,
+
+4 õ
+
+4 õ
+
+4 õ*+
+*
+4ö$" è¦ä¿®å¤çš„è£…å¤‡å”¯ä¸€id
+
+
+4ö
+
+4ö
+
+4ö"#
+(
+4÷," è£…å¤‡æ‰€åœ¨çš„æ ¼å­å·
+
+
+4÷
+
+4÷
+
+4÷*+
+
+5ú 
+
+5ú"
+:
+5 ü$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+5 ü
+
+5 ü
+
+5 ü"#
+
+5ı" é”™è¯¯ä¿¡æ¯
+
+
+5ı
+
+
+5ı
+
+5ı
+
+5ş,
+
+5ş
+
+5ş
+
+5ş*+
+
+5ÿ$
+
+5ÿ
+
+5ÿ
+
+5ÿ"#
+(
+5€," è£…å¤‡æ‰€åœ¨çš„æ ¼å­å·
+
+
+5€
+
+5€
+
+5€*+
+
+6ƒ ‡
+
+6ƒ
+
+6 …
+
+6 …
+
+6 …
+
+6 …
+
+6†$
+
+6†
+
+6†
+
+6†"#
+
+7‰ 
+
+7‰
+:
+7 ‹$", æœåŠ¡å™¨éªŒè¯è¿”å›,0æˆåŠŸ,å…¶ä»–å¤±è´¥
+
+
+7 ‹
+
+7 ‹
+
+7 ‹"#
+
+7Œ" é”™è¯¯ä¿¡æ¯
+
+
+7Œ
+
+
+7Œ
+
+7Œ
+
+7
+
+7
+
+7
+
+7
+
+7$
+
+7
+
+7
+
+7"#bproto3
 ”¶
 dsnode.protocommon.proto
 item.proto

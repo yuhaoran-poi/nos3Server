@@ -1519,12 +1519,92 @@ bootyValue"
 error (	Rerror
 uid (Ruid6
 season_datas (2.PBSeasonPlayerDataRseasonDatasbproto3
-ÃG
+™
+
+gods.proto"9
+
+PBGodImage
+	config_id (RconfigId
+lv (Rlv"ß
+
+PBGodBlock
+idx (Ridx
+god_id (RgodId&
+burn_incense_id (RburnIncenseId(
+burn_incense_val (RburnIncenseVal
+burn_end_ts (R	burnEndTs"ò
+
+PBUserGods9
+
+gods_image (2.PBUserGods.GodsImageEntryR	godsImage9
+
+gods_block (2.PBUserGods.GodsBlockEntryR	godsBlockI
+GodsImageEntry
+key (Rkey!
+value (2.PBGodImageRvalue:8I
+GodsBlockEntry
+key (Rkey!
+value (2.PBGodBlockRvalue:8"'
+PBGodsGetInfoReqCmd
+uid (Ruid"{
+PBGodsGetInfoRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid(
+	gods_info (2.PBUserGodsRgodsInfo"=
+PBGodsInfoSyncCmd(
+	gods_info (2.PBUserGodsRgodsInfo"=
+PBGodsUnlockReqCmd
+uid (Ruid
+god_id (RgodId"z
+PBGodsUnlockRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid(
+	god_image (2.PBGodImageRgodImage";
+PBGodsUpLvReqCmd
+uid (Ruid
+god_id (RgodId"x
+PBGodsUpLvRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid(
+	god_image (2.PBGodImageRgodImage"J
+PBGodsBlockUnlockReqCmd
+uid (Ruid
+
+unlock_idx (R	unlockIdx"
+PBGodsBlockUnlockRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid(
+	god_block (2.PBGodBlockRgodBlock"a
+PBGodsWearOrTakeoffReqCmd
+uid (Ruid
+	block_idx (RblockIdx
+god_id (RgodId"Å
+PBGodsWearOrTakeoffRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid(
+	god_block (2.PBGodBlockRgodBlock"á
+PBGodsBurnIncenseReqCmd
+uid (Ruid
+	block_idx (RblockIdx
+god_id (RgodId&
+burn_incense_id (RburnIncenseId"
+PBGodsBurnIncenseRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid(
+	god_block (2.PBGodBlockRgodBlockbproto3
+ÇH
 
 user.protocommon.proto
 item.proto	bag.proto
 role.protoghost.protograde.proto
-shop.protoaweitem.protoseason.proto"˙
+shop.protoaweitem.protoseason.proto
+gods.proto"˙
 
 PBUserAttr
 uid (Ruid!
@@ -1670,7 +1750,7 @@ cost_items (2.PBItemSimpleR	costItems"I
 info (2.PBUserAttrRinfo"G
 PBGetOtherDetailReqCmd
 uid (Ruid
-	quest_uid (RquestUid"‰
+	quest_uid (RquestUid"é
 PBGetOtherDetailRspCmd
 code (Rcode
 error (	Rerror
@@ -1689,7 +1769,8 @@ consumeBag3
 antique_showcase_data (2.PBAntiqueShowcaseDataSRantiqueShowcaseData4
 aweitems_data (2.PBUserAweItemsRaweitemsData4
 season_data (2.PBSeasonPlayerDataR
-seasonDataS
+seasonData(
+	gods_data (2.PBUserGodsRgodsDataS
 GradeShowInfosEntry
 key (Rkey&
 value (2.PBGradeShowInfoRvalue:8"@
@@ -1874,85 +1955,6 @@ difficulty
 error (	Rerror!
 test_bag (2.PBBagRtestBag(
 	test_item (2.PBItemDataRtestItembproto3
-™
-
-gods.proto"9
-
-PBGodImage
-	config_id (RconfigId
-lv (Rlv"ß
-
-PBGodBlock
-idx (Ridx
-god_id (RgodId&
-burn_incense_id (RburnIncenseId(
-burn_incense_val (RburnIncenseVal
-burn_end_ts (R	burnEndTs"ò
-
-PBUserGods9
-
-gods_image (2.PBUserGods.GodsImageEntryR	godsImage9
-
-gods_block (2.PBUserGods.GodsBlockEntryR	godsBlockI
-GodsImageEntry
-key (Rkey!
-value (2.PBGodImageRvalue:8I
-GodsBlockEntry
-key (Rkey!
-value (2.PBGodBlockRvalue:8"'
-PBGodsGetInfoReqCmd
-uid (Ruid"{
-PBGodsGetInfoRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid(
-	gods_info (2.PBUserGodsRgodsInfo"=
-PBGodsInfoSyncCmd(
-	gods_info (2.PBUserGodsRgodsInfo"=
-PBGodsUnlockReqCmd
-uid (Ruid
-god_id (RgodId"z
-PBGodsUnlockRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid(
-	god_image (2.PBGodImageRgodImage";
-PBGodsUpLvReqCmd
-uid (Ruid
-god_id (RgodId"x
-PBGodsUpLvRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid(
-	god_image (2.PBGodImageRgodImage"J
-PBGodsBlockUnlockReqCmd
-uid (Ruid
-
-unlock_idx (R	unlockIdx"
-PBGodsBlockUnlockRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid(
-	god_block (2.PBGodBlockRgodBlock"a
-PBGodsWearOrTakeoffReqCmd
-uid (Ruid
-	block_idx (RblockIdx
-god_id (RgodId"Å
-PBGodsWearOrTakeoffRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid(
-	god_block (2.PBGodBlockRgodBlock"á
-PBGodsBurnIncenseReqCmd
-uid (Ruid
-	block_idx (RblockIdx
-god_id (RgodId&
-burn_incense_id (RburnIncenseId"
-PBGodsBurnIncenseRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid(
-	god_block (2.PBGodBlockRgodBlockbproto3
 ÃA
 dsnode.protocommon.proto
 item.proto

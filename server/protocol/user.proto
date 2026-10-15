@@ -8,6 +8,7 @@ import "grade.proto";
 import "shop.proto";
 import "aweitem.proto";
 import "season.proto";
+import "gods.proto";
 
 //----------------------------------新增协议----------------------------------//
 
@@ -253,6 +254,7 @@ message PBGetOtherDetailRspCmd
 	PBAntiqueShowcaseDataS antique_showcase_data = 12; // 古董展示柜数据
 	PBUserAweItems aweitems_data = 13;	// 镇山之宝数据
 	PBSeasonPlayerData season_data = 14; // 赛季数据
+	PBUserGods gods_data = 15; // 神明数据
 }
 
 // 客户端使用皮肤礼包
