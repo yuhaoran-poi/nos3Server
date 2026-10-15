@@ -633,9 +633,13 @@ end
 
 function Gods.PBGodsBurnIncenseReqCmd(req)
     -- 参数验证
+    -- burn_incense_id 必须>0: 0是客户端未选香的默认值, 不拦会落到pool[0]查不到误报"配置错误"
     if not req.msg.block_idx
+        or req.msg.block_idx <= 0
         or not req.msg.god_id
-        or not req.msg.burn_incense_id then
+        or req.msg.god_id <= 0
+        or not req.msg.burn_incense_id
+        or req.msg.burn_incense_id <= 0 then
         return context.S2C(context.net_id, CmdCode.PBGodsBurnIncenseRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
