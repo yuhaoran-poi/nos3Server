@@ -9,6 +9,7 @@ local AuctionDef = require("common.def.AuctionDef")
 local ItemDef = require("common.def.ItemDef")
 local BagDef = require("common.def.BagDef")
 local SkinTradeDef = require("common.def.SkinTradeDef")
+local BillDef = require("common.def.BillDef")
 -- local ItemDefine = require("common.logic.ItemDefine")
 local GameCfg = require("common.GameCfg")
 
@@ -3551,9 +3552,9 @@ function _M.loadprocessingbillorders(addr, uid, min_create_ts)
     local cmd = string.format([[
         SELECT orderid, transid, steamid, uid, bill_id, bill_num,
         bill_amount, create_ts, is_sanbox, state FROM mgame.bill_order
-        WHERE uid = %d AND state IN (0, 1) AND create_ts >= %d
+        WHERE uid = %d AND state IN (%d, %d) AND create_ts >= %d
         ORDER BY create_ts;
-    ]], uid, min_create_ts)
+    ]], uid, BillDef.orderStatus.WAIT, BillDef.orderStatus.PAID, min_create_ts)
     local res, err = moon.call("lua", addr, cmd)
     if err then
         moon.error("loadprocessingbillorders failed", uid, err)

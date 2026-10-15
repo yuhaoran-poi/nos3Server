@@ -3170,6 +3170,69 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log, add_roles)
     return err_code
 end
 
+function User.OpenUniqueGift(item_cfg, msg_data, bag_change_log)
+    local err_code = ErrorCode.ItemTypeMismatch
+    local reward_cfg_list = {}
+    if item_cfg.use_type == 8 then
+        -- 唯一礼包
+        if not item_cfg.use_award or table.size(item_cfg.use_award) == 0 then
+            err_code = ErrorCode.ConfigError
+            return err_code
+        end
+        for item_id, item_cnt in pairs(item_cfg.use_award) do
+            if not reward_cfg_list[item_id] then
+                reward_cfg_list[item_id] = 0
+            end
+            reward_cfg_list[item_id] = reward_cfg_list[item_id] + (item_cnt * msg_data.use_item_cnt)
+        end
+    end
+
+    if table.size(reward_cfg_list) == 0 then
+        moon.error("reward_cfg_list error")
+        err_code = ErrorCode.ConfigError
+        return err_code
+    end
+
+    local add_items, add_coins = {}, {}
+    ItemDefine.GetItemsFromCfg(reward_cfg_list, 1, false, add_items, add_coins)
+    err_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_items, 0)
+    if err_code ~= ErrorCode.None then
+        moon.error(string.format("User.OpenUniqueGift CheckEmptyEnough err:\n%s", json.pretty_encode(add_items)))
+        return err_code
+    end
+
+    local stack_items, unstack_items, deal_coins = {}, {}, {}
+    local ok = ItemDefine.GetItemDataFromIdCount(add_items, add_coins, stack_items, unstack_items, deal_coins)
+    if not ok then
+        moon.error(string.format("User.OpenUniqueGift GetItemDataFromIdCount err:\n%s", json.pretty_encode(add_items)))
+        err_code = ErrorCode.ConfigError
+        return err_code
+    end
+
+    -- 添加道具
+    if table.size(stack_items) + table.size(unstack_items) > 0 then
+        err_code = scripts.Bag.AddItems(BagDef.BagType.Cangku, stack_items, unstack_items, bag_change_log)
+        if err_code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            moon.error(string.format("User.OpenUniqueGift AddItems stack_items err:\n%s",
+                json.pretty_encode(stack_items)))
+            moon.error(string.format("User.OpenUniqueGift AddItems unstack_items err:\n%s",
+                json.pretty_encode(unstack_items)))
+            return err_code
+        end
+    end
+    if table.size(deal_coins) > 0 then
+        err_code = scripts.Bag.DealCoins(deal_coins, bag_change_log)
+        if err_code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            moon.error(string.format("User.OpenUniqueGift DealCoins err:\n%s", json.pretty_encode(deal_coins)))
+            return err_code
+        end
+    end
+
+    return err_code
+end
+
 function User.AddAccountBuff(item_cfg, msg_data, buff_id)
     local err_code = ErrorCode.ItemTypeMismatch
     local buff_cfg
@@ -3472,6 +3535,19 @@ function User.PBUseUniqItemReqCmd(req)
     if uniqitem_cfg and uniqitem_cfg.use_type then
         if uniqitem_cfg.use_type == 1 then
             local err_code = scripts.ItemImage.UseUniqItemAddImage(uniqitem_cfg, req.msg, change_image_ids)
+            if err_code ~= ErrorCode.None then
+                return context.S2C(context.net_id, CmdCode.PBUseUniqItemRspCmd, {
+                    code = err_code,
+                    error = "使用道具失败",
+                    uid = context.uid,
+                    use_item_id = req.msg.use_item_id,
+                    use_uniqid = req.msg.use_uniqid,
+                    use_pos = req.msg.use_pos,
+                }, req.msg_context.stub_id)
+            end
+        elseif uniqitem_cfg.use_type == 8 then
+            -- 唯一礼包
+            local err_code = User.OpenUniqueGift(uniqitem_cfg, req.msg, bag_change_log)
             if err_code ~= ErrorCode.None then
                 return context.S2C(context.net_id, CmdCode.PBUseUniqItemRspCmd, {
                     code = err_code,

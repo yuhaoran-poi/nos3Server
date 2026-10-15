@@ -2292,6 +2292,51 @@ function Bag.AddSkinCard(bagType, baginfo, item_data, change_log)
     return ErrorCode.None
 end
 
+function Bag.AddUniqueGift(bagType, baginfo, item_data, change_log)
+    local item_cfg = GameCfg.UniqueItem[item_data.common_info.config_id] -- 耐久度道具配置？
+    if not item_cfg then
+        return ErrorCode.ItemNotExist
+    end
+    -- 类型检查
+    local item_type = ItemDefine.GetItemBagType(item_data.common_info.config_id)
+    if baginfo.bag_item_type ~= ItemDefine.ItemBagType.ALL
+        and baginfo.bag_item_type ~= item_type then
+        return ErrorCode.BagTypeMismatch
+    end
+
+    -- 处理物品记录
+    local add_pos = 0
+    local itype = ItemDefine.GetItemType(item_data.common_info.config_id)
+    for pos = 1, baginfo.capacity do
+        if not baginfo.items[pos] then
+            local new_item = table.copy(item_data)
+            if not new_item
+                or not new_item.common_info then
+                new_item = ItemDef.newItemData()
+                new_item.itype = itype
+                new_item.common_info.config_id = item_cfg.id
+                new_item.common_info.item_count = 1
+                new_item.common_info.item_type = item_cfg.type1
+                new_item.common_info.trade_cnt = -1
+            end
+            if new_item.common_info.uniqid == 0 then
+                new_item.common_info.uniqid = common.UniqueId.next()
+            end
+
+            baginfo.items[pos] = new_item
+            Bag.AddLog(change_log, pos, {})
+            add_pos = pos
+
+            break
+        end
+    end
+    if add_pos == 0 then
+        return ErrorCode.BagFull
+    end
+
+    return ErrorCode.None
+end
+
 function Bag.SyncBagInfo(bagType, sync_baginfo, change_log)
     -- 参数校验
     if bagType ~= BagDef.BagType.Cangku
@@ -2940,6 +2985,8 @@ function Bag.AddItems(bagType, stack_item_datas, unstack_item_datas, change_log)
             err_code = Bag.AddSpaceRing(bagType, baginfo, item_data, change_log[bagType])
         elseif item_small_type == ItemDefine.EItemSmallType.SkinCard then
             err_code = Bag.AddSkinCard(bagType, baginfo, item_data, change_log[bagType])
+        elseif item_small_type == ItemDefine.EItemSmallType.UniqueGift then
+            err_code = Bag.AddUniqueGift(bagType, baginfo, item_data, change_log[bagType])
         else
             moon.error(string.format("AddItems failed, item_data=%s", json.pretty_encode(item_data)))
             err_code = ErrorCode.ItemNotExist

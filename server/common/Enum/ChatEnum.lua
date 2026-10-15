@@ -4,7 +4,7 @@ local ChatEnum = {
 	-- 频道类型
 	EChannelType = {
        CHANNEL_TYPE_NONE = 0,    --无
-       CHANNEL_TYPE_NEARBY = 1,  --附近
+       CHANNEL_TYPE_NEARBY = 1,  --主城附近
        CHANNEL_TYPE_WORLD = 2,   --世界
        CHANNEL_TYPE_TEAM = 3,    --队伍
        CHANNEL_TYPE_GUILD = 4,   --公会

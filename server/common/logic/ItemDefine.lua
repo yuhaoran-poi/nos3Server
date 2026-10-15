@@ -41,6 +41,7 @@ local ItemDefine = {
     GhostDiagrams = { start = 640000, End = 649999 },
     SpaceRing = { start = 650000, End = 659999 },
     SkinCard = { start = 661000, End = 880999 },
+    UniqueGift = { start = 881000, End = 881999 },
     HeadSkin = { start = 1015000, End = 1015499 },
     HeadFrameSkin = { start = 1015500, End = 1015999 },
     AweItem = { start = 1016000, End = 1016499 },
@@ -85,6 +86,7 @@ local ItemDefine = {
         TreasureChest = 32,
         StackAntique = 33, -- 鉴定前的可堆叠古董
         SkinTryCard = 34,
+        UniqueGift = 35,
         Other = 255,
     },
 
@@ -168,6 +170,8 @@ function ItemDefine.GetItemType(nConfigId)
         return ItemDefine.EItemSmallType.GhostSkin
     elseif nConfigId >= ItemDefine.SpaceRing.start and nConfigId <= ItemDefine.SpaceRing.End then
         return ItemDefine.EItemSmallType.SpaceRing
+    elseif nConfigId >= ItemDefine.UniqueGift.start and nConfigId <= ItemDefine.UniqueGift.End then
+        return ItemDefine.EItemSmallType.UniqueGift
     elseif nConfigId >= ItemDefine.ItemSkin.start and nConfigId <= ItemDefine.ItemSkin.End then
         return ItemDefine.EItemSmallType.ItemSkin
     elseif nConfigId >= ItemDefine.HeadSkin.start and nConfigId <= ItemDefine.HeadSkin.End then
@@ -208,6 +212,8 @@ function ItemDefine.GetItemPosType(nConfigId)
     elseif nItemType == ItemDefine.EItemSmallType.SkinTryCard then
         return ItemDefine.EItemBigType.StackItem
     elseif nItemType == ItemDefine.EItemSmallType.SkinCard then
+        return ItemDefine.EItemBigType.UnStackItem
+    elseif nItemType == ItemDefine.EItemSmallType.UniqueGift then
         return ItemDefine.EItemBigType.UnStackItem
     elseif nItemType == ItemDefine.EItemSmallType.ItemSkin then
         return ItemDefine.EItemBigType.Skin
@@ -383,6 +389,8 @@ function ItemDefine.GetItemDataFromIdCount(item_list, coin_list, stack_items, un
                         end
                         table.insert(unstack_items, new_item)
                     elseif item_small_type == ItemDefine.EItemSmallType.SkinCard then
+                        table.insert(unstack_items, new_item)
+                    elseif item_small_type == ItemDefine.EItemSmallType.UniqueGift then
                         table.insert(unstack_items, new_item)
                     end
                 end

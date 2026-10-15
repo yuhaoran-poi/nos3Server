@@ -894,6 +894,37 @@ function Trademgr.NotifyAlreadySendSaleMail(seller_uid)
     Trademgr.wait_sale_mail_uids[seller_uid] = nil
 end
 
+function Trademgr.GmTakeOffProduct(trade_id)
+    local scope <close> = lock_trade_data()
+
+    if Trademgr.product_list[trade_id] then
+        local product_simple_data = Trademgr.product_list[trade_id]
+        if product_simple_data.seller_uid ~= GM_UID then
+            return ErrorCode.TradeProductNotSeller
+        end
+        Trademgr.ChangeTradeRecord(product_simple_data)
+        Trademgr.product_list[trade_id] = nil
+        Trademgr.product_endts[trade_id] = nil
+        -- 从redis中删除商品
+        Database.RedisDelProductData(context.addr_db_redis, { trade_id })
+
+        local trade_products = Database.gettradeproductwithids(context.addr_db_game, { trade_id })
+        if trade_products and #trade_products == 1 then
+            local trade_product = trade_products[1]
+            -- GM_UID主动下架
+            local ret = Database.updatetradeproduct(context.addr_db_game, trade_product.trade_id,
+                { state = TradeDef.StateType.ON_SALE }, { state = TradeDef.StateType.TAKE_DOWNED }, true)
+            if ret ~= 1 then
+                moon.error(string.format("GmTakeOffProduct err = %s", json.pretty_encode(trade_product)))
+                return ErrorCode.TradeProductNotExist
+            end
+            return ErrorCode.None
+        end
+    end
+
+    return ErrorCode.TradeProductNotExist
+end
+
 function Trademgr.TakeOffProduct(uid, trade_id)
     local scope <close> = lock_trade_data()
 

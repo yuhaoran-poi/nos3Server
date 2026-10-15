@@ -561,7 +561,9 @@ function Auction.PBAuctionSaleReqCmd(req)
     end
     
     local item_type = ItemDefine.GetItemType(req.msg.config_id)
-    if item_type ~= ItemDefine.EItemSmallType.SkinCard and item_data.special_info then
+    if item_type ~= ItemDefine.EItemSmallType.SkinCard
+        and item_type ~= ItemDefine.EItemSmallType.UniqueGift
+        and item_data.special_info then
         if item_data.special_info.magic_item then
             if table.size(item_data.special_info.magic_item.tags) > 0 then
                 for _, tag in pairs(item_data.special_info.magic_item.tags) do

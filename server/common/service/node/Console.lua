@@ -85,6 +85,7 @@ Command List:
 	cancel_system_mail <uid> <mail_id> #撤销系统邮件. 1234567 cancel_system_mail 12345 给玩家1234567撤销系统邮件12345
 	add_treasure_box <uid> <config_id> <item_count> #给玩家加宝箱. 1234567 30001 2 给玩家1234567加2个30001宝箱
 	add_trade_product <sale_config_id> <sale_num> <sale_price> <sale_ts> #添加交易行商品. 10001 10 100 3600 添加交易行商品10001,10个,单价100元,3600秒有效
+	take_down_trade_product <trade_id> #下架交易行商品. take_down_trade_product 1234567890 下架交易行商品1234567890
 	close_start_game <close_reason> #关闭游戏开始. close_start_game 关闭游戏
 	open_start_game <open_reason> #打开游戏开始. open_start_game 打开游戏
 	add_grade_score <uid> <count> #增加段位积分. 1234567 999 给玩家1234567增加999段位积分
@@ -487,6 +488,19 @@ function Console.add_trade_product(sale_config_id, sale_num, sale_price, sale_ts
 
         return Response(0, "OK trade_id: " .. res)
     end
+end
+
+function Console.take_down_trade_product(trade_id)
+	local res, err = clusterd.call(3999, "trademgr", "Trademgr.GmTakeOffProduct", trade_id)
+	if err then
+		moon.error("Console.take_down_trade_product err: ", trade_id)
+		return Response(444, err, trade_id)
+    else
+        if res == 0 then
+			return Response(0, "OK", trade_id)
+		end
+		return Response(0, "ret_code:" .. res, trade_id)
+	end
 end
 
 function Console.close_start_game(close_reason)

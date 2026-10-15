@@ -83,41 +83,47 @@ function Billmgr.CheckOrder()
                 use_url = serverconf.STEAM_CONF.sandbox_query_order_url
             end
             local get_url = use_url .. "?" .. param_str
-            local response = httpc.get(get_url)
-            -- print_r(response)
-            moon.info("Billmgr.CheckOrder query_order response:", response)
-            local json_success, rsp_data = pcall(json.decode, response.body or "")
-            if json_success and rsp_data and rsp_data.response.result == 'OK' then
-                if rsp_data.response.params.status == 'Init' then
-                    moon.info("Billmgr.CheckOrder orderid = %s, status = %s", orderid, rsp_data.response.params.status)
-                elseif rsp_data.response.params.status == 'Approved' then
-                    context.send_user(check_data.order_info.uid, "Bill.FinalizeOrder", check_data.order_info.orderid)
-                    moon.info("Billmgr.CheckOrder Approved orderid = %s, status = %s", orderid,
-                        rsp_data.response.params.status)
-                elseif rsp_data.response.params.status == 'Succeeded' then
-                    if check_data.order_info.state == BillDef.orderStatus.WAIT then
-                        local ret = Database.updatebillorderstate(context.addr_db_game, check_data.order_info.orderid,
-                            check_data.order_info.state, BillDef.orderStatus.PAID, true)
-                        if ret > 0 then
-                            check_data.order_info.state = BillDef.orderStatus.PAID
-                            context.send_user(check_data.order_info.uid, "Bill.OnBillPaid", check_data.order_info)
+            -- 轮询循环的生命线: 任何一次查询异常都不能打挂本协程,
+            -- 否则 while true 轮询永久停摆, 全部在途单冻结
+            local http_ok, response = pcall(httpc.get, get_url)
+            if not http_ok or not response then
+                moon.error("Billmgr.CheckOrder query http failed, orderid:", orderid, tostring(response))
+            else
+                -- print_r(response)
+                moon.info("Billmgr.CheckOrder query_order response:", response)
+                local json_success, rsp_data = pcall(json.decode, response.body or "")
+                if json_success and rsp_data and rsp_data.response and rsp_data.response.result == 'OK' then
+                    if rsp_data.response.params.status == 'Init' then
+                        moon.info("Billmgr.CheckOrder orderid = %s, status = %s", orderid, rsp_data.response.params.status)
+                    elseif rsp_data.response.params.status == 'Approved' then
+                        context.send_user(check_data.order_info.uid, "Bill.FinalizeOrder", check_data.order_info.orderid)
+                        moon.info("Billmgr.CheckOrder Approved orderid = %s, status = %s", orderid,
+                            rsp_data.response.params.status)
+                    elseif rsp_data.response.params.status == 'Succeeded' then
+                        if check_data.order_info.state == BillDef.orderStatus.WAIT then
+                            local ret = Database.updatebillorderstate(context.addr_db_game, check_data.order_info.orderid,
+                                check_data.order_info.state, BillDef.orderStatus.PAID, true)
+                            if ret > 0 then
+                                check_data.order_info.state = BillDef.orderStatus.PAID
+                                context.send_user(check_data.order_info.uid, "Bill.OnBillPaid", check_data.order_info)
+                            end
                         end
+                        table.insert(del_orderids, orderid)
+                    elseif rsp_data.response.params.status == 'Failed' then
+                        Database.updatebillorderstate(context.addr_db_game, check_data.order_info.orderid,
+                            check_data.order_info.state, BillDef.orderStatus.FAIL, false)
+                        context.send_user(check_data.order_info.uid, "Bill.OnBillFailed", check_data.order_info)
+                        table.insert(del_orderids, orderid)
+                    elseif rsp_data.response.params.status == 'Refunded'
+                        or rsp_data.response.params.status == 'PartialRefund'
+                        or rsp_data.response.params.status == 'Chargedback'
+                        or rsp_data.response.params.status == 'RefundedSuspectedFraud'
+                        or rsp_data.response.params.status == 'RefundedFriendlyFraud' then
+                        Database.updatebillorderstate(context.addr_db_game, check_data.order_info.orderid,
+                            check_data.order_info.state, BillDef.orderStatus.REFUND, true)
+                        context.send_user(check_data.order_info.uid, "Bill.OnBillRefund", check_data.order_info)
+                        table.insert(del_orderids, orderid)
                     end
-                    table.insert(del_orderids, orderid)
-                elseif rsp_data.response.params.status == 'Failed' then
-                    Database.updatebillorderstate(context.addr_db_game, check_data.order_info.orderid,
-                        check_data.order_info.state, BillDef.orderStatus.FAIL, false)
-                    context.send_user(check_data.order_info.uid, "Bill.OnBillFailed", check_data.order_info)
-                    table.insert(del_orderids, orderid)
-                elseif rsp_data.response.params.status == 'Refunded'
-                    or rsp_data.response.params.status == 'PartialRefund'
-                    or rsp_data.response.params.status == 'Chargedback'
-                    or rsp_data.response.params.status == 'RefundedSuspectedFraud'
-                    or rsp_data.response.params.status == 'RefundedFriendlyFraud' then
-                    Database.updatebillorderstate(context.addr_db_game, check_data.order_info.orderid,
-                        check_data.order_info.state, BillDef.orderStatus.REFUND, true)
-                    context.send_user(check_data.order_info.uid, "Bill.OnBillRefund", check_data.order_info)
-                    table.insert(del_orderids, orderid)
                 end
             end
         end

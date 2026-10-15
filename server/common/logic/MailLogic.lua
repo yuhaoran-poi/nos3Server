@@ -161,6 +161,7 @@ function MailLogic.DealSystemMail(send_info_str)
                         new_item_data.common_info.trade_cnt = attachment.trade_cnt
                     end
                     if small_type ~= ItemDefine.EItemSmallType.SkinCard
+                        and small_type ~= ItemDefine.EItemSmallType.UniqueGift
                         and attachment.special_info then
                         new_item_data.special_info.durab_item = ItemDef.newDurabItem()
                         if attachment.special_info and attachment.special_info.cur_durability then

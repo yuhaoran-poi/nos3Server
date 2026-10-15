@@ -26,6 +26,30 @@ local function escape(s)
     end))
 end
 
+local function days_from_civil(y, m, d)
+    if m <= 2 then
+        y = y - 1
+    end
+    local era = math.floor(y / 400)
+    local yoe = y - era * 400
+    local mp  = (m + 9) % 12 -- 3月=0, 4月=1, ..., 2月=11
+    local doy = math.floor((153 * mp + 2) / 5) + d - 1
+    local doe = yoe * 365 + math.floor(yoe / 4) - math.floor(yoe / 100) + doy
+    return era * 146097 + doe - 719468
+end
+
+-- 将 Steam 返回的 UTC 时间字符串转成 Unix 时间戳（秒）
+-- 输入示例: "2026-10-13T13:47:20Z"
+local function parse_steam_time_to_unix(iso_str)
+    local y, m, d, h, mi, s = iso_str:match("(%d+)-(%d+)-(%d+)T(%d+):(%d+):(%d+)Z")
+    if not y then return nil end
+    y, m, d, h, mi, s = tonumber(y), tonumber(m), tonumber(d),
+        tonumber(h), tonumber(mi), tonumber(s)
+
+    local days = days_from_civil(y, m, d)
+    return days * 86400 + h * 3600 + mi * 60 + s
+end
+
 ---@class Bill
 local Bill = {}
 
@@ -527,12 +551,98 @@ function Bill.PBApplyBillOrderReqCmd(req)
     end
 
     if bills.on_order_id > 0 then
-        return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
-            code = ErrorCode.OnOrder,
-            error = "当前有订单中",
-            uid = context.uid,
-            on_order_id = bills.on_order_id,
-        }, req.msg_context.stub_id)
+        local cur_order_info = Bill.GetCurrentOrder(req.msg.on_order_id)
+        if not cur_order_info then
+            bills.on_order_id = 0
+        end
+
+        if bills.on_order_id > 0 and cur_order_info then
+            -- local ret_status = cur_order_info.state
+            local json_success, rsp_data = Bill.QueryOrder(bills.on_order_id, cur_order_info.transid)
+            if not json_success or not rsp_data then
+                return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
+                    code = ErrorCode.OrderParsingFailed,
+                    error = "解析订单响应失败",
+                    uid = context.uid,
+                    on_order_id = bills.on_order_id,
+                }, req.msg_context.stub_id)
+            else
+                if rsp_data.response.result == 'OK' then
+                    if rsp_data.response.params.status == 'Init' then
+                        if rsp_data.response.params.timecreated then
+                            local created_ts = parse_steam_time_to_unix(rsp_data.response.params.timecreated)
+                            -- created_ts可能为nil(畸形时间串), 不判空会让整个处理器算术崩溃
+                            if created_ts and moon.time() - created_ts > 600 then
+                                -- 超时10分钟: 释放指针让玩家可下新单.
+                                -- 必须同时从billmgr名单摘除, 否则老单随后Succeeded时
+                                -- OnBillPaid会因指针已指向新单而miss, 玩家付了钱当场不到账
+                                bills.on_order_id = 0
+                                Bill.SetCurrentOrder(nil, cur_order_info.orderid)
+                                clusterd.send(3999, "billmgr", "Billmgr.DelBill", cur_order_info.orderid)
+                            end
+                        end
+                        cur_order_info.state = BillDef.orderStatus.WAIT
+                    elseif rsp_data.response.params.status == 'Approved' then
+                        Bill.FinalizeOrder(cur_order_info.orderid)
+
+                        cur_order_info.state = BillDef.orderStatus.WAIT
+                    elseif rsp_data.response.params.status == 'Succeeded' then
+                        clusterd.send(3999, "billmgr", "Billmgr.DelBill", bills.on_order_id)
+                        -- 发货必须按订单自己的商品配置取, 不能用本次请求的bill_cfg:
+                        -- 玩家卡着的Succeeded老单是A商品时, 本次申请B商品会把B的道具发给A的付款
+                        local order_cfg = GameCfg.RechargeStoreConfig[cur_order_info.bill_id]
+                        if not order_cfg then
+                            return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
+                                code = ErrorCode.BillIdInvalid,
+                                error = "充值ID错误",
+                                uid = context.uid,
+                                on_order_id = bills.on_order_id,
+                            }, req.msg_context.stub_id)
+                        end
+                        Bill.BillDeliver(cur_order_info, order_cfg) -- 充值成功,发货
+                        if cur_order_info.state == BillDef.orderStatus.DONE then
+                            Bill.AddBillAmount(bills, cur_order_info, order_cfg)
+                        end
+                    elseif rsp_data.response.params.status == 'Failed' then
+                        clusterd.send(3999, "billmgr", "Billmgr.DelBill", bills.on_order_id)
+                        Bill.BillFailed(cur_order_info) -- 充值失败,记录失败
+                    elseif rsp_data.response.params.status == 'Refunded'
+                        or rsp_data.response.params.status == 'PartialRefund'
+                        or rsp_data.response.params.status == 'Chargedback'
+                        or rsp_data.response.params.status == 'RefundedSuspectedFraud'
+                        or rsp_data.response.params.status == 'RefundedFriendlyFraud' then
+                        -- 订单已退款
+                        -- 购物车中的一个或多个物品已退款
+                        -- 订单存在欺诈或争议
+                        -- 因涉嫌欺诈,该订单已被 Valve 退款
+                        -- 因被认定为友好欺诈,该订单已被 Valve 退款
+                        clusterd.send(3999, "billmgr", "Billmgr.DelBill", bills.on_order_id)
+                        Bill.BillRefund(cur_order_info) -- 充值退款,记录退款
+                    else
+                        moon.error("PBCheckBillOrderReqCmd 未知订单状态: " .. rsp_data.response.params.status)
+                    end
+                end
+            end
+
+            if cur_order_info.state == BillDef.orderStatus.DONE
+                or cur_order_info.state == BillDef.orderStatus.FAIL
+                or cur_order_info.state == BillDef.orderStatus.CLOSE
+                or cur_order_info.state == BillDef.orderStatus.REFUND then
+                bills.on_order_id = 0
+                -- CAS 清: 只在 on_order_info 还指向本订单时才清
+                Bill.SetCurrentOrder(nil, cur_order_info.orderid)
+                Bill.SaveBillsNow()
+            end
+        end
+
+        if bills.on_order_id > 0 then
+            return context.S2C(context.net_id, CmdCode.PBApplyBillOrderRspCmd, {
+                code = ErrorCode.OnOrder,
+                error = "当前有订单中",
+                uid = context.uid,
+                on_order_id = bills.on_order_id,
+            }, req.msg_context.stub_id)
+        end
     end
 
     local res, err = clusterd.call(3999, "billmgr", "Billmgr.GetNowOrderId")
@@ -669,7 +779,7 @@ function Bill.PBCheckBillOrderReqCmd(req)
 
     local ret_status = cur_order_info.state
     local json_success, rsp_data = Bill.QueryOrder(bills.on_order_id, cur_order_info.transid)
-    if not json_success then
+    if not json_success or not rsp_data then
         return context.S2C(context.net_id, CmdCode.PBCheckBillOrderRspCmd, {
             code = ErrorCode.OrderParsingFailed,
             error = "解析订单响应失败",
