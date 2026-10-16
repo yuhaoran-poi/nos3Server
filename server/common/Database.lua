@@ -2327,7 +2327,7 @@ end
 
 function _M.getauctionproductwithnum(addr, start_auction_id, state, num)
     local cmd = string.format([[
-        SELECT auction_id, config_id, uniqid, seller_uid, delay_cnt, beg_ts, end_ts, item_data, start_price, buyout_price, cur_price, buyer_uid FROM mgame.auction_product WHERE auction_id >= %d AND state = %d ORDER BY auction_id LIMIT %d;
+        SELECT auction_id, config_id, uniqid, seller_uid, delay_cnt, beg_ts, end_ts, item_data, start_price, buyout_price, cur_price, buyer_uid, state FROM mgame.auction_product WHERE auction_id >= %d AND state = %d ORDER BY auction_id LIMIT %d;
     ]], start_auction_id, state, num)
     local res, err = moon.call("lua", addr, cmd)
     if err then
@@ -2359,6 +2359,10 @@ function _M.getauctionproductwithnum(addr, start_auction_id, state, num)
             product.beg_ts = res[i].beg_ts
             product.end_ts = res[i].end_ts
             product.delay_cnt = res[i].delay_cnt
+            -- state必须从行回填: 此函数是Auctionmgr重启重载内存商品表的唯一来源,
+            -- 缺失时商品state会是模板默认UNKNOWN(0), 之后BuyAuctionProduct的
+            -- 无条件update会把0写回DB, 导致到期下架CAS(WHERE state=1)永久失配
+            product.state = res[i].state
             product.auction_data.start_price = res[i].start_price
             product.auction_data.buyout_price = res[i].buyout_price
             product.auction_data.cur_price = res[i].cur_price
