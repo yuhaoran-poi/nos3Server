@@ -360,6 +360,11 @@ function Auction.PBGetAuctionInfoReqCmd(req)
         return context.S2C(context.net_id, CmdCode["PBGetAuctionInfoRspCmd"],
             { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
     end
+    local auction_cfg = GameCfg.TransactionConfig[2]
+    if not auction_cfg or (auction_cfg.unlock_lv and scripts.User.GetNowExp() < auction_cfg.unlock_lv) then
+        return context.S2C(context.net_id, CmdCode.PBGetAuctionInfoRspCmd,
+            { code = ErrorCode.TradeLevelNotEnough, error = "等级不足", uid = context.uid }, req.msg_context.stub_id)
+    end
     Auction.CheckOnSaleCnt(player_auction_data)
 
     local rsp = {
@@ -394,6 +399,11 @@ function Auction.PBAuctionSaleReqCmd(req)
         return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
             { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
     end
+    local auction_cfg = GameCfg.TransactionConfig[2]
+    if not auction_cfg or (auction_cfg.unlock_lv and scripts.User.GetNowExp() < auction_cfg.unlock_lv) then
+        return context.S2C(context.net_id, CmdCode.PBAuctionSaleRspCmd,
+            { code = ErrorCode.TradeLevelNotEnough, error = "等级不足", uid = context.uid }, req.msg_context.stub_id)
+    end
     Auction.CheckOnSaleCnt(player_auction_data)
 
     local uniqitem_conf = GameCfg.UniqueItem[req.msg.config_id]
@@ -406,7 +416,6 @@ function Auction.PBAuctionSaleReqCmd(req)
             { code = ErrorCode.TradeItemNotAllowed, error = "物品不允许交易", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    local auction_cfg = GameCfg.TransactionConfig[2]
     if not auction_cfg
         or not auction_cfg.service_charge_type
         -- or not auction_cfg.order_percentage
@@ -636,9 +645,13 @@ function Auction.PBSearchAuctionProductReqCmd(req)
         return context.S2C(context.net_id, CmdCode["PBSearchAuctionProductRspCmd"],
             { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
     end
+    local auction_cfg = GameCfg.TransactionConfig[2]
+    if not auction_cfg or (auction_cfg.unlock_lv and scripts.User.GetNowExp() < auction_cfg.unlock_lv) then
+        return context.S2C(context.net_id, CmdCode.PBSearchAuctionProductRspCmd,
+            { code = ErrorCode.TradeLevelNotEnough, error = "等级不足", uid = context.uid }, req.msg_context.stub_id)
+    end
 
     if req.msg.config_ids and table.size(req.msg.config_ids) > 0 then
-        local auction_cfg = GameCfg.TransactionConfig[2]
         local max_search_num = MAX_SEARCH_IDS_COUNT
         if auction_cfg and auction_cfg.collection_num and auction_cfg.collection_num > max_search_num then
             max_search_num = auction_cfg.collection_num
@@ -717,6 +730,13 @@ function Auction.PBAuctionBuyReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBAuctionBuyRspCmd, {
             code = ErrorCode.MailConfigError,
             error = "邮件参数错误",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+    if not auction_cfg or (auction_cfg.unlock_lv and scripts.User.GetNowExp() < auction_cfg.unlock_lv) then
+        return context.S2C(context.net_id, CmdCode.PBAuctionBuyRspCmd, {
+            code = ErrorCode.TradeLevelNotEnough,
+            error = "等级不足",
             uid = context.uid,
         }, req.msg_context.stub_id)
     end
@@ -812,6 +832,11 @@ function Auction.PBAuctionTakeOffProductReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBAuctionTakeOffProductRspCmd,
             { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
     end
+    local auction_cfg = GameCfg.TransactionConfig[2]
+    if not auction_cfg or (auction_cfg.unlock_lv and scripts.User.GetNowExp() < auction_cfg.unlock_lv) then
+        return context.S2C(context.net_id, CmdCode.PBAuctionTakeOffProductRspCmd,
+            { code = ErrorCode.TradeLevelNotEnough, error = "等级不足", uid = context.uid }, req.msg_context.stub_id)
+    end
     if not player_auction_data.product_list[req.msg.auction_id] then
         return context.S2C(context.net_id, CmdCode.PBAuctionTakeOffProductRspCmd, {
             code = ErrorCode.TradeProductNotExist,
@@ -865,12 +890,16 @@ function Auction.PBAuctionChangeFocusIdReqCmd(req)
         return context.S2C(context.net_id, CmdCode.PBAuctionChangeFocusIdRspCmd,
             { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
     end
+    local auction_cfg = GameCfg.TransactionConfig[2]
+    if not auction_cfg or (auction_cfg.unlock_lv and scripts.User.GetNowExp() < auction_cfg.unlock_lv) then
+        return context.S2C(context.net_id, CmdCode.PBAuctionChangeFocusIdRspCmd,
+            { code = ErrorCode.TradeLevelNotEnough, error = "等级不足", uid = context.uid }, req.msg_context.stub_id)
+    end
 
     if req.msg.focus_op == 0 then
         player_auction_data.simple_info.focus_auctionid_ts[req.msg.focus_id] = nil
     else
         local max_focus_num = 0
-        local auction_cfg = GameCfg.TransactionConfig[2]
         if auction_cfg and auction_cfg.collection_num and auction_cfg.collection_num > max_focus_num then
             max_focus_num = auction_cfg.collection_num
         end
