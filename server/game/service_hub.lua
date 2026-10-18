@@ -122,6 +122,23 @@ local function command_handler(cmdline, echo)
             split[k] = math.tointeger(v) or v
         end
 
+        -- syschat专用: 支持"..."包裹参数以保留空格, 如 S1 syschat "hello world" "attach text".
+        -- 仅影响syschat, 其他命令仍走空白切分; 无引号或引号未闭合时保持旧行为.
+        -- 注意: 引号内token不经过上面的数字转换, 保持string原样传给聊天接口.
+        if split[2] == "syschat" then
+            local body = cmdline:match("syschat%s+(.+)$") or ""
+            local blocks = {}
+            for block in body:gmatch('"([^"]*)"') do
+                blocks[#blocks + 1] = block
+            end
+            if #blocks > 0 then
+                split = { split[1], split[2] }
+                for _, b in ipairs(blocks) do
+                    split[#split + 1] = b
+                end
+            end
+        end
+
         local serverid = -1
         if flag == "S" then--server
             serverid = math.tointeger(string.sub(split[1],2))

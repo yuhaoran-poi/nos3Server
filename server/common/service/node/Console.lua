@@ -77,7 +77,7 @@ Command List:
 
 User command format:     U<uid> command params
 Command List:
-	syschat <msg_content> <msg_attach> #发送系统聊天. syschat 你好 这是聊天附件字符串
+	syschat <msg_content> <msg_attach> #发送系统聊天, 参数含空格时用""包裹. syschat "hello world" "attach text"
 	addscore <uid> <count> #增加积分. 1234567 999 给玩家1234567增加999积分
 	add_account_exp <uid> <count> #增加账号经验. 1234567 999 给玩家1234567增加999账号经验
 	add_items <uid> <config_id> <item_count> #增加物品. 1234567 30001 2 给玩家1234567增加2个30001物品
