@@ -27,6 +27,60 @@ local auth_queue = context.auth_queue
 --local temp_openid = {}
 local NODE = math.tointeger(moon.env("NODE"))
 
+-- --
+-- local pb = require("pb")
+-- local json = require("json")
+
+-- -- 在已经加载 protocol/proto.pb 的环境里运行。
+-- local order = { 16, 1, 11, 6, 21, 12, 22, 17, 2 }
+
+-- local function varint(n)
+--     local bytes = {}
+--     repeat
+--         local b = n & 127
+--         n = n >> 7
+--         bytes[#bytes + 1] = string.char(n > 0 and (b | 128) or b)
+--     until n == 0
+--     return table.concat(bytes)
+-- end
+
+-- local function field(tag, value)
+--     return varint(tag) .. varint(#value) .. value
+-- end
+
+-- local function slots(items)
+--     local keys = {}
+--     for key in pairs(items) do
+--         keys[#keys + 1] = tonumber(key)
+--     end
+--     table.sort(keys)
+--     return table.concat(keys, ",")
+-- end
+
+-- local entries = {}
+-- for _, pos in ipairs(order) do
+--     local item = pb.encode("PBItemData", {
+--         common_info = {
+--             config_id = 40035,
+--             item_count = pos,
+--         }
+--     })
+
+--     -- PBBag.items 的 map entry：key=1，value=2。
+--     local entry = string.char(8) .. varint(pos) .. field(18, item)
+--     entries[#entries + 1] = field(34, entry)
+-- end
+
+-- -- bag_item_type=2，capacity=25。
+-- local wire = string.char(8, 2, 16, 25) .. table.concat(entries)
+-- local bag = assert(pb.decode("PBBag", wire))
+
+-- print("PB实际格子:", slots(bag.items))
+-- print("Lua长度:", table.size(bag.items))
+-- print("JSON打印:", json.pretty_encode(bag))
+-- print("JSON往返后的格子:", slots(json.decode(json.encode(bag)).items))
+-- --
+
 --------------------------------------------------------------------------
 -- 登录重载段并发限流(轮询式排队)
 -- 登录分两段: 前置校验(steam/loginuser一条流ODKU, 走
@@ -424,7 +478,7 @@ local function QuitOneDs(ds)
         context.dsid_map[ds.dsid] = nil
     end
     context.net_id_map[ds.net_id] = nil
-    moon.error(string.format("QuitOneDs net_id = %d", ds.net_id))
+    moon.error(string.format("QuitOneDs net_id = %d dsid = %d", ds.net_id, ds.dsid or -1))
 end
 
 ---@class Auth

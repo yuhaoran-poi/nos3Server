@@ -234,13 +234,22 @@ end
 
 function Citymgr.CheckCityRun()
     local function query_cb(rsp_data)
-        if not rsp_data or not rsp_data.gameservers or #rsp_data.gameservers ~= 1 then
-            return false
+        -- 返回值第二参数为判死原因, 会进入 CITYDS_PROBE_DEAD 日志:
+        -- gameservers_count_0=GS对象已被删(k8s回收/驱逐), count_N(N>1)=异常多实例,
+        -- labels_missing=GS存在但标签异常, no_gameservers_field/empty_rsp=响应结构异常
+        if not rsp_data then
+            return false, "empty_rsp"
+        end
+        if not rsp_data.gameservers then
+            return false, "no_gameservers_field"
+        end
+        if #rsp_data.gameservers ~= 1 then
+            return false, "gameservers_count_" .. #rsp_data.gameservers
         end
 
         local gameserver = rsp_data.gameservers[1]
         if not gameserver.labels then
-            return false
+            return false, "labels_missing"
         end
 
         return true
@@ -258,6 +267,7 @@ function Citymgr.CheckCityRun()
             -- 这个查询就是主城的存活探针: 查不到 / 响应不符合预期, 都判该城不可用并丢弃
             local query_ok, response = pcall(httpc.get, get_url)
             local rsp_data
+            local fail_reason
             if query_ok then
                 -- response 可能为 nil(httpc 某些失败路径不返回 table), 取 body 前必须先判空
                 local body = (response and response.body) or ""
@@ -266,36 +276,42 @@ function Citymgr.CheckCityRun()
                     rsp_data = decoded
                 else
                     query_ok = false
+                    fail_reason = "decode_fail"
                     moon.error(string.format("CheckCityRun json.decode failed cityid:%d url:%s body:\n%s",
                         cityid, get_url, tostring(body)))
                 end
             else
+                fail_reason = "http_fail"
                 moon.error(string.format("CheckCityRun httpc.get failed cityid:%d url:%s err:%s",
                     cityid, get_url, tostring(response)))
             end
 
             local success = false
             if query_ok then
-                success = query_cb(rsp_data)
+                success, fail_reason = query_cb(rsp_data)
             end
 
             if not success then
                 if rsp_data ~= nil then
                     moon.error(string.format("CheckCityRun rsp_data:\n%s", json.pretty_encode(rsp_data)))
                 end
-                table.insert(dead_cityids, cityid)
+                -- 探针判死留痕(路径B): 若为误杀, game侧不会出现对应的close/CITYDS_EXIT日志
+                moon.warn(string.format("CITYDS_PROBE_DEAD cityid:%d region:%s reason:%s players:%d",
+                    cityid, tostring(cityinfo.region), fail_reason or "unknown", table.size(cityinfo.players)))
+                table.insert(dead_cityids, { cityid = cityid, reason = fail_reason or "unknown" })
             elseif cityinfo.now_num < min_num then
                 table.insert(canEnterRoom, cityid)
             end
         end
 
-        for _, cityid in pairs(dead_cityids) do
+        for _, dead in pairs(dead_cityids) do
+            local cityid = dead.cityid
             -- 销毁附近聊天频道
             local res = ChatLogic.RemoveNearbyChannel(cityid)
             if res.code ~= ErrorCode.None then
                 moon.error(string.format("RemoveNearbyChannel cityid:%d, code:%d", cityid, res.code))
             end
-            Citymgr.DestroyCity(cityid)
+            Citymgr.DestroyCity(cityid, "probe:" .. dead.reason)
         end
 
         if #canEnterRoom + table.size(context.waitds_citys) < 1 then
@@ -335,13 +351,16 @@ function Citymgr.CreateCity()
     Citymgr.AddWaitDSCitys(cityid, json.encode(allocate_data))
 end
 
-function Citymgr.DestroyCity(cityid)
+function Citymgr.DestroyCity(cityid, reason)
     local scope <close> = lock_run()
 
     local city = context.citys[cityid]
     if not city then
         return
     end
+    -- reason: "ds_exit"=ds断链触发(DsNode.Exit, 路径A); "probe:xxx"=探针判死触发(路径B)
+    moon.warn(string.format("CITYDS_DESTROY cityid:%d region:%s reason:%s players:%d",
+        cityid, tostring(city.region), tostring(reason), table.size(city.players)))
     local notify_uids = {}
     for uid, _ in pairs(city.players) do
         context.uid_cityid[uid] = nil
@@ -577,7 +596,8 @@ function Citymgr.SetCityDestroy(cityid)
     if res.code ~= ErrorCode.None then
         moon.error(string.format("RemoveNearbyChannel cityid:%d, code:%d, error:%s", cityid, res.code, res.error or "nil"))
     end
-    Citymgr.DestroyCity(cityid)
+    -- 调用来源是 DsNode.Exit: 即主城 ds 的 TCP 断开(路径A)
+    Citymgr.DestroyCity(cityid, "ds_exit")
 end
 
 function Citymgr.Start()

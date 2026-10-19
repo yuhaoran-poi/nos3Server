@@ -95,7 +95,15 @@ socket.on("close", function(fd, msg)
     -- 同一房间上一局的 DS 在新局 DS 登录后才退出时, 按 dsid 上报会让 auth 取到
     -- "最新登录"(当前局的 dsnode)并错杀当前局(DsNode.Exit 补发把进行中的新一局拉回房间态)
     moon.send('lua', context.addr_auth, "Auth.DsDisconnect", c.net_id)
-    print("GAME SERVER: close", fd, c.net_id, data)
+    -- dsid<=10000为主城(citymgr编号), >10000为副本(roommgr编号), 与DsNode.Exit的判定一致;
+    -- idle=距ds最后一条上行消息的秒数, 用于区分"活跃中断"与"长时间静默后被网络层掐断"
+    local dstype = (c.dsid and c.dsid <= 10000) and "city" or "room"
+    local now = moon.time()
+    moon.info(string.format(
+        "GAME SERVER: close type:%s dsid:%d net_id:%d fd:%d reason:%s uptime:%ds idle:%ds",
+        dstype, c.dsid or -1, c.net_id, fd, tostring(data),
+        c.connect_time and (now - c.connect_time) or -1,
+        c.last_ping_time and (now - c.last_ping_time) or -1))
 end)
 
 moon.raw_dispatch("S2D", function(msg)

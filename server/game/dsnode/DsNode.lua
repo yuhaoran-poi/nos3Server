@@ -92,6 +92,7 @@ end
 function DsNode.Init()
     GameCfg.Load()
     context.is_end = false
+    context.start_time = moon.time() -- Exit 时用于计算 ds 存活时长
 end
 
 function DsNode.Start()
@@ -159,6 +160,10 @@ function DsNode.Exit()
                 { roomid = context.dsid, nid = moon.env("NODE"), addr_dsnode = context.addr_dsnode })
         end
     else
+        -- 走到这里说明 dgate 检测到主城 ds 的 TCP 断开(路径A); 探针判死(路径B)不经过这里
+        moon.warn(string.format("CITYDS_EXIT cityid:%d net_id:%d uptime:%ds",
+            context.dsid, context.net_id or -1,
+            context.start_time and (moon.time() - context.start_time) or -1))
         clusterd.send(3999, "citymgr", "Citymgr.SetCityDestroy", context.dsid)
     end
 

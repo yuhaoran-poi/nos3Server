@@ -32,7 +32,8 @@ function DGate.Start()
                 -- 60秒超时
                 -- if now_ts - c.last_ping_time > 60 and c.dsid > 10000 then
                 if now_ts - c.last_ping_time > 60 then
-                    moon.warn("user", c.dsid, "ping timeout")
+                    local dstype = (c.dsid and c.dsid <= 10000) and "city" or "room"
+                    moon.warn("DS_PING_KICK", dstype, c.dsid, c.net_id or -1, c.fd or -1, "ping timeout")
                     socket.close(c.fd)
                 end
             end
@@ -90,6 +91,7 @@ function DGate.BindDS(req)
         fd = req.fd,
         addr_dsnode = req.addr_dsnode,
         last_ping_time = moon.time(),
+        connect_time = moon.time(), -- 断开时用于计算连接存活时长
     }
 
     context.fd_map[req.fd] = c
