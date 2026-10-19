@@ -42,8 +42,15 @@ function Auctionmgr.Init()
         while true do
             moon.sleep(3000) -- 每3秒检查一次
             if Auctionmgr.load_finish then
-                Auctionmgr.CheckEndts()
-                Auctionmgr.TakeDownProduct()
+                -- 错误隔离: 轮询协程一次抛错即被coresume关闭且不会重启(moon.lua:108-116),
+                -- 到期下架会整体停摆(全部商品变僵尸), 必须保证异常后下一拍继续
+                local ok, err = xpcall(function()
+                    Auctionmgr.CheckEndts()
+                    Auctionmgr.TakeDownProduct()
+                end, debug.traceback)
+                if not ok then
+                    moon.error("Auctionmgr.CheckEndts polling error:\n", err)
+                end
             end
         end
     end)
@@ -52,7 +59,13 @@ function Auctionmgr.Init()
         while true do
             moon.sleep(1000) -- 每1秒检查一次
             if Auctionmgr.load_finish then
-                Auctionmgr.AddAuctionLog()
+                -- 同上: 成交日志停发=在线买卖双方都收不到钱货
+                local ok, err = xpcall(function()
+                    Auctionmgr.AddAuctionLog()
+                end, debug.traceback)
+                if not ok then
+                    moon.error("Auctionmgr.AddAuctionLog polling error:\n", err)
+                end
             end
         end
     end)

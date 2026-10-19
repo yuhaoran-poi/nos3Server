@@ -63,15 +63,17 @@ function Auction.CheckData()
         return false
     end
 
-    if player_auction_data.simple_info.auction_ids and table.size(player_auction_data.simple_info.auction_ids) > 0 then
-        local new_product_datas = Database.RedisGetAuctionProductData(context.addr_db_redis,
-            player_auction_data.simple_info.auction_ids)
-        if new_product_datas then
-            player_auction_data.simple_info.auction_ids = {}
-            for _, product_data in pairs(new_product_datas) do
-                player_auction_data.product_list[product_data.auction_id] = product_data
-                table.insert(player_auction_data.simple_info.auction_ids, product_data.auction_id)
-            end
+    -- 以MySQL为权威按卖家全量重建在售列表(不再依赖内存列表回查Redis缓存):
+    -- 上架是跨进程两段操作(auctionmgr写auction_product表+Redis, game侧登记玩家auction_ids),
+    -- 任一段中断(如call挂起期间玩家掉线/user服务退出)都会造成"商品在售但玩家列表无记录"(线上479);
+    -- 玩家列表是覆盖式保存, 丢失后无自愈路径, 这里每次登录重建, 半程状态自动找回
+    local products = Database.getauctionproductbyseller(context.addr_db_user, AuctionDef.StateType.ON_SALE,
+        context.uid)
+    if products then
+        player_auction_data.simple_info.auction_ids = {}
+        for _, product_data in pairs(products) do
+            player_auction_data.product_list[product_data.auction_id] = product_data
+            table.insert(player_auction_data.simple_info.auction_ids, product_data.auction_id)
         end
     end
 

@@ -902,6 +902,8 @@ function _M.loaduserbags(addr, uid, bags_id, data_version)
                     new_bagdata[BagDef.BagType.Cangku].capacity = canku_json_tbl.capacity
                     new_bagdata[BagDef.BagType.Cangku].items = canku_json_tbl.items
                     new_bagdata[BagDef.BagType.Cangku].grid_id = 1
+                    -- new_bagdata[BagDef.BagType.Cangku].item_lock = canku_json_tbl.item_lock
+                    -- new_bagdata[BagDef.BagType.Cangku].uniq_item_lock = canku_json_tbl.uniq_item_lock
 
                     local warehouse_cfgs = GameCfg.WarehouseExpansion
                     if warehouse_cfgs and table.size(warehouse_cfgs) > 0 then
@@ -922,6 +924,8 @@ function _M.loaduserbags(addr, uid, bags_id, data_version)
                     new_bagdata[BagDef.BagType.Consume].capacity = consume_json_tbl.capacity
                     new_bagdata[BagDef.BagType.Consume].items = consume_json_tbl.items
                     new_bagdata[BagDef.BagType.Consume].grid_id = 1
+                    -- new_bagdata[BagDef.BagType.Consume].item_lock = consume_json_tbl.item_lock
+                    -- new_bagdata[BagDef.BagType.Consume].uniq_item_lock = consume_json_tbl.uniq_item_lock
 
                     local consume_cfgs = GameCfg.ConsumablesBackpackExpansion
                     if consume_cfgs and table.size(consume_cfgs) > 0 then
@@ -942,6 +946,8 @@ function _M.loaduserbags(addr, uid, bags_id, data_version)
                     new_bagdata[BagDef.BagType.Booty].capacity = booty_json_tbl.capacity
                     new_bagdata[BagDef.BagType.Booty].items = booty_json_tbl.items
                     new_bagdata[BagDef.BagType.Booty].grid_id = 1
+                    -- new_bagdata[BagDef.BagType.Booty].item_lock = booty_json_tbl.item_lock
+                    -- new_bagdata[BagDef.BagType.Booty].uniq_item_lock = booty_json_tbl.uniq_item_lock
 
                     local booty_cfgs = GameCfg.BootyBackpackExpansion
                     if booty_cfgs and table.size(booty_cfgs) > 0 then
@@ -962,6 +968,8 @@ function _M.loaduserbags(addr, uid, bags_id, data_version)
                     new_bagdata[BagDef.BagType.Tool].capacity = tool_json_tbl.capacity
                     new_bagdata[BagDef.BagType.Tool].items = tool_json_tbl.items
                     new_bagdata[BagDef.BagType.Tool].grid_id = 1
+                    -- new_bagdata[BagDef.BagType.Tool].item_lock = tool_json_tbl.item_lock
+                    -- new_bagdata[BagDef.BagType.Tool].uniq_item_lock = tool_json_tbl.uniq_item_lock
 
                     local tool_cfgs = GameCfg.ToolBackpackExpansion
                     if tool_cfgs and table.size(tool_cfgs) > 0 then
@@ -2187,6 +2195,55 @@ function _M.getauctionwithids(addr, state_type, ids, sort_describe, start_idx, n
     end
     moon.error("getauctionwithids failed", where_str, err)
     return nil
+end
+
+-- 按卖家取指定状态的在售商品(登录对账CheckData重建玩家在售列表用, MySQL是权威数据源)。
+-- 上架是跨进程两段操作(auctionmgr写auction_product表, game侧登记玩家auction_ids),
+-- 任一段中断(如call挂起期间玩家掉线/user服务退出)都会造成"商品在售但玩家列表无记录"(线上479),
+-- 按卖家全量重建可自动找回此类半程状态
+function _M.getauctionproductbyseller(addr, state_type, seller_uid)
+    local cmd = string.format([[
+        SELECT auction_id, config_id, uniqid, seller_uid, beg_ts, end_ts, delay_cnt, item_data, start_price, buyout_price, cur_price, buyer_uid, state FROM mgame.auction_product WHERE state = %d AND seller_uid = %d;
+    ]], state_type, seller_uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error(string.format("getauctionproductbyseller err = %s", json.pretty_encode(err)))
+        return nil
+    end
+    local products = {}
+    if res and #res > 0 then
+        for i = 1, #res do
+            local product = AuctionDef.newAuctionProductBaseData()
+            product.auction_id = res[i].auction_id
+            product.seller_uid = res[i].seller_uid
+            product.config_id = res[i].config_id
+            product.uniqid = res[i].uniqid
+
+            local item_data_str = res[i].item_data
+            if item_data_str and #item_data_str > 0 then
+                local ok, item_data = protocol.decodewithname("PBItemData", crypt.base64decode(item_data_str))
+                if ok then
+                    product.item_data = item_data
+                else
+                    -- 单条解码失败跳过并记错, 不中断整批(对账场景一条坏数据不应让全部重建作废)
+                    moon.error(string.format("getauctionproductbyseller decode item_data failed: %s, auction_id=%s",
+                        tostring(item_data), tostring(res[i].auction_id)))
+                end
+            end
+
+            product.beg_ts = res[i].beg_ts
+            product.end_ts = res[i].end_ts
+            product.delay_cnt = res[i].delay_cnt
+            product.auction_data.start_price = res[i].start_price
+            product.auction_data.buyout_price = res[i].buyout_price
+            product.auction_data.cur_price = res[i].cur_price
+            product.auction_data.buyer_uid = res[i].buyer_uid
+            -- state必须回填: 模板默认UNKNOWN(0)会被后续出价/下架写回DB造成污染(同getauctionproductwithnum的修复)
+            product.state = res[i].state
+            table.insert(products, product)
+        end
+    end
+    return products
 end
 
 function _M.getauctionwithconditions(addr, state_type, condition1, condition2, condition3, condition4, condition5,
