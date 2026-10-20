@@ -113,9 +113,18 @@ function Auctionmgr.Start()
             end
 
             if now_ts >= auction_product.end_ts then
-                -- 已过期，应该下架
-                auction_product.state = AuctionDef.StateType.TAKE_DOWNING
-                Auctionmgr.take_down_auction_ids[auction_product.auction_id] = auction_product
+                -- 已过期: 有真实买家按当前价成交, 否则下架
+                if auction_product.auction_data.buyer_uid > 0 then
+                    -- 到期成交, Redis商品表在下方统一删除
+                    if not Auctionmgr.DealExpireAuctionProduct(auction_product) then
+                        -- 购买结算失败,依旧下架
+                        auction_product.state = AuctionDef.StateType.TAKE_DOWNING
+                        Auctionmgr.take_down_auction_ids[auction_product.auction_id] = auction_product
+                    end
+                else
+                    auction_product.state = AuctionDef.StateType.TAKE_DOWNING
+                    Auctionmgr.take_down_auction_ids[auction_product.auction_id] = auction_product
+                end
                 -- 删除从redis商品表
                 Database.RedisDelAuctionProductData(context.addr_db_redis, { auction_product.auction_id })
             else
@@ -136,6 +145,46 @@ function Auctionmgr.Start()
     return true
 end
 
+-- 到期成交: 有真实买家(buyer_uid>0)的到期商品按当前价cur_price成交, 行为对齐BuyAuctionProduct的买断分支
+-- (DB CAS置CLOSE(3) + 成交日志入队), 成交日志由AddAuctionLog轮询落库并通知买卖双方
+-- (卖家收cur_price-税, 买家收物品)。买家的钱在出价时已被game侧全额扣除, 此处不退款, 资金经成交日志闭环。
+-- 返回false表示DB状态已非在售(异常路径), 调用方按原下架路径处理(其CAS同样失配并留痕, 不会重复发放钱货)
+function Auctionmgr.DealExpireAuctionProduct(product_data)
+    local auction_cfg = GameCfg.TransactionConfig[2]
+    if not auction_cfg then
+        moon.error("Auctionmgr.DealExpireAuctionProduct auction_cfg not found")
+        return false
+    end
+
+    product_data.state = AuctionDef.StateType.CLOSE
+    local ret = Database.updateauctionproduct(context.addr_db_game, product_data.auction_id,
+        { state = AuctionDef.StateType.ON_SALE }, { state = AuctionDef.StateType.CLOSE }, true)
+    if ret ~= 1 then
+        moon.error(string.format("Auctionmgr.DealExpireAuctionProduct CAS err = %s", json.pretty_encode(product_data)))
+        return false
+    end
+
+    local short_scope <close> = lock_auction_log()
+
+    local now_ts = moon.time()
+    local auction_log = AuctionDef.newAuctionLogData()
+    auction_log.auction_id = product_data.auction_id
+    auction_log.config_id = product_data.config_id
+    auction_log.uniqid = product_data.uniqid
+    auction_log.item_data = product_data.item_data
+    auction_log.deal_price = product_data.auction_data.cur_price
+    auction_log.seller_uid = product_data.seller_uid
+    auction_log.buyer_uid = product_data.auction_data.buyer_uid
+    auction_log.auction_ts = now_ts
+    if auction_cfg.service_charge then
+        -- 向上取整
+        auction_log.auction_tax = math.ceil(product_data.auction_data.cur_price * auction_cfg.service_charge /
+            10000)
+    end
+    table.insert(Auctionmgr.add_auction_logs, auction_log)
+    return true
+end
+
 function Auctionmgr.CheckEndts()
     local now_ts = moon.time()
 
@@ -147,8 +196,17 @@ function Auctionmgr.CheckEndts()
             if now_ts >= end_ts then
                 if Auctionmgr.product_list[auction_id] then
                     local product_data = Auctionmgr.product_list[auction_id]
-                    product_data.state = AuctionDef.StateType.TAKE_DOWNING
-                    Auctionmgr.take_down_auction_ids[auction_id] = product_data
+                    if product_data.auction_data.buyer_uid > 0 then
+                        -- 到期有真实买家: 按当前价成交, 不走下架退款
+                        if not Auctionmgr.DealExpireAuctionProduct(product_data) then
+                            -- 购买结算失败,依旧下架
+                            product_data.state = AuctionDef.StateType.TAKE_DOWNING
+                            Auctionmgr.take_down_auction_ids[auction_id] = product_data
+                        end
+                    else
+                        product_data.state = AuctionDef.StateType.TAKE_DOWNING
+                        Auctionmgr.take_down_auction_ids[auction_id] = product_data
+                    end
                     table.insert(remove_auction_ids, auction_id)
                 end
             else
@@ -181,7 +239,8 @@ function Auctionmgr.TakeDownProduct()
         if ret ~= 1 then
             moon.error(string.format("Auctionmgr.TakeDownProduct err = %s", json.pretty_encode(product_data)))
         else
-            if product_data.auction_data.buyer_uid then
+            -- 到期成交分流后此处商品必然无买家(buyer_uid=0), >0判断兜底防止给uid=0发退款垃圾
+            if product_data.auction_data.buyer_uid > 0 then
                 -- 给失败的买家退回邮件
                 local wait_data = {
                     uid = product_data.auction_data.buyer_uid,
@@ -344,16 +403,18 @@ function Auctionmgr.BuyAuctionProduct(buyer_uid, auction_id, uniqid, buy_price)
     end
 
     -- 给失败的买家退回邮件
-    local wait_data = {
-        uid = old_buyer_uid,
-        auction_id = product_data.auction_id,
-        config_id = product_data.config_id,
-        uniqid = product_data.uniqid,
-        price = old_buy_price,
-        send_ts = now_ts,
-    }
-    Database.RedisSetAuctionWaitMail(context.addr_db_redis, wait_data)
-    context.send_user(old_buyer_uid, "Auction.OnAuctionFailMail", wait_data)
+    if old_buyer_uid > 0 then
+        local wait_data = {
+            uid = old_buyer_uid,
+            auction_id = product_data.auction_id,
+            config_id = product_data.config_id,
+            uniqid = product_data.uniqid,
+            price = old_buy_price,
+            send_ts = now_ts,
+        }
+        Database.RedisSetAuctionWaitMail(context.addr_db_redis, wait_data)
+        context.send_user(old_buyer_uid, "Auction.OnAuctionFailMail", wait_data)
+    end
 
     return { code = ErrorCode.None, real_buy_price = real_buy_price }
 end

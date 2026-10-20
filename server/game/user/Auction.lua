@@ -360,12 +360,13 @@ function Auction.PBGetAuctionInfoReqCmd(req)
     local player_auction_data = scripts.UserModel.GetAuctionData()
     if not player_auction_data then
         return context.S2C(context.net_id, CmdCode["PBGetAuctionInfoRspCmd"],
-            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid, now_sys_ts = moon.time() }, req.msg_context.stub_id)
     end
     local auction_cfg = GameCfg.TransactionConfig[2]
     if not auction_cfg or (auction_cfg.unlock_lv and scripts.User.GetNowExp() < auction_cfg.unlock_lv) then
         return context.S2C(context.net_id, CmdCode.PBGetAuctionInfoRspCmd,
-            { code = ErrorCode.TradeLevelNotEnough, error = "等级不足", uid = context.uid }, req.msg_context.stub_id)
+            { code = ErrorCode.TradeLevelNotEnough, error = "等级不足", uid = context.uid, now_sys_ts = moon.time() },
+            req.msg_context.stub_id)
     end
     Auction.CheckOnSaleCnt(player_auction_data)
 
@@ -373,7 +374,8 @@ function Auction.PBGetAuctionInfoReqCmd(req)
         code = ErrorCode.None,
         error = "",
         uid = context.uid,
-        self_auction_info = player_auction_data
+        self_auction_info = player_auction_data,
+        now_sys_ts = moon.time(),
     }
     return context.S2C(context.net_id, CmdCode["PBGetAuctionInfoRspCmd"], rsp, req.msg_context.stub_id)
 end
