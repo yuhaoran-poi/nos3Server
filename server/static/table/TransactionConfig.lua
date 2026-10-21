@@ -21,6 +21,6 @@
 ---@field public sell_currency integer @卖出后获得货币
 ---@field public unlock_lv integer @解锁需要的等级
 return {
-[1] = { id=1,refresh_time=18000,unsell_time=300,service_charge_type=1,bid_percentage=0,auction_deadline=0,postpone_extratime=0,auction_postpone_maxtime=0,account_market=200,collection_num=20,order_num=50,order_time={[86400]=300,[172800]=600,[345600]=1200},order_currency=1,service_charge=1500,shipments_email=2000010,sell_email=2000011,unsell_email=2000012,expire_email=2000013,failed_email=0,sell_currency=0,unlock_lv=0 },
+[1] = { id=1,refresh_time=18000,unsell_time=300,service_charge_type=1,bid_percentage=0,auction_deadline=0,postpone_extratime=0,auction_postpone_maxtime=0,account_market=200,collection_num=20,order_num=50,order_time={[43200]=300,[86400]=600,[172800]=1200},order_currency=1,service_charge=1500,shipments_email=2000010,sell_email=2000011,unsell_email=2000012,expire_email=2000013,failed_email=0,sell_currency=0,unlock_lv=0 },
 [2] = { id=2,refresh_time=0,unsell_time=0,service_charge_type=1,bid_percentage=11000,auction_deadline=120,postpone_extratime=300,auction_postpone_maxtime=10,account_market=200,collection_num=20,order_num=50,order_time={[43200]=300,[86400]=600,[172800]=1200},order_currency=2,service_charge=1500,shipments_email=2000014,sell_email=2000015,unsell_email=2000016,expire_email=2000017,failed_email=2000018,sell_currency=3,unlock_lv=9061 }
 }
