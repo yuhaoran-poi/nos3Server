@@ -817,6 +817,8 @@ function User.AddAccountExp(add_exp)
     -- 角色榜更新
     scripts.Rank.UpdateRank_Player(now_level)
     User.SetUserAttr(update_user_attr, true)
+
+    scripts.Room.SyncAccountExp(now_exp)
 end
 
 function User.GetAccountBuff()

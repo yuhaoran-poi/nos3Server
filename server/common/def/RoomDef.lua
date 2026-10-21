@@ -16,6 +16,7 @@ local RoomDef = {
         PlayerEarlyRetreat = 12,  -- 玩家提前退出
         PlayerChangeModeMonsterTags = 13, -- 玩家变更模式怪物词条
         MasterChange = 14, -- 房主变更
+        PlayerChangeAccountExp = 15, -- 玩家变更账号经验
     },
     GameMode = {
         STORY_MODE = 1,

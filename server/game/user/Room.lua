@@ -1794,6 +1794,13 @@ function Room.SyncRoleInfo(role_info)
     end
 end
 
+function Room.SyncAccountExp(account_exp)
+    if context.roomid then
+        clusterd.send(3999, "roommgr", "Roommgr.MemberChangeAccountExp",
+            { roomid = context.roomid, uid = context.uid, account_exp = account_exp })
+    end
+end
+
 function Room.PBModMasterReqCmd(req)
     if not req.msg.uid or req.msg.uid ~= context.uid
         or not req.msg.roomid or not req.msg.mod_master_id then

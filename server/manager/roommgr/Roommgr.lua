@@ -1988,6 +1988,59 @@ function Roommgr.MemberChangeRoleInfo(msg)
     return { code = ErrorCode.None }
 end
 
+function Roommgr.MemberChangeAccountExp(msg)
+    local room = context.rooms[msg.roomid]
+    if not room then
+        return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+    if room.room_data.state ~= 0 then
+        return { code = ErrorCode.RoomInGame, error = "房间正在游戏中" }
+    end
+
+    -- 查找玩家在房间中的位置
+    local member_index = nil
+    for i, member in pairs(room.players) do
+        if member.mem_info.uid == msg.uid then
+            member_index = i
+            break
+        end
+    end
+
+    if not member_index then
+        return { code = ErrorCode.RoomMemberNotFound, error = "玩家不在房间内" }
+    end
+
+    -- 更新玩家经验
+    room.players[member_index].mem_info.account_exp = msg.account_exp
+
+    -- 广播状态更新
+    local notify_uids = {}
+    for _, player in pairs(room.players) do
+        table.insert(notify_uids, player.mem_info.uid)
+    end
+    -- context.send_users(notify_uids, {}, "Room.OnReadyStatusUpdate", {
+    --     uid = req.uid,
+    --     roomid = req.roomid,
+    --     is_ready = req.ready_op,
+    -- })
+    local sync_msg = {
+        roomid = room.room_data.roomid,
+        sync_type = RoomDef.SyncType.PlayerChangeAccountExp,
+        sync_info = {
+            players = {},
+        }
+    }
+    table.insert(sync_msg.sync_info.players, {
+        seat_idx = member_index,
+        mem_info = {
+            uid = msg.uid,
+            account_exp = msg.account_exp,
+        },
+    })
+    moon.info(string.format("Roommgr.MemberChangeAccountExp sync_msg:\n%s", json.pretty_encode(sync_msg)))
+    context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", sync_msg)
+end
+
 function Roommgr.NotifyPlayerSwitchCity(uid, cityid)
     local roomid = context.uid_roomid[uid]
     if not roomid then
