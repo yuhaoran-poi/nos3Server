@@ -994,11 +994,23 @@ function User.PBPingCmd(req)
             end
         end
         if table.size(recover_list) > 0 then
-            local ok = User.RecoverGameModeItem(recover_list)
-            if ok then
+            local recover_zero = true
+            for _, recover_cnt in pairs(recover_list) do
+                if recover_cnt > 0 then
+                    recover_zero = false
+                end
+            end
+            if recover_zero then
                 local update_user_attr = {}
                 update_user_attr[ProtoEnum.UserAttrType.last_fresh_mode_ts] = now_ts
                 User.SetUserAttr(update_user_attr, false)
+            else
+                local ok = User.RecoverGameModeItem(recover_list)
+                if ok then
+                    local update_user_attr = {}
+                    update_user_attr[ProtoEnum.UserAttrType.last_fresh_mode_ts] = now_ts
+                    User.SetUserAttr(update_user_attr, false)
+                end
             end
         end
     end
