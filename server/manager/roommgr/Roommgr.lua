@@ -1462,8 +1462,10 @@ function Roommgr.RandomMapAndBoss(room_data)
 
     local tmp_conf = GameCfg.GameChapter[cur_idx]
 
-    -- 鬼王入侵模式
+    -- [随机鬼王] 鬼王入侵不再按 GameModeBoss 时间窗每日固定一只, 改走下方 GameChapter.bossid 权重随机;
+    -- 要恢复每日固定制, 取消下面整段注释即可
     local sure_boss = false
+    --[[ 鬼王入侵模式(每日固定鬼王, 已停用)
     local game_mode_cfg = GameCfg.GameMode[RoomDef.GameMode.BOSS_MODE]
     if game_mode_cfg
         and tmp_conf.chapterid >= game_mode_cfg.begin_id
@@ -1484,6 +1486,7 @@ function Roommgr.RandomMapAndBoss(room_data)
             end
         end
     end
+    -- 随机鬼王(已停用) ]]
 
     local map_total_weight = 0
     for id, weight in pairs(tmp_conf.mapid) do
