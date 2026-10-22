@@ -152,7 +152,7 @@ function Friend.DealRelations()
                 if user_attr then
                     local apply_friend = FriendDef.newApplyFriendData()
                     apply_friend.uid = user_attr.uid
-                    apply_friend.head_icon = user_attr.head_id
+                    apply_friend.head_icon = user_attr.head_icon
                     apply_friend.nick_name = user_attr.nick_name
                     apply_friend.account_level = user_attr.account_level
                     apply_friend.head_frame = user_attr.head_frame
@@ -404,7 +404,7 @@ function Friend.OtherApplyFriend(apply_data)
 
     local apply_friend = FriendDef.newApplyFriendData()
     apply_friend.uid = apply_data.uid
-    apply_friend.head_icon = apply_data.head_id
+    apply_friend.head_icon = apply_data.head_icon
     apply_friend.nick_name = apply_data.nick_name
     apply_friend.account_level = apply_data.account_level
     apply_friend.head_frame = apply_data.head_frame
