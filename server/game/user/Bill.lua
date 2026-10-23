@@ -791,13 +791,11 @@ function Bill.PBCheckBillOrderReqCmd(req)
             if rsp_data.response.params.status == 'Init' then
                 cur_order_info.state = BillDef.orderStatus.WAIT
                 ret_status = cur_order_info.state
-
             elseif rsp_data.response.params.status == 'Approved' then
                 Bill.FinalizeOrder(cur_order_info.orderid)
 
                 cur_order_info.state = BillDef.orderStatus.WAIT
                 ret_status = cur_order_info.state
-
             elseif rsp_data.response.params.status == 'Succeeded' then
                 clusterd.send(3999, "billmgr", "Billmgr.DelBill", bills.on_order_id)
                 local bill_cfg = GameCfg.RechargeStoreConfig[cur_order_info.bill_id]
@@ -814,11 +812,9 @@ function Bill.PBCheckBillOrderReqCmd(req)
                 if cur_order_info.state == BillDef.orderStatus.DONE then
                     Bill.AddBillAmount(bills, cur_order_info, bill_cfg)
                 end
-
             elseif rsp_data.response.params.status == 'Failed' then
                 clusterd.send(3999, "billmgr", "Billmgr.DelBill", bills.on_order_id)
                 ret_status = Bill.BillFailed(cur_order_info) -- 充值失败,记录失败
-
             elseif rsp_data.response.params.status == 'Refunded'
                 or rsp_data.response.params.status == 'PartialRefund'
                 or rsp_data.response.params.status == 'Chargedback'
@@ -831,13 +827,12 @@ function Bill.PBCheckBillOrderReqCmd(req)
                 -- 因被认定为友好欺诈,该订单已被 Valve 退款
                 clusterd.send(3999, "billmgr", "Billmgr.DelBill", bills.on_order_id)
                 ret_status = Bill.BillRefund(cur_order_info) -- 充值退款,记录退款
-
             else
                 moon.error("PBCheckBillOrderReqCmd 未知订单状态: " .. rsp_data.response.params.status)
             end
         end
     end
-    
+
     if cur_order_info.state == BillDef.orderStatus.DONE
         or cur_order_info.state == BillDef.orderStatus.FAIL
         or cur_order_info.state == BillDef.orderStatus.CLOSE
@@ -850,7 +845,7 @@ function Bill.PBCheckBillOrderReqCmd(req)
         -- CAS 恢复: 只在还没被其他协程改写时才写回
         Bill.SetCurrentOrder(cur_order_info, cur_order_info.orderid)
     end
-    
+
     return context.S2C(context.net_id, CmdCode.PBCheckBillOrderRspCmd, {
         code = ErrorCode.None,
         error = "",
@@ -858,6 +853,64 @@ function Bill.PBCheckBillOrderReqCmd(req)
         on_order_id = req.msg.on_order_id,
         order_state = ret_status,
     }, req.msg_context.stub_id)
+end
+
+function Bill.CheckDLC()
+    local is_active = Database.checksteamdlc(context.addr_db_user, context.uid)
+    if is_active then
+        return
+    end
+
+    local query_user_attr = {}
+    table.insert(query_user_attr, ProtoEnum.UserAttrType.plateform_id)
+    local query_res = scripts.User.QueryUserAttr(query_user_attr)
+    if not query_res.user_attr or not query_res.user_attr[ProtoEnum.UserAttrType.plateform_id] then
+        moon.error(string.format("Bill CheckDLC 获取用户steamid失败: %d", context.uid))
+        return false, nil
+    end
+    local steamid = tonumber(query_res.user_attr[ProtoEnum.UserAttrType.plateform_id])
+
+    local order_form = {
+        key = serverconf.STEAM_CONF.order_key,
+        appid = serverconf.STEAM_CONF.appId,
+        steamid = steamid,
+    }
+    local param_tbl = {}
+    for k, v in pairs(order_form) do
+        table.insert(param_tbl, string.format("%s=%s", escape(k), escape(v)))
+    end
+    local param_str = table.concat(param_tbl, "&")
+    local use_url = serverconf.STEAM_CONF.query_order_url
+    if serverconf.STEAM_CONF.is_sandbox and serverconf.STEAM_CONF.is_sandbox == 1 then
+        use_url = serverconf.STEAM_CONF.sandbox_query_order_url
+    end
+    local get_url = use_url .. "?" .. param_str
+    local ok, response = pcall(httpc.get, get_url)
+    if not ok or not response then
+        moon.error(string.format("Bill CheckDLC query_order http failed: %s", tostring(response)))
+        return
+    end
+    -- print_r(response)
+    moon.info("Bill CheckDLC response: ", response)
+    local json_success, rsp_data = pcall(json.decode, response.body or "")
+    local add_dlc = false
+    if json_success and rsp_data.appownership then
+        if rsp_data.appownership.ownsapp
+            and rsp_data.appownership.ownsapp == true
+            and rsp_data.appownership.permanent
+            and rsp_data.appownership.permanent == true then
+            add_dlc = true
+        end
+    end
+
+    if not add_dlc then
+        return
+    end
+
+    -- 发送邮件
+    ----------
+
+    Database.addsteamdlc(context.addr_db_user, context.uid, steamid)
 end
 
 return Bill

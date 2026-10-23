@@ -66,7 +66,7 @@ end
 
 function Mailmgr.AddSystemMail(system_info)
     local ret_id = Database.add_system_mail(context.addr_db_game, system_info.mail_data, system_info.all_user,
-    system_info.recv_uids, system_info.cover_new)
+        system_info.recv_uids, system_info.cover_new)
     if ret_id <= 0 then
         return {success = false, id = ret_id}
     end
