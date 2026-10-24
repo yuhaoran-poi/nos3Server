@@ -1075,12 +1075,12 @@ function Trade.PBTradeBuyReqCmd(req)
 
             scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.TradeBuy)
         else
-            -- 计算获得资源发送邮件
+            -- 计算获得资源发送邮件(同样使用转绑定后的道具id)
             local item_simple_data = ItemDef.newItemSimple()
-            item_simple_data.config_id = req.msg.config_id
+            item_simple_data.config_id = get_itemid
             item_simple_data.item_count = res.data.total_real_buy_num
             local attach_items_simple = {}
-            attach_items_simple[req.msg.config_id] = item_simple_data
+            attach_items_simple[get_itemid] = item_simple_data
 
             local mail_ret = scripts.Mail.RecvImmediateMail(trade_cfg.shipments_email, attach_items_simple, {}, {})
             if not mail_ret then
@@ -1330,7 +1330,13 @@ function Trade.PBTradeBuyComplexReqCmd(req)
     end
 
     -- 开始购买
+    local is_gm = false
+    if TradeDef.GM_UID[context.uid] then
+        is_gm = true
+    end
+
     local add_list = {}
+    local buy_id_num_ret = {} -- 按购买请求的原始道具id记录成交数量, 用于响应
     local mgr_err_code = ErrorCode.None
     for config_id, buy_prod in pairs(req.msg.buy_prods) do
         local res, err = clusterd.call(3999, "trademgr", "Trademgr.BuyTradeProduct", context.uid, config_id,
@@ -1354,11 +1360,20 @@ function Trade.PBTradeBuyComplexReqCmd(req)
             break
         end
         if res.data.total_real_buy_num > 0 then
-            add_list[config_id] = {
-                id = config_id,
+            -- 购买到手转为绑定道具发货(GM豁免), 与PBTradeBuyReqCmd一致
+            local get_itemid = config_id
+            if not is_gm and GameCfg.TradeItemBindConfig then
+                local bind_cfg = GameCfg.TradeItemBindConfig[get_itemid]
+                if bind_cfg and bind_cfg.id_bind and bind_cfg.id_bind > 0 then
+                    get_itemid = bind_cfg.id_bind
+                end
+            end
+            add_list[get_itemid] = {
+                id = get_itemid,
                 count = res.data.total_real_buy_num,
                 pos = 0,
             }
+            buy_id_num_ret[config_id] = res.data.total_real_buy_num
         end
 
         lock_coin_count = res.data.remain_coin
@@ -1461,8 +1476,8 @@ function Trade.PBTradeBuyComplexReqCmd(req)
         buy_id_num = {},
         buy_total_price = cost_coins[trade_cfg.order_currency].coin_count,
     }
-    for config_id, add_value in pairs(add_list) do
-        msg_ret.buy_id_num[config_id] = add_value.count
+    for config_id, buy_cnt in pairs(buy_id_num_ret) do
+        msg_ret.buy_id_num[config_id] = buy_cnt
     end
     moon.debug(string.format("Trade.PBTradeBuyComplexReqCmd msg_ret:%s", json.pretty_encode(msg_ret)))
     return context.S2C(context.net_id, CmdCode.PBTradeBuyComplexRspCmd, msg_ret, req.msg_context.stub_id)
