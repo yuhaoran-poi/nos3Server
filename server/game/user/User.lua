@@ -3092,7 +3092,7 @@ function User.OpenGift(item_cfg, msg_data, bag_change_log, add_roles)
         
         for i = 1, msg_data.use_item_cnt do
             local id_weight = table.copy(item_cfg.award_weight, true)
-            for i = 1, item_cfg.award_count do
+            for j = 1, item_cfg.award_count do
                 local rand_item_id = scripts.Item.RangeTags(id_weight)
                 if rand_item_id == 0 then
                     moon.error("rand_item_id error")
