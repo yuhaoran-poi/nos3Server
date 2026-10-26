@@ -203,6 +203,7 @@ local function run(node_conf)
         -- 加入世界聊天频道
         local res_w = ChatLogic.AddWorldChannelGameNode(moon.env("NODE"), moon.queryservice("gate"), serverconf.WORLD_ID)
         local res = ChatLogic.AddSystemChannelGameNode(moon.env("NODE"), moon.queryservice("gate"))
+        local res_recruit = ChatLogic.AddRecruitChannelGameNode(moon.env("NODE"), moon.queryservice("gate"), serverconf.RECRUIT_CHANNEL_ID)
 
         -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         -- GameCfg.Load()
@@ -254,6 +255,7 @@ local function run(node_conf)
                 local ChatLogic = require("common.logic.ChatLogic") --聊天逻辑
                 ChatLogic.RemoveWorldChannelGameNode(moon.env("NODE"), serverconf.WORLD_ID)
                 ChatLogic.RemoveSystemChannelGameNode(moon.env("NODE"))
+                ChatLogic.RemoveRecruitChannelGameNode(moon.env("NODE"), serverconf.RECRUIT_CHANNEL_ID)
                 -- 通知节点管理器
                 assert(moon.call("lua", moon.queryservice("dgate"), "DGate.Shutdown"))
                 assert(moon.call("lua", moon.queryservice("gate"), "Gate.Shutdown"))

@@ -69,6 +69,11 @@ function ChatLogic.SendMsgToWorld(to_msg)
     cluster.send(CmdEnum.FixedNodeId.CHAT, "chatmgr", "ChatMgr.SendWorldChannelMsg", to_msg, serverconf.WORLD_ID)
 end
 
+-- 发送消息到招募频道
+function ChatLogic.SendMsgToRecruit(to_msg)
+    cluster.send(CmdEnum.FixedNodeId.CHAT, "chatmgr", "ChatMgr.SendRecruitChannelMsg", to_msg, serverconf.RECRUIT_CHANNEL_ID)
+end
+
 -- 创建队伍频道
 function ChatLogic.newTeamChannel(team_id)
     local res, err = cluster.call(CmdEnum.FixedNodeId.CHAT, "chatmgr", "ChatMgr.CreateTeamChannel", team_id)
@@ -184,7 +189,35 @@ end
 -- game节点退出世界聊天频道
 function ChatLogic.RemoveWorldChannelGameNode(node_id, world_id)
     local res, err = cluster.call(CmdEnum.FixedNodeId.CHAT, "chatmgr", "ChatMgr.RemoveWorldChannelGameNode", node_id,
-    world_id)
+        world_id)
+    if not res then
+        moon.error("remove world channel game node failed: ", err)
+        return { code = ErrorCode.RemoveWorldChannelGameNodeErr }
+    end
+    if res.code ~= ErrorCode.None then
+        return { code = res.code, error = res.error }
+    end
+    return { code = ErrorCode.None }
+end
+
+-- game节点加入招募聊天频道
+function ChatLogic.AddRecruitChannelGameNode(node_id, addr_gate, world_id)
+    local res, err = cluster.call(CmdEnum.FixedNodeId.CHAT, "chatmgr", "ChatMgr.AddRecruitChannelGameNode", node_id,
+        addr_gate, world_id)
+    if not res then
+        moon.error("add world channel game node failed: ", err)
+        return { code = ErrorCode.AddWorldChannelGameNodeErr }
+    end
+    if res.code ~= ErrorCode.None then
+        return { code = res.code, error = res.error }
+    end
+    return { code = ErrorCode.None }
+end
+
+-- game节点退出招募聊天频道
+function ChatLogic.RemoveRecruitChannelGameNode(node_id, world_id)
+    local res, err = cluster.call(CmdEnum.FixedNodeId.CHAT, "chatmgr", "ChatMgr.RemoveRecruitChannelGameNode", node_id,
+        world_id)
     if not res then
         moon.error("remove world channel game node failed: ", err)
         return { code = ErrorCode.RemoveWorldChannelGameNodeErr }

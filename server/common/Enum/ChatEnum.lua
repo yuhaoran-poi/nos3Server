@@ -10,7 +10,8 @@ local ChatEnum = {
        CHANNEL_TYPE_GUILD = 4,   --公会(暂无)
        CHANNEL_TYPE_PRIVATE = 5, --私聊
        CHANNEL_TYPE_SYSTEM = 6, --系统
-       CHANNEL_TYPE_ROOM = 7, --房间
+        CHANNEL_TYPE_ROOM = 7,   --房间
+        CHANNEL_TYPE_RECRUIT = 8,  --招募
     }
 
 }

@@ -155,6 +155,17 @@ function ChatProxy.PBChatReqCmd(req)
             context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.RoomMemberNotFound }, req)
             return { code = ErrorCode.RoomMemberNotFound }
         end
+    elseif channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_RECRUIT then     --招募
+        -- 招募聊天cd
+        local recruit_chat_cd = 30                                             -- todo 配置
+        if GameCfg.ChatChannelConfig[WORLD_CHAT_CD_CONFID] then
+            recruit_chat_cd = GameCfg.ChatChannelConfig[WORLD_CHAT_CD_CONFID].value
+        end
+        if context.world_chat_last_time
+            and now_ts - context.world_chat_last_time < recruit_chat_cd then
+            context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChatSendInterval }, req)
+            return { code = ErrorCode.ChatSendInterval }
+        end
     else
         context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.ChannelNotExists }, req)
         return { code = ErrorCode.ChannelNotExists }
@@ -204,7 +215,9 @@ function ChatProxy.PBChatReqCmd(req)
     else
         local channel_addr = DB.chat_addrs[channel_type]
         -- 检查频道是否存在
-        if not channel_addr and channel_type ~= ChatEnum.EChannelType.CHANNEL_TYPE_WORLD then
+        if not channel_addr
+            and channel_type ~= ChatEnum.EChannelType.CHANNEL_TYPE_WORLD
+            and channel_type ~= ChatEnum.EChannelType.CHANNEL_TYPE_RECRUIT then
             context.R2C(CmdCode.PBChatRspCmd, { code = ErrorCode.NotInChannel }, req)
             return { code = ErrorCode.NotInChannel }
         end
@@ -216,6 +229,8 @@ function ChatProxy.PBChatReqCmd(req)
         }
         if channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_WORLD then
             ChatLogic.SendMsgToWorld(to_msg)
+        elseif channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_RECRUIT then
+            ChatLogic.SendMsgToRecruit(to_msg)
         else
             ChatLogic.SendMsgToChannel(channel_addr, to_msg)
         end

@@ -45,7 +45,8 @@ function ChatChannel.InitData(channel_id, channel_type, channel_addr)
             if #context.channel_msgs > 0 then
                 -- 判断是否系统消息频道
                 if context.channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_SYSTEM
-                    or context.channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_WORLD then
+                    or context.channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_WORLD
+                    or context.channel_type == ChatEnum.EChannelType.CHANNEL_TYPE_RECRUIT then
                     -- 遍历所有游戏节点，发送消息到游戏节点的gate服务
                     for node_id, gate_addr in pairs(context.game_nodes) do
                         cluster.send(node_id, gate_addr, "Gate.BroadcastSysChat", context.channel_msgs)

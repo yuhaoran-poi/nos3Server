@@ -32,6 +32,7 @@ function ChatMgr.Init()
     context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_PRIVATE] = {} -- 私聊频道
     context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_SYSTEM] = {}  -- 系统频道
     context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_ROOM] = {}  -- 房间频道
+    context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_RECRUIT] = {}  -- 招募频道
     return true
 end
 
@@ -40,6 +41,8 @@ function ChatMgr.Start()
     ChatMgr.CreateSystemChannel()
     -- 创建世界聊天频道
     ChatMgr.CreateWorldChannel(serverconf.WORLD_ID)
+    -- 创建招募聊天频道
+    ChatMgr.CreateRecruitChannel(serverconf.RECRUIT_CHANNEL_ID)
     return true
 end
 
@@ -462,6 +465,106 @@ function ChatMgr.RemoveRoomChannelPlayer(room_id, uid)
         return { code = ErrorCode.ChannelNotExists, error = "room chat channel not found" }
     end
     moon.send("lua", channel.addr_channel, "ChatChannel.RemovePlayer", uid)
+    return { code = ErrorCode.None }
+end
+
+-- 新增招募频道
+function ChatMgr.CreateRecruitChannel(recruit_id)
+    -- 判断是否已经存在
+    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_RECRUIT][recruit_id]
+    if channel then
+        moon.error("create recruit chat channel failed: channel already exists! recruit_id = ", recruit_id)
+        return { code = ErrorCode.ChannelAlreadyExists, error = "recruit chat channel already exists" }
+    end
+    -- local channel_id = uuid.next()
+    local channel_id = common.UniqueId.next()
+    local conf = {
+        name = "channel_recruit" .. recruit_id,
+        file = "chat/service_chatchannel.lua"
+    }
+    local addr_channel = moon.new_service(conf)
+    if addr_channel == 0 then
+        moon.error("create recruit chat channel failed: create chat channel service failed! recruit_id = ", recruit_id)
+        return { code = ErrorCode.CreateChatChannelServiceErr, error = "create recruit chat channel service failed" }
+    end
+    -- 初始化频道数据
+    local res, err = moon.call("lua", addr_channel, "ChatChannel.InitData", channel_id,
+        ChatEnum.EChannelType.CHANNEL_TYPE_RECRUIT, addr_channel)
+    if not res then
+        moon.error("init recruit chat channel data failed: ", err)
+        return { code = ErrorCode.InitChatChannelDataErr, error = err }
+    end
+
+    context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_RECRUIT][recruit_id] = {
+        channel_id = channel_id,
+        addr_channel = addr_channel
+    }
+    return { code = ErrorCode.None, channel_id = channel_id, addr_channel = addr_channel }
+end
+
+-- 移除招募频道
+function ChatMgr.RemoveRecruitChannel(recruit_id)
+    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_RECRUIT][recruit_id]
+    if not channel then
+        moon.warn("remove recruit chat channel failed: channel not found! recruit_id = ", recruit_id)
+        return { code = ErrorCode.ChannelNotExists, error = "recruit chat channel not found" }
+    end
+    moon.send("lua", channel.addr_channel, "ChatChannel.Shutdown")
+    context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_RECRUIT][recruit_id] = nil
+    return { code = ErrorCode.None }
+end
+
+-- 招募频道加入玩家
+function ChatMgr.AddRecruitChannelPlayer(recruit_id, uid)
+    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_RECRUIT][recruit_id]
+    if not channel then
+        moon.warn("add recruit chat channel player failed: channel not found! recruit_id = ", recruit_id, ",uid = ", uid)
+        return { code = ErrorCode.ChannelNotExists, error = "recruit chat channel not found" }
+    end
+    moon.send("lua", channel.addr_channel, "ChatChannel.AddPlayer", uid)
+    return { code = ErrorCode.None }
+end
+
+-- 招募频道移除玩家
+function ChatMgr.RemoveRecruitChannelPlayer(recruit_id, uid)
+    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_RECRUIT][recruit_id]
+    if not channel then
+        moon.warn("remove recruit chat channel player failed: channel not found! recruit_id = ", recruit_id, ",uid = ", uid)
+        return { code = ErrorCode.ChannelNotExists, error = "recruit chat channel not found" }
+    end
+    moon.send("lua", channel.addr_channel, "ChatChannel.RemovePlayer", uid)
+    return { code = ErrorCode.None }
+end
+
+-- 招募频道加入game节点
+function ChatMgr.AddRecruitChannelGameNode(node_id, addr_gate, recruit_id)
+    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_RECRUIT][recruit_id]
+    if not channel then
+        return { code = ErrorCode.ChannelNotExists, error = "recruit chat channel not found" }
+    end
+    moon.send("lua", channel.addr_channel, "ChatChannel.AddGameNode", node_id, addr_gate)
+    return { code = ErrorCode.None }
+end
+
+-- 招募频道移除game节点
+function ChatMgr.RemoveRecruitChannelGameNode(node_id, recruit_id)
+    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_RECRUIT][recruit_id]
+    if not channel then
+        return { code = ErrorCode.ChannelNotExists, error = "recruit chat channel not found" }
+    end
+    moon.send("lua", channel.addr_channel, "ChatChannel.RemoveGameNode", node_id)
+    return { code = ErrorCode.None }
+end
+
+-- 发送招募频道消息
+function ChatMgr.SendRecruitChannelMsg(to_msg, recruit_id)
+    local channel = context.Channels[ChatEnum.EChannelType.CHANNEL_TYPE_RECRUIT][recruit_id]
+    if not channel then
+        moon.error("send recruit chat channel msg failed: channel not found! recruit_id = ", recruit_id)
+        return { code = ErrorCode.ChannelNotExists, error = "recruit chat channel not found" }
+    end
+
+    moon.send("lua", channel.addr_channel, "ChatChannel.AddMsg", to_msg)
     return { code = ErrorCode.None }
 end
  
