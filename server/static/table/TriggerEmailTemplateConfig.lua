@@ -11,5 +11,6 @@
 ---@field public is_active boolean @该邮件是否有效
 return {
 [1000001] = { id=1000001,icon=1,type=1,title=1001,content=4001,signature=9000,attachment={[40001]=1,[40003]=3,[1]=1000},validity_period=604800,read_validity_period=604800,is_active=true },
-[1000002] = { id=1000002,icon=2,type=2,title=1002,content=4002,signature=9000,attachment={[40001]=1,[40003]=3,[1]=1000},validity_period=604800,read_validity_period=604800,is_active=true }
+[1000002] = { id=1000002,icon=2,type=2,title=1002,content=4002,signature=9000,attachment={[40001]=1,[40003]=3,[1]=1000},validity_period=604800,read_validity_period=604800,is_active=true },
+[1000003] = { id=1000003,icon=3,type=3,title=1003,content=4003,signature=9000,attachment={[40003]=3,[1]=1000},validity_period=604800,read_validity_period=604800,is_active=true }
 }
