@@ -640,14 +640,14 @@ takeoffIdx"e
 uid (Ruid,
 mode_difficulty_id (RmodeDifficultyId)
 now_tags (2.PBMonsterTagsRnowTagsbproto3
-ô
+´	
 common.protoghost.proto"ì
 PBMessagePack
 net_id (RnetId
 	broadcast (R	broadcast
 stub_id (RstubId
 msg_type (RmsgType
-msg_body (RmsgBody"ù
+msg_body (RmsgBody"Ø
 PBDsCreateData
 ds_id (RdsId
 chapter (Rchapter
@@ -660,7 +660,12 @@ difficulty
 server_port (R
 serverPort
 uids (Ruids:
-mode_monster_tags	 (2.PBMonsterTagsRmodeMonsterTags"9
+mode_monster_tags	 (2.PBMonsterTagsRmodeMonsterTagsM
+energy_paid_full
+ (2#.PBDsCreateData.EnergyPaidFullEntryRenergyPaidFullA
+EnergyPaidFullEntry
+key (Rkey
+value (Rvalue:8"9
 PBPacketCmd*
 messages (2.PBMessagePackRmessages"
 	PBPingCmd
@@ -1006,7 +1011,7 @@ ds_address (	R	dsAddress
 CityNumListEntry
 key (Rkey
 value (Rvalue:8bproto3
-È;
+ÒC
 
 role.proto
 item.proto"4
@@ -1025,7 +1030,15 @@ start_time (R	startTime
 
 SkinsEntry
 key (Rkey
-value (Rvalue:8"‚
+value (Rvalue:8"Œ
+PBRoleEquipScheme
+
+scheme_idx (R	schemeIdx
+unlocked (Runlocked6
+equips (2.PBRoleEquipScheme.EquipsEntryRequipsF
+EquipsEntry
+key (Rkey!
+value (2.PBItemDataRvalue:8"›
 
 PBRoleData
 	config_id (RconfigId
@@ -1065,7 +1078,11 @@ big_skill2 (2.PBRoleData.BigSkill2EntryR	bigSkill21
 cur_reserve_skill1_id (RcurReserveSkill1IdE
 reserve_skill1 (2.PBRoleData.ReserveSkill1EntryRreserveSkill11
 cur_reserve_skill2_id (RcurReserveSkill2IdE
-reserve_skill2 (2.PBRoleData.ReserveSkill2EntryRreserveSkill2L
+reserve_skill2 (2.PBRoleData.ReserveSkill2EntryRreserveSkill2B
+equip_schemes (2.PBRoleData.EquipSchemesEntryRequipSchemes$
+cur_scheme_idx (RcurSchemeIdx
+energy  (Renergy"
+energy_pay_ts! (RenergyPayTsL
 DigramsCardsEntry
 key (Rkey!
 value (2.PBItemDataRvalue:8=
@@ -1105,7 +1122,10 @@ SkinsEntry
 value (2.PBSkillRvalue:8J
 ReserveSkill2Entry
 key (Rkey
-value (2.PBSkillRvalue:8"‚
+value (2.PBSkillRvalue:8S
+EquipSchemesEntry
+key (Rkey(
+value (2.PBRoleEquipSchemeRvalue:8"‚
 PBUserRoleDatas$
 battle_role_id (RbattleRoleId"
 model_role_id (RmodelRoleId;
@@ -1140,7 +1160,7 @@ roles_info (2.PBUserRoleDatasR	rolesInfo"E
 	role_info (2.PBRoleDataRroleInfo"D
 PBRoleInfoSyncCmd/
 
-roles_info (2.PBUserRoleDatasR	rolesInfo"÷
+roles_info (2.PBUserRoleDatasR	rolesInfo"ı
 PBRoleWearEquipReqCmd
 uid (Ruid
 roleid (Rroleid
@@ -1148,7 +1168,9 @@ roles_info (2.PBUserRoleDatasR	rolesInfo"÷
 pos (Rpos&
 equip_config_id (RequipConfigId!
 equip_uniqid (RequipUniqid
-	equip_idx (RequipIdx"Ä
+	equip_idx (RequipIdx
+
+scheme_idx (R	schemeIdx"Ä
 PBRoleWearEquipRspCmd
 code (Rcode
 error (	Rerror
@@ -1158,7 +1180,7 @@ roles_info (2.PBUserRoleDatasR	rolesInfo"÷
 pos (Rpos&
 equip_config_id (RequipConfigId!
 equip_uniqid (RequipUniqid
-	equip_idx	 (RequipIdx"”
+	equip_idx	 (RequipIdx"Ú
 PBRoleTakeOffEquipReqCmd
 uid (Ruid
 roleid (Rroleid
@@ -1166,7 +1188,9 @@ roles_info (2.PBUserRoleDatasR	rolesInfo"÷
 takeoff_config_id (RtakeoffConfigId%
 takeoff_uniqid (RtakeoffUniqid
 takeoff_idx (R
-takeoffIdx"˝
+takeoffIdx
+
+scheme_idx (R	schemeIdx"˝
 PBRoleTakeOffEquipRspCmd
 code (Rcode
 error (	Rerror
@@ -1302,7 +1326,31 @@ skill_type (R	skillType
 roleid (Rroleid
 	config_id (RconfigId
 uniqid (Runiqid
-pos (Rposbproto3
+pos (Rpos"h
+PBRoleUnlockEquipSchemeReqCmd
+uid (Ruid
+roleid (Rroleid
+
+scheme_idx (R	schemeIdx"í
+PBRoleUnlockEquipSchemeRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+roleid (Rroleid
+
+scheme_idx (R	schemeIdx"h
+PBRoleSwitchEquipSchemeReqCmd
+uid (Ruid
+roleid (Rroleid
+
+scheme_idx (R	schemeIdx"í
+PBRoleSwitchEquipSchemeRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+roleid (Rroleid
+
+scheme_idx (R	schemeIdxbproto3
 ¸	
 grade.proto"§
 PBGradeData
@@ -1598,13 +1646,13 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-ÇH
+·H
 
 user.protocommon.proto
 item.proto	bag.proto
 role.protoghost.protograde.proto
 shop.protoaweitem.protoseason.proto
-gods.proto"˙
+gods.proto"Ÿ	
 
 PBUserAttr
 uid (Ruid!
@@ -1642,7 +1690,9 @@ onlineTime&
 buff_datas (2.PBUserAttr.BuffDatasEntryR	buffDatas*
 battle_report_ids (RbattleReportIds7
 cur_model_role (2.PBSimpleRoleDataRcurModelRole+
-last_fresh_mode_ts (RlastFreshModeTsI
+last_fresh_mode_ts (RlastFreshModeTs/
+last_energy_fresh_ts (RlastEnergyFreshTs,
+battle_role_energy (RbattleRoleEnergyI
 BuffDatasEntry
 key (Rkey!
 value (2.PBBuffDataRvalue:8"/

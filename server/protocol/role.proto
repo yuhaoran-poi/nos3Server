@@ -24,6 +24,16 @@ message PBSimpleRoleData
 	int32 magic_item_id				= 3;// 携带法器id
 }
 
+// 装备分页方案(每角色最多3套, 见 RoleDef.EquipSlotType)
+message PBRoleEquipScheme
+{
+	int32 scheme_idx			= 1;	// 分页号 1/2/3
+	int32 unlocked				= 2;	// 是否已解锁 1=已解锁 0=未解锁(1号默认解锁)
+	map<int32, PBItemData> equips = 3;	// 槽位号 → 装备
+	// 槽位约定: 1~8=八卦(卦位 UniqueItem.type5 + 0) 9=法器 10=空间戒指
+	// 未来新槽位(诡器等)从 11 起, 槽位定义走配置表, proto 无需变更
+}
+
 // 角色详细数据
 message PBRoleData
 {
@@ -45,7 +55,7 @@ message PBRoleData
 	int32 cur_passive_skill_id			= 16;	//选定被动技能id
 	map<int32, PBSkill> passive_skill	= 17;	//可选被动技能
 	repeated int32 emoji				= 18;	//表情槽
-	map<int32, int32> up_lv_rewards		= 19;	//已领取的升级奖励
+	map<int32, int32> up_lv_rewards	= 19;	//已领取的升级奖励
 	PBItemData space_ring	= 20;	//空间戒指
 	int32 star_fail_cnt		= 21;	//升星失败次数
 	int32 cur_big_skill1_id			= 22;	//选定大技能1id
@@ -56,6 +66,13 @@ message PBRoleData
 	map<int32, PBSkill> reserve_skill1	= 27;	//预留技能1
 	int32 cur_reserve_skill2_id			= 28;	//预留技能2id
 	map<int32, PBSkill> reserve_skill2	= 29;	//预留技能2
+	map<int32, PBRoleEquipScheme> equip_schemes	= 30;	//装备分页(权威存储)
+	int32 cur_scheme_idx	= 31;	//当前激活分页号(1/2/3)
+	// 精力系统(角色级, 上限100, 每日6点恢复, 门票模式进入消耗)
+	int32 energy				= 32;	//精力值(0~100)
+	int64 energy_pay_ts			= 33;	//最近一次门票模式扣精力时间戳(0=无记录)
+	// 说明: magic_item/digrams_cards/space_ring 为当前激活分页的兼容镜像(DS/存量链路读取),
+	// 权威数据在 equip_schemes; 新装备类型版本由 DS 直读 equip_schemes 后镜像层退役
 }
 
 // 角色数据
@@ -123,6 +140,7 @@ message PBRoleWearEquipReqCmd
 	int32 equip_config_id = 5; // 准备穿戴的装备配置id
 	int64 equip_uniqid	= 6; // 准备穿戴的装备唯一id
 	int32 equip_idx	= 7; // 装备的位置
+	int32 scheme_idx = 8; // 目标装备分页号(1/2/3, 0=当前激活分页)
 }
 
 message PBRoleWearEquipRspCmd
@@ -147,6 +165,7 @@ message PBRoleTakeOffEquipReqCmd
 	int32 takeoff_config_id	= 4; // 准备卸下的装备配置id
 	int64 takeoff_uniqid	= 5; // 准备卸下的装备唯一id
 	int32 takeoff_idx		= 6; // 卸下的位置
+	int32 scheme_idx = 7; // 目标装备分页号(1/2/3, 0=当前激活分页)
 }
 
 message PBRoleTakeOffEquipRspCmd
@@ -339,7 +358,7 @@ message PBRoleEquipmentRepairRspCmd
 // 角色穿戴装备坚固值修理
 message PBRoleEquipmentStrongRepairReqCmd
 {
-	int64 uid		= 1;
+	int64 uid			= 1;
 	int32 roleid	= 2;
 	int32 config_id	= 3;
 	int64 uniqid	= 4;
@@ -348,11 +367,45 @@ message PBRoleEquipmentStrongRepairReqCmd
 
 message PBRoleEquipmentStrongRepairRspCmd
 {
-	int32 code		= 1; // 服务器验证返回,0成功,其他失败
-    string error	= 2; // 错误信息
-	int64 uid		= 3;
-	int32 roleid	= 4;
-	int32 config_id	= 5;
-	int64 uniqid	= 6;
-	int32 pos		= 7;
+	int32 code			= 1; // 服务器验证返回,0成功,其他失败
+    string error		= 2; // 错误信息
+	int64 uid			= 3;
+	int32 roleid		= 4;
+	int32 config_id		= 5;
+	int64 uniqid		= 6;
+	int32 pos			= 7;
+}
+
+// 解锁装备分页
+message PBRoleUnlockEquipSchemeReqCmd
+{
+	int64 uid			= 1;
+	int32 roleid		= 2; // 角色id
+	int32 scheme_idx	= 3; // 要解锁的分页号(2/3)
+}
+
+message PBRoleUnlockEquipSchemeRspCmd
+{
+	int32 code			= 1; // 服务器验证返回,0成功,其他失败
+	string error		= 2; // 错误信息
+	int64 uid			= 3;
+	int32 roleid		= 4;
+	int32 scheme_idx	= 5; // 已解锁的分页号
+}
+
+// 切换装备分页(局外)
+message PBRoleSwitchEquipSchemeReqCmd
+{
+	int64 uid			= 1;
+	int32 roleid		= 2; // 角色id
+	int32 scheme_idx	= 3; // 要切换到的分页号(1/2/3)
+}
+
+message PBRoleSwitchEquipSchemeRspCmd
+{
+	int32 code			= 1; // 服务器验证返回,0成功,其他失败
+	string error		= 2; // 错误信息
+	int64 uid			= 3;
+	int32 roleid		= 4;
+	int32 scheme_idx	= 5; // 当前激活分页号
 }

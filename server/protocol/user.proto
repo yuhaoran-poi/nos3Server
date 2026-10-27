@@ -48,6 +48,9 @@ message PBUserAttr
 	repeated int64	battle_report_ids	= 26;	// 战报id
 	PBSimpleRoleData cur_model_role		= 27;	// 覆盖更新 展示角色
 	int64 last_fresh_mode_ts			= 28;	// 最后一次更新游戏模式票时间
+	// 精力系统
+	int64 last_energy_fresh_ts		= 29;	// 最后一次精力每日恢复时间(每日6点判定)
+	int32 battle_role_energy		= 30;	// 当前出战角色精力(显示镜像, 权威在角色energy字段)
 }
 
 // 客户端请求简略数据
