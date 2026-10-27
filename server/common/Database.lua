@@ -4781,6 +4781,10 @@ function _M.checksteamdlc(addr, uid)
         SELECT steamid, add_ts FROM mgame.steamdlc WHERE uid = %d;
     ]], uid)
     local res, err = moon.call("lua", addr, cmd)
+    if err then
+        moon.error("checksteamdlc failed", uid, err)
+        return true
+    end
     if res and #res > 0 then
         return true
     end
