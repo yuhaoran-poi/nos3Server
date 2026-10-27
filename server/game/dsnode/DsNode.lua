@@ -249,7 +249,8 @@ function DsNode.PBAddItemsCityPlayerReqCmd(req)
     --     moon.error(string.format("err = %s", json.pretty_encode(err)))
     -- end
 
-    context.S2D(context.net_id, CmdCode["PBAddItemsCityPlayerRspCmd"], { code = res }, req.msg_context.stub_id)
+    -- context.S2D(context.net_id, CmdCode["PBAddItemsCityPlayerRspCmd"], { code = res }, req.msg_context.stub_id)
+    context.S2D(context.net_id, CmdCode["PBAddItemsCityPlayerRspCmd"], { code = ErrorCode.None }, req.msg_context.stub_id)
 end
 
 function DsNode.PBGetDsUserAttrReqCmd(req)
