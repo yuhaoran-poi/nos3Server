@@ -464,6 +464,8 @@ function User.InitCheckData()
     User.CheckAccountLevel()
     User.NotifyGameSettle()
     User.NotifyGameReturnItems()
+    -- test
+    scripts.Bill.CheckDLC()
 end
 
 function User.Init()
