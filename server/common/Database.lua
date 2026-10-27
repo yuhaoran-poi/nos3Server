@@ -4776,4 +4776,22 @@ function _M.RedisDelSkinProductData(addr_db_redis, product_ids)
     redis_send(addr_db_redis, "HDEL", SKIN_PRODUCT_DATA, table.unpack(product_ids))
 end
 
+function _M.checksteamdlc(addr, uid)
+    local cmd = string.format([[
+        SELECT steamid, add_ts FROM mgame.steamdlc WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if res and #res > 0 then
+        return true
+    end
+    return false
+end
+
+function _M.addsteamdlc(addr, uid, steamid)
+    local cmd = string.format([[
+        INSERT INTO mgame.steamdlc (uid, steamid, add_ts) VALUES (%d, %s, %d);
+    ]], uid, steamid, moon.time())
+    return moon.send("lua", addr, cmd)
+end
+
 return _M

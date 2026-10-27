@@ -866,13 +866,13 @@ function Bill.CheckDLC()
     local query_res = scripts.User.QueryUserAttr(query_user_attr)
     if not query_res.user_attr or not query_res.user_attr[ProtoEnum.UserAttrType.plateform_id] then
         moon.error(string.format("Bill CheckDLC 获取用户steamid失败: %d", context.uid))
-        return false, nil
+        return
     end
     local steamid = tonumber(query_res.user_attr[ProtoEnum.UserAttrType.plateform_id])
 
     local order_form = {
         key = serverconf.STEAM_CONF.order_key,
-        appid = serverconf.STEAM_CONF.appId,
+        appid = serverconf.STEAM_CONF.dlc_appid,
         steamid = steamid,
     }
     local param_tbl = {}
@@ -880,10 +880,7 @@ function Bill.CheckDLC()
         table.insert(param_tbl, string.format("%s=%s", escape(k), escape(v)))
     end
     local param_str = table.concat(param_tbl, "&")
-    local use_url = serverconf.STEAM_CONF.query_order_url
-    if serverconf.STEAM_CONF.is_sandbox and serverconf.STEAM_CONF.is_sandbox == 1 then
-        use_url = serverconf.STEAM_CONF.sandbox_query_order_url
-    end
+    local use_url = serverconf.STEAM_CONF.dlc_url
     local get_url = use_url .. "?" .. param_str
     local ok, response = pcall(httpc.get, get_url)
     if not ok or not response then
@@ -908,9 +905,15 @@ function Bill.CheckDLC()
     end
 
     -- 发送邮件
+    local send_success = scripts.Mail.RecvTriggerMail(1000003)
+    if not send_success then
+        moon.error(string.format("Bill CheckDLC 发送邮件失败: %d", context.uid))
+        return
+    end
     ----------
 
     Database.addsteamdlc(context.addr_db_user, context.uid, steamid)
+    -- Database.addsteamdlc(context.addr_db_user, context.uid, 77661)
 end
 
 return Bill

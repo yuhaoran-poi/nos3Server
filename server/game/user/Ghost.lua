@@ -58,10 +58,35 @@ function Ghost.Start(isnew)
             end
         end
 
+        for cfg_id, cfg_val in pairs(GameCfg.GameTagPool) do
+            if not ghosts.mode_monster_tags[cfg_id]
+                or not ghosts.mode_monster_tags[cfg_id].tags
+                or table.size(ghosts.mode_monster_tags[cfg_id].tags) == 0 then
+                local tag_code, new_tags = Ghost.GetNewModeTags(cfg_val)
+                if tag_code == ErrorCode.None and new_tags then
+                    ghosts.mode_monster_tags[cfg_id] = {
+                        tags = new_tags
+                    }
+                end
+            end
+        end
         Ghost.SaveGhostsNow()
     else
         if not ghosts.mode_monster_tags then
             ghosts.mode_monster_tags = {}
+        end
+
+        for cfg_id, cfg_val in pairs(GameCfg.GameTagPool) do
+            if not ghosts.mode_monster_tags[cfg_id]
+                or not ghosts.mode_monster_tags[cfg_id].tags
+                or table.size(ghosts.mode_monster_tags[cfg_id].tags) == 0 then
+                local tag_code, new_tags = Ghost.GetNewModeTags(cfg_val)
+                if tag_code == ErrorCode.None and new_tags then
+                    ghosts.mode_monster_tags[cfg_id] = {
+                        tags = new_tags
+                    }
+                end
+            end
         end
 
         Ghost.SaveGhostsNow()
@@ -852,8 +877,10 @@ function Ghost.GetNowModeTags()
             if not ghosts.mode_monster_tags[cfg_id] then
                 local tag_code, new_tags = Ghost.GetNewModeTags(cfg_val)
                 moon.info("GetNowModeTags tag_code", tag_code)
-                if tag_code == ErrorCode.None then
-                    ghosts.mode_monster_tags[cfg_id] = new_tags
+                if tag_code == ErrorCode.None and new_tags then
+                    ghosts.mode_monster_tags[cfg_id] = {
+                        tags = new_tags
+                    }
                 end
             end
         end
@@ -872,7 +899,8 @@ function Ghost.SetNewModeTags(set_modeid, new_tags)
         ghosts.mode_monster_tags = {}
     end
 
-    ghosts.mode_monster_tags[set_modeid] = new_tags
+    -- 统一存为PBMonsterTags形态{tags=...}, 裸数组经pb.encode会编码为空消息
+    ghosts.mode_monster_tags[set_modeid] = { tags = new_tags }
     return ErrorCode.None
 end
 
@@ -891,7 +919,7 @@ function Ghost.GetNewModeTags(cur_chapter_cfg)
     end
 
     local id_weight = table.copy(cur_chapter_cfg.pool, true)
-    moon.info(string.format("GetNewModeTags id_weight: %s", json.pretty_encode(id_weight)))
+    -- moon.info(string.format("GetNewModeTags id_weight: %s", json.pretty_encode(id_weight)))
     local new_tags = {}
     for i = 1, cur_chapter_cfg.maxtag do
         local new_tag_id = scripts.Item.RangeTags(id_weight)
@@ -906,7 +934,7 @@ function Ghost.GetNewModeTags(cur_chapter_cfg)
         local new_tag_value = math.random(tag_cfg.min, tag_cfg.max)
         table.insert(new_tags, {
             tag_id = new_tag_id,
-            tag_value = new_tag_value,
+            val = new_tag_value,
         })
 
         --现有词条去重
@@ -956,13 +984,14 @@ function Ghost.PBRefreshMonsterTagsReqCmd(req)
             }, req.msg_context.stub_id)
     end
 
+    -- 字段名对齐proto: PBRefreshMonsterTagsRspCmd无chapter_id/difficulty/tags字段,
+    -- 之前写的tags客户端收不到(now_tags), chapter_id/difficulty同样被丢弃
     local rsp_msg = {
         code = ErrorCode.None,
         error = "",
         uid = req.msg.uid,
-        chapter_id = req.msg.chapter_id,
-        difficulty = req.msg.difficulty,
-        tags = {},
+        mode_difficulty_id = req.msg.mode_difficulty_id,
+        now_tags = { tags = {} },
     }
 
     local cost_items = {}
@@ -981,7 +1010,7 @@ function Ghost.PBRefreshMonsterTagsReqCmd(req)
     end
 
     local tag_code, new_tags = Ghost.GetNewModeTags(cur_cfg)
-    if tag_code ~= ErrorCode.None then
+    if tag_code ~= ErrorCode.None or not new_tags then
         rsp_msg.code = tag_code
         rsp_msg.error = "刷新词条失败"
         return context.S2C(context.net_id, CmdCode.PBRefreshMonsterTagsRspCmd, rsp_msg, req.msg_context.stub_id)
@@ -1004,8 +1033,8 @@ function Ghost.PBRefreshMonsterTagsReqCmd(req)
         end
     end
 
-    ghosts.mode_monster_tags[cur_cfg.id] = new_tags
-    rsp_msg.tags = new_tags
+    ghosts.mode_monster_tags[cur_cfg.id] = { tags = new_tags }
+    rsp_msg.now_tags = { tags = new_tags }
 
     Ghost.SaveGhostsNow()
     scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.RefreshMonsterTags)

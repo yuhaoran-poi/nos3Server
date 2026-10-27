@@ -1413,6 +1413,7 @@ function Trade.PBTradeBuyComplexReqCmd(req)
         end
     end
 
+    local use_mail = false
     local bag_code = scripts.Bag.CheckEmptyEnough(BagDef.BagType.Cangku, add_list, 0)
     if bag_code == ErrorCode.None then
         local stack_items, unstack_items = {}, {}
@@ -1467,6 +1468,7 @@ function Trade.PBTradeBuyComplexReqCmd(req)
         end
 
         scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.TradeBuy)
+        use_mail = true
     end
 
     local msg_ret = {
@@ -1476,6 +1478,9 @@ function Trade.PBTradeBuyComplexReqCmd(req)
         buy_id_num = {},
         buy_total_price = cost_coins[trade_cfg.order_currency].coin_count,
     }
+    if use_mail then
+        msg_ret.code = ErrorCode.TradeMailSend
+    end
     for config_id, buy_cnt in pairs(buy_id_num_ret) do
         msg_ret.buy_id_num[config_id] = buy_cnt
     end

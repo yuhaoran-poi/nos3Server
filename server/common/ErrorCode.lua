@@ -573,6 +573,8 @@ local ErrorCode = {
     TradeProductNotSeller = 2118,
     --- 拍卖行使用等级不足
     TradeLevelNotEnough = 2119,
+    --- 仓库已满，使用邮件发送商品
+    TradeMailSend = 2120,
 
     --充值系统相关错误码
     --- 充值ID错误
