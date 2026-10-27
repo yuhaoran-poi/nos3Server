@@ -243,11 +243,11 @@ end
 
 function DsNode.PBAddItemsCityPlayerReqCmd(req)
     -- 暂时省略校验，直接转发给玩家
-    local res, err = context.call_user(req.msg.uid, "User.DsAddItems", req.msg.simple_items)
-    -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    if err then
-        moon.error(string.format("err = %s", json.pretty_encode(err)))
-    end
+    -- local res, err = context.call_user(req.msg.uid, "User.DsAddItems", req.msg.simple_items)
+    -- -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
+    -- if err then
+    --     moon.error(string.format("err = %s", json.pretty_encode(err)))
+    -- end
 
     context.S2D(context.net_id, CmdCode["PBAddItemsCityPlayerRspCmd"], { code = res }, req.msg_context.stub_id)
 end
