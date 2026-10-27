@@ -69,6 +69,7 @@ message PBGetAuctionInfoRspCmd
     string error = 2; // 错误信息
     int64 uid	= 3;
     PBSelfAuctionData self_auction_info	= 4; //自己的交易行数据
+	int64 now_sys_ts	= 5;	//当前服务器时间
 }
 
 // 客户端搜索拍卖行商品

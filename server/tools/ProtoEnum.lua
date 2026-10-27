@@ -8,6 +8,7 @@ local PBChannelType = {
     CHANNEL_TYPE_PRIVATE = 5, -- 私聊
     CHANNEL_TYPE_SYSTEM = 6, -- 系统
     CHANNEL_TYPE_ROOM = 7, -- 房间
+    CHANNEL_TYPE_RECRUIT = 8, -- 招募
 }
 
 ---@class AccountBuffType
@@ -133,6 +134,8 @@ local UserAttrType = {
     battle_report_ids = "battle_report_ids", -- 战报id
     cur_model_role = "cur_model_role", -- 覆盖更新 展示角色
     last_fresh_mode_ts = "last_fresh_mode_ts", -- 最后一次更新游戏模式票时间
+    last_energy_fresh_ts = "last_energy_fresh_ts", -- 最后一次精力每日恢复时间(每日6点判定)
+    battle_role_energy = "battle_role_energy", -- 当前出战角色精力(显示镜像, 权威在角色energy字段)
 }
 
 

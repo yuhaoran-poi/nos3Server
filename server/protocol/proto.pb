@@ -316,7 +316,7 @@ formula_id (R	formulaId"r
 uid (Ruid
 
 formula_id (R	formulaIdbproto3
-Ê
+Ñ
 auction.proto
 item.proto"ç
 PBAuctionData
@@ -378,12 +378,14 @@ simpleInfoF
 key (Rkey/
 value (2.PBAuctionProductBaseDataRvalue:8"*
 PBGetAuctionInfoReqCmd
-uid (Ruid"î
+uid (Ruid"≤
 PBGetAuctionInfoRspCmd
 code (Rcode
 error (	Rerror
 uid (Ruid>
-self_auction_info (2.PBSelfAuctionDataRselfAuctionInfo"Ö
+self_auction_info (2.PBSelfAuctionDataRselfAuctionInfo
+
+now_sys_ts (RnowSysTs"Ö
 PBSearchAuctionProductReqCmd
 uid (Ruid
 
@@ -730,18 +732,26 @@ aweItemMapI
 error (	Rerror
 uid (Ruid3
 awe_item_info (2.PBUserAweItemsRaweItemInfobproto3
-˜
+ﬁ"
 	bag.proto
-item.proto"–
+item.proto"¡
 PBBag"
 bag_item_type (RbagItemType
 capacity (Rcapacity
 grid_id (RgridId'
-items (2.PBBag.ItemsEntryRitemsE
+items (2.PBBag.ItemsEntryRitems1
+	item_lock (2.PBBag.ItemLockEntryRitemLock>
+uniq_item_lock (2.PBBag.UniqItemLockEntryRuniqItemLockE
 
 ItemsEntry
 key (Rkey!
-value (2.PBItemDataRvalue:8"p
+value (2.PBItemDataRvalue:8;
+ItemLockEntry
+key (Rkey
+value (Rvalue:8?
+UniqItemLockEntry
+key (Rkey
+value (Rvalue:8"p
 PBBags%
 bags (2.PBBags.BagsEntryRbags?
 	BagsEntry
@@ -879,7 +889,25 @@ sell_items (2#.PBItemSellNpcRspCmd.SellItemsEntryR	sellItemsK
 code (Rcode
 error (	Rerror
 uid (Ruid
-bag_name (	RbagNamebproto3
+bag_name (	RbagName"í
+PBBagItemLockReqCmd
+uid (Ruid$
+lock_config_id (RlockConfigId 
+lock_uniq_id (R
+lockUniqId!
+lock_operate (RlockOperate"ﬁ
+PBBagItemLockRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid?
+	item_lock (2".PBBagItemLockRspCmd.ItemLockEntryRitemLockL
+uniq_item_lock (2&.PBBagItemLockRspCmd.UniqItemLockEntryRuniqItemLock;
+ItemLockEntry
+key (Rkey
+value (Rvalue:8?
+UniqItemLockEntry
+key (Rkey
+value (Rvalue:8bproto3
 ˙
 
 Bill.proto"ù
@@ -924,7 +952,7 @@ orderState"h
 bill_num (RbillNum
 bill_amount (R
 billAmountbproto3
-Í
+Ñ
 
 chat.proto"û
 PBChatMsgInfo!
@@ -965,7 +993,7 @@ worldIndex"O
 worldIndex"7
 PBNotifyWorldChatCmd
 world_index (R
-worldIndex*–
+worldIndex*Í
 PBChannelType
 CHANNEL_TYPE_NONE 
 CHANNEL_TYPE_NEARBY
@@ -974,7 +1002,8 @@ worldIndex*–
 CHANNEL_TYPE_GUILD
 CHANNEL_TYPE_PRIVATE
 CHANNEL_TYPE_SYSTEM
-CHANNEL_TYPE_ROOMbproto3
+CHANNEL_TYPE_ROOM
+CHANNEL_TYPE_RECRUITbproto3
 ¶
 
 city.proto"*

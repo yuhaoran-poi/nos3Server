@@ -83,6 +83,7 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public self_auction_info PBSelfAuctionData @自己的交易行数据
+---@field public now_sys_ts integer @当前服务器时间
 
 
 ---@class PBSearchAuctionProductReqCmd
@@ -260,6 +261,8 @@
 ---@field public capacity integer
 ---@field public grid_id integer
 ---@field public items table<integer, PBItemData> @有key则覆盖
+---@field public item_lock table<integer, integer>
+---@field public uniq_item_lock table<integer, integer>
 
 
 ---@class PBBags
@@ -417,6 +420,21 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public bag_name string
+
+
+---@class PBBagItemLockReqCmd
+---@field public uid integer
+---@field public lock_config_id integer
+---@field public lock_uniq_id integer
+---@field public lock_operate integer @1--加锁,2--解锁
+
+
+---@class PBBagItemLockRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public item_lock table<integer, integer>
+---@field public uniq_item_lock table<integer, integer>
 
 
 ---@class PBBillData
@@ -577,6 +595,7 @@
 ---@field public server_port integer
 ---@field public uids integer[]
 ---@field public mode_monster_tags PBMonsterTags
+---@field public energy_paid_full table<integer, integer> @[精力] uid->开局实扣精力值(10=足额, 0~9=不足额实扣数; 无条目=非门票模式未扣; DS按此判定是否发放宝箱)
 
 
 ---@class PBPacketCmd
@@ -2966,6 +2985,12 @@
 ---@field public magic_item_id integer @携带法器id
 
 
+---@class PBRoleEquipScheme
+---@field public scheme_idx integer @分页号 1/2/3
+---@field public unlocked integer @是否已解锁 1=已解锁 0=未解锁(1号默认解锁)
+---@field public equips table<integer, PBItemData> @槽位号 → 装备
+
+
 ---@class PBRoleData
 ---@field public config_id integer @配置ID
 ---@field public star_level integer @星级
@@ -2996,6 +3021,10 @@
 ---@field public reserve_skill1 table<integer, PBSkill> @预留技能1
 ---@field public cur_reserve_skill2_id integer @预留技能2id
 ---@field public reserve_skill2 table<integer, PBSkill> @预留技能2
+---@field public equip_schemes table<integer, PBRoleEquipScheme> @装备分页(权威存储)
+---@field public cur_scheme_idx integer @当前激活分页号(1/2/3)
+---@field public energy integer @精力值(0~100)
+---@field public energy_pay_ts integer @最近一次门票模式扣精力时间戳(0=无记录)
 
 
 ---@class PBUserRoleDatas
@@ -3049,6 +3078,7 @@
 ---@field public equip_config_id integer @准备穿戴的装备配置id
 ---@field public equip_uniqid integer @准备穿戴的装备唯一id
 ---@field public equip_idx integer @装备的位置
+---@field public scheme_idx integer @目标装备分页号(1/2/3, 0=当前激活分页)
 
 
 ---@class PBRoleWearEquipRspCmd
@@ -3070,6 +3100,7 @@
 ---@field public takeoff_config_id integer @准备卸下的装备配置id
 ---@field public takeoff_uniqid integer @准备卸下的装备唯一id
 ---@field public takeoff_idx integer @卸下的位置
+---@field public scheme_idx integer @目标装备分页号(1/2/3, 0=当前激活分页)
 
 
 ---@class PBRoleTakeOffEquipRspCmd
@@ -3243,6 +3274,34 @@
 ---@field public config_id integer
 ---@field public uniqid integer
 ---@field public pos integer
+
+
+---@class PBRoleUnlockEquipSchemeReqCmd
+---@field public uid integer
+---@field public roleid integer @角色id
+---@field public scheme_idx integer @要解锁的分页号(2/3)
+
+
+---@class PBRoleUnlockEquipSchemeRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roleid integer
+---@field public scheme_idx integer @已解锁的分页号
+
+
+---@class PBRoleSwitchEquipSchemeReqCmd
+---@field public uid integer
+---@field public roleid integer @角色id
+---@field public scheme_idx integer @要切换到的分页号(1/2/3)
+
+
+---@class PBRoleSwitchEquipSchemeRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public roleid integer
+---@field public scheme_idx integer @当前激活分页号
 
 
 ---@class PBRoomSearchInfo
@@ -4298,6 +4357,8 @@
 ---@field public battle_report_ids integer[] @战报id
 ---@field public cur_model_role PBSimpleRoleData @覆盖更新 展示角色
 ---@field public last_fresh_mode_ts integer @最后一次更新游戏模式票时间
+---@field public last_energy_fresh_ts integer @最后一次精力每日恢复时间(每日6点判定)
+---@field public battle_role_energy integer @当前出战角色精力(显示镜像, 权威在角色energy字段)
 
 
 ---@class PBClientGetUsrSimInfoReqCmd
@@ -4898,6 +4959,7 @@
 ---@field Composite Composite_cfg[]
 ---@field ConditionPool ConditionPool_cfg[]
 ---@field ConsumablesBackpackExpansion ConsumablesBackpackExpansion_cfg[]
+---@field EnergyCostConfig EnergyCostConfig_cfg[]
 ---@field EquipmentTagPool EquipmentTagPool_cfg[]
 ---@field ExchangeStoreWaresConfig ExchangeStoreWaresConfig_cfg[]
 ---@field ExperienceLevel ExperienceLevel_cfg[]
@@ -4927,6 +4989,7 @@
 ---@field LightConvert LightConvert_cfg[]
 ---@field LightInfo LightInfo_cfg[]
 ---@field LinearMissionConfig LinearMissionConfig_cfg[]
+---@field LoadoutConfig LoadoutConfig_cfg[]
 ---@field MagicItemUpLv MagicItemUpLv_cfg[]
 ---@field MaintenanceCost1 MaintenanceCost1_cfg[]
 ---@field MaintenanceCost2 MaintenanceCost2_cfg[]
