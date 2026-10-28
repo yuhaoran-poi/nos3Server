@@ -16,7 +16,7 @@
 ---@field public Durability integer @耐久度
 ---@field public could_sell integer @是否能上架到交易行/拍卖行 0=不可上架 1=可以上架
 ---@field public item_weight integer @道具负重值/10000
----@field public use_type integer @道具使用类型: *配置为空即不可使用； 1 = 皮肤解锁卡； 2 = 皮肤体验卡； 3 = [预留] 4 = 普通道具礼包； 5 = 自选道具礼包； 6 = 随机道具礼包; 7 = 账户 buff 功能卡； 8 = 礼盒
+---@field public use_type integer @道具使用类型: *配置为空即不可使用； 1 = 皮肤解锁卡； 2 = 皮肤体验卡； 3 = [预留] 4 = 普通道具礼包； 5 = 自选道具礼包； 6 = 随机道具礼包; 7 = 账户 buff 功能卡； 8 = 礼盒 9 = 精力丹
 ---@field public use_skin integer @皮肤/头像图鉴ID （当 ues_type = 1~2时生效）
 ---@field public skin_time integer @皮肤体验卡有效期（单位:秒）
 ---@field public buff_type integer @账户 buff id
@@ -2677,6 +2677,7 @@ return {
 [354031] = { id=354031,bound_id=0,type1=0,type2=6,type3=0,type4=0,type5=0,market={0,0,0,0,0},stack_count=1,use_award={[106]=1},award_count=0,award_weight={},award_repetition=0,decompose={[1]=100},Durability=0,could_sell=0,item_weight=10000,use_type=4,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={},is_test=0,lvup=0,table_lvup="" },
 [354032] = { id=354032,bound_id=0,type1=0,type2=6,type3=0,type4=0,type5=0,market={0,0,0,0,0},stack_count=1,use_award={[354028]=1,[354029]=1,[354030]=1,[354031]=1},award_count=1,award_weight={[354028]=1,[354029]=1,[354030]=1,[354031]=1},award_repetition=1,decompose={[1]=100},Durability=0,could_sell=0,item_weight=10000,use_type=6,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={},is_test=0,lvup=0,table_lvup="" },
 [354033] = { id=354033,bound_id=0,type1=0,type2=6,type3=0,type4=0,type5=0,market={0,0,0,0,0},stack_count=1,use_award={[40]=240},award_count=0,award_weight={},award_repetition=0,decompose={[1]=100},Durability=0,could_sell=0,item_weight=10000,use_type=4,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={},is_test=0,lvup=0,table_lvup="" },
+[354034] = { id=354034,bound_id=0,type1=0,type2=6,type3=0,type4=0,type5=0,market={0,0,0,0,0},stack_count=1,use_award={[41]=10},award_count=0,award_weight={},award_repetition=0,decompose={[1]=100},Durability=0,could_sell=0,item_weight=10000,use_type=9,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={},is_test=0,lvup=0,table_lvup="" },
 [360001] = { id=360001,bound_id=0,type1=0,type2=5,type3=0,type4=0,type5=0,market={0,0,0,0,0},stack_count=1,use_award={[661012]=1,[661013]=1,[661014]=1},award_count=0,award_weight={},award_repetition=0,decompose={[1]=100},Durability=0,could_sell=0,item_weight=10000,use_type=4,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={},is_test=0,lvup=0,table_lvup="" },
 [360002] = { id=360002,bound_id=0,type1=0,type2=5,type3=0,type4=0,type5=0,market={0,0,0,0,0},stack_count=1,use_award={[661015]=1,[661016]=1,[661017]=1,[661018]=1},award_count=0,award_weight={},award_repetition=0,decompose={[1]=100},Durability=0,could_sell=0,item_weight=10000,use_type=4,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={},is_test=0,lvup=0,table_lvup="" },
 [360003] = { id=360003,bound_id=0,type1=0,type2=5,type3=0,type4=0,type5=0,market={0,0,0,0,0},stack_count=1,use_award={[661019]=1,[661020]=1,[661021]=1},award_count=0,award_weight={},award_repetition=0,decompose={[1]=100},Durability=0,could_sell=0,item_weight=10000,use_type=4,use_skin=0,skin_time=0,buff_type=0,buff_count=0,sell_value={},is_test=0,lvup=0,table_lvup="" },
