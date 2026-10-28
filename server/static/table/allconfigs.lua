@@ -31,6 +31,7 @@ return {
     ["FallBoxBossZhan"] = "FallBoxBossZhan.lua",
     ["FallBoxGuiMenGuan"] = "FallBoxGuiMenGuan.lua",
     ["FallBoxPaTa"] = "FallBoxPaTa.lua",
+    ["FallBoxTag"] = "FallBoxTag.lua",
     ["FriendConfig"] = "FriendConfig.lua",
     ["GameChapter"] = "GameChapter.lua",
     ["GameMode"] = "GameMode.lua",
