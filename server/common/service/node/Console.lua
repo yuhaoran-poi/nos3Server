@@ -81,6 +81,7 @@ Command List:
 	addscore <uid> <count> #增加积分. 1234567 999 给玩家1234567增加999积分
 	add_account_exp <uid> <count> #增加账号经验. 1234567 999 给玩家1234567增加999账号经验
 	add_items <uid> <config_id> <item_count> #增加物品. 1234567 30001 2 给玩家1234567增加2个30001物品
+	del_items <uid> <config_id> <item_count> <uniqid> <pos> #删除物品. 1234567 30001 2 1234567890 1 给玩家1234567删除2个30001物品,uniqid为1234567890,位置为1
 	send_system_mail <uid> <send_info_str> #给玩家发系统邮件. 1234567 send_system_mail mail_info 给玩家1234567发系统邮件mail_info
 	cancel_system_mail <uid> <mail_id> #撤销系统邮件. 1234567 cancel_system_mail 12345 给玩家1234567撤销系统邮件12345
 	add_treasure_box <uid> <config_id> <item_count> #给玩家加宝箱. 1234567 30001 2 给玩家1234567加2个30001宝箱
@@ -439,6 +440,27 @@ function Console.add_items(uid, config_id, item_count)
     else
         return Response(444, "Failed", string.format("%d %d, %d", uid, config_id, item_count))
     end
+end
+
+function Console.del_items(uid, config_id, item_count, uniqid, pos)
+	local item_simple = {
+		config_id = config_id,
+		item_count = item_count,
+		uniqid = uniqid or 0,
+		pos = pos or 0,
+    }
+	local items = {}
+	table.insert(items, item_simple)
+	local res, err = context.call_user(uid, "User.DsDelItems", items)
+	if err then
+		return Response(444, err, string.format("%d %d, %d %d %d", uid, config_id, item_count, uniqid, pos))
+	end
+
+	if res then
+		return Response(0, "OK")
+	else
+		return Response(444, "Failed", string.format("%d %d, %d %d %d", uid, config_id, item_count, uniqid, pos))
+	end
 end
 
 function Console.add_treasure_box(uid, config_id, item_count)

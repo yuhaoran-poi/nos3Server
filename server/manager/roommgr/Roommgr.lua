@@ -1437,6 +1437,7 @@ function Roommgr.GetRoomInfo(req)
             mem_info = member.mem_info,
             cityid = member.cityid,
             is_early_retreat = member.is_early_retreat,
+            mode_monster_tags = member.mode_monster_tags,
         })
     end
     --moon.info(string.format("Roommgr.GetRoomInfo res:\n%s", json.pretty_encode(res)))

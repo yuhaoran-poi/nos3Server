@@ -1607,6 +1607,62 @@ function User.DsAddItems(simple_items)
     return err_code
 end
 
+function User.DsDelItems(simple_items)
+    local bagdata = scripts.UserModel.GetBagData()
+    if not bagdata then
+        return ErrorCode.BagNotExist
+    end
+
+    local coinsdata = scripts.UserModel.GetCoinsData()
+    if not coinsdata then
+        return ErrorCode.BagNotExist
+    end
+
+    local del_items = {}
+    local del_coins = {}
+    local change_log = {}
+    local err_code = ErrorCode.None
+    for _, item in pairs(simple_items) do
+        local smallType = ItemDefine.GetItemType(item.config_id)
+        if smallType == ItemDefine.EItemSmallType.Coin then
+            del_coins[item.config_id] = {
+                coin_id = item.config_id,
+                coin_count = item.item_count,
+            }
+        else
+            del_items[item.pos] = {
+                config_id = item.config_id,
+                uniqid = item.uniqid,
+                item_count = item.item_count,
+            }
+        end
+    end
+
+    if table.size(del_items) + table.size(del_coins) <= 0 then
+        err_code = ErrorCode.ItemNotExist
+    end
+
+    if table.size(del_items) > 0 then
+        err_code = scripts.Bag.DelItemsPos(BagDef.BagType.Cangku, del_items, change_log)
+        if err_code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(change_log)
+            return err_code
+        end
+    end
+    if table.size(del_coins) > 0 then
+        err_code = scripts.Bag.DealCoins(del_coins, change_log)
+        if err_code ~= ErrorCode.None then
+            scripts.Bag.RollBackWithChange(change_log)
+            return err_code
+        end
+    end
+
+    if err_code == ErrorCode.None then
+        scripts.Bag.SaveAndLog(change_log, ItemDef.ChangeReason.DsDelItems)
+    end
+    return err_code
+end
+
 -- 客户端请求--图鉴升级
 function User.PBClientItemUpLvReqCmd(req)
     -- 参数验证
