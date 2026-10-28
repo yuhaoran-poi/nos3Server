@@ -20,6 +20,8 @@ local Rank = require("game.user.Rank")
 local context = ...
 local scripts = context.scripts
 
+local DLC_MAIL_ID = 1000003
+
 local function escape(s)
     return (string.gsub(s, "([^A-Za-z0-9_])", function(c)
         return string.format("%%%02X", string.byte(c))
@@ -888,14 +890,12 @@ function Bill.CheckDLC()
         return
     end
     -- print_r(response)
-    moon.info("Bill CheckDLC response: ", response)
+    moon.info("Bill CheckDLC response: ", response.body or "")
     local json_success, rsp_data = pcall(json.decode, response.body or "")
     local add_dlc = false
     if json_success and rsp_data.appownership then
         if rsp_data.appownership.ownsapp
-            and rsp_data.appownership.ownsapp == true
-            and rsp_data.appownership.permanent
-            and rsp_data.appownership.permanent == true then
+            and rsp_data.appownership.ownsapp == true then
             add_dlc = true
         end
     end
@@ -905,7 +905,7 @@ function Bill.CheckDLC()
     end
 
     -- 发送邮件
-    local send_success = scripts.Mail.RecvTriggerMail(1000003)
+    local send_success = scripts.Mail.RecvTriggerMail(DLC_MAIL_ID)
     if not send_success then
         moon.error(string.format("Bill CheckDLC 发送邮件失败: %d", context.uid))
         return
