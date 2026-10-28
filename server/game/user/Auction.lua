@@ -144,6 +144,12 @@ function Auction.SearchAuctionWithIds(state_type, ids, sort_type, start_idx, sel
 end
 
 function Auction.OnAuctionFailMail(wait_data)
+    -- 身份闸门: send_user按uid投递, 若usermgr映射残留(stale)+地址复用会错投到别的玩家服务,
+    -- RecvImmediateMail发给"当前服务玩家", 不校验会把退款错发(线上已发生)
+    if wait_data.uid ~= context.uid then
+        return
+    end
+
     local auction_cfg = GameCfg.TransactionConfig[2]
     if not auction_cfg or not auction_cfg.failed_email then
         moon.error("OnAuctionFailMail auction_cfg.failed_email not found")
@@ -170,6 +176,11 @@ function Auction.OnAuctionFailMail(wait_data)
 end
 
 function Auction.OnAuctionTakeDownMail(auction_product, now_state, positive)
+    -- 身份闸门: 寄回邮件只发给卖家本人, 防错投(见OnAuctionFailMail注释)
+    if auction_product.seller_uid ~= context.uid then
+        return
+    end
+
     local auction_cfg = GameCfg.TransactionConfig[2]
     if not auction_cfg or not auction_cfg.unsell_email or not auction_cfg.expire_email then
         moon.error(string.format("OnAuctionTakeDownMail auction_cfg not found = %s", auction_product))
@@ -207,6 +218,11 @@ function Auction.OnAuctionTakeDownMail(auction_product, now_state, positive)
 end
 
 function Auction.OnAuctionLogSaleMail(auction_log, need_save)
+    -- 身份闸门: 卖家收钱邮件只发给卖家本人, 防错投(见OnAuctionFailMail注释)
+    if auction_log.seller_uid ~= context.uid then
+        return
+    end
+
     if auction_log.send_seller_mail ~= 0 then
         return
     end
@@ -256,6 +272,11 @@ function Auction.OnAuctionLogSaleMail(auction_log, need_save)
 end
 
 function Auction.OnAuctionLogBuyMail(auction_log)
+    -- 身份闸门: 买家收货邮件只发给买家本人, 防错投(见OnAuctionFailMail注释)
+    if auction_log.buyer_uid ~= context.uid then
+        return
+    end
+
     if auction_log.send_buyer_mail ~= 0 then
         return
     end
@@ -302,10 +323,13 @@ function Auction.DealOfflineAuctionLog()
         return
     end
     for _, auction_log in pairs(auction_logs) do
-        if auction_log.send_seller_mail == 0 then
+        -- 身份过滤: getgetauctionlognomail是OR查询, 同一条日志可能双侧标记都未发;
+        -- 不区分身份会把"对方侧"的钱/货也发给当前玩家(线上已发生: 卖家登录兜底吞了买家的货),
+        -- 各侧只由本人补发, 对方侧标记保持0等其登录兜底
+        if auction_log.send_seller_mail == 0 and auction_log.seller_uid == context.uid then
             Auction.OnAuctionLogSaleMail(auction_log, false)
         end
-        if auction_log.send_buyer_mail == 0 then
+        if auction_log.send_buyer_mail == 0 and auction_log.buyer_uid == context.uid then
             Auction.OnAuctionLogBuyMail(auction_log)
         end
     end
