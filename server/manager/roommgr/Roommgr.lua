@@ -1683,7 +1683,8 @@ function Roommgr.StartGame(req)
 
     -- [精力] 开局扣精力实扣结果: 传 DS(PBDsCreateData), 宝箱是否发放由 DS 按此判定
     -- map: uid -> 实扣值(10=足额, 0~9=不足额实扣数)
-    room.room_data.energy_paid_full = req.energy_paid_full or {}
+    -- 注: room_data 可能是从Redis反序列化的只读表(老房间重启后加载), 不能写入, 用局部变量传递
+    local energy_paid_full = req.energy_paid_full or {}
     -- 准备进入DS
     local mode_key = room.room_data.chapter * 100 + room.room_data.difficulty
     local room_info = {
@@ -1697,7 +1698,7 @@ function Roommgr.StartGame(req)
         server_ip = context.conf.mgr_host_ip,
         server_port = context.conf.mgr_host_port,
         uids = {},
-        energy_paid_full = room.room_data.energy_paid_full,   -- uid->实扣精力值(10足额/0~9不足额)
+        energy_paid_full = energy_paid_full,   -- uid->实扣精力值(10足额/0~9不足额)
     }
     for _, player in pairs(room.players) do
         table.insert(room_info.uids, player.mem_info.uid)
