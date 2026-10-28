@@ -334,6 +334,20 @@ function User.GetLastFreshModeTime()
     end
 end
 
+-- 精力最后每日恢复时间(-1=attr未加载, 0=从未恢复过)
+function User.GetLastEnergyFreshTime()
+    local db_user_attr = scripts.UserModel.GetUserAttr()
+    if not db_user_attr then
+        return -1
+    end
+
+    if db_user_attr.last_energy_fresh_ts then
+        return db_user_attr.last_energy_fresh_ts
+    else
+        return 0
+    end
+end
+
 function User.GetNowLevel()
     local db_user_attr = scripts.UserModel.GetUserAttr()
     if not db_user_attr then
@@ -662,6 +676,17 @@ function User.NotifyGameSettle()
             break
         end
     end
+end
+
+-- GM/测试: 往结算队列塞一条带宝箱的伪造结算(配合 GM test_settle 触发完整 GameSettle 链路)
+function User.GMPushTestSettle(config_id)
+    config_id = math.tointeger(config_id) or 0
+    local settle_info = {
+        reward_boxs = { { config_id = config_id, item_count = 1 } },
+    }
+    Database.BattleListPushRight(context.addr_db_redis, Database.GetBattleSettleKey(), context.uid, settle_info)
+    moon.info(string.format("GMPushTestSettle uid=%d box=%d", context.uid, config_id))
+    return true
 end
 
 function User.NotifyPlayEnd(out_data)
@@ -1014,6 +1039,41 @@ function User.PBPingCmd(req)
                     local update_user_attr = {}
                     update_user_attr[ProtoEnum.UserAttrType.last_fresh_mode_ts] = now_ts
                     User.SetUserAttr(update_user_attr, false)
+                end
+            end
+        end
+    end
+
+    -- [精力] 每日凌晨6点恢复: 对所有精力不满的角色补满至100(已满不动)
+    -- 判定与模式票一致: 时间戳偏移恢复点后按自然日比较, 跨6点后的首次心跳触发
+    do
+        local last_energy_ts = User.GetLastEnergyFreshTime()
+        if last_energy_ts >= 0 then
+            local recover_offset = RoleDef.EnergyDef.RecoverHour * 3600
+            if last_energy_ts == 0
+                or not datetime.is_same_day(last_energy_ts - recover_offset, now_ts - recover_offset) then
+                local roles = scripts.UserModel.GetRoles()
+                if roles and roles.role_list then
+                    local energy_max = scripts.Role.GetEnergyMax()
+                    local changed = false
+                    for _, role_info in pairs(roles.role_list) do
+                        local cur = role_info.energy or energy_max
+                        if cur < energy_max then
+                            role_info.energy = energy_max
+                            changed = true
+                        end
+                    end
+                    local update_user_attr = {}
+                    update_user_attr[ProtoEnum.UserAttrType.last_energy_fresh_ts] = now_ts
+                    if changed then
+                        local change_roles = {}
+                        for roleid, _ in pairs(roles.role_list) do
+                            change_roles[roleid] = "EnergyDailyRecover"
+                        end
+                        scripts.Role.SaveAndLog(change_roles)
+                        scripts.Role.SyncBattleRoleEnergyAttr()
+                    end
+                    User.SetUserAttr(update_user_attr, true)
                 end
             end
         end
@@ -3494,6 +3554,19 @@ function User.PBUseItemReqCmd(req)
                 }, req.msg_context.stub_id)
             end
             update_user_attr[ProtoEnum.UserAttrType.buff_datas] = buff_datas
+        elseif item_cfg.use_type == 9 then
+            -- [精力] 精力丹: 单颗回复量读 use_award 中 coin 41(出战精力)的配置值, 缺省用 RoleDef.EnergyDef.PillRecover
+            local per_energy = (item_cfg.use_award and item_cfg.use_award[41]) or RoleDef.EnergyDef.PillRecover
+            local err_code = scripts.Role.AddBattleRoleEnergy(per_energy * req.msg.use_item_cnt)
+            if err_code ~= ErrorCode.None then
+                return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
+                    code = err_code,
+                    error = err_code == ErrorCode.EnergyFull and "精力已满" or "使用道具失败",
+                    uid = context.uid,
+                    use_item_id = req.msg.use_item_id,
+                    use_item_cnt = req.msg.use_item_cnt,
+                }, req.msg_context.stub_id)
+            end
         else
             return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
                 code = ErrorCode.ItemTypeMismatch,

@@ -822,9 +822,79 @@ function Room.PBStartGameRoomReqCmd(req)
         end
     end
 
+    -- [精力] 门票模式: StartGame 前同步扣全员出战角色精力, 实扣结果随 req 传给 roommgr(存房间+传DS), 失败退还
+    -- 语义: 足额扣10 → map[uid]=10; 不足扣至0 → map[uid]=实扣值(0~9); 非门票模式/异常 → 无条目(结算放行)
+    local energy_paid_map = {}      -- uid -> 实扣精力值
+    local energy_cost_records = {}  -- uid -> 实扣值(回滚用)
+    local function refund_all_energy()
+        if energy_cost_records[context.uid] then
+            scripts.Role.RefundEnergyForGame(energy_cost_records[context.uid])
+            energy_cost_records[context.uid] = nil
+        end
+        for uid, cost_e in pairs(energy_cost_records) do
+            local info = online_uids and online_uids[uid]
+            if info and info.nid ~= 0 and info.addr_user ~= 0 then
+                if info.nid == mine_node then
+                    moon.send("lua", info.addr_user, "Role.RefundEnergyForGame", cost_e)
+                else
+                    clusterd.send(info.nid, info.addr_user, "Role.RefundEnergyForGame", cost_e)
+                end
+            end
+        end
+        energy_cost_records = {}
+    end
+    if scripts.Role.GetEnergyCost(front_res.conf_idx) then
+        -- 房主本地扣
+        local ret = scripts.Role.CostEnergyForGame(front_res.conf_idx)
+        if ret then
+            energy_paid_map[context.uid] = ret.cost
+            energy_cost_records[context.uid] = ret.cost
+        end
+        -- 队员跨节点扣(moon.call/clusterd.call 同步收结果)
+        local mem_uids = front_res.mem_uids or {}
+        if table.size(mem_uids) > 1 then
+            if not online_uids then
+                local query_uids = {}
+                for _, uid in ipairs(mem_uids) do
+                    if uid ~= context.uid then
+                        table.insert(query_uids, uid)
+                    end
+                end
+                online_uids, call_err = clusterd.call(3999, "usermgr", "Usermgr.getOnlineUsers", query_uids)
+                if not online_uids then
+                    moon.error(call_err)
+                end
+            end
+            if online_uids then
+                for _, uid in ipairs(mem_uids) do
+                    if uid ~= context.uid then
+                        local info = online_uids[uid]
+                        if info and info.nid ~= 0 and info.addr_user ~= 0 then
+                            local ret2
+                            if info.nid == mine_node then
+                                ret2 = moon.call("lua", info.addr_user, "Role.CostEnergyForGame", front_res.conf_idx)
+                            else
+                                ret2 = clusterd.call(info.nid, info.addr_user,
+                                    "Role.CostEnergyForGame", front_res.conf_idx)
+                            end
+                            if ret2 then
+                                energy_paid_map[uid] = ret2.cost
+                                energy_cost_records[uid] = ret2.cost
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        req.msg.energy_paid_full = energy_paid_map
+        moon.info(string.format("[energy] PBStartGameRoom pre-cost energy_paid=%s",
+            json.encode(energy_paid_map)))
+    end
+
     local res, err = clusterd.call(3999, "roommgr", "Roommgr.StartGame", req.msg)
     if err then
         scripts.Bag.RollBackWithChange(bag_change_log)
+        refund_all_energy()
         moon.error(string.format("Roommgr.StartGame err:\n%s", json.pretty_encode(err)))
         if res.code == ErrorCode.RoomNotAllReady and res.error_uid then
             return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, {
@@ -839,9 +909,11 @@ function Room.PBStartGameRoomReqCmd(req)
             error = "system error",
         }, req.msg_context.stub_id)
     end
+
     if table.size(bag_change_log) > 0 then
         if res.code ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(bag_change_log)
+            refund_all_energy()
         else
             scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.GameStartCost)
 
@@ -1261,44 +1333,22 @@ function Room.GameSettle(settle_info)
                 end
 
                 -- 修改装备耐久度
+                -- [装备分页] 经SetEquipDurabilityByUniqid: 身上找不到会扫非激活方案
+                -- (局结束解锁切页后, 异步结算到达时装备可能已搬进方案)
                 local role_info = scripts.Role.GetRoleInfo(role_change.roleid)
-                if role_info and role_change.magic_item_durability
-                    and table.size(role_change.magic_item_durability) > 0 then
-                    for uniqid, cur_durability in pairs(role_change.magic_item_durability) do
-                        if role_info.magic_item and role_info.magic_item.common_info
-                            and role_info.magic_item.common_info.uniqid == uniqid then
-                            role_info.magic_item.special_info.magic_item.cur_durability = cur_durability
-                            if not change_roles[role_change.roleid] then
-                                change_roles[role_change.roleid] = "ModCurDurability"
-                            end
-                            break
-                        end
-                    end
-                end
-                if role_info and role_change.digrams_cards_durability
-                    and table.size(role_change.digrams_cards_durability) > 0 then
-                    for uniqid, cur_durability in pairs(role_change.digrams_cards_durability) do
-                        for _, card in pairs(role_info.digrams_cards) do
-                            if card.common_info and card.common_info.uniqid == uniqid then
-                                card.special_info.diagrams_item.cur_durability = cur_durability
+                local durability_fields = {
+                    role_change.magic_item_durability,
+                    role_change.digrams_cards_durability,
+                    role_change.space_ring_durability,
+                }
+                for _, durability_map in ipairs(durability_fields) do
+                    if role_info and durability_map and table.size(durability_map) > 0 then
+                        for uniqid, cur_durability in pairs(durability_map) do
+                            if scripts.Role.SetEquipDurabilityByUniqid(role_info, uniqid, cur_durability) then
                                 if not change_roles[role_change.roleid] then
                                     change_roles[role_change.roleid] = "ModCurDurability"
                                 end
-                                break
                             end
-                        end
-                    end
-                end
-                if role_info and role_change.space_ring_durability
-                    and table.size(role_change.space_ring_durability) > 0 then
-                    for uniqid, cur_durability in pairs(role_change.space_ring_durability) do
-                        if role_info.space_ring and role_info.space_ring.common_info
-                            and role_info.space_ring.common_info.uniqid == uniqid then
-                            role_info.space_ring.special_info.space_ring.cur_durability = cur_durability
-                            if not change_roles[role_change.roleid] then
-                                change_roles[role_change.roleid] = "ModCurDurability"
-                            end
-                            break
                         end
                     end
                 end
@@ -1343,6 +1393,7 @@ function Room.GameSettle(settle_info)
         scripts.Grade.ChangeScore(settle_info.change_score)
     end
 
+    -- [精力] 宝箱是否发放由 DS 按开局注入的实扣结果(PBDsCreateData.energy_paid_full)判定, 服务器不再介入
     if settle_info.reward_boxs and table.size(settle_info.reward_boxs) > 0 then
         -- 按照宝箱处理
         for _, item_simple in pairs(settle_info.reward_boxs) do

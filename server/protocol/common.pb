@@ -3041,7 +3041,7 @@ serverPort
 energy_paid_full
  (2#.PBDsCreateData.EnergyPaidFullEntryRenergyPaidFullA
 EnergyPaidFullEntry
-key (Rkey
+key (Rkey
 value (Rvalue:8"9
 PBPacketCmd*
 messages (2.PBMessagePackRmessages"

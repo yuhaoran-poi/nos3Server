@@ -96,6 +96,12 @@ function Role.Start(isnew)
             end
         end
     end
+
+    -- 装备分页: 初始化 + 存量角色旧字段迁移进 scheme1 (新老号统一走)
+    Role.CalibrateEquipSchemes()
+
+    -- 精力: 存量角色补默认值 + 出战角色精力镜像同步到 user_attr
+    Role.CalibrateEnergy()
 end
 
 function Role.SaveRolesNow()
@@ -182,7 +188,9 @@ function Role.SaveAndLog(change_roles)
                 or reason == "AddRole"
                 or reason == "LightMagicItem"
                 or reason == "LightSpaceRing"
-                or reason == "LightDiagramsCard" then
+                or reason == "LightDiagramsCard"
+                or reason == "UnlockEquipScheme"
+                or reason == "SwitchEquipScheme" then
                 save_now = true
             end
 
@@ -507,6 +515,14 @@ function Role.AddRole(roleid)
         end
     end
 
+    -- 装备分页: 与登录校准(CalibrateEquipSchemes)同构, 新角色即时初始解锁方案1(空壳, 初始装备在身上)
+    -- 不补会导致当次会话内该角色切页被拒(1516), 要等下次登录校准
+    local init_scheme = RoleDef.newEquipScheme()
+    init_scheme.scheme_idx = 1
+    init_scheme.unlocked = 1
+    role_info.equip_schemes[1] = init_scheme
+    role_info.cur_scheme_idx = 1
+
     roles.role_list[roleid] = role_info
 
     -- 触发角色解锁相关任务(攒批触发, 仅一次任务同步)
@@ -549,6 +565,8 @@ function Role.SetRoleBattle(roleid, sync_client)
 
         local update_user_attr = {}
         update_user_attr[ProtoEnum.UserAttrType.cur_show_role] = show_role
+        -- [精力] 出战角色切换, 精力显示镜像随之刷新
+        update_user_attr[ProtoEnum.UserAttrType.battle_role_energy] = role_info.energy or 0
         scripts.User.SetUserAttr(update_user_attr, sync_client)
 
         -- 同步给房间其他人
@@ -744,6 +762,318 @@ function Role.PBClientGetRoleInfoReqCmd(req)
     return context.S2C(context.net_id, CmdCode["PBClientGetRoleInfoRspCmd"], rsp_msg, req.msg_context.stub_id)
 end
 
+-- ==================== 装备分页系统 ====================
+-- 设计约定(搬家式): 装备任意时刻只存于一处 —— 身上(旧三字段=激活方案穿戴) 或 某个非激活方案
+-- 激活方案的 equips 恒为空壳; 切换方案 = 两段引用搬家; 穿戴/卸下/维修/结算/开光全部操作身上(存量代码零改动)
+
+-- 取分页: scheme_idx 为 0/nil 时取当前激活分页; 返回 nil 表示分页不存在或未解锁
+function Role.GetEquipScheme(role_info, scheme_idx)
+    local schemes = role_info.equip_schemes
+    if not schemes then
+        return nil
+    end
+    if not scheme_idx or scheme_idx <= 0 then
+        scheme_idx = role_info.cur_scheme_idx or 1
+    end
+    local scheme = schemes[scheme_idx]
+    if not scheme or (scheme.unlocked or 0) ~= 1 then
+        return nil
+    end
+    return scheme
+end
+
+-- [装备分页] 身上装备(旧三字段) → 指定方案(纯引用搬家)
+local function MoveBodyToScheme(role_info, scheme)
+    scheme.equips = scheme.equips or {}
+    if role_info.magic_item and role_info.magic_item.common_info then
+        scheme.equips[RoleDef.EquipSlotType.MagicItem] = role_info.magic_item
+    end
+    if role_info.space_ring and role_info.space_ring.common_info then
+        scheme.equips[RoleDef.EquipSlotType.SpaceRing] = role_info.space_ring
+    end
+    if role_info.digrams_cards then
+        for gua_idx, card in pairs(role_info.digrams_cards) do
+            if card and card.common_info then
+                scheme.equips[RoleDef.EquipSlotType.BaguaBase + gua_idx] = card
+            end
+        end
+    end
+end
+
+-- [装备分页] 指定方案装备 → 身上(旧三字段), 并清空该方案(纯引用搬家)
+local function MoveSchemeToBody(role_info, scheme)
+    local equips = scheme.equips or {}
+    role_info.magic_item = equips[RoleDef.EquipSlotType.MagicItem] or {}
+    role_info.space_ring = equips[RoleDef.EquipSlotType.SpaceRing] or {}
+    local digrams = {}
+    for slot_key, item_data in pairs(equips) do
+        if slot_key > RoleDef.EquipSlotType.BaguaBase and slot_key < RoleDef.EquipSlotType.MagicItem then
+            digrams[slot_key - RoleDef.EquipSlotType.BaguaBase] = item_data
+        end
+    end
+    role_info.digrams_cards = digrams
+    scheme.equips = {}   -- 激活方案永远为空壳: 装备只在"身上"和"非激活方案"两处之一
+end
+
+-- 登录校准: 初始化装备分页(方案1空壳, 身上装备保持在旧三字段不动)
+-- 设计约定: 激活方案的 equips 恒为空, 身上装备存旧三字段; 切换方案 = 两段引用搬家
+function Role.CalibrateEquipSchemes()
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list then
+        return
+    end
+
+    local changed = false
+    for _, role_info in pairs(roles.role_list) do
+        role_info.equip_schemes = role_info.equip_schemes or {}
+
+        -- 存量归一化: 早期版本 unlocked 是 bool, 统一转 1/0 (pb 已改 int32)
+        for _, old_scheme in pairs(role_info.equip_schemes) do
+            if old_scheme.unlocked == true or old_scheme.unlocked == 1 then
+                old_scheme.unlocked = 1
+            else
+                old_scheme.unlocked = 0
+            end
+        end
+
+        -- 按 LoadoutConfig 初始化: unlock=0 的方案初始解锁(空壳, 身上装备不动)
+        for loadout_id, loadout_cfg in pairs(GameCfg.LoadoutConfig or {}) do
+            if not role_info.equip_schemes[loadout_id] and loadout_cfg.unlock == 0 then
+                local scheme = RoleDef.newEquipScheme()
+                scheme.scheme_idx = loadout_id
+                scheme.unlocked = 1
+                role_info.equip_schemes[loadout_id] = scheme
+                changed = true
+            end
+        end
+
+        -- 激活页兜底
+        if (role_info.cur_scheme_idx or 0) < 1
+            or not role_info.equip_schemes[role_info.cur_scheme_idx] then
+            role_info.cur_scheme_idx = 1
+            changed = true
+        end
+
+        -- 一致性修复: 激活方案 equips 应为空(历史版本可能残留), 身上装备优先
+        local cur_scheme = role_info.equip_schemes[role_info.cur_scheme_idx]
+        if cur_scheme and cur_scheme.equips and next(cur_scheme.equips) ~= nil then
+            -- 激活方案残留装备(异常/旧版数据): 合并进身上(同槽位身上优先, 方案装备兜底空槽)
+            local body_equips = {}
+            MoveBodyToScheme(role_info, { equips = body_equips })
+            for slot_key, item_data in pairs(cur_scheme.equips) do
+                if not body_equips[slot_key] then
+                    body_equips[slot_key] = item_data
+                end
+            end
+            cur_scheme.equips = {}
+            MoveSchemeToBody(role_info, { equips = body_equips })
+            changed = true
+        end
+    end
+
+    if changed then
+        scripts.UserModel.AddDirtyModule("Role")
+    end
+end
+
+-- ============ 精力系统 ============
+-- 规则: 角色级, 上限走 EnergyCostConfig 表(id=1 全局单行), 各模式消耗走 GameChapter.energy(coin 41), 每日6点恢复满
+-- 表缺省时兜底 RoleDef.EnergyDef
+
+-- 精力上限(表驱动, 兜底 RoleDef.EnergyDef.Max)
+function Role.GetEnergyMax()
+    local energy_cfg = (GameCfg.EnergyCostConfig or {})[1]
+    if energy_cfg and energy_cfg.max_num and energy_cfg.max_num > 0 then
+        return energy_cfg.max_num
+    end
+    return RoleDef.EnergyDef.Max
+end
+
+-- 登录校准: 存量角色补精力默认值(老数据无 energy 字段)
+function Role.CalibrateEnergy()
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.role_list then
+        return
+    end
+
+    local energy_max = Role.GetEnergyMax()
+    local changed = false
+    for _, role_info in pairs(roles.role_list) do
+        if not role_info.energy or role_info.energy < 0 or role_info.energy > energy_max then
+            role_info.energy = energy_max
+            changed = true
+        end
+    end
+    if changed then
+        scripts.UserModel.AddDirtyModule("Role")
+    end
+    Role.SyncBattleRoleEnergyAttr()
+end
+
+-- 同步出战角色精力到 user_attr(显示镜像, 仅同步本人客户端; 权威数据在角色 energy 字段)
+function Role.SyncBattleRoleEnergyAttr()
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.battle_role_id then
+        return
+    end
+    local role_info = roles.role_list[roles.battle_role_id]
+    if not role_info then
+        return
+    end
+    local update_user_attr = {}
+    update_user_attr[ProtoEnum.UserAttrType.battle_role_energy] = role_info.energy or 0
+    scripts.User.SetUserAttr(update_user_attr, true)
+end
+
+-- 门票模式判定: 返回该局的精力消耗(门票模式), 非门票模式返回 nil
+-- conf_idx = GameChapter 表 id; 消耗走 GameChapter.energy 中 coin 41(出战精力)的配置值
+-- (energy 为空表 = 该章节/难度不扣精力, 由策划在表中控制哪些模式哪些难度扣)
+function Role.GetEnergyCost(conf_idx)
+    local chapter_cfg = GameCfg.GameChapter[conf_idx]
+    if not chapter_cfg then
+        return nil
+    end
+
+    local energy = chapter_cfg.energy
+    if not energy or not energy[41] or energy[41] <= 0 then
+        return nil
+    end
+    return energy[41]
+end
+
+-- 门票模式开局扣精力(开局前同步调用: 实扣结果传给 DS/存房间, StartGame 失败时 RefundEnergyForGame 退还)
+-- 扣出战角色精力: 不足则扣至0(不阻止进入)
+-- 返回: { cost = 实扣值 }; 非门票模式/数据异常返回 nil(不进 energy map, 结算侧按放行处理)
+function Role.CostEnergyForGame(conf_idx)
+    local cost = Role.GetEnergyCost(conf_idx)
+    if not cost then
+        return nil  -- 非门票模式, 不扣
+    end
+
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.battle_role_id then
+        return nil  -- 数据异常不扣, 不惩罚玩家
+    end
+    local role_info = roles.role_list[roles.battle_role_id]
+    if not role_info then
+        return nil
+    end
+
+    local cur_energy = role_info.energy or Role.GetEnergyMax()
+    local real_cost = math.min(cur_energy, cost)   -- 不足额: 实扣=剩余精力(可能0)
+    role_info.energy = cur_energy - real_cost
+    -- 扣精力时间戳(仅排查用; 是否足额及宝箱发放由 DS 按开局实扣结果判定)
+    role_info.energy_pay_ts = moon.time()
+
+    local change_roles = {}
+    change_roles[role_info.config_id] = "CostEnergy"
+    Role.SaveAndLog(change_roles)
+
+    moon.info(string.format("CostEnergyForGame uid=%d role=%d conf=%d cost=%d cur=%d->%d paid_full=%d",
+        context.uid, role_info.config_id, conf_idx, cost, cur_energy, role_info.energy,
+        cur_energy >= cost and 1 or 0))
+
+    Role.SyncBattleRoleEnergyAttr()
+    return { cost = real_cost }
+end
+
+-- 开局失败退还精力(与 CostEnergyForGame 配对, add_energy 为其返回的 cost)
+function Role.RefundEnergyForGame(add_energy)
+    add_energy = math.tointeger(add_energy) or 0
+    if add_energy <= 0 then
+        return
+    end
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.battle_role_id then
+        return
+    end
+    local role_info = roles.role_list[roles.battle_role_id]
+    if not role_info then
+        return
+    end
+    local cur_energy = role_info.energy or 0
+    role_info.energy = math.min(Role.GetEnergyMax(), cur_energy + add_energy)
+    role_info.energy_pay_ts = 0
+    local change_roles = {}
+    change_roles[role_info.config_id] = "RefundEnergy"
+    Role.SaveAndLog(change_roles)
+    moon.info(string.format("RefundEnergyForGame uid=%d role=%d +%d cur=%d->%d",
+        context.uid, role_info.config_id, add_energy, cur_energy, role_info.energy))
+    Role.SyncBattleRoleEnergyAttr()
+end
+
+-- 精力丹: 当前出战角色回复精力(超出上限封顶), 返回错误码
+function Role.AddBattleRoleEnergy(add_energy)
+    if not add_energy or add_energy <= 0 then
+        return ErrorCode.ParamInvalid
+    end
+
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.battle_role_id then
+        return ErrorCode.RoleNotExist
+    end
+    local role_info = roles.role_list[roles.battle_role_id]
+    if not role_info then
+        return ErrorCode.RoleNotExist
+    end
+
+    local cur_energy = role_info.energy or 0
+    local energy_max = Role.GetEnergyMax()
+    if cur_energy >= energy_max then
+        return ErrorCode.EnergyFull  -- 已满不可再用
+    end
+
+    role_info.energy = math.min(energy_max, cur_energy + add_energy)
+    local change_roles = {}
+    change_roles[role_info.config_id] = "AddEnergy"
+    Role.SaveAndLog(change_roles)
+
+    moon.info(string.format("AddBattleRoleEnergy uid=%d role=%d +%d cur=%d->%d",
+        context.uid, role_info.config_id, add_energy, cur_energy, role_info.energy))
+    Role.SyncBattleRoleEnergyAttr()
+    return ErrorCode.None
+end
+
+-- GM: 设置出战角色精力(测试/运营), 返回值供 moon.call 使用
+function Role.GMSetEnergy(energy)
+    energy = math.tointeger(energy) or 0
+    local roles = scripts.UserModel.GetRoles()
+    if not roles or not roles.battle_role_id then
+        return false
+    end
+    local role_info = roles.role_list[roles.battle_role_id]
+    if not role_info then
+        return false
+    end
+    local energy_max = Role.GetEnergyMax()
+    if energy < 0 then energy = 0 end
+    if energy > energy_max then energy = energy_max end
+    role_info.energy = energy
+    local change_roles = {}
+    change_roles[role_info.config_id] = "GMSetEnergy"
+    Role.SaveAndLog(change_roles)
+    Role.SyncBattleRoleEnergyAttr()
+    moon.info(string.format("GMSetEnergy uid=%d role=%d energy=%d", context.uid, role_info.config_id, energy))
+    return true
+end
+-- ============ 精力系统 END ============
+
+-- 计算装备在方案 equips 中的槽位key: 法器=9 戒指=10 八卦=BaguaBase+type5(卦位); 非装备返回nil
+function Role.GetEquipSlotKey(item_small_type, config_id, equip_idx)
+    if item_small_type == ItemDefine.EItemSmallType.MagicItem then
+        return RoleDef.EquipSlotType.MagicItem
+    elseif item_small_type == ItemDefine.EItemSmallType.SpaceRing then
+        return RoleDef.EquipSlotType.SpaceRing
+    elseif item_small_type == ItemDefine.EItemSmallType.HumanDiagrams then
+        local uniqitem_cfg = GameCfg.UniqueItem[config_id]
+        if uniqitem_cfg and uniqitem_cfg.type5 then
+            return RoleDef.EquipSlotType.BaguaBase + uniqitem_cfg.type5
+        end
+    end
+    return nil
+end
+
+-- 读取身上装备(旧三字段 = 当前激活方案穿戴)
 function Role.GetRoleEquipment(role_info, config_id, equip_idx)
     local item_small_type = ItemDefine.GetItemType(config_id)
     if item_small_type == ItemDefine.EItemSmallType.MagicItem then
@@ -768,6 +1098,46 @@ function Role.GetRoleEquipment(role_info, config_id, equip_idx)
     return item_small_type, nil
 end
 
+-- 按uniqid回写装备耐久(身上=激活方案优先, 找不到再扫非激活方案equips), 返回是否找到
+-- 场景: 局结束即解锁切页(lock_item_role=0), 但DS结算异步到达时装备可能已搬进非激活方案,
+-- 只查身上会静默丢失耐久变更
+function Role.SetEquipDurabilityByUniqid(role_info, uniqid, cur_durability)
+    if not role_info or not uniqid then
+        return false
+    end
+
+    local function try_write(item_data)
+        if item_data and item_data.common_info and item_data.common_info.uniqid == uniqid then
+            local special = item_data.special_info
+            if special then
+                if special.magic_item then
+                    special.magic_item.cur_durability = cur_durability
+                elseif special.diagrams_item then
+                    special.diagrams_item.cur_durability = cur_durability
+                elseif special.space_ring then
+                    special.space_ring.cur_durability = cur_durability
+                end
+            end
+            return true
+        end
+        return false
+    end
+
+    if try_write(role_info.magic_item) then return true end
+    if try_write(role_info.space_ring) then return true end
+    for _, card in pairs(role_info.digrams_cards or {}) do
+        if try_write(card) then return true end
+    end
+    for _, scheme in pairs(role_info.equip_schemes or {}) do
+        for _, item_data in pairs(scheme.equips or {}) do
+            if try_write(item_data) then return true end
+        end
+    end
+    return false
+end
+
+-- 穿戴/卸下只操作身上装备(旧三字段 = 当前激活方案)
+-- (搬家式设计: 激活方案 equips 恒为空, 编辑装备永远是对身上操作, 想改其他方案先切换)
 function Role.ChangeEquipment(battle_role_id, model_role_id, role_info, config_id, equip_idx, equip_item_data)
     local item_small_type = ItemDefine.GetItemType(config_id)
     if item_small_type == ItemDefine.EItemSmallType.MagicItem then
@@ -1430,6 +1800,17 @@ function Role.PBRoleWearEquipReqCmd(req)
             { code = ErrorCode.ConfigError, error = "no role_cfg" }, req.msg_context.stub_id)
     end
 
+    -- 装备分页: scheme_idx=0/当前激活页 → 编辑身上装备; 已解锁的非激活页 → 直接编辑该方案(无需切换)
+    local target_scheme = nil
+    if req.msg.scheme_idx and req.msg.scheme_idx > 0
+        and req.msg.scheme_idx ~= (role_info.cur_scheme_idx or 1) then
+        target_scheme = Role.GetEquipScheme(role_info, req.msg.scheme_idx)
+        if not target_scheme then
+            return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
+                { code = ErrorCode.RoleSchemeLocked, error = "装备分页未解锁", uid = context.uid }, req.msg_context.stub_id)
+        end
+    end
+
     local errcode, item_data = scripts.Bag.GetOneItemData(req.msg.bag_name, req.msg.pos)
     if errcode ~= ErrorCode.None or not item_data then
         return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
@@ -1450,14 +1831,54 @@ function Role.PBRoleWearEquipReqCmd(req)
     local bag_change_log = {}
     local err_code = ErrorCode.None
 
-    local item_small_type, takeoff_item_data = Role.GetRoleEquipment(role_info, item_data.common_info.config_id,
-        req.msg.equip_idx)
+    local item_small_type, takeoff_item_data, scheme_slot_key
+    if target_scheme then
+        -- 非激活页: 按装备类型定位方案槽位, 取同槽旧装备
+        item_small_type = ItemDefine.GetItemType(item_data.common_info.config_id)
+        scheme_slot_key = Role.GetEquipSlotKey(item_small_type, item_data.common_info.config_id, req.msg.equip_idx)
+        if scheme_slot_key then
+            local old_item = target_scheme.equips[scheme_slot_key]
+            if old_item and old_item.common_info then
+                takeoff_item_data = old_item
+            end
+        end
+    else
+        item_small_type, takeoff_item_data = Role.GetRoleEquipment(role_info, item_data.common_info.config_id,
+            req.msg.equip_idx)
+    end
     if item_small_type ~= ItemDefine.EItemSmallType.MagicItem
         and item_small_type ~= ItemDefine.EItemSmallType.HumanDiagrams
         and item_small_type ~= ItemDefine.EItemSmallType.SpaceRing then
         return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
             { code = ErrorCode.ItemNotExist, error = "装备不存在", uid = context.uid }, req.msg_context.stub_id)
     end
+    -- [通用槽位校验] LoadoutConfig 槽位类型防线(第一道, 表驱动):
+    -- 槽位1~8(八卦)允许值对标 UniqueItem.type5; 槽位9(法器)/10(戒指)对标 UniqueItem.type1
+    -- 未配置允许值(0/空)则跳过, 不影响现有细分校验; 新槽位(诡器等)未来只依赖此层
+    do
+        local loadout_cfg = (GameCfg.LoadoutConfig or {})[req.msg.scheme_idx and req.msg.scheme_idx > 0
+            and req.msg.scheme_idx or (role_info.cur_scheme_idx or 1)]
+        local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+        if loadout_cfg and uniqitem_cfg then
+            local slot_allowed, item_type_val
+            if item_small_type == ItemDefine.EItemSmallType.HumanDiagrams then
+                slot_allowed = loadout_cfg["type" .. req.msg.equip_idx]
+                item_type_val = uniqitem_cfg.type5
+            elseif item_small_type == ItemDefine.EItemSmallType.MagicItem then
+                slot_allowed = loadout_cfg["type" .. RoleDef.EquipSlotType.MagicItem]
+                item_type_val = uniqitem_cfg.type1
+            elseif item_small_type == ItemDefine.EItemSmallType.SpaceRing then
+                slot_allowed = loadout_cfg["type" .. RoleDef.EquipSlotType.SpaceRing]
+                item_type_val = uniqitem_cfg.type1
+            end
+            if slot_allowed and slot_allowed > 0 and item_type_val ~= slot_allowed then
+                return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
+                    { code = ErrorCode.ConfigError, error = "装备类型与槽位不符", uid = context.uid },
+                    req.msg_context.stub_id)
+            end
+        end
+    end
+
     if item_small_type == ItemDefine.EItemSmallType.MagicItem then
         -- 检测法器类型是否正确
         --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
@@ -1497,9 +1918,19 @@ function Role.PBRoleWearEquipReqCmd(req)
         end
     end
 
-    -- 角色穿戴新装备
-    Role.ChangeEquipment(roles.battle_role_id, roles.model_role_id, role_info, item_data.common_info.config_id,
-        req.msg.equip_idx, item_data)
+    -- 穿戴写入: 激活页 → 身上(旧三字段镜像); 非激活页 → 方案对应槽位
+    if target_scheme then
+        if not scheme_slot_key then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode["PBRoleWearEquipRspCmd"],
+                { code = ErrorCode.ConfigError, error = "装备槽位错误", uid = context.uid }, req.msg_context.stub_id)
+        end
+        target_scheme.equips[scheme_slot_key] = item_data
+    else
+        -- 角色穿戴新装备(写入身上 = 当前激活方案)
+        Role.ChangeEquipment(roles.battle_role_id, roles.model_role_id, role_info, item_data.common_info.config_id,
+            req.msg.equip_idx, item_data)
+    end
 
     -- 保存数据并同步给客户端
     -- local save_bags = {}
@@ -1514,28 +1945,31 @@ function Role.PBRoleWearEquipReqCmd(req)
     change_roles[req.msg.roleid] = "WearEquipment"
     Role.SaveAndLog(change_roles)
 
-    if item_small_type == ItemDefine.EItemSmallType.MagicItem then
-        local cur_uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
-        if cur_uniqitem_cfg and cur_uniqitem_cfg.type2 then
-            -- 触发角色装备法器的数量
-            scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_EQUIP_MAGIC_ITEM_CNT,
-                { role_info.config_id, cur_uniqitem_cfg.type2 }, 1)
-        end
-    elseif item_small_type == ItemDefine.EItemSmallType.HumanDiagrams then
-        local cur_uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
-        if cur_uniqitem_cfg and cur_uniqitem_cfg.type2 then
-            local cur_num = 0
-            for _, digrams_card in pairs(role_info.digrams_cards) do
-                local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
-                if uniqitem_cfg
-                    and uniqitem_cfg.type2
-                    and uniqitem_cfg.type2 == cur_uniqitem_cfg.type2 then
-                    cur_num = cur_num + 1
-                end
+    -- 任务埋点: 穿戴的即当前激活方案装备(编辑非激活页不视为"穿戴", 不触发)
+    if not target_scheme then
+        if item_small_type == ItemDefine.EItemSmallType.MagicItem then
+            local cur_uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+            if cur_uniqitem_cfg and cur_uniqitem_cfg.type2 then
+                -- 触发角色装备法器的数量
+                scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_EQUIP_MAGIC_ITEM_CNT,
+                    { role_info.config_id, cur_uniqitem_cfg.type2 }, 1)
             end
-            -- 触发角色装备八卦牌的数量
-            scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_EQUIP_DIAGRAMS_CNT,
-                { role_info.config_id, cur_uniqitem_cfg.type2 }, cur_num + 1)
+        elseif item_small_type == ItemDefine.EItemSmallType.HumanDiagrams then
+            local cur_uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+            if cur_uniqitem_cfg and cur_uniqitem_cfg.type2 then
+                local cur_num = 0
+                for _, digrams_card in pairs(role_info.digrams_cards) do
+                    local uniqitem_cfg = GameCfg.UniqueItem[item_data.common_info.config_id]
+                    if uniqitem_cfg
+                        and uniqitem_cfg.type2
+                        and uniqitem_cfg.type2 == cur_uniqitem_cfg.type2 then
+                        cur_num = cur_num + 1
+                    end
+                end
+                -- 触发角色装备八卦牌的数量
+                scripts.Mission.TriggerCondition(MissionDef.EConditionIds.ROLE_EQUIP_DIAGRAMS_CNT,
+                    { role_info.config_id, cur_uniqitem_cfg.type2 }, cur_num + 1)
+            end
         end
     end
 
@@ -1579,13 +2013,37 @@ function Role.PBRoleTakeOffEquipReqCmd(req)
             { code = ErrorCode.RoleNotExist, error = "角色不存在", uid = context.uid }, req.msg_context.stub_id)
     end
 
+    -- 装备分页: scheme_idx=0/当前激活页 → 卸下身上装备; 已解锁的非激活页 → 直接卸下该方案装备(无需切换)
+    local target_scheme = nil
+    if req.msg.scheme_idx and req.msg.scheme_idx > 0
+        and req.msg.scheme_idx ~= (role_info.cur_scheme_idx or 1) then
+        target_scheme = Role.GetEquipScheme(role_info, req.msg.scheme_idx)
+        if not target_scheme then
+            return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"],
+                { code = ErrorCode.RoleSchemeLocked, error = "装备分页未解锁", uid = context.uid }, req.msg_context.stub_id)
+        end
+    end
+
     -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local bag_change_log = {}
     local err_code = ErrorCode.None
-    local item_small_type, takeoff_item_data = Role.GetRoleEquipment(role_info, req.msg.takeoff_config_id,
-        req.msg.takeoff_idx)
+    local item_small_type, takeoff_item_data, scheme_slot_key
+    if target_scheme then
+        -- 非激活页: 按装备类型定位方案槽位取装备
+        item_small_type = ItemDefine.GetItemType(req.msg.takeoff_config_id)
+        scheme_slot_key = Role.GetEquipSlotKey(item_small_type, req.msg.takeoff_config_id, req.msg.takeoff_idx)
+        if scheme_slot_key then
+            local old_item = target_scheme.equips[scheme_slot_key]
+            if old_item and old_item.common_info then
+                takeoff_item_data = old_item
+            end
+        end
+    else
+        item_small_type, takeoff_item_data = Role.GetRoleEquipment(role_info, req.msg.takeoff_config_id,
+            req.msg.takeoff_idx)
+    end
     if item_small_type ~= ItemDefine.EItemSmallType.MagicItem
-        and item_small_type ~= item_small_type == ItemDefine.EItemSmallType.HumanDiagrams
+        and item_small_type ~= ItemDefine.EItemSmallType.HumanDiagrams
         and item_small_type ~= ItemDefine.EItemSmallType.SpaceRing then
         return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"],
             { code = ErrorCode.ItemNotExist, error = "装备不存在", uid = context.uid }, req.msg_context.stub_id)
@@ -1618,9 +2076,19 @@ function Role.PBRoleTakeOffEquipReqCmd(req)
             { code = err_code, error = "更换装备失败", uid = context.uid }, req.msg_context.stub_id)
     end
 
-    -- 角色卸下新装备
-    Role.ChangeEquipment(roles.battle_role_id, roles.model_role_id, role_info, req.msg.takeoff_config_id,
-        req.msg.takeoff_idx, nil)
+    -- 卸下移除: 激活页 → 从身上移除(旧三字段); 非激活页 → 从方案槽位移除
+    if target_scheme then
+        if not scheme_slot_key then
+            scripts.Bag.RollBackWithChange(bag_change_log)
+            return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"],
+                { code = ErrorCode.ConfigError, error = "装备槽位错误", uid = context.uid }, req.msg_context.stub_id)
+        end
+        target_scheme.equips[scheme_slot_key] = nil
+    else
+        -- 角色卸下装备(从身上移除 = 当前激活方案)
+        Role.ChangeEquipment(roles.battle_role_id, roles.model_role_id, role_info, req.msg.takeoff_config_id,
+            req.msg.takeoff_idx, nil)
+    end
 
     -- 保存数据并同步给客户端
     -- local save_bags = {}
@@ -1645,6 +2113,169 @@ function Role.PBRoleTakeOffEquipReqCmd(req)
         takeoff_idx = req.msg.takeoff_idx,
     }
     return context.S2C(context.net_id, CmdCode["PBRoleTakeOffEquipRspCmd"], rsp_msg, req.msg_context.stub_id)
+end
+
+-- 解锁装备分页
+function Role.PBRoleUnlockEquipSchemeReqCmd(req)
+    if not req.msg.roleid
+        or not req.msg.scheme_idx
+        or req.msg.scheme_idx <= 1 then
+        return context.S2C(context.net_id, CmdCode["PBRoleUnlockEquipSchemeRspCmd"],
+            { code = ErrorCode.ParamInvalid, error = "无效请求参数", uid = req.msg.uid }, req.msg_context.stub_id)
+    end
+
+    local roles = scripts.UserModel.GetRoles()
+    if not roles then
+        return context.S2C(context.net_id, CmdCode["PBRoleUnlockEquipSchemeRspCmd"],
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    if context.lock_item_role == 1 then
+        return context.S2C(context.net_id, CmdCode["PBRoleUnlockEquipSchemeRspCmd"],
+            { code = ErrorCode.LockItemRole, error = "变更操作被锁定", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local role_info = roles.role_list[req.msg.roleid]
+    if not role_info then
+        return context.S2C(context.net_id, CmdCode["PBRoleUnlockEquipSchemeRspCmd"],
+            { code = ErrorCode.RoleNotExist, error = "角色不存在", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local scheme_idx = req.msg.scheme_idx
+    local loadout_cfg = (GameCfg.LoadoutConfig or {})[scheme_idx]
+    if not loadout_cfg then
+        return context.S2C(context.net_id, CmdCode["PBRoleUnlockEquipSchemeRspCmd"],
+            { code = ErrorCode.ParamInvalid, error = "超出分页上限", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    role_info.equip_schemes = role_info.equip_schemes or {}
+    if role_info.equip_schemes[scheme_idx] then
+        return context.S2C(context.net_id, CmdCode["PBRoleUnlockEquipSchemeRspCmd"],
+            { code = ErrorCode.ParamInvalid, error = "该分页已解锁", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    -- 扣解锁费用(LoadoutConfig.unlock_cost: map{coin_id: 数量}; 未配置则拒绝, 防止漏配白送)
+    -- 注意: Bag.CheckCoinsEnough/DealCoins 的入参是 PBCoin 对象表且消耗为负数(与 GetItemsFromCfg 生成格式一致)
+    local cost_coins = {}
+    if type(loadout_cfg.unlock_cost) == "table" then
+        for coin_id, count in pairs(loadout_cfg.unlock_cost) do
+            if count and count > 0 then
+                cost_coins[coin_id] = { coin_id = coin_id, coin_count = -count }
+            end
+        end
+    end
+    if table.size(cost_coins) < 1 then
+        return context.S2C(context.net_id, CmdCode["PBRoleUnlockEquipSchemeRspCmd"],
+            { code = ErrorCode.ConfigError, error = "解锁费用未配置", uid = context.uid }, req.msg_context.stub_id)
+    end
+    local err_code = scripts.Bag.CheckCoinsEnough(cost_coins)
+    if err_code ~= ErrorCode.None then
+        return context.S2C(context.net_id, CmdCode["PBRoleUnlockEquipSchemeRspCmd"],
+            { code = err_code, error = "消耗金币不足", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local bag_change_log = {}
+    err_code = scripts.Bag.DealCoins(cost_coins, bag_change_log)
+    if err_code ~= ErrorCode.None then
+        scripts.Bag.RollBackWithChange(bag_change_log)
+        return context.S2C(context.net_id, CmdCode["PBRoleUnlockEquipSchemeRspCmd"],
+            { code = err_code, error = "扣除金币失败", uid = context.uid }, req.msg_context.stub_id)
+    end
+    scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.UnlockEquipScheme, req.msg.roleid)
+
+    local scheme = RoleDef.newEquipScheme()
+    scheme.scheme_idx = scheme_idx
+    scheme.unlocked = 1
+    role_info.equip_schemes[scheme_idx] = scheme
+
+    local change_roles = {}
+    change_roles[req.msg.roleid] = "UnlockEquipScheme"
+    Role.SaveAndLog(change_roles)
+
+    return context.S2C(context.net_id, CmdCode["PBRoleUnlockEquipSchemeRspCmd"],
+        { code = ErrorCode.None, error = "", uid = req.msg.uid, roleid = req.msg.roleid, scheme_idx = scheme_idx },
+        req.msg_context.stub_id)
+end
+
+-- 切换装备分页(局外, 整套装备随激活分页生效)
+function Role.PBRoleSwitchEquipSchemeReqCmd(req)
+    if not req.msg.roleid
+        or not req.msg.scheme_idx
+        or req.msg.scheme_idx < 1 then
+        return context.S2C(context.net_id, CmdCode["PBRoleSwitchEquipSchemeRspCmd"],
+            { code = ErrorCode.ParamInvalid, error = "无效请求参数", uid = req.msg.uid }, req.msg_context.stub_id)
+    end
+
+    local roles = scripts.UserModel.GetRoles()
+    if not roles then
+        return context.S2C(context.net_id, CmdCode["PBRoleSwitchEquipSchemeRspCmd"],
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    -- 局外限定: 局内锁定角色装备变更
+    if context.lock_item_role == 1 then
+        return context.S2C(context.net_id, CmdCode["PBRoleSwitchEquipSchemeRspCmd"],
+            { code = ErrorCode.LockItemRole, error = "变更操作被锁定", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local role_info = roles.role_list[req.msg.roleid]
+    if not role_info then
+        return context.S2C(context.net_id, CmdCode["PBRoleSwitchEquipSchemeRspCmd"],
+            { code = ErrorCode.RoleNotExist, error = "角色不存在", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local scheme_idx = req.msg.scheme_idx
+    if not (GameCfg.LoadoutConfig or {})[scheme_idx] then
+        return context.S2C(context.net_id, CmdCode["PBRoleSwitchEquipSchemeRspCmd"],
+            { code = ErrorCode.ParamInvalid, error = "超出分页上限", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local scheme = Role.GetEquipScheme(role_info, scheme_idx)
+    if not scheme then
+        return context.S2C(context.net_id, CmdCode["PBRoleSwitchEquipSchemeRspCmd"],
+            { code = ErrorCode.RoleSchemeLocked, error = "装备分页未解锁", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    if (role_info.cur_scheme_idx or 1) == scheme_idx then
+        return context.S2C(context.net_id, CmdCode["PBRoleSwitchEquipSchemeRspCmd"],
+            { code = ErrorCode.ParamInvalid, error = "该分页已激活", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    -- 两段搬家(纯内存引用移动, 无背包操作, 天然原子):
+    -- ① 身上装备(旧三字段) → 旧激活方案
+    -- ② 激活新分页, 新分页装备 → 身上, 新分页清空(激活方案恒为空壳)
+    local old_scheme = role_info.equip_schemes[role_info.cur_scheme_idx or 1]
+    if old_scheme then
+        MoveBodyToScheme(role_info, old_scheme)
+    end
+    role_info.cur_scheme_idx = scheme_idx
+    MoveSchemeToBody(role_info, scheme)
+
+    -- 出战/展示角色的法器摘要随新穿戴刷新
+    if roles.battle_role_id == role_info.config_id or roles.model_role_id == role_info.config_id then
+        local show_role = RoleDef.newSimpleRoleData()
+        show_role.config_id = role_info.config_id
+        show_role.skins = role_info.skins
+        if role_info.magic_item and role_info.magic_item.common_info then
+            show_role.magic_item_id = role_info.magic_item.common_info.config_id
+        end
+        local update_user_attr = {}
+        if roles.battle_role_id == role_info.config_id then
+            update_user_attr[ProtoEnum.UserAttrType.cur_show_role] = show_role
+        end
+        if roles.model_role_id == role_info.config_id then
+            update_user_attr[ProtoEnum.UserAttrType.cur_model_role] = show_role
+        end
+        scripts.User.SetUserAttr(update_user_attr, true)
+    end
+
+    local change_roles = {}
+    change_roles[req.msg.roleid] = "SwitchEquipScheme"
+    Role.SaveAndLog(change_roles)
+
+    return context.S2C(context.net_id, CmdCode["PBRoleSwitchEquipSchemeRspCmd"],
+        { code = ErrorCode.None, error = "", uid = req.msg.uid, roleid = req.msg.roleid, scheme_idx = scheme_idx },
+        req.msg_context.stub_id)
 end
 
 function Role.PBRoleWearSkinReqCmd(req)

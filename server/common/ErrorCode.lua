@@ -379,6 +379,10 @@ local ErrorCode = {
     BagSortOutFailed = 1514,
     --- 背包道具变更操作被锁定
     LockItemRole = 1515,
+    --- 装备分页未解锁
+    RoleSchemeLocked = 1516,
+    --- 精力已满(精力丹不可使用)
+    EnergyFull = 1517,
 
     --装备强化系列错误码
     --- 开光次数达到上限

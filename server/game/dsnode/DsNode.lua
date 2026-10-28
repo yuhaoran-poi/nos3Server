@@ -613,6 +613,7 @@ function DsNode.PBDsNotifyPlayEndReqCmd(req)
 
     -- 先往数据库中写入结算信息
     if req.msg.need_settle == 1 then
+        -- [精力] 宝箱是否发放由 DS 按开局注入的实扣结果(PBDsCreateData.energy_paid_full)判定, 服务器不再注入/判定
         for uid, settle_info in pairs(req.msg.players_settle) do
             moon.warn(string.format("PBDsNotifyPlayEndReqCmd settle uid = %d, settle_info = %s", uid,
                 json.pretty_encode(settle_info)))

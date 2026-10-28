@@ -36,7 +36,7 @@ message PBDsCreateData
 	int32 server_port	= 7;
 	repeated int64 uids = 8;
     PBMonsterTags mode_monster_tags = 9;
-    map<int32, int32> energy_paid_full = 10;   // [精力] uid->开局实扣精力值(10=足额, 0~9=不足额实扣数; 无条目=非门票模式未扣; DS按此判定是否发放宝箱)
+    map<int64, int32> energy_paid_full = 10;   // [精力] uid->开局实扣精力值(10=足额, 0~9=不足额实扣数; 无条目=非门票模式未扣; DS按此判定是否发放宝箱)
 }
 
 // 客户端和服务器直接通信的消息

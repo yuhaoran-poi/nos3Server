@@ -74,6 +74,7 @@ local ItemDef = {
         UseAntiquePreset = 55,     -- 使用古董预设
         RefreshMonsterTags = 56,  -- 刷新敌方战斗怪物词条
         DsDelItems = 57,          --Ds删除道具
+        UnlockEquipScheme = 58, --解锁装备分页(灵币)
     },
     TabooWordInlay = {
         RoleType = 1000,

@@ -4811,7 +4811,6 @@
 ---@field Season Season
 ---@field SeasonPass SeasonPass
 ---@field Shop Shop
----@field SkinTrade SkinTrade
 ---@field Team Team
 ---@field Trade Trade
 ---@field User User
@@ -4909,10 +4908,6 @@
 
 ---@class shopmgr_scripts
 ---@field Shopmgr Shopmgr
-
-
----@class skintrademgr_scripts
----@field SkinTrademgr SkinTrademgr
 
 
 ---@class teammgr_scripts
