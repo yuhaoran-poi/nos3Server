@@ -2066,6 +2066,24 @@ function Mission.TriggerCondition(condition_id, params, change_cnt)
                         change_cnt = 1,
                     })
                 end
+                -- 完成日常/周常任务次数埋点(与 PeriodMissionComplete_new 同口径):
+                -- 实时完成路径不经过 PeriodMissionComplete_new, 必须在此补报,
+                -- 否则"累计完成日常/周常任务"类成就(如10585/10595)永不计数
+                if cfg then
+                    if cfg.cyclical_date == 1 then
+                        table.insert(queue, {
+                            cond_id = MissionDef.EConditionIds.DAILY_TASK_COMPLETE_CNT,
+                            params = {},
+                            change_cnt = 1,
+                        })
+                    elseif cfg.cyclical_date == 2 then
+                        table.insert(queue, {
+                            cond_id = MissionDef.EConditionIds.WEEKLY_TASK_COMPLETE_CNT,
+                            params = {},
+                            change_cnt = 1,
+                        })
+                    end
+                end
             end
         end
         done_per = #new_complete_period_ids
@@ -2331,6 +2349,24 @@ function Mission.TriggerConditionList(condition_list, change_log, need_sync)
                         params = { cfg.type, mission_id },
                         change_cnt = 1,
                     })
+                end
+                -- 完成日常/周常任务次数埋点(与 PeriodMissionComplete_new 同口径):
+                -- 实时完成路径不经过 PeriodMissionComplete_new, 必须在此补报,
+                -- 否则"累计完成日常/周常任务"类成就(如10585/10595)永不计数
+                if cfg then
+                    if cfg.cyclical_date == 1 then
+                        table.insert(queue, {
+                            cond_id = MissionDef.EConditionIds.DAILY_TASK_COMPLETE_CNT,
+                            params = {},
+                            change_cnt = 1,
+                        })
+                    elseif cfg.cyclical_date == 2 then
+                        table.insert(queue, {
+                            cond_id = MissionDef.EConditionIds.WEEKLY_TASK_COMPLETE_CNT,
+                            params = {},
+                            change_cnt = 1,
+                        })
+                    end
                 end
             end
         end
