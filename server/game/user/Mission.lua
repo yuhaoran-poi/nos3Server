@@ -813,7 +813,10 @@ end
 function Mission.CheckPeriodInfo(mission_info, now_ts, new_complete_period_ids)
     -- 尝试清理周期任务
     local day_fresh, week_fresh, month_fresh = false, false, false
-    if not datetime.is_same_day(mission_info.period_info.last_update_ts, now_ts) then
+    -- [每日任务] 刷新时刻为每日 DailyRefreshHour(6)点: 时间戳偏移6小时后按自然日比较,
+    -- 跨6点后的首次任务检查(登录/任务操作)触发刷新, 与精力每日恢复的6点日界同口径
+    local daily_offset = MissionDef.DailyRefreshHour * 3600
+    if not datetime.is_same_day(mission_info.period_info.last_update_ts - daily_offset, now_ts - daily_offset) then
         day_fresh = true
 
         mission_info.period_info.now_day_mission_datas = {}

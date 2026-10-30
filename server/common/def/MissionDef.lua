@@ -1,6 +1,7 @@
 local LuaExt = require "common.LuaExt"
 
 local MissionDef = {
+    DailyRefreshHour = 6, -- [每日任务] 刷新时刻(小时): 每日该点为日界刷新日常任务/日活跃, 0=凌晨0点
     ETaskState = {
         NO_PROGRESS = 0, -- 未领取
         NO_COMPLETE = 1, -- 未完成
