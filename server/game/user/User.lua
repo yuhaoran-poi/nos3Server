@@ -1549,7 +1549,8 @@ function User.PBClientLightReqCmd(req)
             bag_name = req.msg.bag_name or "",
             pos = req.msg.pos or 0,
             config_id = req.msg.config_id or 0,
-            uniqid = req.msg.uniqid or 0,
+            -- uniqid = req.msg.uniqid or 0,
+            uniqid = item_data.common_info.uniqid or 0,
         }, req.msg_context.stub_id)
     else
         return context.S2C(context.net_id, CmdCode.PBClientLightRspCmd, {
