@@ -267,6 +267,12 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
 
     if is_succ == 0 then
         rsp_is_fake = 1
+        -- [需求] 赝品价值不清零: 在原价基础上随机降低 50%~80%
+        local fake_code, fake_rate = scripts.Bag.RandomValue(50, 80)
+        if fake_code ~= ErrorCode.None then
+            return fake_code, "鉴定失败"
+        end
+        rsp_price = math.floor(item_data.special_info.antique_item.price.coin_count * (100 - fake_rate) / 100)
     else
         -- 获得随机该古董的降平升的权重池
         local random_pool = {}
@@ -414,8 +420,8 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
     end
     scripts.Mission.TriggerConditionList(condition_list, nil, true)
 
-    if(rsp_price > 0) then
-        -- 更新古董榜
+    if(rsp_price > 0 and rsp_is_fake ~= 1) then
+        -- 更新古董榜(赝品不上榜, 保持原有语义: 旧版赝品价0天然不进榜)
         scripts.Rank.UpdateRank_Antique(real_config_id, rsp_price)
     end
 
