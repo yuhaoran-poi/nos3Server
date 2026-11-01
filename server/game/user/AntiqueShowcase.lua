@@ -267,8 +267,8 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
 
     if is_succ == 0 then
         rsp_is_fake = 1
-        -- [需求] 赝品价值不清零: 在原价基础上随机降低 50%~80%
-        local fake_code, fake_rate = scripts.Bag.RandomValue(50, 80)
+        -- [需求] 赝品价值不清零: 在原价基础上随机降低 70%~90%
+        local fake_code, fake_rate = scripts.Bag.RandomValue(70, 90)
         if fake_code ~= ErrorCode.None then
             return fake_code, "鉴定失败"
         end
