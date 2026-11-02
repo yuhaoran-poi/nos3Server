@@ -910,25 +910,35 @@ function Room.PBStartGameRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
+    -- 门票(cost1/cost2)预扣结果: 成功落账 / 失败回滚+退还精力
+    -- 注意: 灵币cost的扣款不依赖门票(bag_change_log), 主线低难度无门票但有灵币cost, 必须在成功后独立执行
+    local start_ok = (not err) and (res.code == ErrorCode.None)
     if table.size(bag_change_log) > 0 then
-        if res.code ~= ErrorCode.None then
+        if not start_ok then
             scripts.Bag.RollBackWithChange(bag_change_log)
             refund_all_energy()
         else
             scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.GameStartCost)
+        end
+    elseif not start_ok then
+        refund_all_energy()
+    end
 
-            -- 扣除所有人的消耗
-            for _, uid in ipairs(success_uids) do
-                if mine_node == online_uids[uid].nid then
-                    moon.send("lua", online_uids[uid].addr_user, "Room.GameStartCost",
+    -- 扣除所有人的灵币消耗(cost): 开始成功才扣
+    if start_ok and table.size(all_cost_items) + table.size(all_cost_coins) > 0 then
+        for _, uid in ipairs(success_uids or {}) do
+            local info = online_uids and online_uids[uid]
+            if info and info.nid ~= 0 and info.addr_user ~= 0 then
+                if mine_node == info.nid then
+                    moon.send("lua", info.addr_user, "Room.GameStartCost",
                         { cost_items = all_cost_items, cost_coins = all_cost_coins })
                 else
-                    clusterd.send(online_uids[uid].nid, online_uids[uid].addr_user,
+                    clusterd.send(info.nid, info.addr_user,
                         "Room.GameStartCost", { cost_items = all_cost_items, cost_coins = all_cost_coins })
                 end
             end
-            Room.GameStartCost({ cost_items = all_cost_items, cost_coins = all_cost_coins })
         end
+        Room.GameStartCost({ cost_items = all_cost_items, cost_coins = all_cost_coins })
     end
 
     return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd, res, req.msg_context.stub_id)

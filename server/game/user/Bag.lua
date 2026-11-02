@@ -4026,6 +4026,7 @@ function Bag.PBDecomposeReqCmd(req)
         -- local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
         local cost_items = {}
         local add_items, add_coins = {}, {}
+        local allow_empty_output = false -- 0价老赝品纯销毁时允许无产出
         for _, value in pairs(req.msg.decompose_items) do
             -- 获取分解配置
             local decompose_cfg = {}
@@ -4037,8 +4038,11 @@ function Bag.PBDecomposeReqCmd(req)
                 end
 
                 -- 古董道具：按鉴定后价格出售(真品=鉴定价, 赝品=降价70%~90%后的残值)
-                -- 存量老赝品price为0(旧逻辑清零), 保底100对齐旧行为, 避免GetItemsFromCfg过滤后add_coins为空导致ConfigError
-                decompose_cfg[antique_info.price.coin_id] = math.max(antique_info.price.coin_count, 100) * value.item_count
+                -- 存量老赝品price为0(旧逻辑清零): 出售价为0, 纯销毁, 允许无产出
+                if antique_info.price.coin_count <= 0 then
+                    allow_empty_output = true
+                end
+                decompose_cfg[antique_info.price.coin_id] = antique_info.price.coin_count * value.item_count
                 moon.info(string.format("Bag.PBDecomposeReqCmd antique: uid %d, config_id %d, uniqid %d, pos %d, is_fake %d, coin_id %d, coin_count %d, item_count %d", context.uid, value.config_id, value.uniqid, value.pos, antique_info.is_fake, antique_info.price.coin_id, antique_info.price.coin_count, value.item_count))
             elseif value.uniqid == 0 then
                 local cfg = GameCfg.Item[value.config_id]
@@ -4095,7 +4099,7 @@ function Bag.PBDecomposeReqCmd(req)
         -- 根据道具表生成item_data
         -- local add_list = {}
         -- ItemDefine.GetItemListFromItemsCoins(add_items, add_coins, add_list)
-        if table.size(add_items) + table.size(add_coins) <= 0 then
+        if table.size(add_items) + table.size(add_coins) <= 0 and not allow_empty_output then
             return ErrorCode.ConfigError
         end
         local stack_items, unstack_items, deal_coins = {}, {}, {}
