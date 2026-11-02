@@ -816,7 +816,14 @@ function Mission.CheckPeriodInfo(mission_info, now_ts, new_complete_period_ids)
     -- [每日任务] 刷新时刻为每日 DailyRefreshHour(6)点: 时间戳偏移6小时后按自然日比较,
     -- 跨6点后的首次任务检查(登录/任务操作)触发刷新, 与精力每日恢复的6点日界同口径
     local daily_offset = MissionDef.DailyRefreshHour * 3600
-    if not datetime.is_same_day(mission_info.period_info.last_update_ts - daily_offset, now_ts - daily_offset) then
+    -- last_update_ts=0(新号初值)减偏移后为负时间戳, Windows的os.date拒绝负值直接报错
+    -- "date result cannot be represented in this installation"; 钳到0(1970-1-1),
+    -- is_same_day(0, now-offset)必为false, 保持"0触发首次日刷新"的原语义
+    local last_day_ts = mission_info.period_info.last_update_ts - daily_offset
+    if last_day_ts < 0 then
+        last_day_ts = 0
+    end
+    if not datetime.is_same_day(last_day_ts, now_ts - daily_offset) then
         day_fresh = true
 
         mission_info.period_info.now_day_mission_datas = {}
