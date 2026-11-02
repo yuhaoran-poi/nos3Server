@@ -4038,11 +4038,13 @@ function Bag.PBDecomposeReqCmd(req)
                 end
 
                 -- 古董道具：按鉴定后价格出售(真品=鉴定价, 赝品=降价70%~90%后的残值)
-                -- 存量老赝品price为0(旧逻辑清零): 出售价为0, 纯销毁, 允许无产出
-                if antique_info.price.coin_count <= 0 then
+                -- 存量老赝品price为0(旧逻辑清零): 无产出纯销毁, 不生成coin条目
+                -- (GetItemDataFromIdCount 对 coin_count==0 返回false, 会触发ConfigError)
+                if antique_info.price.coin_count > 0 then
+                    decompose_cfg[antique_info.price.coin_id] = antique_info.price.coin_count * value.item_count
+                else
                     allow_empty_output = true
                 end
-                decompose_cfg[antique_info.price.coin_id] = antique_info.price.coin_count * value.item_count
                 moon.info(string.format("Bag.PBDecomposeReqCmd antique: uid %d, config_id %d, uniqid %d, pos %d, is_fake %d, coin_id %d, coin_count %d, item_count %d", context.uid, value.config_id, value.uniqid, value.pos, antique_info.is_fake, antique_info.price.coin_id, antique_info.price.coin_count, value.item_count))
             elseif value.uniqid == 0 then
                 local cfg = GameCfg.Item[value.config_id]
@@ -4069,7 +4071,7 @@ function Bag.PBDecomposeReqCmd(req)
                 end
             end
 
-            if table.size(decompose_cfg) <= 0 then
+            if table.size(decompose_cfg) <= 0 and not allow_empty_output then
                 return ErrorCode.DecomposeNotGet
             end
             -- 分解后获得的道具列表
