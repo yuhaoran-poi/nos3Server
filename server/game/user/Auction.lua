@@ -81,7 +81,10 @@ function Auction.CheckData()
     if not auction_logs then
         return false
     end
-    player_auction_data.log_list = auction_logs
+    player_auction_data.log_list = {}
+    for _, auction_log in pairs(auction_logs) do
+        table.insert(player_auction_data.log_list, auction_log)
+    end
 
     return true
 end
