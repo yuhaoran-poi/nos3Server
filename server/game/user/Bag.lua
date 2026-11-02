@@ -4037,7 +4037,8 @@ function Bag.PBDecomposeReqCmd(req)
                 end
 
                 -- 古董道具：按鉴定后价格出售(真品=鉴定价, 赝品=降价70%~90%后的残值)
-                decompose_cfg[antique_info.price.coin_id] = antique_info.price.coin_count * value.item_count
+                -- 存量老赝品price为0(旧逻辑清零), 保底100对齐旧行为, 避免GetItemsFromCfg过滤后add_coins为空导致ConfigError
+                decompose_cfg[antique_info.price.coin_id] = math.max(antique_info.price.coin_count, 100) * value.item_count
                 moon.info(string.format("Bag.PBDecomposeReqCmd antique: uid %d, config_id %d, uniqid %d, pos %d, is_fake %d, coin_id %d, coin_count %d, item_count %d", context.uid, value.config_id, value.uniqid, value.pos, antique_info.is_fake, antique_info.price.coin_id, antique_info.price.coin_count, value.item_count))
             elseif value.uniqid == 0 then
                 local cfg = GameCfg.Item[value.config_id]
