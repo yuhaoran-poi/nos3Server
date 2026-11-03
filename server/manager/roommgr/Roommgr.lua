@@ -1700,9 +1700,12 @@ function Roommgr.StartGame(req)
         uids = {},
         energy_paid_full = energy_paid_full,   -- uid->实扣精力值(10足额/0~9不足额)
     }
+    -- uids(玩家列表)不受词条开关影响, 无论use_tags取值都必须下发给DS
+    for _, player in pairs(room.players) do
+        table.insert(room_info.uids, player.mem_info.uid)
+    end
     if room.room_data.use_tags == 1 then
         for _, player in pairs(room.players) do
-            table.insert(room_info.uids, player.mem_info.uid)
             if player.mem_info.uid == room.master_id then
                 if player.mode_monster_tags and player.mode_monster_tags[mode_key] then
                     room_info.mode_monster_tags = player.mode_monster_tags[mode_key]
@@ -1825,9 +1828,12 @@ function Roommgr.GetRoomCreateData(req)
         redis_port = context.conf.redis_nginx_port,
         uids = {},
     }
+    -- uids(玩家列表)不受词条开关影响, 无论use_tags取值都必须下发给DS
+    for _, player in pairs(room.players) do
+        table.insert(room_info.uids, player.mem_info.uid)
+    end
     if room.room_data.use_tags == 1 then
         for _, player in pairs(room.players) do
-            table.insert(room_info.uids, player.mem_info.uid)
             if player.mem_info.uid == room.master_id then
                 if player.mode_monster_tags and player.mode_monster_tags[mode_key] then
                     room_info.mode_monster_tags = player.mode_monster_tags[mode_key]
