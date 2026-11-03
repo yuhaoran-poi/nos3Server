@@ -1903,4 +1903,23 @@ function Room.PBModMasterReqCmd(req)
     }, req.msg_context.stub_id)
 end
 
+function Room.PBChangeNeedUseTagsReqCmd(req)
+    if not context.roomid then
+        return context.S2C(context.net_id, CmdCode["PBChangeNeedUseTagsRspCmd"], {
+            code = ErrorCode.RoomNotCreated,
+            error = "你还未创建房间",
+        }, req.msg_context.stub_id)
+    end
+
+    local res, err = clusterd.call(3999, "roommgr", "Roommgr.ChangeNeedUseTags", req.msg)
+    if err then
+        return context.S2C(context.net_id, CmdCode["PBChangeNeedUseTagsRspCmd"], {
+            code = ErrorCode.ServerInternalError,
+            error = "system error",
+        }, req.msg_context.stub_id)
+    end
+
+    return context.S2C(context.net_id, CmdCode["PBChangeNeedUseTagsRspCmd"], res, req.msg_context.stub_id)
+end
+
 return Room

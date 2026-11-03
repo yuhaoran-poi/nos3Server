@@ -3673,7 +3673,7 @@ RankReward
 RankType_GuildMoney
 RankType_GuildScore_Weekly
 RankType_GuildScore_Seasonbproto3
-ù4
+¸5
 
 room.proto
 user.protoghost.proto"≠
@@ -3718,7 +3718,7 @@ masterName
 value (Rvalue:8R
 ModeMonsterTagsEntry
 key (Rkey$
-value (2.PBMonsterTagsRvalue:8"°
+value (2.PBMonsterTagsRvalue:8"º
 
 PBRoomInfo
 roomid (Rroomid
@@ -3739,7 +3739,8 @@ difficulty
 
 ds_address (	R	dsAddress
 ds_ip (	RdsIp+
-last_start_is_open (RlastStartIsOpen"n
+last_start_is_open (RlastStartIsOpen
+use_tags (RuseTags"n
 PBRoomApplyInfo
 uid (Ruid*
 
@@ -3958,7 +3959,15 @@ ds_address (	R	dsAddress
 code (Rcode
 error (	Rerror
 roomid (Rroomid"
-mod_master_id (RmodMasterIdbproto3
+mod_master_id (RmodMasterId"`
+PBChangeNeedUseTagsReqCmd
+uid (Ruid
+roomid (Rroomid
+use_tags (RuseTags"`
+PBChangeNeedUseTagsRspCmd
+code (Rcode
+error (	Rerror
+use_tags (RuseTagsbproto3
 √
 seasonpass.proto"l
 PBSeasonPassData

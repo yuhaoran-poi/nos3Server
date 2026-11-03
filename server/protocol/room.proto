@@ -59,6 +59,7 @@ message PBRoomInfo
     string ds_address   = 13;
     string ds_ip        = 14;
     int32 last_start_is_open = 15;
+    int32 use_tags  = 16;
 }
 
 message PBRoomApplyInfo
@@ -422,4 +423,19 @@ message PBModMasterRspCmd
     string error    = 2; // 错误信息
     int64 roomid	= 3;
     int64 mod_master_id = 4;
+}
+
+// 房主更改房间是否开启怪物词条
+message PBChangeNeedUseTagsReqCmd
+{
+    int64 uid		= 1;
+	int64 roomid	= 2;
+    int32 use_tags  = 3;
+}
+
+message PBChangeNeedUseTagsRspCmd
+{
+    int32 code      = 1; // 服务器返回,0成功,其他失败
+    string error    = 2; // 错误信息
+    int32 use_tags  = 3;
 }

@@ -1700,16 +1700,21 @@ function Roommgr.StartGame(req)
         uids = {},
         energy_paid_full = energy_paid_full,   -- uid->实扣精力值(10足额/0~9不足额)
     }
-    for _, player in pairs(room.players) do
-        table.insert(room_info.uids, player.mem_info.uid)
-        if player.mem_info.uid == room.master_id then
-            if player.mode_monster_tags and player.mode_monster_tags[mode_key] then
-                room_info.mode_monster_tags = player.mode_monster_tags[mode_key]
-            else
-                room_info.mode_monster_tags = {}
+    if room.room_data.use_tags == 1 then
+        for _, player in pairs(room.players) do
+            table.insert(room_info.uids, player.mem_info.uid)
+            if player.mem_info.uid == room.master_id then
+                if player.mode_monster_tags and player.mode_monster_tags[mode_key] then
+                    room_info.mode_monster_tags = player.mode_monster_tags[mode_key]
+                else
+                    room_info.mode_monster_tags = {}
+                end
             end
         end
+    else
+        room_info.mode_monster_tags = {}
     end
+    
     local _, pbdata = protocol.encodewithname("PBDsCreateData", room_info)
     local room_str = crypt.base64encode(pbdata)
     local allocate_data = {
@@ -1820,16 +1825,21 @@ function Roommgr.GetRoomCreateData(req)
         redis_port = context.conf.redis_nginx_port,
         uids = {},
     }
-    for _, player in pairs(room.players) do
-        table.insert(room_info.uids, player.mem_info.uid)
-        if player.mem_info.uid == room.master_id then
-            if player.mode_monster_tags and player.mode_monster_tags[mode_key] then
-                room_info.mode_monster_tags = player.mode_monster_tags[mode_key]
-            else
-                room_info.mode_monster_tags = {}
+    if room.room_data.use_tags == 1 then
+        for _, player in pairs(room.players) do
+            table.insert(room_info.uids, player.mem_info.uid)
+            if player.mem_info.uid == room.master_id then
+                if player.mode_monster_tags and player.mode_monster_tags[mode_key] then
+                    room_info.mode_monster_tags = player.mode_monster_tags[mode_key]
+                else
+                    room_info.mode_monster_tags = {}
+                end
             end
         end
+    else
+        room_info.mode_monster_tags = {}
     end
+    
     local _, pbdata = protocol.encodewithname("PBDsCreateData", room_info)
     local room_str = crypt.base64encode(pbdata)
     return { code = ErrorCode.None, error = "success", roomid = req.roomid, room_str = room_str }
@@ -2272,6 +2282,48 @@ end
 
 function Roommgr.StartGameIsClose(is_close)
     Roommgr.start_is_close = is_close
+end
+
+function Roommgr.ChangeNeedUseTags(req)
+    local room = context.rooms[req.roomid]
+    -- 房间不存在
+    if not room then
+        return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
+    end
+
+    if room.room_data.state ~= 0 then
+        return { code = ErrorCode.RoomInGame, error = "房间正在游戏中" }
+    end
+
+    -- 验证房主权限
+    if room.master_id ~= req.uid then
+        return {
+            code = ErrorCode.RoomPermissionDenied,
+            error = "无修改权限",
+            use_tags = room.room_data.use_tags,
+        }
+    end
+
+    room.room_data.use_tags = req.use_tags or room.room_data.use_tags
+
+    local notify_uids = {}
+    for _, player in pairs(room.players) do
+        table.insert(notify_uids, player.mem_info.uid)
+    end
+
+    context.send_users(notify_uids, {}, "Room.OnRoomInfoSync", {
+        roomid = room.room_data.roomid,
+        sync_type = RoomDef.SyncType.ModRoomData,
+        sync_info = {
+            room_data = room.room_data,
+        },
+    })
+
+    return {
+        code = ErrorCode.None,
+        error = "修改完成",
+        use_tags = room.room_data.use_tags,
+    }
 end
 
 function Roommgr.Start()

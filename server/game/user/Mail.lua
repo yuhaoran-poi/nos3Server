@@ -657,8 +657,17 @@ function Mail.PBGetRewardReqCmd(req)
 
             if mail_common_config.attachment
                 and table.size(mail_common_config.attachment) > 0 then
-                local ret_code = Mail.GetAttachmentFromCfg(mail_common_config.attachment, mail_info.items_simple,
-                    mail_info.coins)
+                -- 深拷贝计算附件: GetAttachmentFromCfg是累加语义, 直接传mail_info.items_simple会把
+                -- 配置附件固化写进邮件本体并随SaveMailsNow落库, 重复领取时每领一次膨胀一份
+                -- (线上661132附件count 1->7递增). PBGetMailDetailReqCmd/PBReadMailReqCmd均对拷贝操作, 保持一致
+                local calc_mail = table.copy(mail_info, true)
+                if not calc_mail then
+                    rsp.code = ErrorCode.ServerInternalError
+                    rsp.error = "数据加载出错"
+                    return context.S2C(context.net_id, CmdCode["PBGetRewardRspCmd"], rsp, req.msg_context.stub_id)
+                end
+                local ret_code = Mail.GetAttachmentFromCfg(mail_common_config.attachment, calc_mail.items_simple,
+                    calc_mail.coins)
                 if ret_code ~= ErrorCode.None then
                     rsp.code = ret_code
                     rsp.error = "获取附件失败"
@@ -666,7 +675,7 @@ function Mail.PBGetRewardReqCmd(req)
                 end
 
                 -- 统计附件
-                Mail.MergeAttachment(mail_info, attach_items, attach_item_datas, attach_coins)
+                Mail.MergeAttachment(calc_mail, attach_items, attach_item_datas, attach_coins)
             end
         elseif mail_info.simple_data.mail_type == MailDef.MailType.ImmediateConfig then
             local mail_common_config = GameCfg.ImmediatelyEmailTemplateConfig[mail_info.simple_data.mail_config_id]

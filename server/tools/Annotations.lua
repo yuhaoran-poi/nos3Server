@@ -3346,6 +3346,7 @@
 ---@field public ds_address string
 ---@field public ds_ip string
 ---@field public last_start_is_open integer
+---@field public use_tags integer
 
 
 ---@class PBRoomApplyInfo
@@ -3627,6 +3628,18 @@
 ---@field public error string @错误信息
 ---@field public roomid integer
 ---@field public mod_master_id integer
+
+
+---@class PBChangeNeedUseTagsReqCmd
+---@field public uid integer
+---@field public roomid integer
+---@field public use_tags integer
+
+
+---@class PBChangeNeedUseTagsRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public use_tags integer
 
 
 ---@class PBSeasonData
@@ -4811,6 +4824,7 @@
 ---@field Season Season
 ---@field SeasonPass SeasonPass
 ---@field Shop Shop
+---@field SkinTrade SkinTrade
 ---@field Team Team
 ---@field Trade Trade
 ---@field User User
@@ -4910,6 +4924,10 @@
 ---@field Shopmgr Shopmgr
 
 
+---@class skintrademgr_scripts
+---@field SkinTrademgr SkinTrademgr
+
+
 ---@class teammgr_scripts
 ---@field Teammgr Teammgr
 
@@ -4962,6 +4980,7 @@
 ---@field FallBoxBossZhan FallBoxBossZhan_cfg[]
 ---@field FallBoxGuiMenGuan FallBoxGuiMenGuan_cfg[]
 ---@field FallBoxPaTa FallBoxPaTa_cfg[]
+---@field FallBoxTag FallBoxTag_cfg[]
 ---@field FriendConfig FriendConfig_cfg[]
 ---@field GameChapter GameChapter_cfg[]
 ---@field GameMode GameMode_cfg[]
