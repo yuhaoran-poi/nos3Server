@@ -947,6 +947,10 @@ function Ghost.GetNewModeTags(cur_chapter_cfg)
         end
     end
 
+    -- 定位客户端空词条: 记录每次roll结果(含uid和时间戳), 客户端出现空词条时按时间戳比对出渲染异常的tag_id
+    moon.info(string.format("mode_tags roll ts=%s uid=%s mode=%s tags=%s",
+        tostring(moon.time()), tostring(context.uid), tostring(cur_chapter_cfg.id), json.encode(new_tags)))
+
     return ErrorCode.None, new_tags
 end
 
