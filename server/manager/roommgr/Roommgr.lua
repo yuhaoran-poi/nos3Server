@@ -762,6 +762,7 @@ function Roommgr.ReturnRoom(req)
             mem_info = member.mem_info,
             cityid = member.cityid,
             is_early_retreat = member.is_early_retreat,
+            mode_monster_tags = member.mode_monster_tags,
         })
     end
 

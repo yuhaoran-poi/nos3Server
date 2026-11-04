@@ -999,6 +999,13 @@ function Room.PBCheckReturnRoomReqCmd(req)
             mode_monster_tags = mode_monster_tags,
         })
 
+        for _, member_data in pairs(res.member_datas) do
+            if member_data.mem_info.uid == context.uid then
+                member_data.mode_monster_tags = mode_monster_tags
+                break
+            end
+        end
+
         -- 加入队伍频道
         local chat_ret = ChatLogic.JoinRoomChannel(context.roomid, context.uid)
         if chat_ret.code ~= ErrorCode.None then
