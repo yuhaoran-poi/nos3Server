@@ -2323,8 +2323,10 @@ function Role.PBRoleWearSkinReqCmd(req)
     change_roles[req.msg.roleid] = "WearSkin"
     Role.SaveAndLog(change_roles)
 
-    -- 同步给房间其他人
-    scripts.Room.SyncRoleInfo(role_info)
+    if roles.battle_role_id == role_info.config_id then
+        -- 同步给房间其他人
+        scripts.Room.SyncRoleInfo(role_info)
+    end
 end
 
 function Role.PBRoleChangeEmojiReqCmd(req)
