@@ -39,7 +39,8 @@ local Trademgr = {
     take_down_trade_ids = {}, -- 交易行下架商品id
     change_product_num_state = {}, -- 交易行商品数量状态变更
     add_trade_logs = {},           -- 交易行商品日志添加
-    wait_sale_mail_uids = {},    -- 等待发送销售邮件的uid列表
+    wait_sale_mail_uids = {},      -- 等待发送销售邮件的uid列表
+    wait_recycle_trades = {}, -- 等待回收商品id列表
 }
 
 function Trademgr.Init()
@@ -51,6 +52,7 @@ function Trademgr.Init()
                 Trademgr.CheckEndts()
                 Trademgr.UpdateChangeTradeRecords()
                 Trademgr.TakeDownProduct()
+                Trademgr.RecycleProduct()
             end
         end
     end)
@@ -163,11 +165,32 @@ function Trademgr.Start()
                     state = TradeDef.StateType.CLOSE,
                 }
             else
+                local need_recycle = false
+                local item_conf = GameCfg.Item[trade_product.config_id]
+                if item_conf
+                    and item_conf.recycle
+                    and item_conf.recycle >= trade_product.trade_data.single_price then
+                    need_recycle = true
+                end
                 if now_ts >= trade_product.end_ts then
                     -- 已过期，应该下架
                     Trademgr.take_down_trade_ids[trade_product.trade_id] = {
                         config_id = trade_product.config_id,
                         state = TradeDef.StateType.TAKE_DOWNING,
+                    }
+                elseif need_recycle then
+                    Trademgr.wait_recycle_trades[trade_product.trade_id] = {
+                        trade_id = trade_product.trade_id,
+                        config_id = trade_product.config_id,
+                        total_num = trade_product.total_num,
+                        seller_uid = trade_product.seller_uid,
+                        end_ts = trade_product.end_ts,
+                        trade_data = {
+                            single_price = trade_product.trade_data.single_price,
+                            sale_num = trade_product.trade_data.sale_num,
+                            now_num = trade_product.trade_data.now_num,
+                        },
+                        state = TradeDef.StateType.ON_SALE,
                     }
                 else
                     if not Trademgr.trade_record_infos[trade_product.config_id] then
@@ -517,6 +540,43 @@ function Trademgr.TakeDownProduct()
     end
 end
 
+function Trademgr.RecycleProduct()
+    if table.size(Trademgr.wait_recycle_trades) <= 0 then
+        return
+    end
+
+    local scope <close> = lock_trade_data()
+    local short_scope <close> = lock_trade_log()
+
+    local now_ts = moon.time()
+    for trade_id, trade_product in pairs(Trademgr.wait_recycle_trades) do
+        Trademgr.change_product_num_state[trade_id] = {
+            sale_num = trade_product.trade_data.sale_num + trade_product.trade_data.now_num,
+            now_num = 0,
+            state = TradeDef.StateType.CLOSE,
+        }
+
+        -- 添加交易日志到Trademgr.trade_logs
+        local trade_log = TradeDef.newTradeLogData()
+        trade_log.trade_id = trade_product.trade_id
+        trade_log.config_id = trade_product.config_id
+        trade_log.deal_num = trade_product.trade_data.now_num
+        trade_log.deal_price = trade_product.trade_data.single_price
+        trade_log.seller_uid = trade_product.seller_uid
+        trade_log.buyer_uid = GM_UID
+        trade_log.trade_ts = now_ts
+        -- 计算税费
+        local trade_cfg = GameCfg.TransactionConfig[1]
+        if trade_cfg and trade_cfg.service_charge then
+            -- 向上取整
+            trade_log.trade_tax = math.ceil(trade_log.deal_price * trade_log.deal_num * trade_cfg.service_charge / 10000)
+        end
+        table.insert(Trademgr.add_trade_logs, trade_log)
+    end
+
+    Trademgr.wait_recycle_trades = {}
+end
+
 function Trademgr.UpdateProductNumState()
     local short_scope <close> = lock_trade_log()
 
@@ -612,6 +672,30 @@ function Trademgr.AddTradeProduct(req_data)
     end
 
     local scope <close> = lock_trade_data()
+
+    local need_recycle = false
+    local item_conf = GameCfg.Item[product_data.config_id]
+    if item_conf
+        and item_conf.recycle
+        and item_conf.recycle >= product_data.trade_data.single_price then
+        need_recycle = true
+    end
+    if need_recycle then
+        Trademgr.wait_recycle_trades[product_data.trade_id] = {
+            trade_id = product_data.trade_id,
+            config_id = product_data.config_id,
+            total_num = product_data.total_num,
+            seller_uid = product_data.seller_uid,
+            end_ts = product_data.end_ts,
+            trade_data = {
+                single_price = product_data.trade_data.single_price,
+                sale_num = product_data.trade_data.sale_num,
+                now_num = product_data.trade_data.now_num,
+            },
+            state = TradeDef.StateType.ON_SALE,
+        }
+        return product_data.trade_id
+    end
 
     Trademgr.product_endts[product_data.trade_id] = product_data.end_ts
     if Trademgr.min_endts > product_data.end_ts then
