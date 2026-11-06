@@ -318,6 +318,14 @@ function Mail.RecvTriggerMail(config_id)
     if ret then
         mails.last_trigger_mail_id = mails.last_trigger_mail_id + 1
         Mail.SaveMailsNow()
+
+        local sycn_msg = {
+            add_mail_ids = {},
+            del_mail_ids = {},
+            update_mail_ids = {},
+        }
+        table.insert(sycn_msg.add_mail_ids, new_mail_info.simple_data.mail_id)
+        context.S2C(context.net_id, CmdCode["PBMailSyncCmd"], sycn_msg, 0)
     end
 
     return ret
@@ -365,6 +373,14 @@ function Mail.RecvImmediateMail(config_id, items_simple, item_datas, coins, cont
     if ret then
         mails.last_immediate_mail_id = mails.last_immediate_mail_id + 1
         Mail.SaveMailsNow()
+
+        local sycn_msg = {
+            add_mail_ids = {},
+            del_mail_ids = {},
+            update_mail_ids = {},
+        }
+        table.insert(sycn_msg.add_mail_ids, new_mail_info.simple_data.mail_id)
+        context.S2C(context.net_id, CmdCode["PBMailSyncCmd"], sycn_msg, 0)
     end
 
     moon.debug("Mail.RecvImmediateMail AddMail success", new_mail_info.simple_data.mail_id)
