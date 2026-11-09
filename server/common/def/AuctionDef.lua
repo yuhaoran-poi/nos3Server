@@ -64,6 +64,7 @@ local defaultPBSelfAuctionInfo = {
     auction_ids = {},
     log_ids = {},
     focus_auctionid_ts = {},
+    ever_buy_auction_uid = {},
 }
 
 local defaultPBSelfAuctionData = {

@@ -249,6 +249,7 @@ function Auctionmgr.TakeDownProduct()
                     uniqid = product_data.uniqid,
                     price = product_data.auction_data.cur_price,
                     send_ts = now_ts,
+                    win_uid = 0,
                 }
                 Database.RedisSetAuctionWaitMail(context.addr_db_redis, wait_data)
                 context.send_user(product_data.auction_data.buyer_uid, "Auction.OnAuctionFailMail", wait_data)
@@ -358,6 +359,8 @@ function Auctionmgr.BuyAuctionProduct(buyer_uid, auction_id, uniqid, buy_price)
         and product_data.delay_cnt < auction_cfg.auction_postpone_maxtime then
         product_data.end_ts = product_data.end_ts + auction_cfg.postpone_extratime
         product_data.delay_cnt = product_data.delay_cnt + 1
+        -- 同步到期检查表: CheckEndts按product_endts判定, 不同步会按原end_ts提前终止拍卖
+        Auctionmgr.product_endts[product_data.auction_id] = product_data.end_ts
     end
 
     local function change_auction_record_log()
@@ -411,12 +414,13 @@ function Auctionmgr.BuyAuctionProduct(buyer_uid, auction_id, uniqid, buy_price)
             uniqid = product_data.uniqid,
             price = old_buy_price,
             send_ts = now_ts,
+            win_uid = buyer_uid,
         }
         Database.RedisSetAuctionWaitMail(context.addr_db_redis, wait_data)
         context.send_user(old_buyer_uid, "Auction.OnAuctionFailMail", wait_data)
     end
 
-    return { code = ErrorCode.None, real_buy_price = real_buy_price }
+    return { code = ErrorCode.None, real_buy_price = real_buy_price, state = product_data.state }
 end
 
 function Auctionmgr.SellerDealAuctionLog(log_id)
@@ -446,6 +450,7 @@ function Auctionmgr.TakeOffProduct(uid, auction_id)
                 uniqid = product_data.uniqid,
                 price = product_data.auction_data.cur_price,
                 send_ts = now_ts,
+                win_uid = 0,
             }
             Database.RedisSetAuctionWaitMail(context.addr_db_redis, wait_data)
             context.send_user(product_data.auction_data.buyer_uid, "Auction.OnAuctionFailMail", wait_data)
@@ -461,8 +466,19 @@ function Auctionmgr.TakeOffProduct(uid, auction_id)
 
         return ErrorCode.None
     end
-    
+
     return ErrorCode.TradeProductNotExist
+end
+
+function Auctionmgr.GetAuctionNowInfos(auction_ids)
+    local res = {}
+    for auction_id, _ in pairs(auction_ids) do
+        local product_data = Auctionmgr.product_list[auction_id]
+        if product_data then
+            res[auction_id] = product_data
+        end
+    end
+    return res
 end
 
 function Auctionmgr.Shutdown()

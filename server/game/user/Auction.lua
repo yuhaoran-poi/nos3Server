@@ -41,6 +41,10 @@ function Auction.Init()
         end
         scripts.UserModel.SetAuctionData(player_auction_data)
     end
+
+    if not player_auction_data.simple_info.ever_buy_auction_uid then
+        player_auction_data.simple_info.ever_buy_auction_uid = {}
+    end
 end
 
 function Auction.Start()
@@ -176,6 +180,16 @@ function Auction.OnAuctionFailMail(wait_data)
     end
 
     Database.RedisDelAuctionWaitMail(context.addr_db_redis, context.uid, wait_data.auction_id, wait_data.price)
+
+    -- 发送提示消息
+    if wait_data.win_uid and wait_data.win_uid == 0 then
+        player_auction_data.simple_info.ever_buy_auction_uid[wait_data.auction_id] = nil
+    else
+        player_auction_data.simple_info.ever_buy_auction_uid[wait_data.auction_id] = wait_data.win_uid or 0
+    end
+    context.S2C(context.net_id, CmdCode.PBAuctionFailSyncCmd, {
+        ever_buy_auction_uid = player_auction_data.simple_info.ever_buy_auction_uid,
+    }, 0)
 end
 
 function Auction.OnAuctionTakeDownMail(auction_product, now_state, positive)
@@ -755,6 +769,12 @@ function Auction.PBAuctionBuyReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
+    local player_auction_data = scripts.UserModel.GetAuctionData()
+    if not player_auction_data then
+        return context.S2C(context.net_id, CmdCode.PBAuctionBuyRspCmd,
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
+    end
+
     local auction_cfg = GameCfg.TransactionConfig[2]
     if not auction_cfg or not auction_cfg.shipments_email then
         moon.error("PBAuctionBuyReqCmd auction_cfg.shipments_email not found")
@@ -796,13 +816,21 @@ function Auction.PBAuctionBuyReqCmd(req)
     }
     local err_code_coins = scripts.Bag.CheckCoinsEnough(cost_coins)
     if err_code_coins ~= ErrorCode.None then
-        return err_code_coins
+        return context.S2C(context.net_id, CmdCode.PBAuctionBuyRspCmd, {
+            code = err_code_coins,
+            error = "货币不足",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
     end
     local bag_change_logs = {}
     err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_logs)
     if err_code_coins ~= ErrorCode.None then
         scripts.Bag.RollBackWithChange(bag_change_logs)
-        return err_code_coins
+        return context.S2C(context.net_id, CmdCode.PBAuctionBuyRspCmd, {
+            code = err_code_coins,
+            error = "货币不足",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
     end
 
     local res, err = clusterd.call(3999, "auctionmgr", "Auctionmgr.BuyAuctionProduct", context.uid, req.msg.auction_id,
@@ -833,8 +861,19 @@ function Auction.PBAuctionBuyReqCmd(req)
         err_code_coins = scripts.Bag.DealCoins(cost_coins, bag_change_logs)
         if err_code_coins ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(bag_change_logs)
-            return err_code_coins
+            return context.S2C(context.net_id, CmdCode.PBAuctionBuyRspCmd, {
+                code = err_code_coins,
+                error = "货币不足",
+                uid = context.uid,
+            }, req.msg_context.stub_id)
         end
+    end
+
+    -- 记录购买商品的uid
+    if res.state and res.state == AuctionDef.StateType.ON_SALE then
+        player_auction_data.simple_info.ever_buy_auction_uid[req.msg.auction_id] = context.uid
+    else
+        player_auction_data.simple_info.ever_buy_auction_uid[req.msg.auction_id] = nil
     end
 
     scripts.Bag.SaveAndLog(bag_change_logs, ItemDef.ChangeReason.AuctionBuy)
@@ -951,6 +990,73 @@ function Auction.PBAuctionChangeFocusIdReqCmd(req)
         uid = context.uid,
         focus_id_ts = player_auction_data.simple_info.focus_auctionid_ts,
     }, req.msg_context.stub_id)
+end
+
+function Auction.PBAuctionGetNowInfoReqCmd(req)
+    -- 参数验证
+    if not req.msg.uid
+        or not req.msg.auction_ids
+        or table.size(req.msg.auction_ids) == 0 then
+        return context.S2C(context.net_id, CmdCode.PBAuctionGetNowInfoRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = context.uid,
+        }, req.msg_context.stub_id)
+    end
+
+    local player_auction_data = scripts.UserModel.GetAuctionData()
+    if not player_auction_data then
+        return context.S2C(context.net_id, CmdCode.PBAuctionGetNowInfoRspCmd,
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
+    end
+
+    local get_auction_ids = {}
+    for _, auction_id in pairs(req.msg.auction_ids) do
+        get_auction_ids[auction_id] = true
+    end
+    for auction_id, buyer_uid in pairs(player_auction_data.simple_info.ever_buy_auction_uid) do
+        get_auction_ids[auction_id] = true
+    end
+
+    local res, err = clusterd.call(3999, "auctionmgr", "Auctionmgr.GetAuctionNowInfos", get_auction_ids)
+    if err then
+        moon.error("Auction.PBAuctionGetNowInfoReqCmd Auctionmgr.GetAuctionNowInfos err:", err)
+        return context.S2C(context.net_id, CmdCode.PBAuctionGetNowInfoRspCmd,
+            { code = ErrorCode.ServerInternalError, error = "数据加载出错", uid = context.uid }, req.msg_context.stub_id)
+    else
+        local now_auction_infos = {}
+        for _, auction_id in pairs(req.msg.auction_ids) do
+            local product_data = res[auction_id]
+            if product_data then
+                now_auction_infos[auction_id] = product_data
+            end
+        end
+
+        local is_change = false
+        local now_auction_uids = {}
+        for auction_id, buyer_uid in pairs(player_auction_data.simple_info.ever_buy_auction_uid) do
+            local product_data = res[auction_id]
+            if product_data then
+                now_auction_uids[auction_id] = product_data.auction_data.buyer_uid
+                if now_auction_uids[auction_id] ~= buyer_uid then
+                    is_change = true
+                end
+            else
+                is_change = true
+            end
+        end
+        player_auction_data.simple_info.ever_buy_auction_uid = now_auction_uids
+        if is_change then
+            Auction.SaveAuctionInfoNow()
+        end
+
+        return context.S2C(context.net_id, CmdCode.PBAuctionGetNowInfoRspCmd, {
+            code = ErrorCode.None,
+            error = "获取商品信息成功",
+            uid = context.uid,
+            now_auction_infos = now_auction_infos,
+        }, req.msg_context.stub_id)
+    end
 end
 
 return Auction

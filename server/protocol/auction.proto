@@ -47,6 +47,7 @@ message PBSelfAuctionInfo
 	repeated int64 auction_ids	= 4;
 	repeated int64 log_ids	= 5;
 	map<int64, int64> focus_auctionid_ts	= 6;	//关注id-关注时间
+	map<int64, int64> ever_buy_auction_uid	= 7;	//参与过拍卖的trade_id及当前出价者
 }
 
 message PBSelfAuctionData
@@ -162,4 +163,23 @@ message PBAuctionChangeFocusIdRspCmd
     string error = 2; // 错误信息
 	int64 uid	= 3;
 	map<int64, int64> focus_id_ts	= 4;
+}
+
+message PBAuctionFailSyncCmd
+{
+	map<int64, int64> ever_buy_auction_uid	= 1;	//参与过拍卖的trade_id及当前出价者
+}
+
+message PBAuctionGetNowInfoReqCmd
+{
+	int64 uid	= 1;
+	repeated int64 auction_ids = 2;
+}
+
+message PBAuctionGetNowInfoRspCmd
+{
+	int32 code = 1; // 服务器返回,0成功,其他失败
+    string error = 2; // 错误信息
+	int64 uid	= 3;
+	map<int64, PBAuctionProductBaseData> now_auction_infos	= 4;
 }

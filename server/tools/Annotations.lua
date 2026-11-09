@@ -66,6 +66,7 @@
 ---@field public auction_ids integer[]
 ---@field public log_ids integer[]
 ---@field public focus_auctionid_ts table<integer, integer> @关注id-关注时间
+---@field public ever_buy_auction_uid table<integer, integer> @参与过拍卖的trade_id及当前出价者
 
 
 ---@class PBSelfAuctionData
@@ -162,6 +163,22 @@
 ---@field public error string @错误信息
 ---@field public uid integer
 ---@field public focus_id_ts table<integer, integer>
+
+
+---@class PBAuctionFailSyncCmd
+---@field public ever_buy_auction_uid table<integer, integer> @参与过拍卖的trade_id及当前出价者
+
+
+---@class PBAuctionGetNowInfoReqCmd
+---@field public uid integer
+---@field public auction_ids integer[]
+
+
+---@class PBAuctionGetNowInfoRspCmd
+---@field public code integer @服务器返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public now_auction_infos table<integer, PBAuctionProductBaseData>
 
 
 ---@class PBUserLoginData

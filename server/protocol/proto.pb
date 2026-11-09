@@ -316,7 +316,7 @@ formula_id (R	formulaId"r
 uid (Ruid
 
 formula_id (R	formulaIdbproto3
-Ñ
+  
 auction.proto
 item.proto"ç
 PBAuctionData
@@ -357,7 +357,7 @@ auction_ts	 (R	auctionTs
  (R
 auctionTax(
 send_seller_mail (RsendSellerMail&
-send_buyer_mail (RsendBuyerMail"–
+send_buyer_mail (RsendBuyerMail"Ú
 PBSelfAuctionInfo!
 box_capacity (RboxCapacity$
 can_onsale_cnt (RcanOnsaleCnt
@@ -365,8 +365,12 @@ auctionTax(
 auction_ids (R
 auctionIds
 log_ids (RlogIdsV
-focus_auctionid_ts (2(.PBSelfAuctionInfo.FocusAuctionidTsEntryRfocusAuctionidTsC
+focus_auctionid_ts (2(.PBSelfAuctionInfo.FocusAuctionidTsEntryRfocusAuctionidTsZ
+ever_buy_auction_uid (2).PBSelfAuctionInfo.EverBuyAuctionUidEntryReverBuyAuctionUidC
 FocusAuctionidTsEntry
+key (Rkey
+value (Rvalue:8D
+EverBuyAuctionUidEntry
 key (Rkey
 value (Rvalue:8"ô
 PBSelfAuctionData3
@@ -464,7 +468,24 @@ auction_id (R	auctionId"f
 focus_id_ts (2,.PBAuctionChangeFocusIdRspCmd.FocusIdTsEntryR	focusIdTs<
 FocusIdTsEntry
 key (Rkey
-value (Rvalue:8bproto3
+value (Rvalue:8"ª
+PBAuctionFailSyncCmd]
+ever_buy_auction_uid (2,.PBAuctionFailSyncCmd.EverBuyAuctionUidEntryReverBuyAuctionUidD
+EverBuyAuctionUidEntry
+key (Rkey
+value (Rvalue:8"N
+PBAuctionGetNowInfoReqCmd
+uid (Ruid
+auction_ids (R
+auctionIds"ì
+PBAuctionGetNowInfoRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid[
+now_auction_infos (2/.PBAuctionGetNowInfoRspCmd.NowAuctionInfosEntryRnowAuctionInfos]
+NowAuctionInfosEntry
+key (Rkey/
+value (2.PBAuctionProductBaseDataRvalue:8bproto3
 à
 
 auth.proto"»
