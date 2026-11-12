@@ -89,4 +89,5 @@ return {
     ["UpLvCostIDMapping"] = "UpLvCostIDMapping.lua",
     ["UpStar"] = "UpStar.lua",
     ["WarehouseExpansion"] = "WarehouseExpansion.lua",
+    ["WeekRotation"] = "WeekRotation.lua",
 }
