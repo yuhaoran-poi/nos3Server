@@ -1587,6 +1587,10 @@ function Roommgr.GetMasterAndChapter(room_id)
                             moon.error(string.format("player %d account_exp is nil mem_info: %s", player.mem_info.uid,
                                 json.pretty_encode(player.mem_info)))
                         end
+                        moon.warn(string.format(
+                            "RoomPlayerAccountExpError uid=%d chapter=%d difficulty=%d account_exp=%s playerlvlimits=%d",
+                            player.mem_info.uid, room.room_data.chapter, room.room_data.difficulty,
+                            tostring(player.mem_info.account_exp), tmp_conf.playerlvlimits))
                         return { code = ErrorCode.RoomPlayerAccountExpError, error = "玩家账户等级不满足难度要求", error_uid = player.mem_info.uid }
                     end
                 end
@@ -1951,9 +1955,9 @@ function Roommgr.MemberChangeRoleInfo(msg)
     if not room then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
-    if room.room_data.state ~= 0 then
-        return { code = ErrorCode.RoomInGame, error = "房间正在游戏中" }
-    end
+    -- if room.room_data.state ~= 0 then
+    --     return { code = ErrorCode.RoomInGame, error = "房间正在游戏中" }
+    -- end
 
     -- 查找玩家在房间中的位置
     local member_index = nil
@@ -2019,9 +2023,9 @@ function Roommgr.MemberChangeAccountExp(msg)
     if not room then
         return { code = ErrorCode.RoomNotFound, error = "房间不存在" }
     end
-    if room.room_data.state ~= 0 then
-        return { code = ErrorCode.RoomInGame, error = "房间正在游戏中" }
-    end
+    -- if room.room_data.state ~= 0 then
+    --     return { code = ErrorCode.RoomInGame, error = "房间正在游戏中" }
+    -- end
 
     -- 查找玩家在房间中的位置
     local member_index = nil

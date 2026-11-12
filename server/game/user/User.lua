@@ -30,6 +30,9 @@ local state = { ---内存中的状态
     ismatching = false
 }
 
+local MAX_NICK_LEN = 10              -- 昵称最大长度(字符数, utf8)
+local FORCE_NICK_PREFIX = "违规昵称"  -- 强制整改昵称前缀, 玩家不可主动使用
+
 local simple_fields = {
     ProtoEnum.UserAttrType.uid,
     ProtoEnum.UserAttrType.nick_name,
@@ -184,6 +187,23 @@ function User.Load(req)
         -- if ghost_res.code ~= ErrorCode.None then
         --     return false
         -- end
+
+        -- 强制整改超长昵称: 长度>10字符改为"违规昵称"+uid
+        -- (该前缀玩家不可主动取, 见PBModNickNameReqCmd; 下方updateusernickname会随之落库)
+        local now_attr = scripts.UserModel.MutGetUserAttr()
+        local old_nick = now_attr.nick_name
+        if old_nick and old_nick ~= "" then
+            local nick_len = utf8.len(old_nick)
+            if (not nick_len or nick_len > MAX_NICK_LEN)
+                and old_nick:sub(1, #FORCE_NICK_PREFIX) ~= FORCE_NICK_PREFIX then
+                local new_nick = FORCE_NICK_PREFIX .. tostring(req.uid)
+                now_attr.nick_name = new_nick
+                Database.RedisDelNick(context.addr_db_redis, old_nick)
+                Database.RedisSetNick(context.addr_db_redis, new_nick, req.uid)
+                moon.warn(string.format("ForceRename oversize nick, uid=%d old_len=%s new_nick=%s",
+                    req.uid, tostring(nick_len), new_nick))
+            end
+        end
 
         -- 同步到redis
         local to_redis_data = scripts.UserModel.GetUserAttr()
@@ -3019,12 +3039,23 @@ function User.PBModNickNameReqCmd(req)
     -- 参数验证
     if not req.msg.uid
         or not req.msg.nick_name
-        or req.msg.nick_name == "" then
+        or req.msg.nick_name == ""
+        or not utf8.len(req.msg.nick_name)
+        or utf8.len(req.msg.nick_name) > MAX_NICK_LEN then
         return context.S2C(context.net_id, CmdCode.PBModNickNameRspCmd, {
             code = ErrorCode.ParamInvalid,
             error = "无效请求参数",
             uid = req.msg.uid,
             nick_name = req.msg.nick_name or "",
+        }, req.msg_context.stub_id)
+    end
+    -- 禁止主动取"违规昵称"开头(该前缀保留给系统强制整改使用)
+    if req.msg.nick_name:sub(1, #FORCE_NICK_PREFIX) == FORCE_NICK_PREFIX then
+        return context.S2C(context.net_id, CmdCode.PBModNickNameRspCmd, {
+            code = ErrorCode.ParamInvalid,
+            error = "无效请求参数",
+            uid = req.msg.uid,
+            nick_name = req.msg.nick_name,
         }, req.msg_context.stub_id)
     end
 
