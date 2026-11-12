@@ -196,12 +196,12 @@ function User.Load(req)
             local nick_len = utf8.len(old_nick)
             if (not nick_len or nick_len > MAX_NICK_LEN)
                 and old_nick:sub(1, #FORCE_NICK_PREFIX) ~= FORCE_NICK_PREFIX then
-                local new_nick = FORCE_NICK_PREFIX .. tostring(req.uid)
+                local new_nick = FORCE_NICK_PREFIX .. tostring(context.uid)
                 now_attr.nick_name = new_nick
                 Database.RedisDelNick(context.addr_db_redis, old_nick)
-                Database.RedisSetNick(context.addr_db_redis, new_nick, req.uid)
+                Database.RedisSetNick(context.addr_db_redis, new_nick, context.uid)
                 moon.warn(string.format("ForceRename oversize nick, uid=%d old_len=%s new_nick=%s",
-                    req.uid, tostring(nick_len), new_nick))
+                    context.uid, tostring(nick_len), new_nick))
             end
         end
 
