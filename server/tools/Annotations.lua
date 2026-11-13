@@ -195,6 +195,7 @@
 ---@field public login_data PBUserLoginData
 ---@field public is_register boolean
 ---@field public password string
+---@field public is_demo integer @0--不是demo 1--是demo
 
 
 ---@class PBClientLoginRspCmd
@@ -4389,6 +4390,7 @@
 ---@field public last_fresh_mode_ts integer @最后一次更新游戏模式票时间
 ---@field public last_energy_fresh_ts integer @最后一次精力每日恢复时间(每日6点判定)
 ---@field public battle_role_energy integer @当前出战角色精力(显示镜像, 权威在角色energy字段)
+---@field public is_demo integer
 
 
 ---@class PBClientGetUsrSimInfoReqCmd
@@ -5055,3 +5057,4 @@
 ---@field UpLvCostIDMapping UpLvCostIDMapping_cfg[]
 ---@field UpStar UpStar_cfg[]
 ---@field WarehouseExpansion WarehouseExpansion_cfg[]
+---@field WeekRotation WeekRotation_cfg[]

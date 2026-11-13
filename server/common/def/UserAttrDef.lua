@@ -93,7 +93,8 @@ local defaultPBUserAttr = {
     cur_model_role = LuaExt.const(table.copy(defaultPBSimpleRoleData)),  --当前展示的角色
     last_fresh_mode_ts = 0,                                            --最后一次刷新模式的时间
     last_energy_fresh_ts = 0,                                          --最后一次精力每日恢复时间
-    battle_role_energy = 0,                                            --当前出战角色精力(显示镜像)
+    battle_role_energy = 0,                                              --当前出战角色精力(显示镜像)
+    is_demo = 0,                                                         --是否是demo账号 0-否 1-是
 }
 
 ---@return PBBuffData

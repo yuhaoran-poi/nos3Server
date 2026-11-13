@@ -7,6 +7,7 @@ local ErrorCode = {
     ConfigError = 3,
     OperationNotPermit = 4,
     ProtoError = 5,
+    DemoGameTimeOver = 6,
 
     ---没有这个装备
     EquipNotFound = 101,

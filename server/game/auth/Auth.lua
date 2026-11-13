@@ -645,10 +645,17 @@ Auth.PBClientLoginReqCmd = function(req)
         local now_ts = moon.time()
         local begValidTimem = now_ts - 60
         local endValidTime = now_ts + 60
-        local steam_id = fishsteam.CheckSteamAuthSessionTicket(req.msg.login_data.authkey,
-            string.len(req.msg.login_data.authkey), serverconf.STEAM_APP_KEY, serverconf.STEAM_APP_ID, begValidTimem,
-            endValidTime, 0)
-        return steam_id
+        if req.msg.is_demo and req.msg.is_demo == 1 then
+            local steam_id = fishsteam.CheckSteamAuthSessionTicket(req.msg.login_data.authkey,
+                string.len(req.msg.login_data.authkey), serverconf.DEMO_APP_KEY, serverconf.DEMO_APP_ID, begValidTimem,
+                endValidTime, 0)
+            return steam_id
+        else
+            local steam_id = fishsteam.CheckSteamAuthSessionTicket(req.msg.login_data.authkey,
+                string.len(req.msg.login_data.authkey), serverconf.STEAM_APP_KEY, serverconf.STEAM_APP_ID, begValidTimem,
+                endValidTime, 0)
+            return steam_id
+        end
     end
     
     local function processLogin()
@@ -696,7 +703,7 @@ Auth.PBClientLoginReqCmd = function(req)
         -- 取号/建号一条流: 老号NOT EXISTS不满足→INSERT 0行(零自增消耗,不跳号);
         -- 新号插入拿自增uid; 并发首登竞态由ODKU兜底带回原uid;
         -- 新老号统一从语句2行集取uid(老号OK包insert_id为0)
-        local login_res = db.loginuser(context.addr_db_game, plateform_id)
+        local login_res = db.loginuser(context.addr_db_game, plateform_id, req.msg.is_demo or 1)
         local okp = (login_res and login_res.multiresultset) and login_res[1] or login_res
         local rows = (login_res and login_res.multiresultset) and login_res[2] or nil
         if not okp or okp.badresult or not rows or not rows[1] or not rows[1].user_id then
@@ -710,7 +717,14 @@ Auth.PBClientLoginReqCmd = function(req)
             return { code = ErrorCode.AccountBanned, error = "ACCOUNT_BANNED" }
         end
 
+        -- 检查是否是demo账号,后更新为正版客户端
+        if rows[1].is_demo == 1 and req.msg.is_demo == 0 then
+            rows[1].is_demo = 0
+            db.updateuserisdemo(context.addr_db_game, rows[1].user_id, 0)
+        end
+
         req.uid = rows[1].user_id
+        req.is_demo = rows[1].is_demo
 
         -- 登录重载段并发限流: 前置校验(走保留连接)已完成, req.uid已确定,
         -- 仅对 doAuth(User.Load ~25条SQL+RPC)排队。

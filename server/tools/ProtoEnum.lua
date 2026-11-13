@@ -136,6 +136,7 @@ local UserAttrType = {
     last_fresh_mode_ts = "last_fresh_mode_ts", -- 最后一次更新游戏模式票时间
     last_energy_fresh_ts = "last_energy_fresh_ts", -- 最后一次精力每日恢复时间(每日6点判定)
     battle_role_energy = "battle_role_energy", -- 当前出战角色精力(显示镜像, 权威在角色energy字段)
+    is_demo = "is_demo",
 }
 
 

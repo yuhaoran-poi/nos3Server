@@ -188,9 +188,14 @@ function User.Load(req)
         --     return false
         -- end
 
+        local now_attr = scripts.UserModel.MutGetUserAttr()
+        -- 同步is_demo
+        if req.is_demo and req.is_demo ~= now_attr.is_demo then
+            now_attr.is_demo = req.is_demo
+        end
+
         -- 强制整改超长昵称: 长度>10字符改为"违规昵称"+uid
         -- (该前缀玩家不可主动取, 见PBModNickNameReqCmd; 下方updateusernickname会随之落库)
-        local now_attr = scripts.UserModel.MutGetUserAttr()
         local old_nick = now_attr.nick_name
         if old_nick and old_nick ~= "" then
             local nick_len = utf8.len(old_nick)

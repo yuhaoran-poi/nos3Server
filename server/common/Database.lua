@@ -314,14 +314,14 @@ end
 --    ODKU会误登他人账号(全库实测 username 已全部不等于 authkey 且无业务消费方)。
 -- 返回: 成功为 multiresultset = { [1]=OK包, [2]=行集(必含uid行),
 -- multiresultset=true }; 失败为 badresult 表/nil(调用方走CreateAccountFailed重试)。
-function _M.loginuser(addr, authkey)
+function _M.loginuser(addr, authkey, is_demo)
     local cmd = string.format([[
-        INSERT INTO mgame.account (authkey, username, password_hash)
-        SELECT '%s','%s','%s' FROM DUAL
+        INSERT INTO mgame.account (authkey, username, password_hash, is_demo)
+        SELECT '%s','%s','%s', %d FROM DUAL
         WHERE NOT EXISTS (SELECT 1 FROM mgame.account WHERE authkey = '%s')
         ON DUPLICATE KEY UPDATE user_id = LAST_INSERT_ID(user_id);
-        SELECT user_id, ban_end_ts FROM mgame.account WHERE authkey = '%s';
-    ]], authkey, authkey, "", authkey, authkey)
+        SELECT user_id, ban_end_ts, is_demo FROM mgame.account WHERE authkey = '%s';
+    ]], authkey, authkey, "", is_demo, authkey, authkey)
     -- "_reserved": 登录前置校验专用保留连接, 突增登录业务池被 User.Load 打满时仍秒回
     return moon.call("lua", addr, "_reserved", cmd)
 end
@@ -372,6 +372,14 @@ function _M.updateusernickname(addr, user_id, nickname)
     local cmd = string.format([[
         UPDATE mgame.account SET username = '%s' WHERE user_id = %d;
     ]], nickname, user_id)
+    moon.send("lua", addr, cmd)
+end
+
+-- 更新用户is_demo方法
+function _M.updateuserisdemo(addr, user_id, is_demo)
+    local cmd = string.format([[
+        UPDATE mgame.account SET is_demo = %d WHERE user_id = %d;
+    ]], is_demo, user_id)
     moon.send("lua", addr, cmd)
 end
 

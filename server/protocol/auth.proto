@@ -23,6 +23,7 @@ message PBClientLoginReqCmd
     PBUserLoginData login_data = 1;
     bool is_register = 2;
     string password = 3;
+    int32 is_demo   = 4;    //0--不是demo 1--是demo
 }
 
 // 客户端请求登录 返回信息

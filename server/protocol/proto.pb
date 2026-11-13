@@ -486,7 +486,7 @@ auctionIds"“
 NowAuctionInfosEntry
 key (Rkey/
 value (2.PBAuctionProductBaseDataRvalue:8bproto3
-ˆ
+¡
 
 auth.proto"È
 PBUserLoginData
@@ -498,13 +498,14 @@ authTicket
 macid (Rmacid
 version (	Rversion
 
-pb_version (	R	pbVersion"ƒ
+pb_version (	R	pbVersion"œ
 PBClientLoginReqCmd/
 
 login_data (2.PBUserLoginDataR	loginData
 is_register (R
 isRegister
-password (	Rpassword"¬
+password (	Rpassword
+is_demo (RisDemo"¬
 PBClientLoginRspCmd
 code (Rcode
 error (	Rerror
@@ -1696,13 +1697,13 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-áH
+úH
 
 user.protocommon.proto
 item.proto	bag.proto
 role.protoghost.protograde.proto
 shop.protoaweitem.protoseason.proto
-gods.proto"Ù	
+gods.proto"ò	
 
 PBUserAttr
 uid (Ruid!
@@ -1742,7 +1743,8 @@ buff_datas (2.PBUserAttr.BuffDatasEntryR	buffDatas*
 cur_model_role (2.PBSimpleRoleDataRcurModelRole+
 last_fresh_mode_ts (RlastFreshModeTs/
 last_energy_fresh_ts (RlastEnergyFreshTs,
-battle_role_energy (RbattleRoleEnergyI
+battle_role_energy (RbattleRoleEnergy
+is_demo (RisDemoI
 BuffDatasEntry
 key (Rkey!
 value (2.PBBuffDataRvalue:8"/
