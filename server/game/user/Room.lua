@@ -59,11 +59,11 @@ function Room.PBCreateRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local user_attr = scripts.UserModel.GetUserAttr()
-    if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
-        return context.S2C(context.net_id, CmdCode.PBCreateRoomRspCmd,
-            { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
-    end
+    -- local user_attr = scripts.UserModel.GetUserAttr()
+    -- if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
+    --     return context.S2C(context.net_id, CmdCode.PBCreateRoomRspCmd,
+    --         { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
+    -- end
 
     local brief_data = scripts.User.GetUsrRoomBriefData()
     if not brief_data or table.size(brief_data) <= 0 then
@@ -177,11 +177,11 @@ function Room.PBModRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local user_attr = scripts.UserModel.GetUserAttr()
-    if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
-        return context.S2C(context.net_id, CmdCode.PBModRoomRspCmd,
-            { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
-    end
+    -- local user_attr = scripts.UserModel.GetUserAttr()
+    -- if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
+    --     return context.S2C(context.net_id, CmdCode.PBModRoomRspCmd,
+    --         { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
+    -- end
 
     local res, err = clusterd.call(3999, "roommgr", "Roommgr.ModRoom", req.msg)
     if err then
@@ -297,11 +297,11 @@ function Room.PBApplyRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local user_attr = scripts.UserModel.GetUserAttr()
-    if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
-        return context.S2C(context.net_id, CmdCode.PBApplyRoomRspCmd,
-            { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
-    end
+    -- local user_attr = scripts.UserModel.GetUserAttr()
+    -- if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
+    --     return context.S2C(context.net_id, CmdCode.PBApplyRoomRspCmd,
+    --         { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
+    -- end
 
     --local user_data = scripts.UserModel.Get()
     local brief_data = scripts.User.GetUsrRoomBriefData()
@@ -334,11 +334,11 @@ function Room.PBDealApplyRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local user_attr = scripts.UserModel.GetUserAttr()
-    if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
-        return context.S2C(context.net_id, CmdCode.PBDealApplyRoomRspCmd,
-            { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
-    end
+    -- local user_attr = scripts.UserModel.GetUserAttr()
+    -- if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
+    --     return context.S2C(context.net_id, CmdCode.PBDealApplyRoomRspCmd,
+    --         { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
+    -- end
 
     local res, err = clusterd.call(3999, "roommgr", "Roommgr.DealApply", {
         roomid = context.roomid,
@@ -376,11 +376,11 @@ function Room.PBEnterRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local user_attr = scripts.UserModel.GetUserAttr()
-    if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
-        return context.S2C(context.net_id, CmdCode.PBEnterRoomRspCmd,
-            { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
-    end
+    -- local user_attr = scripts.UserModel.GetUserAttr()
+    -- if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
+    --     return context.S2C(context.net_id, CmdCode.PBEnterRoomRspCmd,
+    --         { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
+    -- end
 
     ----local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     local brief_data = scripts.User.GetUsrRoomBriefData()
@@ -491,11 +491,11 @@ function Room.PBKickRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local user_attr = scripts.UserModel.GetUserAttr()
-    if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
-        return context.S2C(context.net_id, CmdCode.PBKickRoomRspCmd,
-            { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
-    end
+    -- local user_attr = scripts.UserModel.GetUserAttr()
+    -- if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
+    --     return context.S2C(context.net_id, CmdCode.PBKickRoomRspCmd,
+    --         { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
+    -- end
 
     if context.uid == req.msg.kick_uid then
         return context.S2C(context.net_id, CmdCode["PBKickRoomRspCmd"], {
@@ -536,11 +536,11 @@ function Room.PBInviteRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local user_attr = scripts.UserModel.GetUserAttr()
-    if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
-        return context.S2C(context.net_id, CmdCode.PBInviteRoomRspCmd,
-            { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
-    end
+    -- local user_attr = scripts.UserModel.GetUserAttr()
+    -- if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
+    --     return context.S2C(context.net_id, CmdCode.PBInviteRoomRspCmd,
+    --         { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
+    -- end
 
     local res, err = clusterd.call(3999, "roommgr", "Roommgr.InviteMember", req.msg)
     if err then
@@ -566,11 +566,11 @@ function Room.PBDealInviteRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local user_attr = scripts.UserModel.GetUserAttr()
-    if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
-        return context.S2C(context.net_id, CmdCode.PBDealInviteRoomRspCmd,
-            { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
-    end
+    -- local user_attr = scripts.UserModel.GetUserAttr()
+    -- if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
+    --     return context.S2C(context.net_id, CmdCode.PBDealInviteRoomRspCmd,
+    --         { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
+    -- end
 
     local brief_data = scripts.User.GetUsrRoomBriefData()
     if not brief_data or table.size(brief_data) <= 0 then
@@ -605,11 +605,11 @@ function Room.PBReadyRoomReqCmd(req)
         })
     end
 
-    local user_attr = scripts.UserModel.GetUserAttr()
-    if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
-        return context.S2C(context.net_id, CmdCode.PBReadyRoomRspCmd,
-            { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
-    end
+    -- local user_attr = scripts.UserModel.GetUserAttr()
+    -- if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
+    --     return context.S2C(context.net_id, CmdCode.PBReadyRoomRspCmd,
+    --         { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
+    -- end
 
     local res, err = clusterd.call(3999, "roommgr", "Roommgr.UpdateReadyStatus", req.msg)
     if err then
@@ -713,11 +713,11 @@ function Room.PBStartGameRoomReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local user_attr = scripts.UserModel.GetUserAttr()
-    if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
-        return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd,
-            { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
-    end
+    -- local user_attr = scripts.UserModel.GetUserAttr()
+    -- if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
+    --     return context.S2C(context.net_id, CmdCode.PBStartGameRoomRspCmd,
+    --         { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
+    -- end
 
     local front_res, front_err = clusterd.call(3999, "roommgr", "Roommgr.GetMasterAndChapter", req.msg.roomid)
     if front_err then
@@ -1889,12 +1889,12 @@ function Room.GameSettle(settle_info)
             table.insert(user_attr[ProtoEnum.UserAttrType.battle_report_ids], report_id)
         end
 
-        local now_sum_ts = user_attr[ProtoEnum.UserAttrType.sum_online_time] or 0
-        now_sum_ts = now_sum_ts + game_time
-        if now_sum_ts < 0 then
-            now_sum_ts = 0
-        end
-        user_attr[ProtoEnum.UserAttrType.sum_online_time] = now_sum_ts
+        -- local now_sum_ts = user_attr[ProtoEnum.UserAttrType.sum_online_time] or 0
+        -- now_sum_ts = now_sum_ts + game_time
+        -- if now_sum_ts < 0 then
+        --     now_sum_ts = 0
+        -- end
+        -- user_attr[ProtoEnum.UserAttrType.sum_online_time] = now_sum_ts
 
         scripts.User.SetUserAttr(user_attr, false)
         -- 保存简略战报
@@ -1952,11 +1952,11 @@ function Room.PBModMasterReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    local user_attr = scripts.UserModel.GetUserAttr()
-    if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
-        return context.S2C(context.net_id, CmdCode.PBModMasterRspCmd,
-            { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
-    end
+    -- local user_attr = scripts.UserModel.GetUserAttr()
+    -- if user_attr.is_demo and user_attr.is_demo == 1 and user_attr.sum_online_time > MAX_DEMO_GAME_TIME then
+    --     return context.S2C(context.net_id, CmdCode.PBModMasterRspCmd,
+    --         { code = ErrorCode.DemoGameTimeOver, error = "试玩时间已超时" }, req.msg_context.stub_id)
+    -- end
 
     if not context.roomid
         or context.roomid ~= req.msg.roomid then
