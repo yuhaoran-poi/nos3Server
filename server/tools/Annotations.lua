@@ -3,25 +3,80 @@
 --- </auto-generated>
 
 
----@class PBActivityData
----@field public activity_id integer
----@field public beg_ts integer
----@field public end_ts integer
----@field public activity_type integer
----@field public now_mission_ids integer[]
----@field public complete_mission_ids integer[]
----@field public take_rewards_mission_ids integer[]
+---@class PBWeekRotationView
+---@field public activity_id integer @活动ID(7001~7006)
+---@field public name string @活动名称
+---@field public sub_name string @副标题
+---@field public activity_type integer @1=主线活动 2=副模式活动
+---@field public score integer @当前轮积分
+---@field public round integer @当前轮次(1起)
+---@field public max_round integer @轮次上限(7)
+---@field public locked integer @1=本周轮次已达上限锁定
+---@field public full_score integer @满轮分值
+---@field public tier_scores integer[] @5档分值阈值
+---@field public tier_chests integer[] @5档宝箱数
+---@field public claimed_tiers integer[] @已领取档位列表(1-5)
+---@field public end_ts integer @本周活动结束时间戳(周三06:00切换)
 
 
----@class PBGetActivityInfoReqCmd
+---@class PBWeekRotationInfo
+---@field public uid integer
+---@field public opened integer @活动是否开启(0=未配置锚点/未到上线日)
+---@field public week_index integer @周期内周次(1-3)
+---@field public cycle_weeks integer @轮换周期周数(3)
+---@field public activities PBWeekRotationView[] @当周开启的2个活动(1主线+1副模式)
+
+
+---@class PBGetWeekRotationInfoReqCmd
 ---@field public uid integer
 
 
----@class PBGetActivityInfoRspCmd
----@field public code integer @服务器返回,0成功,其他失败
+---@class PBGetWeekRotationInfoRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
 ---@field public error string @错误信息
 ---@field public uid integer
----@field public activity_datas PBActivityData[]
+---@field public info PBWeekRotationInfo
+
+
+---@class PBClaimWeekRotationTierReqCmd
+---@field public uid integer
+---@field public activity_id integer @当周开启的活动ID
+---@field public tier integer @档位1-5(claim_all=1时忽略)
+---@field public claim_all integer @1=一键领取本轮全部可领档位
+
+
+---@class PBClaimWeekRotationTierRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息(已领取/积分未达档位/活动已结束等, code=0时为状态提示)
+---@field public uid integer
+---@field public activity_id integer
+---@field public chests_granted integer @本次发放宝箱数
+---@field public info PBWeekRotationInfo @领取后最新活动数据
+
+
+---@class PBWeekRotationSyncCmd
+---@field public uid integer
+---@field public info PBWeekRotationInfo
+
+
+---@class PBWeekRotationNotifyCmd
+---@field public uid integer
+---@field public notify_type string @"ending_soon"=活动即将结束(结束前1小时)
+---@field public end_ts integer @结束时间戳
+
+
+---@class PBTestWeekRotationSettleReqCmd
+---@field public uid integer
+---@field public chapter integer @章节id(按章节段路由到对应活动)
+---@field public difficulty integer @难度
+---@field public times integer @模拟次数(1-100)
+
+
+---@class PBTestWeekRotationSettleRspCmd
+---@field public code integer
+---@field public error string
+---@field public uid integer
+---@field public applied integer @实际模拟次数
 
 
 ---@class PBAuctionData
@@ -4843,11 +4898,11 @@
 ---@field Season Season
 ---@field SeasonPass SeasonPass
 ---@field Shop Shop
----@field SkinTrade SkinTrade
 ---@field Team Team
 ---@field Trade Trade
 ---@field User User
 ---@field UserModel UserModel
+---@field WeekRotation WeekRotation
 
 
 
@@ -4941,10 +4996,6 @@
 
 ---@class shopmgr_scripts
 ---@field Shopmgr Shopmgr
-
-
----@class skintrademgr_scripts
----@field SkinTrademgr SkinTrademgr
 
 
 ---@class teammgr_scripts

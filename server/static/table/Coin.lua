@@ -54,5 +54,6 @@ return {
 [105] = { id=105,max_num=1000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
 [106] = { id=106,max_num=7,day_num=10000,weak_num=50000,year_num=100000,coin_bound=105 },
 [107] = { id=107,max_num=1000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
-[108] = { id=108,max_num=7,day_num=10000,weak_num=50000,year_num=100000,coin_bound=107 }
+[108] = { id=108,max_num=7,day_num=10000,weak_num=50000,year_num=100000,coin_bound=107 },
+[200] = { id=200,max_num=1000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 }
 }

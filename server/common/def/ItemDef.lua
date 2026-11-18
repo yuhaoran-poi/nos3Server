@@ -75,6 +75,7 @@ local ItemDef = {
         RefreshMonsterTags = 56,  -- 刷新敌方战斗怪物词条
         DsDelItems = 57,          --Ds删除道具
         UnlockEquipScheme = 58, --解锁装备分页(灵币)
+        WeekRotationReward = 59, --周天轮转活动(档位宝箱/开箱产出)
     },
     TabooWordInlay = {
         RoleType = 1000,

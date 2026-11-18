@@ -1,34 +1,101 @@
 syntax = "proto3";
 
-message PBActivityData
+// 活动系统通用协议文件
+// 所有活动相关的PB消息统一定义在本文件(周天轮转/门票流转为首个活动系统)
+// 对应服务端模块: game/user/WeekRotation.lua (消息名与处理器函数名一一对应, 自动路由)
+
+// =============== 周天轮转(门票流转) ===============
+
+// 单个活动的玩家可见数据
+message PBWeekRotationView
 {
-    int32 activity_id	= 1;
-    int64 beg_ts		= 2;
-    int64 end_ts		= 3;
-    int32 activity_type = 4;
-    repeated int32 now_mission_ids = 5;
-    repeated int32 complete_mission_ids = 6;
-    repeated int32 take_rewards_mission_ids = 7;
+    int32 activity_id   = 1;    // 活动ID(7001~7006)
+    string name         = 2;    // 活动名称
+    string sub_name     = 3;    // 副标题
+    int32 activity_type = 4;    // 1=主线活动 2=副模式活动
+    int32 score         = 5;    // 当前轮积分
+    int32 round         = 6;    // 当前轮次(1起)
+    int32 max_round     = 7;    // 轮次上限(7)
+    int32 locked        = 8;    // 1=本周轮次已达上限锁定
+    int32 full_score    = 9;    // 满轮分值
+    repeated int32 tier_scores   = 10;   // 5档分值阈值
+    repeated int32 tier_chests   = 11;   // 5档宝箱数
+    repeated int32 claimed_tiers = 12;   // 已领取档位列表(1-5)
+    int64 end_ts        = 13;   // 本周活动结束时间戳(周三06:00切换)
 }
 
-// 客户端请求活动数据
-message PBGetActivityInfoReqCmd
+message PBWeekRotationInfo
 {
-    // 协议数据
-    int64 uid          = 1;
+    int64 uid           = 1;
+    int32 opened        = 2;    // 活动是否开启(0=未配置锚点/未到上线日)
+    int32 week_index    = 3;    // 周期内周次(1-3)
+    int32 cycle_weeks   = 4;    // 轮换周期周数(3)
+    repeated PBWeekRotationView activities = 5;   // 当周开启的2个活动(1主线+1副模式)
 }
 
-// 客户端请求活动数据返回信息
-message PBGetActivityInfoRspCmd
+// 客户端请求活动信息
+message PBGetWeekRotationInfoReqCmd
 {
-    int32 code = 1; // 服务器返回,0成功,其他失败
-    string error = 2; // 错误信息
-    // 协议数据
-    int64 uid = 3;
-    repeated PBActivityData activity_datas = 4;
+    int64 uid   = 1;
 }
 
+message PBGetWeekRotationInfoRspCmd
+{
+    int32 code      = 1;    // 服务器验证返回,0成功,其他失败
+    string error    = 2;    // 错误信息
+    int64 uid       = 3;
+    PBWeekRotationInfo info  = 4;
+}
 
+// 领取档位奖励(单档/一键)
+message PBClaimWeekRotationTierReqCmd
+{
+    int64 uid       = 1;
+    int32 activity_id  = 2;    // 当周开启的活动ID
+    int32 tier      = 3;    // 档位1-5(claim_all=1时忽略)
+    int32 claim_all = 4;    // 1=一键领取本轮全部可领档位
+}
 
+message PBClaimWeekRotationTierRspCmd
+{
+    int32 code      = 1;    // 服务器验证返回,0成功,其他失败
+    string error    = 2;    // 错误信息(已领取/积分未达档位/活动已结束等, code=0时为状态提示)
+    int64 uid       = 3;
+    int32 activity_id  = 4;
+    int32 chests_granted  = 5; // 本次发放宝箱数
+    PBWeekRotationInfo info  = 6; // 领取后最新活动数据
+}
 
+// 服务端推送: 活动数据变化(积分达档/跨周重置)
+message PBWeekRotationSyncCmd
+{
+    int64 uid   = 1;
+    PBWeekRotationInfo info  = 2;
+}
 
+// 服务端推送: 活动提醒
+message PBWeekRotationNotifyCmd
+{
+    int64 uid   = 1;
+    string notify_type  = 2;   // "ending_soon"=活动即将结束(结束前1小时)
+    int64 end_ts    = 3;   // 结束时间戳
+}
+
+// =============== 测试辅助(仅测试环境, 上线前可整体删除) ===============
+
+// 模拟通关结算累计活动积分(机器人驱动E2E测试用)
+message PBTestWeekRotationSettleReqCmd
+{
+    int64 uid       = 1;
+    int32 chapter   = 2;    // 章节id(按章节段路由到对应活动)
+    int32 difficulty= 3;    // 难度
+    int32 times     = 4;    // 模拟次数(1-100)
+}
+
+message PBTestWeekRotationSettleRspCmd
+{
+    int32 code      = 1;
+    string error    = 2;
+    int64 uid       = 3;
+    int32 applied   = 4;    // 实际模拟次数
+}

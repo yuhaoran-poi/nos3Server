@@ -1,22 +1,76 @@
 
-Ô
-activity.proto"ó
-PBActivityData
+ô
+activity.proto"á
+PBWeekRotationView
 activity_id (R
-activityId
-beg_ts (RbegTs
-end_ts (RendTs#
-activity_type (RactivityType&
-now_mission_ids (RnowMissionIds0
-complete_mission_ids (RcompleteMissionIds7
-take_rewards_mission_ids (RtakeRewardsMissionIds"+
-PBGetActivityInfoReqCmd
-uid (Ruid"ç
-PBGetActivityInfoRspCmd
+activityId
+name (	Rname
+sub_name (	RsubName#
+activity_type (RactivityType
+score (Rscore
+round (Rround
+	max_round (RmaxRound
+locked (Rlocked
+
+full_score	 (R	fullScore
+tier_scores
+ (R
+tierScores
+tier_chests (R
+tierChests#
+claimed_tiers (RclaimedTiers
+end_ts (RendTs"≥
+PBWeekRotationInfo
+uid (Ruid
+opened (Ropened
+
+week_index (R	weekIndex
+cycle_weeks (R
+cycleWeeks3
+
+activities (2.PBWeekRotationViewR
+activities"/
+PBGetWeekRotationInfoReqCmd
+uid (Ruid"Ç
+PBGetWeekRotationInfoRspCmd
 code (Rcode
 error (	Rerror
-uid (Ruid6
-activity_datas (2.PBActivityDataRactivityDatasbproto3
+uid (Ruid'
+info (2.PBWeekRotationInfoRinfo"É
+PBClaimWeekRotationTierReqCmd
+uid (Ruid
+activity_id (R
+activityId
+tier (Rtier
+	claim_all (RclaimAll"Ã
+PBClaimWeekRotationTierRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+activity_id (R
+activityId%
+chests_granted (RchestsGranted'
+info (2.PBWeekRotationInfoRinfo"R
+PBWeekRotationSyncCmd
+uid (Ruid'
+info (2.PBWeekRotationInfoRinfo"c
+PBWeekRotationNotifyCmd
+uid (Ruid
+notify_type (	R
+notifyType
+end_ts (RendTs"Ç
+PBTestWeekRotationSettleReqCmd
+uid (Ruid
+chapter (Rchapter
+
+difficulty (R
+difficulty
+times (Rtimes"v
+PBTestWeekRotationSettleRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+applied (Rappliedbproto3
 ¸@
 
 item.proto"@

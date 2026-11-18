@@ -1576,6 +1576,9 @@ function Room.GameSettle(settle_info)
     end
 
     if settle_info.chapter_id and settle_info.difficulty and settle_info.is_complete == 1 then
+        -- 周天轮转(门票流转)活动: 通关成功累计活动积分(内部按当周活动/主线章节池/难度分值过滤)
+        scripts.WeekRotation.OnSettleSuccess(settle_info.chapter_id, settle_info.difficulty)
+
         -- 完成章节难度
         add_condition(MissionDef.EConditionIds.BATTLE_CHAPTER_CNT,
             { settle_info.chapter_id, settle_info.difficulty }, 1)

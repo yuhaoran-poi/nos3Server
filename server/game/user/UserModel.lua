@@ -407,6 +407,18 @@ function UserModel.SetSeasons(season_player_data)
     DBData.seasons = season_player_data
 end
 
+---@return WeekRotationPlayerData
+function UserModel.GetWeekRotation()
+    if DBData and DBData.week_rotation then
+        return DBData.week_rotation
+    end
+    return nil
+end
+
+function UserModel.SetWeekRotation(week_rotation_data)
+    DBData.week_rotation = week_rotation_data
+end
+
 ---@return PBSelfSkinTradeData ? nil
 function UserModel.GetSkinTradeData()
     if DBData and DBData.skin_trade_data then

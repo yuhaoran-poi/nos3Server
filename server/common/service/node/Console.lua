@@ -93,6 +93,7 @@ Command List:
 	set_user_bants <uid> <ban_end_ts> #设置玩家封禁时间. set_user_bants 1234567 3600 给玩家1234567封禁3600秒后解封
 	free_user_ban <uid> #解封玩家. free_user_ban 1234567 解封玩家1234567
 	trigger_mission <uid> <cond_id> (params) (change_cnt) #触发任务埋点. 1234567 44 "{}" 1 给玩家1234567触发条件44埋点增加1次, params为json数组如"[5,0]"
+	add_week_score <uid> <activity_id> <count> #增加周天轮转活动积分(仅当周活动, 可负数扣减). 1234567 7001 999 给玩家1234567的7001活动加999积分
 	]]
 
 function Console.help()
@@ -476,6 +477,25 @@ function Console.add_treasure_box(uid, config_id, item_count)
 	end
 end
 
+-- 增加周天轮转活动积分(仅当周开启的活动有效, 支持负数扣减)
+function Console.add_week_score(uid, activity_id, score)
+	activity_id = math.tointeger(activity_id)
+	score = math.tointeger(score)
+	if not activity_id or activity_id <= 0 or not score or score == 0 then
+		return Response(444, "param error", string.format("%s %s %s", tostring(uid), tostring(activity_id), tostring(score)))
+	end
+	local res, err = context.call_user(uid, "WeekRotation.GMAddScore", activity_id, score)
+	if err then
+		return Response(444, err, string.format("%d %d %d", uid, activity_id, score))
+	end
+
+	if res then
+		return Response(0, "OK")
+	else
+		return Response(444, "Failed", string.format("%d %d %d", uid, activity_id, score))
+	end
+end
+
 function Console.add_trade_product(sale_config_id, sale_num, sale_price, sale_ts)
     local product_data = TradeDef.newTradeProductBaseData()
     product_data.trade_id = 1
@@ -615,5 +635,63 @@ function Console.trigger_mission(uid, cond_id, params_str, change_cnt)
 	else
 		return Response(444, "Failed", string.format("%d %d", uid, cond_id))
 	end
+end
+
+-- ============ 精力系统测试/运营命令 ============
+
+-- 设置出战角色精力: set_energy <uid> <energy>
+function Console.set_energy(uid, energy)
+	energy = math.tointeger(energy)
+	if not energy or energy < 0 then
+		return Response(444, "Invalid energy", string.format("%d %s", uid, tostring(energy)))
+	end
+	local res, err = context.call_user(uid, "Role.GMSetEnergy", energy)
+	if err then
+		return Response(444, err, uid)
+	end
+	if res then
+		return Response(0, "OK")
+	else
+		return Response(444, "Failed", uid)
+	end
+end
+
+-- 模拟门票模式开局扣精力: cost_energy <uid> <conf_idx>(GameChapter表id)
+function Console.cost_energy(uid, conf_idx)
+	conf_idx = math.tointeger(conf_idx)
+	if not conf_idx or conf_idx <= 0 then
+		return Response(444, "Invalid conf_idx", string.format("%d %s", uid, tostring(conf_idx)))
+	end
+	local _, err = context.call_user(uid, "Role.CostEnergyForGame", conf_idx)
+	if err then
+		return Response(444, err, uid)
+	end
+	return Response(0, "OK")
+end
+
+-- 往结算队列塞一条带宝箱的伪造结算: push_settle <uid> <box_config_id>
+function Console.push_settle(uid, box_config_id)
+	box_config_id = math.tointeger(box_config_id)
+	if not box_config_id or box_config_id <= 0 then
+		return Response(444, "Invalid box_config_id", string.format("%d %s", uid, tostring(box_config_id)))
+	end
+	local res, err = context.call_user(uid, "User.GMPushTestSettle", box_config_id)
+	if err then
+		return Response(444, err, uid)
+	end
+	if res then
+		return Response(0, "OK")
+	else
+		return Response(444, "Failed", uid)
+	end
+end
+
+-- 触发一次结算队列消费(走完整 GameSettle 链路): test_settle <uid>
+function Console.test_settle(uid)
+	local _, err = context.call_user(uid, "User.NotifyGameSettle")
+	if err then
+		return Response(444, err, uid)
+	end
+	return Response(0, "OK")
 end
 return Console
