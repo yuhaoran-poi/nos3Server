@@ -29,6 +29,7 @@ local ItemDefine = {
     HumanTabooWord = { start = 116000, End = 119999 },
     GhostTabooWord = { start = 120000, End = 123999 },
     StackSpaceRing = { start = 124000, End = 133999 },
+    SkinPiece = { start = 134000, End = 143999 },
     -- SkinCard = { start = 134000, End = 353999 },
     Gift = { start = 354000, End = 363999 },
     SkinTryCard = { start = 364000, End = 379999 },
@@ -87,6 +88,7 @@ local ItemDefine = {
         StackAntique = 33, -- 鉴定前的可堆叠古董
         SkinTryCard = 34,
         UniqueGift = 35,
+        SkinPiece = 36,
         Other = 255,
     },
 
@@ -142,6 +144,8 @@ function ItemDefine.GetItemType(nConfigId)
         return ItemDefine.EItemSmallType.GhostTabooWord
     elseif nConfigId >= ItemDefine.StackSpaceRing.start and nConfigId <= ItemDefine.StackSpaceRing.End then
         return ItemDefine.EItemSmallType.StackSpaceRing
+    elseif nConfigId >= ItemDefine.SkinPiece.start and nConfigId <= ItemDefine.SkinPiece.End then
+        return ItemDefine.EItemSmallType.SkinPiece
     elseif nConfigId >= ItemDefine.SkinCard.start and nConfigId <= ItemDefine.SkinCard.End then
         return ItemDefine.EItemSmallType.SkinCard
     elseif nConfigId >= ItemDefine.Gift.start and nConfigId <= ItemDefine.Gift.End then
@@ -196,7 +200,9 @@ function ItemDefine.GetItemPosType(nConfigId)
         and nItemType <= ItemDefine.EItemSmallType.Gift then
         return ItemDefine.EItemBigType.StackItem
     elseif nItemType == ItemDefine.EItemSmallType.StackAntique then
-        return ItemDefine.EItemBigType.StackItem    -- 鉴定前的可堆叠古董属于可堆叠物品
+        return ItemDefine.EItemBigType.StackItem -- 鉴定前的可堆叠古董属于可堆叠物品
+    elseif nItemType == ItemDefine.EItemSmallType.SkinPiece then
+        return ItemDefine.EItemBigType.StackItem
     elseif nItemType == ItemDefine.EItemSmallType.DurabItem then
         return ItemDefine.EItemBigType.UnStackItem
     elseif nItemType == ItemDefine.EItemSmallType.Tool then

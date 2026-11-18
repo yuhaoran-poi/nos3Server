@@ -2237,6 +2237,11 @@ function Roommgr.ModMaster(now_master_id, roomid, mod_master_id)
         return ErrorCode.RoomMemberNotFound
     end
 
+    -- 取消所有玩家的准备状态
+    for _, player in pairs(room.players) do
+        player.is_ready = 0
+    end
+
     -- 修改房主
     room.room_data.master_id = room.players[now_master_seat_idx].mem_info.uid
     room.master_id = room.players[now_master_seat_idx].mem_info.uid
