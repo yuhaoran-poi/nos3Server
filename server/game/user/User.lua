@@ -510,6 +510,16 @@ end
 function User.Init()
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
     --GameCfg.Load()
+    -- 返还邮件配置自检: DungeonAwardEmailId缺失或对应邮件未激活时, ds道具返还会持续失败回推积压, 启动即告警
+    local mail_id_cfg = CommonCfgDef.getConf("DungeonAwardEmailId")
+    if not mail_id_cfg then
+        moon.error("User.Init err: DungeonAwardEmailId cfg missing, ds return items will keep failing")
+    else
+        local mail_cfg = GameCfg.ImmediatelyEmailTemplateConfig[mail_id_cfg.value]
+        if not mail_cfg or not mail_cfg.is_active then
+            moon.error("User.Init err: return-mail config not active, id=", mail_id_cfg.value)
+        end
+    end
 end
 
 function User.Start()
@@ -726,14 +736,23 @@ function User.NotifyPlayEnd(out_data)
 end
 
 function User.NotifyGameReturnItems()
-    -- while true do
-    --     local return_info = Database.BattleListPopLeft(context.addr_db_redis, Database.GetBattleReturnKey(), context.uid)
-    --     if return_info then
-    --         -- scripts.Room.GameReturnItems(return_info)
-    --     else
-    --         break
-    --     end
-    -- end
+    while true do
+        local return_info = Database.BattleListPopLeft(context.addr_db_redis, Database.GetBattleReturnKey(), context.uid)
+        if not return_info then
+            break
+        end
+        -- LPOP即删, 发放失败必须回推队尾留待下次登录重试, 否则道具丢失;
+        -- break防止同因失败(如邮件配置错误)在同一次循环里反复失败
+        local ok, ret = xpcall(scripts.Room.GameReturnItems, debug.traceback, return_info)
+        if not ok then
+            moon.error("NotifyGameReturnItems xpcall err:", ret)
+            ret = false
+        end
+        if ret ~= true then
+            Database.BattleListPushRight(context.addr_db_redis, Database.GetBattleReturnKey(), context.uid, return_info)
+            break
+        end
+    end
 end
 
 function User.OnHour()

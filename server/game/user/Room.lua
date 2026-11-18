@@ -24,7 +24,7 @@ local MIN_MAINLINE_CHAPTERID = 1
 local MAX_MAINLINE_CHAPTERID = 1000
 local MIN_FENGTA_CHAPTERID = 3001
 local MAX_FENGTA_CHAPTERID = 4000
-local MAX_DEMO_GAME_TIME = 60 * 30 -- 30分钟
+local MAX_DEMO_GAME_TIME = 60 * 60 * 5 -- 5小时
 
 
 
@@ -1915,21 +1915,30 @@ end
 function Room.GameReturnItems(return_info)
     local mail_id_cfg = CommonCfgDef.getConf("DungeonAwardEmailId")
     if not mail_id_cfg then
-        moon.error("CommonCfgDef.getConf err")
-        return
+        moon.error("GameReturnItems err: DungeonAwardEmailId cfg missing")
+        return false
     end
 
     -- 发送邮件
     -- 只有唯一道具
     local item_datas = {}
     for _, item_data in pairs(return_info) do
-        table.insert(item_datas, item_data)
+        local itype = ItemDefine.GetItemType(item_data.common_info.config_id)
+        local item_type = 0
+        local item_cfg = GameCfg.Item[item_data.common_info.config_id]
+        if item_cfg then
+            item_type = item_cfg.type1
+        end
+        local new_item_data = ItemDef.newItemDataFromData(item_data, itype, item_type)
+        table.insert(item_datas, new_item_data)
     end
 
     local mail_ret = scripts.Mail.RecvImmediateMail(mail_id_cfg.value, {}, item_datas, {})
     if not mail_ret then
         moon.error(string.format("GameReturnItems mail_ret err:\n%s", json.pretty_encode(item_datas)))
+        return false
     end
+    return true
 end
 
 function Room.SyncRoleInfo(role_info)
