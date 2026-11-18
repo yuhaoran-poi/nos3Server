@@ -441,11 +441,11 @@ function Auction.PBAuctionSaleReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    -- local user_attr = scripts.UserModel.GetUserAttr()
-    -- if user_attr and user_attr.is_demo and user_attr.is_demo == 1 then
-    --     return context.S2C(context.net_id, CmdCode.PBAuctionSaleRspCmd,
-    --         { code = ErrorCode.TradeItemNotAllowed, error = "账号不允许交易", uid = context.uid }, req.msg_context.stub_id)
-    -- end
+    local user_attr = scripts.UserModel.GetUserAttr()
+    if user_attr and user_attr.is_demo and user_attr.is_demo == 1 then
+        return context.S2C(context.net_id, CmdCode.PBAuctionSaleRspCmd,
+            { code = ErrorCode.TradeItemNotAllowed, error = "账号不允许交易", uid = context.uid }, req.msg_context.stub_id)
+    end
 
     local player_auction_data = scripts.UserModel.GetAuctionData()
     if not player_auction_data then
@@ -777,11 +777,11 @@ function Auction.PBAuctionBuyReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    -- local user_attr = scripts.UserModel.GetUserAttr()
-    -- if user_attr and user_attr.is_demo and user_attr.is_demo == 1 then
-    --     return context.S2C(context.net_id, CmdCode.PBAuctionBuyRspCmd,
-    --         { code = ErrorCode.TradeItemNotAllowed, error = "账号不允许交易", uid = context.uid }, req.msg_context.stub_id)
-    -- end
+    local user_attr = scripts.UserModel.GetUserAttr()
+    if user_attr and user_attr.is_demo and user_attr.is_demo == 1 then
+        return context.S2C(context.net_id, CmdCode.PBAuctionBuyRspCmd,
+            { code = ErrorCode.TradeItemNotAllowed, error = "账号不允许交易", uid = context.uid }, req.msg_context.stub_id)
+    end
 
     local player_auction_data = scripts.UserModel.GetAuctionData()
     if not player_auction_data then
@@ -912,11 +912,11 @@ function Auction.PBAuctionTakeOffProductReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    -- local user_attr = scripts.UserModel.GetUserAttr()
-    -- if user_attr and user_attr.is_demo and user_attr.is_demo == 1 then
-    --     return context.S2C(context.net_id, CmdCode.PBAuctionTakeOffProductRspCmd,
-    --         { code = ErrorCode.TradeItemNotAllowed, error = "账号不允许交易", uid = context.uid }, req.msg_context.stub_id)
-    -- end
+    local user_attr = scripts.UserModel.GetUserAttr()
+    if user_attr and user_attr.is_demo and user_attr.is_demo == 1 then
+        return context.S2C(context.net_id, CmdCode.PBAuctionTakeOffProductRspCmd,
+            { code = ErrorCode.TradeItemNotAllowed, error = "账号不允许交易", uid = context.uid }, req.msg_context.stub_id)
+    end
 
     local player_auction_data = scripts.UserModel.GetAuctionData()
     if not player_auction_data then
@@ -976,11 +976,11 @@ function Auction.PBAuctionChangeFocusIdReqCmd(req)
         }, req.msg_context.stub_id)
     end
 
-    -- local user_attr = scripts.UserModel.GetUserAttr()
-    -- if user_attr and user_attr.is_demo and user_attr.is_demo == 1 then
-    --     return context.S2C(context.net_id, CmdCode.PBAuctionChangeFocusIdRspCmd,
-    --         { code = ErrorCode.TradeItemNotAllowed, error = "账号不允许交易", uid = context.uid }, req.msg_context.stub_id)
-    -- end
+    local user_attr = scripts.UserModel.GetUserAttr()
+    if user_attr and user_attr.is_demo and user_attr.is_demo == 1 then
+        return context.S2C(context.net_id, CmdCode.PBAuctionChangeFocusIdRspCmd,
+            { code = ErrorCode.TradeItemNotAllowed, error = "账号不允许交易", uid = context.uid }, req.msg_context.stub_id)
+    end
 
     local player_auction_data = scripts.UserModel.GetAuctionData()
     if not player_auction_data then
