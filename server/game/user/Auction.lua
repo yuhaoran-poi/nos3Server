@@ -173,7 +173,9 @@ function Auction.OnAuctionFailMail(wait_data)
         coin_id = auction_cfg.order_currency,
         coin_count = wait_data.price
     }
-    local mail_ret = scripts.Mail.RecvImmediateMail(auction_cfg.failed_email, {}, {}, add_coins)
+    local content_params = {}
+    table.insert(content_params, tostring(wait_data.config_id))
+    local mail_ret = scripts.Mail.RecvImmediateMail(auction_cfg.failed_email, {}, {}, add_coins, content_params)
     if not mail_ret then
         moon.error(string.format("OnAuctionFailMail mail_ret false wait_data = %s", json.pretty_encode(wait_data)))
         return
