@@ -18,6 +18,7 @@ return {
     ["Book"] = "Book.lua",
     ["BootyBackpackExpansion"] = "BootyBackpackExpansion.lua",
     ["ChatChannelConfig"] = "ChatChannelConfig.lua",
+    ["ChosenTreasureChest"] = "ChosenTreasureChest.lua",
     ["Coin"] = "Coin.lua",
     ["CommonConfig"] = "CommonConfig.lua",
     ["Composite"] = "Composite.lua",

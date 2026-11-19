@@ -18,5 +18,8 @@ return {
 [12] = { id=12,type1=3,type2=3,cost={[1]=446} },
 [13] = { id=13,type1=3,type2=4,cost={[1]=781} },
 [14] = { id=14,type1=3,type2=5,cost={[1]=1736} },
-[15] = { id=15,type1=3,type2=6,cost={[1]=4167} }
+[15] = { id=15,type1=3,type2=6,cost={[1]=4167} },
+[16] = { id=16,type1=1,type2=7,cost={[1]=750} },
+[17] = { id=17,type1=2,type2=7,cost={[1]=6250} },
+[18] = { id=18,type1=3,type2=7,cost={[1]=4167} }
 }

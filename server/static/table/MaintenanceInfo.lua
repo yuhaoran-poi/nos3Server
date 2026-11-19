@@ -11,5 +11,6 @@ return {
 [3] = { id=3,Durability=210,sturdy=440,sturdy_reset_count=5,fall_cost=21,fail_cost=63,time_cost={[60]=1} },
 [4] = { id=4,Durability=240,sturdy=500,sturdy_reset_count=5,fall_cost=24,fail_cost=72,time_cost={[60]=1} },
 [5] = { id=5,Durability=270,sturdy=560,sturdy_reset_count=5,fall_cost=27,fail_cost=81,time_cost={[60]=1} },
-[6] = { id=6,Durability=300,sturdy=625,sturdy_reset_count=5,fall_cost=30,fail_cost=90,time_cost={[60]=1} }
+[6] = { id=6,Durability=300,sturdy=625,sturdy_reset_count=5,fall_cost=30,fail_cost=90,time_cost={[60]=1} },
+[7] = { id=7,Durability=300,sturdy=625,sturdy_reset_count=5,fall_cost=30,fail_cost=90,time_cost={[60]=1} }
 }
