@@ -2230,6 +2230,9 @@ function Roommgr.ModMaster(now_master_id, roomid, mod_master_id)
     for idx, player in pairs(room.players) do
         if player.mem_info.uid == mod_master_id then
             now_master_seat_idx = idx
+            if player.is_ready == 2 then
+                return ErrorCode.RoomMemberNotFound
+            end
         end
         table.insert(notify_uids, player.mem_info.uid)
     end
@@ -2237,9 +2240,11 @@ function Roommgr.ModMaster(now_master_id, roomid, mod_master_id)
         return ErrorCode.RoomMemberNotFound
     end
 
-    -- 取消所有玩家的准备状态
+    -- 取消所有非暂离玩家的准备状态
     for _, player in pairs(room.players) do
-        player.is_ready = 0
+        if player.is_ready == 1 then
+            player.is_ready = 0
+        end
     end
 
     -- 修改房主
