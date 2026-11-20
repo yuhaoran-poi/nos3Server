@@ -66,6 +66,7 @@ return {
     ["PeriodMissionConfig"] = "PeriodMissionConfig.lua",
     ["PropCompose"] = "PropCompose.lua",
     ["RandomComposite"] = "RandomComposite.lua",
+    ["RankBoard"] = "RankBoard.lua",
     ["RankingListReward"] = "RankingListReward.lua",
     ["RankingListRewardPool"] = "RankingListRewardPool.lua",
     ["RankLevel"] = "RankLevel.lua",
