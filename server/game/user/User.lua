@@ -743,15 +743,15 @@ function User.NotifyGameReturnItems()
         end
         -- LPOP即删, 发放失败必须回推队尾留待下次登录重试, 否则道具丢失;
         -- break防止同因失败(如邮件配置错误)在同一次循环里反复失败
-        local ok, ret = xpcall(scripts.Room.GameReturnItems, debug.traceback, return_info)
-        if not ok then
-            moon.error("NotifyGameReturnItems xpcall err:", ret)
-            ret = false
-        end
-        if ret ~= true then
-            Database.BattleListPushRight(context.addr_db_redis, Database.GetBattleReturnKey(), context.uid, return_info)
-            break
-        end
+        -- local ok, ret = xpcall(scripts.Room.GameReturnItems, debug.traceback, return_info)
+        -- if not ok then
+        --     moon.error("NotifyGameReturnItems xpcall err:", ret)
+        --     ret = false
+        -- end
+        -- if ret ~= true then
+        --     Database.BattleListPushRight(context.addr_db_redis, Database.GetBattleReturnKey(), context.uid, return_info)
+        --     break
+        -- end
     end
 end
 
