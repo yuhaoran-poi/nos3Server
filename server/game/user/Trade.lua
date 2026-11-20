@@ -65,15 +65,41 @@ function Trade.CheckData()
         return false
     end
 
+    -- 登录对账: mgr内存为权威在售校验, 不再盲信Redis缓存(Redis的HDEL是fire-and-forget,
+    -- 丢失会产生state=1的过期孤儿快照, 曾导致已售出/下架商品一直挂在玩家"我的上架"里)
+    -- 成功: 以mgr返回的存活商品重建trade_ids/product_list, 残留(售出/下架/到期孤儿)
+    --       从玩家列表移除+清掉Redis孤儿field(自愈)
+    -- 失败(mgr重启窗口/网络异常): 保留旧列表不动, 等下次登录再对账
+    -- 已知缺口(有意取舍): mgr有而玩家列表无的商品(上架RPC成功但game侧未记录)不会被补录,
+    --       如出现"商品在售但玩家看不到"的反馈, 需升级为mgr侧seller_uid反向索引方案
     if player_trade_data.simple_info.trade_ids and table.size(player_trade_data.simple_info.trade_ids) > 0 then
-        local new_product_datas = Database.RedisGetProductData(context.addr_db_redis, player_trade_data.simple_info
-            .trade_ids)
-        if new_product_datas then
-            player_trade_data.simple_info.trade_ids = {}
-            for _, product_data in pairs(new_product_datas) do
+        local ok, res = pcall(clusterd.call, 3999, "trademgr", "Trademgr.GetOnSaleProductsByIds",
+            player_trade_data.simple_info.trade_ids)
+        if ok and type(res) == "table" then
+            local onsale_map = {}
+            local new_trade_ids = {}
+            for _, product_data in pairs(res) do
+                onsale_map[product_data.trade_id] = true
                 player_trade_data.product_list[product_data.trade_id] = product_data
-                table.insert(player_trade_data.simple_info.trade_ids, product_data.trade_id)
+                table.insert(new_trade_ids, product_data.trade_id)
             end
+            local del_product_ids = {}
+            for _, old_trade_id in ipairs(player_trade_data.simple_info.trade_ids) do
+                if not onsale_map[old_trade_id] then
+                    table.insert(del_product_ids, old_trade_id)
+                end
+            end
+            for _, trade_id in ipairs(del_product_ids) do
+                player_trade_data.product_list[trade_id] = nil
+            end
+            player_trade_data.simple_info.trade_ids = new_trade_ids
+            if #del_product_ids > 0 then
+                moon.info(string.format("CheckData clean stale trade_ids uid=%d ids=%s",
+                    context.uid, table.concat(del_product_ids, ",")))
+                Database.RedisDelProductData(context.addr_db_redis, del_product_ids)
+            end
+        else
+            moon.warn("CheckData GetUserOnSaleProducts failed, keep old trade_ids uid=", context.uid)
         end
     end
 

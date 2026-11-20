@@ -772,6 +772,31 @@ function Trademgr.GetTradeRecordInfo(config_id)
     return Trademgr.trade_record_infos[config_id]
 end
 
+-- 按trade_id批量校验在售商品(mgr内存为权威, 供game侧登录对账CheckData使用)
+-- 只返回入参中仍在售的商品数据(逐个哈希查找O(1), 不遍历全量product_list)
+-- 已知缺口(有意取舍): mgr有而玩家列表无的商品(上架RPC成功但game侧未记录/进程崩溃丢快照)不会被补录,
+-- 出现该类问题时需升级为seller_uid反向索引方案
+function Trademgr.GetOnSaleProductsByIds(trade_ids)
+    if not Trademgr.load_finish then
+        return nil
+    end
+    -- 防御: 入参nil/非表(跨节点序列化异常等)返回空表, 不让ipairs(nil)炸掉mgr协程
+    if type(trade_ids) ~= "table" then
+        return {}
+    end
+
+    local scope <close> = lock_trade_data()
+
+    local product_datas = {}
+    for _, trade_id in ipairs(trade_ids) do
+        local product_data = Trademgr.product_list[trade_id]
+        if product_data then
+            table.insert(product_datas, product_data)
+        end
+    end
+    return product_datas
+end
+
 function Trademgr.BuyTradeProduct(buyer_uid, config_id, buy_num, buy_max_price, lock_coin_num)
     if not Trademgr.load_finish then
         return {code = ErrorCode.TradeProductNotExist}
