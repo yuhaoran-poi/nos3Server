@@ -3857,7 +3857,8 @@ function Bag.Light(op_itemdata)
         end
         pool_id_weight[pool_id] = pool_weight
     end
-    if table.size(cur_ability_tag) == 0 then
+    local special_tag_num = uniqitem_cfg.ability_tag_num or 1
+    if table.size(cur_ability_tag) < special_tag_num then
         for pool_id, pool_weight in pairs(light_cfg.lightpooltype2) do
             local pool_cfg = GameCfg.AllTagPool[pool_id]
             if not pool_cfg then
