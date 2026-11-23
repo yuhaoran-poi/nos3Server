@@ -3848,55 +3848,15 @@ function Bag.Light(op_itemdata)
     end
 
     --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    -- 随机出词条池子
-    local id_weight = {}
+    -- 第一次随机词条池子
+    local pool_id_weight = {}
     for pool_id, pool_weight in pairs(light_cfg.lightpooltype) do
         local pool_cfg = GameCfg.AllTagPool[pool_id]
         if not pool_cfg then
             return ErrorCode.TagPoolNotExist
         end
-
-        for tag_id, tag_weight in pairs(pool_cfg.all_tag) do
-            local tag_cfg = GameCfg.AllTag[tag_id]
-            if not tag_cfg then
-                moon.error("tag_id not found", tag_id, pool_id)
-                return ErrorCode.TagNotExist
-            end
-
-            --现有词条去重
-            local had_tag = false
-            for _, tag in pairs(cur_tags) do
-                if tag.tag_id == tag_id then
-                    had_tag = true
-                    break
-                end
-
-            end
-            --去除互斥词条
-            if not had_tag and tag_cfg.exclusion and table.size(tag_cfg.exclusion) > 0 then
-                for _, ex_tag_id in pairs(tag_cfg.exclusion) do
-                    for _, tag in pairs(cur_tags) do
-                        if tag.tag_id == ex_tag_id then
-                            had_tag = true
-                            break
-                        end
-                    end
-                    if had_tag then
-                        break
-                    end
-                end
-            end
-
-            if not had_tag then
-                if not id_weight[tag_id] then
-                    id_weight[tag_id] = tag_weight * pool_weight
-                else
-                    id_weight[tag_id] = id_weight[tag_id] + (tag_weight * pool_weight)
-                end
-            end
-        end
+        pool_id_weight[pool_id] = pool_weight
     end
-    -- moon.info(string.format("cur_ability_tag:\n%s", json.pretty_encode(cur_ability_tag)))
     if table.size(cur_ability_tag) == 0 then
         for pool_id, pool_weight in pairs(light_cfg.lightpooltype2) do
             local pool_cfg = GameCfg.AllTagPool[pool_id]
@@ -3904,34 +3864,72 @@ function Bag.Light(op_itemdata)
                 moon.error("pool_cfg not found", pool_id)
                 return ErrorCode.TagPoolNotExist
             end
+            pool_id_weight[pool_id] = pool_weight
+        end
+    end
+    if table.size(pool_id_weight) <= 0 then
+        moon.error("pool_id_weight is empty")
+        return ErrorCode.TagNotExist
+    end
+    local cur_pool_id = scripts.Item.RangeTags(pool_id_weight)
+    if cur_pool_id == 0 then
+        return ErrorCode.TagPoolNotExist
+    end
 
-            for tag_id, tag_weight in pairs(pool_cfg.all_tag) do
-                local tag_cfg = GameCfg.AllTag[tag_id]
-                if not tag_cfg then
-                    moon.error("tag_id not found", tag_id, pool_id)
-                    return ErrorCode.TagNotExist
+    local pool_cfg = GameCfg.AllTagPool[cur_pool_id]
+    if not pool_cfg then
+        return ErrorCode.TagPoolNotExist
+    end
+
+    -- 随机出词条
+    local tag_id_weight = {}
+    for tag_id, tag_weight in pairs(pool_cfg.all_tag) do
+        local tag_cfg = GameCfg.AllTag[tag_id]
+        if not tag_cfg then
+            moon.error("tag_id not found", tag_id, cur_pool_id)
+            return ErrorCode.TagNotExist
+        end
+
+        --现有词条去重
+        local had_tag = false
+        for _, tag in pairs(cur_tags) do
+            if tag.tag_id == tag_id then
+                had_tag = true
+                break
+            end
+        end
+        --去除互斥词条
+        if not had_tag and tag_cfg.exclusion and table.size(tag_cfg.exclusion) > 0 then
+            for _, ex_tag_id in pairs(tag_cfg.exclusion) do
+                for _, tag in pairs(cur_tags) do
+                    if tag.tag_id == ex_tag_id then
+                        had_tag = true
+                        break
+                    end
                 end
-
-                if not id_weight[tag_id] then
-                    id_weight[tag_id] = tag_weight * pool_weight
-                else
-                    id_weight[tag_id] = id_weight[tag_id] + (tag_weight * pool_weight)
+                if had_tag then
+                    break
                 end
             end
         end
+
+        if not had_tag then
+            if not tag_id_weight[tag_id] then
+                tag_id_weight[tag_id] = tag_weight
+            else
+                tag_id_weight[tag_id] = tag_id_weight[tag_id] + tag_weight
+            end
+        end
     end
-    -- moon.info(string.format("id_weight:\n%s", json.pretty_encode(id_weight)))
-    --local retxx = LuaPanda and LuaPanda.BP and LuaPanda.BP()
-    if table.size(id_weight) <= 0 then
-        moon.error("id_weight is empty")
+    if table.size(tag_id_weight) <= 0 then
+        moon.error("tag_id_weight is empty")
         return ErrorCode.TagNotExist
     end
 
     moon.debug(string.format("cur_tags:\n%s", json.pretty_encode(cur_tags)))
     moon.debug(string.format("cur_ability_tag:\n%s", json.pretty_encode(cur_ability_tag)))
-    moon.debug(string.format("id_weight:\n%s", json.pretty_encode(id_weight)))
-    -- 随机词条
-    local new_tag_id = scripts.Item.RangeTags(id_weight)
+    moon.debug(string.format("tag_id_weight:\n%s", json.pretty_encode(tag_id_weight)))
+    local new_tag_id = scripts.Item.RangeTags(tag_id_weight)
     if new_tag_id == 0 then
         return ErrorCode.TagDuplicate
     end
