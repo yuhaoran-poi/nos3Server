@@ -1,5 +1,5 @@
 
-ô
+‚
 activity.proto"á
 PBWeekRotationView
 activity_id (R
@@ -70,7 +70,68 @@ difficulty
 code (Rcode
 error (	Rerror
 uid (Ruid
-applied (Rappliedbproto3
+applied (Rapplied"˙
+PBChosenTreasureChestView
+box_id (RboxId
+state (Rstate
+
+start_time (R	startTime
+end_time (RendTime
+	ticket_id (RticketId
+gift_lv (RgiftLv!
+gift_claimed (RgiftClaimed
+step_prices (R
+stepPrices
+
+slot_items	 (R	slotItems!
+slot_weights
+ (RslotWeights
+drawn_slots (R
+drawnSlots
+cur_step (RcurStep"a
+PBChosenTreasureChestInfo
+uid (Ruid2
+chests (2.PBChosenTreasureChestViewRchests"6
+"PBGetChosenTreasureChestInfoReqCmd
+uid (Ruid"ê
+"PBGetChosenTreasureChestInfoRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid.
+info (2.PBChosenTreasureChestInfoRinfo"J
+PBOpenChosenTreasureChestReqCmd
+uid (Ruid
+box_id (RboxId"›
+PBOpenChosenTreasureChestRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+box_id (RboxId
+step (Rstep
+	hit_slots (RhitSlots
+	hit_items (RhitItems
+cur_step (RcurStep"a
+$PBBuyChosenTreasureChestTicketReqCmd
+uid (Ruid
+box_id (RboxId
+num (Rnum"§
+$PBBuyChosenTreasureChestTicketRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+box_id (RboxId
+num (Rnum
+coin_id (RcoinId"M
+"PBGetChosenTreasureChestGiftReqCmd
+uid (Ruid
+box_id (RboxId"ñ
+"PBGetChosenTreasureChestGiftRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+box_id (RboxId
+
+ticket_num (R	ticketNumbproto3
 ¸@
 
 item.proto"@
@@ -2111,7 +2172,7 @@ difficulty
 error (	Rerror!
 test_bag (2.PBBagRtestBag(
 	test_item (2.PBItemDataRtestItembproto3
-ÃA
+˘B
 dsnode.protocommon.proto
 item.proto
 user.proto	bag.proto
@@ -2159,7 +2220,7 @@ item_count (R	itemCount%
 open_cnt (RopenCnt
 pot_type (RpotType
 pot_quality (R
-potQuality"ô
+potQuality"∆
 PBGameSettle
 settle_data (	R
 settleData-
@@ -2209,7 +2270,9 @@ subTaskCnt&
 kill_ghost_king! (RkillGhostKing1
 out_uniq_items" (2.PBItemDataRoutUniqItemsQ
 game_collect_items# (2#.PBGameSettle.GameCollectItemsEntryRgameCollectItemsQ
-game_consume_items$ (2#.PBGameSettle.GameConsumeItemsEntryRgameConsumeItems?
+game_consume_items$ (2#.PBGameSettle.GameConsumeItemsEntryRgameConsumeItemsK
+ghost_king_kills% (2!.PBGameSettle.GhostKingKillsEntryRghostKingKills
+	mode_tags& (RmodeTags?
 GameMissionsEntry
 key (Rkey
 value (Rvalue:8F
@@ -2223,6 +2286,9 @@ subTaskCnt&
 key (Rkey
 value (Rvalue:8C
 GameConsumeItemsEntry
+key (Rkey
+value (Rvalue:8A
+GhostKingKillsEntry
 key (Rkey
 value (Rvalue:8"=
 PBEnterCityReqCmd
@@ -3579,7 +3645,7 @@ period_ids (R	periodIds%
 vitality_type (RvitalityType
 	award_ids (RawardIds%
 total_vitality (RtotalVitalitybproto3
-Ω
+∫
 
 rank.proto"ú
 RankItemData
@@ -3615,12 +3681,15 @@ gl_char_id (RglCharId"
 rank_id (RrankId
 create_time (R
 createTime*
-last_refresh_time (RlastRefreshTime"é
-RankTypeInfo&
-	rank_type (2	.RankTypeRrankType
+last_refresh_time (RlastRefreshTime"Œ
+RankTypeInfo
+	rank_type (RrankType
 name (	Rname
 is_flow (RisFlow)
-	sub_ranks (2.SubRankInfoRsubRanks"+
+	sub_ranks (2.SubRankInfoRsubRanks
+category (Rcategory
+sub_id (RsubId
+window (Rwindow"+
 PBRankGetAllTypesReqCmd
 uid (Ruid"z
 PBRankGetAllTypesRspCmd
@@ -3645,111 +3714,56 @@ createTime*
 code (Rcode
 error (	Rerror
 uid (Ruid&
-	rank_data (2	.RankDataRrankData"G
-PBRankUpdateDuanweiReqCmd
-uid (Ruid
-duanwei (Rduanwei"q
-PBRankUpdateDuanweiRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-success (Rsuccess"ê
-PBRankUpdateMainlineReqCmd
-uid (Ruid!
-character_id (RcharacterId
-
-difficulty (R
-difficulty
-
-clear_time (R	clearTime"r
-PBRankUpdateMainlineRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-success (Rsuccess"é
-PBRankUpdateFengtaReqCmd
-uid (Ruid!
-character_id (RcharacterId
-
-difficulty (R
-difficulty
-
-clear_time (R	clearTime"p
-PBRankUpdateFengtaRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-success (Rsuccess"Æ
-PBRankUpdateFadianReqCmd
-uid (Ruid(
-week_bill_amount (RweekBillAmount*
-month_bill_amount (RmonthBillAmount*
-total_bill_amount (RtotalBillAmount"p
-PBRankUpdateFadianRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-success (Rsuccess"B
-PBRankUpdatePlayerReqCmd
-uid (Ruid
-level (Rlevel"p
-PBRankUpdatePlayerRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-success (Rsuccess"~
-PBRankUpdateRoleReqCmd
-uid (Ruid
-roleid (Rroleid
-
-role_level (R	roleLevel
-	role_skin (RroleSkin"n
-PBRankUpdateRoleRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-success (Rsuccess"b
-PBRankUpdateAntiqueReqCmd
-uid (Ruid
-
-antique_id (R	antiqueId
-value (Rvalue"q
-PBRankUpdateAntiqueRspCmd
-code (Rcode
-error (	Rerror
-uid (Ruid
-success (Rsuccess"Q
+	rank_data (2	.RankDataRrankData"E
 PBRankGetRewardReqCmd
-uid (Ruid&
-	rank_type (2	.RankTypeRrankType"O
+uid (Ruid
+category (Rcategory"O
 
 RankReward
 item_id (RitemId
 count (Rcount
-type (	Rtype"í
+type (	Rtype"À
 PBRankGetRewardRspCmd
 code (Rcode
 error (	Rerror
 uid (Ruid
 success (Rsuccess#
-reward (2.RankRewardRreward*à
-RankType
-RankType_None 
-RankType_Duanwei_Weekly
-RankType_Duanwei_Season
-RankType_Mainline
-RankType_Fengta
-RankType_Fadian_Total
-RankType_Fadian_Weekly
-RankType_Fadian_Monthly
-RankType_Player
-RankType_Role	
-RankType_Antique
-
-RankType_GuildActive
-RankType_GuildMoney
-RankType_GuildScore_Weekly
-RankType_GuildScore_Seasonbproto3
+reward (2.RankRewardRreward
+category (Rcategory
+	best_rank (RbestRank"¿
+BoardHistoryItem
+	rank_type (RrankType
+sub_id (RsubId
+window (Rwindow
+sub_rank_id (R	subRankId
+rank (Rrank
+value (Rvalue
+period (Rperiod"K
+PBRankGetBoardHistoryReqCmd
+uid (Ruid
+category (Rcategory"û
+PBRankGetBoardHistoryRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+category (Rcategory'
+items (2.BoardHistoryItemRitems"ÿ
+PBTestRankBoardSettleReqCmd
+uid (Ruid
+kind (Rkind
+sub_id (RsubId
+
+clear_time (R	clearTime
+value (Rvalue
+times (Rtimes
+
+chapter_id (R	chapterId
+tags (Rtags"s
+PBTestRankBoardSettleRspCmd
+code (Rcode
+error (	Rerror
+uid (Ruid
+applied (Rappliedbproto3
 ¸5
 
 room.proto

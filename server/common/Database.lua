@@ -1119,6 +1119,39 @@ function _M.saveweekrotation(addr, uid, data)
     return moon.send("lua", addr, cmd)
 end
 
+-- 天选宝箱活动数据(服务器私有结构 ChosenTreasureChestPlayerData, 走json列存取, 不涉及PB消息)
+function _M.loadchosentreasurechest(addr, uid)
+    local cmd = string.format([[
+        SELECT json FROM mgame.chosentreasurechests WHERE uid = %d;
+    ]], uid)
+    local res, err = moon.call("lua", addr, cmd)
+    if not res or res.badresult then
+        return nil, res or { code = "NO_RESPONSE" }
+    end
+    if res and #res > 0 and res[1].json and res[1].json ~= "" then
+        local ok, data = pcall(jdecode, res[1].json)
+        if ok then
+            return data
+        end
+        moon.error("loadchosentreasurechest jdecode failed, uid = ", uid)
+        return nil
+    end
+    return nil
+end
+
+function _M.savechosentreasurechest(addr, uid, data)
+    assert(data)
+
+    local data_str = jencode(data)
+    local cmd = string.format([[
+        INSERT INTO mgame.chosentreasurechests (uid, value, json)
+        VALUES (%d, '', '%s')
+        ON DUPLICATE KEY UPDATE json = '%s';
+    ]], uid, data_str, data_str)
+
+    return moon.send("lua", addr, cmd)
+end
+
 -- function _M.loaduseritemimage(addr, uid)
 --     local cmd = string.format([[
 --         SELECT value, json FROM mgame.itemimages WHERE uid = %d;

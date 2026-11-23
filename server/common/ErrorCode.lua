@@ -672,6 +672,22 @@ local ErrorCode = {
     LoginQueuing = 2451,
     --- 服务器繁忙(排队已满或排队超时): 客户端应提示稍后重试
     ServerBusy = 2452,
+
+    --天选宝箱相关错误码
+    --- 宝匣不存在
+    ChosenChestNotFound = 2501,
+    --- 宝匣未在售(待上线/已下线)
+    ChosenChestNotOnSale = 2502,
+    --- 本期已开满(八档集齐)
+    ChosenChestAlreadyFinished = 2503,
+    --- 令不足(客户端应弹本箱买令页)
+    ChosenChestTicketNotEnough = 2504,
+    --- 免费令已领取(每箱全期一次)
+    ChosenChestGiftAlreadyClaimed = 2505,
+    --- 账号等级未达免费领取门槛
+    ChosenChestGiftLevelNotEnough = 2506,
+    --- 购买令数量非法
+    ChosenChestBuyNumInvalid = 2507,
 }
 
 return ErrorCode

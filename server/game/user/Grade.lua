@@ -163,8 +163,7 @@ function Grade.ChangeScore(change_score)
             Grade.GetHistoryMaxScore())
     end
 
-    -- 更新段位榜
-    scripts.Rank.UpdateRank_Duanwei(grade_info.grade_data.now_grade_score)
+    -- 段位榜更新已删除(旧14榜下线)
 
     Grades.grade_infos[Grades.cur_season_id] = grade_info
     -- Grade.SaveGradesNow()

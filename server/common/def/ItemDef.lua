@@ -76,6 +76,9 @@ local ItemDef = {
         DsDelItems = 57,          --Ds删除道具
         UnlockEquipScheme = 58, --解锁装备分页(灵币)
         WeekRotationReward = 59, --周天轮转活动(档位宝箱/开箱产出)
+        ChosenChestOpen = 60,       --天选宝箱开箱(扣令/发物件)
+        ChosenChestBuyTicket = 61,  --天选宝箱购买令(灵石兑换)
+        ChosenChestGift = 62,       --天选宝箱免费领取令
     },
     TabooWordInlay = {
         RoleType = 1000,

@@ -6,6 +6,7 @@ local Database = common.Database
 
 local RankLogic = require("common.logic.RankLogic")
 local RankDef = require("common.def.RankDef")
+local GameCfg = common.GameCfg
 
 ---@type rank_context
 local context = ...
@@ -13,9 +14,24 @@ local context = ...
 ---@class RankMgr
 local RankMgr = {}
 
--- 记录上次刷新时间(启动时从Redis恢复, 避免跨周/跨月重启后漏刷)
+-- 榜实例清单由配置表驱动(static/table/RankBoard.lua), 旧14榜已屏蔽不再刷新
+-- window: 1=周榜(周一刷新) 2=总榜(赛季结束刷新)
+-- 注意: 必须定义在所有使用它的函数(RankMgr.TestRefreshRanks/RefreshSeasonRanks/setupRefreshTasks)之前
+local function getBoardRankTypes(window)
+    local list = {}
+    if GameCfg.RankBoard then
+        for rank_type, cfg in pairs(GameCfg.RankBoard) do
+            if cfg.window == window then
+                table.insert(list, rank_type)
+            end
+        end
+    end
+    table.sort(list)
+    return list
+end
+
+-- 记录上次刷新时间(启动时从Redis恢复, 避免跨周重启后漏刷)
 local lastRefreshWeek
-local lastRefreshMonth
 local lastRefreshDay = moon.time()
 
 -- 周/月刷新标记在Redis中的持久化key
@@ -48,7 +64,7 @@ local function saveRefreshMark()
         return
     end
 
-    local mark = { week = lastRefreshWeek, month = lastRefreshMonth }
+    local mark = { week = lastRefreshWeek }
     local res, err = pcall(Database.saveserverdata_with_key, addr_db, RANK_REFRESH_MARK_KEY, json.encode(mark))
     if not res then
         moon.error("[RankMgr] Save rank refresh mark failed:", err)
@@ -64,12 +80,11 @@ function RankMgr.Init()
     RankLogic.Init(context)
     RankLogic.StartQueueProcessor()
 
-    -- 恢复刷新标记: 若停服跨越了周/月边界, 重启后30秒内即可补刷, 不会整周漏刷
+    -- 恢复刷新标记: 若停服跨越了周边界, 重启后30秒内即可补刷, 不会整周漏刷
     local mark = loadRefreshMark()
     lastRefreshWeek = tonumber(mark and mark.week) or moon.time()
-    lastRefreshMonth = tonumber(mark and mark.month) or moon.time()
-    moon.info(string.format("[RankMgr] Refresh mark restored: week=%s, month=%s",
-        tostring(lastRefreshWeek), tostring(lastRefreshMonth)))
+    moon.info(string.format("[RankMgr] Refresh mark restored: week=%s",
+        tostring(lastRefreshWeek)))
 
     RankMgr.setupRefreshTasks()
     RankMgr.setupSyncTasks()
@@ -97,40 +112,51 @@ function RankMgr.GetRankInfo(msg)
     return RankLogic.GetRankInfo(rank_type, rank_id, uid)
 end
 
-function RankMgr.GetRankReward(msg)
-    local rank_type = msg.rank_type
-    local uid = msg.uid
-    -- local period = msg.period
-    return RankLogic.GetRankReward(rank_type, uid)
+-- (旧单榜领奖与邮件转发 GetRankReward/ConfirmRankReward/CancelRankRewardClaim/
+--  GetUnclaimedRewards/CheckAndSendUnclaimedRewards/SendRankRewardMail 已删除,
+--  新三榜统一走 GetBoardReward/ConfirmBoardReward/CancelBoardRewardClaim, 见下方)
+
+-- 新三榜: 按一级标签聚合领奖(两段式第一段, 取该标签下全部子榜最优名次档位)
+function RankMgr.GetBoardReward(msg)
+    return RankLogic.GetBoardReward(msg.category, msg.uid)
 end
 
--- 确认领取奖励(两段式第二段: 游戏侧入包成功后调用)
-function RankMgr.ConfirmRankReward(msg)
-    return RankLogic.ConfirmRankReward(msg.rank_type, msg.uid)
+-- 新三榜: 确认领取(从该标签下全部子榜快照移除玩家)
+function RankMgr.ConfirmBoardReward(msg)
+    return RankLogic.ConfirmBoardReward(msg.category, msg.uid)
 end
 
--- 取消领取奖励(两段式回滚: 游戏侧入包失败时调用)
-function RankMgr.CancelRankRewardClaim(msg)
-    return RankLogic.CancelRankRewardClaim(msg.rank_type, msg.uid)
+-- 新三榜: 取消领取(两段式回滚)
+function RankMgr.CancelBoardRewardClaim(msg)
+    return RankLogic.CancelBoardRewardClaim(msg.category, msg.uid)
 end
 
-function RankMgr.GetUnclaimedRewards(msg)
-    local uid = msg.uid
-    return RankLogic.GetUnclaimedRewards(uid)
+-- 新三榜: 查询上期锁榜排名(领奖弹窗展示)
+function RankMgr.GetBoardHistory(msg)
+    return RankLogic.GetBoardHistory(msg.category, msg.uid)
 end
 
-function RankMgr.CheckAndSendUnclaimedRewards(msg)
-    local uid = msg.uid
-    return RankLogic.CheckAndSendUnclaimedRewards(uid)
+-- 测试命令: 触发指定窗口全部榜实例刷新(快照+清空, 等价锁榜), 测试环境用
+function RankMgr.TestRefreshRanks(msg)
+    local window = tonumber(msg.window) or 1
+    moon.info(string.format("[RankMgr] TestRefreshRanks: window=%d", window))
+    for _, rank_type in ipairs(getBoardRankTypes(window)) do
+        RankLogic.RefreshRankData(rank_type)
+    end
+    return ErrorCode.None
 end
 
-function RankMgr.SendRankRewardMail(msg)
-    local uid = msg.uid
-    local rank_type = msg.rank_type
-    local period = msg.period
-    local reward_id = msg.reward_id
-    local rank = msg.rank
-    return RankLogic.SendRewardMailToPlayer(uid, rank_type, period, reward_id, rank)
+-- 测试命令: 清空全部榜实例数据与Redis键(测试幂等用)
+function RankMgr.TestClearBoards(msg)
+    moon.info("[RankMgr] TestClearBoards")
+    local boards = GameCfg.RankBoard
+    if not boards then
+        return ErrorCode.None
+    end
+    for rank_type, _ in pairs(boards) do
+        RankLogic.ClearBoard(rank_type)
+    end
+    return ErrorCode.None
 end
 
 function RankMgr.UpdatePlayerInfo(msg)
@@ -204,49 +230,21 @@ local function isNewDay(lastTime)
     return t2.day ~= t1.day
 end
 
--- 每周刷新的排行榜
-local weeklyRanks = {
-    RankDef.RankType.Duanwei_Weekly,
-    RankDef.RankType.Mainline,
-    RankDef.RankType.Fengta,
-    RankDef.RankType.Fadian_Weekly,
-    RankDef.RankType.Antique,
-    RankDef.RankType.Player,
-    RankDef.RankType.Role,
-}
-
--- 每月刷新的排行榜
-local monthlyRanks = {
-    RankDef.RankType.Fadian_Monthly,
-}
+-- (getBoardRankTypes 已上移至文件头部: TestRefreshRanks 等前部函数需要引用,
+--  local 定义晚于调用函数时为nil全局, 曾导致刷新抛错不生效)
 
 function RankMgr.setupRefreshTasks()
-    -- 每周刷新任务（现为了做测试暂时改为每天刷新）
+    -- 周榜刷新(周一0点后, 30秒轮询检测; 快照即锁榜结果, 保留一期)
     moon.async(function()
         while true do
             moon.sleep(30000) -- 30秒检测一次
             if isNewWeek(lastRefreshWeek) then
                 moon.info(string.format("[RankMgr] Weekly rank refresh triggered"))
-                for _, rank_type in ipairs(weeklyRanks) do
+                for _, rank_type in ipairs(getBoardRankTypes(1)) do
                     RankLogic.RefreshRankData(rank_type)
                 end
                 moon.info(string.format("[RankMgr] Weekly rank refresh completed"))
                 lastRefreshWeek = moon.time()
-                saveRefreshMark()
-            end
-        end
-    end)
-
-    -- 每月刷新任务（每5分钟检查一次是否到了新的一月）
-    moon.async(function()
-        while true do
-            moon.sleep(30000) -- 30秒检测一次
-            if isNewMonth(lastRefreshMonth) then
-                moon.info(string.format("[RankMgr] Monthly rank refresh triggered"))
-                for _, rank_type in ipairs(monthlyRanks) do
-                    RankLogic.RefreshRankData(rank_type)
-                end
-                lastRefreshMonth = moon.time()
                 saveRefreshMark()
             end
         end
@@ -262,16 +260,11 @@ function RankMgr.setupSyncTasks()
     end)
 end
 
--- 刷新赛季排行榜（赛季段位榜和宗门赛季积分榜）
+-- 刷新赛季总榜(Seasonmgr赛季结束时触发; 榜单=RankBoard中window=2的榜实例)
 function RankMgr.RefreshSeasonRanks()
     moon.info("[RankMgr] RefreshSeasonRanks triggered")
 
-    local seasonRanks = {
-        RankDef.RankType.Duanwei_Season,     -- 赛季段位榜
-        RankDef.RankType.GuildScore_Season,  -- 宗门赛季积分榜
-    }
-
-    for _, rank_type in ipairs(seasonRanks) do
+    for _, rank_type in ipairs(getBoardRankTypes(2)) do
         moon.info(string.format("[RankMgr] Refreshing season rank: %d", rank_type))
         RankLogic.RefreshRankData(rank_type)
     end

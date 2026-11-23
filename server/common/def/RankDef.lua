@@ -3,25 +3,8 @@ local LuaExt = require "common.LuaExt"
 local RankDef = {
 }
 
--- 排行榜类型
-RankDef.RankType = {
-    -- 流动榜
-    Duanwei_Weekly = 1,     -- 周段位榜
-    Duanwei_Season = 2,     -- 赛季段位榜
-    Mainline = 3,           -- 主线榜
-    Fengta = 4,             -- 封塔榜
-    Fadian_Total = 5,       -- 发电总榜
-    Fadian_Weekly = 6,      -- 发电周榜
-    Fadian_Monthly = 7,     -- 发电月榜
-    Player = 8,             -- 玩家榜
-    Role = 9,               -- 角色榜
-    Antique = 10,           -- 古董榜
-    -- 总榜
-    GuildActive = 11,        -- 宗门活跃榜
-    GuildMoney = 12,         -- 宗门资金榜
-    GuildScore_Weekly = 13,  -- 宗门周赛季积分榜
-    GuildScore_Season = 14,  -- 宗门赛季积分榜
-}
+-- (旧RankType枚举 1~14 已删除: 旧14榜随新三榜上线整体下线, 榜实例现由 static/table/RankBoard.lua
+--  配置注册, id 即 rank_type, 采用百位分段: 1xx竞速周 2xx竞速总 3xx摸金周 4xx摸金总 5xx古董周 6xx古董总)
 
 -- 排行榜刷新类型
 RankDef.RefreshType = {
@@ -34,6 +17,25 @@ RankDef.RefreshType = {
 
 -- 流动榜默认最大人数
 RankDef.FLOW_RANK_MAX_PLAYERS = 1000
+
+-- 新三榜(鬼王竞速/摸金/古董): 榜实例由 static/table/RankBoard.lua 配置注册, id 即 rank_type(101+)
+-- 旧14种榜(RankType枚举)已屏蔽: RankLogic 入口过滤, 更新静默丢弃, 不再初始化/刷新/列举
+-- 一级标签(领奖聚合粒度: 同标签下多子榜取最高名次档位, 每标签一期各领一次)
+RankDef.Category = {
+    SPEED = 1,      -- 鬼王竞速
+    GOLD = 2,       -- 摸金
+    ANTIQUE = 3,    -- 古董
+}
+-- 成绩合并方式
+RankDef.MergeType = {
+    MAX = 1,        -- 取最高(最好一次/最高一件, 不涨只更新形象)
+    SUM = 2,        -- 累加(每次上报为增量, 榜值=旧值+增量)
+}
+-- 统计窗口
+RankDef.WindowType = {
+    WEEKLY = 1,     -- 周榜: 周一刷新, 快照保留一期(本周只能领上周奖励)
+    SEASON = 2,     -- 总榜: 赛季结束刷新, 快照保留一期
+}
 
 -- 排行榜数据结构 (使用短字段名节省存储)
 local defaultRankData = {

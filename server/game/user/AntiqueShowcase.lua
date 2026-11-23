@@ -420,9 +420,10 @@ function AntiqueShowcase.IdentifyAntique(config_id, uniqid, bag_pos)
     end
     scripts.Mission.TriggerConditionList(condition_list, nil, true)
 
-    if(rsp_price > 0 and rsp_is_fake ~= 1) then
-        -- 更新古董榜(赝品不上榜, 保持原有语义: 旧版赝品价0天然不进榜)
-        scripts.Rank.UpdateRank_Antique(real_config_id, rsp_price)
+    -- 古董榜(新): 红古董(quality=5)鉴定完成(次数用尽)且为真才上榜, 周榜+总榜取最高(merge=max)
+    -- 旧混合古董榜已屏蔽(RankLogic入口过滤), 不再调用 UpdateRank_Antique
+    if rsp_price > 0 and rsp_is_fake ~= 1 and rsp_remain_identify_num <= 0 and a_cfg.quality == 5 then
+        scripts.Rank.OnAntiqueAppraised(real_config_id, rsp_price)
     end
 
     moon.info(string.format("IdentifyAntique - uid=%d, config_id=%d, uniqid=%s, pos=%d, is_succ=%d, is_fake=%d, price=%d, final_price=%d",

@@ -5,15 +5,24 @@ local GameCfg = common.GameCfg
 local ErrorCode = common.ErrorCode
 local Database = common.Database
 local RankDef = require "common.def.RankDef"
-local MailLogic = require "common.logic.MailLogic"
 local redisd = require "redisd"
 local redis_call = redisd.call
-local clusterd = require "cluster"
 local json = require "json"
-local ItemDef = require("common.def.ItemDef")
-local ItemDefine = require("common.logic.ItemDefine")
 
 local RankLogic = {}
+
+--=============================== 新三榜(RankBoard) ===============================
+-- 榜实例由 static/table/RankBoard.lua 配置注册(id=rank_type, 101+), 全部为流动榜(1000人/卷)
+-- 未注册的榜(旧14种RankType)全部屏蔽: 更新静默丢弃, 不再初始化/刷新/列举, 上游调用点无需改动
+
+local function get_board_cfg(rank_type)
+    local boards = GameCfg.RankBoard
+    return boards and boards[rank_type] or nil
+end
+
+local function is_board_enabled(rank_type)
+    return get_board_cfg(rank_type) ~= nil
+end
 
 -- 排行榜数据
 local rank_data = {}
@@ -27,9 +36,6 @@ local claiming_rewards = {}
 -- 领奖标记超时时间(秒): 游戏侧异常中断未确认/未取消时, 超时后允许玩家重新领取
 local CLAIM_PENDING_TIMEOUT = 60
 
--- 最大保留期数（超过此数自动清理过期数据）
-local MAX_RETAIN_PERIODS = 4  -- 保留4期（约1个月）
-
 -- 排行榜更新队列（待处理的更新请求）
 local rank_update_queue = {}
 
@@ -38,15 +44,6 @@ local BATCH_PROCESS_INTERVAL = 10
 
 -- 是否正在处理队列
 local is_processing_queue = false
-
--- 邮件发送队列（用于分批发送奖励邮件）
-local mail_send_queue = {}
-local is_processing_mail_queue = false
-
--- 邮件发送配置
-local MAIL_BATCH_SIZE = 50      -- 每批发送50封
-local MAIL_BATCH_DELAY = 1000   -- 每批间隔1秒（毫秒）
-local MAIL_SEND_THRESHOLD = 100  -- 超过此数量的邮件使用分批发送
 
 -- 玩家信息更新队列（专门处理头像、头像框、昵称等非排名数据）
 local player_info_update_queue = {}
@@ -59,66 +56,23 @@ local INFO_UPDATE_INTERVAL = 5   -- 批量处理间隔（秒）
 
 -- 初始化排行榜
 function RankLogic.Init()
-    -- 加载排行榜数据
     rank_data = {}
-    -- 从Redis加载数据
+    -- 从Redis加载数据(仅新三榜; 旧14榜已下线, 残留键顺带清理)
     local _, loaded_rank_types = RankLogic.LoadRankDataFromRedis()
-    -- 初始化未加载的流动榜
-    RankLogic.InitFlowRanks(loaded_rank_types)
-    -- 初始化未加载的总榜
-    RankLogic.InitTotalRanks(loaded_rank_types)
-end
-
--- 初始化流动榜
-function RankLogic.InitFlowRanks(loaded_rank_types)
-    local flow_ranks = {
-        RankDef.RankType.Duanwei_Weekly,
-        RankDef.RankType.Duanwei_Season,
-        RankDef.RankType.Mainline,
-        RankDef.RankType.Fengta,
-        RankDef.RankType.Fadian_Total,
-        RankDef.RankType.Fadian_Weekly,
-        RankDef.RankType.Fadian_Monthly,
-        RankDef.RankType.Player,
-        RankDef.RankType.Role,
-        RankDef.RankType.Antique,
-    }
-
-    for _, rank_type in ipairs(flow_ranks) do
-        -- 只初始化未加载的排行榜
-        if not loaded_rank_types[rank_type] then
-            rank_data[rank_type] = rank_data[rank_type] or {}
-            -- 创建初始流动榜
-            local initial_rank = RankDef.newRankData()
-            initial_rank.rid = 1
-            initial_rank.rt = rank_type
-            initial_rank.flow = true
-            initial_rank.ct = moon.time()
-            initial_rank.lrt = moon.time()
-            table.insert(rank_data[rank_type], initial_rank)
-        end
-    end
-end
-
--- 初始化总榜
-function RankLogic.InitTotalRanks(loaded_rank_types)
-    local total_ranks = {
-        RankDef.RankType.GuildActive,
-        RankDef.RankType.GuildMoney,
-        RankDef.RankType.GuildScore_Weekly,
-        RankDef.RankType.GuildScore_Season,
-    }
-
-    for _, rank_type in ipairs(total_ranks) do
-        -- 只初始化未加载的排行榜
-        if not loaded_rank_types[rank_type] then
-            local rank = RankDef.newRankData()
-            rank.rid = 1
-            rank.rt = rank_type
-            rank.flow = false
-            rank.ct = moon.time()
-            rank.lrt = moon.time()
-            rank_data[rank_type] = { rank }
+    -- 初始化未加载的榜实例(全部为流动榜)
+    local boards = GameCfg.RankBoard
+    if boards then
+        for rank_type, _ in pairs(boards) do
+            if not loaded_rank_types[rank_type] then
+                rank_data[rank_type] = rank_data[rank_type] or {}
+                local initial_rank = RankDef.newRankData()
+                initial_rank.rid = 1
+                initial_rank.rt = rank_type
+                initial_rank.flow = true
+                initial_rank.ct = moon.time()
+                initial_rank.lrt = moon.time()
+                table.insert(rank_data[rank_type], initial_rank)
+            end
         end
     end
 end
@@ -198,9 +152,17 @@ function RankLogic.SortRank(rank)
         end
     end)
 
-    -- 更新排名
-    for i, data in ipairs(players) do
-        data.rank = i
+    -- 更新排名: value完全相同 → 并列同名次, 并列后名次紧接顺延不跳号(1,1,2 密集名次, 策划案1.4"下一位就是第2名");
+    -- 同分内部按ut升序保证顺序确定(仅显示顺序, 不影响名次值);
+    -- 密集名次保证并列组永不跨档位边界被拆档(同名次同档)
+    local rank_no, prev_val = 0, nil
+    for _i, data in ipairs(players) do
+        local val = data.value or 0
+        if prev_val == nil or val ~= prev_val then
+            rank_no = rank_no + 1
+        end
+        data.rank = rank_no
+        prev_val = val
         local key = data.id or data.uid
         if key then
             rank.ps[key] = data
@@ -210,19 +172,8 @@ end
 
 -- 检查是否为流动榜
 function RankLogic.IsFlowRank(rank_type)
-    local flow_ranks = {
-        [RankDef.RankType.Duanwei_Weekly] = true,
-        [RankDef.RankType.Duanwei_Season] = true,
-        [RankDef.RankType.Mainline] = true,
-        [RankDef.RankType.Fengta] = true,
-        [RankDef.RankType.Fadian_Total] = true,
-        [RankDef.RankType.Fadian_Weekly] = true,
-        [RankDef.RankType.Fadian_Monthly] = true,
-        [RankDef.RankType.Player] = true,
-        [RankDef.RankType.Role] = true,
-        [RankDef.RankType.Antique] = true,
-    }
-    return flow_ranks[rank_type] or false
+    -- 仅新三榜存在, 全部为流动榜(1000人/卷)
+    return get_board_cfg(rank_type) ~= nil
 end
 
 -- 周期类型常量
@@ -232,20 +183,14 @@ local PERIOD_TYPE = {
     SEASON = 3       -- 赛季周期（3个月）
 }
 
--- 获取排行榜的周期类型（可根据需要扩展）
+-- 获取排行榜的周期类型
 local function getPeriodType(rank_type)
-    -- 赛季排行榜使用赛季周期
-    if rank_type == RankDef.RankType.Duanwei_Season then
+    -- 新三榜: window决定周期(1周榜 2赛季)
+    local board_cfg = get_board_cfg(rank_type)
+    if board_cfg and board_cfg.window == RankDef.WindowType.SEASON then
         return PERIOD_TYPE.SEASON
-    elseif rank_type == RankDef.RankType.GuildScore_Season then
-        return PERIOD_TYPE.SEASON
-    -- 月度排行榜使用月周期
-    elseif rank_type == RankDef.RankType.Fadian_Total then
-        return PERIOD_TYPE.MONTHLY
-    -- 默认使用周周期
-    else
-        return PERIOD_TYPE.WEEKLY
     end
+    return PERIOD_TYPE.WEEKLY
 end
 
 -- 获取当前期数（支持多种周期类型）
@@ -270,24 +215,16 @@ local function getCurrentPeriod(rank_type)
     end
 end
 
--- 获取最大保留期数（根据周期类型调整）
+-- 获取最大保留期数
 local function getMaxRetainPeriods(rank_type)
-    local period_type = getPeriodType(rank_type)
-
-    if period_type == PERIOD_TYPE.WEEKLY then
-        return 4  -- 保留4周（约1个月）
-    elseif period_type == PERIOD_TYPE.MONTHLY then
-        return 3  -- 保留3个月（约1季度）
-    elseif period_type == PERIOD_TYPE.SEASON then
-        return 2  -- 保留2个赛季（约6个月）
-    else
-        return 4
-    end
+    -- 新三榜: 快照只保留一期(本周只能领上周锁榜奖励, 下次刷新时上上期作废)
+    return 1
 end
 
 -- 刷新排行榜数据
 function RankLogic.RefreshRankData(rank_type)
     if not rank_data[rank_type] then
+        moon.info(string.format("[RankLogic] RefreshRankData SKIP: rank_data[%s] is nil", tostring(rank_type)))
         return ErrorCode.ConfigError
     end
 
@@ -360,202 +297,7 @@ function RankLogic.CleanExpiredPeriods(rank_type)
     end
 end
 
--- 给所有玩家发送奖励邮件（通过邮件管理器，支持离线玩家）
--- 使用异步分批发送，避免阻塞事件循环
-function RankLogic.SendRewardMailToOnlinePlayers(rank_type, period)
-    if not rank_reward_data[rank_type] or not rank_reward_data[rank_type][period] then
-        return
-    end
-
-    local reward_data = rank_reward_data[rank_type][period]
-    local rank_reward_cfg = GameCfg.RankingListReward[rank_type]
-    if not rank_reward_cfg then
-        return
-    end
-
-    -- 收集所有需要发送的邮件任务
-    local mail_tasks = {}
-    for _, sub_rank in pairs(reward_data.sr) do
-        for uid, player_data in pairs(sub_rank.ps) do
-            local player_rank = player_data.rank
-            local reward_id = RankLogic.GetRewardIdByRank(rank_reward_cfg, player_rank)
-            if reward_id then
-                table.insert(mail_tasks, {
-                    uid = uid,
-                    reward_id = reward_id,
-                    player_rank = player_rank
-                })
-            end
-        end
-    end
-
-    local total_tasks = #mail_tasks
-    moon.info(string.format("[RankLogic] SendRewardMailToOnlinePlayers: rank_type=%d, period=%d, total_tasks=%d",
-        rank_type, period, total_tasks))
-
-    if total_tasks == 0 then
-        return
-    end
-
-    -- 如果任务数量较少，直接同步发送
-    if total_tasks <= MAIL_SEND_THRESHOLD then
-        moon.info(string.format("[RankLogic] Small batch, sending synchronously: %d tasks", total_tasks))
-        for _, task in ipairs(mail_tasks) do
-            RankLogic.SendRewardMailToPlayer(task.uid, rank_type, period, task.reward_id, task.player_rank)
-        end
-        moon.info(string.format("[RankLogic] All %d reward mails sent synchronously for rank_type=%d, period=%d",
-            total_tasks, rank_type, period))
-        return
-    end
-
-    -- 任务数量较多，使用异步分批发送
-    moon.async(function()
-        local sent_count = 0
-        local batch_num = 0
-
-        for i = 1, total_tasks, MAIL_BATCH_SIZE do
-            batch_num = batch_num + 1
-            local batch_end = math.min(i + MAIL_BATCH_SIZE - 1, total_tasks)
-
-            moon.info(string.format("[RankLogic] Processing batch %d: tasks %d-%d of %d",
-                batch_num, i, batch_end, total_tasks))
-
-            -- 处理当前批次
-            for j = i, batch_end do
-                local task = mail_tasks[j]
-                local ok, err = pcall(function()
-                    RankLogic.SendRewardMailToPlayer(task.uid, rank_type, period, task.reward_id, task.player_rank)
-                end)
-                if not ok then
-                    moon.error(string.format("[RankLogic] Send mail failed for uid=%d, err=%s", task.uid, err))
-                end
-                sent_count = sent_count + 1
-            end
-
-            moon.info(string.format("[RankLogic] Batch %d completed: %d/%d tasks sent",
-                batch_num, sent_count, total_tasks))
-
-            -- 如果不是最后一批，等待一段时间再发送下一批
-            if batch_end < total_tasks then
-                moon.sleep(MAIL_BATCH_DELAY)
-            end
-        end
-
-        moon.info(string.format("[RankLogic] All %d reward mails sent for rank_type=%d, period=%d",
-            total_tasks, rank_type, period))
-    end)
-end
-
--- 给玩家发送奖励邮件（通过邮件管理器，支持离线玩家）
--- function RankLogic.SendMailToOnlinePlayer(uid, rank_type, period, reward_id, player_rank)
---     -- 获取奖励配置
---     local reward_pool_cfg = GameCfg.RankingListRewardPool[reward_id]
---     if not reward_pool_cfg then
---         moon.error(string.format("[RankLogic] SendMailToOnlinePlayer: reward_pool_cfg not found for reward_id=%d", reward_id))
---         return
---     end
-
---     -- 准备附件
---     local item_datas = {}
---     for item_id, item_cnt in pairs(reward_pool_cfg.reward) do
---         table.insert(item_datas, {
---             config_id = item_id,
---             item_count = item_cnt
---         })
---     end
-
---     -- 构建邮件内容
---     local mail_title = "排行榜奖励"
---     local mail_content = string.format("恭喜你在排行榜中获得第%d名，获得以下奖励：", player_rank)
-
---     -- 通过玩家服务发送邮件
---     clusterd.call(3001, "user", "User.SendRankRewardMail", {
---         uid = uid,
---         title = mail_title,
---         content = mail_content,
---         items = item_datas,
---         rank_type = rank_type,
---         period = period
---     })
--- end
-
--- 给玩家发送奖励邮件（由游戏层调用）
-function RankLogic.SendRewardMailToPlayer(uid, rank_type, period, reward_id, player_rank)
-    local reward_pool_cfg = GameCfg.RankingListRewardPool[reward_id]
-    if not reward_pool_cfg then
-        moon.error(string.format("[RankLogic] SendRewardMailToPlayer: reward_pool_cfg not found for reward_id=%d", reward_id))
-        return false
-    end
-
-    local items = {}
-    local reward_items = reward_pool_cfg.reward or {}
-    for config_id, item_count in pairs(reward_items) do
-        local item_id = tonumber(config_id)
-        if item_id and item_id > 0 then
-            if item_id >= ItemDefine.Coin.start and item_id <= ItemDefine.Coin.End then
-                local coin = ItemDef.newCoin()
-                coin.coin_id = item_id
-                coin.coin_count = item_count
-                items[item_id] = coin
-            else
-                local item_simple = ItemDef.newItemSimple()
-                item_simple.config_id = item_id
-                item_simple.item_count = item_count
-                items[item_id] = item_simple
-            end
-        else
-            moon.error(string.format("[RankLogic] SendRewardMailToPlayer: invalid config_id=%s", tostring(config_id)))
-        end
-    end
-
-    moon.info(string.format("[RankLogic] SendRewardMailToPlayer: uid=%d, rank=%d, items=%s",
-        uid, player_rank, json.encode(items)))
-
-    local mail_title = "排行榜奖励"
-    local mail_content = string.format("恭喜你在排行榜中获得第%d名，获得以下奖励：", player_rank)
-
-    local msg = {
-        uid = uid,
-        title = mail_title,
-        content = mail_content,
-        items = items,
-        rank_type = rank_type,
-        period = period
-    }
-
-    local res, err = clusterd.call(3999, "usermgr", "Usermgr.getAddrUserByUid", uid)
-    if not res then
-        moon.warn(string.format("[RankLogic] SendRewardMailToPlayer: getAddrUserByUid failed for uid=%d, err=%s", uid, tostring(err)))
-        return false
-    end
-
-    local node, addr_user = res.nid, res.addr_user
-    local current_node = math.tointeger(moon.env("NODE"))
-    local call_result
-    local ok, call_err = pcall(function()
-        if current_node == node then
-            call_result = moon.call("lua", addr_user, "User.SendRankRewardMail", msg)
-        else
-            call_result = clusterd.call(node, addr_user, "User.SendRankRewardMail", msg)
-        end
-    end)
-
-    if not ok or call_err then
-        moon.warn(string.format("[RankLogic] SendRewardMailToPlayer: immediate mail failed for uid=%d, player may be offline, err=%s", uid, tostring(call_err)))
-        return false
-    end
-
-    if not call_result then
-        moon.error(string.format("[RankLogic] SendRewardMailToPlayer: SendRankRewardMail failed for uid=%d, err=%s", uid, tostring(call_err)))
-        return false
-    end
-
-    moon.info(string.format("[RankLogic] SendRewardMailToPlayer: immediate mail sent to uid=%d, rank=%d, period=%d",
-        uid, player_rank, period))
-
-    RankLogic.RemovePlayerFromRewardData(rank_type, period, uid)
-    return ErrorCode.None
-end
+-- (邮件发奖链路已删除: 新三榜奖励为点领直入背包, 不走邮件)
 
 -- 根据排名获取奖励ID
 function RankLogic.GetRewardIdByRank(rank_reward_cfg, player_rank)
@@ -577,150 +319,16 @@ function RankLogic.GetRewardIdByRank(rank_reward_cfg, player_rank)
     return nil
 end
 
-function RankLogic.GetUnclaimedRewards(uid)
-    local unclaimed_rewards = {}
-
-    for rank_type, periods in pairs(rank_reward_data) do
-        for period, reward_data in pairs(periods) do
-            for _, sub_rank in pairs(reward_data.sr) do
-                if sub_rank.ps[uid] then
-                    local player_data = sub_rank.ps[uid]
-                    local player_rank = player_data.rank
-
-                    local rank_reward_cfg = GameCfg.RankingListReward[rank_type]
-                    if rank_reward_cfg then
-                        local reward_id = RankLogic.GetRewardIdByRank(rank_reward_cfg, player_rank)
-                        if reward_id then
-                            if not unclaimed_rewards[period] then
-                                unclaimed_rewards[period] = {}
-                            end
-                            unclaimed_rewards[period][rank_type] = {
-                                reward_id = reward_id,
-                                rank = player_rank
-                            }
-                        end
-                    end
-                end
-            end
+-- 全局奖励档位匹配(新结构: RankingListReward 为全局区间模板 id=1~4, 所有榜共用同一套奖励,
+-- 不再按榜实例配行; 注意各行区间不要重叠, 重叠时匹配顺序不定)
+function RankLogic.GetBoardRewardIdByRank(player_rank)
+    for _, cfg in pairs(GameCfg.RankingListReward) do
+        local rid = RankLogic.GetRewardIdByRank(cfg, player_rank)
+        if rid then
+            return rid
         end
     end
-
-    moon.info(string.format("[RankLogic] GetUnclaimedRewards: id=%d, unclaimed_rewards=%s", uid, json.encode(unclaimed_rewards)))
-    return ErrorCode.None, unclaimed_rewards
-end
-
-function RankLogic.CheckAndSendUnclaimedRewards(uid)
-    for rank_type, periods in pairs(rank_reward_data) do
-        for period, reward_data in pairs(periods) do
-            for _, sub_rank in pairs(reward_data.sr) do
-                if sub_rank.ps[uid] then
-                    local player_data = sub_rank.ps[uid]
-                    local player_rank = player_data.rank
-
-                    local rank_reward_cfg = GameCfg.RankingListReward[rank_type]
-                    if rank_reward_cfg then
-                        local reward_id = RankLogic.GetRewardIdByRank(rank_reward_cfg, player_rank)
-                        if reward_id then
-                            RankLogic.SendRewardMailToPlayer(uid, rank_type, period, reward_id, player_rank)
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    return ErrorCode.None
-end
-
--- 从奖励数据中移除玩家/宗门
-function RankLogic.RemovePlayerFromRewardData(rank_type, period, id)
-    if not rank_reward_data[rank_type] or not rank_reward_data[rank_type][period] then
-        return
-    end
-
-    local reward_data = rank_reward_data[rank_type][period]
-    for rid, sub_rank in pairs(reward_data.sr) do
-        if sub_rank.ps[id] then
-            sub_rank.ps[id] = nil
-
-            if table.empty(sub_rank.ps) then
-                reward_data.sr[rid] = nil
-            end
-
-            if table.empty(reward_data.sr) then
-                rank_reward_data[rank_type][period] = nil
-            end
-
-            if table.empty(rank_reward_data[rank_type]) then
-                rank_reward_data[rank_type] = nil
-            end
-
-            RankLogic.SaveRankRewardToRedis(rank_type)
-            moon.info(string.format("[RankLogic] Removed entry %d from reward data: rank_type=%d, period=%d", id, rank_type, period))
-            break
-        end
-    end
-end
-
--- 合并流动榜
-function RankLogic.MergeFlowRanks(rank_type)
-    if not RankLogic.IsFlowRank(rank_type) or not rank_data[rank_type] then
-        return ErrorCode.ConfigError
-    end
-
-    local ranks = rank_data[rank_type]
-    local merged_ranks = {}
-
-    -- 按照rid排序
-    table.sort(ranks, function(a, b)
-        return a.rid < b.rid
-    end)
-
-    -- 合并相邻的两个榜单
-    for i = 1, #ranks, 2 do
-        local rank1 = ranks[i]
-        local rank2 = ranks[i + 1]
-
-        local merged_rank = RankDef.newRankData()
-        merged_rank.rid = math.floor((i + 1) / 2)
-        merged_rank.rt = rank_type
-        merged_rank.flow = true
-        merged_rank.ct = moon.time()
-        merged_rank.lrt = moon.time()
-
-        -- 合并第一个榜单的玩家数据
-        if rank1 then
-            for uid, data in pairs(rank1.ps) do
-                merged_rank.ps[uid] = data
-            end
-        end
-
-        -- 合并第二个榜单的玩家数据
-        if rank2 then
-            for uid, data in pairs(rank2.ps) do
-                merged_rank.ps[uid] = data
-            end
-        end
-
-        -- 重新排序
-        RankLogic.SortRank(merged_rank)
-        table.insert(merged_ranks, merged_rank)
-    end
-
-    -- 替换为合并后的榜单
-    rank_data[rank_type] = merged_ranks
-
-    return ErrorCode.None
-end
-
-local function isGuildRank(rank_type)
-    local guild_ranks = {
-        [RankDef.RankType.GuildActive] = true,
-        [RankDef.RankType.GuildMoney] = true,
-        [RankDef.RankType.GuildScore_Weekly] = true,
-        [RankDef.RankType.GuildScore_Season] = true,
-    }
-    return guild_ranks[rank_type] or false
+    return nil
 end
 
 local function convertPlayersToArray(rank, rank_type)
@@ -739,8 +347,6 @@ local function convertPlayersToArray(rank, rank_type)
         last_refresh_time = rank.lrt or rank.last_refresh_time or 0,
     }
 
-    local need_guild_leader = isGuildRank(rank_type or rank.rt)
-
     for id, player_data in pairs(rank.ps) do
         local new_player_data = {
             id = player_data.id or player_data.uid or id or 0,
@@ -758,14 +364,6 @@ local function convertPlayersToArray(rank, rank_type)
             ghost_id = player_data.gho or 0,
             ghost_skin = player_data.ghs or 0,
         }
-
-        if need_guild_leader then
-            new_player_data.guild_leader = player_data.gl or ""
-            new_player_data.gl_char_id = player_data.gl_chr or 0
-            new_player_data.gl_char_skins = type(player_data.gl_chs) == "table" and player_data.gl_chs or (player_data.gl_chs and {player_data.gl_chs} or {})
-            new_player_data.gl_ghost_id = player_data.gl_gho or 0
-            new_player_data.gl_ghost_skin = player_data.gl_ghs or 0
-        end
 
         if player_data.ed then
             for k, v in pairs(player_data.ed) do
@@ -786,63 +384,39 @@ local function convertPlayersToArray(rank, rank_type)
     return new_rank
 end
 
--- 获取排行榜数据
-function RankLogic.GetRankData(rank_type, rank_id)
-    -- 处理枚举值可能是字符串的情况
-    if type(rank_type) == "string" then
-        local rank_type_name = string.gsub(rank_type, "RankType_", "")
-        rank_type = RankDef.RankType[rank_type_name]
-    end
-
-    if not rank_type or not rank_data[rank_type] then
-        return nil
-    end
-
-    if rank_id then
-        for _, rank in ipairs(rank_data[rank_type]) do
-            if rank.rid == rank_id then
-                return convertPlayersToArray(rank)
-            end
-        end
-    else
-        local result = {}
-        for _, rank in ipairs(rank_data[rank_type]) do
-            table.insert(result, convertPlayersToArray(rank))
-        end
-        return result
-    end
-
-    return nil
-end
+-- (旧接口 GetRankData(枚举字符串兼容查询) 已删除, 无调用方)
 
 -- 获取所有可用的排行榜类型和子榜信息
+-- 新三榜: 只列举 RankBoard 配置表注册的榜实例(旧14榜已屏蔽不下发)
 function RankLogic.GetAllRankTypes()
-    moon.info("[RankLogic] GetAllRankTypes called")
-
     local result = {}
-    for name, rank_type in pairs(RankDef.RankType) do
-        local rank_info = {
-            rank_type = rank_type,
-            name = name,
-            is_flow = RankLogic.IsFlowRank(rank_type),
-            sub_ranks = {}
-        }
-
-        -- 如果是流动榜，获取所有子榜ID
-        if rank_data[rank_type] then
-            for _, rank in ipairs(rank_data[rank_type]) do
-                table.insert(rank_info.sub_ranks, {
-                    rank_id = rank.rid,
-                    create_time = rank.ct,
-                    last_refresh_time = rank.lrt
-                })
+    local boards = GameCfg.RankBoard
+    if boards then
+        for rank_type, cfg in pairs(boards) do
+            local rank_info = {
+                rank_type = rank_type,
+                name = "",
+                is_flow = true,
+                category = cfg.category,
+                sub_id = cfg.sub_id,
+                window = cfg.window,
+                sub_ranks = {}
+            }
+            if rank_data[rank_type] then
+                for _, rank in ipairs(rank_data[rank_type]) do
+                    table.insert(rank_info.sub_ranks, {
+                        rank_id = rank.rid,
+                        create_time = rank.ct,
+                        last_refresh_time = rank.lrt
+                    })
+                end
             end
+            table.insert(result, rank_info)
         end
-
-        table.insert(result, rank_info)
     end
-
-    moon.info(string.format("[RankLogic] GetAllRankTypes: returned %d rank types", #result))
+    table.sort(result, function(a, b)
+        return a.rank_type < b.rank_type
+    end)
     return ErrorCode.None, result
 end
 
@@ -866,7 +440,6 @@ function RankLogic.GetRankInfo(rank_type, rank_id, query_id)
     if query_id and query_id > 0 then
         moon.info(string.format("[RankLogic] GetRankInfo: entering info branch for query_id=%d", query_id))
         local results = {}
-        local need_guild_leader = isGuildRank(rank_type)
 
         for _, rank in ipairs(rank_data[rank_type]) do
             moon.info(string.format("[RankLogic] GetRankInfo: checking rank.rid=%d, rank_id=%s, rank.ps[query_id]=%s", 
@@ -905,14 +478,6 @@ function RankLogic.GetRankInfo(rank_type, rank_id, query_id)
                         ghost_id = player_data.gho or 0,
                         ghost_skin = player_data.ghs or 0,
                     }
-
-                    if need_guild_leader then
-                        player_result.guild_leader = player_data.gl or ""
-                        player_result.gl_char_id = player_data.gl_chr or 0
-                        player_result.gl_char_skins = type(player_data.gl_chs) == "table" and player_data.gl_chs or (player_data.gl_chs and {player_data.gl_chs} or {})
-                        player_result.gl_ghost_id = player_data.gl_gho or 0
-                        player_result.gl_ghost_skin = player_data.gl_ghs or 0
-                    end
 
                     table.insert(results, player_result)
                 end
@@ -995,12 +560,13 @@ end
 
 -- 保存所有排行榜数据到Redis
 function RankLogic.SaveAllRankDataToRedis()
-    for _, rank_type in pairs(RankDef.RankType) do
+    -- 按内存中实际存在的榜遍历(含新三榜动态ID 101+, RankType枚举不含它们)
+    for rank_type in pairs(rank_data) do
         RankLogic.SaveRankDataToRedis(rank_type)
     end
 end
 
--- 从Redis加载排行榜数据
+-- 从Redis加载排行榜数据(仅新三榜; 旧14榜已下线, 残留键启动时清理)
 function RankLogic.LoadRankDataFromRedis()
     local addr_db = moon.queryservice("db_server")
     if not addr_db or addr_db == 0 then
@@ -1011,7 +577,19 @@ function RankLogic.LoadRankDataFromRedis()
     local loaded_rank_types = {}
     local loaded_count = 0
 
-    for _, rank_type in pairs(RankDef.RankType) do
+    -- 清理旧榜残留键(rank:1~14 / rank_reward:1~14), 一次性; 旧榜已下线
+    for legacy_type = 1, 14 do
+        pcall(redis_call, addr_db, "del", string.format("rank:%d", legacy_type))
+        pcall(redis_call, addr_db, "del", string.format("rank_reward:%d", legacy_type))
+    end
+
+    -- 仅加载新三榜(RankBoard配置注册)
+    local boards = GameCfg.RankBoard
+    if not boards then
+        return ErrorCode.None, loaded_rank_types
+    end
+
+    for rank_type, _ in pairs(boards) do
         local rank_key = string.format("rank:%d", rank_type)
         local res, rank_json = pcall(Database.loadserverdata_with_key, addr_db, rank_key)
         if res and rank_json and rank_json ~= nil and rank_json ~= "" then
@@ -1059,125 +637,30 @@ function RankLogic.LoadRankDataFromRedis()
     return ErrorCode.None, loaded_rank_types
 end
 
--- 玩家领取排行榜奖励(两段式第一段: 预取)
--- 只返回奖励内容并打上领取标记, 不移除快照;
--- 由游戏侧入包成功后调用 ConfirmRankReward 确认移除, 失败则调用 CancelRankRewardClaim 回滚
-function RankLogic.GetRankReward(rank_type, uid)
-    if not rank_reward_data[rank_type] then
-        return ErrorCode.RankRewardNotExist
-    end
-
-    -- 上一次领取请求仍在进行中(且未超时), 拒绝重复领取
-    local claim_key = rank_type .. "_" .. uid
-    local pending_time = claiming_rewards[claim_key]
-    if pending_time and (moon.time() - pending_time) < CLAIM_PENDING_TIMEOUT then
-        return ErrorCode.RankRewardClaiming
-    end
-
-    -- rank_reward_data[rank_type] = { [period] = reward_data } (多期), reward_data.sr = 子榜列表
-    -- 遍历各期查找玩家所在的子榜
-    local sub_rank_reward = nil
-    local player_data = nil
-    local reward_data = nil
-    local reward_period = nil
-    for period, period_reward_data in pairs(rank_reward_data[rank_type]) do
-        if period_reward_data and period_reward_data.sr then
-            for _, sub_rank in pairs(period_reward_data.sr) do
-                if sub_rank.ps[uid] then
-                    reward_data = period_reward_data
-                    reward_period = period
-                    sub_rank_reward = sub_rank
-                    player_data = sub_rank.ps[uid]
-                    break
-                end
-            end
-        end
-        if sub_rank_reward then
-            break
-        end
-    end
-
-    if not sub_rank_reward or not player_data then
-        return ErrorCode.RankRewardNotExist
-    end
-
-    -- 获取该排行榜的奖励配置
-    local rank_reward_cfg = GameCfg.RankingListReward[rank_type]
-    if not rank_reward_cfg then
-        return ErrorCode.RankRewardNotExist
-    end
-
-    -- 根据玩家排名查找对应的奖励ID
-    local player_rank = player_data.rank
-    local reward_id = nil
-    local ranking_range = rank_reward_cfg.ranking_range
-    local reward_ids = rank_reward_cfg.reward_id
-
-    -- 排序区间的最小排名
-    local sorted_min_ranks = {}
-    for min_rank, _ in pairs(ranking_range) do
-        table.insert(sorted_min_ranks, min_rank)
-    end
-    table.sort(sorted_min_ranks)
-
-    -- 遍历查找玩家排名所在的区间
-    for i, min_rank in ipairs(sorted_min_ranks) do
-        local max_rank = ranking_range[min_rank]
-        if player_rank >= min_rank and player_rank <= max_rank then
-            reward_id = reward_ids[i]
-            break
-        end
-    end
-
-    if not reward_id then
-        return ErrorCode.RankRewardNotExist
-    end
-
-    -- 根据奖励ID从奖励池中获取具体奖励
-    local reward_pool_cfg = GameCfg.RankingListRewardPool[reward_id]
-    if not reward_pool_cfg then
-        return ErrorCode.RankRewardNotExist
-    end
-
-    -- 只打领取标记, 不移除快照; 待游戏侧入包成功后由 ConfirmRankReward 确认移除
-    claiming_rewards[claim_key] = moon.time()
-
-    return ErrorCode.None, reward_pool_cfg.reward
-end
-
--- 确认领取(两段式第二段): 游戏侧奖励入包成功后调用, 从奖励快照中移除玩家并落库
-function RankLogic.ConfirmRankReward(rank_type, uid)
-    claiming_rewards[rank_type .. "_" .. uid] = nil
-
-    if not rank_reward_data[rank_type] then
-        return ErrorCode.None
-    end
-
-    for period, period_reward_data in pairs(rank_reward_data[rank_type]) do
-        if period_reward_data and period_reward_data.sr then
-            for _, sub_rank in pairs(period_reward_data.sr) do
-                if sub_rank.ps[uid] then
-                    RankLogic.RemovePlayerFromRewardData(rank_type, period, uid)
-                    return ErrorCode.None
-                end
-            end
-        end
-    end
-
-    -- 快照中已无该玩家(可能已被确认过), 幂等返回成功
-    return ErrorCode.None
-end
-
--- 取消领取(两段式回滚): 游戏侧奖励入包失败时调用, 清除领取标记以便玩家重试
-function RankLogic.CancelRankRewardClaim(rank_type, uid)
-    claiming_rewards[rank_type .. "_" .. uid] = nil
-    return ErrorCode.None
-end
+-- (旧单榜领奖 GetRankReward/ConfirmRankReward/CancelRankRewardClaim 已删除:
+--  新三榜按一级标签聚合领奖, 见 GetBoardReward/ConfirmBoardReward/CancelBoardRewardClaim)
 
 -- 将排行榜更新请求放入队列（不立即处理）
 -- force: 是否强制更新（true=强制更新，即使分数降低；false=初始化时使用，不覆盖已有分数）
 function RankLogic.EnqueueRankUpdate(rank_type, uid, player_data, force)
+    if not is_board_enabled(rank_type) then
+        return ErrorCode.None -- 未注册榜(旧14榜)静默屏蔽, 上游调用点无需改动
+    end
     local key = rank_type .. "_" .. uid
+    -- 同玩家10秒窗口内多次上报先就地合并, 避免队列按key去重丢数据:
+    -- SUM(摸金): 增量相加; MAX(竞速/古董): 保留更高值(否则低值后到会覆盖高值, 破坏取最高语义)
+    local board_cfg = get_board_cfg(rank_type)
+    local pending = rank_update_queue[key]
+    if pending and board_cfg then
+        if board_cfg.merge == RankDef.MergeType.SUM then
+            player_data = table.copy(player_data)
+            player_data.value = (player_data.value or 0) + (pending.player_data.value or 0)
+        elseif board_cfg.merge == RankDef.MergeType.MAX then
+            if (pending.player_data.value or 0) > (player_data.value or 0) then
+                player_data = pending.player_data
+            end
+        end
+    end
     rank_update_queue[key] = {
         rank_type = rank_type,
         uid = uid,
@@ -1231,45 +714,27 @@ function RankLogic.UpdatePlayerRankInternal(rank_type, uid, player_data, force)
 
     local existing_data = rank.ps[rank_key]
 
-    -- 主线榜(RankType_Mainline=3)和封塔榜(RankType_Fengta=4)：只有分数上涨才更新排名
-    local is_mainline_or_fengta = rank_type == RankDef.RankType.Mainline or rank_type == RankDef.RankType.Fengta
-    if is_mainline_or_fengta and existing_data then
-        local new_value = player_data.value or 0
-        local old_value = existing_data.value or 0
-        if new_value <= old_value then
-            -- 分数没有上涨，只更新出战信息，不更新排名
-            --moon.info(string.format("[RankLogic] Mainline/Fengta rank: player %d value %d <= %d, update battle info only", 
-                --uid, new_value, old_value))
+    -- 新三榜: 按配置的合并方式处理
+    -- MAX(竞速/古董): 取最高, 不涨只更新出战信息(同款多件古董取最高一件天然成立)
+    -- SUM(摸金): 上报值为增量, 榜值=旧值+增量
+    local board_cfg = get_board_cfg(rank_type)
+    if board_cfg then
+        if board_cfg.merge == RankDef.MergeType.SUM then
+            if existing_data then
+                player_data = table.copy(player_data)
+                player_data.value = (existing_data.value or 0) + (player_data.value or 0)
+            end
+        elseif existing_data and (player_data.value or 0) <= (existing_data.value or 0) then
             if player_data.chr then existing_data.chr = player_data.chr end
             if player_data.chs then existing_data.chs = player_data.chs end
             if player_data.gho then existing_data.gho = player_data.gho end
             if player_data.ghs then existing_data.ghs = player_data.ghs end
             return ErrorCode.None
         end
-    end
-
-    -- 根据force参数决定更新策略
-    if existing_data then
-        --moon.info(string.format("[RankLogic] Player %d already exists in rank %d, force=%s, existing value=%d",
-            --uid, rank_type, tostring(force), existing_data.value or 0))
-        if force then
-            -- force=true: 强制更新，即使分数降低也更新排名
-            -- 始终更新
-            --moon.info(string.format("[RankLogic] Force update for player %d in rank %d", uid, rank_type))
-        else
-            -- force=false (初始化模式):
-            -- 如果已有数据，只更新出战信息（chr, chs, gho, ghs），不覆盖分数相关字段
-            -- 保留：value, ed, rank, ut 等分数相关字段
-            -- moon.info(string.format("[RankLogic] Init mode: updating battle info only for player %d in rank %d", uid, rank_type))
-            if player_data.chr then existing_data.chr = player_data.chr end
-            if player_data.chs then existing_data.chs = player_data.chs end
-            if player_data.gho then existing_data.gho = player_data.gho end
-            if player_data.ghs then existing_data.ghs = player_data.ghs end
-            return ErrorCode.None
-        end
-    else
-        moon.info(string.format("[RankLogic] Player %d not found in rank %d, adding new data with value=%d",
-            uid, rank_type, player_data.value or 0))
+        rank.ps[rank_key] = player_data
+        player_data.ut = moon.time()
+        RankLogic.SortRank(rank)
+        return ErrorCode.None
     end
 
     rank.ps[rank_key] = player_data
@@ -1411,6 +876,182 @@ end
 -- 立即更新玩家信息（用于特殊场景）
 function RankLogic.UpdatePlayerInfoImmediately(uid, info)
     return RankLogic.UpdatePlayerInfoInternal(uid, info)
+end
+
+-- 清空指定榜实例(内存+Redis, 榜/奖励快照全部重置) 测试环境用
+function RankLogic.ClearBoard(rank_type)
+    if not get_board_cfg(rank_type) then
+        return ErrorCode.ConfigError
+    end
+    -- 重建空榜(置nil会导致后续上报AssignPlayerToFlowRank拿不到榜)
+    local fresh = RankDef.newRankData()
+    fresh.rid = 1
+    fresh.rt = rank_type
+    fresh.flow = true
+    fresh.ct = moon.time()
+    fresh.lrt = moon.time()
+    rank_data[rank_type] = { fresh }
+    rank_reward_data[rank_type] = nil
+    claiming_rewards = {} -- 顺带清领取标记
+    local addr_db = moon.queryservice("db_server")
+    if addr_db and addr_db ~= 0 then
+        pcall(redis_call, addr_db, "del", string.format("rank:%d", rank_type))
+        pcall(redis_call, addr_db, "del", string.format("rank_reward:%d", rank_type))
+    end
+    moon.info(string.format("[RankLogic] ClearBoard: rank_type=%d", rank_type))
+    return ErrorCode.None
+end
+
+--=============================== 新三榜: 聚合领奖与历史查询 ===============================
+
+-- 按一级标签聚合领奖(两段式第一段: 预取)
+-- 遍历该标签下全部子榜的全部期快照, 取该玩家最优名次(名次值最小), 按该名次匹配奖励档位;
+-- 同标签下多子榜都上榜只发最高档一次, 三个标签各领一次互不占用
+-- 返回: code, reward({[item_id]=count}), best_info{rank, rank_type, period}
+function RankLogic.GetBoardReward(category, uid)
+    if not category or category <= 0 then
+        return ErrorCode.ParamInvalid
+    end
+
+    -- 上一次领取请求仍在进行中(且未超时), 拒绝重复领取
+    local claim_key = "cat_" .. category .. "_" .. uid
+    local pending_time = claiming_rewards[claim_key]
+    if pending_time and (moon.time() - pending_time) < CLAIM_PENDING_TIMEOUT then
+        return ErrorCode.RankRewardClaiming
+    end
+
+    -- 找最优名次
+    local best = nil -- {rank_type, period, sub_rank_id, player_data}
+    local boards = GameCfg.RankBoard
+    if boards then
+        for rank_type, cfg in pairs(boards) do
+            if cfg.category == category then
+                for period, rd in pairs(rank_reward_data[rank_type] or {}) do
+                    if rd and rd.sr then
+                        for _, sub_rank in pairs(rd.sr) do
+                            local pd = sub_rank.ps[uid]
+                            if pd and pd.rank and pd.rank > 0 then
+                                if not best or pd.rank < best.player_data.rank then
+                                    best = {
+                                        rank_type = rank_type,
+                                        period = period,
+                                        sub_rank_id = sub_rank.rid or 0,
+                                        player_data = pd,
+                                    }
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    if not best then
+        return ErrorCode.RankRewardNotExist -- 未上榜或已领取(快照已移除)
+    end
+
+    -- 按最优名次匹配奖励档位(全局统一区间模板, 所有榜共用同一套奖励)
+    local reward_id = RankLogic.GetBoardRewardIdByRank(best.player_data.rank)
+    if not reward_id then
+        return ErrorCode.RankRewardNotExist
+    end
+    local reward_pool_cfg = GameCfg.RankingListRewardPool[reward_id]
+    if not reward_pool_cfg then
+        return ErrorCode.RankRewardNotExist
+    end
+
+    -- 只打领取标记, 不移除快照; 待游戏侧入包成功后由 ConfirmBoardReward 确认移除
+    claiming_rewards[claim_key] = moon.time()
+
+    local best_info = {
+        rank = best.player_data.rank,
+        rank_type = best.rank_type,
+        period = best.period,
+        sub_rank_id = best.sub_rank_id,
+    }
+    return ErrorCode.None, reward_pool_cfg.reward, best_info
+end
+
+-- 确认领取(两段式第二段): 从该标签下全部子榜全部期快照移除玩家并落库
+function RankLogic.ConfirmBoardReward(category, uid)
+    claiming_rewards["cat_" .. category .. "_" .. uid] = nil
+
+    local boards = GameCfg.RankBoard
+    if boards then
+        for rank_type, cfg in pairs(boards) do
+            if cfg.category == category and rank_reward_data[rank_type] then
+                local changed = false
+                for _, rd in pairs(rank_reward_data[rank_type]) do
+                    if rd and rd.sr then
+                        for _, sub_rank in pairs(rd.sr) do
+                            if sub_rank.ps[uid] then
+                                sub_rank.ps[uid] = nil
+                                changed = true
+                            end
+                        end
+                    end
+                end
+                if changed then
+                    RankLogic.SaveRankRewardToRedis(rank_type)
+                end
+            end
+        end
+    end
+    return ErrorCode.None
+end
+
+-- 取消领取(两段式回滚): 清除领取标记允许重试
+function RankLogic.CancelBoardRewardClaim(category, uid)
+    claiming_rewards["cat_" .. category .. "_" .. uid] = nil
+    return ErrorCode.None
+end
+
+-- 查询上期锁榜排名(领奖弹窗展示"上周排名"): 返回该标签下各子榜最新一期快照中玩家的名次
+-- 注: 领取后快照已移除, 该查询返回空列表(客户端按钮置灰态)
+function RankLogic.GetBoardHistory(category, uid)
+    if not category or category <= 0 then
+        return ErrorCode.ParamInvalid
+    end
+
+    local result = {}
+    local boards = GameCfg.RankBoard
+    if boards then
+        for rank_type, cfg in pairs(boards) do
+            if cfg.category == category then
+                local periods = rank_reward_data[rank_type]
+                if periods then
+                    -- 取最新一期
+                    local latest_period, latest = nil, nil
+                    for period, rd in pairs(periods) do
+                        if not latest_period or period > latest_period then
+                            latest_period, latest = period, rd
+                        end
+                    end
+                    if latest and latest.sr then
+                        for _, sub_rank in pairs(latest.sr) do
+                            local pd = sub_rank.ps[uid]
+                            if pd then
+                                table.insert(result, {
+                                    rank_type = rank_type,
+                                    sub_id = cfg.sub_id,
+                                    window = cfg.window,
+                                    sub_rank_id = sub_rank.rid or 0,
+                                    rank = pd.rank or 0,
+                                    value = pd.value or 0,
+                                    period = latest_period or 0,
+                                })
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    table.sort(result, function(a, b)
+        return a.rank_type < b.rank_type
+    end)
+    return ErrorCode.None, result
 end
 
 return RankLogic

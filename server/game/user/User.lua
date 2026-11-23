@@ -563,8 +563,7 @@ function User.StartDailyCheck()
 end
 
 function User.CheckUnclaimedRankRewards()
-    moon.info(string.format("[User] CheckUnclaimedRankRewards called for uid=%d", context.uid))
-    clusterd.call(3004, "rank", "RankMgr.CheckAndSendUnclaimedRewards", {uid = context.uid})
+    -- 旧榜未领奖补发(走邮件)已删除: 旧14榜下线, 新三榜为点领直入背包
 end
 
 -- 给在线玩家发送排行榜奖励邮件（由排行榜服务调用）
@@ -885,8 +884,7 @@ function User.AddAccountExp(add_exp)
     local update_user_attr = {}
     update_user_attr[ProtoEnum.UserAttrType.account_level] = now_level
     update_user_attr[ProtoEnum.UserAttrType.account_exp] = now_exp
-    -- 角色榜更新
-    scripts.Rank.UpdateRank_Player(now_level)
+    -- 玩家榜更新已删除(旧14榜下线)
     User.SetUserAttr(update_user_attr, true)
 
     scripts.Room.SyncAccountExp(now_exp)

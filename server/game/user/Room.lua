@@ -1593,12 +1593,15 @@ function Room.GameSettle(settle_info)
         local now_time = moon.time()
         local clear_time = now_time - settle_info.start_game_ts
         if clear_time > 0 then
-            if settle_info.chapter_id >= MIN_MAINLINE_CHAPTERID and settle_info.chapter_id <= MAX_MAINLINE_CHAPTERID then
-                -- 主线榜更新
-                scripts.Rank.UpdateRank_Mainline(settle_info.difficulty, settle_info.chapter_id, clear_time)
-            elseif settle_info.chapter_id >= MIN_FENGTA_CHAPTERID and settle_info.chapter_id <= MAX_FENGTA_CHAPTERID then
-                -- 封塔榜更新
-                scripts.Rank.UpdateRank_Fengta(settle_info.chapter_id, settle_info.difficulty, clear_time)
+            -- (主线榜/封塔榜旧榜上报已删除: 旧14榜下线)
+            -- 鬼王竞速榜(新): 地狱难度(5)+带词条通关才计入, 服务端权威口径
+            -- 鬼王ID来自 DS 结算的 ghost_king_kills; 词条来自 mode_tags(DS带回开局实际生效的词条, 未开词条为空)
+            if settle_info.chapter_id >= 2001 and settle_info.chapter_id <= 3000
+                and settle_info.difficulty == 5
+                and settle_info.ghost_king_kills and table.size(settle_info.ghost_king_kills) > 0
+                and settle_info.mode_tags and table.size(settle_info.mode_tags) > 0 then
+                scripts.Rank.OnGhostKingSettle(settle_info.chapter_id, clear_time,
+                    settle_info.ghost_king_kills, settle_info.mode_tags)
             end
         end
     end
@@ -1618,6 +1621,13 @@ function Room.GameSettle(settle_info)
         -- 单局从X章节Y难度带出Z价值战利品(覆盖型,取单局值)
         add_condition(MissionDef.EConditionIds.SINGLE_BOOTY_VALUE_CNT,
             { settle_info.chapter_id, settle_info.difficulty }, settle_info.booty_value)
+    end
+
+    -- 摸金榜(新): 成功带出(通关或撤离成功)的战利品估值累加, 死亡/撤退失败不计
+    if settle_info.booty_value and settle_info.booty_value > 0
+        and ((settle_info.is_complete and settle_info.is_complete == 1)
+            or (settle_info.is_retreat and settle_info.is_retreat == 1)) then
+        scripts.Rank.OnBootyExtracted(settle_info.booty_value)
     end
 
     -- 对局完成次数

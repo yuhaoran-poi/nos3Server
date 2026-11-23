@@ -120,8 +120,7 @@ function Bill.SaveBillsNow()
         return false
     end
 
-    --发电榜更新
-    scripts.Rank.UpdateRank_Fadian(bills.week_bill_amount, bills.month_bill_amount, bills.total_bill_amount)
+    -- 发电榜更新已删除(旧14榜下线)
     local success = Database.savebillinfo(context.addr_db_user, context.uid, bills)
     return success
 end

@@ -76,7 +76,82 @@
 ---@field public code integer
 ---@field public error string
 ---@field public uid integer
----@field public applied integer @实际模拟次数
+---@field public applied integer
+
+
+---@class PBChosenTreasureChestView
+---@field public box_id integer @宝匣ID
+---@field public state integer @0=待上线 1=在售 2=已下线
+---@field public start_time integer @开售时间戳(期号锚点, 返场后变化触发进度重置)
+---@field public end_time integer @下线时间戳
+---@field public ticket_id integer @令货币ID
+---@field public gift_lv integer @免费领令所需账号等级
+---@field public gift_claimed integer @1=免费令已领(每箱全期一次, 不随返场重置)
+---@field public step_prices integer[] @八档价格(下标1-8, 令)
+---@field public slot_items integer[] @九格物件ID(下标1-9)
+---@field public slot_weights integer[] @九格初始权重(万分位, 合计10000)
+---@field public drawn_slots integer[] @已抽出格位列表
+---@field public cur_step integer @下一次开启的档位(1-8), 9=本期已开满(终态)
+
+
+---@class PBChosenTreasureChestInfo
+---@field public uid integer
+---@field public chests PBChosenTreasureChestView[] @按box_id升序
+
+
+---@class PBGetChosenTreasureChestInfoReqCmd
+---@field public uid integer
+
+
+---@class PBGetChosenTreasureChestInfoRspCmd
+---@field public code integer @服务器验证返回,0成功,其他失败
+---@field public error string @错误信息
+---@field public uid integer
+---@field public info PBChosenTreasureChestInfo
+
+
+---@class PBOpenChosenTreasureChestReqCmd
+---@field public uid integer
+---@field public box_id integer
+
+
+---@class PBOpenChosenTreasureChestRspCmd
+---@field public code integer
+---@field public error string
+---@field public uid integer
+---@field public box_id integer
+---@field public step integer @本次开启的档位
+---@field public hit_slots integer[] @本次抽出/收池的格位
+---@field public hit_items integer[] @对应物件ID(与hit_slots对齐)
+---@field public cur_step integer @开启后的下一档位(9=已开满)
+
+
+---@class PBBuyChosenTreasureChestTicketReqCmd
+---@field public uid integer
+---@field public box_id integer
+---@field public num integer @购买数量(>=1)
+
+
+---@class PBBuyChosenTreasureChestTicketRspCmd
+---@field public code integer
+---@field public error string
+---@field public uid integer
+---@field public box_id integer
+---@field public num integer @实际购买数量
+---@field public coin_id integer @令货币ID
+
+
+---@class PBGetChosenTreasureChestGiftReqCmd
+---@field public uid integer
+---@field public box_id integer
+
+
+---@class PBGetChosenTreasureChestGiftRspCmd
+---@field public code integer
+---@field public error string
+---@field public uid integer
+---@field public box_id integer
+---@field public ticket_num integer @发放的令数量(=第1档价)
 
 
 ---@class PBAuctionData
@@ -758,6 +833,8 @@
 ---@field public out_uniq_items PBItemData[] @被放入战利品的局外带入的唯一道具
 ---@field public game_collect_items table<integer, integer> @局内收集的道具(局内道具id -> 数量, 局内id局外无配置, 仅用于任务埋点87)
 ---@field public game_consume_items table<integer, integer> @局内消耗的道具(局内道具id -> 数量, 局内id局外无配置, 仅用于任务埋点88)
+---@field public ghost_king_kills table<integer, integer> @局内击杀鬼王统计(鬼王id -> 击杀次数, 竞速榜按鬼王分榜用)
+---@field public mode_tags integer[] @本局生效的词条ID列表(开局时实际生效的词条, 未开词条为空; 竞速榜难度分=ΣAllTag.tagscore)
 
 
 ---@class PBEnterCityReqCmd
@@ -2890,10 +2967,13 @@
 
 
 ---@class RankTypeInfo
----@field public rank_type RankType @排行榜类型
+---@field public rank_type integer @榜实例ID(RankBoard配置, 101+)
 ---@field public name string @排行榜名称
 ---@field public is_flow boolean @是否为流动榜
 ---@field public sub_ranks SubRankInfo[] @子榜列表
+---@field public category integer @一级标签 1=鬼王竞速 2=摸金 3=古董(新三榜)
+---@field public sub_id integer @二级标签: 鬼王章节ID/红古董ID, 摸金=0
+---@field public window integer @统计窗口 1=周榜 2=总榜(赛季)
 
 
 ---@class PBRankGetAllTypesReqCmd
@@ -2929,102 +3009,9 @@
 ---@field public rank_data RankData[] @排行榜数据
 
 
----@class PBRankUpdateDuanweiReqCmd
----@field public uid integer @玩家ID
----@field public duanwei integer @段位等级
-
-
----@class PBRankUpdateDuanweiRspCmd
----@field public code integer @错误码
----@field public error string @错误信息
----@field public uid integer @玩家ID
----@field public success boolean @是否成功
-
-
----@class PBRankUpdateMainlineReqCmd
----@field public uid integer @玩家ID
----@field public character_id integer @章节id
----@field public difficulty integer @难度
----@field public clear_time integer @通关时间
-
-
----@class PBRankUpdateMainlineRspCmd
----@field public code integer @错误码
----@field public error string @错误信息
----@field public uid integer @玩家ID
----@field public success boolean @是否成功
-
-
----@class PBRankUpdateFengtaReqCmd
----@field public uid integer @玩家ID
----@field public character_id integer @章节id
----@field public difficulty integer @难度
----@field public clear_time integer @通关时间
-
-
----@class PBRankUpdateFengtaRspCmd
----@field public code integer @错误码
----@field public error string @错误信息
----@field public uid integer @玩家ID
----@field public success boolean @是否成功
-
-
----@class PBRankUpdateFadianReqCmd
----@field public uid integer @玩家ID
----@field public week_bill_amount integer @周充值金额
----@field public month_bill_amount integer @月充值金额
----@field public total_bill_amount integer @总充值金额
-
-
----@class PBRankUpdateFadianRspCmd
----@field public code integer @错误码
----@field public error string @错误信息
----@field public uid integer @玩家ID
----@field public success boolean @是否成功
-
-
----@class PBRankUpdatePlayerReqCmd
----@field public uid integer @玩家ID
----@field public level integer @玩家等级
-
-
----@class PBRankUpdatePlayerRspCmd
----@field public code integer @错误码
----@field public error string @错误信息
----@field public uid integer @玩家ID
----@field public success boolean @是否成功
-
-
----@class PBRankUpdateRoleReqCmd
----@field public uid integer @玩家ID
----@field public roleid integer @角色ID
----@field public role_level integer @角色等级
----@field public role_skin integer @角色时装
-
-
----@class PBRankUpdateRoleRspCmd
----@field public code integer @错误码
----@field public error string @错误信息
----@field public uid integer @玩家ID
----@field public success boolean @是否成功
-
-
----@class PBRankUpdateAntiqueReqCmd
----@field public uid integer @玩家ID
----@field public antique_id integer @古董ID
----@field public value integer @古董价值
-
-
----@class PBRankUpdateAntiqueRspCmd
----@field public code integer @错误码
----@field public error string @错误信息
----@field public uid integer @玩家ID
----@field public success boolean @是否成功
-
-
 ---@class PBRankGetRewardReqCmd
 ---@field public uid integer @玩家ID
----@field public rank_type RankType @排行榜类型
+---@field public category integer @一级标签 1=鬼王竞速 2=摸金 3=古董(必填, 按标签聚合领奖)
 
 
 ---@class RankReward
@@ -3039,6 +3026,49 @@
 ---@field public uid integer @玩家ID
 ---@field public success boolean @是否成功
 ---@field public reward RankReward[] @奖励列表
+---@field public category integer @本次领取的一级标签(新三榜路径回显)
+---@field public best_rank integer @领奖所用的最优名次(新三榜路径回显)
+
+
+---@class BoardHistoryItem
+---@field public rank_type integer @榜实例ID
+---@field public sub_id integer @二级标签(鬼王章节ID/红古董ID/0)
+---@field public window integer @1=周榜 2=总榜
+---@field public sub_rank_id integer @所在卷ID
+---@field public rank integer @上期名次(并列同名次)
+---@field public value integer @上期成绩
+---@field public period integer @期数
+
+
+---@class PBRankGetBoardHistoryReqCmd
+---@field public uid integer @玩家ID
+---@field public category integer @一级标签 1=鬼王竞速 2=摸金 3=古董
+
+
+---@class PBRankGetBoardHistoryRspCmd
+---@field public code integer @错误码
+---@field public error string @错误信息
+---@field public uid integer @玩家ID
+---@field public category integer @一级标签
+---@field public items BoardHistoryItem[] @上期各子榜名次(未上榜/已领取为空)
+
+
+---@class PBTestRankBoardSettleReqCmd
+---@field public uid integer @玩家ID
+---@field public kind integer @1=鬼王竞速 2=摸金 3=古董鉴定 9=触发周榜刷新 10=触发总榜(赛季)刷新
+---@field public sub_id integer @竞速:鬼王ID 古董:红古董ID 摸金:0
+---@field public clear_time integer @竞速:通关用时(秒)
+---@field public value integer @摸金:战利品估值 古董:鉴定价值
+---@field public times integer @重复次数(默认1, 上限100, 用于SUM累加测试)
+---@field public chapter_id integer @竞速:章节ID(默认2001)
+---@field public tags integer[] @竞速:本局词条ID列表(默认{3000007}=7分; 传空数组=模拟未开词条不计入)
+
+
+---@class PBTestRankBoardSettleRspCmd
+---@field public code integer @错误码
+---@field public error string @错误信息
+---@field public uid integer @玩家ID
+---@field public applied integer @实际执行次数
 
 
 ---@class PBPinchFaceData
@@ -4879,6 +4909,7 @@
 ---@field Bag Bag
 ---@field Bill Bill
 ---@field ChatProxy ChatProxy
+---@field ChosenTreasureChest ChosenTreasureChest
 ---@field City City
 ---@field Friend Friend
 ---@field Ghost Ghost
@@ -5037,6 +5068,7 @@
 ---@field Book Book_cfg[]
 ---@field BootyBackpackExpansion BootyBackpackExpansion_cfg[]
 ---@field ChatChannelConfig ChatChannelConfig_cfg[]
+---@field ChosenTreasureChest ChosenTreasureChest_cfg[]
 ---@field Coin Coin_cfg[]
 ---@field CommonConfig CommonConfig_cfg[]
 ---@field Composite Composite_cfg[]
@@ -5084,6 +5116,7 @@
 ---@field PeriodMissionConfig PeriodMissionConfig_cfg[]
 ---@field PropCompose PropCompose_cfg[]
 ---@field RandomComposite RandomComposite_cfg[]
+---@field RankBoard RankBoard_cfg[]
 ---@field RankingListReward RankingListReward_cfg[]
 ---@field RankingListRewardPool RankingListRewardPool_cfg[]
 ---@field RankLevel RankLevel_cfg[]

@@ -419,6 +419,18 @@ function UserModel.SetWeekRotation(week_rotation_data)
     DBData.week_rotation = week_rotation_data
 end
 
+---@return ChosenTreasureChestPlayerData
+function UserModel.GetChosenTreasureChest()
+    if DBData and DBData.chosen_treasure_chest then
+        return DBData.chosen_treasure_chest
+    end
+    return nil
+end
+
+function UserModel.SetChosenTreasureChest(chosen_treasure_chest_data)
+    DBData.chosen_treasure_chest = chosen_treasure_chest_data
+end
+
 ---@return PBSelfSkinTradeData ? nil
 function UserModel.GetSkinTradeData()
     if DBData and DBData.skin_trade_data then

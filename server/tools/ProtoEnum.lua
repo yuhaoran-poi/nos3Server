@@ -85,25 +85,6 @@ local PBSelectionStateType = {
     PBSelectionState_SH_Ghost_Select_Skin = 8,
 }
 
----@class RankType
-local RankType = {
-    RankType_None = 0, -- 无类型
-    RankType_Duanwei_Weekly = 1, -- 周段位榜
-    RankType_Duanwei_Season = 2, -- 赛季段位榜
-    RankType_Mainline = 3, -- 主线榜
-    RankType_Fengta = 4, -- 封塔榜
-    RankType_Fadian_Total = 5, -- 发电总榜
-    RankType_Fadian_Weekly = 6, -- 发电周榜
-    RankType_Fadian_Monthly = 7, -- 发电月榜
-    RankType_Player = 8, -- 玩家榜
-    RankType_Role = 9, -- 角色榜
-    RankType_Antique = 10, -- 古董榜
-    RankType_GuildActive = 11, -- 宗门活跃榜
-    RankType_GuildMoney = 12, -- 宗门资金榜
-    RankType_GuildScore_Weekly = 13, -- 宗门周赛季积分榜
-    RankType_GuildScore_Season = 14, -- 宗门赛季积分榜
-}
-
 ---@class UserAttrType
 local UserAttrType = {
     uid = "uid",
@@ -149,6 +130,5 @@ return {
     eApplyOpt=eApplyOpt,
     PBSelectionOpType=PBSelectionOpType,
     PBSelectionStateType=PBSelectionStateType,
-    RankType=RankType,
     UserAttrType=UserAttrType,
 }

@@ -79,6 +79,8 @@ message PBGameSettle
     repeated PBItemData out_uniq_items = 34; // 被放入战利品的局外带入的唯一道具
     map<int32, int32> game_collect_items = 35; // 局内收集的道具(局内道具id -> 数量, 局内id局外无配置, 仅用于任务埋点87)
     map<int32, int32> game_consume_items = 36; // 局内消耗的道具(局内道具id -> 数量, 局内id局外无配置, 仅用于任务埋点88)
+    map<int32, int32> ghost_king_kills = 37;   // 局内击杀鬼王统计(鬼王id -> 击杀次数, 竞速榜按鬼王分榜用)
+    repeated int32 mode_tags = 38;             // 本局生效的词条ID列表(开局时实际生效的词条, 未开词条为空; 竞速榜难度分=ΣAllTag.tagscore)
 }
 
 // 玩家进入主城

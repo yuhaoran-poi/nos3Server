@@ -2,24 +2,9 @@ syntax = "proto3";
 
 // package rank;
 
-// 排行榜类型
-enum RankType {
-    RankType_None = 0;                // 无类型
-    RankType_Duanwei_Weekly = 1;     // 周段位榜
-    RankType_Duanwei_Season = 2;     // 赛季段位榜
-    RankType_Mainline = 3;           // 主线榜
-    RankType_Fengta = 4;             // 封塔榜
-    RankType_Fadian_Total = 5;       // 发电总榜
-    RankType_Fadian_Weekly = 6;      // 发电周榜
-    RankType_Fadian_Monthly = 7;     // 发电月榜
-    RankType_Player = 8;             // 玩家榜
-    RankType_Role = 9;               // 角色榜
-    RankType_Antique = 10;           // 古董榜
-    RankType_GuildActive = 11;        // 宗门活跃榜
-    RankType_GuildMoney = 12;         // 宗门资金榜
-    RankType_GuildScore_Weekly = 13;  // 宗门周赛季积分榜
-    RankType_GuildScore_Season = 14;  // 宗门赛季积分榜
-}
+// (旧RankType枚举 1~14 已删除: 旧14榜下线, 榜实例由服务器 RankBoard 配置表注册,
+//  rank_type 字段统一为 int32, 取值 = 榜实例ID, 百位分段: 1xx竞速周 2xx竞速总
+//  3xx摸金周 4xx摸金总 5xx古董周 6xx古董总, 同 sub_id 周总相差100)
 
 // 排行项数据（玩家、宗门等）
 message RankItemData {
@@ -55,10 +40,13 @@ message SubRankInfo {
 
 // 排行榜类型信息
 message RankTypeInfo {
-    RankType rank_type = 1;     // 排行榜类型
+    int32 rank_type = 1;         // 榜实例ID(RankBoard配置, 101+)
     string name = 2;            // 排行榜名称
     bool is_flow = 3;           // 是否为流动榜
     repeated SubRankInfo sub_ranks = 4; // 子榜列表
+    int32 category = 5;         // 一级标签 1=鬼王竞速 2=摸金 3=古董(新三榜)
+    int32 sub_id = 6;           // 二级标签: 鬼王章节ID/红古董ID, 摸金=0
+    int32 window = 7;           // 统计窗口 1=周榜 2=总榜(赛季)
 }
 
 // 获取所有排行榜类型请求
@@ -99,117 +87,12 @@ message PBRankGetInfoRspCmd {
     repeated RankData rank_data = 4; // 排行榜数据
 }
 
-// 更新段位榜请求
-message PBRankUpdateDuanweiReqCmd {
-    int64 uid = 1;             // 玩家ID
-    int32 duanwei = 2;         // 段位等级
-}
-
-// 更新段位榜响应
-message PBRankUpdateDuanweiRspCmd {
-    int32 code = 1;             // 错误码
-    string error = 2;            // 错误信息
-    int64 uid = 3;             // 玩家ID
-    bool success = 4;            // 是否成功
-}
-
-// 更新主线榜请求
-message PBRankUpdateMainlineReqCmd {
-    int64 uid = 1;             // 玩家ID
-	int32 character_id = 2;	// 章节id
-    int32 difficulty = 3;      // 难度
-    int64 clear_time = 4;       // 通关时间
-}
-
-// 更新主线榜响应
-message PBRankUpdateMainlineRspCmd {
-    int32 code = 1;             // 错误码
-    string error = 2;            // 错误信息
-    int64 uid = 3;             // 玩家ID
-    bool success = 4;            // 是否成功
-}
-
-// 更新封塔榜请求
-message PBRankUpdateFengtaReqCmd {
-    int64 uid = 1;             // 玩家ID
-	int32 character_id = 2;	// 章节id
-    int32 difficulty = 3;      // 难度
-    int64 clear_time = 4;       // 通关时间
-}
-
-// 更新封塔榜响应
-message PBRankUpdateFengtaRspCmd {
-    int32 code = 1;             // 错误码
-    string error = 2;            // 错误信息
-    int64 uid = 3;             // 玩家ID
-    bool success = 4;            // 是否成功
-}
-
-// 更新发电榜请求
-message PBRankUpdateFadianReqCmd {
-    int64 uid = 1;             	// 玩家ID
-    int64 week_bill_amount = 2;     // 周充值金额
-	int64 month_bill_amount = 3;	// 月充值金额
-	int64 total_bill_amount = 4;	// 总充值金额
-}
-
-// 更新发电榜响应
-message PBRankUpdateFadianRspCmd {
-    int32 code = 1;             // 错误码
-    string error = 2;            // 错误信息
-    int64 uid = 3;             // 玩家ID
-    bool success = 4;            // 是否成功
-}
-
-// 更新玩家榜请求
-message PBRankUpdatePlayerReqCmd {
-    int64 uid = 1;             // 玩家ID
-    int32 level = 2;           // 玩家等级
-}
-
-// 更新玩家榜响应
-message PBRankUpdatePlayerRspCmd {
-    int32 code = 1;             // 错误码
-    string error = 2;            // 错误信息
-    int64 uid = 3;             // 玩家ID
-    bool success = 4;            // 是否成功
-}
-
-// 更新角色榜请求
-message PBRankUpdateRoleReqCmd {
-    int64 uid = 1;             // 玩家ID
-    int32 roleid = 2;         // 角色ID
-    int32 role_level = 3;      // 角色等级
-    int32 role_skin = 4;       // 角色时装
-}
-
-// 更新角色榜响应
-message PBRankUpdateRoleRspCmd {
-    int32 code = 1;             // 错误码
-    string error = 2;            // 错误信息
-    int64 uid = 3;             // 玩家ID
-    bool success = 4;            // 是否成功
-}
-
-// 更新古董榜请求
-message PBRankUpdateAntiqueReqCmd {
-    int64 uid = 1;             // 玩家ID
-    int32 antique_id = 2;      // 古董ID
-    int64 value = 3;            // 古董价值
-}
-
-// 更新古董榜响应
-message PBRankUpdateAntiqueRspCmd {
-    int32 code = 1;             // 错误码
-    string error = 2;            // 错误信息
-    int64 uid = 3;             // 玩家ID
-    bool success = 4;            // 是否成功
-}
+// (旧榜客户端直报协议 PBRankUpdateXxxReqCmd×7 已删除: 新三榜为服务端结算权威上报, 不接受客户端直报)
 
 // 领取排行榜奖励请求
 message PBRankGetRewardReqCmd {
     int64 uid = 1;             // 玩家ID
-    RankType rank_type = 2;     // 排行榜类型
+    int32 category = 2;         // 一级标签 1=鬼王竞速 2=摸金 3=古董(必填, 按标签聚合领奖)
 }
 
 // 排行榜奖励数据
@@ -226,4 +109,50 @@ message PBRankGetRewardRspCmd {
     int64 uid = 3;             // 玩家ID
     bool success = 4;            // 是否成功
     repeated RankReward reward = 5; // 奖励列表
+    int32 category = 6;         // 本次领取的一级标签(新三榜路径回显)
+    int32 best_rank = 7;        // 领奖所用的最优名次(新三榜路径回显)
+}
+
+// 上期锁榜快照单条(领奖弹窗展示"上周排名"用; 领取后快照移除, 该查询返回空)
+message BoardHistoryItem {
+    int32 rank_type = 1;        // 榜实例ID
+    int32 sub_id = 2;           // 二级标签(鬼王章节ID/红古董ID/0)
+    int32 window = 3;           // 1=周榜 2=总榜
+    int32 sub_rank_id = 4;      // 所在卷ID
+    int32 rank = 5;             // 上期名次(并列同名次)
+    int64 value = 6;            // 上期成绩
+    int32 period = 7;           // 期数
+}
+
+// 查询上期锁榜排名(按一级标签聚合该标签下所有子榜)
+message PBRankGetBoardHistoryReqCmd {
+    int64 uid = 1;             // 玩家ID
+    int32 category = 2;         // 一级标签 1=鬼王竞速 2=摸金 3=古董
+}
+
+message PBRankGetBoardHistoryRspCmd {
+    int32 code = 1;             // 错误码
+    string error = 2;            // 错误信息
+    int64 uid = 3;             // 玩家ID
+    int32 category = 4;         // 一级标签
+    repeated BoardHistoryItem items = 5; // 上期各子榜名次(未上榜/已领取为空)
+}
+
+// 测试命令(仅测试环境): 驱动新三榜上报入口 / 触发榜期刷新
+message PBTestRankBoardSettleReqCmd {
+    int64 uid = 1;             // 玩家ID
+    int32 kind = 2;            // 1=鬼王竞速 2=摸金 3=古董鉴定 9=触发周榜刷新 10=触发总榜(赛季)刷新
+    int32 sub_id = 3;          // 竞速:鬼王ID 古董:红古董ID 摸金:0
+    int32 clear_time = 4;      // 竞速:通关用时(秒)
+    int64 value = 5;           // 摸金:战利品估值 古董:鉴定价值
+    int32 times = 6;           // 重复次数(默认1, 上限100, 用于SUM累加测试)
+    int32 chapter_id = 7;      // 竞速:章节ID(默认2001)
+    repeated int32 tags = 8;   // 竞速:本局词条ID列表(默认{3000007}=7分; 传空数组=模拟未开词条不计入)
+}
+
+message PBTestRankBoardSettleRspCmd {
+    int32 code = 1;             // 错误码
+    string error = 2;            // 错误信息
+    int64 uid = 3;             // 玩家ID
+    int32 applied = 4;          // 实际执行次数
 }

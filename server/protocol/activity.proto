@@ -97,5 +97,99 @@ message PBTestWeekRotationSettleRspCmd
     int32 code      = 1;
     string error    = 2;
     int64 uid       = 3;
-    int32 applied   = 4;    // 实际模拟次数
+    int32 applied   = 4;
+}
+
+// =============== 天选宝箱(ChosenTreasureChest) ===============
+// 对应服务端模块: game/user/ChosenTreasureChest.lua
+// 九格无放回抽取 + 八档递增价 + 第8档收池; 令为活动货币(Coin表), 灵石(coin 2)购买
+
+// 单箱玩家可见数据
+message PBChosenTreasureChestView
+{
+    int32 box_id        = 1;    // 宝匣ID
+    int32 state         = 2;    // 0=待上线 1=在售 2=已下线
+    int64 start_time    = 3;    // 开售时间戳(期号锚点, 返场后变化触发进度重置)
+    int64 end_time      = 4;    // 下线时间戳
+    int32 ticket_id     = 5;    // 令货币ID
+    int32 gift_lv       = 6;    // 免费领令所需账号等级
+    int32 gift_claimed  = 7;    // 1=免费令已领(每箱全期一次, 不随返场重置)
+    repeated int32 step_prices  = 8;   // 八档价格(下标1-8, 令)
+    repeated int32 slot_items   = 9;   // 九格物件ID(下标1-9)
+    repeated int32 slot_weights = 10;  // 九格初始权重(万分位, 合计10000)
+    repeated int32 drawn_slots  = 11;  // 已抽出格位列表
+    int32 cur_step      = 12;   // 下一次开启的档位(1-8), 9=本期已开满(终态)
+}
+
+message PBChosenTreasureChestInfo
+{
+    int64 uid = 1;
+    repeated PBChosenTreasureChestView chests = 2;  // 按box_id升序
+}
+
+// 拉取全部宝箱信息(列表+进度)
+message PBGetChosenTreasureChestInfoReqCmd
+{
+    int64 uid   = 1;
+}
+
+message PBGetChosenTreasureChestInfoRspCmd
+{
+    int32 code      = 1;    // 服务器验证返回,0成功,其他失败
+    string error    = 2;    // 错误信息
+    int64 uid       = 3;
+    PBChosenTreasureChestInfo info = 4;
+}
+
+// 开箱(第1-7档单抽, 第8档一次收走剩余格位), 扣对应箱的令
+message PBOpenChosenTreasureChestReqCmd
+{
+    int64 uid       = 1;
+    int32 box_id    = 2;
+}
+
+message PBOpenChosenTreasureChestRspCmd
+{
+    int32 code      = 1;
+    string error    = 2;
+    int64 uid       = 3;
+    int32 box_id    = 4;
+    int32 step      = 5;              // 本次开启的档位
+    repeated int32 hit_slots  = 6;    // 本次抽出/收池的格位
+    repeated int32 hit_items  = 7;    // 对应物件ID(与hit_slots对齐)
+    int32 cur_step  = 8;              // 开启后的下一档位(9=已开满)
+}
+
+// 购买令(灵石coin2 -> 本箱令, 1令=100灵石, 仅在售期可买)
+message PBBuyChosenTreasureChestTicketReqCmd
+{
+    int64 uid       = 1;
+    int32 box_id    = 2;
+    int32 num       = 3;    // 购买数量(>=1)
+}
+
+message PBBuyChosenTreasureChestTicketRspCmd
+{
+    int32 code      = 1;
+    string error    = 2;
+    int64 uid       = 3;
+    int32 box_id    = 4;
+    int32 num       = 5;    // 实际购买数量
+    int32 coin_id   = 6;    // 令货币ID
+}
+
+// 免费领取首抽令(每箱全期一次, 账号等级达标gift_lv, 数量=第1档价)
+message PBGetChosenTreasureChestGiftReqCmd
+{
+    int64 uid       = 1;
+    int32 box_id    = 2;
+}
+
+message PBGetChosenTreasureChestGiftRspCmd
+{
+    int32 code      = 1;
+    string error    = 2;
+    int64 uid       = 3;
+    int32 box_id    = 4;
+    int32 ticket_num = 5;   // 发放的令数量(=第1档价)
 }

@@ -496,6 +496,43 @@ function Console.add_week_score(uid, activity_id, score)
 	end
 end
 
+-- 重置玩家天选宝箱单箱进度(按当前配置期号重建, 测返场重置)
+function Console.reset_chosen_chest(uid, box_id)
+	box_id = math.tointeger(box_id)
+	if not box_id or box_id <= 0 then
+		return Response(444, "param error", string.format("%s %s", tostring(uid), tostring(box_id)))
+	end
+	local res, err = context.call_user(uid, "ChosenTreasureChest.GMResetBox", box_id)
+	if err then
+		return Response(444, err, string.format("%d %d", uid, box_id))
+	end
+
+	if res then
+		return Response(0, "OK")
+	else
+		return Response(444, "Failed", string.format("%d %d", uid, box_id))
+	end
+end
+
+-- 直接加天选宝箱令(测开箱流程, 不走灵石兑换)
+function Console.add_chosen_ticket(uid, box_id, num)
+	box_id = math.tointeger(box_id)
+	num = math.tointeger(num)
+	if not box_id or box_id <= 0 or not num or num <= 0 then
+		return Response(444, "param error", string.format("%s %s %s", tostring(uid), tostring(box_id), tostring(num)))
+	end
+	local res, err = context.call_user(uid, "ChosenTreasureChest.GMAddTicket", box_id, num)
+	if err then
+		return Response(444, err, string.format("%d %d %d", uid, box_id, num))
+	end
+
+	if res then
+		return Response(0, "OK")
+	else
+		return Response(444, "Failed", string.format("%d %d %d", uid, box_id, num))
+	end
+end
+
 function Console.add_trade_product(sale_config_id, sale_num, sale_price, sale_ts)
     local product_data = TradeDef.newTradeProductBaseData()
     product_data.trade_id = 1

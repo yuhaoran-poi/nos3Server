@@ -1336,8 +1336,7 @@ function Role.GetLvMoreThanNum(target_role_id, target_lv_exps)
 
     for roleid, role_info in pairs(roles.role_list) do
         if roleid == target_role_id and max_lv then
-            -- 角色榜更新(修正: 原target_lv_exps.lv恒为nil)
-            scripts.Rank.UpdateRank_Role(roleid, max_lv.lv, role_info.skins)
+            -- 角色榜更新已删除(旧14榜下线)
         end
     end
 end
