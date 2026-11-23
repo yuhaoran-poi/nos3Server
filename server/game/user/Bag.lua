@@ -3014,7 +3014,7 @@ end
 
 -- 增加或扣除货币
 -- param coins = {[PBCoin.coin_id] = PBCoin}
-function Bag.DealCoins(coins, change_log)
+function Bag.DealCoins(coins, change_log, need_check_max)
     local coinsdata = scripts.UserModel.GetCoinsData()
     if not coinsdata then
         return ErrorCode.CoinNotExist
@@ -3034,6 +3034,12 @@ function Bag.DealCoins(coins, change_log)
         if not coinsdata.coins[coinid] then
             coinsdata.coins[coinid] = ItemDef.newCoin()
             coinsdata.coins[coinid].coin_id = coinid
+        end
+
+        if need_check_max then
+            if coinsdata.coins[coinid].coin_count + coin.coin_count > coin_cfg.max_num then
+                return ErrorCode.CoinMaxNumOverflow
+            end
         end
 
         if not change_log[BagDef.BagType.Coins] then
@@ -4126,7 +4132,7 @@ function Bag.PBDecomposeReqCmd(req)
         end
 
         if table.size(deal_coins) > 0 then
-            err_code = Bag.DealCoins(deal_coins, change_log)
+            err_code = Bag.DealCoins(deal_coins, change_log, true)
             if err_code ~= ErrorCode.None then
                 Bag.RollBackWithChange(change_log)
                 return err_code
@@ -4610,5 +4616,64 @@ function Bag.PBBagSortOutRangeReqCmd(req)
         bag_name = req.msg.bag_name,
     }, req.msg_context.stub_id)
 end
+
+-- function Bag.PBBagItemLockReqCmd(req)
+--     -- 参数验证
+--     if not req.msg.uid
+--         or (not req.msg.lock_config_id and not req.msg.lock_uniq_id)
+--         or not req.msg.lock_operate
+--         or (req.msg.lock_operate ~= 1 and req.msg.lock_operate ~= 2) then
+--         return context.S2C(context.net_id, CmdCode.PBBagItemLockRspCmd, {
+--             code = ErrorCode.ParamInvalid,
+--             error = "无效请求参数",
+--             uid = req.msg.uid,
+--         }, req.msg_context.stub_id)
+--     end
+
+--     local bagdata = scripts.UserModel.GetBagData()
+--     if not bagdata or not bagdata[BagDef.BagType.Cangku] then
+--         return context.S2C(context.net_id, CmdCode.PBBagItemLockRspCmd, {
+--             code = ErrorCode.BagNotExist,
+--             error = "背包不存在",
+--             uid = req.msg.uid,
+--         }, req.msg_context.stub_id)
+--     end
+
+--     local baginfo = bagdata[BagDef.BagType.Cangku]
+--     if req.msg.lock_operate == 1 then
+--         if req.msg.lock_uniq_id and req.msg.lock_uniq_id > 0 then
+--             baginfo.uniq_item_lock[req.msg.lock_uniq_id] = 1
+--         else
+--             if req.msg.lock_config_id and req.msg.lock_config_id > 0 then
+--                 baginfo.item_lock[req.msg.lock_config_id] = 1
+--             end
+--         end
+--     elseif req.msg.lock_operate == 2 then
+--         if req.msg.lock_uniq_id
+--             and req.msg.lock_uniq_id > 0
+--             and baginfo.uniq_item_lock[req.msg.lock_uniq_id] then
+--             baginfo.uniq_item_lock[req.msg.lock_uniq_id] = nil
+--         else
+--             if req.msg.lock_config_id
+--                 and req.msg.lock_config_id > 0
+--                 and baginfo.item_lock[req.msg.lock_config_id] then
+--                 baginfo.item_lock[req.msg.lock_config_id] = nil
+--             end
+--         end
+--     end
+
+--     -- 独立缓存,不做日志更新
+--     local bagTypes = {}
+--     bagTypes[BagDef.BagType.Cangku] = 1
+--     scripts.UserModel.AddDirtyModule("Bag", bagTypes)
+
+--     return context.S2C(context.net_id, CmdCode.PBBagItemLockRspCmd, {
+--         code = ErrorCode.None,
+--         error = "操作成功",
+--         uid = req.msg.uid,
+--         item_lock = baginfo.item_lock,
+--         uniq_item_lock = baginfo.uniq_item_lock,
+--     }, req.msg_context.stub_id)
+-- end
 
 return Bag

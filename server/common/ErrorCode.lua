@@ -45,6 +45,8 @@ local ErrorCode = {
     ItemNotSell = 311,
     ---分解无法获得道具
     DecomposeNotGet = 312,
+    ---货币数量超出限制
+    CoinMaxNumOverflow = 313,
 
     ---宝物相关错误码
     ---没有拥有该宝物

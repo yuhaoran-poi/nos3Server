@@ -772,7 +772,7 @@ function Mail.PBGetRewardReqCmd(req)
         end
     end
     if table.size(deal_coins) > 0 then
-        rsp.code = scripts.Bag.DealCoins(deal_coins, bag_change_log)
+        rsp.code = scripts.Bag.DealCoins(deal_coins, bag_change_log, true)
         if rsp.code ~= ErrorCode.None then
             scripts.Bag.RollBackWithChange(bag_change_log)
 
