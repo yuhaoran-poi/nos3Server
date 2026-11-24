@@ -3872,6 +3872,7 @@ function Bag.Light(op_itemdata)
         moon.error("pool_id_weight is empty")
         return ErrorCode.TagNotExist
     end
+    moon.debug(string.format("pool_id_weight:\n%s", json.pretty_encode(pool_id_weight)))
     local cur_pool_id = scripts.Item.RangeTags(pool_id_weight)
     if cur_pool_id == 0 then
         return ErrorCode.TagPoolNotExist
