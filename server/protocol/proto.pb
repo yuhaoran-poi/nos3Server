@@ -4063,7 +4063,7 @@ ds_address (	R	dsAddress
 seasonpass.proto"l
 PBSeasonPassData
 pass_id (RpassId
-	cost_coin (RcostCoin"
+	cost_coin (RcostCoin"
 get_reward_id (RgetRewardId"Û
 PBSeasonPassPlayerData
 uid (RuidX
@@ -4404,7 +4404,7 @@ deal_price (R	dealPrice
 seller_uid (R	sellerUid
 	buyer_uid (RbuyerUid
 trade_ts (RtradeTs
-	trade_tax	 (RtradeTax
+	trade_tax	 (RtradeTax
 	send_mail
  (RsendMail"ï
 PBTradeSearchSimpleData

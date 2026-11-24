@@ -6,7 +6,7 @@
 ---@field public year_num integer @无效-年获取上限
 ---@field public coin_bound integer @关联的非绑定货币id
 return {
-[1] = { id=1,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
+[1] = { id=1,max_num=10000000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
 [2] = { id=2,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },
 [3] = { id=3,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=2 },
 [4] = { id=4,max_num=2100000000,day_num=10000,weak_num=50000,year_num=100000,coin_bound=0 },

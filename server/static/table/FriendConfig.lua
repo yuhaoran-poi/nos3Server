@@ -5,5 +5,5 @@
 ---@field public Group_limit integer @分组上限
 ---@field public Blacklist_limit integer @黑名单上限
 return {
-[1] = { id=1,Friend_limit=50,apply_limit=10,Group_limit=10,Blacklist_limit=50 }
+[1] = { id=1,Friend_limit=100,apply_limit=10,Group_limit=10,Blacklist_limit=50 }
 }
