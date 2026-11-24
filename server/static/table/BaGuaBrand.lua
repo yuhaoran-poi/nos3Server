@@ -17,5 +17,6 @@ return {
 [2] = { id=2,maxlv=35,tagnum=2,tagcost1={[1]=1001},tagcost2={[1]=1002},tagcost3={[1]=1003},tagcost4={[1]=1004},tagcost5={[1]=1005},tagcost6={[1]=1005},tagcost7={[1]=1005},tagcost8={[1]=1005},tagcost9={[1]=1005},tagcost10={[1]=1005} },
 [3] = { id=3,maxlv=40,tagnum=3,tagcost1={[1]=1001},tagcost2={[1]=1002},tagcost3={[1]=1003},tagcost4={[1]=1004},tagcost5={[1]=1005},tagcost6={[1]=1005},tagcost7={[1]=1005},tagcost8={[1]=1005},tagcost9={[1]=1005},tagcost10={[1]=1005} },
 [4] = { id=4,maxlv=45,tagnum=4,tagcost1={[1]=1001},tagcost2={[1]=1002},tagcost3={[1]=1003},tagcost4={[1]=1004},tagcost5={[1]=1005},tagcost6={[1]=1005},tagcost7={[1]=1005},tagcost8={[1]=1005},tagcost9={[1]=1005},tagcost10={[1]=1005} },
-[5] = { id=5,maxlv=50,tagnum=5,tagcost1={[1]=1001},tagcost2={[1]=1002},tagcost3={[1]=1003},tagcost4={[1]=1004},tagcost5={[1]=1005},tagcost6={[1]=1005},tagcost7={[1]=1005},tagcost8={[1]=1005},tagcost9={[1]=1005},tagcost10={[1]=1005} }
+[5] = { id=5,maxlv=50,tagnum=5,tagcost1={[1]=1001},tagcost2={[1]=1002},tagcost3={[1]=1003},tagcost4={[1]=1004},tagcost5={[1]=1005},tagcost6={[1]=1005},tagcost7={[1]=1005},tagcost8={[1]=1005},tagcost9={[1]=1005},tagcost10={[1]=1005} },
+[6] = { id=6,maxlv=60,tagnum=6,tagcost1={[1]=1001},tagcost2={[1]=1002},tagcost3={[1]=1003},tagcost4={[1]=1004},tagcost5={[1]=1005},tagcost6={[1]=1005},tagcost7={[1]=1005},tagcost8={[1]=1005},tagcost9={[1]=1005},tagcost10={[1]=1005} }
 }
