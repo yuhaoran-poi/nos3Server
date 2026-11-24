@@ -3,7 +3,7 @@ syntax = "proto3";
 message PBSeasonPassData
 {
     int32 pass_id   = 1;
-    int32 cost_coin = 2;
+    int64 cost_coin = 2;
     repeated int32 get_reward_id    = 3;
 }
 
