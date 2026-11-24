@@ -1902,12 +1902,12 @@ function Room.GameSettle(settle_info)
             table.insert(user_attr[ProtoEnum.UserAttrType.battle_report_ids], report_id)
         end
 
-        -- local now_sum_ts = user_attr[ProtoEnum.UserAttrType.sum_online_time] or 0
-        -- now_sum_ts = now_sum_ts + game_time
-        -- if now_sum_ts < 0 then
-        --     now_sum_ts = 0
-        -- end
-        -- user_attr[ProtoEnum.UserAttrType.sum_online_time] = now_sum_ts
+        local now_sum_ts = user_attr[ProtoEnum.UserAttrType.sum_online_time] or 0
+        now_sum_ts = now_sum_ts + game_time
+        if now_sum_ts < 0 then
+            now_sum_ts = 0
+        end
+        user_attr[ProtoEnum.UserAttrType.sum_online_time] = now_sum_ts
 
         scripts.User.SetUserAttr(user_attr, false)
         -- 保存简略战报
