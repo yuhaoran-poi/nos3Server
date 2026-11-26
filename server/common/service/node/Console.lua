@@ -676,13 +676,14 @@ end
 
 -- ============ 精力系统测试/运营命令 ============
 
--- 设置出战角色精力: set_energy <uid> <energy>
-function Console.set_energy(uid, energy)
+-- 设置角色精力: set_energy <uid> <energy> [role_id](可选, 0/缺省=出战角色)
+function Console.set_energy(uid, energy, role_id)
 	energy = math.tointeger(energy)
 	if not energy or energy < 0 then
 		return Response(444, "Invalid energy", string.format("%d %s", uid, tostring(energy)))
 	end
-	local res, err = context.call_user(uid, "Role.GMSetEnergy", energy)
+	role_id = math.tointeger(role_id) or 0
+	local res, err = context.call_user(uid, "Role.GMSetEnergy", energy, role_id)
 	if err then
 		return Response(444, err, uid)
 	end

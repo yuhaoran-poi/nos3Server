@@ -1002,8 +1002,9 @@ function Role.RefundEnergyForGame(add_energy)
     Role.SyncBattleRoleEnergyAttr()
 end
 
--- 精力丹: 当前出战角色回复精力(超出上限封顶), 返回错误码
-function Role.AddBattleRoleEnergy(add_energy)
+-- 精力丹: 回复指定角色精力(2026-11改版: role_id=0或nil取出战角色, 兼容旧版),
+-- 超出上限封顶, 返回错误码 + 实际回复的角色config_id(供协议回显)
+function Role.AddBattleRoleEnergy(add_energy, role_id)
     if not add_energy or add_energy <= 0 then
         return ErrorCode.ParamInvalid
     end
@@ -1012,7 +1013,12 @@ function Role.AddBattleRoleEnergy(add_energy)
     if not roles or not roles.battle_role_id then
         return ErrorCode.RoleNotExist
     end
-    local role_info = roles.role_list[roles.battle_role_id]
+    local role_info
+    if role_id and role_id > 0 then
+        role_info = roles.role_list[role_id] -- 指定角色
+    else
+        role_info = roles.role_list[roles.battle_role_id] -- 缺省出战角色
+    end
     if not role_info then
         return ErrorCode.RoleNotExist
     end
@@ -1030,18 +1036,27 @@ function Role.AddBattleRoleEnergy(add_energy)
 
     moon.info(string.format("AddBattleRoleEnergy uid=%d role=%d +%d cur=%d->%d",
         context.uid, role_info.config_id, add_energy, cur_energy, role_info.energy))
-    Role.SyncBattleRoleEnergyAttr()
-    return ErrorCode.None
+    -- 出战角色精力镜像(user_attr.battle_role_energy)仅目标为出战角色时同步
+    if role_info.config_id == roles.battle_role_id then
+        Role.SyncBattleRoleEnergyAttr()
+    end
+    return ErrorCode.None, role_info.config_id
 end
 
 -- GM: 设置出战角色精力(测试/运营), 返回值供 moon.call 使用
-function Role.GMSetEnergy(energy)
+-- GM: 设置角色精力(测试/运营, 2026-11改版: role_id可选, 0/nil=出战角色), 返回值供 moon.call 使用
+function Role.GMSetEnergy(energy, role_id)
     energy = math.tointeger(energy) or 0
     local roles = scripts.UserModel.GetRoles()
     if not roles or not roles.battle_role_id then
         return false
     end
-    local role_info = roles.role_list[roles.battle_role_id]
+    local role_info
+    if role_id and role_id > 0 then
+        role_info = roles.role_list[role_id] -- 指定角色
+    else
+        role_info = roles.role_list[roles.battle_role_id] -- 缺省出战角色
+    end
     if not role_info then
         return false
     end
@@ -1052,7 +1067,9 @@ function Role.GMSetEnergy(energy)
     local change_roles = {}
     change_roles[role_info.config_id] = "GMSetEnergy"
     Role.SaveAndLog(change_roles)
-    Role.SyncBattleRoleEnergyAttr()
+    if role_info.config_id == roles.battle_role_id then
+        Role.SyncBattleRoleEnergyAttr()
+    end
     moon.info(string.format("GMSetEnergy uid=%d role=%d energy=%d", context.uid, role_info.config_id, energy))
     return true
 end

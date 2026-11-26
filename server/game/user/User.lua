@@ -3566,6 +3566,7 @@ function User.PBUseItemReqCmd(req)
     local bag_change_log = {}
     local add_roles = {}
     local update_user_attr = {}
+    local use_item_role_id = 0 -- 精力丹实际回复的角色(成功rsp回显)
     local item_cfg = GameCfg.Item[req.msg.use_item_id]
     if item_cfg and item_cfg.use_type then
         if item_cfg.use_type == 1
@@ -3610,8 +3611,9 @@ function User.PBUseItemReqCmd(req)
             update_user_attr[ProtoEnum.UserAttrType.buff_datas] = buff_datas
         elseif item_cfg.use_type == 9 then
             -- [精力] 精力丹: 单颗回复量读 use_award 中 coin 41(出战精力)的配置值, 缺省用 RoleDef.EnergyDef.PillRecover
+            -- 2026-11改版: 支持指定角色回复(role_id=0或空=出战角色, 兼容旧版)
             local per_energy = (item_cfg.use_award and item_cfg.use_award[41]) or RoleDef.EnergyDef.PillRecover
-            local err_code = scripts.Role.AddBattleRoleEnergy(per_energy * req.msg.use_item_cnt)
+            local err_code, applied_role_id = scripts.Role.AddBattleRoleEnergy(per_energy * req.msg.use_item_cnt, req.msg.role_id or 0)
             if err_code ~= ErrorCode.None then
                 return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
                     code = err_code,
@@ -3621,6 +3623,7 @@ function User.PBUseItemReqCmd(req)
                     use_item_cnt = req.msg.use_item_cnt,
                 }, req.msg_context.stub_id)
             end
+            use_item_role_id = applied_role_id or 0
         else
             return context.S2C(context.net_id, CmdCode.PBUseItemRspCmd, {
                 code = ErrorCode.ItemTypeMismatch,
@@ -3697,6 +3700,7 @@ function User.PBUseItemReqCmd(req)
         uid = context.uid,
         use_item_id = req.msg.use_item_id,
         use_item_cnt = req.msg.use_item_cnt,
+        role_id = use_item_role_id,
     }, req.msg_context.stub_id)
 end
 

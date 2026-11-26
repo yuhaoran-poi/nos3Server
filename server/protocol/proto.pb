@@ -1812,7 +1812,7 @@ unlock_idx (R	unlockIdx"
 error (	Rerror
 uid (Ruid(
 	god_block (2.PBGodBlockRgodBlockbproto3
-˙H
+¨I
 
 user.protocommon.proto
 item.proto	bag.proto
@@ -2044,23 +2044,25 @@ inlay_type (R	inlayType
 code (Rcode
 error (	Rerror
 uid (Ruid
-	nick_name (	RnickName"Ù
+	nick_name (	RnickName"ç
 PBUseItemReqCmd
 uid (Ruid
 use_item_id (R	useItemId 
 use_item_cnt (R
 useItemCntK
-choose_item_ids (2#.PBUseItemReqCmd.ChooseItemIdsEntryRchooseItemIds@
+choose_item_ids (2#.PBUseItemReqCmd.ChooseItemIdsEntryRchooseItemIds
+role_id (RroleId@
 ChooseItemIdsEntry
 key (Rkey
-value (Rvalue:8"è
+value (Rvalue:8"®
 PBUseItemRspCmd
 code (Rcode
 error (	Rerror
 uid (Ruid
 use_item_id (R	useItemId 
 use_item_cnt (R
-useItemCnt"
+useItemCnt
+role_id (RroleId"
 PBUseUniqItemReqCmd
 uid (Ruid
 use_item_id (R	useItemId
@@ -3645,7 +3647,7 @@ period_ids (R	periodIds%
 vitality_type (RvitalityType
 	award_ids (RawardIds%
 total_vitality (RtotalVitalitybproto3
-∫
+‘
 
 rank.proto"ú
 RankItemData
@@ -3730,7 +3732,7 @@ RankReward
 success (Rsuccess#
 reward (2.RankRewardRreward
 category (Rcategory
-	best_rank (RbestRank"¿
+	best_rank (RbestRank"⁄
 BoardHistoryItem
 	rank_type (RrankType
 sub_id (RsubId
@@ -3738,7 +3740,8 @@ RankReward
 sub_rank_id (R	subRankId
 rank (Rrank
 value (Rvalue
-period (Rperiod"K
+period (Rperiod
+claimed (Rclaimed"K
 PBRankGetBoardHistoryReqCmd
 uid (Ruid
 category (Rcategory"û

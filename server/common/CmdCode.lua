@@ -1,5 +1,5 @@
 --- Automatically generated,do not modify.
---- Proto version: 148381214
+--- Proto version: 1839588944
 
 local M={
     ["PBPacketCmd"] = 1,
@@ -543,7 +543,7 @@ local M={
     ["PBWeekRotationNotifyCmd"] = 630,
     ["PBWeekRotationSyncCmd"] = 631,
 
-    CrC = "148381214",
+    CrC = "1839588944",
 }
 
 local forward = {

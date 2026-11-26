@@ -3038,6 +3038,7 @@
 ---@field public rank integer @上期名次(并列同名次)
 ---@field public value integer @上期成绩
 ---@field public period integer @期数
+---@field public claimed boolean @该子榜奖励是否已领取(客户端"已领取"灰态展示)
 
 
 ---@class PBRankGetBoardHistoryReqCmd
@@ -3050,7 +3051,7 @@
 ---@field public error string @错误信息
 ---@field public uid integer @玩家ID
 ---@field public category integer @一级标签
----@field public items BoardHistoryItem[] @上期各子榜名次(未上榜/已领取为空)
+---@field public items BoardHistoryItem[] @上期各子榜名次(带claimed领取状态; 未上榜为空)
 
 
 ---@class PBTestRankBoardSettleReqCmd
@@ -4719,6 +4720,7 @@
 ---@field public use_item_id integer
 ---@field public use_item_cnt integer
 ---@field public choose_item_ids table<integer, integer>
+---@field public role_id integer @精力丹: 指定回复角色(角色config_id, 0=出战角色, 兼容旧版; 其他道具忽略)
 
 
 ---@class PBUseItemRspCmd
@@ -4727,6 +4729,7 @@
 ---@field public uid integer
 ---@field public use_item_id integer
 ---@field public use_item_cnt integer
+---@field public role_id integer @精力丹: 实际回复的角色(成功时回显, 其他道具0)
 
 
 ---@class PBUseUniqItemReqCmd

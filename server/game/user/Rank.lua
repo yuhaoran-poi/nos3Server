@@ -566,7 +566,7 @@ function Rank.BoardRewardClaim(req, category)
     }, req.msg_context.stub_id)
 end
 
--- 新三榜: 查询上期锁榜排名(领奖弹窗展示"上周排名"; 领取后返回空)
+-- 新三榜: 查询上期锁榜排名(领奖弹窗展示"上周排名"; 条目带claimed领取状态, 未上榜为空)
 function Rank.PBRankGetBoardHistoryReqCmd(req)
     local category = req.msg.category or 0
     local err, items = clusterd.call(3004, "rank", "RankMgr.GetBoardHistory", {

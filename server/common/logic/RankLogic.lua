@@ -930,7 +930,8 @@ function RankLogic.GetBoardReward(category, uid)
                     if rd and rd.sr then
                         for _, sub_rank in pairs(rd.sr) do
                             local pd = sub_rank.ps[uid]
-                            if pd and pd.rank and pd.rank > 0 then
+                            -- 已领取(claimed标记)的条目不再参与聚合, 防重复领奖
+                            if pd and pd.rank and pd.rank > 0 and not pd.claimed then
                                 if not best or pd.rank < best.player_data.rank then
                                     best = {
                                         rank_type = rank_type,
@@ -948,7 +949,7 @@ function RankLogic.GetBoardReward(category, uid)
     end
 
     if not best then
-        return ErrorCode.RankRewardNotExist -- 未上榜或已领取(快照已移除)
+        return ErrorCode.RankRewardNotExist -- 未上榜或已领取(claimed标记)
     end
 
     -- 按最优名次匹配奖励档位(全局统一区间模板, 所有榜共用同一套奖励)
@@ -985,8 +986,11 @@ function RankLogic.ConfirmBoardReward(category, uid)
                 for _, rd in pairs(rank_reward_data[rank_type]) do
                     if rd and rd.sr then
                         for _, sub_rank in pairs(rd.sr) do
-                            if sub_rank.ps[uid] then
-                                sub_rank.ps[uid] = nil
+                            local pd = sub_rank.ps[uid]
+                            -- 领取改为打claimed标记而非删除: 保留上期名次供客户端展示"已领取"状态
+                            -- (防重复领奖由GetBoardReward聚合时过滤claimed条目保证)
+                            if pd and not pd.claimed then
+                                pd.claimed = true
                                 changed = true
                             end
                         end
@@ -1008,7 +1012,7 @@ function RankLogic.CancelBoardRewardClaim(category, uid)
 end
 
 -- 查询上期锁榜排名(领奖弹窗展示"上周排名"): 返回该标签下各子榜最新一期快照中玩家的名次
--- 注: 领取后快照已移除, 该查询返回空列表(客户端按钮置灰态)
+-- 已领取的条目带claimed=true(客户端展示"已领取"灰态), 未上榜才返回空列表
 function RankLogic.GetBoardHistory(category, uid)
     if not category or category <= 0 then
         return ErrorCode.ParamInvalid
@@ -1040,6 +1044,7 @@ function RankLogic.GetBoardHistory(category, uid)
                                     rank = pd.rank or 0,
                                     value = pd.value or 0,
                                     period = latest_period or 0,
+                                    claimed = pd.claimed or false,
                                 })
                             end
                         end
