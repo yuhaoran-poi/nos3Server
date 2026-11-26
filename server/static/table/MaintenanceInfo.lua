@@ -7,10 +7,10 @@
 ---@field public fail_cost integer @撤离失败耐久扣除
 ---@field public time_cost table @随时间扣除<秒：扣除点>
 return {
-[2] = { id=2,Durability=180,sturdy=375,sturdy_reset_count=5,fall_cost=18,fail_cost=54,time_cost={[60]=1} },
-[3] = { id=3,Durability=210,sturdy=440,sturdy_reset_count=5,fall_cost=21,fail_cost=63,time_cost={[60]=1} },
-[4] = { id=4,Durability=240,sturdy=500,sturdy_reset_count=5,fall_cost=24,fail_cost=72,time_cost={[60]=1} },
-[5] = { id=5,Durability=270,sturdy=560,sturdy_reset_count=5,fall_cost=27,fail_cost=81,time_cost={[60]=1} },
-[6] = { id=6,Durability=300,sturdy=625,sturdy_reset_count=5,fall_cost=30,fail_cost=90,time_cost={[60]=1} },
-[7] = { id=7,Durability=300,sturdy=625,sturdy_reset_count=5,fall_cost=30,fail_cost=90,time_cost={[60]=1} }
+[2] = { id=2,Durability=180,sturdy=375,sturdy_reset_count=20,fall_cost=18,fail_cost=54,time_cost={[60]=1} },
+[3] = { id=3,Durability=210,sturdy=440,sturdy_reset_count=20,fall_cost=21,fail_cost=63,time_cost={[60]=1} },
+[4] = { id=4,Durability=240,sturdy=500,sturdy_reset_count=20,fall_cost=24,fail_cost=72,time_cost={[60]=1} },
+[5] = { id=5,Durability=270,sturdy=560,sturdy_reset_count=20,fall_cost=27,fail_cost=81,time_cost={[60]=1} },
+[6] = { id=6,Durability=300,sturdy=625,sturdy_reset_count=20,fall_cost=30,fail_cost=90,time_cost={[60]=1} },
+[7] = { id=7,Durability=360,sturdy=750,sturdy_reset_count=20,fall_cost=36,fail_cost=108,time_cost={[60]=1} }
 }
