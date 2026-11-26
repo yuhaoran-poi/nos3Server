@@ -192,7 +192,6 @@ return {
 [3400100] = { id=3400100,max_num=10,item_id=34001,num=1,cost={[43066]=5,[43067]=5,[43068]=5,[43069]=5,[43070]=5,[40]=20},rate=10000,show_ui=10,unlock_cost={[1]=192000},unlock_lv=0 },
 [3400200] = { id=3400200,max_num=10,item_id=34002,num=1,cost={[43071]=9,[43072]=8,[43073]=8,[43074]=8,[40]=80},rate=10000,show_ui=10,unlock_cost={[1]=384000},unlock_lv=0 },
 [3498200] = { id=3498200,max_num=10,item_id=34982,num=1,cost={[34989]=30},rate=10000,show_ui=7,unlock_cost={[1]=768000},unlock_lv=0 },
-[3498300] = { id=3498300,max_num=10,item_id=34983,num=1,cost={[34994]=30},rate=10000,show_ui=7,unlock_cost={[1]=768000},unlock_lv=0 },
 [3498400] = { id=3498400,max_num=10,item_id=34984,num=1,cost={[34999]=30},rate=10000,show_ui=7,unlock_cost={[1]=768000},unlock_lv=0 },
 [3498600] = { id=3498600,max_num=10,item_id=34986,num=1,cost={[34985]=5},rate=10000,show_ui=7,unlock_cost={[1]=48000},unlock_lv=0 },
 [3498700] = { id=3498700,max_num=10,item_id=34987,num=1,cost={[34986]=10},rate=10000,show_ui=7,unlock_cost={[1]=96000},unlock_lv=0 },
