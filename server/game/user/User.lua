@@ -723,6 +723,112 @@ function User.GMPushTestSettle(config_id)
     return true
 end
 
+-- GM/测试: 伪造一条通关结算, 产出带章节/难度/胜负的战报(客户端章节解锁判定用)
+-- 用法: gm_pass_chapter <uid> <chapter_id> <difficulty> 后执行 test_settle <uid>(或重新登录)消费
+-- 刻意不带奖励/段位分/经验/排行榜字段; 正常产生赛季统计、周积分(命中当周池时)、任务埋点(等同真实通关该关)
+function User.GMPassChapter(chapter_id, difficulty)
+    chapter_id = math.tointeger(chapter_id) or 0
+    difficulty = math.tointeger(difficulty) or 0
+    if chapter_id <= 0 or difficulty <= 0 then
+        return false
+    end
+    local now_ts = moon.time()
+    -- 战报roleid列取当前出战角色(仅回显, 不加经验不加耐久变更)
+    local battle_role_id = 0
+    local roles = scripts.UserModel.GetRoles()
+    if roles and roles.battle_role_id then
+        battle_role_id = roles.battle_role_id
+    end
+    -- 模拟DS的PBGameSettle解码结构: 仅带产战报与章节统计所需的最小字段集
+    local settle_info = {
+        chapter_id = chapter_id,
+        difficulty = difficulty,
+        is_complete = 1,              -- 通关(客户端解锁判定的关键标记)
+        is_retreat = 0,
+        kill_ghost_king = 0,
+        booty_value = 0,              -- 必须显式0: Season.AddBattleNum裸算术, nil会崩(proto3解码int64缺省为0)
+        start_game_ts = now_ts - 600, -- 模拟10分钟一局
+        end_game_ts = now_ts,
+        kill_monsters = {},           -- 必须空表: GameSettle统计处无nil防护
+        game_missions = {},
+        battle_god_ids = {},
+        total_open_cnt = {},
+        fall_down_cnt = 0,
+        game_role_change = { { roleid = battle_role_id } },
+        settle_data = json.encode({
+            chapter_id = chapter_id,
+            difficulty = difficulty,
+            is_complete = 1,
+            is_retreat = 0,
+            start_game_ts = now_ts - 600,
+            end_game_ts = now_ts,
+            fall_down_cnt = 0,
+            kill_monsters = {},
+            booty_value = 0,
+            damage_value = 0,
+            healing_value = 0,
+        }),
+        settle_simple_data = json.encode({
+            chapter_id = chapter_id,
+            difficulty = difficulty,
+            is_complete = 1,
+            start_game_ts = now_ts - 600,
+            end_game_ts = now_ts,
+        }),
+    }
+    Database.BattleListPushRight(context.addr_db_redis, Database.GetBattleSettleKey(), context.uid, settle_info)
+    moon.info(string.format("GMPassChapter uid=%d chapter=%d difficulty=%d", context.uid, chapter_id, difficulty))
+    return true
+end
+
+-- GM/测试: 直接把全部章节的通过最高记录填充到指定难度(客户端章节锁解锁用)
+-- 走Season记录直写, 不产战报/不触发结算链路/无任务埋点; 客户端重登后拉 PBGetSeasonPlayerReqCmd 生效
+-- difficulty缺省5(地狱): 填最高值可同时满足任何"达到X难度"类解锁条件
+function User.GMUnlockChapters(difficulty)
+    difficulty = math.tointeger(difficulty) or 0
+    if difficulty <= 0 then
+        difficulty = 5
+    end
+    local Seasons = scripts.UserModel.GetSeasons()
+    if not Seasons then
+        return false
+    end
+    Seasons.story_line_record = Seasons.story_line_record or {}
+    Seasons.ghost_gate_record = Seasons.ghost_gate_record or {}
+    Seasons.boss_battle_record = Seasons.boss_battle_record or {}
+    Seasons.tower_battle_record = Seasons.tower_battle_record or {}
+
+    local cnt = 0
+    for _, conf in pairs(GameCfg.GameChapter or {}) do
+        local chapterid = conf.chapterid
+        if chapterid then
+            -- 按模式区间路由到对应record map(与Season.AddBattleNum同口径)
+            local record_map = nil
+            for _, mode_cfg in pairs(GameCfg.GameMode or {}) do
+                if mode_cfg.begin_id <= chapterid and chapterid <= mode_cfg.end_id then
+                    if mode_cfg.id == RoomDef.GameMode.STORY_MODE then
+                        record_map = Seasons.story_line_record
+                    elseif mode_cfg.id == RoomDef.GameMode.GHOST_GATE_MODE then
+                        record_map = Seasons.ghost_gate_record
+                    elseif mode_cfg.id == RoomDef.GameMode.BOSS_MODE then
+                        record_map = Seasons.boss_battle_record
+                    elseif mode_cfg.id == RoomDef.GameMode.TOWER_MODE then
+                        record_map = Seasons.tower_battle_record
+                    end
+                    break
+                end
+            end
+            if record_map and (not record_map[chapterid] or record_map[chapterid] < difficulty) then
+                record_map[chapterid] = difficulty
+                cnt = cnt + 1
+            end
+        end
+    end
+    scripts.UserModel.AddDirtyModule("Season")
+    moon.info(string.format("GMUnlockChapters uid=%d difficulty=%d updated=%d", context.uid, difficulty, cnt))
+    return true
+end
+
 function User.NotifyPlayEnd(out_data)
     User.OutPlay(out_data)
     User.NotifyGameSettle()

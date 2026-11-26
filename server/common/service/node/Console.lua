@@ -724,6 +724,41 @@ function Console.push_settle(uid, box_config_id)
 	end
 end
 
+-- 伪造通关章节结算(产出带章节/难度/胜利的战报, 客户端章节解锁验证): gm_pass_chapter <uid> <chapter_id> <difficulty>
+-- 塞队列后需 test_settle <uid> 或重新登录消费; 无奖励无排行数据
+function Console.gm_pass_chapter(uid, chapter_id, difficulty)
+	chapter_id = math.tointeger(chapter_id)
+	difficulty = math.tointeger(difficulty)
+	if not chapter_id or chapter_id <= 0 or not difficulty or difficulty <= 0 then
+		return Response(444, "Invalid params",
+			string.format("%d %s %s", uid, tostring(chapter_id), tostring(difficulty)))
+	end
+	local res, err = context.call_user(uid, "User.GMPassChapter", chapter_id, difficulty)
+	if err then
+		return Response(444, err, uid)
+	end
+	if res then
+		return Response(0, "OK")
+	else
+		return Response(444, "Failed", uid)
+	end
+end
+
+-- 一键解锁全部章节(直填赛季通过记录, 不走结算): gm_unlock_chapters <uid> [difficulty](缺省5)
+-- 客户端重新登录拉赛季数据后生效
+function Console.gm_unlock_chapters(uid, difficulty)
+	difficulty = math.tointeger(difficulty) or 0
+	local res, err = context.call_user(uid, "User.GMUnlockChapters", difficulty)
+	if err then
+		return Response(444, err, uid)
+	end
+	if res then
+		return Response(0, "OK")
+	else
+		return Response(444, "Failed", uid)
+	end
+end
+
 -- 触发一次结算队列消费(走完整 GameSettle 链路): test_settle <uid>
 function Console.test_settle(uid)
 	local _, err = context.call_user(uid, "User.NotifyGameSettle")
