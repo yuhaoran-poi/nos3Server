@@ -5,7 +5,7 @@
 要点:
 - 九格无放回: 权重合计10000(万分位, 公示口径=初始权重), 抽中移出池, 剩余池归一化抽取
 - 九档九格(2026-11改版): step_prices九档; 每档按剩余池权重抽1格, 无收池, cur_step=10终态(走满必集齐)
-- 令 = 活动货币(Coin表, 一箱一令ticket_id, 跨期保留不回收); 灵石(coin 2)购买, 1令=100灵石
+- 令 = 活动货币(Coin表, 一箱一令ticket_id, 跨期保留不回收); 绑定灵石(coin3)优先购买, 不足补扣灵石(coin2), 1令=100灵石
 - 时间窗: 下线后禁止开箱/买令/免费领令(协议层校验, 防直发); 返场 = 复用旧箱ID只改配置start_time/end_time
 - 进度按期号锚点(period_key=cfg.start_time)惰性重置: 访问时发现不匹配 → 审计日志 → 全新九格;
   锚定新期StartTime而非end_time, 策划中途延期不会误清数据
@@ -503,8 +503,10 @@ function ChosenTreasureChest.PBBuyChosenTreasureChestTicketReqCmd(req)
     end
 
     local cost = num * Config.TICKET_EXCHANGE_RATE
+    -- 2026-11改版: 优先扣绑定灵石(coin 3), 不足自动补扣非绑定灵石(coin 2)
+    -- CheckCoinsEnough对绑定货币做单向转换(原表改写), DealCoins按改写后的金额执行
     local coins = {
-        [Config.LINGSHI_COIN_ID] = { coin_id = Config.LINGSHI_COIN_ID, coin_count = -cost },
+        [Config.BOUND_LINGSHI_COIN_ID] = { coin_id = Config.BOUND_LINGSHI_COIN_ID, coin_count = -cost },
         [cfg.ticket_id] = { coin_id = cfg.ticket_id, coin_count = num },
     }
     local check_code = scripts.Bag.CheckCoinsEnough(coins)
@@ -520,9 +522,9 @@ function ChosenTreasureChest.PBBuyChosenTreasureChestTicketReqCmd(req)
     end
     scripts.Bag.SaveAndLog(bag_change_log, ItemDef.ChangeReason.ChosenChestBuyTicket)
 
-    moon.info(string.format("[chosen_chest] event=buy_ticket uid=%s box=%s num=%s cost_coin=%s cost=%s ticket_coin=%s",
+    moon.info(string.format("[chosen_chest] event=buy_ticket uid=%s box=%s num=%s cost=%s ticket_coin=%s coins_deduct=%s",
         tostring(context.uid), tostring(box_id), tostring(num),
-        tostring(Config.LINGSHI_COIN_ID), tostring(cost), tostring(cfg.ticket_id)))
+        tostring(cost), tostring(cfg.ticket_id), json.encode(coins)))
 
     rsp_msg.num = num
     rsp_msg.coin_id = cfg.ticket_id

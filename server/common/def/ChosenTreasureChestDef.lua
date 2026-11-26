@@ -30,7 +30,8 @@ local ChosenTreasureChestDef = {}
 
 -- 运行参数(非策划数值表, 属服务器运营参数)
 local Config = {
-    LINGSHI_COIN_ID = 2,        -- 灵石货币ID(购买令的扣款币)
+    LINGSHI_COIN_ID = 2,        -- 灵石货币ID(非绑定)
+    BOUND_LINGSHI_COIN_ID = 3,  -- 绑定灵石货币ID(买令优先扣, 不足自动补扣灵石2)
     TICKET_EXCHANGE_RATE = 100, -- 兑换比例: 1令 = 100灵石(案子1.4)
     WEIGHT_TOTAL = 10000,       -- 九格权重合计基准(万分位, 2026-11口径)
     STEP_COUNT = 9,             -- 档位数(2026-11改版: 九档九格, 每档抽1格, 无收池)
