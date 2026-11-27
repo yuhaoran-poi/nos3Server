@@ -29,22 +29,20 @@ local LuaExt = require "common.LuaExt"
 local ChosenTreasureChestDef = {}
 
 -- 运行参数(非策划数值表, 属服务器运营参数)
+-- 买令扣款币+单价: 走配置表ChosenTreasureChest.ticket_price(map键=货币id, 值=单价);
+-- 缺省兜底(字段缺失/非法)在ChosenTreasureChest.lua内联: 扣款币=绑定灵石coin3, 单价=100
+-- 档数/格数/终态档位: 从配置表键数推导(档数=step_prices键数, 格数=slot_items键数, 终态=档数+1),
+-- 策划改配任意档格数(如8档8格)无需改代码, 见ChosenTreasureChest.get_box_dims
 local Config = {
-    LINGSHI_COIN_ID = 2,        -- 灵石货币ID(非绑定)
-    BOUND_LINGSHI_COIN_ID = 3,  -- 绑定灵石货币ID(买令优先扣, 不足自动补扣灵石2)
-    TICKET_EXCHANGE_RATE = 100, -- 兑换比例: 1令 = 100灵石(案子1.4)
-    WEIGHT_TOTAL = 10000,       -- 九格权重合计基准(万分位, 2026-11口径)
-    STEP_COUNT = 9,             -- 档位数(2026-11改版: 九档九格, 每档抽1格, 无收池)
-    SLOT_COUNT = 9,             -- 格位数
-    CUR_STEP_FINISHED = 10,     -- 终态档位: 本期已开满(九档集齐)
+    WEIGHT_TOTAL = 10000,       -- 格位权重合计基准(万分位, 2026-11口径)
     BUY_NUM_MAX = 10000,        -- 单次购买令数量上限(防呆, 非限购)
 }
 
 -- 玩家单箱进度(按期重置)
 ---@class ChosenTreasureChestBoxData
 ---@field period_key integer 期号锚点(=开局时cfg.start_time), 与当前配置不匹配即重置
----@field drawn_slots table<integer, integer> 已抽出格位 {[slot]=1}(九格无放回的"池")
----@field cur_step integer 下一次开启的档位(1-8), 9=本期已开满
+---@field drawn_slots table<integer, integer> 已抽出格位 {[slot]=1}(无放回的"池", 格数=配置表slot_items键数)
+---@field cur_step integer 下一次开启的档位(1..档数), 档数+1=本期已开满(档数=配置表step_prices键数)
 local defaultChosenTreasureChestBoxData = {
     period_key = 0,
     drawn_slots = {},   -- { [slot] = 1 }

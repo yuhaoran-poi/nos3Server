@@ -5,7 +5,7 @@
 要点:
 - 九格无放回: 权重合计10000(万分位, 公示口径=初始权重), 抽中移出池, 剩余池归一化抽取
 - 九档九格(2026-11改版): step_prices九档; 每档按剩余池权重抽1格, 无收池, cur_step=10终态(走满必集齐)
-- 令 = 活动货币(Coin表, 一箱一令ticket_id, 跨期保留不回收); 绑定灵石(coin3)优先购买, 不足补扣灵石(coin2), 1令=100灵石
+- 令 = 活动货币(Coin表, 一箱一令ticket_id, 跨期保留不回收); 买令走配置表ticket_price(map键=扣款币, 默认绑定灵石3优先+不足自动补扣灵石2), 买N令=N×单价
 - 时间窗: 下线后禁止开箱/买令/免费领令(协议层校验, 防直发); 返场 = 复用旧箱ID只改配置start_time/end_time
 - 进度按期号锚点(period_key=cfg.start_time)惰性重置: 访问时发现不匹配 → 审计日志 → 全新九格;
   锚定新期StartTime而非end_time, 策划中途延期不会误清数据
@@ -74,6 +74,20 @@ local function sorted_box_ids()
     return ids
 end
 
+-- 档位/格位维度从配置表键数推导(档数=step_prices键数, 格数=slot_items键数, 终态档位=档数+1):
+-- 策划改配8档8格/12档12格等无需改代码; "每档抽1格"语义要求档数=格数, 不一致打审计日志
+-- (格数<档数时池先空走"已开满"防御, 格数>档数时多余格永远抽不到, 均不崩溃)
+local function get_box_dims(cfg)
+    local step_count = type(cfg.step_prices) == "table" and table.size(cfg.step_prices) or 0
+    local slot_count = type(cfg.slot_items) == "table" and table.size(cfg.slot_items) or 0
+    if step_count > 0 and slot_count > 0 and step_count ~= slot_count then
+        moon.error(string.format(
+            "[chosen_chest] config err box=%s: step_prices(%d) != slot_items(%d), 档数应=格数(每档抽1格)",
+            tostring(cfg.id), step_count, slot_count))
+    end
+    return step_count, slot_count
+end
+
 -- 启动期配置校验(错误打日志不阻断, 防策划表填错静默上线)
 local validated = false
 local function validate_configs()
@@ -88,13 +102,14 @@ local function validate_configs()
     local ticket_owner = {}
     for box_id, cfg in pairs(cfgs) do
         local prefix = string.format("[chosen_chest] config err box=%s: ", tostring(box_id))
+        local step_count, slot_count = get_box_dims(cfg)
         if not cfg.start_time or not cfg.end_time or cfg.start_time >= cfg.end_time then
             moon.error(prefix .. "start_time/end_time invalid")
         end
         if type(cfg.step_prices) ~= "table" then
             moon.error(prefix .. "step_prices missing")
         else
-            for step = 1, Config.STEP_COUNT do
+            for step = 1, step_count do
                 local price = cfg.step_prices[step]
                 if not price or price <= 0 then
                     moon.error(prefix .. "step_prices[" .. step .. "] invalid")
@@ -105,7 +120,7 @@ local function validate_configs()
             moon.error(prefix .. "slot_items/slot_weights missing")
         else
             local weight_sum = 0
-            for slot = 1, Config.SLOT_COUNT do
+            for slot = 1, slot_count do
                 local item = cfg.slot_items[slot]
                 local weight = cfg.slot_weights[slot]
                 if not item or item <= 0 then
@@ -256,17 +271,18 @@ end
 
 local function build_box_view(box_id, cfg, data, now_ts)
     local box = ensure_box_data(data, cfg)
+    local step_count, slot_count = get_box_dims(cfg)
     local drawn_list = {}
-    for slot = 1, Config.SLOT_COUNT do
+    for slot = 1, slot_count do
         if box.drawn_slots[slot] then
             table.insert(drawn_list, slot)
         end
     end
     local step_prices, slot_items, slot_weights = {}, {}, {}
-    for step = 1, Config.STEP_COUNT do
+    for step = 1, step_count do
         table.insert(step_prices, cfg.step_prices[step] or 0)
     end
-    for slot = 1, Config.SLOT_COUNT do
+    for slot = 1, slot_count do
         table.insert(slot_items, cfg.slot_items[slot] or 0)
         table.insert(slot_weights, cfg.slot_weights[slot] or 0)
     end
@@ -402,8 +418,10 @@ function ChosenTreasureChest.PBOpenChosenTreasureChestReqCmd(req)
         return reply(ErrorCode.ServerInternalError, "数据未初始化")
     end
     local box = ensure_box_data(data, cfg)
+    local step_count, slot_count = get_box_dims(cfg)
 
-    if box.cur_step >= Config.CUR_STEP_FINISHED then
+    -- 终态档位=档数+1(档数由配置表step_prices键数推导)
+    if box.cur_step >= step_count + 1 then
         return reply(ErrorCode.ChosenChestAlreadyFinished, "本期已开满")
     end
 
@@ -413,10 +431,10 @@ function ChosenTreasureChest.PBOpenChosenTreasureChestReqCmd(req)
         return reply(ErrorCode.ConfigError, "配置错误")
     end
 
-    -- 本次抽出格位: 每档按剩余池权重抽1格(九档九格, 无收池)
+    -- 本次抽出格位: 每档按剩余池权重抽1格(档数=格数, 无收池)
     local hit_slots = {}
     local pool = {}
-    for slot = 1, Config.SLOT_COUNT do
+    for slot = 1, slot_count do
         if not box.drawn_slots[slot] then
             pool[slot] = cfg.slot_weights[slot]
         end
@@ -502,11 +520,40 @@ function ChosenTreasureChest.PBBuyChosenTreasureChestTicketReqCmd(req)
         return reply(ErrorCode.ChosenChestBuyNumInvalid, "购买数量错误")
     end
 
-    local cost = num * Config.TICKET_EXCHANGE_RATE
-    -- 2026-11改版: 优先扣绑定灵石(coin 3), 不足自动补扣非绑定灵石(coin 2)
-    -- CheckCoinsEnough对绑定货币做单向转换(原表改写), DealCoins按改写后的金额执行
+    -- 令单价+扣款币一体配置(2026-11改版, 策划走ticket_price):
+    --  - map<货币id,单价>: 键=扣款币, 值=单价(多键时绑定货币优先, 再按键值小; 建议只配一键)
+    --  - 标量: 统一单价, 扣款币=缺省绑定灵石(coin3)
+    --  - 缺省: 单价100 + coin3
+    -- 扣绑定货币(Coin表coin_bound≠0) => 优先扣绑定, 不足自动补扣关联非绑定(CheckCoinsEnough单向转换)
+    -- 扣非绑定货币(如coin2) => 纯扣该币(无自动补扣)
+    local buy_coin_id = 3   -- 缺省兜底: 绑定灵石(配置表ticket_price的map键接管)
+    local ticket_price = 100 -- 缺省兜底单价(配置表ticket_price接管; 买N令=N×单价)
+    local price_cfg = cfg.ticket_price
+    if type(price_cfg) == "number" then
+        if price_cfg > 0 then
+            ticket_price = price_cfg
+        end
+    elseif type(price_cfg) == "table" then
+        local best_coin, best_is_bound, best_price
+        for coin_id, price in pairs(price_cfg) do
+            if coin_id and coin_id > 0 and price and price > 0 then
+                local coin_cfg = GameCfg.Coin[coin_id]
+                local is_bound = (coin_cfg and coin_cfg.coin_bound ~= 0) or false
+                if not best_coin
+                    or (is_bound and not best_is_bound)
+                    or (is_bound == best_is_bound and coin_id < best_coin) then
+                    best_coin, best_is_bound, best_price = coin_id, is_bound, price
+                end
+            end
+        end
+        if best_coin then
+            buy_coin_id = best_coin
+            ticket_price = best_price
+        end
+    end
+    local cost = num * ticket_price
     local coins = {
-        [Config.BOUND_LINGSHI_COIN_ID] = { coin_id = Config.BOUND_LINGSHI_COIN_ID, coin_count = -cost },
+        [buy_coin_id] = { coin_id = buy_coin_id, coin_count = -cost },
         [cfg.ticket_id] = { coin_id = cfg.ticket_id, coin_count = num },
     }
     local check_code = scripts.Bag.CheckCoinsEnough(coins)
