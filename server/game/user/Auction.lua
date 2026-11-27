@@ -470,6 +470,10 @@ function Auction.PBAuctionSaleReqCmd(req)
         return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
             { code = ErrorCode.TradeItemNotAllowed, error = "物品不允许交易", uid = context.uid }, req.msg_context.stub_id)
     end
+    if uniqitem_conf.buyout_price and uniqitem_conf.buyout_price > req.msg.buyout_price then
+        return context.S2C(context.net_id, CmdCode["PBAuctionSaleRspCmd"],
+            { code = ErrorCode.BuyOutTooLow, error = "一口价过低", uid = context.uid }, req.msg_context.stub_id)
+    end
 
     if not auction_cfg
         or not auction_cfg.service_charge_type
