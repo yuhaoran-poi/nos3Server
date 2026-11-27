@@ -582,6 +582,8 @@ local ErrorCode = {
     TradeLevelNotEnough = 2119,
     --- 仓库已满，使用邮件发送商品
     TradeMailSend = 2120,
+    --- 一口价过低
+    BuyOutTooLow = 2121,
 
     --充值系统相关错误码
     --- 充值ID错误
